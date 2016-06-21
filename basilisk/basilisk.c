@@ -874,7 +874,7 @@ int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_i
                 flag++;
             }
     }
-    basilisk_iscomplete(myinfo,pending);
+    /*basilisk_iscomplete(myinfo,pending);
     if ( OS_milliseconds() > pending->expiration )
     {
         if ( pending->finished == 0 )
@@ -893,7 +893,7 @@ int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_i
                     pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
             flag++;
         }
-    }
+    }*/
     //fprintf(stderr,"c");
     if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
     {
