@@ -59,14 +59,14 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
         myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)
         memcpy(&myinfo->relaybits[i],&myinfo->relays[i].ipbits,sizeof(myinfo->relaybits[i]));
-    /*revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
+    revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
     for (i=0; i<myinfo->numrelays; i++)
     {
         char ipaddr[64];
         expand_ipbits(ipaddr,myinfo->relaybits[i]);
         printf("%s ",ipaddr);
     }
-    printf("sorted\n");*/
+    printf("sorted\n");
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
@@ -114,7 +114,7 @@ int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *ad
         init_hexbytes_noT(hexstr,serialized,len);
         //printf("send relays.(%s)\n",hexstr);
         vcalc_sha256(0,txhash2.bytes,serialized,len);
-        if ( (siglen= bitcoin_sign(myinfo->ctx,"BTCD",sig,txhash2,myinfo->persistent_priv,1)) > 0 )
+        if ( 0 && bits256_nonz(myinfo->persistent_priv) != 0 && (siglen= bitcoin_sign(myinfo->ctx,"BTCD",sig,txhash2,myinfo->persistent_priv,1)) > 0 )
         {
             init_hexbytes_noT(strbuf,sig,siglen);
             jaddstr(vals,"sig",strbuf);

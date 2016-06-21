@@ -799,14 +799,18 @@ void basilisks_loop(void *arg)
         iter++;
         if ( (ptr= queue_dequeue(&myinfo->basilisks.submitQ,0)) != 0 )
         {
+            portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(ptr->basilisktag),ptr);
+            portable_mutex_unlock(&myinfo->basilisk_mutex);
             ptr->refcount++;
             continue;
         }
         //fprintf(stderr,"A");
         if ( (ptr= queue_dequeue(&myinfo->basilisks.resultsQ,0)) != 0 )
         {
+            portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_FIND(hh,myinfo->basilisks.issued,&ptr->basilisktag,sizeof(ptr->basilisktag),pending);
+            portable_mutex_unlock(&myinfo->basilisk_mutex);
             if ( pending != 0 )
             {
                 if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
@@ -844,6 +848,7 @@ void basilisks_loop(void *arg)
         }
         //fprintf(stderr,"B");
         flag = 0;
+        portable_mutex_lock(&myinfo->basilisk_mutex);
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
             //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
@@ -894,12 +899,13 @@ void basilisks_loop(void *arg)
                                 free(pending->results[i]), pending->results[i] = 0;
                         if ( pending->vals != 0 )
                             free_json(pending->vals), pending->vals = 0;
-                        //free(pending);
+                        free(pending);
                     } else printf("illegal refcount for pending\n");
                     flag++;
                 }
             }
         }
+        portable_mutex_unlock(&myinfo->basilisk_mutex);
         //fprintf(stderr,"D");
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {

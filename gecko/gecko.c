@@ -287,9 +287,9 @@ cJSON *gecko_genesisissue(char *symbol,char *chainname,char *chainstr,cJSON *val
 
 struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj)
 {
-    int32_t datalen,hdrsize,len=0; struct iguana_info *virt=0; char *hexstr; uint8_t hexbuf[1024],*ptr,*serialized; struct iguana_peer *addr; struct iguana_txblock txdata;
+    int32_t datalen,hdrsize,len=0; struct iguana_info *virt=0; char *hexstr; uint8_t hexbuf[8192],*ptr,*serialized; struct iguana_peer *addr; struct iguana_txblock txdata;
     portable_mutex_lock(&myinfo->gecko_mutex);
-    printf("symbol.%s chain.%s (%s)\n",symbol,chainname,jprint(valsobj,0));
+    printf("basilisk_geckochain symbol.%s chain.%s (%s)\n",symbol,chainname,jprint(valsobj,0));
     if ( iguana_coinfind(symbol) == 0 && (hexstr= jstr(valsobj,"genesisblock")) != 0 && (virt= iguana_coinadd(symbol,chainname,valsobj)) != 0 )
     {
         safecopy(virt->name,chainname,sizeof(virt->name));

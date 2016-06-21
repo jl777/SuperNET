@@ -606,11 +606,6 @@ ZERO_ARGS(bitcoinrpc,getdifficulty)
     char buf[512];
     if ( coin != 0 )
     {
-       /* {
-            "proof-of-work": 15432589.66327462,
-            "proof-of-stake": 0.00112314,
-            "search-interval": 0
-        }*/
         sprintf(buf,"{\"result\":\"success\",\"proof-of-work\":\"%.8f\",\"search-interval\": 0}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
         return(clonestr(buf));
     } else return(clonestr("{\"error\":\"getdifficulty needs coin\"}"));
