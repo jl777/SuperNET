@@ -309,8 +309,8 @@ void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,str
     //printf("submit.(%s)\n",blockstr);
     if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) == 0 )
     {
-        if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < (myinfo->numrelays >> 1) )
-            return;
+        while ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < (myinfo->numrelays >> 1) )
+            sleep(1);
     }
     else // physical node for geckochain
     {
