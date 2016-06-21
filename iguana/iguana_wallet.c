@@ -930,7 +930,7 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
         cJSON_AddTrueToObject(retjson,"ismine");
     }
     else cJSON_AddFalseToObject(retjson,"ismine");
-    portable_mutex_lock(&myinfo->allcoins_mutex);
+    //portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,other,tmp)
     {
         if ( strcmp(other->symbol,coin->symbol) != 0 )
@@ -939,7 +939,7 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
             jaddstr(retjson,other->symbol,str);
         }
     }
-    portable_mutex_unlock(&myinfo->allcoins_mutex);
+    //portable_mutex_unlock(&myinfo->allcoins_mutex);
     return(jprint(retjson,1));
 }
 

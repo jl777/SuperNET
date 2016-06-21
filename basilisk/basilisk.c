@@ -208,7 +208,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
     r = rand();
-    portable_mutex_lock(&myinfo->allcoins_mutex);
+    //portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         if (  coin->peers == 0 )
@@ -265,7 +265,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
             break;
     }
-    portable_mutex_unlock(&myinfo->allcoins_mutex);
+    //portable_mutex_unlock(&myinfo->allcoins_mutex);
     free(alreadysent);
     return(n);
 }

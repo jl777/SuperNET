@@ -31,9 +31,9 @@ struct iguana_info *iguana_coinfind(char *symbol)
         sleep(1);
     }
     symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
-    portable_mutex_lock(&myinfo->allcoins_mutex);
+    //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_FIND(hh,myinfo->allcoins,&symbolcrc,sizeof(coin->symbolcrc),coin);
-    portable_mutex_unlock(&myinfo->allcoins_mutex);
+    //portable_mutex_unlock(&myinfo->allcoins_mutex);
     return(coin);
 }
 
@@ -75,9 +75,9 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
             basilisk_functions(coin,coin->protocol);
             printf("ADD ALLCOINS.(%s) name.(%s) size %ld numvirts.%d\n",symbol,name,sizeof(*coin),myinfo->allcoins_numvirts);
             coin->symbolcrc = symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
-            portable_mutex_lock(&myinfo->allcoins_mutex);
+            //portable_mutex_lock(&myinfo->allcoins_mutex);
                 HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
-            portable_mutex_unlock(&myinfo->allcoins_mutex);
+            //portable_mutex_unlock(&myinfo->allcoins_mutex);
             myinfo->allcoins_being_added = 0;
         }
         if ( (coin= iguana_coinfind(symbol)) == 0 )
@@ -577,7 +577,7 @@ void iguana_helper(void *arg)
             {
                 maxmillis = (10000 / myinfo->allcoins_numvirts) + 1;
                 flag = 0;
-                portable_mutex_lock(&myinfo->allcoins_mutex);
+                //portable_mutex_lock(&myinfo->allcoins_mutex);
                 HASH_ITER(hh,myinfo->allcoins,virt,tmp)
                 {
                     if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
@@ -587,14 +587,14 @@ void iguana_helper(void *arg)
                             gecko_iteration(myinfo,btcd,virt,maxmillis);
                     }
                 }
-                portable_mutex_unlock(&myinfo->allcoins_mutex);
+                //portable_mutex_unlock(&myinfo->allcoins_mutex);
             }
         }
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 2;
         polltimeout = 100;
-        portable_mutex_lock(&myinfo->allcoins_mutex);
+        //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
             if ( coin->spendvectorsaved == 1 )
@@ -606,7 +606,7 @@ void iguana_helper(void *arg)
                         iguana_bundlevalidate(coin,bp,0);
             }
         }
-        portable_mutex_unlock(&myinfo->allcoins_mutex);
+        //portable_mutex_unlock(&myinfo->allcoins_mutex);
         n = queue_size(&bundlesQ);
         for (iter=0; iter<n; iter++)
         {

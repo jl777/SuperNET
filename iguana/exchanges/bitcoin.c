@@ -445,7 +445,7 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
     double balance; int16_t hdrsi; uint32_t unspentind; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t *unspents=0,value,avail;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
-    portable_mutex_lock(&myinfo->allcoins_mutex);
+    //portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         balance = 0.;
@@ -477,7 +477,7 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
         if ( unspents != 0 )
             free(unspents);
     }
-    portable_mutex_unlock(&myinfo->allcoins_mutex);
+    //portable_mutex_unlock(&myinfo->allcoins_mutex);
     return(retjson);
 }
 
