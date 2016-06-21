@@ -1089,14 +1089,13 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
                             free(retstr);
+                        break;
                     } //else printf("services null return\n");
                 } else printf("non-relay got unexpected.(%s)\n",type);
             }
         }
+        free_json(valsobj);
     }
-    free_json(valsobj);
-    if ( retstr != 0 )
-        free(retstr);
     if ( coin != 0 )
         coin->basilisk_busy = 0;
     myinfo->basilisk_busy = 0;
