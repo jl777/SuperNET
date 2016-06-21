@@ -467,7 +467,8 @@ struct supernet_info
     portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex;
     void *ctx;
     struct delayedPoW_info dPOW;
-    uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS]; int32_t numrelays;
+    uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS];
+    int32_t numrelays,RELAYID;
     // compatibility
     bits256 pangea_category,instantdex_category;
 };

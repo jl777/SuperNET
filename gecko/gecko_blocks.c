@@ -288,11 +288,13 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                 if ( jobj(retjson,"error") == 0 )
                 {
                     valsobj = cJSON_CreateObject();
+                    jaddnum(valsobj,"minresults",myinfo->numrelays - 1);
                     jaddnum(valsobj,"timeout",1000);
                     jaddnum(valsobj,"fanout",-1);
                     jaddstr(valsobj,"symbol",virt->symbol);
                     if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,1)) != 0 )
                     {
+                        printf("got responses.(%s)\n",str2);
                         free(str2);
                     }
                     free_json(valsobj);

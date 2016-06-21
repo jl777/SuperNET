@@ -116,14 +116,28 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
 
 char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
 {
-    char *retstr = 0; struct basilisk_item *parent;
+    char *str,*retstr = 0; int32_t i; struct basilisk_item *parent; cJSON *retarray,*item;
     if ( ptr->retstr != 0 )
         return(ptr->retstr);
-    if ( besti >= 0 && besti < ptr->numresults )
+    /*if ( besti >= 0 && besti < ptr->numresults )
     {
         retstr = ptr->results[besti];
         ptr->results[besti] = 0;
     } else printf("besti.%d vs numresults.%d retstr.%p\n",besti,ptr->numresults,retstr);
+   */
+    if ( ptr->numresults > 0 )
+    {
+        retarray = cJSON_CreateArray();
+        for (i=0; i<ptr->numresults; i++)
+            if ( (str= ptr->results[i]) != 0 )
+            {
+                ptr->results[i] = 0;
+                if ( (item= cJSON_Parse(str)) != 0 )
+                    jaddi(retarray,item);
+                free(str);
+            }
+        retstr = jprint(retarray,1);
+    } else retstr = ptr->results[0], ptr->results[0] = 0;
     if ( retstr == 0 )
         retstr = clonestr(errstr);
     ptr->retstr = retstr;
@@ -322,7 +336,7 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
             usleep(50000);
         }
         if ( retstr == 0 )
-            retstr = basilisk_finish(ptr,-1,"{\"error\":\"basilisk timeout\"}");
+            retstr = basilisk_finish(ptr,-1,"[{\"error\":\"basilisk timeout\"}]");
     }
     basilisk_sendback(myinfo,CMD,symbol,remoteaddr,ptr->basilisktag,retstr);
     return(retstr);
@@ -503,8 +517,8 @@ char *basilisk_iscomplete(struct basilisk_item *ptr)
         return(0);
     }
     if ( ptr->uniqueflag == 0 && ptr->numexact != ptr->numresults && ptr->numexact < (ptr->numresults >> 1) )
-        besti = -1, errstr = "{\"error\":\"basilisk non-consensus results\"}";
-    else besti = basilisk_besti(ptr), errstr = "{\"error\":\"basilisk no valid results\"}";
+        besti = -1, errstr = "[{\"error\":\"basilisk non-consensus results\"}]";
+    else besti = basilisk_besti(ptr), errstr = "[{\"error\":\"basilisk no valid results\"}]";
     //printf("%u complete besti.%d\n",ptr->basilisktag,besti);
     retstr = basilisk_finish(ptr,besti,errstr);
     //printf("%u besti.%d numexact.%d numresults.%d -> (%s)\n",ptr->basilisktag,besti,ptr->numexact,ptr->numresults,retstr);

@@ -15,15 +15,23 @@
 
 // included from basilisk.c
 
-struct iguana_peer *basilisk_ensurerelay(struct iguana_info *btcd,uint32_t ipbits)
+struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits)
 {
-    struct iguana_peer *addr;
+    struct iguana_peer *addr; int32_t i;
     if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
     {
         if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
         {
             printf("launch peer for relay\n");
             addr->isrelay = 1;
+            myinfo->RELAYID = -1;
+            for (i=0; i<myinfo->numrelays; i++)
+                if ( myinfo->relaybits[i] == myinfo->myaddr.myipbits )
+                {
+                    myinfo->RELAYID = i;
+                    break;
+                }
+
             iguana_launch(btcd,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
@@ -54,7 +62,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     printf("add relay[%d] <- %x\n",i,ipbits);
     rp = &myinfo->relays[i];
     rp->ipbits = ipbits;
-    rp->addr = basilisk_ensurerelay(btcd,rp->ipbits);
+    rp->addr = basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)
@@ -105,7 +113,8 @@ char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr
 int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr)
 {
     int32_t i,siglen,len = 0; char strbuf[512]; bits256 txhash2; uint8_t sig[128],serialized[sizeof(myinfo->relaybits)]; cJSON *vals; bits256 hash; char *retstr,hexstr[sizeof(myinfo->relaybits)*2 + 1];
-    if ( myinfo != 0 )
+    printf("skip sending relays\n");
+    if ( 0 && myinfo != 0 )
     {
         vals = cJSON_CreateObject();
         hash = myinfo->myaddr.persistent;
