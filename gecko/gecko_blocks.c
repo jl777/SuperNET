@@ -290,8 +290,10 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                     valsobj = cJSON_CreateObject();
                     jaddnum(valsobj,"fanout",-1);
                     jaddstr(valsobj,"symbol",virt->symbol);
-                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,1)) != 0 )
+                    {
                         free(str2);
+                    }
                     free_json(valsobj);
                 }
                 free_json(retjson);

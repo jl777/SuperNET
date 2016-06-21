@@ -287,7 +287,11 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         remoteaddr = 0;
     if ( (agent = jstr(json,"agent")) == 0 )
         agent = "bitcoinrpc";
-    method = jstr(json,"method");
+    if ( (method= jstr(json,"method")) == 0 )
+    {
+        printf("no method in request.(%s)\n",jprint(json,0));
+        return(clonestr("{\"error\":\"no method\"}"));
+    }
     if ( remoteaddr == 0 )
     {
         if ( jobj(json,"timestamp") != 0 )

@@ -1007,19 +1007,25 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                 }
             }
         }
-        origargjson = argjson;
-        if ( is_cJSON_Array(argjson) != 0 && cJSON_GetArraySize(argjson) == 1 )
-            argjson = jitem(argjson,0);
-        //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-        if ( jstr(argjson,"method") == 0 )
+        if ( is_cJSON_Array(argjson) != 0 && (n= cJSON_GetArraySize(argjson)) > 0 )
         {
-            printf("no method in request.(%s)\n",jprint(argjson,0));
+            cJSON *retitem,*retarray = cJSON_CreateArray();
+            origargjson = argjson;
+            for (i=0; i<n; i++)
+            {
+                argjson = jitem(origargjson,i);
+                //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+                if ( (retstr= SuperNET_JSON(myinfo,argjson,remoteaddr,port)) != 0 )
+                {
+                    if ( (retitem= cJSON_Parse(retstr)) != 0 )
+                        jaddi(retarray,retitem);
+                    free(retstr);
+                }
+                //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
+            }
             free_json(origargjson);
-            return(0);
-        }
-        retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
-        //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
-        free_json(origargjson);
+            retstr = jprint(retarray,1);
+        } else retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
         return(retstr);
     }
     *jsonflagp = 1;
