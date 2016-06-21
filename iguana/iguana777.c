@@ -954,8 +954,11 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
             coin->started = 0;
             if ( strcmp("BTCD",coin->symbol) == 0 )
             {
-                basilisk_ensurerelay(coin,(uint32_t)calc_ipbits("78.47.196.146"));
-                basilisk_ensurerelay(coin,(uint32_t)calc_ipbits("5.9.102.210"));
+                char *str;
+                if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("78.47.196.146"),GENESIS_PUBKEY)) != 0 )
+                    free(str);
+                if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("5.9.102.210"),GENESIS_PUBKEY)) != 0 )
+                    free(str);
             }
             return(1);
         }

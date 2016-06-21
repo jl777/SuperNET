@@ -884,7 +884,7 @@ int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_i
             HASH_DELETE(hh,myinfo->basilisks.issued,pending);
             if ( pending->dependents != 0 )
                 free(pending->dependents);
-            fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
+            //fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
             for (i=0; i<pending->numresults; i++)
                 if ( pending->results[i] != 0 )
                     free(pending->results[i]), pending->results[i] = 0;
