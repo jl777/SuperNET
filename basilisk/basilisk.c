@@ -114,7 +114,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     return(data);
 }
 
-char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
+char *basilisk_finish(struct supernet_info *myinfo,struct basilisk_item *ptr,int32_t besti,char *errstr)
 {
     char *str,*retstr = 0; int32_t i; struct basilisk_item *parent; cJSON *retarray,*item;
     if ( ptr->retstr != 0 )
@@ -133,11 +133,15 @@ char *basilisk_finish(struct basilisk_item *ptr,int32_t besti,char *errstr)
             {
                 ptr->results[i] = 0;
                 if ( (item= cJSON_Parse(str)) != 0 )
+                {
+                    if ( jobj(item,"myip") == 0 )
+                        jaddstr(item,"myip",myinfo->ipaddr);
                     jaddi(retarray,item);
+                }
                 free(str);
             }
         retstr = jprint(retarray,1);
-    } else retstr = ptr->results[0], ptr->results[0] = 0;
+    }
     if ( retstr == 0 )
         retstr = clonestr(errstr);
     ptr->retstr = retstr;
@@ -336,7 +340,7 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
             usleep(50000);
         }
         if ( retstr == 0 )
-            retstr = basilisk_finish(ptr,-1,"[{\"error\":\"basilisk timeout\"}]");
+            retstr = basilisk_finish(myinfo,ptr,-1,"[{\"error\":\"basilisk timeout\"}]");
     }
     basilisk_sendback(myinfo,CMD,symbol,remoteaddr,ptr->basilisktag,retstr);
     return(retstr);
@@ -496,7 +500,7 @@ int32_t basilisk_besti(struct basilisk_item *ptr)
     return(besti);
 }
 
-char *basilisk_iscomplete(struct basilisk_item *ptr)
+char *basilisk_iscomplete(struct supernet_info *myinfo,struct basilisk_item *ptr)
 {
     int32_t i,numvalid,besti=-1; char *errstr = 0,*retstr = 0;
     if ( ptr->childrendone < ptr->numchildren )
@@ -520,7 +524,7 @@ char *basilisk_iscomplete(struct basilisk_item *ptr)
         besti = -1, errstr = "[{\"error\":\"basilisk non-consensus results\"}]";
     else besti = basilisk_besti(ptr), errstr = "[{\"error\":\"basilisk no valid results\"}]";
     //printf("%u complete besti.%d\n",ptr->basilisktag,besti);
-    retstr = basilisk_finish(ptr,besti,errstr);
+    retstr = basilisk_finish(myinfo,ptr,besti,errstr);
     //printf("%u besti.%d numexact.%d numresults.%d -> (%s)\n",ptr->basilisktag,besti,ptr->numexact,ptr->numresults,retstr);
     return(retstr);
 }
@@ -870,7 +874,7 @@ int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_i
                 flag++;
             }
     }
-    basilisk_iscomplete(pending);
+    basilisk_iscomplete(myinfo,pending);
     if ( OS_milliseconds() > pending->expiration )
     {
         if ( pending->finished == 0 )

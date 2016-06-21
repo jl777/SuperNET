@@ -276,9 +276,9 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
     return(0);
 }
 
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2)
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
-    int32_t datalen; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson; char *str,*str2;
+    int32_t i,datalen,num,numerrs,numresults=-1; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
     if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
     {
         if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2)) != 0 )
@@ -294,7 +294,31 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                     jaddstr(valsobj,"symbol",virt->symbol);
                     if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,1)) != 0 )
                     {
-                        printf("got responses.(%s)\n",str2);
+                        if ( (retarray= cJSON_Parse(str2)) != 0 )
+                        {
+                            numerrs = numresults = 0;
+                            if ( (num= cJSON_GetArraySize(retarray)) > 0 )
+                            {
+                                for (i=0; i<num; i++)
+                                {
+                                    item = jitem(retarray,i);
+                                    if ( jobj(item,"error") != 0 )
+                                        numerrs++;
+                                    else if ( jstr(item,"result") != 0 )
+                                    {
+                                        if ( (othercoin= jstr(item,"symbol")) != 0 && strcmp(othercoin,virt->symbol) == 0 && juint(item,"hwm") == height )
+                                        {
+                                            othertip = jbits256(item,"chaintip");
+                                            if ( bits256_cmp(hash2,othertip) == 0 )
+                                                numresults++;
+                                            else numerrs++;
+                                        } else numerrs++;
+                                    }
+                                }
+                            }
+                            printf("%s got responses.%d good.%d errs.%d (%s)\n","BLK",num,numresults,numerrs,str2);
+                            free_json(retjson);
+                        }
                         free(str2);
                     }
                     free_json(valsobj);
@@ -306,7 +330,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
     }
     if ( allocptr != 0 )
         free(allocptr);
-    return(0);
+    return(numresults);
 }
 
 int32_t basilisk_respond_geckogetblock(struct supernet_info *myinfo,struct iguana_info *virt,uint8_t *serialized,int32_t maxsize,cJSON *valsobj,bits256 hash2)
