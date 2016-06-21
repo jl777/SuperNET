@@ -31,13 +31,15 @@ struct iguana_info *iguana_coinfind(char *symbol)
         sleep(1);
     }
     symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
-    HASH_FIND(hh,myinfo->allcoins,&symbolcrc,sizeof(coin->symbolcrc),coin);
+    portable_mutex_lock(&myinfo->allcoins_mutex);
+        HASH_FIND(hh,myinfo->allcoins,&symbolcrc,sizeof(coin->symbolcrc),coin);
+    portable_mutex_unlock(&myinfo->allcoins_mutex);
     return(coin);
 }
 
 struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
 {
-    struct iguana_info *coin,*tmp; uint32_t symbolcrc; char *privatechain; int32_t j; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    struct iguana_info *coin; uint32_t symbolcrc; char *privatechain; int32_t j; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
     {
         portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -74,14 +76,12 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
             basilisk_functions(coin,coin->protocol);
             printf("ADD ALLCOINS.(%s) name.(%s) size %ld numvirts.%d\n",symbol,name,sizeof(*coin),myinfo->allcoins_numvirts);
             coin->symbolcrc = symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
-            HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
+            portable_mutex_lock(&myinfo->allcoins_mutex);
+                HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
+            portable_mutex_unlock(&myinfo->allcoins_mutex);
             myinfo->allcoins_being_added = 0;
         }
         portable_mutex_unlock(&myinfo->allcoins_mutex);
-        HASH_ITER(hh,myinfo->allcoins,coin,tmp)
-        {
-            printf("HASH_ITER.(%s)\n",coin->symbol);
-        }
         if ( (coin= iguana_coinfind(symbol)) == 0 )
             printf("error finding justadded.(%s)\n",symbol);
     }
@@ -549,8 +549,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 void iguana_helper(void *arg)
 {
     static int32_t maxhelperid;
-    cJSON *argjson=0; int32_t iter,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin,*btcd,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    cJSON *argjson=0; int32_t iter,n,j,maxmillis,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    struct iguana_helper *ptr; struct iguana_info *coin,*btcd,*virt,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     if ( helperid > maxhelperid )
@@ -571,16 +571,32 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
-        if ( helperid == 0 && (btcd= iguana_coinfind("BTCD")) != 0 )
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
-            if ( myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
+            if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
                 basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
+            if ( myinfo->allcoins_numvirts > 0 )
+            {
+                maxmillis = (10000 / myinfo->allcoins_numvirts) + 1;
+                flag = 0;
+                portable_mutex_lock(&myinfo->allcoins_mutex);
+                HASH_ITER(hh,myinfo->allcoins,virt,tmp)
+                {
+                    if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+                    {
+                        //fprintf(stderr,"h");
+                        if ( (flag++ % IGUANA_NUMHELPERS) == helperid )
+                            gecko_iteration(myinfo,btcd,virt,maxmillis);
+                    }
+                }
+                portable_mutex_unlock(&myinfo->allcoins_mutex);
+            }
         }
         //iguana_jsonQ(); cant do this here
         flag = 0;
         allcurrent = 2;
         polltimeout = 100;
-        //portable_mutex_lock(&Allcoins_mutex);
+        portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
             if ( coin->spendvectorsaved == 1 )
@@ -592,7 +608,7 @@ void iguana_helper(void *arg)
                         iguana_bundlevalidate(coin,bp,0);
             }
         }
-        //portable_mutex_unlock(&Allcoins_mutex);
+        portable_mutex_unlock(&myinfo->allcoins_mutex);
         n = queue_size(&bundlesQ);
         for (iter=0; iter<n; iter++)
         {

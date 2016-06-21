@@ -414,7 +414,7 @@ void mainloop(struct supernet_info *myinfo)
         if ( 1 )
         {
             coin = 0;
-            //portable_mutex_lock(&Allcoins_mutex);
+            portable_mutex_lock(&myinfo->allcoins_mutex);
             HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
                 if ( coin->current != 0 && coin->active != 0 && coin->started != 0 )
@@ -467,7 +467,7 @@ void mainloop(struct supernet_info *myinfo)
                         printf("call RT update busy.%d\n",coin->RTramchain_busy);
                 }
             }
-            //portable_mutex_unlock(&Allcoins_mutex);
+            portable_mutex_unlock(&myinfo->allcoins_mutex);
         }
         //pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
@@ -1932,12 +1932,12 @@ STRING_ARG(SuperNET,getpeers,activecoin)
         max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
     else
     {
-        //portable_mutex_lock(&Allcoins_mutex);
+        portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
             max = SuperNET_coinpeers(coin,SNjson,rawjson,max);
         }
-        //portable_mutex_unlock(&Allcoins_mutex);
+        portable_mutex_unlock(&myinfo->allcoins_mutex);
     }
     if ( max != 64 )
     {

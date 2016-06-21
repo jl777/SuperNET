@@ -692,14 +692,14 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         }
         else
         {
-            //portable_mutex_lock(&Allcoins_mutex);
+            portable_mutex_lock(&myinfo->allcoins_mutex);
             HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
                 if ( coin->chain->rpcport == port )
                     break;
                 else coin = 0;
             }
-            //portable_mutex_unlock(&Allcoins_mutex);
+            portable_mutex_unlock(&myinfo->allcoins_mutex);
         }
         if ( coin == 0 && symbol[0] != 0 )
             coin = iguana_coinfind(symbol);

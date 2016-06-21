@@ -137,7 +137,7 @@ char *basilisk_finish(struct supernet_info *myinfo,struct basilisk_item *ptr,int
                     if ( jobj(item,"myip") == 0 )
                         jaddstr(item,"myip",myinfo->ipaddr);
                     jaddi(retarray,item);
-                }
+                } else printf("couldnt parse.(%s)\n",str);
                 free(str);
             }
         retstr = jprint(retarray,1);
@@ -208,7 +208,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
     r = rand();
-    //portable_mutex_lock(&Allcoins_mutex);
+    portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         if (  coin->peers == 0 )
@@ -265,7 +265,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )
             break;
     }
-    //portable_mutex_unlock(&Allcoins_mutex);
+    portable_mutex_unlock(&myinfo->allcoins_mutex);
     free(alreadysent);
     return(n);
 }
@@ -335,12 +335,12 @@ char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,
         while ( OS_milliseconds() < ptr->expiration )
         {
             //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
-            if ( (retstr= ptr->retstr) != 0 )
+            if ( ptr->numresults >= ptr->numrequired || (retstr= ptr->retstr) != 0 )
                 break;
             usleep(50000);
         }
         if ( retstr == 0 )
-            retstr = basilisk_finish(myinfo,ptr,-1,"[{\"error\":\"basilisk timeout\"}]");
+            retstr = basilisk_finish(myinfo,ptr,-1,"[{\"error\":\"basilisk wait timeout\"}]");
     }
     basilisk_sendback(myinfo,CMD,symbol,remoteaddr,ptr->basilisktag,retstr);
     return(retstr);
@@ -826,7 +826,7 @@ void basilisk_geckoresult(struct supernet_info *myinfo,struct basilisk_item *ptr
 
 void basilisk_pending_result(struct supernet_info *myinfo,struct basilisk_item *ptr,struct basilisk_item *pending)
 {
-    int32_t n; struct basilisk_item *parent; basilisk_metricfunc metricfunc;
+    int32_t n; basilisk_metricfunc metricfunc;
     if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
     {
         pending->numresults++;
@@ -848,11 +848,11 @@ void basilisk_pending_result(struct supernet_info *myinfo,struct basilisk_item *
         if ( strcmp(ptr->CMD,"RET") == 0 || strcmp(ptr->CMD,"GET") == 0 )
         {
             printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
-            if ( (parent= pending->parent) != 0 )
+            /*if ( (parent= pending->parent) != 0 )
             {
                 pending->parent = 0;
                 parent->childrendone++;
-            }
+            }*/
             if ( strcmp(ptr->CMD,"GET") == 0 )
                 basilisk_geckoresult(myinfo,ptr);
         }
@@ -917,7 +917,7 @@ int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_i
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *btcd,*virt,*hhtmp; struct basilisk_item *ptr,*tmp,*pending; int32_t iter,maxmillis,flag; struct supernet_info *myinfo = arg;
+    struct basilisk_item *ptr,*tmp,*pending; int32_t iter,flag; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -939,21 +939,6 @@ void basilisks_loop(void *arg)
             HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
             {
                 flag += basilisk_issued_iteration(myinfo,pending);
-            }
-            if ( flag == 0 && myinfo->allcoins_numvirts > 0 && (btcd= iguana_coinfind("BTCD")) != 0 )
-            {
-                maxmillis = (1000 / myinfo->allcoins_numvirts) + 1;
-                //portable_mutex_lock(&Allcoins_mutex);
-                HASH_ITER(hh,myinfo->allcoins,virt,hhtmp)
-                {
-                    if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
-                    {
-                        //fprintf(stderr,"h");
-                        gecko_iteration(myinfo,btcd,virt,maxmillis);
-                        flag++;
-                    }
-                }
-                //portable_mutex_unlock(&Allcoins_mutex);
             }
         }
         //fprintf(stderr,"i ");
