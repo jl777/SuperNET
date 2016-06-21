@@ -317,7 +317,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                                 }
                             }
                             printf("%s got responses.%d good.%d errs.%d (%s)\n","BLK",num,numresults,numerrs,str2);
-                            free_json(retjson);
+                            free_json(retarray);
                         }
                         free(str2);
                     }
