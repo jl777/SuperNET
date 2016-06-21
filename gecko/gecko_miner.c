@@ -303,14 +303,14 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
     return(txjson);
 }
 
-void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
+int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
     //printf("submit.(%s)\n",blockstr);
     if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) == 0 )
     {
-        while ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < (myinfo->numrelays >> 1) )
-            sleep(1);
+        if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < (myinfo->numrelays >> 1) )
+            return(-1);
     }
     else // physical node for geckochain
     {
@@ -325,6 +325,7 @@ void gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,str
         if ( allocptr != 0 )
             free(allocptr);
     }
+    return(0);
 }
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33)
@@ -345,6 +346,16 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         if ( i == gap )
             return;
     }
+    if ( virt->newblockstr != 0 )
+    {
+        if ( gecko_blocksubmit(myinfo,btcd,virt,virt->newblockstr,virt->newblock.RO.hash2,virt->newblock.height) == 0 )
+        {
+            memset(&virt->newblock,0,sizeof(virt->newblock));
+            free(virt->newblockstr);
+            virt->newblockstr = 0;
+        }
+        return;
+    }
     memset(&newblock,0,sizeof(newblock));
     newblock.height = virt->blocks.hwmchain.height + 1;
     newblock.RO.prev_block = virt->blocks.hwmchain.RO.hash2;
@@ -359,8 +370,13 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
         {
             char str[65]; printf(">>>>>>>>>>>>>>>>> MINED %s.%x %s %u %d %.8f %d\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward),newblock.RO.txn_count);
-            gecko_blocksubmit(myinfo,btcd,virt,blockstr,newblock.RO.hash2,newblock.height);
-            free(blockstr);
+            if ( gecko_blocksubmit(myinfo,btcd,virt,blockstr,newblock.RO.hash2,newblock.height) == 0 )
+                free(blockstr);
+            else
+            {
+                virt->newblockstr = blockstr;
+                virt->newblock = newblock;
+            }
         }
         if ( txptrs != (void *)space )
             free(txptrs);

@@ -414,6 +414,7 @@ struct iguana_info
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     struct datachain_info dPOW;
+    struct iguana_zblock newblock; char *newblockstr;
     struct iguana_blocks blocks; void *mempool; void *mempools[IGUANA_MAXRELAYS];
 };
 
