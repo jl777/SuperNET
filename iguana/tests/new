@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"newgeckochain\",\"vals\":{\"RELAY\":1,\"blocktime\":10,\"chain\":\"InstantDEX\",\"symbol\":\"DEX\"}}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"newgeckochain\",\"vals\":{\"RELAY\":1,\"blocktime\":10,\"chain\":\"testchain\",\"symbol\":\"test\"}}"
