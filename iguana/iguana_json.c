@@ -603,7 +603,7 @@ STRING_ARG(iguana,getconnectioncount,activecoin)
 
 ZERO_ARGS(bitcoinrpc,getdifficulty)
 {
-    char buf[64];
+    char buf[512];
     if ( coin != 0 )
     {
        /* {
@@ -611,7 +611,7 @@ ZERO_ARGS(bitcoinrpc,getdifficulty)
             "proof-of-stake": 0.00112314,
             "search-interval": 0
         }*/
-        sprintf(buf,"{\"result\":\"%.8f\"}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
+        sprintf(buf,"{\"result\":\"success\",\"proof-of-work\":\"%.8f\",\"search-interval\": 0}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
         return(clonestr(buf));
     } else return(clonestr("{\"error\":\"getdifficulty needs coin\"}"));
 }
