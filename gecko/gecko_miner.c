@@ -335,9 +335,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         return;
     if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
     {
-        if ( myinfo->numrelays < 3 )
-            return;
-        gap = (int32_t)(time(NULL) - virt->backstoptime) / virt->chain->estblocktime;
+        //if ( myinfo->numrelays < 3 )
+        //    return;
+        gap = (int32_t)(time(NULL) - virt->backstoptime) / (10 * virt->chain->estblocktime);
         for (i=0; i<gap; i++)
         {
             if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )
