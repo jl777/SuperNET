@@ -33,9 +33,9 @@
 
 struct iguana_peer;
 
-struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
+/*struct hashstamp { bits256 hash2; uint32_t timestamp; int32_t height; };
 struct gecko_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
-struct gecko_sequences { struct gecko_sequence BTC,BTCD; };
+struct gecko_sequences { struct gecko_sequence BTC,BTCD; };*/
 
 struct gecko_memtx
 {

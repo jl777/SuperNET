@@ -44,7 +44,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
-    if ( 0 && hwmhdrsi <= longesthdrsi && virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( hwmhdrsi <= longesthdrsi && virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
@@ -162,7 +162,7 @@ struct gecko_chain *gecko_chain(struct supernet_info *myinfo,char chainname[GECK
     return(chain);
 }
 
-int32_t gecko_chainvals(struct supernet_info *myinfo,char *CMD,cJSON *valsobj)
+/*int32_t gecko_chainvals(struct supernet_info *myinfo,char *CMD,cJSON *valsobj)
 {
     struct iguana_info *virt; struct gecko_chain *chain; bits256 hash,prevhash; struct iguana_block *block; char chainname[GECKO_MAXNAMELEN];
     if ( strcmp(CMD,"SET") == 0 || strcmp(CMD,"GET") == 0 )
@@ -188,7 +188,7 @@ int32_t gecko_chainvals(struct supernet_info *myinfo,char *CMD,cJSON *valsobj)
         return(0);
     }
     return(-1);
-}
+}*/
 
 cJSON *gecko_genesisargs(char *symbol,char *chainname,char *chain,char *keystr,char *genesishash,char *genesisblock,char *magicstr,uint16_t port,uint16_t blocktime,char *nbitstr,char *pubval,char *p2shval,char *wifval,uint32_t isPoS)
 {

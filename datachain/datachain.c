@@ -15,29 +15,53 @@
 
 #include "../iguana/iguana777.h"
 
+int32_t datachain_events_rewind(struct supernet_info *myinfo,struct datachain_event *events,int32_t numevents,int32_t height,uint32_t hdrsi,uint32_t unspentind)
+{
+    return(numevents);
+}
+
 void datachain_BTC_clock(struct supernet_info *myinfo,struct iguana_info *btc,int32_t height,uint32_t hdrsi,uint32_t unspentind)
 {
-    if ( hdrsi < myinfo->dPOW.lastbtc_hdrsi || (hdrsi == myinfo->dPOW.lastbtc_hdrsi && unspentind < myinfo->dPOW.lastbtc_unspentind) )
+    if ( hdrsi < myinfo->dPOW.BTC.lasthdrsi || (hdrsi == myinfo->dPOW.BTC.lasthdrsi && unspentind < myinfo->dPOW.BTC.lastunspentind) )
     {
-        // rewind BTC
+        myinfo->dPOW.BTC.numevents = datachain_events_rewind(myinfo,myinfo->dPOW.BTC.events,myinfo->dPOW.BTC.numevents,height,hdrsi,unspentind);
     }
-    myinfo->dPOW.lastbtc_hdrsi = hdrsi;
-    myinfo->dPOW.lastbtc_unspentind = unspentind;
+    else
+    {
+        printf("NEWBLOCK.%s ht.%d\n",btc->symbol,height);
+    }
+    myinfo->dPOW.BTC.lasthdrsi = hdrsi;
+    myinfo->dPOW.BTC.lastunspentind = unspentind;
 }
 
 void datachain_BTCD_newblock(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t height,uint32_t hdrsi,uint32_t unspentind)
 {
-    if ( hdrsi < myinfo->dPOW.lastbtcd_hdrsi || (hdrsi == myinfo->dPOW.lastbtcd_hdrsi && unspentind < myinfo->dPOW.lastbtcd_unspentind) )
+    if ( hdrsi < myinfo->dPOW.BTCD.lasthdrsi || (hdrsi == myinfo->dPOW.BTCD.lasthdrsi && unspentind < myinfo->dPOW.BTCD.lastunspentind) )
     {
-        // rewind BTCD
+        datachain_events_rewind(myinfo,myinfo->dPOW.BTCD.events,myinfo->dPOW.BTCD.numevents,height,hdrsi,unspentind);
     }
-    myinfo->dPOW.lastbtcd_hdrsi = hdrsi;
-    myinfo->dPOW.lastbtcd_unspentind = unspentind;
+    else
+    {
+        // new BTCD block actions
+        printf("NEWBLOCK.%s ht.%d\n",btcd->symbol,height);
+    }
+    myinfo->dPOW.BTCD.lasthdrsi = hdrsi;
+    myinfo->dPOW.BTCD.lastunspentind = unspentind;
 }
 
 void datachain_virt_newblock(struct supernet_info *myinfo,struct iguana_info *virt,int32_t height,uint32_t hdrsi,uint32_t unspentind)
 {
-    
+    if ( hdrsi < virt->dPOW.lasthdrsi || (hdrsi == virt->dPOW.lasthdrsi && unspentind < virt->dPOW.lastunspentind) )
+    {
+        datachain_events_rewind(myinfo,virt->dPOW.events,virt->dPOW.numevents,height,hdrsi,unspentind);
+    }
+    else
+    {
+        // new virt block actions
+        printf("NEWBLOCK.%s ht.%d\n",virt->symbol,height);
+    }
+    virt->dPOW.lasthdrsi = hdrsi;
+    virt->dPOW.lastunspentind = unspentind;
 }
 
 void datachain_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,int32_t btc_or_btcd,int64_t crypto777_payment,int64_t burned,int32_t height,uint64_t hdrsi_unspentind,uint8_t *data,int32_t datalen)

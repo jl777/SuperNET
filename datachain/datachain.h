@@ -83,8 +83,21 @@ struct datachain_item
     uint8_t itemdata[];
 };
 
+struct datachain_event
+{
+    
+};
+
 struct datachain_info
 {
+    uint32_t lasthdrsi,lastunspentind,numevents,maxevents;
+    struct datachain_event *events;
+};
+
+struct delayedPoW_info
+{
+    //struct gecko_sequences SEQ;
+    struct datachain_info BTC,BTCD;
 };
 
 

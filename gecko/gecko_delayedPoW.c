@@ -15,7 +15,7 @@
 
 // included from gecko.c
 
-int32_t gecko_hashstampsfind(struct hashstamp *stamps,int32_t max,struct gecko_sequence *seq,bits256 hash,uint32_t reftimestamp)
+/*int32_t gecko_hashstampsfind(struct hashstamp *stamps,int32_t max,struct gecko_sequence *seq,bits256 hash,uint32_t reftimestamp)
 {
     int32_t j,i = 0,foundflag = -1,gap = -1; uint32_t timestamp;
     if ( seq->stamps == 0 )
@@ -230,7 +230,7 @@ char *basilisk_respond_hashstamps(struct supernet_info *myinfo,char *CMD,void *a
             jadd(retjson,"BTC",gecko_sequencejson(btcd->chain->zcash,&myinfo->dPOW.SEQ.BTC,startheight,GECKO_FIRSTPOSSIBLEBTC));
     }
     return(jprint(retjson,1));
-}
+}*/
 
 /*
 done = 3;
