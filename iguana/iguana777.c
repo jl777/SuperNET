@@ -42,7 +42,6 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
     struct iguana_info *coin; uint32_t symbolcrc; char *privatechain; int32_t j; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
     {
-        portable_mutex_lock(&myinfo->allcoins_mutex);
         if ( (coin= iguana_coinfind(symbol)) == 0 )
         {
             myinfo->allcoins_being_added = 1;
@@ -81,7 +80,6 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
             portable_mutex_unlock(&myinfo->allcoins_mutex);
             myinfo->allcoins_being_added = 0;
         }
-        portable_mutex_unlock(&myinfo->allcoins_mutex);
         if ( (coin= iguana_coinfind(symbol)) == 0 )
             printf("error finding justadded.(%s)\n",symbol);
     }
