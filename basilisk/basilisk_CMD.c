@@ -58,7 +58,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)
-        myinfo->relaybits[i] = myinfo->relays[i].ipbits;
+        memcpy(&myinfo->relaybits[i],&myinfo->relays[i].ipbits,sizeof(myinfo->relaybits[i]));
     /*revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
     for (i=0; i<myinfo->numrelays; i++)
     {
