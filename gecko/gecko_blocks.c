@@ -67,7 +67,7 @@ struct iguana_bundle *gecko_bundleset(struct iguana_info *virt,struct iguana_blo
 
 struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_block *block,int32_t origheight,int32_t depth)
 {
-    int32_t hdrsi,bundlei,checkbundlei,height = origheight; bits256 zero; struct iguana_bundle *bp = 0;
+    int32_t hdrsi,bundlei,checkbundlei,height = origheight; bits256 zero;
     memset(zero.bytes,0,sizeof(zero));
     bundlei = (height % virt->chain->bundlesize);
     hdrsi = (height / virt->chain->bundlesize);

@@ -327,8 +327,8 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt,*btcd;
-    if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 )
-        jaddnum(valsobj,"iamrelay",1);
+    //if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 )
+    //    jaddnum(valsobj,"iamrelay",1);
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
     if ( bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0 )
     {
@@ -352,9 +352,11 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
             jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
         }
     }
+    if ( symbol == 0 )
+        symbol = "BTCD";
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    ptr = basilisk_issueremote(myinfo,&numsent,CMD,"BTCD",blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
+    ptr = basilisk_issueremote(myinfo,&numsent,CMD,symbol,blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
     return(ptr);
 }
 
@@ -541,8 +543,8 @@ void basilisks_loop(void *arg)
 
 void basilisks_init(struct supernet_info *myinfo)
 {
-    iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
-    iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
+    //iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
+    //iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
     portable_mutex_init(&myinfo->allcoins_mutex);
     portable_mutex_init(&myinfo->basilisk_mutex);
     portable_mutex_init(&myinfo->gecko_mutex);

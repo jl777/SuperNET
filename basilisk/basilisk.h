@@ -39,7 +39,8 @@ struct basilisk_item
 
 struct basilisk_info
 {
-    queue_t resultsQ,submitQ; void *launched; //portable_mutex_t *mutex; 
+    //queue_t resultsQ,submitQ;
+    void *launched; //portable_mutex_t *mutex;
     struct basilisk_item *issued;
     struct basilisk_value values[8192]; int32_t numvalues;
 };
