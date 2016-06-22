@@ -348,12 +348,10 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     }
     if ( virt->newblockstr != 0 )
     {
-        if ( gecko_blocksubmit(myinfo,btcd,virt,virt->newblockstr,virt->newblock.RO.hash2,virt->newblock.height) == 0 )
-        {
-            memset(&virt->newblock,0,sizeof(virt->newblock));
-            free(virt->newblockstr);
-            virt->newblockstr = 0;
-        }
+        gecko_blocksubmit(myinfo,btcd,virt,virt->newblockstr,virt->newblock.RO.hash2,virt->newblock.height);
+        memset(&virt->newblock,0,sizeof(virt->newblock));
+        free(virt->newblockstr);
+        virt->newblockstr = 0;
         return;
     }
     memset(&newblock,0,sizeof(newblock));
