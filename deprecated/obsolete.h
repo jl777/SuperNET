@@ -17462,7 +17462,310 @@ len = 0;
                 }
                 return(0);
             }
+                
+                void basilisk_pending_result(struct supernet_info *myinfo,struct basilisk_item *ptr,struct basilisk_item *pending)
+            {
+                int32_t n; basilisk_metricfunc metricfunc;
+                if ( (n= pending->numresults) < sizeof(pending->results)/sizeof(*pending->results) )
+                {
+                    pending->numresults++;
+                    if ( (metricfunc= pending->metricfunc) == 0 )
+                        pending->metrics[n] = n + 1;
+                    else if ( (pending->metrics[n]= (*metricfunc)(myinfo,pending,ptr->retstr)) != 0. )
+                        pending->childrendone++;
+                    printf("%s.%u Add results[%d] <- metric %f\n",pending->CMD,pending->basilisktag,n,pending->metrics[n]);
+                    pending->results[n] = ptr->retstr, ptr->retstr = 0;
+                    /*if ( strcmp(ptr->CMD,"SEQ") == 0 )
+                     {
+                     if ( (retjson= cJSON_Parse(ptr->retstr)) != 0 )
+                     {
+                     gecko_seqresult(myinfo,ptr->retstr);
+                     free_json(retjson);
+                     }
+                     }
+                     else*/
+                    if ( strcmp(ptr->CMD,"RET") == 0 || strcmp(ptr->CMD,"GET") == 0 )
+                    {
+                        printf("got return for tag.%d parent.%p\n",pending->basilisktag,pending->parent);
+                        /*if ( (parent= pending->parent) != 0 )
+                         {
+                         pending->parent = 0;
+                         parent->childrendone++;
+                         }*/
+                        if ( strcmp(ptr->CMD,"GET") == 0 )
+                            basilisk_geckoresult(myinfo,ptr->retstr);
+                    }
+                }
+            }
+                
+                int32_t basilisk_issued_iteration(struct supernet_info *myinfo,struct basilisk_item *pending)
+            {
+                basilisk_metricfunc metricfunc; int32_t i,flag = 0;
+                //printf("pending.%u numresults.%d m %f func.%p\n",pending->basilisktag,pending->numresults,pending->metrics[0],pending->metricfunc);
+                if ( (metricfunc= pending->metricfunc) != 0 )
+                {
+                    for (i=0; i<pending->numresults; i++)
+                        if ( pending->metrics[i] == 0. && pending->results[i] != 0 )
+                        {
+                            if ( (pending->metrics[i]= (*metricfunc)(myinfo,pending,pending->results[i])) != 0 )
+                                pending->childrendone++;
+                            // printf("iter.%d %p.[%d] poll metrics.%u metric %f\n",iter,pending,i,pending->basilisktag,pending->metrics[i]);
+                            flag++;
+                        }
+                }
+                /*basilisk_iscomplete(myinfo,pending);
+                 if ( OS_milliseconds() > pending->expiration )
+                 {
+                 if ( pending->finished == 0 )
+                 {
+                 if ( (parent= pending->parent) != 0 )
+                 {
+                 pending->parent = 0;
+                 parent->childrendone++;
+                 }
+                 pending->finished = (uint32_t)time(NULL);
+                 if ( pending->retstr == 0 )
+                 pending->retstr = clonestr("{\"error\":\"basilisk timeout\"}");
+                 fprintf(stderr,"timeout.%s call metrics.%u lag %f - %f\n",pending->CMD,pending->basilisktag,OS_milliseconds(),pending->expiration);
+                 for (i=0; i<pending->numresults; i++)
+                 if ( (metricfunc= pending->metricfunc) != 0 && pending->metrics[i] == 0. )
+                 pending->metrics[i] = (*metricfunc)(myinfo,pending,pending->results[i]);
+                 flag++;
+                 }
+                 }*/
+                //fprintf(stderr,"c");
+                if ( pending->finished != 0 && time(NULL) > pending->finished+60 )
+                {
+                    if ( pending->dependents == 0 || pending->childrendone >= pending->numchildren )
+                    {
+                        HASH_DELETE(hh,myinfo->basilisks.issued,pending);
+                        if ( pending->dependents != 0 )
+                            free(pending->dependents);
+                        //fprintf(stderr,"HASH_DELETE free ptr.%u refcount.%d\n",pending->basilisktag,pending->refcount);
+                        for (i=0; i<pending->numresults; i++)
+                            if ( pending->results[i] != 0 )
+                                free(pending->results[i]), pending->results[i] = 0;
+                        //if ( pending->vals != 0 )
+                        //    free_json(pending->vals), pending->vals = 0;
+                        free(pending);
+                        flag++;
+                    }
+                }
+                return(flag);
+            }
 
+                
+                int32_t basilisk_besti(struct basilisk_item *ptr)
+            {
+                int32_t i,besti = -1; double metric,bestmetric=-1.;
+                for (i=0; i<ptr->numresults; i++)
+                {
+                    if ( (metric= ptr->metrics[i]) > 0. )
+                    {
+                        if ( (ptr->metricdir < 0 && (bestmetric < 0. || metric < bestmetric)) || (ptr->metricdir > 0 && (bestmetric < 0. || metric > bestmetric)) || (ptr->metricdir == 0 && bestmetric < 0.) )
+                        {
+                            bestmetric = metric;
+                            besti = i;
+                        }
+                    }
+                }
+                if ( besti >= 0 )
+                {
+                    for (ptr->numexact=i=0; i<ptr->numresults; i++)
+                        if ( fabs(ptr->metrics[i] - bestmetric) < SMALLVAL )
+                            ptr->numexact++;
+                }
+                return(besti);
+            }
+                
+                char *basilisk_iscomplete(struct supernet_info *myinfo,struct basilisk_item *ptr)
+            {
+                int32_t i,numvalid,besti=-1; char *errstr = 0,*retstr = 0;
+                if ( ptr->childrendone < ptr->numchildren )
+                    return(0);
+                if ( ptr->retstr != 0 || ptr->finished != 0 )
+                    return(ptr->retstr);
+                if ( (numvalid= ptr->numresults) >= ptr->numrequired )
+                {
+                    for (i=numvalid=0; i<ptr->numresults; i++)
+                    {
+                        if ( ptr->metrics[i] != 0. )
+                            numvalid++;
+                    }
+                }
+                if ( numvalid < ptr->numrequired )
+                {
+                    //printf("%u: numvalid.%d < required.%d m %f\n",ptr->basilisktag,numvalid,ptr->numrequired,ptr->metrics[0]);
+                    return(0);
+                }
+                if ( ptr->uniqueflag == 0 && ptr->numexact != ptr->numresults && ptr->numexact < (ptr->numresults >> 1) )
+                    besti = -1, errstr = "[{\"error\":\"basilisk non-consensus results\"}]";
+                else besti = basilisk_besti(ptr), errstr = "[{\"error\":\"basilisk no valid results\"}]";
+                //printf("%u complete besti.%d\n",ptr->basilisktag,besti);
+                retstr = basilisk_finish(myinfo,ptr,besti,errstr);
+                //printf("%u besti.%d numexact.%d numresults.%d -> (%s)\n",ptr->basilisktag,besti,ptr->numexact,ptr->numresults,retstr);
+                return(retstr);
+            }
+                
+                char *basilisk_finish(struct supernet_info *myinfo,struct basilisk_item *ptr,int32_t besti,char *errstr)
+            {
+                char *str,*retstr = 0; int32_t i; struct basilisk_item *parent; cJSON *retarray,*item;
+                if ( ptr->retstr != 0 )
+                    return(ptr->retstr);
+                /*if ( besti >= 0 && besti < ptr->numresults )
+                 {
+                 retstr = ptr->results[besti];
+                 ptr->results[besti] = 0;
+                 } else printf("besti.%d vs numresults.%d retstr.%p\n",besti,ptr->numresults,retstr);
+                 */
+                if ( ptr->numresults > 0 )
+                {
+                    retarray = cJSON_CreateArray();
+                    for (i=0; i<ptr->numresults; i++)
+                        if ( (str= ptr->results[i]) != 0 )
+                        {
+                            ptr->results[i] = 0;
+                            if ( (item= cJSON_Parse(str)) != 0 )
+                            {
+                                if ( jobj(item,"myip") == 0 )
+                                    jaddstr(item,"myip",myinfo->ipaddr);
+                                jaddi(retarray,item);
+                            } else printf("couldnt parse.(%s)\n",str);
+                            free(str);
+                        }
+                    retstr = jprint(retarray,1);
+                }
+                if ( retstr == 0 )
+                    retstr = clonestr(errstr);
+                ptr->retstr = retstr;
+                ptr->finished = (uint32_t)time(NULL);
+                if ( (parent= ptr->parent) != 0 )
+                {
+                    ptr->parent = 0;
+                    parent->childrendone++;
+                }
+                return(retstr);
+            }
+                
+                char *basilisk_check(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *symbol,cJSON *vals)
+            {
+                if ( symbol != 0 && symbol[0] != 0 && vals != 0 )
+                {
+                    if ( *basilisktagp == 0 )
+                        *basilisktagp = rand();
+                    if ( (*timeoutmillisp= jint(vals,"timeout")) < 0 )
+                        *timeoutmillisp = BASILISK_TIMEOUT;
+                    return(0);
+                } else return(clonestr("{\"error\":\"missing activecoin or vals\"}"));
+            }
+                
+                char *basilisk_standardcmd(struct supernet_info *myinfo,char *CMD,char *activecoin,char *remoteaddr,uint32_t basilisktag,cJSON *vals,basilisk_func func,basilisk_metricfunc metric)
+            {
+                char *retstr; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis; struct iguana_info *coin;
+                if ( (retstr= basilisk_check(&timeoutmillis,&basilisktag,activecoin,vals)) == 0 )
+                {
+                    if ( (coin= iguana_coinfind(activecoin)) != 0 )
+                    {
+                        if ( (ptr= basilisk_issuecmd(&Lptr,func,metric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
+                        {
+                            return(basilisk_waitresponse(myinfo,CMD,coin->symbol,remoteaddr,&Lptr,vals,ptr));
+                        }
+                        else return(clonestr("{\"error\":\"null return from basilisk_issuecmd\"}"));
+                    } else return(clonestr("{\"error\":\"couldnt get coin\"}"));
+                } else return(retstr);
+            }
+                
+                char *_basilisk_value(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+            {
+                struct iguana_info *coin; char *symbol;
+                if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
+                {
+                    if ( (coin= iguana_coinfind(symbol)) != 0 )
+                        return(basilisk_standardcmd(myinfo,"VAL",symbol,remoteaddr,basilisktag,valsobj,coin->basilisk_value,coin->basilisk_valuemetric));
+                }
+                return(clonestr("{\"error\":\"couldnt get coin\"}"));
+            }
+                
+                char *_basilisk_balances(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+            {
+                struct iguana_info *coin; char *symbol;
+                if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
+                {
+                    if ( (coin= iguana_coinfind(symbol)) != 0 )
+                        return(basilisk_standardcmd(myinfo,"BAL",symbol,remoteaddr,basilisktag,valsobj,coin->basilisk_balances,coin->basilisk_balancesmetric));
+                }
+                return(clonestr("{\"error\":\"couldnt get coin\"}"));
+            }
+                
+                char *_basilisk_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+            {
+                char *retstr,strbuf[4096],*symbol,*str = 0; struct iguana_info *coin;
+                if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
+                {
+                    if ( (coin= iguana_coinfind(symbol)) != 0 )
+                    {
+                        printf("remote rawtx.(%s)\n",jprint(valsobj,0));
+                        basilisk_addhexstr(&str,valsobj,strbuf,sizeof(strbuf),data,datalen);
+                        retstr = basilisk_rawtx(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
+                        if ( str != 0 )
+                            free(str);
+                        return(retstr);
+                    }
+                }
+                return(clonestr("{\"error\":\"couldnt get coin\"}"));
+            }
+                
+                char *basilisk_waitresponse(struct supernet_info *myinfo,char *CMD,char *symbol,char *remoteaddr,struct basilisk_item *Lptr,cJSON *vals,struct basilisk_item *ptr)
+            {
+                char *retstr = 0;
+                if ( ptr == Lptr )
+                {
+                    //if ( (retstr= Lptr->retstr) == 0 )
+                    //    retstr = clonestr("{\"result\":\"null return from local basilisk_issuecmd\"}");
+                    //ptr = basilisk_itemcreate(myinfo,CMD,symbol,Lptr->basilisktag,Lptr->numrequired,vals,OS_milliseconds() - Lptr->expiration,0);//Lptr->metricfunc);
+                    //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+                    retstr = Lptr->retstr;
+                }
+                else
+                {
+                    //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+                    while ( OS_milliseconds() < ptr->expiration )
+                    {
+                        //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
+                        if ( ptr->numresults >= ptr->numrequired || (retstr= ptr->retstr) != 0 )
+                            break;
+                        usleep(50000);
+                    }
+                    if ( retstr == 0 )
+                    {
+                        //ptr->finished = (uint32_t)time(NULL);
+                        //retstr = clonestr("[{\"error\":\"basilisk wait timeout\"}]");
+                        free(ptr);
+                        return(0);
+                    }
+                }
+                basilisk_sendback(myinfo,CMD,symbol,remoteaddr,ptr->basilisktag,retstr);
+                return(retstr);
+            }
+                struct basilisk_item *basilisk_issuecmd(struct basilisk_item *Lptr,basilisk_func func,basilisk_metricfunc metricfunc,struct supernet_info *myinfo,char *remoteaddr,uint32_t basilisktag,char *symbol,int32_t timeoutmillis,cJSON *vals)
+            {
+                struct iguana_info *coin; struct basilisk_item *ptr;
+                memset(Lptr,0,sizeof(*Lptr));
+                if ( (coin= iguana_coinfind(symbol)) != 0 )
+                {
+                    if ( func != 0 )
+                    {
+                        if ( (ptr= (*func)(Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+                        {
+                            strcpy(ptr->symbol,symbol);
+                            ptr->basilisktag = basilisktag;
+                            ptr->expiration = OS_milliseconds() + timeoutmillis;
+                            return(ptr);
+                        } else Lptr->retstr = clonestr("{\"error\":\"error issuing basilisk command\"}");
+                    } else Lptr->retstr = clonestr("{\"error\":\"null basilisk function\"}");
+                } else Lptr->retstr = clonestr("{\"error\":\"error missing coin\"}");
+                return(Lptr);
+            }
 
 #endif
 #endif

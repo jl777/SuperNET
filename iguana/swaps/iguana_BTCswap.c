@@ -201,7 +201,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
     jaddnum(valsobj,"basilisktag",basilisktag);
     jaddnum(valsobj,"locktime",locktime);
     jaddnum(valsobj,"timeout",30000);
-    if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,basilisktag,valsobj,coin->symbol)) != 0 )
+    if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
     {
         //printf("%s got.(%s)\n",str,retstr);
         flag = 0;

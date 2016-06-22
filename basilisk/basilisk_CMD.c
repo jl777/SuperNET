@@ -243,4 +243,145 @@ char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,void *a
     return(retstr);
 }
 
+char *basilisk_respond_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *retstr=0;
+    return(retstr);
+}
+
+char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *retstr=0;
+    return(retstr);
+}
+
+char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *retstr=0;
+    return(retstr);
+}
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("BAL",myinfo,hash,vals,hexstr,1));
+    //return(basilisk_standardcmd(myinfo,"BAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
+}
+
+HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("VAL",myinfo,hash,vals,hexstr,1));
+    //return(basilisk_standardcmd(myinfo,"VAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
+}
+
+/*char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *symbol,cJSON *vals)
+{
+    cJSON *addresses=0; char *changeaddr,*spendscriptstr; int32_t i,n;
+    *timeoutmillisp = -1;
+    changeaddr = jstr(vals,"changeaddr");
+    spendscriptstr = jstr(vals,"spendscript");
+    addresses = jarray(&n,vals,"addresses");
+    if ( addresses == 0 || changeaddr == 0 || changeaddr[0] == 0 )
+        return(clonestr("{\"error\":\"invalid addresses[] or changeaddr\"}"));
+    else
+    {
+        for (i=0; i<n; i++)
+            if ( strcmp(jstri(addresses,i),changeaddr) == 0 )
+                return(clonestr("{\"error\":\"changeaddr cant be in addresses[]\"}"));
+    }
+    if ( spendscriptstr != 0 && spendscriptstr[0] != 0 )
+        return(basilisk_check(timeoutmillisp,basilisktagp,symbol,vals));
+    else
+    {
+        printf("vals.(%s)\n",jprint(vals,0));
+        return(clonestr("{\"error\":\"missing spendscript\"}"));
+    }
+}*/
+
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
+{
+    //char *retstr; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    //if ( (retstr= basilisk_checkrawtx(&timeoutmillis,(uint32_t *)&basilisktag,activecoin,vals)) == 0 )
+    {
+        return(basilisk_standardservice("RAW",myinfo,hash,vals,hexstr,1));
+        /*coin = iguana_coinfind(activecoin);
+         if ( coin != 0 && (ptr= basilisk_issuecmd(&Lptr,coin->basilisk_rawtx,coin->basilisk_rawtxmetric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
+         {
+         if ( (ptr->numrequired= juint(vals,"numrequired")) == 0 )
+         ptr->numrequired = 1;
+         //ptr->uniqueflag = 1;
+         //ptr->metricdir = -1;
+         return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,vals,ptr));
+         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));*/
+    } //else return(retstr);
+}
+
+HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("ADD",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,relays,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,dispatch,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("RUN",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,publish,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("PUB",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("SUB",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("HOP",myinfo,hash,vals,hexstr,0));
+}
+
+HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("BOX",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("VPN",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("ARC",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("GAB",myinfo,hash,vals,hexstr,0));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("SAY",myinfo,hash,vals,hexstr,0));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("EAR",myinfo,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("END",myinfo,hash,vals,hexstr,0));
+}
+
+#include "../includes/iguana_apiundefs.h"
 

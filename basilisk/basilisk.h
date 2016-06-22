@@ -31,12 +31,10 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 
 struct basilisk_item
 {
-    struct queueitem DL; UT_hash_handle hh; struct basilisk_item *parent; void *dependents;
-    uint32_t submit,finished,basilisktag,numresults,numsent,numexact,uniqueflag,numrequired,childrendone,numchildren,nBits;
-    int32_t refcount;
-    char symbol[32],CMD[4],remoteaddr[64];
-    double expiration; int32_t metricdir; void *metricfunc; //cJSON *vals; 
-    char *retstr,*results[BASILISK_MAXFANOUT]; double metrics[BASILISK_MAXFANOUT];
+    struct queueitem DL; UT_hash_handle hh;
+    double expiration; cJSON *retarray;
+    uint32_t submit,finished,basilisktag,numresults,numsent,numrequired,nBits;
+    char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 
 struct basilisk_info

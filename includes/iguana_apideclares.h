@@ -14,10 +14,10 @@
  ******************************************************************************/
 
 
-INT_ARRAY_STRING(basilisk,balances,basilisktag,vals,activecoin);
-INT_ARRAY_STRING(basilisk,rawtx,basilisktag,vals,activecoin);
-INT_ARRAY_STRING(basilisk,value,basilisktag,vals,activecoin);
-INT_AND_ARRAY(basilisk,result,basilisktag,vals);
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+//INT_AND_ARRAY(basilisk,result,basilisktag,vals);
 HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr);

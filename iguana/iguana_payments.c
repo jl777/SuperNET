@@ -423,7 +423,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         jaddnum(valsobj,"basilisktag",basilisktag);
         jaddnum(valsobj,"locktime",locktime);
         jaddnum(valsobj,"timeout",30000);
-        if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,basilisktag,valsobj,coin->symbol)) != 0 )
+        if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
