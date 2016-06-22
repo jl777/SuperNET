@@ -312,7 +312,7 @@ void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,str
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)]; char *retstr;
     //printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
-    if ( strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
+    if ( 0 && strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
     {
         addr->supernet = 1, addr->basilisk = 0;
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)addr->ipbits,GENESIS_PUBKEY)) != 0 )
