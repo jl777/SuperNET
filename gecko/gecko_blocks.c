@@ -48,6 +48,23 @@ void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
     }
 }
 
+struct iguana_bundle *gecko_bundleset(struct iguana_info *virt,struct iguana_block *block)
+{
+    int32_t hdrsi,bundlei; struct iguana_bundle *bp;
+    hdrsi = (block->height / virt->chain->bundlesize);
+    bundlei = (block->height % virt->chain->bundlesize);
+    if ( (bp= virt->bundles[hdrsi]) == 0 )
+        printf("error ensuring bundle ht.%d\n",block->height);
+    else
+    {
+        bp->blocks[bundlei] = block;
+        bp->hashes[bundlei] = block->RO.hash2;
+        //char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
+        iguana_hash2set(virt,"ensure",bp,bundlei,block->RO.hash2);
+    }
+    return(bp);
+}
+
 struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_block *block,int32_t origheight,int32_t depth)
 {
     int32_t hdrsi,bundlei,checkbundlei,height = origheight; bits256 zero; struct iguana_bundle *bp = 0;
@@ -99,17 +116,7 @@ struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_
                 printf("cant find ht.%d %s\n",block->height,bits256_str(str,block->RO.hash2));
         }
     }*/
-    hdrsi = (block->height / virt->chain->bundlesize);
-    if ( (bp= virt->bundles[hdrsi]) == 0 )
-        printf("error ensuring bundle ht.%d\n",origheight);
-    else
-    {
-        bp->blocks[bundlei] = block;
-        bp->hashes[bundlei] = block->RO.hash2;
-        //char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
-        iguana_hash2set(virt,"ensure",bp,bundlei,block->RO.hash2);
-    }
-    return(bp);
+    return(gecko_bundleset(virt,block));
 }
 
 int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,uint8_t *data,int32_t datalen,int32_t depth,int32_t verifyonly)
@@ -226,6 +233,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                                 prev->mainchain = 1;
                             if ( prev->height != (adjacent + 1 - j) )
                                 prev->height = (adjacent + 1 - j);
+                            gecko_bundleset(virt,prev);
                             if ( prev->height == 0 )
                                 break;
                         }

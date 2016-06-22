@@ -44,19 +44,17 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
-    if ( hwmhdrsi <= longesthdrsi && virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
-            if ( strcmp("BTCD",virt->symbol) == 0 )
-                ;
-            //fprintf(stderr,"r");
+            fprintf(stderr,"request headers\n");
             gecko_requesthdrs(myinfo,virt,hwmhdrsi);
             //fprintf(stderr,"R");
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( btcd->RELAYNODE != 0 && virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
+    if ( btcd->RELAYNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
         //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
