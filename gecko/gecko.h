@@ -37,6 +37,17 @@ struct iguana_peer;
 struct gecko_sequence { struct hashstamp *stamps; int32_t lastupdate,maxstamps,numstamps,lasti,longestchain; };
 struct gecko_sequences { struct gecko_sequence BTC,BTCD; };*/
 
+//{"genesishash":"633edf349442dea79aa308b286f5368d34f887c898e3c1b4c728679891160000","genesisblock":"010000000000000000000000000000000000000000000000000000000000000000000000413d9e3a8f530415b548973af6545e7a8902d005782478d061295d795f29d68054766a57ffff001f091c070b010100000054766a57011be5d2440c9fb34410947ed9e378478b66d9809f60d17c8d89301ad321ec5912ffffffff050000000000ffffffff0000000000","netmagic":"a1faaa90","symbol":"DEX","name":"InstantDEX","pubval":"00","p2shval":"05","wifval":"80","nBits":"1f00ffff","chain":"InstantDEX","isPoS":1,"geckochain":"InstantDEX","services":128,"blocktime":10,"targetspacing":10,"targettimespan":2450,"result":"success","tag":"10215666446676071864"}
+
+struct gecko_genesis_opreturn
+{
+    char symbol[6],name[16];
+    uint64_t PoSvalue;
+    uint32_t netmagic,timestamp,nBits,nonce;
+    uint16_t blocktime;
+    uint8_t version,pubval,p2shval,wifval,rmd160[20];
+};
+
 struct gecko_memtx
 {
     double feeperkb;
@@ -82,5 +93,6 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t
 
 struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct iguana_info *virt,int32_t *numotherp,uint32_t ipbits);
 void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis);
+int32_t gecko_opreturn_create(uint8_t *serialized,char *symbol,char *name,char *coinaddr,int64_t PoSvalue,uint32_t nBits,uint16_t blocktime,uint8_t p2shval,uint8_t wifval);
 
 #endif

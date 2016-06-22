@@ -326,7 +326,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
-    int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt,*btcd;
+    int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
     //if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 )
     //    jaddnum(valsobj,"iamrelay",1);
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
@@ -384,6 +384,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 ha
         }
         ptr->finished = (uint32_t)time(NULL);
     }
+    printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
 

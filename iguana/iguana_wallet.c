@@ -71,7 +71,7 @@ struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struc
         wacct = mycalloc('w',1,sizeof(*wacct));
         strcpy(wacct->account,account);
         HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
-        //printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+        printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
         myinfo->dirty = (uint32_t)time(NULL);
         if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
             printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
@@ -151,7 +151,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
     {
         HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->rmd160,sizeof(waddr->rmd160),waddr);
         myinfo->dirty = (uint32_t)time(NULL);
-        //printf("add (%s).%d scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,len,waddr->scriptlen,wacct->account,waddr->wifstr);
+        printf("add (%s) scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,waddr->scriptlen,wacct->account,waddr->wifstr);
     }
     if ( waddr != 0 && waddr->symbol[0] == 0 )
         strcpy(waddr->symbol,coin->symbol);
@@ -1345,7 +1345,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
         account = "*";
     if ( minconf == 0 )
         minconf = 1;
-    if ( strcmp(account,"*") != 0 )
+    //if ( strcmp(account,"*") != 0 )
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,account),0);
     numunspents = 0;
     balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents);

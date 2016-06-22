@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);

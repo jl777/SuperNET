@@ -573,7 +573,7 @@ double basilisk_bitcoin_rawtxmetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t numsent,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee;
+    uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t oplen,offset,numsent,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     spendscriptstr = jstr(valsobj,"spendscript");
@@ -600,7 +600,31 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 spendlen = (int32_t)strlen(spendscriptstr) >> 1;
                 decode_hex(buf,spendlen,spendscriptstr);
                 bitcoin_txoutput(txobj,buf,spendlen,amount);
-                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf);
+                burnamount = offset = oplen = 0;
+                if ( (opreturn= jstr(valsobj,"opreturn")) != 0 && (oplen= is_hexstr(opreturn,0)) > 0 )
+                {
+                    oplen >>= 1;
+                    offset = 0;
+                    buf[offset++] = 0x6a;
+                    if ( oplen >= 0x4c )
+                    {
+                        if ( oplen > 0xff )
+                        {
+                            buf[offset++] = 0x4d;
+                            buf[offset++] = oplen & 0xff;
+                            buf[offset++] = (oplen >> 8) & 0xff;
+                        }
+                        else
+                        {
+                            buf[offset++] = 0x4c;
+                            buf[offset++] = oplen;
+                        }
+                    } else buf[offset++] = oplen;
+                    decode_hex(&buf[offset],oplen,opreturn);
+                    burnamount = SATOSHIDEN * jdouble(valsobj,"burn");
+                    bitcoin_txoutput(txobj,buf,oplen+offset,burnamount);
+                }
+                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount);
                 //printf("generated.(%s) vins.(%s)\n",rawtx,vins!=0?jprint(vins,0):"");
             }
             else

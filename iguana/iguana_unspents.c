@@ -307,7 +307,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                //printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
@@ -349,7 +349,7 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
             iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents << 1],numunspentsp,maxunspents);
-            //printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
+            printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
             maxunspents -= *numunspentsp;
             numunspents += *numunspentsp;
             sum += total;
@@ -367,7 +367,7 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
 {
     int32_t i,n,flag=0,j=0; char *coinaddr,rmdstr[41]; uint8_t *addrtypes,*rmdarray = 0;
     *numrmdsp = 0;
-    if ( array == 0 )
+    if ( array == 0 || cJSON_GetArraySize(array) == 0 )
         array = iguana_getaddressesbyaccount(myinfo,coin,"*");
     if ( array != 0 && (n= cJSON_GetArraySize(array)) > 0 )
     {

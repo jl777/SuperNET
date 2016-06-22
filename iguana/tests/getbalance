@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"getbalance\",\"params\":[\"default\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"getbalance\",\"params\":[\"RSyKVKNxrSDc1Vwvh4guYb9ZDEpvMFz2rm\"]}"

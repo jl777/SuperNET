@@ -302,11 +302,28 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 {
-    //char *retstr; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    //if ( (retstr= basilisk_checkrawtx(&timeoutmillis,(uint32_t *)&basilisktag,activecoin,vals)) == 0 )
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+    {
+        if ( (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            basilisktag = juint(vals,"basilisktag");
+            if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+                timeoutmillis = BASILISK_TIMEOUT;
+            if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+            {
+                retstr = ptr->retstr;
+            }
+            if ( ptr != &Lptr )
+                free(ptr);
+        }
+    }
+    return(retstr);
+
+    /*if ( (retstr= basilisk_checkrawtx(&timeoutmillis,(uint32_t *)&basilisktag,activecoin,vals)) == 0 )
     {
         return(basilisk_standardservice("RAW",myinfo,hash,vals,hexstr,1));
-        /*coin = iguana_coinfind(activecoin);
+        coin = iguana_coinfind(activecoin);
          if ( coin != 0 && (ptr= basilisk_issuecmd(&Lptr,coin->basilisk_rawtx,coin->basilisk_rawtxmetric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
          {
          if ( (ptr->numrequired= juint(vals,"numrequired")) == 0 )
@@ -314,8 +331,8 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
          //ptr->uniqueflag = 1;
          //ptr->metricdir = -1;
          return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,vals,ptr));
-         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));*/
-    } //else return(retstr);
+         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
+    } //else return(retstr);*/
 }
 
 HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
@@ -381,6 +398,30 @@ HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr)
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr)
 {
     return(basilisk_standardservice("END",myinfo,hash,vals,hexstr,0));
+}
+
+HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr)
+{
+    int32_t len; uint16_t blocktime; uint8_t p2shval,wifval; uint8_t serialized[4096],tmp[4]; char hex[8192],*symbol,*name,*destaddr; uint64_t PoSvalue; uint32_t nBits;
+    symbol = jstr(vals,"symbol");
+    name = jstr(vals,"name");
+    destaddr = jstr(vals,"issuer");
+    PoSvalue = jdouble(vals,"stake") * SATOSHIDEN;
+    if ( (blocktime= juint(vals,"blocktime")) == 0 )
+        blocktime = 1;
+    p2shval = juint(vals,"p2sh");
+    wifval = juint(vals,"wif");
+    if ( jstr(vals,"nBits") != 0 )
+    {
+        decode_hex((void *)&tmp,sizeof(tmp),jstr(vals,"nBits"));
+        ((uint8_t *)&nBits)[0] = tmp[3];
+        ((uint8_t *)&nBits)[1] = tmp[2];
+        ((uint8_t *)&nBits)[2] = tmp[1];
+        ((uint8_t *)&nBits)[3] = tmp[0];
+    } else nBits = 0x1e00ffff;
+    len = gecko_opreturn_create(serialized,symbol,name,destaddr,PoSvalue,nBits,blocktime,p2shval,wifval);
+    init_hexbytes_noT(hex,serialized,len);
+    return(clonestr(hex));
 }
 
 #include "../includes/iguana_apiundefs.h"
