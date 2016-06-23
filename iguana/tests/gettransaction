@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"gettransaction\",\"params\":[\"4b5ba0f755c7bc322e32cdd957546bfa586e828eaeff9181cc72fe3fa0944f51\"]}"
+curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"gettransaction\",\"coin\":\"BTCD\",\"params\":[\"9825a57222b1f8d2e0072e547865c84d29cd356c0d9078b9cdcd52cf3b320378\"]}"
 

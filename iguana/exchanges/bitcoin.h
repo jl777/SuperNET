@@ -39,23 +39,6 @@
 #define SCRIPT_OP_CHECKSEQUENCEVERIFY	0xb2
 #define SCRIPT_OP_CHECKLOCKTIMEVERIFY 0xb1
 
-#define IGUANA_SCRIPT_NULL 0
-#define IGUANA_SCRIPT_76AC 1
-#define IGUANA_SCRIPT_76A988AC 2
-#define IGUANA_SCRIPT_P2SH 3
-#define IGUANA_SCRIPT_OPRETURN 4
-#define IGUANA_SCRIPT_3of3 5
-#define IGUANA_SCRIPT_2of3 6
-#define IGUANA_SCRIPT_1of3 7
-#define IGUANA_SCRIPT_2of2 8
-#define IGUANA_SCRIPT_1of2 9
-#define IGUANA_SCRIPT_MSIG 10
-#define IGUANA_SCRIPT_DATA 11
-#define IGUANA_SCRIPT_AC 12
-#define IGUANA_SCRIPT_1of1 13
-#define IGUANA_SCRIPT_STRANGE 15
-
-#define IGUANA_MAXSCRIPTSIZE 10001
 
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,char *senderaddr,char *otheraddr,uint8_t secret160[20],uint32_t locktime);

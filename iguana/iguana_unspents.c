@@ -198,6 +198,34 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
     else return(bundleheight);
 }
 
+int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20])
+{
+    int64_t deposits,crypto777_payment; uint32_t lastunspentind,unspentind; int32_t i,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash P; struct iguana_unspent *U; struct iguana_txid *T;
+    for (i=num=0; i<coin->bundlescount; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 )
+        {
+            ramchain = 0;
+            if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&P,rmd160,i,i) != 0 )
+            {
+                if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
+                {
+                    unspentind = lastunspentind;
+                    U = RAMCHAIN_PTR(rdata,Uoffset);
+                    T = RAMCHAIN_PTR(rdata,Toffset);
+                    while ( unspentind > 0 )
+                    {
+                        uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
+                        
+                        crypto777_payment = datachain_update(myinfo,coin,bp,rmd160,crypto777_payment,U[unspentind].type,uheight,(((uint64_t)bp->hdrsi << 32) | unspentind),U[unspentind].value,U[unspentind].fileid,U[unspentind].scriptpos,U[unspentind].scriptlen);
+                    }
+                }
+            }
+        }
+    }
+    return(num);
+}
+
 int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int64_t *spentp,int64_t *unspents,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t lastheight,int32_t minconf,int32_t maxconf)
 {
     struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0;
@@ -216,8 +244,6 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     unspentind = lastunspentind;
     U = RAMCHAIN_PTR(rdata,Uoffset);
     T = RAMCHAIN_PTR(rdata,Toffset);
-    //U = (void *)(long)((long)rdata + rdata->Uoffset);
-    //T = (void *)(long)((long)rdata + rdata->Toffset);
     RTspend = 0;
     if ( lastheight == 0 )
         lastheight = IGUANA_MAXHEIGHT;

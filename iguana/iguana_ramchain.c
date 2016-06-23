@@ -1671,6 +1671,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
             if ( iguana_ramchain_addtxid(coin,RAMCHAIN_DESTARG,tx->txid,tx->numvouts,tx->numvins,tx->locktime,tx->version,tx->timestamp,bundlei) == 0 )
                 return(-2);
         }
+        crypto777_payment = 0;
         for (j=0; j<tx->numvouts; j++)
         {
             if ( coin->active == 0 )
@@ -1702,12 +1703,6 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
                         //fprintf(stderr,"iter add %p[%d] type.%d\n",scriptdata,scriptlen,type);
                         if ( (unspentind= iguana_ramchain_addunspent(coin,RAMCHAIN_ARG,value,hdrsi,rmd160,j,type,fileid,(uint32_t)scriptpos,scriptlen,ramchain->H.txidind-rdata->firsti)) == 0 )
                             return(-3);
-                        if ( memcmp(rmd160,CRYPTO777_RMD160,sizeof(rmd160)) == 0 )
-                            crypto777_payment += value;
-                        else if ( type == IGUANA_SCRIPT_OPRETURN )
-                        {
-                            iguana_opreturn(myinfo,coin,bp,crypto777_payment,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | unspentind),0,fileid,scriptpos,scriptlen);
-                        }
                     }
                 }
                 else
@@ -1742,6 +1737,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
                 }
                 if ( dest != 0 )
                 {
+                    crypto777_payment = datachain_update(myinfo,coin,bp,rmd160,crypto777_payment,type,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | unspentind),value,fileid,scriptpos,scriptlen);
                     if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,fileid,(uint32_t)scriptpos,scriptlen,ramchain->H.txidind-rdata->firsti) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");

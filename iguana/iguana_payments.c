@@ -369,7 +369,12 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(txobj,spendscript,spendlen,change);
                 if ( opreturn != 0 )
+                {
+                    int32_t i; for (i=0; i<oplen; i++)
+                        printf("%02x",opreturn[i]);
+                    printf(" <- got opret\n");
                     bitcoin_txoutput(txobj,opreturn,oplen,burnamount);
+                }
             }
             if ( vins != 0 )
                 V = calloc(cJSON_GetArraySize(vins),sizeof(*V));

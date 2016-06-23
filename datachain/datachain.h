@@ -100,5 +100,8 @@ struct delayedPoW_info
     struct datachain_info BTC,BTCD;
 };
 
+int32_t datachain_datascript(struct iguana_info *coin,uint8_t *script,uint8_t *data,int32_t datalen);
+int32_t datachain_opreturnscript(struct iguana_info *coin,uint8_t *script,char *datastr,int32_t datalen);
+int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,char *coinaddr,int64_t PoSvalue,uint32_t nBits,uint16_t blocktime,uint16_t port,uint8_t p2shval,uint8_t wifval);
 
 #endif

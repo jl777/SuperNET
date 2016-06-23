@@ -308,6 +308,8 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
         if ( (coin= iguana_coinfind(symbol)) != 0 )
         {
             basilisktag = juint(vals,"basilisktag");
+            if ( juint(vals,"burn") == 0 )
+                jaddnum(vals,"burn",0.0001);
             if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
                 timeoutmillis = BASILISK_TIMEOUT;
             if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
@@ -400,9 +402,22 @@ HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr)
     return(basilisk_standardservice("END",myinfo,hash,vals,hexstr,0));
 }
 
+uint16_t basilisk_portavailable(struct supernet_info *myinfo,uint16_t port)
+{
+    struct iguana_info *coin,*tmp;
+    if ( port < 10000 )
+        return(0);
+    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+    {
+        if ( port == coin->chain->portp2p || port == coin->chain->rpcport )
+            return(0);
+    }
+    return(port);
+}
+
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr)
 {
-    int32_t len; uint16_t blocktime; uint8_t p2shval,wifval; uint8_t serialized[4096],tmp[4]; char hex[8192],*symbol,*name,*destaddr; uint64_t PoSvalue; uint32_t nBits;
+    int32_t len; uint16_t blocktime,port; uint8_t p2shval,wifval; uint8_t serialized[4096],tmp[4]; char hex[8192],*symbol,*name,*destaddr; uint64_t PoSvalue; uint32_t nBits;
     symbol = jstr(vals,"symbol");
     name = jstr(vals,"name");
     destaddr = jstr(vals,"issuer");
@@ -411,6 +426,9 @@ HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr)
         blocktime = 1;
     p2shval = juint(vals,"p2sh");
     wifval = juint(vals,"wif");
+    if ( (port= juint(vals,"port")) == 0 )
+        while ( (port= basilisk_portavailable(myinfo,(rand() % 50000) + 10000)) == 0 )
+            ;
     if ( jstr(vals,"nBits") != 0 )
     {
         decode_hex((void *)&tmp,sizeof(tmp),jstr(vals,"nBits"));
@@ -419,7 +437,7 @@ HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr)
         ((uint8_t *)&nBits)[2] = tmp[1];
         ((uint8_t *)&nBits)[3] = tmp[0];
     } else nBits = 0x1e00ffff;
-    len = gecko_opreturn_create(serialized,symbol,name,destaddr,PoSvalue,nBits,blocktime,p2shval,wifval);
+    len = datachain_opreturn_create(serialized,symbol,name,destaddr,PoSvalue,nBits,blocktime,port,p2shval,wifval);
     init_hexbytes_noT(hex,serialized,len);
     return(clonestr(hex));
 }

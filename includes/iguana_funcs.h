@@ -464,6 +464,8 @@ struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana
 void instantdex_FSMinit();
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount);
+int64_t datachain_update(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen);
+
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey);
 bits256 scrypt_blockhash(const void *input);
 bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len);

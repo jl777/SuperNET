@@ -292,6 +292,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
             chain->pubtype = 60, chain->p2shtype = 85;
+        else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
         chain->minconfirms = juint(argjson,"minconfirms");
@@ -312,7 +313,6 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         if ( chain->txfee == 0 )
             chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
         chain->use_addmultisig = juint(argjson,"useaddmultisig");
-        chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");

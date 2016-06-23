@@ -604,25 +604,15 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 if ( (opreturn= jstr(valsobj,"opreturn")) != 0 && (oplen= is_hexstr(opreturn,0)) > 0 )
                 {
                     oplen >>= 1;
-                    offset = 0;
-                    buf[offset++] = 0x6a;
-                    if ( oplen >= 0x4c )
+                    if ( (strcmp("BTC",coin->symbol) == 0 && oplen < 77) || coin->chain->do_opreturn == 0 )
                     {
-                        if ( oplen > 0xff )
-                        {
-                            buf[offset++] = 0x4d;
-                            buf[offset++] = oplen & 0xff;
-                            buf[offset++] = (oplen >> 8) & 0xff;
-                        }
-                        else
-                        {
-                            buf[offset++] = 0x4c;
-                            buf[offset++] = oplen;
-                        }
-                    } else buf[offset++] = oplen;
-                    decode_hex(&buf[offset],oplen,opreturn);
-                    burnamount = SATOSHIDEN * jdouble(valsobj,"burn");
-                    bitcoin_txoutput(txobj,buf,oplen+offset,burnamount);
+                        decode_hex(&buf[sizeof(buf) - oplen],oplen,opreturn);
+                        spendlen = datachain_datascript(coin,buf,&buf[sizeof(buf) - oplen],oplen);
+                        if ( (burnamount= SATOSHIDEN * jdouble(valsobj,"burn")) < 10000 )
+                            burnamount = 10000;
+                        bitcoin_txoutput(txobj,buf,spendlen,burnamount);
+                        oplen = 0;
+                    } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
                 }
                 rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount);
                 //printf("generated.(%s) vins.(%s)\n",rawtx,vins!=0?jprint(vins,0):"");
