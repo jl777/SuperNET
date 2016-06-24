@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"sendtoaddress\",\"params\":[\"RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA\", 0.0001, \"4e4557444558000000496e7374616e744445580000407a10f35a0000e1526b5aab0b6b57ffffff1e000000000100013c0580f1dce4182fce875748c4986b240ff7d7bc3fffb0\", \"sendcomment\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"sendtoaddress\",\"params\":[\"RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA\", 0.0001, \"4e4557444558000000496e7374616e74444558000000000000407a10f35a0000dffc6993a2216d57ffffff1e1f4e010001000cba013c0580f1dce4182fce875748c4986b240ff7d7bc3fffb0\", \"sendcomment\"]}"
 

@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"genesis_opreturn\",\"vals\":{\"issuer\":\"RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA\",\"stake\":1000000,\"blocktime\":1,\"name\":\"HOT ICO\",\"symbol\":\"HOT\",\"p2sh\":5,\"wif\":128,\"nBits\":\"1effffff\"}}"
+

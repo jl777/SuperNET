@@ -575,8 +575,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
         // gecko chains
-        { (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
-        { (void *)"GEN", &basilisk_respond_geckogenesis },  // returns genesis list
+        //{ (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
+        ///{ (void *)"GEN", &basilisk_respond_geckogenesis },  // returns genesis list
         { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
         { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
         { (void *)"BLK", &basilisk_respond_geckoblock },    // reports block

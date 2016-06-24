@@ -1626,7 +1626,7 @@ int32_t iguana_ramchain_cmp(struct iguana_ramchain *A,struct iguana_ramchain *B,
 int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int16_t bundlei)
 {
     RAMCHAIN_DECLARE; RAMCHAIN_DESTDECLARE;
-    int32_t j,hdrsi,prevout,scriptlen; uint32_t unspentind,sequenceid,destspendind=0,desttxidind=0; uint16_t fileid; uint64_t scriptpos; int64_t crypto777_payment = 0;
+    int32_t j,hdrsi,prevout,scriptlen; uint32_t timestamp=0,unspentind,sequenceid,destspendind=0,desttxidind=0; uint16_t fileid; uint64_t scriptpos; int64_t crypto777_payment = 0;
     bits256 prevhash; uint64_t value; uint8_t type; struct iguana_unspent *u;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t rmd160[20];
     //if ( dest != 0 )
@@ -1638,9 +1638,8 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
     }
     if ( dest != 0 )
     {
+        // required to do one block at a time, all vins/vouts the same height are assumed to happen simultaneously with vouts before vins
         _iguana_ramchain_setptrs(RAMCHAIN_DESTPTRS,dest->H.data);
-        if ( dest->expanded != 0 )
-            iguana_opreturn(myinfo,coin,bp,0,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | dest->H.unspentind),0,0,0,0);
     }
     //fprintf(stderr,"iterate %d/%d dest.%p ramchain.%p rdata.%p\n",bp->bundleheight,bp->n,dest,ramchain,rdata);
     _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
@@ -1665,6 +1664,8 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
         //printf("txidind.%u firstvout.%u firstvin.%u bundlei.%d n.%d\n",tx->txidind,tx->firstvout,tx->firstvin,bundlei,bp->n);
         if ( dest != 0 )
         {
+            if ( dest->expanded != 0 )
+                iguana_opreturn(myinfo,1,coin,tx->timestamp,bp,0,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | dest->H.unspentind),0,0,0,0);
             //char str[65];
             if ( 0 && ramchain->expanded == 0 )
                 printf("ITER [%d] TXID.%d -> dest.%p desttxid.%d dest->hashmem.%p numtxids.%d\n",rdata->height,ramchain->H.txidind,dest,dest!=0?dest->H.txidind:0,dest!=0?dest->hashmem:0,rdata->numtxids);
@@ -1737,7 +1738,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
                 }
                 if ( dest != 0 )
                 {
-                    crypto777_payment = datachain_update(myinfo,coin,bp,rmd160,crypto777_payment,type,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | unspentind),value,fileid,scriptpos,scriptlen);
+                    crypto777_payment = datachain_update(myinfo,1,coin,timestamp,bp,rmd160,crypto777_payment,type,bp->bundleheight + bundlei,(((uint64_t)bp->hdrsi << 32) | unspentind),value,fileid,scriptpos,scriptlen,tx->txid,j);
                     if ( iguana_ramchain_addunspent(coin,RAMCHAIN_DESTARG,value,hdrsi,rmd160,j,type,fileid,(uint32_t)scriptpos,scriptlen,ramchain->H.txidind-rdata->firsti) == 0 )
                         return(-5);
                 } //else printf("addunspent20 done\n");
@@ -1759,6 +1760,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
     for (ramchain->H.txidind=rdata->firsti; ramchain->H.txidind<rdata->numtxids; ramchain->H.txidind++)
     {
         tx = &T[ramchain->H.txidind];
+        timestamp = tx->timestamp;
         for (j=0; j<tx->numvins; j++)
         {
             if ( coin->active == 0 )
@@ -1811,6 +1813,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
             }
             if ( dest != 0 )
             {
+                datachain_update_spend(myinfo,1,coin,timestamp,bp,bp->bundleheight + bundlei,tx->txid,j,0,-1);
                 if ( iguana_ramchain_addspend(coin,RAMCHAIN_DESTARG,prevhash,prevout,sequenceid,bp->hdrsi,fileid,scriptpos,scriptlen) == 0 )
                     return(-9);
                 //printf("from dest iter scriptspace.%d\n",dest->H.stacksize);

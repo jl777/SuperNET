@@ -14,93 +14,139 @@
  ******************************************************************************/
 
 #include "../iguana/iguana777.h"
+#include "datachain_events.c"
 
-int32_t datachain_rwgenesis(int32_t rwflag,uint8_t *serialized,struct gecko_genesis_opreturn *opret)
+uint32_t datachain_checkpoint(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t lastcheckpoint,uint32_t timestamp,bits256 merkle,int32_t lastheight,bits256 lasthash2)
 {
-    int32_t len = 0;
-    if ( rwflag == 0 )
+    char str[65],str2[65]; struct iguana_info *btc = iguana_coinfind("BTC");
+    printf("datachain_checkpoint.%s for %s.%u to %u lastheight.%d %s\n",bits256_str(str,merkle),coin->symbol,lastcheckpoint,timestamp,lastheight,bits256_str(str2,lasthash2));
+    if ( (lastheight % myinfo->numrelays) == myinfo->RELAYID )
     {
-        memcpy(opret->type,&serialized[len],sizeof(opret->type)), len += sizeof(opret->type);
-        memcpy(opret->symbol,&serialized[len],sizeof(opret->symbol)), len += sizeof(opret->symbol);
-        memcpy(opret->name,&serialized[len],sizeof(opret->name)), len += sizeof(opret->name);
+        // if designated relay, submit checkpoint -> add ip/relayid to opreturn
+        //
+        if ( strcmp(coin->symbol,"BTCD") == 0 )
+        {
+            if ( btc != 0 )
+            {
+                
+            }
+        }
+        else
+        {
+        }
     }
-    else
-    {
-        memcpy(&serialized[len],opret->type,sizeof(opret->type)), len += sizeof(opret->type);
-        memcpy(&serialized[len],opret->symbol,sizeof(opret->symbol)), len += sizeof(opret->symbol);
-        memcpy(&serialized[len],opret->name,sizeof(opret->name)), len += sizeof(opret->name);
-    }
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->PoSvalue),&opret->PoSvalue);
-    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->flags),&opret->flags);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->netmagic),&opret->netmagic);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->timestamp),&opret->timestamp);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->nBits),&opret->nBits);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->nonce),&opret->nonce);
-    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->extra),&opret->extra);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->blocktime),&opret->blocktime);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(opret->port),&opret->port);
-    if ( rwflag == 0 )
-    {
-        opret->version = serialized[len++];
-        opret->pubval = serialized[len++];
-        opret->p2shval = serialized[len++];
-        opret->wifval = serialized[len++];
-        memcpy(opret->rmd160,&serialized[len],20), len += 20;
-    }
-    else
-    {
-        serialized[len++] = opret->version;
-        serialized[len++] = opret->pubval;
-        serialized[len++] = opret->p2shval;
-        serialized[len++] = opret->wifval;
-        memcpy(&serialized[len],opret->rmd160,20), len += 20;
-    }
-    printf("opreturn len.%d\n",len);
-    return(len);
+    return(timestamp);
 }
 
-int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,char *coinaddr,int64_t PoSvalue,uint32_t nBits,uint16_t blocktime,uint16_t port,uint8_t p2shval,uint8_t wifval)
+int32_t datachain_events_rewind(struct supernet_info *myinfo,int32_t ordered,struct datachain_info *dPoW,int32_t height,uint32_t hdrsi,uint32_t unspentind)
 {
-    uint8_t txidbytes[1024],minerpayment[512]; int32_t i,len,datalen,minerpaymentlen=0,txlen; struct gecko_genesis_opreturn opret; bits256 txid,zero,threshold,hash2; struct iguana_info *btcd; char coinbasestr[512]; struct iguana_msgblock msg;
-    btcd = iguana_coinfind("BTCD");
-    memset(&opret,0,sizeof(opret));
-    opret.type[0] = 'N', opret.type[1] = 'E', opret.type[2] = 'W';
-    memcpy(opret.symbol,symbol,sizeof(opret.symbol));
-    memcpy(opret.name,name,sizeof(opret.name));
-    opret.version = 1;
-    opret.PoSvalue = PoSvalue;
-    opret.nBits = nBits;
-    opret.p2shval = p2shval;
-    opret.wifval = wifval;
-    opret.blocktime = blocktime;
-    opret.port = port;
-    opret.timestamp = (uint32_t)time(NULL);
-    OS_randombytes((void *)&opret.netmagic,sizeof(opret.netmagic));
-    bitcoin_addr2rmd160(&opret.pubval,opret.rmd160,coinaddr);
-    if ( PoSvalue > 0 )
-        minerpaymentlen = bitcoin_standardspend(minerpayment,0,opret.rmd160);
-    memset(zero.bytes,0,sizeof(zero));
-    sprintf(coinbasestr,"%s_%s",symbol,name);
-    txlen = iguana_coinbase(btcd,txidbytes,opret.timestamp,zero,(uint8_t *)coinbasestr,(int32_t)strlen(coinbasestr)+1,minerpayment,minerpaymentlen,PoSvalue,&txid);
-    memset(&msg,0,sizeof(msg));
-    msg.H.version = opret.version;
-    msg.H.merkle_root = txid;
-    msg.H.timestamp = opret.timestamp;
-    msg.H.bits = opret.nBits;
-    threshold = bits256_from_compact(nBits);
-    for (i=0; i<100000000; i++)
+    uint64_t hdrsi_unspentind; int32_t i;
+    if ( dPoW->numevents > 0 )
     {
-        msg.H.nonce = i;
-        datalen = iguana_rwblockhdr(1,0,serialized,&msg);
-        hash2 = iguana_calcblockhash(symbol,btcd->chain->hashalgo,serialized,datalen);
-        if ( bits256_cmp(threshold,hash2) > 0 )
-            break;
+        datachain_events_sort(dPoW);
+        hdrsi_unspentind = ((uint64_t)hdrsi << 32) | unspentind;
+        for (i=dPoW->numevents-1; i>=0; i--)
+            if ( hdrsi_unspentind > dPoW->events[i]->hdrsi_unspentind )
+                break;
+        printf("dPoW rewind %d to %d\n",dPoW->numevents,i+1);
+        dPoW->numevents = i+1;
     }
-    len = datachain_rwgenesis(1,serialized,&opret);
-    //for (i=0; i<len; i++)
-    //    printf("%02x",serialized[i]);
-    //printf(" <- opreturn\n");
-    return(len);
+    return(dPoW->numevents);
+}
+
+int32_t datachain_checkpoint_update(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timestamp)
+{
+    int32_t i,num,n,lastheight; bits256 *tree,hash2,lasthash2,merkle; struct iguana_block *block;
+    if ( coin->lastcheckpoint <= coin->blocks.hwmchain.height )
+    {
+        num = (coin->blocks.hwmchain.height - coin->lastcheckpoint) + 1;
+        tree = (bits256 *)coin->blockspace;
+        if ( num <= IGUANA_MAXPACKETSIZE/(sizeof(bits256) * 2) )
+        {
+            lastheight = -1;
+            memset(lasthash2.bytes,0,sizeof(lasthash2));
+            for (i=n=0; i<num; i++)
+            {
+                hash2 = iguana_blockhash(coin,coin->lastcheckpoint + i);
+                if ( bits256_nonz(hash2) != 0 )
+                {
+                    if ( (block= iguana_blockfind("datachain",coin,hash2)) != 0 && block->height == coin->lastcheckpoint + i && block->mainchain != 0 && block->RO.timestamp < timestamp )
+                    {
+                        tree[n++] = hash2;
+                        lastheight = block->height;
+                        lasthash2 = hash2;
+                    }
+                    else break;
+                }
+                else
+                {
+                    printf("got zero blockhash for %s.[%d]\n",coin->symbol,coin->lastcheckpoint + i);
+                    break;
+                }
+            }
+            if ( n > 0 && lastheight >= 0 && bits256_nonz(lasthash2) != 0 )
+            {
+                merkle = iguana_merkle(tree,num);
+                coin->lastcheckpoint = datachain_checkpoint(myinfo,coin,coin->lastcheckpoint,timestamp,merkle,lastheight,lasthash2);
+            }
+        }
+    }
+    return(coin->lastcheckpoint);
+}
+
+void datachain_BTC_clock(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *btc,int32_t height,uint32_t hdrsi,uint32_t unspentind,uint32_t timestamp)
+{
+    int32_t retval; struct iguana_info *btcd = iguana_coinfind("BTCD");
+    if ( (retval= datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTC,DATACHAIN_ISBTC,0)) < 0 )
+    {
+        myinfo->dPoW.BTC.numevents = datachain_events_rewind(myinfo,ordered,&myinfo->dPoW.BTC,height,hdrsi,unspentind);
+    }
+    else if ( retval > 0 )
+    {
+        if ( ordered != 0 && btcd != 0 && btcd->started != 0 && btcd->active != 0 )
+        {
+            // new BTC block actions, ie gather BTCD hashes for checkpoint
+            btcd->lastcheckpoint = datachain_checkpoint_update(myinfo,btcd,timestamp);
+            printf("NEWBLOCK.%s ht.%d\n",btc->symbol,height);
+        }
+    }
+}
+
+void datachain_KOMODO_newblock(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *btcd,int32_t height,uint32_t hdrsi,uint32_t unspentind,uint32_t timestamp)
+{
+    int32_t retval; struct iguana_info *virt,*tmp;
+    if ( (retval= datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTCD,DATACHAIN_ISKOMODO,0)) < 0 )
+    {
+        myinfo->dPoW.BTCD.numevents = datachain_events_rewind(myinfo,ordered,&myinfo->dPoW.BTCD,height,hdrsi,unspentind);
+    }
+    else if ( retval > 0 )
+    {
+        // new BTCD block actions, ie gather all virtual hashes for checkpoint
+        if ( ordered != 0 )
+        {
+            HASH_ITER(hh,myinfo->allcoins,virt,tmp)
+            {
+                if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+                    virt->lastcheckpoint = datachain_checkpoint_update(myinfo,virt,timestamp);
+            }
+            //printf("NEWBLOCK.%s ht.%d\n",btcd->symbol,height);
+        }
+    }
+}
+
+void datachain_virt_newblock(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *virt,int32_t height,uint32_t hdrsi,uint32_t unspentind,uint32_t timestamp)
+{
+    int32_t retval;
+    if ( (retval= datachain_eventadd(myinfo,ordered,&virt->dPoW,0,0)) < 0 )
+    {
+        virt->dPoW.numevents = datachain_events_rewind(myinfo,ordered,&virt->dPoW,height,hdrsi,unspentind);
+    }
+    else if ( retval > 0 )
+    {
+        // new virt block actions, maybe nothing to do?
+        if ( ordered != 0 )
+            printf("NEWBLOCK.%s ht.%d\n",virt->symbol,height);
+    }
 }
 
 int32_t datachain_datascript(struct iguana_info *coin,uint8_t *script,uint8_t *data,int32_t datalen)
@@ -122,6 +168,9 @@ int32_t datachain_datascript(struct iguana_info *coin,uint8_t *script,uint8_t *d
 int32_t datachain_datascript_decode(uint8_t *opreturn,uint8_t *script,int32_t scriptlen,struct vin_info *vp,int32_t type)
 {
     int32_t plen,i,oplen=0;
+    //for (i=0; i<scriptlen; i++)
+    //    printf("%02x",script[i]);
+    //printf(" <- MofNscript\n");
     for (i=0; i<vp->N; i++)
     {
         if ( (plen= bitcoin_pubkeylen(vp->signers[i].pubkey)) > 32 )
@@ -171,103 +220,57 @@ int32_t datachain_opreturn_decode(uint8_t *opreturn,uint8_t *script,int32_t scri
     else return(-1);
 }
 
-int32_t datachain_events_rewind(struct supernet_info *myinfo,struct datachain_event *events,int32_t numevents,int32_t height,uint32_t hdrsi,uint32_t unspentind)
+void datachain_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,int32_t btc_or_btcd,int64_t crypto777_payment,int64_t burned,int32_t height,uint64_t hdrsi_unspentind,uint8_t *opreturn,int32_t oplen)
 {
-    return(numevents);
-}
-
-void datachain_BTC_clock(struct supernet_info *myinfo,struct iguana_info *btc,int32_t height,uint32_t hdrsi,uint32_t unspentind)
-{
-    if ( hdrsi < myinfo->dPOW.BTC.lasthdrsi || (hdrsi == myinfo->dPOW.BTC.lasthdrsi && unspentind < myinfo->dPOW.BTC.lastunspentind) )
-    {
-        myinfo->dPOW.BTC.numevents = datachain_events_rewind(myinfo,myinfo->dPOW.BTC.events,myinfo->dPOW.BTC.numevents,height,hdrsi,unspentind);
-    }
-    else
-    {
-        printf("NEWBLOCK.%s ht.%d\n",btc->symbol,height);
-    }
-    myinfo->dPOW.BTC.lasthdrsi = hdrsi;
-    myinfo->dPOW.BTC.lastunspentind = unspentind;
-}
-
-void datachain_BTCD_newblock(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t height,uint32_t hdrsi,uint32_t unspentind)
-{
-    if ( hdrsi < myinfo->dPOW.BTCD.lasthdrsi || (hdrsi == myinfo->dPOW.BTCD.lasthdrsi && unspentind < myinfo->dPOW.BTCD.lastunspentind) )
-    {
-        myinfo->dPOW.BTCD.numevents = datachain_events_rewind(myinfo,myinfo->dPOW.BTCD.events,myinfo->dPOW.BTCD.numevents,height,hdrsi,unspentind);
-    }
-    else
-    {
-        // new BTCD block actions
-        printf("NEWBLOCK.%s ht.%d\n",btcd->symbol,height);
-    }
-    myinfo->dPOW.BTCD.lasthdrsi = hdrsi;
-    myinfo->dPOW.BTCD.lastunspentind = unspentind;
-}
-
-void datachain_virt_newblock(struct supernet_info *myinfo,struct iguana_info *virt,int32_t height,uint32_t hdrsi,uint32_t unspentind)
-{
-    if ( hdrsi < virt->dPOW.lasthdrsi || (hdrsi == virt->dPOW.lasthdrsi && unspentind < virt->dPOW.lastunspentind) )
-    {
-        virt->dPOW.numevents = datachain_events_rewind(myinfo,virt->dPOW.events,virt->dPOW.numevents,height,hdrsi,unspentind);
-    }
-    else
-    {
-        // new virt block actions
-        printf("NEWBLOCK.%s ht.%d\n",virt->symbol,height);
-    }
-    virt->dPOW.lasthdrsi = hdrsi;
-    virt->dPOW.lastunspentind = unspentind;
-}
-
-void datachain_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,int32_t btc_or_btcd,int64_t crypto777_payment,int64_t burned,int32_t height,uint64_t hdrsi_unspentind,uint8_t *opreturn,int32_t oplen)
-{
-    uint32_t hdrsi,unspentind;
+    uint32_t hdrsi,unspentind; struct datachain_event *event;
     hdrsi = (uint32_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
-    if ( btc_or_btcd == 1 ) // BTC
+    if ( btc_or_btcd == DATACHAIN_ISBTC ) // BTC
     {
         if ( opreturn == 0 )
-            datachain_BTC_clock(myinfo,coin,height,hdrsi,unspentind);
+            datachain_BTC_clock(myinfo,ordered,coin,height,hdrsi,unspentind,timestamp);
         else
         {
-            
+            if ( (event= datachain_event_create(coin,crypto777_payment,burned,height,hdrsi,unspentind,opreturn,oplen)) != 0 )
+                datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTC,btc_or_btcd,event);
         }
     }
-    else if ( btc_or_btcd == 2 ) // BTCD
+    else if ( btc_or_btcd == DATACHAIN_ISKOMODO ) // BTCD
     {
         if ( opreturn == 0 )
-            datachain_BTCD_newblock(myinfo,coin,height,hdrsi,unspentind);
+            datachain_KOMODO_newblock(myinfo,ordered,coin,height,hdrsi,unspentind,timestamp);
         else
         {
-            
+            if ( (event= datachain_event_create(coin,crypto777_payment,burned,height,hdrsi,unspentind,opreturn,oplen)) != 0 )
+                datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTCD,btc_or_btcd,event);
         }
     }
     else
     {
         if ( opreturn == 0 )
-            datachain_virt_newblock(myinfo,coin,height,hdrsi,unspentind);
+            datachain_virt_newblock(myinfo,ordered,coin,height,hdrsi,unspentind,timestamp);
         else
         {
-            
+            if ( (event= datachain_event_create(coin,crypto777_payment,burned,height,hdrsi,unspentind,opreturn,oplen)) != 0 )
+                datachain_eventadd(myinfo,ordered,&coin->dPoW,btc_or_btcd,event);
         }
     }
     if ( opreturn != 0 )
     {
         int32_t i;
         for (i=0; i<oplen; i++)
-            printf("%02x",opreturn[oplen]);
-        printf(" <- opreturn.%s len.%d\n",coin->symbol,oplen);
+            printf("%02x",opreturn[i]);
+        printf(" <- opreturn.%s len.%d ht.%d [%d] u.%u 777 %.8f burn %.8f\n",coin->symbol,oplen,height,hdrsi,unspentind,dstr(crypto777_payment),dstr(burned));
     }
 }
 
-int32_t iguana_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen)
+int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen)
 {
-    uint8_t type,scriptspace[IGUANA_MAXSCRIPTSIZE],opreturn[8192]; char fname[1024]; uint32_t sigsize,pubkeysize,p2shsize,suffix,oplen=0; int32_t btc_or_btcd=0,len = -1; struct vin_info V;
+    uint8_t type,scriptspace[IGUANA_MAXSCRIPTSIZE],opreturn[8192]; char fname[1024]; uint32_t oplen=0; int32_t btc_or_btcd=0,len = -1; struct vin_info V;
     if ( strcmp("BTC",coin->symbol) == 0 )
-        btc_or_btcd = 1;
+        btc_or_btcd = DATACHAIN_ISBTC;
     else if ( strcmp("BTCD",coin->symbol) == 0 )
-        btc_or_btcd = 2;
+        btc_or_btcd = DATACHAIN_ISKOMODO;
     else if ( coin->virtualchain == 0 )
         return(-1);
     if ( height < bp->bundleheight || height >= bp->bundleheight+coin->chain->bundlesize )
@@ -277,7 +280,7 @@ int32_t iguana_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,st
     }
     if ( crypto777_payment == 0 && burned == 0 && scriptlen == 0 && fileid == 0 && scriptpos == 0 )
     {
-        datachain_opreturn(myinfo,coin,btc_or_btcd,crypto777_payment,burned,height,hdrsi_unspentind,0,0);
+        datachain_opreturn(myinfo,ordered,coin,timestamp,btc_or_btcd,crypto777_payment,burned,height,hdrsi_unspentind,0,0);
         return(0);
     }
     if ( scriptpos > 0 && scriptlen > 0 )
@@ -286,24 +289,35 @@ int32_t iguana_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,st
         if ( (len= iguana_scriptdata(coin,scriptspace,coin->voutptrs[fileid],fname,scriptpos,scriptlen)) == scriptlen )
         {
             memset(&V,0,sizeof(V));
-            type = iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffix,scriptspace,scriptlen);
+            V.spendlen = scriptlen;
+            memcpy(V.spendscript,scriptspace,scriptlen);
+            type = _iguana_calcrmd160(coin,&V);
             if ( type == IGUANA_SCRIPT_OPRETURN )
                 oplen = datachain_opreturn_decode(opreturn,scriptspace,scriptlen);
             else oplen = datachain_datascript_decode(opreturn,scriptspace,scriptlen,&V,type);
-            datachain_opreturn(myinfo,coin,btc_or_btcd,crypto777_payment,burned,height,hdrsi_unspentind,opreturn,oplen);
+            datachain_opreturn(myinfo,ordered,coin,timestamp,btc_or_btcd,crypto777_payment,burned,height,hdrsi_unspentind,opreturn,oplen);
             return(oplen);
         } else printf("iguana_opreturn error: %d bytes from fileid.%d[%d] %s for scriptlen.%d\n",len,fileid,(uint32_t)scriptpos,fname,scriptlen);
     }
     return(-1);
 }
 
-int64_t datachain_update(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen)
+void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int32_t height,bits256 txid,int32_t vout,uint8_t rmd160[20],int64_t value)
+{
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        datachain_update_txidvout(myinfo,ordered,coin,&myinfo->dPoW.BTC,DATACHAIN_ISBTC,height,txid,vout,rmd160,value);
+    else if ( strcmp("BTCD",coin->symbol) == 0 )
+        datachain_update_txidvout(myinfo,ordered,coin,&myinfo->dPoW.BTCD,DATACHAIN_ISKOMODO,height,txid,vout,rmd160,value);
+    else datachain_update_txidvout(myinfo,ordered,coin,&coin->dPoW,0,height,txid,vout,rmd160,value);
+}
+
+int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout)
 {
     if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
         crypto777_payment += value;
     else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
     {
-        iguana_opreturn(myinfo,coin,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
-    }
+        iguana_opreturn(myinfo,ordered,coin,timestamp,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
+    } else datachain_update_spend(myinfo,ordered,coin,timestamp,bp,height,txid,vout,rmd160,value);
     return(crypto777_payment);
 }

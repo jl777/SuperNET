@@ -113,7 +113,7 @@ int32_t gecko_delayedPoW(struct supernet_info *myinfo,struct iguana_info *btcd,i
     return(len);
 }
 
-int32_t iguana_coinbase(struct iguana_info *virt,uint8_t *serialized,uint32_t timestamp,bits256 prev_hash,uint8_t *coinbasescript,uint32_t coinbaselen,uint8_t *minerpayment,uint32_t minerpaymentlen,int64_t blockreward,bits256 *txidp)
+int32_t iguana_coinbase(int32_t isPoS,uint32_t txversion,uint8_t *serialized,uint32_t timestamp,bits256 prev_hash,uint8_t *coinbasescript,uint32_t coinbaselen,uint8_t *minerpayment,uint32_t minerpaymentlen,int64_t blockreward,bits256 *txidp)
 {
     int32_t len = 0,rwflag=1; uint32_t prev_vout,sequence,lock_time; char txidstr[65]; struct iguana_msgtx msg;
     memset(&msg,0,sizeof(msg));
@@ -121,10 +121,10 @@ int32_t iguana_coinbase(struct iguana_info *virt,uint8_t *serialized,uint32_t ti
     msg.tx_in = 1;
     sequence = prev_vout = -1;
     lock_time = 0;
-    msg.version = virt->chain->normal_txversion;
+    msg.version = txversion;
     msg.timestamp = timestamp;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg.version),&msg.version);
-    if ( virt->chain->isPoS != 0 )
+    if ( isPoS != 0 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg.timestamp),&msg.timestamp);
     {
         len += iguana_rwvarint32(rwflag,&serialized[len],&msg.tx_in);
@@ -155,7 +155,7 @@ char *gecko_coinbasestr(struct supernet_info *myinfo,struct iguana_info *virt,bi
     char *rawtx=0; uint8_t minerpayment[512],serialized[8192]; int32_t minerpaymentlen=0,len=0;
     if ( blockreward > 0 )
         minerpaymentlen = bitcoin_pubkeyspend(minerpayment,0,minerpubkey);
-    len = iguana_coinbase(virt,serialized,timestamp,coinbasespend,data,datalen,minerpayment,minerpaymentlen,blockreward,txidp);
+    len = iguana_coinbase(virt->chain->isPoS,virt->chain->normal_txversion,serialized,timestamp,coinbasespend,data,datalen,minerpayment,minerpaymentlen,blockreward,txidp);
     if ( len > 0 )
     {
         rawtx = malloc(len*2 + 1);

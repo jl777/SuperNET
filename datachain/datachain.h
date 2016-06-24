@@ -69,6 +69,9 @@
 #define DATACHAIN_ACTION_QUOTE 10004
 #define DATACHAIN_ACTION_SENDGROUP 10005
 
+#define DATACHAIN_ISBTC 1
+#define DATACHAIN_ISKOMODO 2
+
 struct datachain_itemexclusive { uint8_t ownerpub[33]; };
 
 struct datachain_item
@@ -85,13 +88,22 @@ struct datachain_item
 
 struct datachain_event
 {
-    
+    uint64_t hdrsi_unspentind,crypto777_payment,burned;
+    int32_t height,btc_or_btcd,oplen;
+    char symbol[16];
+    uint8_t opreturn[];
+};
+
+struct datachain_state
+{
+    int32_t numprocessed,lasthdrsi,lastunspentind;
 };
 
 struct datachain_info
 {
-    uint32_t lasthdrsi,lastunspentind,numevents,maxevents;
-    struct datachain_event *events;
+    struct datachain_state state;
+    uint32_t numevents,maxevents,ordered;
+    struct datachain_event **events;
 };
 
 struct delayedPoW_info

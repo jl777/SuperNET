@@ -92,6 +92,6 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t
 
 struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct iguana_info *virt,int32_t *numotherp,uint32_t ipbits);
 void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis);
-int32_t iguana_coinbase(struct iguana_info *virt,uint8_t *serialized,uint32_t timestamp,bits256 prev_hash,uint8_t *coinbasescript,uint32_t coinbaselen,uint8_t *minerpayment,uint32_t minerpaymentlen,int64_t blockreward,bits256 *txidp);
+int32_t iguana_coinbase(int32_t isPoS,uint32_t txversion,uint8_t *serialized,uint32_t timestamp,bits256 prev_hash,uint8_t *coinbasescript,uint32_t coinbaselen,uint8_t *minerpayment,uint32_t minerpaymentlen,int64_t blockreward,bits256 *txidp);
 
 #endif

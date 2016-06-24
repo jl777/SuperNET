@@ -688,12 +688,12 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
         {
             if ( len > recvlen )
             {
-                printf("gentxarray error len.%d > recvlen.%d\n",len,recvlen);
+                printf("gentxarrayB error len.%d > recvlen.%d\n",len,recvlen);
                 break;
             }
             if ( (n= iguana_rwtx(coin->chain->zcash,0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->isPoS,strcmp(coin->symbol,"VPN")==0)) < 0 )
             {
-                printf("gentxarray error len.%d > recvlen.%d\n",len,recvlen);
+                printf("gentxarrayC error len.%d > recvlen.%d, n.%d\n",len,recvlen,n);
                 break;
             }
             numvouts += tx[i].tx_out;

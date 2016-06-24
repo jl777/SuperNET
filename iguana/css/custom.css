@@ -1,0 +1,60 @@
+.exchangecontainer{
+	margin:30px;
+	
+	background-color:#FFF;
+	color:#000;
+	
+	}
+.innersection{
+	background-color:#EEE;
+    margin:20px 0;
+	padding:10px;
+  }
+.innersection h4{
+		padding:7px;
+		font-weight:bolder;
+	}
+.coin1, .coin2{
+ 	 float:left;
+	 color:#000;
+	 background-color:#EEE;
+	 width:50%;
+	 padding: 10px 10px;
+	 
+	}
+
+.exchangecontainer label, #exchange_model #frmexchange label{
+	color:#000;
+	
+	}	
+#frmexchange label{
+	text-align:left !important;
+	}
+.innersection .exchange{
+	 text-align:center;
+	 width: 120px;
+	 background-color: #009688;
+	 
+	}
+.button{
+	width: 20%;
+    margin: 0 auto;
+}
+.shape{
+ font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    height: 33px;
+    border-radius: 6px;
+    box-shadow: 0 0 0;
+    border: 1px solid #ccc;
+    width: 166px;
+	text-align: center;
+}
+.innersection table td{ padding:10px;}
+
+#address_to, #address_from{
+	
+	width:100% !important;
+	height:45px !important;
+	}

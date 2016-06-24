@@ -1718,5 +1718,35 @@ TWO_STRINGS(InstantDEX,events,base,rel)
     //return(clonestr("[{\"h\":14,\"m\":44,\"s\":32,\"date\":1407877200000,\"bid\":30,\"ask\":35},{\"date\":1407877200000,\"bid\":40,\"ask\":44},{\"date\":1407877200000,\"bid\":49,\"ask\":45},{\"date\":1407877200000,\"ask\":28},{\"date\":1407877200000,\"ask\":52}]"));
 }
 
+ZERO_ARGS(InstantDEX,allcoins)
+{
+    return(clonestr("{\"result\":\"this will return array of available coins\"}"));
+}
+
+STRING_ARG(InstantDEX,available,source)
+{
+    return(clonestr("{\"result\":\"this will return available balance for source\"}"));
+}
+
+THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount)
+{
+    return(clonestr("{\"result\":\"this will request converting amount worth of source into dest\"}"));
+}
+
+INT_ARG(InstantDEX,incoming,requestid)
+{
+    return(clonestr("{\"result\":\"this will return array of incoming request objects\"}"));
+}
+
+INT_ARG(InstantDEX,choose,quoteid)
+{
+    return(clonestr("{\"result\":\"this will choose one of the incoming requests and cancel the rest\"}"));
+}
+
+INT_ARG(InstantDEX,qstatus,quoteid)
+{
+    return(clonestr("{\"result\":\"this will return status of pending quote\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
 

@@ -200,24 +200,32 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
 
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20])
 {
-    int64_t deposits,crypto777_payment; uint32_t lastunspentind,unspentind; int32_t i,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash P; struct iguana_unspent *U; struct iguana_txid *T;
+    int64_t deposits,crypto777_payment; uint32_t lastunspentind,unspentind; int32_t i,j,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,p; struct iguana_unspent *U,*u; struct iguana_txid *T,*tx;
     for (i=num=0; i<coin->bundlescount; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
             ramchain = 0;
-            if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&P,rmd160,i,i) != 0 )
+            if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&p,rmd160,i,i) != 0 )
             {
                 if ( ramchain != 0 && (rdata= ramchain->H.data) != 0 )
                 {
                     unspentind = lastunspentind;
                     U = RAMCHAIN_PTR(rdata,Uoffset);
                     T = RAMCHAIN_PTR(rdata,Toffset);
+                    P = RAMCHAIN_PTR(rdata,Poffset);
                     while ( unspentind > 0 )
                     {
-                        uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
-                        
-                        crypto777_payment = datachain_update(myinfo,coin,bp,rmd160,crypto777_payment,U[unspentind].type,uheight,(((uint64_t)bp->hdrsi << 32) | unspentind),U[unspentind].value,U[unspentind].fileid,U[unspentind].scriptpos,U[unspentind].scriptlen);
+                        tx = &T[U[unspentind].txidind];
+                        u = &U[tx->firstvout];
+                        uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,u);
+                        for (crypto777_payment=j=0; j<tx->numvouts; j++,u++)
+                        {
+                            //u = &U[tx->firstvout + j];
+                            crypto777_payment = datachain_update(myinfo,0,coin,tx->timestamp,bp,P[u->pkind].rmd160,crypto777_payment,u->type,uheight,(((uint64_t)bp->hdrsi << 32) | unspentind),u->value,u->fileid,u->scriptpos,u->scriptlen,tx->txid,j);
+                        }
+                        num++;
+                        unspentind = U[unspentind].prevunspentind;
                     }
                 }
             }

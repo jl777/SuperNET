@@ -403,7 +403,7 @@ struct iguana_info
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
-    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked;
+    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
@@ -413,7 +413,7 @@ struct iguana_info
     struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
-    struct datachain_info dPOW;
+    struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
     struct iguana_blocks blocks; void *mempool; void *mempools[IGUANA_MAXRELAYS];
 };
@@ -467,7 +467,7 @@ struct supernet_info
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
     portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex;
     void *ctx;
-    struct delayedPoW_info dPOW;
+    struct delayedPoW_info dPoW;
     uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS];
     int32_t numrelays,RELAYID;
     // compatibility

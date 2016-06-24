@@ -13,15 +13,22 @@
  *                                                                            *
  ******************************************************************************/
 
+ZERO_ARGS(InstantDEX,allcoins);
+STRING_ARG(InstantDEX,available,source);
+THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount);
+INT_ARG(InstantDEX,incoming,requestid);
+INT_ARG(InstantDEX,choose,quoteid);
+INT_ARG(InstantDEX,qstatus,quoteid);
+
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 //INT_AND_ARRAY(basilisk,result,basilisktag,vals);
-HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr);
+//HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr);
+//HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,geckoheaders,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,geckoblock,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr);

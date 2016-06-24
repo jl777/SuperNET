@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+// are nbits and magicstr endian dependent?
+
 // code mempool and tx (payment and opreturn protocol)
 
 // debug genesis balances
@@ -121,7 +123,7 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 chainhash,bits256 
     {
         chain = mycalloc('c',1,sizeof(*chain));
         chain->hash = hash = chainhash;
-        char str[65]; printf("ADD cat.(%s)\n",bits256_str(str,chainhash));
+        //char str[65]; printf("ADD cat.(%s)\n",bits256_str(str,chainhash));
         HASH_ADD(hh,Categories,hash,sizeof(hash),chain);
     }
     if ( bits256_nonz(keyhash) > 0 && memcmp(GENESIS_PUBKEY.bytes,keyhash.bytes,sizeof(keyhash)) != 0 && chain != 0 )
@@ -131,7 +133,7 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 chainhash,bits256 
         {
             subchain = mycalloc('c',1,sizeof(*subchain));
             subchain->hash = hash = keyhash;
-            char str[65],str2[65]; printf("subadd.(%s) -> (%s)\n",bits256_str(str,keyhash),bits256_str(str2,chainhash));
+            //char str[65],str2[65]; printf("subadd.(%s) -> (%s)\n",bits256_str(str,keyhash),bits256_str(str2,chainhash));
             HASH_ADD(hh,chain->subchains,hash,sizeof(hash),subchain);
         }
     }
@@ -143,9 +145,9 @@ struct gecko_chain *gecko_chain(struct supernet_info *myinfo,char chainname[GECK
 {
     char *chainstr,*keystr; bits256 keyhash,chainhash; struct gecko_chain *chain;
     chainname[0] = 0;
-    if ( (chainstr= jstr(valsobj,"chain")) == 0 )
+    if ( (chainstr= jstr(valsobj,"symbol")) == 0 )
         return(0);
-    if ( (keystr= jstr(valsobj,"key")) != 0 )
+    if ( (keystr= jstr(valsobj,"name")) != 0 )
         vcalc_sha256(0,keyhash.bytes,(uint8_t *)keystr,(int32_t)strlen(keystr));
     else keyhash = GENESIS_PUBKEY;
     vcalc_sha256(0,chainhash.bytes,(uint8_t *)chainstr,(int32_t)strlen(chainstr));
@@ -186,7 +188,7 @@ struct gecko_chain *gecko_chain(struct supernet_info *myinfo,char chainname[GECK
         return(0);
     }
     return(-1);
-}*/
+}
 
 cJSON *gecko_genesisargs(char *symbol,char *chainname,char *chain,char *keystr,char *genesishash,char *genesisblock,char *magicstr,uint16_t port,uint16_t blocktime,char *nbitstr,char *pubval,char *p2shval,char *wifval,uint32_t isPoS)
 {
@@ -281,7 +283,7 @@ cJSON *gecko_genesisissue(char *symbol,char *chainname,char *chainstr,cJSON *val
 {
     printf("issue blocktime.%d\n",juint(valsobj,"blocktime"));
     return(gecko_genesisargs(symbol,chainname,chainstr,jstr(valsobj,"key"),jstr(valsobj,"genesishash"),jstr(valsobj,"genesisblock"),jstr(valsobj,"netmagic"),juint(valsobj,"port"),juint(valsobj,"blocktime"),jstr(valsobj,"nBits"),jstr(valsobj,"pubval"),jstr(valsobj,"p2shval"),jstr(valsobj,"wifval"),juint(valsobj,"isPoS")));
-}
+}*/
 
 struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj)
 {
@@ -295,6 +297,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         virt->enableCACHE = 1;
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
         iguana_chaininit(virt->chain,1,valsobj);
+        virt->chain->isPoS = 1;
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )
         {
@@ -333,13 +336,14 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
             }
             virt->started = virt;
             virt->active = (uint32_t)time(NULL);
+            iguana_datachain_scan(myinfo,virt,CRYPTO777_RMD160);
         } else printf("error validating nonce\n");
     }
     portable_mutex_unlock(&myinfo->gecko_mutex);
     return(virt);
 }
 
-char *basilisk_respond_newgeckochain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+/*char *basilisk_respond_newgeckochain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
 {
     struct iguana_info *virt,*btcd; struct gecko_chain *chain; char fname[512],*symbol,*retstr,*chainstr,chainname[GECKO_MAXNAMELEN],*genesises; cJSON *chainjson,*retjson,*genesisjson; long filesize; FILE *fp;
     if ( (chain= gecko_chain(myinfo,chainname,valsobj)) != 0 && (virt= chain->info) != 0 )
@@ -431,7 +435,7 @@ char *basilisk_respond_geckogenesis(struct supernet_info *myinfo,char *CMD,void 
 {
     long filesize;
     return(OS_filestr(&filesize,"genesis/list"));
-}
+}*/
 
 char *basilisk_standardreturn(char *CMD,char *type,struct iguana_info *virt,uint8_t *serialized,int32_t datalen,bits256 hash)
 {
@@ -480,7 +484,7 @@ char *basilisk_respond_geckoget(struct supernet_info *myinfo,char *CMD,void *add
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-HASH_ARRAY_STRING(basilisk,sequence,hash,vals,hexstr)
+/*HASH_ARRAY_STRING(basilisk,sequence,hash,vals,hexstr)
 {
     return(basilisk_standardservice("SEQ",myinfo,hash,vals,hexstr,1));
 }
@@ -533,7 +537,7 @@ HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr)
         } else return(clonestr("{\"error\":\"couldnt create genesis_block\"}"));
     }
     return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko chain\"}"));
-}
+}*/
 
 char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t *data,int32_t datalen,bits256 txid,cJSON *vals,char *signedtx)
 {
@@ -591,7 +595,7 @@ HASH_ARRAY_STRING(basilisk,geckoget,hash,vals,hexstr)
     return(clonestr("{\"error\":\"geckoget needs BTCD\"}"));
 }
 
-HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
+/*HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
 {
     long filesize; int32_t i,j,n,m; struct iguana_info *btcd; char *ref,*symbol,*retstr=0; cJSON *item,*array = 0,*arrayB = 0; FILE *fp;
     if ( (btcd= iguana_coinfind("BTCD")) != 0 )
@@ -653,7 +657,7 @@ HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
         }
     }
     return(clonestr("{\"error\":\"need BTCD to get geckogenesis list\"}"));
-}
+}*/
 #include "../includes/iguana_apiundefs.h"
 
 

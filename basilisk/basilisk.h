@@ -69,5 +69,6 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
 void basilisk_request_goodbye(struct supernet_info *myinfo);
 int32_t basilisk_update(char *symbol,uint32_t reftimestamp);
 void basilisk_seqresult(struct supernet_info *myinfo,char *retstr);
+struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj);
 
 #endif

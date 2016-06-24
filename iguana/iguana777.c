@@ -572,8 +572,8 @@ void iguana_helper(void *arg)
         flag = 0;
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
-            if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
-                basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
+            //if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
+            //    basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
             if ( myinfo->allcoins_numvirts > 0 )
             {
                 maxmillis = (10000 / myinfo->allcoins_numvirts) + 1;
@@ -704,6 +704,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
 }
 
 void iguana_coinloop(void *arg)

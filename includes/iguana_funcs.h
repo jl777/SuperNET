@@ -464,7 +464,8 @@ struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana
 void instantdex_FSMinit();
 void iguana_unspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount);
-int64_t datachain_update(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen);
+int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout);
+void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int32_t height,bits256 txid,int32_t vout,uint8_t rmd160[20],int64_t value);
 
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey);
 bits256 scrypt_blockhash(const void *input);
@@ -521,9 +522,10 @@ struct iguana_peer *iguana_peerfindipaddr(struct iguana_info *coin,char *ipaddr,
 struct iguana_peer *iguana_peerfindipbits(struct iguana_info *coin,uint32_t ipbits,int32_t needalive);
 int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr);
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *txids,int32_t num);
-int32_t iguana_opreturn(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t payment,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen);
+int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t payment,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen);
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen);
 struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits);
+int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 
 #include "../includes/iguana_api.h"
 
