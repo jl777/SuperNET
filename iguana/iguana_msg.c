@@ -385,8 +385,8 @@ void iguana_supernet_ping(struct supernet_info *myinfo,struct iguana_info *coin,
 {
     if ( addr->supernet != 0 || addr->basilisk != 0 )
     {
-        if ( coin->RELAYNODE != 0 )
-            basilisk_relays_send(myinfo,addr);
+        //if ( coin->RELAYNODE != 0 )
+        //    basilisk_relays_send(myinfo,addr);
         //printf("send getpeers to %s\n",addr->ipaddr);
         //printf("maybe send basilisk ping here?\n");
         //iguana_send_supernet(addr,SUPERNET_GETPEERSTR,0);
@@ -448,8 +448,8 @@ int32_t iguana_send_ping(struct supernet_info *myinfo,struct iguana_info *coin,s
     iguana_queue_send(addr,0,serialized,"getaddr",0);
     len = iguana_rwnum(1,&serialized[sizeof(struct iguana_msghdr)],sizeof(uint64_t),&nonce);
     iguana_supernet_ping(myinfo,coin,addr);
-    if ( myinfo->IAMRELAY != 0 )
-        basilisk_relays_send(myinfo,addr);
+    //if ( myinfo->IAMRELAY != 0 )
+    //    basilisk_relays_send(myinfo,addr);
     return(iguana_queue_send(addr,0,serialized,"ping",len));
 }
 

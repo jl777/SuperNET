@@ -520,7 +520,7 @@ struct gecko_memtx *gecko_unspentfind(struct gecko_memtx ***ptrpp,struct iguana_
 int64_t *gecko_valueptr(struct gecko_memtx *memtx,int32_t vout);
 struct iguana_peer *iguana_peerfindipaddr(struct iguana_info *coin,char *ipaddr,int32_t needalive);
 struct iguana_peer *iguana_peerfindipbits(struct iguana_info *coin,uint32_t ipbits,int32_t needalive);
-int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr);
+//int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr);
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *txids,int32_t num);
 int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t payment,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen);
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen);

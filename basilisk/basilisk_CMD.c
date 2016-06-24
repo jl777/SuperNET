@@ -78,7 +78,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
-char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+/*char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[65],sig[128]; char *sigstr = 0,*retstr,pubstr[128];
     if ( (sigstr= jstr(valsobj,"sig")) != 0 )
@@ -135,7 +135,7 @@ int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *ad
     } else return(-1);
 }
 
-/*char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     uint32_t *ipbits = (uint32_t *)data; int32_t num,i,j,n = datalen >> 2;
     for (i=num=0; i<n; i++)
