@@ -78,83 +78,6 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
-/*char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-    bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[65],sig[128]; char *sigstr = 0,*retstr,pubstr[128];
-    if ( (sigstr= jstr(valsobj,"sig")) != 0 )
-    {
-        siglen = (int32_t)strlen(sigstr) >> 1;
-        if ( siglen < sizeof(sig) )
-        {
-            decode_hex(sig,siglen,sigstr);
-            vcalc_sha256(0,txhash2.bytes,data,datalen);
-            memset(pubkey33,0,33);
-            if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 )
-            {
-                // compare with existing
-                init_hexbytes_noT(pubstr,pubkey33,33);
-                printf(" verified relay data siglen.%d pub33.%s\n",siglen,pubstr);
-                if ( (retstr= basilisk_addrelay_info(myinfo,pubkey33,(uint32_t)calc_ipbits(remoteaddr),hash)) != 0 )
-                    free(retstr);
-                n = (int32_t)(datalen / sizeof(uint32_t));
-                for (i=len=0; i<n; i++)
-                {
-                    len += iguana_rwnum(0,(void *)&data[len],sizeof(uint32_t),&ipbits);
-                    //printf("(%d %x) ",i,ipbits);
-                    if ( (retstr= basilisk_addrelay_info(myinfo,0,ipbits,GENESIS_PUBKEY)) != 0 )
-                        free(retstr);
-                }
-            } else printf("error relay data sig.%d didnt verify\n",siglen);
-        }
-    }
-    return(clonestr("{\"result\":\"processed relays\"}"));
-}
-
-int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr)
-{
-    int32_t i,siglen,len = 0; char strbuf[512]; bits256 txhash2; uint8_t sig[128],serialized[sizeof(myinfo->relaybits)]; cJSON *vals; bits256 hash; char *retstr,hexstr[sizeof(myinfo->relaybits)*2 + 1];
-    //printf("skip sending relays\n");
-    if ( 0 && myinfo != 0 )
-    {
-        vals = cJSON_CreateObject();
-        hash = myinfo->myaddr.persistent;
-        for (i=0; i<myinfo->numrelays; i++)
-            len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myinfo->relaybits[i]);
-        init_hexbytes_noT(hexstr,serialized,len);
-        //printf("send relays.(%s)\n",hexstr);
-        vcalc_sha256(0,txhash2.bytes,serialized,len);
-        if ( 0 && bits256_nonz(myinfo->persistent_priv) != 0 && (siglen= bitcoin_sign(myinfo->ctx,"BTCD",sig,txhash2,myinfo->persistent_priv,1)) > 0 )
-        {
-            init_hexbytes_noT(strbuf,sig,siglen);
-            jaddstr(vals,"sig",strbuf);
-        }
-        if ( (retstr= basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,0)) != 0 )
-            free(retstr);
-        free_json(vals);
-        return(0);
-    } else return(-1);
-}
-
-char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-    uint32_t *ipbits = (uint32_t *)data; int32_t num,i,j,n = datalen >> 2;
-    for (i=num=0; i<n; i++)
-    {
-        for (j=0; j<myinfo->numrelays; j++)
-            if ( ipbits[i] == myinfo->relays[j].ipbits )
-                break;
-        if ( j == myinfo->numrelays )
-        {
-            num++;
-            printf("i.%d j.%d ensure new relay.(%s)\n",i,j,remoteaddr);
-            basilisk_ensurerelay(iguana_coinfind("BTCD"),ipbits[i]);
-        }
-    }
-    if ( num == 0 )
-        return(clonestr("{\"result\":\"no new relays found\"}"));
-    else return(clonestr("{\"result\":\"relay added\"}"));
-}*/
-
 char *basilisk_respond_goodbye(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     struct iguana_peer *addr = _addr;
@@ -276,30 +199,6 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     //return(basilisk_standardcmd(myinfo,"VAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
 }
 
-/*char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *symbol,cJSON *vals)
-{
-    cJSON *addresses=0; char *changeaddr,*spendscriptstr; int32_t i,n;
-    *timeoutmillisp = -1;
-    changeaddr = jstr(vals,"changeaddr");
-    spendscriptstr = jstr(vals,"spendscript");
-    addresses = jarray(&n,vals,"addresses");
-    if ( addresses == 0 || changeaddr == 0 || changeaddr[0] == 0 )
-        return(clonestr("{\"error\":\"invalid addresses[] or changeaddr\"}"));
-    else
-    {
-        for (i=0; i<n; i++)
-            if ( strcmp(jstri(addresses,i),changeaddr) == 0 )
-                return(clonestr("{\"error\":\"changeaddr cant be in addresses[]\"}"));
-    }
-    if ( spendscriptstr != 0 && spendscriptstr[0] != 0 )
-        return(basilisk_check(timeoutmillisp,basilisktagp,symbol,vals));
-    else
-    {
-        printf("vals.(%s)\n",jprint(vals,0));
-        return(clonestr("{\"error\":\"missing spendscript\"}"));
-    }
-}*/
-
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
@@ -321,20 +220,6 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
         }
     }
     return(retstr);
-
-    /*if ( (retstr= basilisk_checkrawtx(&timeoutmillis,(uint32_t *)&basilisktag,activecoin,vals)) == 0 )
-    {
-        return(basilisk_standardservice("RAW",myinfo,hash,vals,hexstr,1));
-        coin = iguana_coinfind(activecoin);
-         if ( coin != 0 && (ptr= basilisk_issuecmd(&Lptr,coin->basilisk_rawtx,coin->basilisk_rawtxmetric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
-         {
-         if ( (ptr->numrequired= juint(vals,"numrequired")) == 0 )
-         ptr->numrequired = 1;
-         //ptr->uniqueflag = 1;
-         //ptr->metricdir = -1;
-         return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,vals,ptr));
-         } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
-    } //else return(retstr);*/
 }
 
 HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)

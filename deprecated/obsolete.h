@@ -17766,6 +17766,454 @@ len = 0;
                 } else Lptr->retstr = clonestr("{\"error\":\"error missing coin\"}");
                 return(Lptr);
             }
+            /*int32_t gecko_chainvals(struct supernet_info *myinfo,char *CMD,cJSON *valsobj)
+             {
+             struct iguana_info *virt; struct gecko_chain *chain; bits256 hash,prevhash; struct iguana_block *block; char chainname[GECKO_MAXNAMELEN];
+             if ( strcmp(CMD,"SET") == 0 || strcmp(CMD,"GET") == 0 )
+             {
+             if ( (chain= gecko_chain(myinfo,chainname,valsobj)) == 0  || (virt= chain->info) == 0 )
+             clonestr("{\"error\":\"cant find gecko chain\"}");
+             if ( strcmp(CMD,"SET") == 0 )
+             {
+             hash = GENESIS_PUBKEY;
+             if ( jobj(valsobj,"prev") != 0 )
+             {
+             prevhash = jbits256(valsobj,"prev");
+             if ( (block= iguana_blockfind("basilisk",virt,prevhash)) == 0 )
+             {
+             char str[65]; printf("warning couldnt find %s in %s\n",bits256_str(str,prevhash),chainname);
+             prevhash = virt->blocks.hwmchain.RO.hash2;
+             }
+             } else prevhash = virt->blocks.hwmchain.RO.hash2;
+             hash = prevhash;
+             if ( jobj(valsobj,"prev") != 0 )
+             jdelete(valsobj,"prev");
+             }
+             return(0);
+             }
+             return(-1);
+             }
+             
+             cJSON *gecko_genesisargs(char *symbol,char *chainname,char *chain,char *keystr,char *genesishash,char *genesisblock,char *magicstr,uint16_t port,uint16_t blocktime,char *nbitstr,char *pubval,char *p2shval,char *wifval,uint32_t isPoS)
+             {
+             int32_t timespan,targetspacing; cJSON *argvals = cJSON_CreateObject();
+             if ( genesishash != 0 && genesishash[0] != 0 )
+             jaddstr(argvals,"genesishash",genesishash);
+             if ( genesisblock != 0 && genesisblock[0] != 0  )
+             jaddstr(argvals,"genesisblock",genesisblock);
+             jaddstr(argvals,"netmagic",magicstr);
+             jaddstr(argvals,"symbol",symbol);
+             jaddstr(argvals,"name",chainname);
+             if ( pubval == 0 || is_hexstr(pubval,0) != 2 )
+             pubval = "00";
+             jaddstr(argvals,"pubval",pubval);
+             if ( p2shval == 0 || is_hexstr(p2shval,0) != 2 )
+             p2shval = "05";
+             jaddstr(argvals,"p2shval",p2shval);
+             if ( wifval == 0 || is_hexstr(wifval,0) != 2 )
+             wifval = "80";
+             jaddstr(argvals,"wifval",wifval);
+             if ( nbitstr == 0 || nbitstr[0] == 0 )
+             nbitstr = GECKO_DEFAULTDIFFSTR;
+             jaddstr(argvals,"nBits",nbitstr);
+             jaddstr(argvals,"chain",chain);
+             if ( keystr != 0 )
+             jaddstr(argvals,"key",keystr);
+             jaddnum(argvals,"isPoS",isPoS);
+             //printf("argvals isPoS.%d\n",isPoS);
+             if ( port == 0 )
+             {
+             jaddstr(argvals,"geckochain",chainname);
+             jaddnum(argvals,"services",128);
+             }
+             else
+             {
+             jaddnum(argvals,"services",129);
+             jaddnum(argvals,"portp2p",port);
+             }
+             if ( blocktime == 0 )
+             blocktime = 1;
+             jaddnum(argvals,"blocktime",blocktime);
+             if ( blocktime != 0 && 0 )
+             {
+             if ( blocktime == 0xffff )
+             targetspacing = 24 * 60 * 60; // one day
+             else targetspacing = blocktime; // one minute
+             jaddnum(argvals,"targetspacing",targetspacing);
+             if ( (timespan= sqrt(604800 / targetspacing)) < 7 )
+             timespan = 7;
+             jaddnum(argvals,"targettimespan",targetspacing * timespan);
+             }
+             return(argvals);
+             }
+             
+             cJSON *gecko_genesisjson(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t isPoS,char *symbol,char *chainname,cJSON *valsobj,char *magicstr,uint16_t blocktime)
+             {
+             char str2[64],hashstr[65],argbuf[1024],*pubstr,*p2shstr,*wifvalstr,*nbitstr,*blockstr; uint8_t buf[4]; int32_t i; uint32_t nBits; struct iguana_block genesis;
+             if ( (nbitstr= jstr(valsobj,"nBits")) == 0 )
+             {
+             nBits = GECKO_DEFAULTDIFF;
+             nbitstr = GECKO_DEFAULTDIFFSTR;
+             }
+             else
+             {
+             for (i=0; i<4; i++)
+             decode_hex(&buf[3-i],1,&nbitstr[i*2]);
+             memcpy(&nBits,buf,sizeof(nBits));
+             }
+             if ( (blocktime= juint(valsobj,"blocktime")) == 0 )
+             blocktime = 1;
+             if ( (pubstr= jstr(valsobj,"pubval")) == 0 )
+             pubstr = "00";
+             if ( (p2shstr= jstr(valsobj,"p2shval")) == 0 )
+             p2shstr = "05";
+             if ( (wifvalstr= jstr(valsobj,"wifval")) == 0 )
+             wifvalstr = "80";
+             printf("json netmagic.%s\n",magicstr);
+             memset(&genesis,0,sizeof(genesis));
+             genesis.RO.version = GECKO_DEFAULTVERSION;
+             genesis.RO.bits = nBits;
+             if ( (blockstr= gecko_createblock(myinfo,blocktime,0,btcd,isPoS,&genesis,symbol,0,0,10000,0,0)) != 0 )
+             {
+             bits256_str(hashstr,genesis.RO.hash2);
+             sprintf(argbuf,"{\"isPoS\":%d,\"name\":\"%s\",\"symbol\":\"%s\",\"netmagic\":\"%s\",\"port\":%u,\"blocktime\":%u,\"pubval\":\"%s\",\"p2shval\":\"%s\",\"wifval\":\"%s\",\"isPoS\":%u,\"unitval\":\"%02x\",\"genesishash\":\"%s\",\"genesis\":{\"version\":1,\"timestamp\":%u,\"nBits\":\"%s\",\"nonce\":%d,\"merkle_root\":\"%s\"},\"genesisblock\":\"%s\"}",isPoS,chainname,symbol,magicstr,juint(valsobj,"port"),blocktime,pubstr,p2shstr,wifvalstr,juint(valsobj,"isPoS"),(nBits >> 24) & 0xff,hashstr,genesis.RO.timestamp,nbitstr,genesis.RO.nonce,bits256_str(str2,genesis.RO.merkle_root),blockstr);
+             free(blockstr);
+             printf("argbuf.(%s) hash.%s\n",argbuf,hashstr);
+             return(cJSON_Parse(argbuf));
+             } else return(cJSON_Parse("{\"error\":\"couldnt create block\"}"));
+             }
+             
+             cJSON *gecko_genesisissue(char *symbol,char *chainname,char *chainstr,cJSON *valsobj)
+             {
+             printf("issue blocktime.%d\n",juint(valsobj,"blocktime"));
+             return(gecko_genesisargs(symbol,chainname,chainstr,jstr(valsobj,"key"),jstr(valsobj,"genesishash"),jstr(valsobj,"genesisblock"),jstr(valsobj,"netmagic"),juint(valsobj,"port"),juint(valsobj,"blocktime"),jstr(valsobj,"nBits"),jstr(valsobj,"pubval"),jstr(valsobj,"p2shval"),jstr(valsobj,"wifval"),juint(valsobj,"isPoS")));
+             }*/
+            /*char *basilisk_respond_newgeckochain(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 prevhash,int32_t from_basilisk)
+             {
+             struct iguana_info *virt,*btcd; struct gecko_chain *chain; char fname[512],*symbol,*retstr,*chainstr,chainname[GECKO_MAXNAMELEN],*genesises; cJSON *chainjson,*retjson,*genesisjson; long filesize; FILE *fp;
+             if ( (chain= gecko_chain(myinfo,chainname,valsobj)) != 0 && (virt= chain->info) != 0 )
+             {
+             //printf("%s already exists\n",chainname);
+             return(clonestr("{\"error\":\"cant create duplicate geckochain\"}"));
+             }
+             if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(valsobj,"symbol")) != 0 && (chainstr= jstr(valsobj,"chain")) != 0 )
+             {
+             if ( (virt= basilisk_geckochain(myinfo,symbol,chainname,valsobj)) != 0 )
+             {
+             chain->info = virt;
+             if ( (retjson= gecko_genesisissue(symbol,chainname,chainstr,valsobj)) != 0 )
+             {
+             jaddstr(retjson,"result","success");
+             retstr = jprint(retjson,0);
+             sprintf(fname,"genesis/%s",symbol);
+             genesisjson = 0;
+             filesize = 0;
+             if ( (fp= fopen(fname,"wb")) != 0 )
+             {
+             if ( fwrite(retstr,1,strlen(retstr),fp) == strlen(retstr) )
+             {
+             if ( (genesises= OS_filestr(&filesize,"genesis/list")) != 0 )
+             {
+             genesisjson = cJSON_Parse(genesises);
+             free(genesises);
+             } else genesisjson = cJSON_CreateArray();
+             chainjson = cJSON_CreateObject();
+             jaddstr(chainjson,"chain",chainname);
+             jaddstr(chainjson,"symbol",symbol);
+             jaddstr(chainjson,"agent","basilisk");
+             jaddstr(chainjson,"method","newgeckochain");
+             jadd(chainjson,"vals",retjson);
+             jaddi(genesisjson,chainjson);
+             }
+             fclose(fp);
+             }
+             if ( genesisjson != 0 )
+             {
+             genesises = jprint(genesisjson,1);
+             if ( strlen(genesises) > filesize )
+             {
+             if ( (fp= fopen("genesis/list","wb")) != 0 )
+             {
+             fwrite(genesises,1,strlen(genesises),fp);
+             fclose(fp);
+             }
+             }
+             } else free_json(retjson);
+             return(retstr);
+             } else return(clonestr("{\"error\":\"couldnt create gecko genesis\"}"));
+             }
+             }
+             return(clonestr("{\"error\":-22}"));
+             }
+             
+             int32_t gecko_genesises(struct supernet_info *myinfo,cJSON *array)
+             {
+             char *chainstr,chainname[GECKO_MAXNAMELEN],*symbol; int32_t i,n,num=0; cJSON *item,*valsobj; struct iguana_info *btcd,*virt; struct gecko_chain *chain;
+             if ( (btcd= iguana_coinfind("BTCD")) == 0 )
+             return(0);
+             if ( array != 0 && (n= cJSON_GetArraySize(array)) != 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             item = jitem(array,i);
+             valsobj = jobj(item,"vals");
+             if ( valsobj != 0 && (chainstr= jstr(item,"chain")) != 0 && (symbol= jstr(item,"symbol")) != 0 )
+             {
+             if ( (chain= gecko_chain(myinfo,chainname,valsobj)) != 0 && (virt= chain->info) != 0 )
+             {
+             //printf("%s %s already exists\n",chainname,symbol);
+             continue;
+             }
+             if ( (virt= basilisk_geckochain(myinfo,symbol,chainname,valsobj)) != 0 )
+             {
+             myinfo->genesisresults++;
+             chain->info = virt;
+             num++;
+             }
+             }
+             }
+             }
+             return(num);
+             }
+             
+             char *basilisk_respond_geckogenesis(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 txid,int32_t from_basilisk)
+             {
+             long filesize;
+             return(OS_filestr(&filesize,"genesis/list"));
+             }*/
+            /*HASH_ARRAY_STRING(basilisk,sequence,hash,vals,hexstr)
+             {
+             return(basilisk_standardservice("SEQ",myinfo,hash,vals,hexstr,1));
+             }
+             
+             HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr)
+             {
+             char chainname[GECKO_MAXNAMELEN],magicstr[9],*retstr=0,*symbol,*chainstr; struct iguana_info *btcd; cJSON *argjson,*argvals,*retjson=0; int32_t i,isPoS; uint32_t magic; struct gecko_chain *chain;
+             if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 && (chainstr= jstr(vals,"chain")) != 0 )
+             {
+             if ( iguana_coinfind(symbol) == 0 && (chain= gecko_chain(myinfo,chainname,vals)) != 0 && chain->info != 0 )
+             {
+             printf("%s already exists\n",chainname);
+             return(clonestr("{\"error\":\"cant create duplicate geckochain\"}"));
+             }
+             if ( jobj(vals,"netmagic") == 0 )
+             {
+             OS_randombytes((void *)&magic,sizeof(magic));
+             for (i=0; i<sizeof(magic); i++)
+             ((uint8_t *)&magic)[i] |= 0x80;
+             init_hexbytes_noT(magicstr,(void *)&magic,sizeof(magic));
+             } else safecopy(magicstr,jstr(vals,"netmagic"),sizeof(magicstr));
+             if ( (isPoS= juint(vals,"isPoS")) == 0 )
+             isPoS = 1;
+             //printf("netmagic.%s\n",magicstr);
+             if ( (argjson= gecko_genesisjson(myinfo,btcd,isPoS,symbol,chainname,vals,magicstr,juint(vals,"blocktime"))) != 0 )
+             {
+             argvals = gecko_genesisissue(symbol,chainname,chainstr,argjson);
+             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+             {
+             basilisk_wait(myinfo,0);
+             retstr = basilisk_respond_newgeckochain(myinfo,"NEW",0,0,0,argvals,0,0,GENESIS_PUBKEY,0);
+             }
+             if ( retstr == 0 )
+             retstr = basilisk_standardservice("NEW",myinfo,GENESIS_PUBKEY,argvals,0,1);
+             free_json(argvals);
+             if ( (argvals= cJSON_Parse(retstr)) != 0 )
+             {
+             if ( jobj(argvals,"result") != 0 && strcmp(jstr(argvals,"result"),"success") == 0 )
+             {
+             if ( basilisk_geckochain(myinfo,symbol,chainname,argvals) != 0 )
+             jaddstr(argvals,"status","active");
+             } else jaddstr(argvals,"error","couldnt initialize geckochain");
+             free(retstr);
+             return(jprint(argvals,1));
+             }
+             if ( retjson != 0 )
+             free_json(retjson);
+             free_json(argvals);
+             return(retstr);
+             } else return(clonestr("{\"error\":\"couldnt create genesis_block\"}"));
+             }
+             return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko chain\"}"));
+             }*/
+                
+            /*HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr)
+             {
+             long filesize; int32_t i,j,n,m; struct iguana_info *btcd; char *ref,*symbol,*retstr=0; cJSON *item,*array = 0,*arrayB = 0; FILE *fp;
+             if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+             {
+             if ( (retstr= basilisk_standardservice("GEN",myinfo,hash,vals,hexstr,1)) != 0 )
+             {
+             arrayB = cJSON_Parse(retstr);
+             free(retstr);
+             }
+             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+             {
+             if ( (retstr= OS_filestr(&filesize,"genesis/list")) != 0 )
+             {
+             array = cJSON_Parse(retstr);
+             free(retstr);
+             }
+             if ( array == 0 )
+             array = arrayB;
+             else if ( arrayB != 0 )
+             {
+             if ( (n= cJSON_GetArraySize(array)) > 0 )
+             {
+             if ( (m= cJSON_GetArraySize(arrayB)) > 0 )
+             {
+             for (j=0; j<m; j++)
+             {
+             item = jitem(arrayB,j);
+             if ( jobj(item,"error") == 0 && (symbol= jstr(item,"symbol")) != 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             if ( (ref= jstr(jitem(array,i),"symbol")) != 0 && strcmp(symbol,ref) == 0 )
+             break;
+             }
+             if ( i == n )
+             jaddi(array,jduplicate(item));
+             }
+             }
+             }
+             }
+             free_json(arrayB);
+             }
+             } else array = arrayB;
+             if ( array != 0 )
+             {
+             gecko_genesises(myinfo,array);
+             retstr = jprint(array,1);
+             if ( (ref= OS_filestr(&filesize,"genesis/list")) == 0 || strlen(ref) < strlen(retstr) )
+             {
+             if ( (fp= fopen("genesis/list","wb")) != 0 )
+             {
+             fwrite(retstr,1,strlen(retstr),fp);
+             fclose(fp);
+             }
+             }
+             if ( ref != 0 )
+             free(ref);
+             return(retstr);
+             }
+             }
+             return(clonestr("{\"error\":\"need BTCD to get geckogenesis list\"}"));
+             }*/
+ 
+            /*char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             bits256 txhash2; uint32_t ipbits; int32_t i,n,len,siglen; uint8_t pubkey33[65],sig[128]; char *sigstr = 0,*retstr,pubstr[128];
+             if ( (sigstr= jstr(valsobj,"sig")) != 0 )
+             {
+             siglen = (int32_t)strlen(sigstr) >> 1;
+             if ( siglen < sizeof(sig) )
+             {
+             decode_hex(sig,siglen,sigstr);
+             vcalc_sha256(0,txhash2.bytes,data,datalen);
+             memset(pubkey33,0,33);
+             if ( bitcoin_recoververify(myinfo->ctx,"BTCD",sig,txhash2,pubkey33) == 0 )
+             {
+             // compare with existing
+             init_hexbytes_noT(pubstr,pubkey33,33);
+             printf(" verified relay data siglen.%d pub33.%s\n",siglen,pubstr);
+             if ( (retstr= basilisk_addrelay_info(myinfo,pubkey33,(uint32_t)calc_ipbits(remoteaddr),hash)) != 0 )
+             free(retstr);
+             n = (int32_t)(datalen / sizeof(uint32_t));
+             for (i=len=0; i<n; i++)
+             {
+             len += iguana_rwnum(0,(void *)&data[len],sizeof(uint32_t),&ipbits);
+             //printf("(%d %x) ",i,ipbits);
+             if ( (retstr= basilisk_addrelay_info(myinfo,0,ipbits,GENESIS_PUBKEY)) != 0 )
+             free(retstr);
+             }
+             } else printf("error relay data sig.%d didnt verify\n",siglen);
+             }
+             }
+             return(clonestr("{\"result\":\"processed relays\"}"));
+             }
+             
+             int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr)
+             {
+             int32_t i,siglen,len = 0; char strbuf[512]; bits256 txhash2; uint8_t sig[128],serialized[sizeof(myinfo->relaybits)]; cJSON *vals; bits256 hash; char *retstr,hexstr[sizeof(myinfo->relaybits)*2 + 1];
+             //printf("skip sending relays\n");
+             if ( 0 && myinfo != 0 )
+             {
+             vals = cJSON_CreateObject();
+             hash = myinfo->myaddr.persistent;
+             for (i=0; i<myinfo->numrelays; i++)
+             len += iguana_rwnum(1,&serialized[len],sizeof(uint32_t),&myinfo->relaybits[i]);
+             init_hexbytes_noT(hexstr,serialized,len);
+             //printf("send relays.(%s)\n",hexstr);
+             vcalc_sha256(0,txhash2.bytes,serialized,len);
+             if ( 0 && bits256_nonz(myinfo->persistent_priv) != 0 && (siglen= bitcoin_sign(myinfo->ctx,"BTCD",sig,txhash2,myinfo->persistent_priv,1)) > 0 )
+             {
+             init_hexbytes_noT(strbuf,sig,siglen);
+             jaddstr(vals,"sig",strbuf);
+             }
+             if ( (retstr= basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,0)) != 0 )
+             free(retstr);
+             free_json(vals);
+             return(0);
+             } else return(-1);
+             }
+             
+             char *basilisk_respond_relays(struct supernet_info *myinfo,char *CMD,void *_addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             uint32_t *ipbits = (uint32_t *)data; int32_t num,i,j,n = datalen >> 2;
+             for (i=num=0; i<n; i++)
+             {
+             for (j=0; j<myinfo->numrelays; j++)
+             if ( ipbits[i] == myinfo->relays[j].ipbits )
+             break;
+             if ( j == myinfo->numrelays )
+             {
+             num++;
+             printf("i.%d j.%d ensure new relay.(%s)\n",i,j,remoteaddr);
+             basilisk_ensurerelay(iguana_coinfind("BTCD"),ipbits[i]);
+             }
+             }
+             if ( num == 0 )
+             return(clonestr("{\"result\":\"no new relays found\"}"));
+             else return(clonestr("{\"result\":\"relay added\"}"));
+             }*/
+                
+            /*char *basilisk_checkrawtx(int32_t *timeoutmillisp,uint32_t *basilisktagp,char *symbol,cJSON *vals)
+             {
+             cJSON *addresses=0; char *changeaddr,*spendscriptstr; int32_t i,n;
+             *timeoutmillisp = -1;
+             changeaddr = jstr(vals,"changeaddr");
+             spendscriptstr = jstr(vals,"spendscript");
+             addresses = jarray(&n,vals,"addresses");
+             if ( addresses == 0 || changeaddr == 0 || changeaddr[0] == 0 )
+             return(clonestr("{\"error\":\"invalid addresses[] or changeaddr\"}"));
+             else
+             {
+             for (i=0; i<n; i++)
+             if ( strcmp(jstri(addresses,i),changeaddr) == 0 )
+             return(clonestr("{\"error\":\"changeaddr cant be in addresses[]\"}"));
+             }
+             if ( spendscriptstr != 0 && spendscriptstr[0] != 0 )
+             return(basilisk_check(timeoutmillisp,basilisktagp,symbol,vals));
+             else
+             {
+             printf("vals.(%s)\n",jprint(vals,0));
+             return(clonestr("{\"error\":\"missing spendscript\"}"));
+             }
+             }*/
+                
+            /*if ( (retstr= basilisk_checkrawtx(&timeoutmillis,(uint32_t *)&basilisktag,activecoin,vals)) == 0 )
+             {
+             return(basilisk_standardservice("RAW",myinfo,hash,vals,hexstr,1));
+             coin = iguana_coinfind(activecoin);
+             if ( coin != 0 && (ptr= basilisk_issuecmd(&Lptr,coin->basilisk_rawtx,coin->basilisk_rawtxmetric,myinfo,remoteaddr,basilisktag,activecoin,timeoutmillis,vals)) != 0 )
+             {
+             if ( (ptr->numrequired= juint(vals,"numrequired")) == 0 )
+             ptr->numrequired = 1;
+             //ptr->uniqueflag = 1;
+             //ptr->metricdir = -1;
+             return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,vals,ptr));
+             } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
+             } //else return(retstr);*/
 
 #endif
 #endif
