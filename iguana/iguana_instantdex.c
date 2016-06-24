@@ -1720,12 +1720,17 @@ TWO_STRINGS(InstantDEX,events,base,rel)
 
 ZERO_ARGS(InstantDEX,allcoins)
 {
-    return(clonestr("{\"result\":\"this will return array of available coins\"}"));
+    return(clonestr("{\"result\":\"[\"BTC\", \"BTCD\", \"LTC\", \"SYS\", \"ZEC\"]\"}"));
 }
 
 STRING_ARG(InstantDEX,available,source)
 {
-    return(clonestr("{\"result\":\"this will return available balance for source\"}"));
+    if ( (coin= iguana_coinfind(source)) != 0 )
+    {
+        if ( myinfo->expiration != 0 )
+            return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
+        else return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    } else return(clonestr("{\"error\":\"specified coin is not active\"}"));
 }
 
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount)
