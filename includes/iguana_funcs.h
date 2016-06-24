@@ -121,7 +121,7 @@ int32_t iguana_updatebundles(struct iguana_info *coin);
 void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag);
 void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjson);
 void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,int32_t *maxpeersp,int32_t *initialheightp,uint64_t *servicesp,int32_t *maxrequestsp,int32_t *maxbundlesp,cJSON *json);
-struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json);
+struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin);
 
 // init
 struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
@@ -245,7 +245,7 @@ char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *dest
 void peggy();
 int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);
 struct iguana_info *iguana_coinfind(char *symbol);
-struct iguana_info *iguana_coinadd(char *symbol,char *nane,cJSON *json);
+struct iguana_info *iguana_coinadd(char *symbol,char *nane,cJSON *json,int32_t virtcoin);
 struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int32_t extraflag);
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t delay);
@@ -259,7 +259,7 @@ char *iguana_coinjson(struct iguana_info *coin,char *method,cJSON *json);
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
 //int32_t btc_priv2wif(char *wifstr,uint8_t privkey[32],uint8_t addrtype);
 //int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
-int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json);
+int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin);
 int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1);
 int32_t iguana_jsonQ();
 int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr);

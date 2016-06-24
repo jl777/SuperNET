@@ -37,7 +37,7 @@ struct iguana_info *iguana_coinfind(char *symbol)
     return(coin);
 }
 
-struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
+struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_t virtcoin)
 {
     struct iguana_info *coin; uint32_t symbolcrc; char *privatechain; int32_t j; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
@@ -48,7 +48,7 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson)
             coin = mycalloc('C',1,sizeof(*coin));
             coin->blockspacesize = IGUANA_MAXPACKETSIZE + 8192;
             coin->blockspace = calloc(1,coin->blockspacesize);
-            if ( (privatechain= jstr(argjson,"geckochain")) != 0 && privatechain[0] != 0 )
+            if ( virtcoin != 0 || ((privatechain= jstr(argjson,"geckochain")) != 0 && privatechain[0] != 0) )
             {
                 myinfo->allcoins_numvirts++;
                 coin->virtualchain = 1;
@@ -574,9 +574,9 @@ void iguana_helper(void *arg)
         {
             //if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
             //    basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
-            if ( myinfo->allcoins_numvirts > 0 )
+            //if ( myinfo->allcoins_numvirts > 0 )
             {
-                maxmillis = (10000 / myinfo->allcoins_numvirts) + 1;
+                maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
                 n = 0;
                 //portable_mutex_lock(&myinfo->allcoins_mutex);
                 HASH_ITER(hh,myinfo->allcoins,virt,tmp)
@@ -832,14 +832,14 @@ void iguana_nameset(char name[64],char *symbol,cJSON *json)
     }
 }
 
-struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json)
+struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
     struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     iguana_nameset(name,symbol,json);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
-        coin = iguana_coinadd(symbol,name,json);
+        coin = iguana_coinadd(symbol,name,json,virtcoin);
     //printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
     mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 32;
     maxval = IGUANA_MAXPENDBUNDLES;
@@ -939,7 +939,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     return(coin);
 }
 
-int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
+int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin)
 {
     int32_t maxpeers,maphash,initialheight,minconfirms,maxrequests,maxbundles; char name[64]; int64_t maxrecvcache; uint64_t services; struct iguana_info **coins,*coin;
     if ( symbol == 0 )
@@ -948,7 +948,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
         return(0);
     iguana_nameset(name,symbol,json);
     printf("launchcoin.%s name.%s\n",symbol,name);
-    if ( (coin= iguana_coinadd(symbol,name,json)) == 0 )
+    if ( (coin= iguana_coinadd(symbol,name,json,virtcoin)) == 0 )
         return(-1);
     if ( myinfo->rpcsymbol[0] == 0 || iguana_coinfind(myinfo->rpcsymbol) == 0 )
         strcpy(myinfo->rpcsymbol,symbol);
@@ -959,7 +959,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json)
         else maphash = 0;
         iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,json);
         coins = mycalloc('A',1+1,sizeof(*coins));
-        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json)) != 0 )
+        if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json,virtcoin)) != 0 )
         {
             coins[0] = (void *)((long)1);
             coins[1] = coin;
@@ -1001,7 +1001,7 @@ void iguana_coins(void *arg)
             if ( (symbol= jstr(json,"coin")) != 0 && strncmp(symbol,"BTC",3) == 0 )
             {
                 coins = mycalloc('A',1+1,sizeof(*coins));
-                if ( (coins[1]= iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json)) != 0 )
+                if ( (coins[1]= iguana_setcoin(symbol,coins,0,0,0,0,0,0,0,0,json,0)) != 0 )
                 {
                     _iguana_calcrmd160(coins[1],&V);
                     coins[0] = (void *)((long)1);
@@ -1029,7 +1029,7 @@ void iguana_coins(void *arg)
                 continue;
             }
             iguana_coinargs(symbol,&maxrecvcache,&minconfirms,&maxpeers,&initialheight,&services,&maxrequests,&maxbundles,item);
-            coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item);
+            coins[1 + i] = coin = iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,item,0);
             if ( coin == 0 )
             {
                 printf("iguana_coins: couldnt initialize.(%s)\n",symbol);
