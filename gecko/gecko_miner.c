@@ -330,7 +330,9 @@ int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,
 
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33)
 {
-    struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t i,gap,txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
+    struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
+#ifndef __APPLE__
+    int32_t i,gap;
     if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
     {
         //printf("skip non-virtual chain.%s\n",virt->symbol);
@@ -349,6 +351,7 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         if ( i == gap )
             return;
     }
+#endif
     if ( virt->newblockstr != 0 )
     {
         gecko_blocksubmit(myinfo,btcd,virt,virt->newblockstr,virt->newblock.RO.hash2,virt->newblock.height);

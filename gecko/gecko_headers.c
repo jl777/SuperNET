@@ -96,7 +96,7 @@ void gecko_requesthdrs(struct supernet_info *myinfo,struct iguana_info *virt,int
         memset(zero.bytes,0,sizeof(zero));
         jaddstr(vals,"symbol",virt->symbol);
         jaddstr(vals,"type","HDR");
-        if ( (retstr= basilisk_standardservice("GET",myinfo,bp->hashes[0],vals,0,1)) != 0 )
+        if ( (retstr= basilisk_standardservice("GET",myinfo,bp->hashes[0],vals,0,0)) != 0 )
             free(retstr);
         free_json(vals);
     } else printf("dont have bundle needed\n");
