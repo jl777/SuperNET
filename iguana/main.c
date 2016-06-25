@@ -2270,7 +2270,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             myinfo->dirty = (uint32_t)time(NULL);
         }
         jaddstr(argjson,"passphrase",passphrase);
-        if ( (str= SuperNET_encryptjson(myinfo,coin,argjson,remoteaddr,password,myinfo->permanentfile,"")) != 0 )
+        if ( (str= SuperNET_encryptjson(myinfo,coin,argjson,remoteaddr,password,myinfo->permanentfile,myinfo->decryptstr == 0 ? "" : myinfo->decryptstr)) != 0 )
             free(str);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));

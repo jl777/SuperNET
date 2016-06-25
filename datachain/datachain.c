@@ -304,7 +304,6 @@ int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct igua
 
 void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int32_t height,bits256 txid,int32_t vout,uint8_t rmd160[20],int64_t value)
 {
-    return;
     if ( strcmp("BTC",coin->symbol) == 0 )
         datachain_update_txidvout(myinfo,ordered,coin,&myinfo->dPoW.BTC,DATACHAIN_ISBTC,height,txid,vout,rmd160,value);
     else if ( strcmp("BTCD",coin->symbol) == 0 )
@@ -314,7 +313,6 @@ void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct 
 
 int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout)
 {
-    return(0);
     if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
         crypto777_payment += value;
     else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
