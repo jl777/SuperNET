@@ -254,6 +254,7 @@ cJSON *iguana_voutjson(struct iguana_info *coin,struct iguana_msgvout *vout,int3
     uint8_t space[8192]; cJSON *addrs,*skey,*json = cJSON_CreateObject();
     vp = calloc(1,sizeof(*vp));
     jadd64bits(json,"satoshis",vout->value);
+    jaddnum(json,"value",dstr(vout->value));
     jaddnum(json,"n",txi);
     //"scriptPubKey":{"asm":"OP_DUP OP_HASH160 5f69cb73016264270dae9f65c51f60d0e4d6fd44 OP_EQUALVERIFY OP_CHECKSIG","reqSigs":1,"type":"pubkeyhash","addresses":["RHyh1V9syARTf2pyxibz7v27D5paBeWza5"]}
     if ( vout->pk_script != 0 && vout->pk_scriptlen*2+1 < sizeof(scriptstr) )
