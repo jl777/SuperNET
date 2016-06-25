@@ -331,9 +331,12 @@ int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,
 void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,uint8_t *minerpubkey33)
 {
     struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t i,gap,txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
-    if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
+    if ( virt->virtualchain == 0 )//|| myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
+    {
+        printf("skip non-virtual chain.%s\n",virt->symbol);
         return;
-    if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
+    }
+    if ( 0 && (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
     {
         if ( myinfo->numrelays < 3 )
             return;
@@ -362,7 +365,7 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     if ( (nBits= gecko_nBits(virt,&prevtimestamp,(void *)&newblock,GECKO_DIFFITERS)) != 0 )
     {
         newblock.RO.bits = nBits;
-        //printf("mine.%s nBits.%x ht.%d\n",virt->symbol,nBits,newblock.height);
+        printf("mine.%s nBits.%x ht.%d\n",virt->symbol,nBits,newblock.height);
         txptrs = gecko_mempool_txptrs(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height);
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
@@ -372,8 +375,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
                 free(blockstr);
             else
             {
-                virt->newblockstr = blockstr;
-                virt->newblock = newblock;
+                //virt->newblockstr = blockstr;
+                //virt->newblock = newblock;
+                free(blockstr);
             }
         }
         if ( txptrs != (void *)space )

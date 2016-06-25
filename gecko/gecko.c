@@ -1,3 +1,4 @@
+
 /******************************************************************************
  * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
@@ -44,22 +45,28 @@
 void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis)
 {
     char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
+    struct iguana_info *coin,*tmp;
+    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+    {
+        printf("%s ",coin->symbol);
+    }
+    printf("allcoins iteration\n");
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
     if ( hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
-            fprintf(stderr,"request headers\n");
+            fprintf(stderr,"request %s headers\n",virt->symbol);
             gecko_requesthdrs(myinfo,virt,hwmhdrsi);
             //fprintf(stderr,"R");
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( btcd->RELAYNODE != 0 && myinfo->RELAYID == 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
+    //if ( btcd->RELAYNODE != 0 && myinfo->RELAYID == 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
-        //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
+        fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
         gecko_miner(myinfo,btcd,virt,maxmillis,myinfo->persistent_pubkey33);
     }
 }

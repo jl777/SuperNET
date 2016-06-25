@@ -78,6 +78,12 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             //portable_mutex_lock(&myinfo->allcoins_mutex);
                 HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
+            struct iguana_info *virt,*tmp;
+            HASH_ITER(hh,myinfo->allcoins,virt,tmp)
+            {
+                printf("%s ",virt->symbol);
+            }
+            printf("allcoins\n");
             myinfo->allcoins_being_added = 0;
         }
         if ( (coin= iguana_coinfind(symbol)) == 0 )

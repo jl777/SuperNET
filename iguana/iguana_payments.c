@@ -773,7 +773,7 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
-    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace;
+    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_block *block; bits256 hash2;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
@@ -790,7 +790,15 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
                 free(extraspace);
                 free(txbytes);
                 if ( txobj != 0 )
+                {
+                    hash2 = iguana_blockhash(coin,height);
+                    jaddbits256(txobj,"blockhash",hash2);
+                    if ( (block= iguana_blockfind("rawtx",coin,hash2)) != 0 )
+                        jaddnum(txobj,"blocktime",block->RO.timestamp);
+                    jaddnum(txobj,"height",height);
+                    jaddnum(txobj,"confirmations",coin->blocks.hwmchain.height - height);
                     return(jprint(txobj,1));
+                }
             }
             jaddstr(retjson,"result",txbytes);
             char str[65]; printf("txbytes.(%s) len.%d (%s) %s\n",txbytes,len,jprint(retjson,0),bits256_str(str,checktxid));
