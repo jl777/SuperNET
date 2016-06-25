@@ -365,8 +365,8 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     if ( (nBits= gecko_nBits(virt,&prevtimestamp,(void *)&newblock,GECKO_DIFFITERS)) != 0 )
     {
         newblock.RO.bits = nBits;
-        printf("mine.%s nBits.%x ht.%d\n",virt->symbol,nBits,newblock.height);
-        txptrs = gecko_mempool_txptrs(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height);
+        printf("mine.%s nBits.%x ht.%d maxmillis.%d\n",virt->symbol,nBits,newblock.height);
+        txptrs = gecko_mempool_txptrs(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height,maxmillis);
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
         {
