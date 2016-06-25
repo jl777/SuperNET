@@ -47,7 +47,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
-    if ( hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( 0 && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
