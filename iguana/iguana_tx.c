@@ -350,7 +350,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
     jaddnum(json,"numvins",block->RO.numvins);
     jaddnum(json,"recvlen",block->RO.recvlen);
     jaddnum(json,"hdrsi",block->hdrsi);
-    jaddnum(json,"difficulty",block->PoW);
+    jaddnum(json,"difficulty",PoW_from_compact(block->RO.bits,coin->chain->unitval));
     jaddnum(json,"bundlei",block->bundlei);
     jaddnum(json,"mainchain",block->mainchain);
     jaddnum(json,"valid",block->valid);
