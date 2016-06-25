@@ -162,9 +162,9 @@ int32_t SuperNET_savejsonfile(char *finalfname,bits256 privkey,bits256 destpubke
     free(confstr);
     if ( retval == 0 && strcmp(destfname,finalfname) != 0 )
     {
-        char oldfname[1024];
-        if ( OS_filesize(finalfname) >= OS_filesize(destfname) )
-            printf("skip replacing (%s) since new one is smaller\n",finalfname);
+        char oldfname[1024]; int64_t fsize,dsize;
+        if ( (fsize= OS_filesize(finalfname)) >= (dsize= OS_filesize(destfname)) )
+            printf("skip replacing (%s) since new one is smaller %lld vs %lld\n",finalfname,(long long)fsize,(long long)dsize);
         else
         {
             strcpy(oldfname,finalfname), strcat(oldfname,".old");
