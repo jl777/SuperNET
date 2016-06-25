@@ -333,7 +333,7 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t i,gap,txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
     if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
     {
-        printf("skip non-virtual chain.%s\n",virt->symbol);
+        //printf("skip non-virtual chain.%s\n",virt->symbol);
         return;
     }
     if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
