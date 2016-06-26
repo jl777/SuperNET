@@ -210,7 +210,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
                     //printf("FOUND NONCE\n");
                     break;
                 }
-                if ( virt->blocks.hwmchain.RO.timestamp != 0 && (i & 0xff) == 0xff && OS_milliseconds() > expiration )
+                if ( newblock->height != 0 && OS_milliseconds() > expiration )
                 {
                     //printf("time limit exceeded %u\n",virt->blocks.hwmchain.RO.timestamp);
                     free(coinbasestr);
