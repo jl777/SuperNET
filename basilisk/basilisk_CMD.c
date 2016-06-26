@@ -40,8 +40,8 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
 
 static int _decreasing_ipbits(const void *a,const void *b)
 {
-#define uint32_a (*(struct basilisk_relay **)a)->ipbits
-#define uint32_b (*(struct basilisk_relay **)b)->ipbits
+#define uint32_a (*(struct basilisk_relay *)a).ipbits
+#define uint32_b (*(struct basilisk_relay *)b).ipbits
 	if ( uint32_b > uint32_a )
 		return(1);
 	else if ( uint32_b < uint32_a )
