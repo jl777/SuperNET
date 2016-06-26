@@ -297,7 +297,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                 break;
             dest = &coin->RTramchain;
             B = RAMCHAIN_PTR(rdata,Boffset);
-            //B = (void *)(long)((long)rdata + rdata->Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
                 iguana_bundlehashadd(coin,bp,bundlei,block);

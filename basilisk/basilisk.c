@@ -588,7 +588,7 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,n,blocklen,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
+    int32_t diff,i,n,blocklen,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7],str[65]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
     for (i=0; i<myinfo->numrelays; i++)
@@ -613,8 +613,8 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
     {
         memcpy(symbol,&data[len],6), len += 6;
         len += iguana_rwvarint32(0,&data[len],&height);
-        printf("(%s %d) ",symbol,height);
-        if ( addr != 0 && (virt= iguana_coinfind(symbol)) != 0 && virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
+        printf("(%s %d).%p ",symbol,height,addr);
+        if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 && virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
         {
             if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,virt->blocks.hwmchain.RO.hash2,0)) > 0 )
             {
@@ -624,7 +624,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
                 basilisk_blocksubmit(myinfo,btcd,virt,blockstr,virt->blocks.hwmchain.RO.hash2,height);
                 if ( allocptr != 0 )
                     free(allocptr);
-            }
+            } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,virt->blocks.hwmchain.RO.hash2));
         }
     }
     for (i=0; i<datalen; i++)
