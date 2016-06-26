@@ -187,7 +187,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                             break;
                     if ( s == myinfo->numrelays )
                     {
-                        printf("skip non-relay.(%s)\n",addr->ipaddr);
+                        //printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
                     }
                     printf("send to other relay.(%s)\n",addr->ipaddr);

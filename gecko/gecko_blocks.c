@@ -147,6 +147,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
                 virt->current = bp;
                 virt->RTramchain = bp->ramchain;
                 iguana_RTramchainalloc("RTbundle",virt,bp);
+                iguana_update_balances(virt);
                 iguana_realtime_update(myinfo,virt);
                 if ( (block->height % virt->chain->bundlesize) == 13 && hdrsi > 0 && (prevbp= virt->bundles[hdrsi - 1]) != 0 && prevbp->emitfinish == 0 && prevbp->numsaved >= prevbp->n )
                 {

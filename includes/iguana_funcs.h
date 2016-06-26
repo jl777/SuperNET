@@ -527,6 +527,7 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp);
+void iguana_update_balances(struct iguana_info *coin);
 
 #include "../includes/iguana_api.h"
 
