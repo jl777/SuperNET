@@ -306,7 +306,7 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
 int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
-    printf("submit.(%s)\n",blockstr);
+    //printf("submit.(%s)\n",blockstr);
     if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) <= 0 )
     {
         if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < 0 )//(myinfo->numrelays >> 1) )
@@ -342,14 +342,15 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     {
         //if ( myinfo->numrelays < 3 )
         //    return;
-        gap = (int32_t)(time(NULL) - virt->backstoptime) / virt->chain->estblocktime;
-        for (i=1; i<gap; i++)
+        gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timstamp) / 10;//virt->chain->estblocktime;
+        for (i=0; i<gap; i++)
         {
             if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )
                 break;
         }
         if ( i == gap )
             return;
+        printf("backup block generator RELAYID.%d gap.%d ht.%d i.%d num.%d\n",myinfo->RELAYID,gap,virt->blocks.hwmchain.height,i,myinfo->numrelays);
     }
 #endif
     /*if ( virt->newblockstr != 0 )

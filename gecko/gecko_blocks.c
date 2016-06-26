@@ -162,12 +162,10 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
 char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2,int32_t verifyonly)
 {
     struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65]; bits256 txid; struct iguana_msgtx *txs;
-    printf("gecko_blockarrived\n");
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&virt->TXMEM);
     if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
     {
-        printf("gentxarray datalen.%d\n",datalen);
         if ( bits256_cmp(hash2,txdata.zblock.RO.hash2) != 0 )
         {
             printf("gecko_blockarrived: mismatched hash2\n");
@@ -297,7 +295,6 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
     int32_t i,datalen,num,numerrs,numresults=0; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
     if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
     {
-        printf("call gecko_blockarrived\n");
         if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,0)) != 0 )
         {
             if ( (retjson= cJSON_Parse(str)) != 0 )
