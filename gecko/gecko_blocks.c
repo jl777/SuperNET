@@ -292,10 +292,10 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 
 int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
-    int32_t i,datalen,num,numerrs,numresults=-1; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
+    int32_t i,datalen,num,numerrs,numresults=0; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
     if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
     {
-        if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,1)) != 0 )
+        if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,0)) != 0 )
         {
             if ( (retjson= cJSON_Parse(str)) != 0 )
             {
@@ -307,7 +307,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                     jaddnum(valsobj,"fanout",-1);
                     jaddnum(valsobj,"height",height);
                     jaddstr(valsobj,"symbol",virt->symbol);
-                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+                    if ( 0 && (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
                     {
                         if ( (retarray= cJSON_Parse(str2)) != 0 )
                         {

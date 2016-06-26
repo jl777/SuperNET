@@ -145,7 +145,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     {
         if ( destipaddr[0] == 0 )
             destipaddr = 0; // broadcast
-        else if ( strcmp(destipaddr,"127.0.0.1") == 0 )
+        else if ( strcmp(destipaddr,"127.0.0.1") == 0 || strcmp(destipaddr,myinfo->ipaddr) == 0 )
         {
             printf("return after locally basilisk_msgprocess\n");
             hash = GENESIS_PUBKEY;

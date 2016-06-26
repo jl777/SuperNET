@@ -307,9 +307,9 @@ int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
     //printf("submit.(%s)\n",blockstr);
-    if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) == 0 )
+    if ( (peers= virt->peers) != 0 && (numranked= peers->numranked) > 0 )
     {
-        if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < (myinfo->numrelays >> 1) )
+        if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < 0 )//(myinfo->numrelays >> 1) )
             return(-1);
     }
     else // physical node for geckochain
@@ -341,9 +341,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
     {
         //if ( myinfo->numrelays < 3 )
-            return;
+        //    return;
         gap = (int32_t)(time(NULL) - virt->backstoptime) / virt->chain->estblocktime;
-        for (i=0; i<gap; i++)
+        for (i=1; i<gap; i++)
         {
             if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )
                 break;
@@ -352,14 +352,14 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
             return;
     }
 #endif
-    if ( virt->newblockstr != 0 )
+    /*if ( virt->newblockstr != 0 )
     {
         gecko_blocksubmit(myinfo,btcd,virt,virt->newblockstr,virt->newblock.RO.hash2,virt->newblock.height);
         memset(&virt->newblock,0,sizeof(virt->newblock));
         free(virt->newblockstr);
         virt->newblockstr = 0;
         return;
-    }
+    }*/
     memset(&newblock,0,sizeof(newblock));
     newblock.height = virt->blocks.hwmchain.height + 1;
     newblock.RO.prev_block = virt->blocks.hwmchain.RO.hash2;
