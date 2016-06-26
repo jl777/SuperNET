@@ -73,7 +73,8 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
         ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-        if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
+        if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= coin->RTramchain.H.data) != 0))) && i < tx->numvins )
+        //if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
         {
             S = RAMCHAIN_PTR(rdata,Soffset);
             X = RAMCHAIN_PTR(rdata,Xoffset);
