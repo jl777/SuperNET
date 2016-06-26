@@ -228,31 +228,6 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     return(n);
 }
 
-void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
-{
-    uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
-    if ( encrypted != 0 )
-    {
-        printf("encrypted p2p\n");
-        memset(senderpub.bytes,0,sizeof(senderpub));
-        if ( (data= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
-        {
-            printf("basilisk_p2p decrytion error\n");
-            return;
-        } else datalen = msglen;
-    }
-    if ( senderip != 0 && senderip[0] != 0 && strcmp(senderip,"127.0.0.1") != 0 )
-        ipbits = (uint32_t)calc_ipbits(senderip);
-    else ipbits = 0;
-    len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-    //int32_t i; for (i=0; i<datalen-len; i++)
-    //    printf("%02x",data[len+i]);
-    printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
-    basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
-    if ( ptr != 0 )
-        free(ptr);
-}
-
 void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
     uint8_t *data,space[4096],*allocptr; struct iguana_info *virt; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
@@ -551,6 +526,7 @@ int32_t basilisk_relay_ping(struct supernet_info *myinfo,uint8_t *data,int32_t m
 int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
 {
     uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits;
+    ipbits = rp->ipbits;
     if ( maxlen < sizeof(ipbits)+1 )
     {
         printf("unping error maxlen.%d is too small\n",maxlen);
@@ -684,10 +660,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     }
     else
     {
-        if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
-        {
-            basilisk_respond_ping(myinfo,senderipbits,data,datalen);
-        }
+        printf("unexpected binary packet datalen.%d\n",datalen);
         return;
     }
     for (i=flag=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++) // iguana node
@@ -754,6 +727,41 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     if ( coin != 0 )
         coin->basilisk_busy = 0;
     myinfo->basilisk_busy = 0;
+}
+
+void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
+{
+    uint32_t ipbits,basilisktag; int32_t msglen,len=0; void *ptr = 0; uint8_t space[8192]; bits256 senderpub; struct supernet_info *myinfo = _myinfo;
+    if ( encrypted != 0 )
+    {
+        printf("encrypted p2p\n");
+        memset(senderpub.bytes,0,sizeof(senderpub));
+        if ( (data= SuperNET_deciphercalc(&ptr,&msglen,myinfo->privkey,senderpub,data,datalen,space,sizeof(space))) == 0 )
+        {
+            printf("basilisk_p2p decrytion error\n");
+            return;
+        } else datalen = msglen;
+    }
+    if ( senderip != 0 && senderip[0] != 0 && strcmp(senderip,"127.0.0.1") != 0 )
+        ipbits = (uint32_t)calc_ipbits(senderip);
+    else ipbits = myinfo->myaddr.myipbits;
+    if ( type[0] == 'P' && type[1] == 'I' && type[2] == 'N' )
+    {
+        if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
+        {
+            basilisk_respond_ping(myinfo,ipbits,data,datalen);
+        }
+    }
+    else
+    {
+        len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
+        //int32_t i; for (i=0; i<datalen-len; i++)
+        //    printf("%02x",data[len+i]);
+        printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+        basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
+    }
+    if ( ptr != 0 )
+        free(ptr);
 }
 
 void basilisks_loop(void *arg)
