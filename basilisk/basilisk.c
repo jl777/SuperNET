@@ -531,6 +531,13 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
+char *basilisk_respond_ping(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+{
+    char *retstr=0;
+    printf("PING got %d from (%s)\n",datalen,remoteaddr!=0?remoteaddr:"");
+    return(retstr);
+}
+
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
@@ -690,21 +697,23 @@ void basilisks_loop(void *arg)
                 }
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            if ( myinfo->RELAYID >= 0 )
+            if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
                 struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,j,datalen=0; uint8_t data[1024];
+                data[datalen++] = myinfo->numrelays;
+                for (j=0; j<myinfo->numrelays; j++)
+                    data[datalen++] = myinfo->relays[j].status;
                 for (i=0; i<myinfo->numrelays; i++)
                 {
                     rp = &myinfo->relays[i];
-                    if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
+                    addr = 0;
+                    if ( rp->ipbits == myinfo->myaddr.myipbits )
+                        basilisk_msgprocess(myinfo,0,0,"PIN",0,&data[sizeof(struct iguana_msghdr)],datalen);
+                    else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
                     {
-                        data[datalen++] = myinfo->numrelays;
-                        for (j=0; j<myinfo->numrelays; j++)
-                            data[datalen++] = myinfo->relays[j].status;
-                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNET",datalen) != datalen )
+                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNETPIN",datalen) != datalen )
                             printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
                         else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
-                        flag++;
                     }
                 }
             }
@@ -713,8 +722,7 @@ void basilisks_loop(void *arg)
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
-        if ( flag == 0 )
-            usleep(1000000);
+        usleep(100000);
     }
 }
 
