@@ -341,13 +341,13 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                 free_json(retjson);
             }
             free(str);
-#ifndef __APPLE__
+/*#ifndef __APPLE__
             if ( numresults >= (myinfo->numrelays >> 1) )
 #endif
             {
                 if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,0)) != 0 )
                     free(str);
-            }
+            }*/
         }
     }
     if ( allocptr != 0 )

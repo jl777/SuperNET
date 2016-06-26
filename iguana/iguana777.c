@@ -553,8 +553,8 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
 void iguana_helper(void *arg)
 {
     static int32_t maxhelperid;
-    cJSON *argjson=0; int32_t iter,n,j,maxmillis,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
-    struct iguana_helper *ptr; struct iguana_info *coin,*btcd,*virt,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    cJSON *argjson=0; int32_t iter,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    struct iguana_helper *ptr; struct iguana_info *coin,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
     if ( helperid > maxhelperid )
@@ -576,27 +576,6 @@ void iguana_helper(void *arg)
     while ( 1 )
     {
         flag = 0;
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
-        {
-            //if ( helperid == 0 && myinfo->numrelays > 0 && myinfo->genesisresults == 0 )
-            //    basilisk_geckogenesis(myinfo,btcd,0,0,GENESIS_PUBKEY,0,0);
-            //if ( myinfo->allcoins_numvirts > 0 )
-            {
-                maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
-                n = 0;
-                //portable_mutex_lock(&myinfo->allcoins_mutex);
-                HASH_ITER(hh,myinfo->allcoins,virt,tmp)
-                {
-                    if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
-                    {
-                        //fprintf(stderr,"h");
-                        if ( (n++ % IGUANA_NUMHELPERS) == helperid )
-                            gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
-                    }
-                }
-                //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            }
-        }
         //iguana_jsonQ(); cant do this here
         allcurrent = 2;
         polltimeout = 100;

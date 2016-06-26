@@ -519,7 +519,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
 
 void basilisks_loop(void *arg)
 {
-    struct basilisk_item *tmp,*pending; int32_t iter,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_item *tmp,*pending; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -533,6 +533,21 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->basilisk_mutex);
+        //if ( myinfo->allcoins_numvirts > 0 )
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+        {
+            maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
+            //portable_mutex_lock(&myinfo->allcoins_mutex);
+            HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
+            {
+                if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+                {
+                    gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
+                }
+            }
+            //portable_mutex_unlock(&myinfo->allcoins_mutex);
+        }
+
         //fprintf(stderr,"i ");
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
