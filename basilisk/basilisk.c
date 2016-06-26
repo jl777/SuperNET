@@ -580,16 +580,17 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     }
     for (i=0; i<myinfo->numrelays; i++)
         datalen += basilisk_relay_ping(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
-    for (i=0; i<datalen; i++)
-        printf("%02x",data[i]);
-    printf(" <- output ping\n");
+    //for (i=0; i<datalen; i++)
+    //    printf("%02x",data[i]);
+    //printf(" <- output ping\n");
     return(datalen);
 }
 
-void basilisk_respond_ping(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
+void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,n,len = 0; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
+    int32_t diff,i,n,blocklen,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
+    btcd = iguana_coinfind("BTCD");
     for (i=0; i<myinfo->numrelays; i++)
     {
         rp = &myinfo->relays[i];
@@ -613,6 +614,18 @@ void basilisk_respond_ping(struct supernet_info *myinfo,uint32_t senderipbits,ui
         memcpy(symbol,&data[len],6), len += 6;
         len += iguana_rwvarint32(0,&data[len],&height);
         printf("(%s %d) ",symbol,height);
+        if ( addr != 0 && (virt= iguana_coinfind(symbol)) != 0 && virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
+        {
+            if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,virt->blocks.hwmchain.RO.hash2,0)) > 0 )
+            {
+                char strbuf[8192],*blockstr,*allocptr = 0;
+                printf("RELAYID.%d send block.%d -> (%s)\n",myinfo->RELAYID,blocklen,addr->ipaddr);
+                blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),virt->blockspace,blocklen);
+                basilisk_blocksubmit(myinfo,btcd,virt,blockstr,virt->blocks.hwmchain.RO.hash2,height);
+                if ( allocptr != 0 )
+                    free(allocptr);
+            }
+        }
     }
     for (i=0; i<datalen; i++)
         printf("%02x",data[i]);
@@ -785,7 +798,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     {
         if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
         {
-            basilisk_respond_ping(myinfo,ipbits,data,datalen);
+            basilisk_respond_ping(myinfo,_addr,ipbits,data,datalen);
         }
     }
     else
@@ -839,7 +852,7 @@ void basilisks_loop(void *arg)
                     rp = &myinfo->relays[i];
                     addr = 0;
                     if ( rp->ipbits == myinfo->myaddr.myipbits )
-                        basilisk_respond_ping(myinfo,myinfo->myaddr.myipbits,&data[sizeof(struct iguana_msghdr)],datalen);
+                        basilisk_respond_ping(myinfo,0,myinfo->myaddr.myipbits,&data[sizeof(struct iguana_msghdr)],datalen);
                     else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
                     {
                         if ( iguana_queue_send(addr,0,data,"SuperNETPIN",datalen) <= 0 )
