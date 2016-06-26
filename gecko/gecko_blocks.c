@@ -147,7 +147,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
             {
                 bp->numsaved++;
                 virt->current = bp;
-                virt->RTramchain = bp->ramchain;
+                iguana_RTspendvectors(virt,bp);
                 iguana_RTramchainalloc("RTbundle",virt,bp);
                 iguana_update_balances(virt);
                 iguana_realtime_update(myinfo,virt);
