@@ -186,7 +186,11 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         if ( myinfo->relays[s].ipbits == addr->ipbits )
                             break;
                     if ( s == myinfo->numrelays )
+                    {
+                        printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
+                    }
+                    printf("send to other relay.(%s)\n",addr->ipaddr);
                 }
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
