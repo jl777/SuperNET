@@ -93,7 +93,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        printf("ALLOC RTramchain\n");
+        printf("ALLOC RTramchain.(%s)\n",fname);
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
@@ -207,7 +207,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->peers == 0 )
+    if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
     offset = (strcmp("BTC",coin->symbol) != 0);
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )

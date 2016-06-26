@@ -364,7 +364,7 @@ void iguana_parseline(struct iguana_info *coin,int32_t iter,FILE *fp)
     }
     if ( iter == 1 && bits256_nonz(lastbundle) != 0 )
     {
-        printf("parseline ht.%d\n",lastheight);
+        printf("%s parseline ht.%d\n",coin->symbol,lastheight);
         iguana_initfinal(coin,lastbundle);
     }
 }
