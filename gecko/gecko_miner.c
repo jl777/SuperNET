@@ -306,8 +306,8 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
 int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
     uint8_t *data,space[16384],*allocptr=0; int32_t i,len,numranked=0; struct iguana_peers *peers; struct iguana_peer *addr;
-    //printf("submit.(%s)\n",blockstr);
-    if ( (peers= virt->peers) != 0 && (numranked= peers->numranked) > 0 )
+    printf("submit.(%s)\n",blockstr);
+    if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) <= 0 )
     {
         if ( basilisk_blocksubmit(myinfo,btcd,virt,blockstr,hash2,height) < 0 )//(myinfo->numrelays >> 1) )
             return(-1);
