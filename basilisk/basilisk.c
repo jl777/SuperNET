@@ -180,9 +180,17 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             addr = &coin->peers->active[i];
             if ( addr->usock >= 0 )
             {
+                if ( strcmp(type,"BLK") == 0 )
+                {
+                    for (s=0; s<myinfo->numrelays; s++)
+                        if ( myinfo->relays[s].ipbits == addr->ipbits )
+                            break;
+                    if ( s == myinfo->numrelays )
+                        continue;
+                }
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
-                        break;
+                        continue;
                 //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {

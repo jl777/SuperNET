@@ -307,9 +307,9 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                     jaddnum(valsobj,"fanout",-1);
                     jaddnum(valsobj,"height",height);
                     jaddstr(valsobj,"symbol",virt->symbol);
-                    if ( 0 && (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
                     {
-                        if ( (retarray= cJSON_Parse(str2)) != 0 )
+                        if ( 0 && (retarray= cJSON_Parse(str2)) != 0 )
                         {
                             numerrs = numresults = 0;
                             if ( (num= cJSON_GetArraySize(retarray)) > 0 )
