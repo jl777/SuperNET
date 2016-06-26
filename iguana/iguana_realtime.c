@@ -262,9 +262,12 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                     bp->issued[0] = 0;
                     hash2 = bp->hashes[0];
                     //char str[65]; printf("RT[0] [%d:%d] %s %p\n",bp->hdrsi,0,bits256_str(str,hash2),block);
-                    addr = coin->peers->ranked[rand() % 8];
-                    if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 )
-                        iguana_sendblockreqPT(coin,addr,bp,0,hash2,0);
+                    if ( coin->peers != 0 )
+                    {
+                        addr = coin->peers->ranked[rand() % 8];
+                        if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 )
+                            iguana_sendblockreqPT(coin,addr,bp,0,hash2,0);
+                    }
                 }
             }
         }
@@ -272,7 +275,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         bp->lastRT = (uint32_t)time(NULL);
-        if ( coin->RTheight <= coin->longestchain-offset && coin->peers->numranked > 0 && time(NULL) > coin->RThdrstime+60 )
+        if ( coin->peers != 0 && coin->RTheight <= coin->longestchain-offset && coin->peers->numranked > 0 && time(NULL) > coin->RThdrstime+60 )
         {
             iguana_RThdrs(coin,bp,coin->peers->numranked);
             coin->RThdrstime = bp->lastRT;
@@ -317,9 +320,12 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
                             //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
-                            addr = coin->peers->ranked[rand() % 8];
-                            if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
-                                iguana_send(coin,addr,serialized,len);
+                            if ( coin->peers != 0 )
+                            {
+                                addr = coin->peers->ranked[rand() % 8];
+                                if ( addr != 0 && addr->usock >= 0 && addr->dead == 0 && (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
+                                    iguana_send(coin,addr,serialized,len);
+                            }
                             coin->RTgenesis = 0;
                         }
                         if ( bits256_nonz(hash2) != 0 )
