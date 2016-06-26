@@ -319,7 +319,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             if ( coin->virtualchain != 0 )
                 ;
             if ( block != 0 )
-                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local");
+                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s bp.%p rdata.%p\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local",bp,bp!=0?bp->ramchain.H.data:0);
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
     } //else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));

@@ -128,7 +128,10 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
     } else return(-1);
     addr = &virt->internaladdr;
     if ( gecko_ensurebundle(virt,block,block->height,depth) == 0 )
+    {
+        printf("no bundle for %s.%d\n",virt->symbol,block->height);
         return(-1);
+    }
     if ( iguana_ramchain_data(virt,addr,txdata,txarray,block->RO.txn_count,data,datalen) >= 0 )
     {
         block->fpipbits = (uint32_t)addr->ipbits;
@@ -155,7 +158,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
             //printf("created block.%d [%d:%d] %d\n",block->height,bp!=0?bp->hdrsi:-1,block->height%virt->chain->bundlesize,bp->numsaved);
         }
         return(block->height);
-    }
+    } else printf("Error updating virt ramchain\n");
     return(-1);
 }
 
