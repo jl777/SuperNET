@@ -2386,11 +2386,13 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
             numexternaltxids *= .9;
         }
         iguana_meminit(mem,coin->symbol,0,allocsize + 65536*3,0);
+        printf("%s meminit %lld\n",coin->symbol,(long long)mem->totalsize);
     }
     if ( hashmem->ptr == 0 )
     {
         hashsize = iguana_hashmemsize(numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace);
         iguana_meminit(hashmem,coin->symbol,0,hashsize + 65536*3,0);
+        printf("%s hash meminit %lld\n",coin->symbol,(long long)hashmem->totalsize);
     }
     if ( iguana_ramchain_init(fname,ramchain,mem,hashmem,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,1,numblocks,coin->chain->zcash) > 0 )
     {
@@ -2399,6 +2401,7 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
         ramchain->H.scriptoffset = 1;
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
         iguana_ramchain_extras(coin,ramchain,hashmem,0);
+        printf("%s ramchaininit %p\n",coin->symbol,ramchain->H.data);
     }
     if ( rdata != 0 )
         return(rdata->allocsize);
