@@ -564,7 +564,7 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     {
         HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
         {
-            if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+            if ( virt != 0 && virt->virtualchain != 0 )
             {
                 if ( iter == 0 )
                     n++;
@@ -844,7 +844,7 @@ void basilisks_loop(void *arg)
                     {
                         if ( iguana_queue_send(addr,0,data,"SuperNETPIN",datalen) <= 0 )
                             printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-                        else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
+                        //else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
                     }
                 }
             }
