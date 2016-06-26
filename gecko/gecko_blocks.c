@@ -166,6 +166,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
     iguana_memreset(&virt->TXMEM);
     if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
     {
+        printf("gentxarray datalen.%d\n",datalen);
         if ( bits256_cmp(hash2,txdata.zblock.RO.hash2) != 0 )
         {
             printf("gecko_blockarrived: mismatched hash2\n");
@@ -259,7 +260,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
             }
         }
         return(clonestr("{\"error\":\"gecko orphan block\"}"));
-    }
+    } else printf("blockarrived error generating txlist\n");
     return(clonestr("{\"error\":\"gecko block didnt decode\"}"));
 }
 
