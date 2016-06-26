@@ -222,10 +222,12 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
-    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65];
+    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
-        if ( (block= bp->blocks[bundlei]) != 0 && bp->ramchain.H.data != 0 )
+        if ( (rdata= bp->ramchain.H.data) == 0 && bp == coin->current )
+            rdata = coin->RTramchain.H.data;
+        if ( (block= bp->blocks[bundlei]) != 0 && rdata != 0 )
         {
             iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;
@@ -319,7 +321,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             if ( coin->virtualchain != 0 )
                 ;
             if ( block != 0 )
-                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s bp.%p rdata.%p\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local",bp,bp!=0?bp->ramchain.H.data:0);
+                printf("iguana_peerblockrequest: block.%p ht.%d mainchain.%d [%d:%d] from %s bp.%p rdata.%p\n",block,block->height,block->mainchain,bp->hdrsi,bundlei,addr!=0?addr->ipaddr:"local",bp,bp!=0?rdata:0);
             else printf("iguana_peerblockrequest: block.%p [%d:%d]\n",block,bp->hdrsi,bundlei);
         }
     } //else printf("iguana_peerblockrequest: cant find %s\n",bits256_str(str,hash2));

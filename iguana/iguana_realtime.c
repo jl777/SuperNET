@@ -93,8 +93,8 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
     }
     if ( coin->RTramchain.H.data == 0 )
     {
-        printf("ALLOC RTramchain.(%s)\n",fname);
         iguana_ramchainopen(fname,coin,dest,&coin->RTmem,&coin->RThashmem,bp->bundleheight,bp->hashes[0]);
+        printf("ALLOC RTramchain.(%s) RTrdata %p rdata.%p\n",fname,coin->RTramchain.H.data,bp->ramchain.H.data);
         dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
         dest->externalind = dest->H.stacksize = 0;
         dest->H.scriptoffset = 1;

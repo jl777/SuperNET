@@ -2401,7 +2401,7 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
         ramchain->H.scriptoffset = 1;
         _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
         iguana_ramchain_extras(coin,ramchain,hashmem,0);
-        printf("%s ramchaininit %p\n",coin->symbol,ramchain->H.data);
+        printf("%s ramchaininit %p ramchain.%p\n",coin->symbol,ramchain->H.data,ramchain);
     }
     if ( rdata != 0 )
         return(rdata->allocsize);
