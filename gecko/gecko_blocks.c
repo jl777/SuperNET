@@ -142,6 +142,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
             iguana_blockzcopy(virt->chain->zcash,(void *)&virt->blocks.hwmchain,block);
             hdrsi = block->height / virt->chain->bundlesize;
             block->hdrsi = hdrsi;
+            block->height =
             block->bundlei = (block->height % virt->chain->bundlesize);
             if ( (bp= virt->bundles[hdrsi]) != 0 )
             {
@@ -212,7 +213,10 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
             if ( (prev= iguana_blockfind("geckoprev",virt,prev->RO.prev_block)) == 0 )
                 return(clonestr("{\"error\":\"gecko block is orphan\"}"));
             if ( i == 0 )
+            {
                 adjacent = prev->height;
+                block->height = (prev->height + 1);
+            }
             printf("i.%d prevht.%d adjacent.%d hwm.%d\n",i,prev->height,adjacent,virt->blocks.hwmchain.height);
             if ( prev->height >= 0 && prev->mainchain != 0 )
             {
@@ -259,6 +263,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                     txdata.zblock.mainchain = block->mainchain = 1;
                     if ( gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,data,datalen,i+1,verifyonly) >= 0 )
                     {
+                        block->txvalid = block->valid = 1;
                         if ( block->height > virt->longestchain )
                             virt->longestchain = block->height;
                         virt->backstoptime = (uint32_t)time(NULL);
