@@ -794,7 +794,7 @@ void basilisks_loop(void *arg)
                     rp = &myinfo->relays[i];
                     addr = 0;
                     if ( rp->ipbits == myinfo->myaddr.myipbits )
-                        basilisk_msgprocess(myinfo,0,0,"PIN",0,&data[sizeof(struct iguana_msghdr)],datalen);
+                        basilisk_respond_ping(myinfo,myinfo->myaddr.myipbits,&data[sizeof(struct iguana_msghdr)],datalen);
                     else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
                     {
                         if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNETPIN",datalen) <= 0 )
