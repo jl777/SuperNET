@@ -535,7 +535,7 @@ int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t
     datalen = iguana_rwnum(1,&data[datalen],sizeof(ipbits),&ipbits);
     pingdelay = data[datalen++];
     if ( myinfo->relays[i].ipbits != ipbits )
-        printf("unping warning reported.[%d] ipbits %u != %u\n",i,myinfo->relays[i].ipbits,ipbits);
+        printf("unping warning reported.[%d] ipbits %08x != %08x\n",i,myinfo->relays[i].ipbits,ipbits);
     for (j=0; j<myinfo->numrelays; j++)
         if ( myinfo->relays[j].ipbits == ipbits )
         {
@@ -805,7 +805,7 @@ void basilisks_loop(void *arg)
                         basilisk_respond_ping(myinfo,myinfo->myaddr.myipbits,&data[sizeof(struct iguana_msghdr)],datalen);
                     else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
                     {
-                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNETPIN",datalen) <= 0 )
+                        if ( iguana_queue_send(addr,0,data,"SuperNETPIN",datalen) <= 0 )
                             printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
                         else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
                     }
