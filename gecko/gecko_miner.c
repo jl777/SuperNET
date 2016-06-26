@@ -378,9 +378,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
                 free(blockstr);
             else
             {
-                virt->newblockstr = blockstr;
-                virt->newblock = newblock;
-                //free(blockstr);
+                //virt->newblockstr = blockstr;
+                //virt->newblock = newblock;
+                free(blockstr);
             }
         } else printf("didnt find %s.block\n",virt->symbol);
         if ( txptrs != (void *)space )

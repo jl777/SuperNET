@@ -711,7 +711,7 @@ void basilisks_loop(void *arg)
                         basilisk_msgprocess(myinfo,0,0,"PIN",0,&data[sizeof(struct iguana_msghdr)],datalen);
                     else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
                     {
-                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNETPIN",datalen) != datalen )
+                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNETPIN",datalen) <= 0 )
                             printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
                         else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
                     }
