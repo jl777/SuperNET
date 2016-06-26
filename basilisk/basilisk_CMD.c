@@ -91,7 +91,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
-    qsort(&myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_decreasing_ipbits);
+    qsort(myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_decreasing_ipbits);
     for (i=0; i<myinfo->numrelays; i++)
     {
         char ipaddr[64];
