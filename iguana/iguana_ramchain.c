@@ -599,7 +599,9 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
 #endif
         } else s->scriptpos = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
-        //char str[65]; printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),s->scriptfpos,s->vinscriptlen);
+        char str[65];
+        if ( coin->virtualchain != 0 )
+            printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),(uint32_t)s->scriptpos,s->vinscriptlen);
     }
     return(spendind);
 }
