@@ -22,6 +22,7 @@
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
+#define BASILISK_MAXRELAYS 64
 
 #define BASILISK_MAXFUTUREBLOCK 60
 //#define BASILISK_MAXBLOCKLAG 600
@@ -45,10 +46,16 @@ struct basilisk_info
     struct basilisk_value values[8192]; int32_t numvalues;
 };
 
+struct basilisk_relaystatus
+{
+    uint8_t pingdelay;
+};
+
 struct basilisk_relay
 {
-    bits256 pubkey; uint32_t ipbits;
-    uint8_t status,pubkey33[33];
+    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping;
+    uint8_t pubkey33[33];
+    struct basilisk_relaystatus direct,reported[BASILISK_MAXRELAYS];
 };
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen);

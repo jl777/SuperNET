@@ -16,8 +16,6 @@
 #ifndef H_IGUANASTRUCTS_H
 #define H_IGUANASTRUCTS_H
 
-#define IGUANA_MAXRELAYS 64
-
 struct iguana_thread
 {
     struct queueitem DL;
@@ -415,7 +413,7 @@ struct iguana_info
     struct iguana_monitorinfo monitoring[256];
     struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
-    struct iguana_blocks blocks; void *mempool; void *mempools[IGUANA_MAXRELAYS];
+    struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -468,7 +466,7 @@ struct supernet_info
     portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex;
     void *ctx;
     struct delayedPoW_info dPoW;
-    uint32_t relaybits[IGUANA_MAXRELAYS]; struct basilisk_relay relays[IGUANA_MAXRELAYS];
+    struct basilisk_relay relays[BASILISK_MAXRELAYS];
     int32_t numrelays,RELAYID;
     // compatibility
     bits256 pangea_category,instantdex_category;

@@ -57,9 +57,9 @@ void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bi
     for (; i<myinfo->numrelays; i+=n)
     {
         printf("mempool_sync.%d\n",i);
-        if ( (addr= iguana_peerfindipbits(coin,myinfo->relaybits[i],1)) != 0 )
+        if ( (addr= iguana_peerfindipbits(coin,myinfo->relays[i].ipbits,1)) != 0 )
         {
-            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,myinfo->relaybits[i])) != 0 )
+            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,myinfo->relays[i].ipbits)) != 0 )
             {
                 for (j=num=0; j<pool->numtx; j++)
                 {

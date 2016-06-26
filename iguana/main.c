@@ -2088,7 +2088,7 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
             strcpy(myinfo->ipaddr,ipaddr);
             myinfo->myaddr.myipbits = (uint32_t)calc_ipbits(ipaddr);
             for (i=0; i<myinfo->numrelays; i++)
-                if ( myinfo->relaybits[i] == myinfo->myaddr.myipbits )
+                if ( myinfo->relays[i].ipbits == myinfo->myaddr.myipbits )
                 {
                     myinfo->RELAYID = i;
                     break;

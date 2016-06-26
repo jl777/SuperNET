@@ -514,7 +514,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                 pending->numresults++;
             } else printf("couldnt find issued.%u\n",basilisktag);
         }
-    } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
+    }
 }
 
 void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
@@ -531,11 +531,74 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-char *basilisk_respond_ping(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relaystatus *reported,uint8_t pingdelay)
 {
-    char *retstr=0;
-    printf("PING got %d from (%s)\n",datalen,remoteaddr!=0?remoteaddr:"");
-    return(retstr);
+    if ( reported != 0 )
+    {
+        reported->pingdelay = pingdelay;
+    }
+    return(0);
+}
+
+int32_t basilisk_relay_ping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp)
+{
+    int32_t datalen = 0;
+    datalen = iguana_rwnum(1,&data[datalen],sizeof(rp->ipbits),&rp->ipbits);
+    data[datalen++] = rp->direct.pingdelay;
+    return(datalen);
+}
+
+int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
+{
+    uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits;
+    datalen = iguana_rwnum(1,&data[datalen],sizeof(ipbits),&ipbits);
+    pingdelay = data[datalen++];
+    if ( myinfo->relays[i].ipbits != ipbits )
+        printf("unping warning reported.[%d] ipbits %u != %u\n",i,myinfo->relays[i].ipbits,ipbits);
+    for (j=0; j<myinfo->numrelays; j++)
+        if ( myinfo->relays[j].ipbits == ipbits )
+        {
+            datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,&rp->reported[j],pingdelay);
+            return(datalen);
+        }
+    datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,0,pingdelay);
+    return(datalen);
+}
+
+int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
+{
+    int32_t i,datalen = 0;
+    data[datalen++] = myinfo->numrelays;
+    for (i=0; i<myinfo->numrelays; i++)
+        datalen += basilisk_relay_ping(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
+    return(datalen);
+}
+
+void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t *data,int32_t datalen)
+{
+    int32_t diff,len = 0; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
+    if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0 )
+        ipbits = myinfo->myaddr.myipbits;
+    else ipbits = (uint32_t)calc_ipbits(remoteaddr);
+    for (i=0; i<myinfo->numrelays; i++)
+    {
+        rp = &myinfo->relays[i];
+        rp->direct.pingdelay = 0;
+        if ( rp->ipbits == ipbits )
+            rp->lastping = now;
+        if ( rp->lastping == now )
+            rp->direct.pingdelay = 1;
+        else
+        {
+            diff = (now - rp->lastping);
+            if ( diff < 0xff )
+                rp->direct.pingdelay = diff;
+        }
+    }
+    numrelays = data[len++];
+    for (i=0; i<numrelays; i++)
+        len += basilisk_relay_unping(myinfo,&data[len],datalen-len,rp,i);
+    printf("PING got %d, processed.%d from (%s)\n",datalen,len,remoteaddr!=0?remoteaddr:"");
 }
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
@@ -543,7 +606,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
-        { (void *)"PIN", &basilisk_respond_ping },
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
         // gecko chains
@@ -601,7 +663,15 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             basilisk_result(myinfo,remoteaddr,basilisktag,valsobj,data,datalen);
             return;
         }
-    } else return;
+    }
+    else
+    {
+        if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
+        {
+            basilisk_respond_ping(myinfo,remoteaddr,data,datalen);
+        }
+        return;
+    }
     for (i=flag=0; i<sizeof(basilisk_services)/sizeof(*basilisk_services); i++) // iguana node
         if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
         {
@@ -699,10 +769,8 @@ void basilisks_loop(void *arg)
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
-                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,j,datalen=0; uint8_t data[1024];
-                data[datalen++] = myinfo->numrelays;
-                for (j=0; j<myinfo->numrelays; j++)
-                    data[datalen++] = myinfo->relays[j].status;
+                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,datalen=0; uint8_t data[32768];
+                datalen = basilisk_relays_ping(myinfo,data,sizeof(data));
                 for (i=0; i<myinfo->numrelays; i++)
                 {
                     rp = &myinfo->relays[i];

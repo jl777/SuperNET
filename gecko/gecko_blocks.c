@@ -31,7 +31,7 @@ void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
     }
     if ( virt->RELAYNODE != 0 )
     {
-        for (i=0; i<IGUANA_MAXRELAYS; i++)
+        for (i=0; i<BASILISK_MAXRELAYS; i++)
         {
             if ( (pool= virt->mempools[i]) != 0 && (n= pool->numtx) != 0 )
             {

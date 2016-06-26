@@ -26,7 +26,7 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
             addr->isrelay = 1;
             myinfo->RELAYID = -1;
             for (i=0; i<myinfo->numrelays; i++)
-                if ( myinfo->relaybits[i] == myinfo->myaddr.myipbits )
+                if ( myinfo->relays[i].ipbits == myinfo->myaddr.myipbits )
                 {
                     myinfo->RELAYID = i;
                     break;
@@ -36,6 +36,29 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
     return(addr);
+}
+
+static int _decreasing_ipbits(const void *a,const void *b)
+{
+#define uint32_a (*(struct basilisk_relay **)a)->ipbits
+#define uint32_b (*(struct basilisk_relay **)b)->ipbits
+	if ( uint32_b > uint32_a )
+		return(1);
+	else if ( uint32_b < uint32_a )
+		return(-1);
+	return(0);
+#undef uint32_a
+#undef uint32_b
+}
+
+void basilisk_relay_remap(struct supernet_info *myinfo,struct basilisk_relay *rp)
+{
+    int32_t i; struct basilisk_relaystatus tmp[BASILISK_MAXRELAYS];
+    // need to verify this works
+    for (i=0; i<myinfo->numrelays; i++)
+        tmp[i] = rp->reported[i];
+    for (i=0; i<myinfo->numrelays; i++)
+        rp->reported[myinfo->relays[i].relayid] = tmp[myinfo->relays[i].oldrelayid];
 }
 
 char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
@@ -60,21 +83,27 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     if ( i >= sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         i = (rand() % (sizeof(myinfo->relays)/sizeof(*myinfo->relays)));
     printf("add relay[%d] <- %x\n",i,ipbits);
+    for (i=0; i<myinfo->numrelays; i++)
+        myinfo->relays[i].oldrelayid = i;
     rp = &myinfo->relays[i];
     rp->ipbits = ipbits;
+    rp->relayid = myinfo->numrelays;
     basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
-    for (i=0; i<myinfo->numrelays; i++)
-        memcpy(&myinfo->relaybits[i],&myinfo->relays[i].ipbits,sizeof(myinfo->relaybits[i]));
-    revsort32(&myinfo->relaybits[0],myinfo->numrelays,sizeof(myinfo->relaybits[0]));
+    qsort(&myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_decreasing_ipbits);
     for (i=0; i<myinfo->numrelays; i++)
     {
         char ipaddr[64];
-        expand_ipbits(ipaddr,myinfo->relaybits[i]);
+        expand_ipbits(ipaddr,myinfo->relays[i].ipbits);
+        if ( myinfo->myaddr.myipbits == myinfo->relays[i].ipbits )
+            myinfo->RELAYID = i;
+        myinfo->relays[i].relayid = i;
         printf("%s ",ipaddr);
     }
-    printf("sorted\n");
+    printf("sorted MYRELAYID.%d\n",myinfo->RELAYID);
+    for (i=0; i<myinfo->numrelays; i++)
+        basilisk_relay_remap(myinfo,&myinfo->relays[i]);
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
