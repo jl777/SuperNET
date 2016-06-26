@@ -690,21 +690,22 @@ void basilisks_loop(void *arg)
                 }
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-        }
-        if ( myinfo->RELAYID >= 0 )
-        {
-            struct basilisk_relay *rp; int32_t i,j,datalen=0; uint8_t data[1024];
-            for (i=0; i<myinfo->numrelays; i++)
+            if ( myinfo->RELAYID >= 0 )
             {
-                rp = &myinfo->relays[i];
-                if ( rp->addr != 0 && rp->addr->usock >= 0 )
+                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,j,datalen=0; uint8_t data[1024];
+                for (i=0; i<myinfo->numrelays; i++)
                 {
-                    data[datalen++] = myinfo->numrelays;
-                    for (j=0; j<myinfo->numrelays; j++)
-                        data[datalen++] = myinfo->relays[j].status;
-                    if ( iguana_queue_send(rp->addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNET",datalen) != datalen )
-                        printf("error sending %d to (%s)\n",datalen,rp->addr->ipaddr);
-                    else printf("sent %d to (%s)\n",datalen,rp->addr->ipaddr);
+                    rp = &myinfo->relays[i];
+                    if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
+                    {
+                        data[datalen++] = myinfo->numrelays;
+                        for (j=0; j<myinfo->numrelays; j++)
+                            data[datalen++] = myinfo->relays[j].status;
+                        if ( iguana_queue_send(addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNET",datalen) != datalen )
+                            printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
+                        else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
+                        flag++;
+                    }
                 }
             }
         }

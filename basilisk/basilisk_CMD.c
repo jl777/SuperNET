@@ -62,7 +62,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     printf("add relay[%d] <- %x\n",i,ipbits);
     rp = &myinfo->relays[i];
     rp->ipbits = ipbits;
-    rp->addr = basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
+    basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
     for (i=0; i<myinfo->numrelays; i++)

@@ -47,7 +47,7 @@ struct basilisk_info
 
 struct basilisk_relay
 {
-    bits256 pubkey; uint32_t ipbits; struct iguana_peer *addr;
+    bits256 pubkey; uint32_t ipbits;
     uint8_t status,pubkey33[33];
 };
 
