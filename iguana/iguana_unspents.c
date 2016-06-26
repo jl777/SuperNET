@@ -167,12 +167,9 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 numpkinds = rdata->numpkinds;
                 PKbits = RAMCHAIN_PTR(rdata,PKoffset);
                 P = RAMCHAIN_PTR(rdata,Poffset);
-                //PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
-                //P = (void *)(long)((long)rdata + rdata->Poffset);
                 if ( bp == coin->current )
                     ACCTS = ramchain->A;
                 else ACCTS = RAMCHAIN_PTR(rdata,Aoffset);
-                //ACCTS = (void *)(long)((long)rdata + rdata->Aoffset);
                 if ( (pkind= iguana_sparseaddpk(PKbits,rdata->pksparsebits,rdata->numpksparse,rmd160,P,0,ramchain)) > 0 && pkind < numpkinds )
                 {
                     *ramchainp = ramchain;
