@@ -517,56 +517,6 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     } else printf("null vals.(%s) or no hexmsg.%p\n",jprint(vals,0),vals);
 }
 
-void basilisks_loop(void *arg)
-{
-    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_item *tmp,*pending; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
-    iter = 0;
-    while ( 1 )
-    {
-        portable_mutex_lock(&myinfo->basilisk_mutex);
-        HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
-        {
-            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60) )
-            {
-                HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                free(pending);
-            }
-        }
-        portable_mutex_unlock(&myinfo->basilisk_mutex);
-        //if ( myinfo->allcoins_numvirts > 0 )
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
-        {
-            maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
-            //portable_mutex_lock(&myinfo->allcoins_mutex);
-            HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
-            {
-                if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
-                {
-                    gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
-                }
-            }
-            //portable_mutex_unlock(&myinfo->allcoins_mutex);
-        }
-
-        //fprintf(stderr,"i ");
-        //for (i=0; i<IGUANA_MAXCOINS; i++)
-        //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
-        //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
-        if ( flag == 0 )
-            usleep(1000000);
-    }
-}
-
-void basilisks_init(struct supernet_info *myinfo)
-{
-    //iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
-    //iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
-    portable_mutex_init(&myinfo->allcoins_mutex);
-    portable_mutex_init(&myinfo->basilisk_mutex);
-    portable_mutex_init(&myinfo->gecko_mutex);
-    myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
-}
-
 void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     if ( coin != 0 )
@@ -586,7 +536,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
-        { (void *)"RUN", &basilisk_respond_dispatch },   // higher level protocol handler, pass through
+        { (void *)"PIN", &basilisk_respond_ping },
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
         // gecko chains
@@ -711,4 +661,68 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     myinfo->basilisk_busy = 0;
 }
 
+void basilisks_loop(void *arg)
+{
+    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_item *tmp,*pending; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    iter = 0;
+    while ( 1 )
+    {
+        portable_mutex_lock(&myinfo->basilisk_mutex);
+        HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
+        {
+            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60) )
+            {
+                HASH_DELETE(hh,myinfo->basilisks.issued,pending);
+                free(pending);
+            }
+        }
+        portable_mutex_unlock(&myinfo->basilisk_mutex);
+        //if ( myinfo->allcoins_numvirts > 0 )
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+        {
+            maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
+            //portable_mutex_lock(&myinfo->allcoins_mutex);
+            HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
+            {
+                if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
+                {
+                    gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
+                }
+            }
+            //portable_mutex_unlock(&myinfo->allcoins_mutex);
+        }
+        if ( myinfo->RELAYID >= 0 )
+        {
+            struct basilisk_relay *rp; int32_t i,j,datalen=0; uint8_t data[1024];
+            for (i=0; i<myinfo->numrelays; i++)
+            {
+                rp = &myinfo->relays[i];
+                if ( rp->addr != 0 && rp->addr->usock >= 0 )
+                {
+                    data[datalen++] = myinfo->numrelays;
+                    for (j=0; j<myinfo->numrelays; j++)
+                        data[datalen++] = myinfo->relays[j].status;
+                    if ( iguana_queue_send(rp->addr,0,&data[sizeof(struct iguana_msghdr)],"SuperNET",datalen) != datalen )
+                        printf("error sending %d to (%s)\n",datalen,rp->addr->ipaddr);
+                    else printf("sent %d to (%s)\n",datalen,rp->addr->ipaddr);
+                }
+            }
+        }
+        //fprintf(stderr,"i ");
+        //for (i=0; i<IGUANA_MAXCOINS; i++)
+        //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
+        //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
+        if ( flag == 0 )
+            usleep(1000000);
+    }
+}
 
+void basilisks_init(struct supernet_info *myinfo)
+{
+    //iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
+    //iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
+    portable_mutex_init(&myinfo->allcoins_mutex);
+    portable_mutex_init(&myinfo->basilisk_mutex);
+    portable_mutex_init(&myinfo->gecko_mutex);
+    myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
+}
