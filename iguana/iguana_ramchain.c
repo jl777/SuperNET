@@ -81,6 +81,7 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
 
 void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block,struct iguana_ramchain * ramchain)
 {
+    printf("iguana_blocksetcounters set 1st txidind.%u <- ht.%d\n",ramchain->H.txidind,block->height);
     block->RO.firsttxidind = ramchain->H.txidind;
     block->RO.firstvout = ramchain->H.unspentind;
     block->RO.firstvin = ramchain->H.spendind;

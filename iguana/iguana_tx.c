@@ -234,7 +234,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             total = iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB,max);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
-                static int counter;
+                //static int counter;
                 //if ( counter++ < 100 )
                     printf("iguana_peerblockrequest: blockhash mismatch ht.%d\n",bp->bundleheight+bundlei);
                 return(-1);
