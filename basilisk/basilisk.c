@@ -582,13 +582,10 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     return(datalen);
 }
 
-void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t *data,int32_t datalen)
+void basilisk_respond_ping(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,n,len = 0; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
-    if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0 )
-        ipbits = myinfo->myaddr.myipbits;
-    else ipbits = (uint32_t)calc_ipbits(remoteaddr);
-    expand_ipbits(ipbuf,ipbits);
+    int32_t diff,i,n,len = 0; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t now = (uint32_t)time(NULL);
+    expand_ipbits(ipbuf,senderipbits);
     for (i=0; i<datalen; i++)
         printf("%02x",data[i]);
     printf(" <- input ping from.(%s)\n",ipbuf);
@@ -596,7 +593,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t
     {
         rp = &myinfo->relays[i];
         rp->direct.pingdelay = 0;
-        if ( rp->ipbits == ipbits )
+        if ( rp->ipbits == senderipbits )
             rp->lastping = now;
         if ( rp->lastping == now )
             rp->direct.pingdelay = 1;
@@ -616,7 +613,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t
             break;
         len += n;
     }
-    printf("PING got %d, processed.%d from (%s)\n",datalen,len,remoteaddr!=0?remoteaddr:"");
+    printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
 }
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
@@ -659,6 +656,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"BAL", &basilisk_respond_balances },
     };
     symbol = "BTCD";
+    if ( senderipbits == 0 )
+        expand_ipbits(remoteaddr,myinfo->myaddr.myipbits);
+    else expand_ipbits(remoteaddr,senderipbits);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
         //printf("MSGVALS.(%s)\n",(char *)data);
@@ -686,7 +686,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     {
         if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
         {
-            basilisk_respond_ping(myinfo,remoteaddr,data,datalen);
+            basilisk_respond_ping(myinfo,senderipbits,data,datalen);
         }
         return;
     }
