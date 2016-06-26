@@ -534,8 +534,6 @@ int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t
     }
     datalen = iguana_rwnum(1,&data[datalen],sizeof(ipbits),&ipbits);
     pingdelay = data[datalen++];
-    if ( myinfo->relays[i].ipbits != ipbits )
-        printf("unping warning reported.[%d] ipbits %08x != %08x\n",i,myinfo->relays[i].ipbits,ipbits);
     for (j=0; j<myinfo->numrelays; j++)
         if ( myinfo->relays[j].ipbits == ipbits )
         {
@@ -792,6 +790,7 @@ void basilisks_loop(void *arg)
                     gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
                 }
             }
+            printf("my RELAYID.%d\n",myinfo->RELAYID);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
