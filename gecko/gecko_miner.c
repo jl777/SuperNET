@@ -245,6 +245,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
                 {
                     init_hexbytes_noT(&blockstr[len],gecko_txdata(memtx),memtx->datalen);
                     len += memtx->datalen << 1;
+                    printf(" txi.%d (%s)\n",i,&blockstr[len]);
                 }
             }
         } else printf("nonce failure\n");
@@ -378,7 +379,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
         {
-            char str[65]; printf(">>>>>>>>>>>>>>>>> MINED %s.%x %s %u %d %.8f %d\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward),newblock.RO.txn_count);
+            char str[65];
+            printf("tx0.%s\n",bits256_str(str,newblock.RO.merkle_root));
+            printf(">>>>>>>>>>>>>>>>> MINED %s.%x %s %u %d %.8f %d\n",virt->symbol,newblock.RO.bits,bits256_str(str,newblock.RO.hash2),newblock.RO.timestamp,newblock.height,dstr(reward),newblock.RO.txn_count);
             if ( gecko_blocksubmit(myinfo,btcd,virt,blockstr,newblock.RO.hash2,newblock.height) == 0 )
                 free(blockstr);
             else
