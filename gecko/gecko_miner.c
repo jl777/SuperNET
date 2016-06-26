@@ -17,9 +17,13 @@
 
 uint32_t gecko_earliest_blocktime(int32_t estblocktime,uint32_t prevtimestamp)
 {
+    uint32_t timestamp,now = (uint32_t)time(NULL);
     if ( prevtimestamp == 0 )
-        prevtimestamp = (uint32_t)time(NULL);
-    return(prevtimestamp + ((estblocktime << 1) / 3));
+        prevtimestamp = now;
+    timestamp = (prevtimestamp + ((estblocktime << 1) / 3));
+    if ( timestamp < now )
+        timestamp = now;
+    return(timestamp);
 }
 
 int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int32_t datalen,uint32_t nBits,uint32_t timestamp,uint32_t prevtimestamp)
