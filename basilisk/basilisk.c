@@ -781,7 +781,7 @@ void basilisks_loop(void *arg)
         //if ( myinfo->allcoins_numvirts > 0 )
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
-            maxmillis = (10000 / (myinfo->allcoins_numvirts + 1)) + 1;
+            maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
             //portable_mutex_lock(&myinfo->allcoins_mutex);
             HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
             {
