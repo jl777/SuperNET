@@ -576,15 +576,22 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     data[datalen++] = myinfo->numrelays;
     for (i=0; i<myinfo->numrelays; i++)
         datalen += basilisk_relay_ping(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- output ping\n");
     return(datalen);
 }
 
 void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,n,len = 0; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
+    int32_t diff,n,len = 0; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
     if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0 )
         ipbits = myinfo->myaddr.myipbits;
     else ipbits = (uint32_t)calc_ipbits(remoteaddr);
+    expand_ipbits(ipbuf,ipbits);
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- input ping from.(%s)\n",ipbuf);
     for (i=0; i<myinfo->numrelays; i++)
     {
         rp = &myinfo->relays[i];
