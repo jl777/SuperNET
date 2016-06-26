@@ -236,7 +236,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
         {
             blockstr = calloc(1,strlen(coinbasestr) + (totaltxlen+n)*2 + 1);
             init_hexbytes_noT(blockstr,serialized,n);
-            //printf("block.(%s) coinbase.(%s) lens.%ld\n",blockstr,coinbasestr,(strlen(blockstr)+strlen(coinbasestr))/2);
+            printf("block.(%s) coinbase.(%s) lens.%ld\n",blockstr,coinbasestr,(strlen(blockstr)+strlen(coinbasestr))/2);
             strcat(blockstr,coinbasestr);
             len = (int32_t)strlen(blockstr);
             for (i=0; i<txn_count; i++)
