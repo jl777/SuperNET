@@ -161,9 +161,9 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
                         return(tx);
                     printf("error getting txidind.%d + i.%d from hdrsi.%d\n",txidind,i,block->hdrsi);
                     return(0);
-                } // else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
+                } else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
-        } //else printf("blocktx illegal height.%d\n",block->height);
+        } else printf("blocktx illegal height.%d\n",block->height);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
     return(0);
 }
@@ -235,7 +235,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 static int counter;
-                if ( counter++ < 100 )
+                //if ( counter++ < 100 )
                     printf("iguana_peerblockrequest: blockhash mismatch ht.%d\n",bp->bundleheight+bundlei);
                 return(-1);
             }
@@ -247,9 +247,9 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                         total += len;
                     else
                     {
-                        static int counter;
+                        //static int counter;
                         char str[65],str2[65];
-                        if ( counter++ < 100 )
+                        //if ( counter++ < 100 )
                         {
                             for (i=0; i<len; i++)
                                 printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
@@ -260,7 +260,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                 }
                 else
                 {
-                    //printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
                     break;
                 }
             }
