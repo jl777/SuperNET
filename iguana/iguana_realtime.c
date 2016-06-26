@@ -305,7 +305,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
                 iguana_bundlehashadd(coin,bp,bundlei,block);
             //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
-            if ( coin->RTdatabad == 0 && block != 0 && bits256_nonz(block->RO.prev_block) != 0 )
+            if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();

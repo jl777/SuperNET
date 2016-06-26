@@ -141,6 +141,8 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
         {
             iguana_blockzcopy(virt->chain->zcash,(void *)&virt->blocks.hwmchain,block);
             hdrsi = block->height / virt->chain->bundlesize;
+            block->hdrsi = hdrsi;
+            block->bundlei = (block->height % virt->chain->bundlesize);
             if ( (bp= virt->bundles[hdrsi]) != 0 )
             {
                 bp->numsaved++;

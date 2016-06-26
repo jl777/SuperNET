@@ -929,7 +929,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
 
 int32_t iguana_spendvectorsaves(struct iguana_info *coin)
 {
-    int32_t i,j,n,iter; struct iguana_bundle *bp;
+    int32_t i,j,n,iter; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     if ( coin->spendvectorsaved > 1 )
         return(0);
     coin->spendvectorsaved = 1;
@@ -941,6 +941,8 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         {
             if ( (bp= coin->bundles[i]) != 0 )
             {
+                rdata = (bp == coin->current) ? bp->ramchain.H.data : coin->RTramchain.H.data;
+                ramchain = (bp == coin->current) ? &bp->ramchain : &coin->RTramchain;
                 if ( iter == 0 )
                 {
                     if ( bp->tmpspends != 0 )//bp->ramchain.Xspendinds == 0 &&
@@ -953,9 +955,9 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
                             }
                     }
                 }
-                else if ( iguana_spendvectorsave(coin,bp,&bp->ramchain,bp->tmpspends,bp->numtmpspends,bp->ramchain.H.data->numspends) == 0 )
+                else if ( rdata != 0 && iguana_spendvectorsave(coin,bp,ramchain,bp->tmpspends,bp->numtmpspends,rdata->numspends) == 0 )
                 {
-                    if ( bp->tmpspends != 0 && bp->numtmpspends > 0 && bp->tmpspends != bp->ramchain.Xspendinds )
+                    if ( bp->tmpspends != 0 && bp->numtmpspends > 0 && bp->tmpspends != ramchain->Xspendinds )
                         myfree(bp->tmpspends,sizeof(*bp->tmpspends) * bp->numtmpspends);
                     bp->numtmpspends = 0;
                     bp->tmpspends = 0;
