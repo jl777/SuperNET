@@ -551,6 +551,11 @@ int32_t basilisk_relay_ping(struct supernet_info *myinfo,uint8_t *data,int32_t m
 int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
 {
     uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits;
+    if ( maxlen < sizeof(ipbits)+1 )
+    {
+        printf("unping error maxlen.%d is too small\n",maxlen);
+        return(-1);
+    }
     datalen = iguana_rwnum(1,&data[datalen],sizeof(ipbits),&ipbits);
     pingdelay = data[datalen++];
     if ( myinfo->relays[i].ipbits != ipbits )
@@ -576,7 +581,7 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,len = 0; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
+    int32_t diff,n,len = 0; struct basilisk_relay *rp; uint8_t numrelays; uint32_t i,ipbits,now = (uint32_t)time(NULL);
     if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp("127.0.0.1",remoteaddr) == 0 )
         ipbits = myinfo->myaddr.myipbits;
     else ipbits = (uint32_t)calc_ipbits(remoteaddr);
@@ -597,7 +602,13 @@ void basilisk_respond_ping(struct supernet_info *myinfo,char *remoteaddr,uint8_t
     }
     numrelays = data[len++];
     for (i=0; i<numrelays; i++)
-        len += basilisk_relay_unping(myinfo,&data[len],datalen-len,rp,i);
+    {
+        if ( len > datalen )
+            break;
+        if ( (n= basilisk_relay_unping(myinfo,&data[len],datalen-len,rp,i)) < 0 )
+            break;
+        len += n;
+    }
     printf("PING got %d, processed.%d from (%s)\n",datalen,len,remoteaddr!=0?remoteaddr:"");
 }
 
@@ -770,7 +781,7 @@ void basilisks_loop(void *arg)
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
                 struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,datalen=0; uint8_t data[32768];
-                datalen = basilisk_relays_ping(myinfo,data,sizeof(data));
+                datalen = basilisk_relays_ping(myinfo,&data[sizeof(struct iguana_msghdr)],sizeof(data)-sizeof(struct iguana_msghdr));
                 for (i=0; i<myinfo->numrelays; i++)
                 {
                     rp = &myinfo->relays[i];
