@@ -124,13 +124,34 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
     free_json(valsobj);
 }
 
+int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,bits256 *hashp,char *src,uint64_t *amountp,char *dest,uint32_t *timestampp,char *message)
+{
+    int32_t len = 0;
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(*timestampp),timestampp);
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(*hashp),hashp->bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(*amountp),amountp);
+    len += iguana_rwvarstr(rwflag,&serialized[len],8,src);
+    len += iguana_rwvarstr(rwflag,&serialized[len],8,dest);
+    if ( message == 0 )
+        message = "";
+    len += iguana_rwvarstr(rwflag,&serialized[len],128,message);
+    return(len);
+}
+
 char *basilisk_respond_instantdex(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *dest,*src,*retstr=0; uint64_t satoshis;
+    char *dest,*src,*retstr=0; int32_t len; uint32_t timestamp; uint64_t satoshis; uint8_t serialized[64]; struct queueitem *item;
     if ( (dest= jstr(valsobj,"dest")) != 0 && (src= jstr(valsobj,"src")) != 0 && (satoshis= j64bits(valsobj,"satoshis")) != 0 )
     {
         char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",src,dstr(satoshis),dest,bits256_str(str,hash));
-        
+        timestamp = (uint32_t)time(NULL);
+        len = basilisk_rwDEXquote(1,serialized+1,&hash,src,&satoshis,dest,&timestamp,jstr(valsobj,"msg"));
+        serialized[0] = len;
+        item = calloc(1,sizeof(*item) + len + 1);
+        memcpy(&item[1],serialized,len + 1);
+        portable_mutex_lock(&myinfo->DEX_mutex);
+        DL_APPEND(myinfo->DEX_quotes,item);
+        portable_mutex_unlock(&myinfo->DEX_mutex);
         retstr = clonestr("{\"result\":\"DEX quote added\"}");
     }
     //instantdex_quotep2p(myinfo,0,addr,data,datalen);

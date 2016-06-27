@@ -1738,6 +1738,8 @@ THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount)
     char *retstr; cJSON *vals = cJSON_CreateObject();
     jaddstr(vals,"dest",dest);
     jaddstr(vals,"src",source);
+    if ( strlen(message) < 128 )
+        jaddstr(vals,"msg",message);
     jadd64bits(vals,"satoshis",amount * SATOSHIDEN);
     retstr = basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
     free_json(vals);

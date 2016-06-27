@@ -600,7 +600,7 @@ int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t
 
 int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
 {
-    struct iguana_info *virt,*tmpcoin; int32_t i,iter,datalen = 0; uint32_t n;
+    struct iguana_info *virt,*tmpcoin; struct queueitem *item,*tmp; uint8_t clen; int32_t i,iter,offset,datalen = 0; uint32_t n; uint16_t sn; uint32_t timestamp,now;
     data[datalen++] = myinfo->numrelays;
     for (iter=n=0; iter<2; iter++)
     {
@@ -622,6 +622,29 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     }
     for (i=0; i<myinfo->numrelays; i++)
         datalen += basilisk_relay_ping(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
+    offset = datalen, datalen += sizeof(uint16_t);
+    i = 0;
+    now = (uint32_t)time(NULL);
+    portable_mutex_lock(&myinfo->DEX_mutex);
+    DL_FOREACH_SAFE(myinfo->DEX_quotes,item,tmp)
+    {
+        memcpy(&clen,&item[1],sizeof(clen));
+        if ( datalen+clen < maxlen )
+        {
+            memcpy(&data[datalen],&item[1],clen+1), datalen += (clen + 1);
+            i++;
+        }
+        iguana_rwnum(0,(void *)((long)&item[1] + 1),sizeof(timestamp),&timestamp);
+        if ( now > timestamp + BASILISK_DEXDURATION )
+        {
+            DL_DELETE(myinfo->DEX_quotes,item);
+            free(item);
+        }
+    }
+    sn = i;
+    datalen += iguana_rwnum(1,&data[datalen],sizeof(sn),&sn);
+    portable_mutex_unlock(&myinfo->DEX_mutex);
+    
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
     //printf(" <- output ping\n");
@@ -664,7 +687,7 @@ int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd
 
 void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,j,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
+    int32_t diff,i,j,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays,clen,serialized[256]; uint16_t sn; uint32_t numvirts,height,now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
     for (i=0; i<myinfo->numrelays; i++)
@@ -718,7 +741,18 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
             break;
         len += n;
     }
-    //printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
+    len += iguana_rwnum(1,&data[len],sizeof(sn),&sn);
+    char src[16],dest[16],message[128]; bits256 hash; uint64_t amount; uint32_t timestamp;
+    for (i=0; i<n; i++)
+    {
+        clen = data[len++];
+        memcpy(serialized,&data[len],clen), len += clen;
+        len += basilisk_rwDEXquote(0,serialized,&hash,src,&amount,dest,&timestamp,message);
+        printf("(%s (%s %.8f) -> %s) ",message,src,dstr(amount),dest);
+    }
+    if ( len != datalen )
+        printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
+    else printf("\n");
 }
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
@@ -925,7 +959,7 @@ void basilisks_loop(void *arg)
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
-                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,datalen=0; uint8_t data[32768];
+                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,datalen=0; uint8_t data[32768]; // need bigger buffer
                 datalen = basilisk_relays_ping(myinfo,&data[sizeof(struct iguana_msghdr)],sizeof(data)-sizeof(struct iguana_msghdr));
                 for (i=0; i<myinfo->numrelays; i++)
                 {
@@ -956,6 +990,7 @@ void basilisks_init(struct supernet_info *myinfo)
     //iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
     portable_mutex_init(&myinfo->allcoins_mutex);
     portable_mutex_init(&myinfo->basilisk_mutex);
+    portable_mutex_init(&myinfo->DEX_mutex);
     portable_mutex_init(&myinfo->gecko_mutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
