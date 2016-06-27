@@ -186,7 +186,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 if ( strcmp(type,"BLK") == 0 )
                 {
                     for (s=0; s<myinfo->numrelays; s++)
-                        if ( myinfo->relays[s].ipbits == addr->ipbits )
+                        if ( addr->ipbits != myinfo->myaddr.myipbits && myinfo->relays[s].ipbits == addr->ipbits )
                             break;
                     if ( s == myinfo->numrelays )
                     {

@@ -14,8 +14,6 @@
  *                                                                            *
  ******************************************************************************/
 
-// are nbits and magicstr endian dependent?
-
 // code mempool and tx (payment and opreturn protocol)
 
 // debug genesis balances
@@ -44,9 +42,16 @@
 
 void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis)
 {
-    char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi;
+    char mineraddr[64]; int32_t hwmhdrsi,longesthdrsi; struct iguana_bundle *bp;
     hwmhdrsi = virt->blocks.hwmchain.height / virt->chain->bundlesize;
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
+    if ( (bp= virt->bundles[hwmhdrsi]) != 0 )
+    {
+        iguana_RTspendvectors(virt,bp);
+        iguana_RTramchainalloc("RTbundle",virt,bp);
+        iguana_update_balances(virt);
+        iguana_realtime_update(myinfo,virt);
+    }
     if ( 0 && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
