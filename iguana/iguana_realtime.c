@@ -75,19 +75,18 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
         else
         {
             B = RAMCHAIN_PTR(rdata,Boffset);
-            //B = (void *)(long)((long)rdata + rdata->Boffset);
             for (i=0; i<rdata->numblocks; i++)
                 if ( bits256_cmp(B[i].hash2,bp->hashes[i]) != 0 )
                 {
                     char str[65],str2[65]; printf("mismatched hash2 at %d %s vs %s\n",bp->bundleheight+i,bits256_str(str,B[i].hash2),bits256_str(str2,bp->hashes[i]));
                     changed++;
+                    iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
                     break;
                 }
         }
         if ( changed != 0 )
         {
             printf("RTramchain changed %d bundlei.%d | coin->RTheight %d != %d bp->bundleheight +  %d coin->RTramchain.H.data->numblocks\n",coin->RTheight,i,coin->RTheight,bp->bundleheight,rdata->numblocks);
-            //coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
             iguana_RTramchainfree(coin,bp);
         }
     }
@@ -247,7 +246,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
         coin->spendvectorsaved = 0;
-        iguana_RTramchainfree(coin,coin->current);
+        //iguana_RTramchainfree(coin,coin->current);
         return(0);
     }
     if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight < coin->blocks.hwmchain.height-offset && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+10) )
