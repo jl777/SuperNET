@@ -595,7 +595,7 @@ int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd
     hash2 = iguana_blockhash(virt,height);
     if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,hash2,0)) > 0 )
     {
-        printf("RELAYID.%d send block.%d -> (%s)\n",myinfo->RELAYID,blocklen,addr->ipaddr);
+        printf("RELAYID.%d send block.%d -> (%s) %s\n",myinfo->RELAYID,height,addr->ipaddr,bits256_str(str,hash2));
         blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),&virt->blockspace[sizeof(struct iguana_msghdr)],blocklen);
         basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,virt->blocks.hwmchain.RO.hash2,height);
         if ( allocptr != 0 )
@@ -636,7 +636,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
         if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             if ( virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
-                basilisk_blocksend(myinfo,btcd,virt,addr,height);
+                basilisk_blocksend(myinfo,btcd,virt,addr,height+1);
         }
     }
     for (i=0; i<datalen; i++)
