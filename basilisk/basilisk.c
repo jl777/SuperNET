@@ -691,7 +691,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
         for (i=0; i<sn; i++)
         {
             clen = data[len++];
-            memcpy(serialized,&data[len],clen), len += clen;
+            memcpy(serialized,&data[len],clen);
             len += basilisk_rwDEXquote(0,serialized,&hash,src,&amount,dest,&timestamp,message);
             printf("(%s (%s %.8f) -> %s) ",message,src,dstr(amount),dest);
         }
