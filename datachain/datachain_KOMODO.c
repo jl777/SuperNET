@@ -80,7 +80,9 @@ int32_t datachain_genesis_verify(struct gecko_genesis_opreturn *opret)
 {
     int32_t txlen,datalen; bits256 txid,threshold,hash2; uint8_t serialized[1024],txidbytes[1024]; struct iguana_msgblock msg; char str[65],str2[65];
     txid = datachain_opreturn_convert(txidbytes,&txlen,&msg,opret);
-    threshold = bits256_from_compact(opret->nBits);
+    if ( opret->nBits >= GECKO_EASIESTDIFF )
+        threshold = bits256_from_compact(GECKO_EASIESTDIFF);
+    else threshold = bits256_from_compact(opret->nBits);
     datalen = iguana_rwblockhdr(1,0,serialized,&msg);
     hash2 = iguana_calcblockhash("virtual",blockhash_sha256,serialized,datalen);
     //for (i=0; i<datalen; i++)
@@ -116,7 +118,9 @@ int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,ch
     OS_randombytes((void *)&opret.netmagic,sizeof(opret.netmagic));
     bitcoin_addr2rmd160(&opret.pubval,opret.rmd160,coinaddr);
     txid = datachain_opreturn_convert(txidbytes,&txlen,&msg,&opret);
-    threshold = bits256_from_compact(nBits);
+    if ( nBits >= GECKO_EASIESTDIFF )
+        threshold = bits256_from_compact(GECKO_EASIESTDIFF);
+    else threshold = bits256_from_compact(nBits);
     for (i=0; i<100000000; i++)
     {
         opret.nonce = msg.H.nonce = i;
@@ -148,7 +152,9 @@ void datachain_events_processKOMODO(struct supernet_info *myinfo,struct datachai
             memset(symbol,0,sizeof(symbol)), memcpy(symbol,opret.symbol,sizeof(opret.symbol));
             memset(name,0,sizeof(name)), memcpy(name,opret.name,sizeof(opret.name));
             hash2 = datachain_opreturn_convert(txidbytes,&txlen,&msg,&opret);
-            threshold = bits256_from_compact(opret.nBits);
+            if ( opret.nBits >= GECKO_EASIESTDIFF )
+                threshold = bits256_from_compact(GECKO_EASIESTDIFF);
+            else threshold = bits256_from_compact(opret.nBits);
             msg.txn_count = 1;
             //n = iguana_serialize_block(virt->chain,&hash2,serialized,newblock);
             datalen = iguana_rwblockhdr(1,0,serialized,&msg);

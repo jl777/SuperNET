@@ -23,7 +23,9 @@ uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t d
 {
     int32_t i,numiters = 0; bits256 hash,hash2,threshold; uint32_t basilisktag;
     vcalc_sha256(0,hash.bytes,data,datalen);
-    threshold = bits256_from_compact(nBits);
+    if ( nBits >= GECKO_EASIESTDIFF )
+        threshold = bits256_from_compact(GECKO_EASIESTDIFF);
+    else threshold = bits256_from_compact(nBits);
     for (i=0; i<numiters; i++)
     {
         //OS_randombytes((void *)hash.uints,sizeof(basilisktag));

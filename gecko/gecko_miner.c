@@ -43,6 +43,8 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
             return(-1);
         }
     }
+    if ( nBits >= GECKO_EASIESTDIFF )
+        nBits = GECKO_EASIESTDIFF;
     threshold = bits256_from_compact(nBits);
     hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,datalen);
     if ( bits256_cmp(threshold,hash2) > 0 )
@@ -203,7 +205,9 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
         {
             printf("%s %s\n",bits256_str(str,txids[0]),bits256_str(str2,txids[1]));
         }
-        threshold = bits256_from_compact(newblock->RO.bits);
+        if ( newblock->RO.bits >= GECKO_EASIESTDIFF )
+            bits256_from_compact(GECKO_EASIESTDIFF);
+        else threshold = bits256_from_compact(newblock->RO.bits);
         if ( (newblock->RO.nonce= *noncep) == 0 )
         {
             for (i=0; i<GECKO_MAXMINERITERS; i++)
