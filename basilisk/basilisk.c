@@ -641,13 +641,12 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
             free(item);
         }
     }
+    portable_mutex_unlock(&myinfo->DEX_mutex);
     sn = i;
     datalen += iguana_rwnum(1,&data[datalen],sizeof(sn),&sn);
-    portable_mutex_unlock(&myinfo->DEX_mutex);
-    
-    //for (i=0; i<datalen; i++)
-    //    printf("%02x",data[i]);
-    //printf(" <- output ping\n");
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- output ping sn.%d\n",sn);
     return(datalen);
 }
 
@@ -730,9 +729,6 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
             }
         }
     }
-    for (i=0; i<datalen; i++)
-        printf("%02x",data[i]);
-    printf(" <- input ping from.(%s) numrelays.%d numvirts.%d\n",ipbuf,numrelays,numvirts);
     for (i=0; i<numrelays; i++)
     {
         if ( len > datalen )
@@ -756,6 +752,9 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
     if ( len != datalen )
         printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
     else printf("\n");
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- input ping from.(%s) numrelays.%d numvirts.%d\n",ipbuf,numrelays,numvirts);
 }
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
