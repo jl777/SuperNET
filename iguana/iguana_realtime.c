@@ -221,7 +221,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-        //printf("spendvectorsaved not yet\n");
+printf("spendvectorsaved not yet\n");
         usleep(100000);
         return(0);
     }
@@ -283,10 +283,9 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc("RTbundle",coin,bp);
         bp->isRT = 1;
-        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height-offset )
+        printf("RTheight.%d hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
+        while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height-offset && coin->RTdatabad == 0 )
         {
-            if ( coin->RTdatabad != 0 )
-                break;
             dest = &coin->RTramchain;
             B = RAMCHAIN_PTR(rdata,Boffset);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
