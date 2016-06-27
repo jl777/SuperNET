@@ -295,7 +295,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
             if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
-                printf("bundlei.%d blockht.%d RTheight.%d\n",bundlei,block->height,coin->RTheight);
+                //printf("bundlei.%d blockht.%d RTheight.%d\n",bundlei,block->height,coin->RTheight);
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();
                 if ( coin->RTdatabad == 0 && iguana_ramchainfile(myinfo,coin,dest,&blockR,bp,bundlei,block) == 0 )
