@@ -301,14 +301,17 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
             return(clonestr("{\"error\":\"duplicate block rejected\"}"));
         }
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
-        nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
-        if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) > 0 )
+        //nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
+        //if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) > 0 )
         {
             iguana_rwblock(symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
             if ( bits256_cmp(hash2,checkhash2) == 0 )
-                return(gecko_blockarrived(myinfo,virt,addr,data,datalen,hash2,0));
-            else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
-        } else return(clonestr("{\"error\":\"block nonce didnt verify\"}"));
+            {
+                if ( gecko_blocknonce_verify(virt,data,hdrsize,msg.H.bits,0,0) > 0 )
+                    return(gecko_blockarrived(myinfo,virt,addr,data,datalen,hash2,0));
+                else return(clonestr("{\"error\":\"block nonce didnt verify\"}"));
+            } else return(clonestr("{\"error\":\"block error with checkhash2\"}"));
+        }
     }
     return(0);
 }
