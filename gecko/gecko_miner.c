@@ -21,8 +21,8 @@ uint32_t gecko_earliest_blocktime(int32_t estblocktime,uint32_t prevtimestamp)
     if ( prevtimestamp == 0 )
         prevtimestamp = now;
     timestamp = (prevtimestamp + ((estblocktime << 1) / 3));
-    if ( timestamp < now )
-        timestamp = now;
+    if ( timestamp <= prevtimestamp )
+        timestamp = prevtimestamp + 1;
     return(timestamp);
 }
 
