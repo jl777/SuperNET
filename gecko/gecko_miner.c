@@ -49,7 +49,7 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
     {
         printf("nonce worked crc.%x\n",calc_crc32(0,serialized,datalen));
         return(1);
-    } else printf("nonce failed crc.%x\n",calc_crc32(0,serialized,datalen));
+    } else printf("nonce failed crc.%x nBits.%08x\n",calc_crc32(0,serialized,datalen),nBits);
     return(-1);
 }
 
@@ -85,6 +85,8 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
         }
         else if ( diff < est )
         {
+            if ( nBits == GECKO_EASIESTDIFF )
+                return(GECKO_EASIESTDIFF);
             targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_lshift(targetval)));
         }
         printf("diff.%d est.%d nBits.%08x <- %08x\n",diff,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
