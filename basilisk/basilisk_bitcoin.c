@@ -576,15 +576,17 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     uint8_t buf[IGUANA_MAXSCRIPTSIZE]; int32_t oplen,offset,numsent,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
-    spendscriptstr = jstr(valsobj,"spendscript");
-    amount = j64bits(valsobj,"satoshis");
+    if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
+        amount = jdouble(valsobj,"value") * SATOSHIDEN;
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
         txfee = coin->chain->txfee;
     if ( txfee == 0 )
         txfee = 10000;
+    spendscriptstr = jstr(valsobj,"spendscript");
     minconf = juint(valsobj,"minconf");
     locktime = juint(valsobj,"locktime");
-    addresses = jobj(valsobj,"addresses");
+    if ( (addresses= jobj(valsobj,"addresses")) == 0 )
+        addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
     {
         printf("vals.(%s)\n",jprint(valsobj,0));

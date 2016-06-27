@@ -265,7 +265,8 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                                 prev->mainchain = 1;
                             if ( prev->height != (adjacent + 1 - j) )
                                 prev->height = (adjacent + 1 - j);
-                            gecko_bundleset(virt,prev);
+                            gecko_ensurebundle(virt,prev,prev->height,0);
+                            //gecko_bundleset(virt,prev);
                             if ( prev->height == 0 )
                                 break;
                         }

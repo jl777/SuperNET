@@ -210,41 +210,6 @@ char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *add
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
-{
-    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
-    //return(basilisk_standardcmd(myinfo,"BAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
-}
-
-HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
-{
-    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
-    //return(basilisk_standardcmd(myinfo,"VAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
-}
-
-HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
-{
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
-    {
-        if ( (coin= iguana_coinfind(symbol)) != 0 )
-        {
-            basilisktag = juint(vals,"basilisktag");
-            if ( juint(vals,"burn") == 0 )
-                jaddnum(vals,"burn",0.0001);
-            if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
-                timeoutmillis = BASILISK_TIMEOUT;
-            if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
-            {
-                retstr = ptr->retstr;
-            }
-            if ( ptr != &Lptr )
-                free(ptr);
-        }
-    }
-    return(retstr);
-}
-
 HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
 {
     return(basilisk_standardservice("ADD",myinfo,0,hash,vals,hexstr,1));
