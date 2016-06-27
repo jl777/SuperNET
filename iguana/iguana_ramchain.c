@@ -443,7 +443,7 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
     s = &Sx[spendind];
     pkind = unspentind = 0;
     ptr = iguana_hashfind(ramchain,'T',prev_hash.bytes);
-    if ( prev_vout >= 0 && ptr == 0 )
+    if ( (bits256_nonz(prev_hash) != 0 || prev_vout >= 0) && ptr == 0 )
     {
         external = 1;
         txidind = ramchain->externalind++;

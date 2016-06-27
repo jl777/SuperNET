@@ -1720,7 +1720,7 @@ TWO_STRINGS(InstantDEX,events,base,rel)
 
 ZERO_ARGS(InstantDEX,allcoins)
 {
-    return(clonestr("{\"result\":\"[\"BTC\", \"BTCD\", \"LTC\", \"SYS\", \"ZEC\"]\"}"));
+    return(clonestr("{\"result\":[\"BTC\", \"BTCD\", \"LTC\", \"SYS\", \"ZEC\"]}"));
 }
 
 STRING_ARG(InstantDEX,available,source)

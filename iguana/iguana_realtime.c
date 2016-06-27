@@ -209,10 +209,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
-    if ( coin->virtualchain != 0 )
-    {
-        ;
-    }
     offset = (strcmp("BTCD",coin->symbol) == 0);
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {
@@ -283,14 +279,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         {
             iguana_RThdrs(coin,bp,coin->peers->numranked);
             coin->RThdrstime = bp->lastRT;
-            for (i=0; i<coin->peers->numranked; i++)
-            {
-                if ( (addr= coin->peers->ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 )
-                {
-                    //printf("%d ",addr->numRThashes);
-                }
-            }
-            //printf("RTheaders %s\n",coin->symbol);
         }
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc("RTbundle",coin,bp);

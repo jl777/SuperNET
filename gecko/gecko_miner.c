@@ -100,19 +100,19 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
 
 int32_t gecko_delayedPoW(struct supernet_info *myinfo,struct iguana_info *btcd,int32_t isPoS,uint8_t *coinbase,bits256 *btcdhashp,uint32_t timestamp,int32_t height)
 {
-    int32_t len = 0; //bits256 btchash; 
-    *btcdhashp = GENESIS_PUBKEY;
+    int32_t len = 0; //bits256 btchash;
+    memset(btcdhashp,0,sizeof(*btcdhashp));
     len += iguana_rwnum(1,&coinbase[len],sizeof(height),(void *)&height);
     coinbase[len++] = 0;
     if ( (isPoS & 7) != 0 )
     {
-        /* *btcdhashp = gecko_hashstampscalc(myinfo,btcd,&btchash,timestamp);
+        /**btcdhashp = gecko_hashstampscalc(myinfo,btcd,&btchash,timestamp);
         if ( (isPoS & 2) != 0 && (bits256_cmp(*btcdhashp,GENESIS_PUBKEY) == 0 || bits256_nonz(*btcdhashp) == 0) )
             return(-1);
         if ( (isPoS & 4) != 0 && (bits256_cmp(btchash,GENESIS_PUBKEY) == 0 || bits256_nonz(btchash) == 0) )
-            return(-1);
+            return(-1);*/
         //len += iguana_rwbignum(1,&coinbase[len],sizeof(*btcdhashp),btcdhashp->bytes);
-        len += iguana_rwbignum(1,&coinbase[len],sizeof(btchash),btchash.bytes);*/
+        //len += iguana_rwbignum(1,&coinbase[len],sizeof(btchash),btchash.bytes);
     }
     return(len);
 }

@@ -161,7 +161,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 printf("iguana_pkhashfind: unexpected access when RTramchain_busy\n");
                 return(0);
             }
-            ramchain = (bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
+            ramchain = &bp->ramchain;//(bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 numpkinds = rdata->numpkinds;
