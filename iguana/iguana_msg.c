@@ -695,7 +695,7 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
             {
                 for (i=0; i<recvlen-hdrlen; i++)
                     printf("%02x",data[hdrlen+i]);
-                printf(" <- gentxarrayC error i.%d len.%d > recvlen.%d, n.%d\n",i,len,recvlen,n);
+                printf(" <- gentxarrayC error i.%d len.%d > recvlen.%d, n.%d hdrlen.%d\n",i,len,recvlen,n,hdrlen);
                 break;
             }
             numvouts += tx[i].tx_out;

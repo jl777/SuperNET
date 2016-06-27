@@ -86,7 +86,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     if ( (hexstr= jstr(sendjson,"data")) != 0 )
     {
         hexdata = get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr);
-        //printf("delete data.%s from sendjson\n",hexstr);
+        printf("jsondata.%s from sendjson\n",hexstr);
         jdelete(sendjson,"data");
     }
     *ptrp = 0;
@@ -105,6 +105,9 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     free(sendstr);
     if ( hexlen > 0 )
     {
+        int32_t i; for (i=0; i<hexlen; i++)
+            printf("%02x",hexdata[i]);
+        printf(" <- hexdata\n");
         memcpy(&data[datalen],hexdata,hexlen);
         datalen += hexlen;
     }
@@ -314,8 +317,6 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
-    //if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 )
-    //    jaddnum(valsobj,"iamrelay",1);
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
     if ( bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0 )
     {
@@ -804,8 +805,8 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     else
     {
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
-        //int32_t i; for (i=0; i<datalen-len; i++)
-        //    printf("%02x",data[len+i]);
+        int32_t i; for (i=0; i<datalen-len; i++)
+            printf("%02x",data[len+i]);
         printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     }
