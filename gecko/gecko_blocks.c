@@ -208,8 +208,8 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
         adjacent = -1;
         for (i=0; i<virt->chain->bundlesize; i++)
         {
-            char str2[65];
-            printf("scan back.%d: prev.%s hwm.%s ht.%d\n",i,bits256_str(str,prev->RO.prev_block),bits256_str(str2,virt->blocks.hwmchain.RO.hash2),virt->blocks.hwmchain.height);
+            //char str2[65];
+            //printf("scan back.%d: prev.%s hwm.%s ht.%d\n",i,bits256_str(str,prev->RO.prev_block),bits256_str(str2,virt->blocks.hwmchain.RO.hash2),virt->blocks.hwmchain.height);
             if ( (prev= iguana_blockfind("geckoprev",virt,prev->RO.prev_block)) == 0 )
                 return(clonestr("{\"error\":\"gecko block is orphan\"}"));
             if ( i == 0 )
@@ -217,7 +217,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
                 adjacent = prev->height;
                 block->height = (prev->height + 1);
             }
-            printf("i.%d prevht.%d adjacent.%d hwm.%d\n",i,prev->height,adjacent,virt->blocks.hwmchain.height);
+            //printf("i.%d prevht.%d adjacent.%d hwm.%d\n",i,prev->height,adjacent,virt->blocks.hwmchain.height);
             if ( prev->height >= 0 && prev->mainchain != 0 )
             {
                 if ( (adjacent + 1) > virt->blocks.hwmchain.height ) // longest chain wins
@@ -308,7 +308,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
 {
     int32_t i,datalen,num,numerrs,numresults=0; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
-    printf("blocksubmit.(%s)\n",blockstr);
+    //printf("blocksubmit.(%s)\n",blockstr);
     if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
     {
         if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,0)) != 0 )

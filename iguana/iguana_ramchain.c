@@ -81,7 +81,7 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
 
 void iguana_blocksetcounters(struct iguana_info *coin,struct iguana_block *block,struct iguana_ramchain * ramchain)
 {
-    if ( coin->virtualchain != 0 )
+    if ( 0 && coin->virtualchain != 0 )
         printf("iguana_blocksetcounters.%s 1st txidind.%u <- ht.%d\n",coin->symbol,ramchain->H.txidind,block->height);
     block->RO.firsttxidind = ramchain->H.txidind;
     block->RO.firstvout = ramchain->H.unspentind;
@@ -600,7 +600,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         } else s->scriptpos = 0;
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         char str[65];
-        if ( coin->virtualchain != 0 )
+        if ( 0 && coin->virtualchain != 0 )
             printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),(uint32_t)s->scriptpos,s->vinscriptlen);
     }
     return(spendind);
