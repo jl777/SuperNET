@@ -81,13 +81,13 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
         targetval = bits256_from_compact(nBits);
         if ( diff > est )
         {
-            targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_lshift(targetval)));
+            targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_rshift(targetval)));
         }
         else if ( diff < est )
         {
-            targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_rshift(targetval)));
+            targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_lshift(targetval)));
         }
-        //printf("diff.%d est.%d nBits.%08x <- %08x\n",endtime - starttime,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
+        printf("diff.%d est.%d nBits.%08x <- %08x\n",diff,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
         nBits = bits256_to_compact(targetval);
     }
     if ( nBits > GECKO_EASIESTDIFF )
