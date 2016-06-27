@@ -684,10 +684,10 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
             break;
         len += n;
     }
-    if ( len < datalen-sizeof(sn) )
+    if ( len <= datalen-sizeof(sn) )
     {
-        len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
         char src[16],dest[16],message[128]; bits256 hash; uint64_t amount; uint32_t timestamp;
+        len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
         for (i=0; i<sn; i++)
         {
             clen = data[len++];
