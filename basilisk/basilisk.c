@@ -621,7 +621,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
             {
                 char strbuf[8192],*blockstr,*allocptr = 0;
                 printf("RELAYID.%d send block.%d -> (%s)\n",myinfo->RELAYID,blocklen,addr->ipaddr);
-                blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),virt->blockspace,blocklen);
+                blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),&virt->blockspace[sizeof(struct iguana_msghdr)],blocklen);
                 basilisk_blocksubmit(myinfo,btcd,virt,blockstr,virt->blocks.hwmchain.RO.hash2,height);
                 if ( allocptr != 0 )
                     free(allocptr);
