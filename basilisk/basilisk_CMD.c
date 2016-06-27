@@ -126,9 +126,14 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 
 char *basilisk_respond_instantdex(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *retstr=0;
-    printf("from.(%s) DEX.(%s) datalen.%d\n",remoteaddr,jprint(valsobj,0),datalen);
-    instantdex_quotep2p(myinfo,0,addr,data,datalen);
+    char *dest,*src,*retstr=0; uint64_t satoshis;
+    if ( (dest= jstr(valsobj,"dest")) != 0 && (src= jstr(valsobj,"src")) != 0 && (satoshis= j64bits(valsobj,"satoshis")) != 0 )
+    {
+        char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",src,dstr(satoshis),dest,bits256_str(str,hash));
+        
+        retstr = clonestr("{\"result\":\"DEX quote added\"}");
+    }
+    //instantdex_quotep2p(myinfo,0,addr,data,datalen);
     return(retstr);
 }
 

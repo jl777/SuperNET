@@ -1735,7 +1735,13 @@ STRING_ARG(InstantDEX,available,source)
 
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount)
 {
-    return(clonestr("{\"result\":\"this will request converting amount worth of source into dest\"}"));
+    char *retstr; cJSON *vals = cJSON_CreateObject();
+    jaddstr(vals,"dest",dest);
+    jaddstr(vals,"src",source);
+    jadd64bits(vals,"satoshis",amount * SATOSHIDEN);
+    retstr = basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
+    free_json(vals);
+    return(retstr);
 }
 
 INT_ARG(InstantDEX,incoming,requestid)

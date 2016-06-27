@@ -40,7 +40,7 @@ int32_t iguana_unspentindfind(struct iguana_info *coin,char *coinaddr,uint8_t *s
         {
             RTspend = 0;
             flag++;
-            if ( iguana_spentflag(coin,&RTspend,&spentheight,&bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
+            if ( iguana_spentflag(coin,&RTspend,&spentheight,bp == coin->current ? &coin->RTramchain : &bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //
             {
                 if ( valuep != 0 )
                     *valuep = U[unspentind].value;
@@ -161,7 +161,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 printf("iguana_pkhashfind: unexpected access when RTramchain_busy\n");
                 return(0);
             }
-            ramchain = &bp->ramchain;//(bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
+            ramchain = (bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 numpkinds = rdata->numpkinds;
@@ -457,7 +457,7 @@ int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguan
     struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[hdrsi]) == 0 )
         return(-1);
-    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) != 0 )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -482,7 +482,7 @@ int64_t iguana_unspentavail(struct iguana_info *coin,uint64_t hdrsi_unspentind,i
         return(-1);
     hdrsi = (int16_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
-    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     if ( (spentflag= iguana_spentflag(coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,0,minconf,maxconf,0)) > 0 )
