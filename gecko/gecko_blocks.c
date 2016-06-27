@@ -172,7 +172,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
 
 char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *data,int32_t datalen,bits256 hash2,int32_t verifyonly)
 {
-    struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65]; bits256 txid; struct iguana_msgtx *txs;
+    struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65]; bits256 txid,threshold; struct iguana_msgtx *txs;
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&virt->TXMEM);
     if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
@@ -181,6 +181,14 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
         {
             printf("gecko_blockarrived: mismatched hash2\n");
             return(clonestr("{\"error\":\"gecko block hash2 mismatch\"}"));
+        }
+        if ( txdata.zblock.RO.bits >= GECKO_EASIESTDIFF )
+            bits256_from_compact(GECKO_EASIESTDIFF);
+        else threshold = bits256_from_compact(txdata.zblock.RO.bits);
+        if ( bits256_cmp(threshold,hash2) <= 0 )
+        {
+            printf("gecko_blockarrived: failed nBits diff\n");
+            return(clonestr("{\"error\":\"gecko block failed nBits diff\"}"));
         }
         txs = virt->TXMEM.ptr;
         for (i=0; i<txdata.zblock.RO.txn_count; i++)
