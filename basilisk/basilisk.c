@@ -662,7 +662,7 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
                 diff++;
                 if ( (rand() % diff) == 0 )
                 {
-                    for (j=1; height+j+myinfo->numrelays<virt->blocks.hwmchain.height; j+=myinfo->numrelays)
+                    for (j=1; height+j<virt->blocks.hwmchain.height && j<3; j++)
                         basilisk_blocksend(myinfo,btcd,virt,addr,height+j);
                 }
             }

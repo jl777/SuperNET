@@ -305,8 +305,8 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
         if ( (block= iguana_blockfind("geckoblock",virt,hash2)) != 0 )
         {
             char str[65];
-            if ( block->height == virt->blocks.hwmchain.height )
-                return(clonestr("{\"result\":\"duplicate chaintip received\"}"));
+            if ( block->height == juint(valsobj,"height") )
+                return(0);
             printf("REJECT: duplicate block %s\n",bits256_str(str,hash2));
             return(clonestr("{\"error\":\"duplicate block rejected\"}"));
         }
