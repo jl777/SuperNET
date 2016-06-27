@@ -49,7 +49,7 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
     hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,datalen);
     if ( bits256_cmp(threshold,hash2) > 0 )
     {
-        printf("nonce worked crc.%x\n",calc_crc32(0,serialized,datalen));
+        //printf("nonce worked crc.%x\n",calc_crc32(0,serialized,datalen));
         return(1);
     }
     else
@@ -232,13 +232,13 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
                 hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,len);
                 if ( bits256_cmp(threshold,hash2) > 0 )
                 {
-                    printf("FOUND NONCE %d iterations\n",i+1);
+                    //printf("FOUND NONCE %d iterations\n",i+1);
                     newblock->RO.hash2 = hash2;
                     break;
                 }
                 if ( newblock->height != 0 && OS_milliseconds() > expiration )
                 {
-                    printf("time limit exceeded %u %d iterations\n",virt->blocks.hwmchain.RO.timestamp,i+1);
+                    //printf("time limit exceeded %u %d iterations\n",virt->blocks.hwmchain.RO.timestamp,i+1);
                     free(coinbasestr);
                     if ( txids != txspace )
                         free(txids);
@@ -365,11 +365,13 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
         //printf("skip non-virtual chain.%s\n",virt->symbol);
         return;
     }
+    if ( virt->blocks.hwmchain.height < virt->longestchain-1 )
+        return;
     if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
     {
         //if ( myinfo->numrelays < 3 )
-            return;
-        gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timestamp) / 10;//virt->chain->estblocktime;
+        //    return;
+        gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timestamp) / 60;//virt->chain->estblocktime;
         for (i=0; i<gap; i++)
         {
             if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )

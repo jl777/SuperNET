@@ -635,8 +635,16 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
         printf("(%s %d).%p ",symbol,height,addr);
         if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
-            if ( virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
-                basilisk_blocksend(myinfo,btcd,virt,addr,height+1);
+            if ( height > virt->longestchain )
+                virt->longestchain = height;
+            if ( myinfo->numrelays > 0 && virt->blocks.hwmchain.height > height )
+            {
+                diff = ((height % myinfo->numrelays) - myinfo->RELAYID);
+                diff *= diff;
+                diff++;
+                if ( (rand() % diff) == 0 )
+                    basilisk_blocksend(myinfo,btcd,virt,addr,height+1);
+            }
         }
     }
     for (i=0; i<datalen; i++)

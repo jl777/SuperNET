@@ -288,7 +288,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
 
 char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
-    char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; uint32_t prevtimestamp,nBits; struct iguana_msgblock msg; struct iguana_block *block;
+    char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; struct iguana_msgblock msg; struct iguana_block *block;
     printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
     if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
     {
