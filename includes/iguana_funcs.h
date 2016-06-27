@@ -490,7 +490,7 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *block);
 void basilisk_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height);
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,char *blockstr,bits256 hash2,int32_t height);
 struct supernet_info *SuperNET_MYINFO(char *passphrase);
 bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct gecko_chain *category_find(bits256 categoryhash,bits256 subhash);

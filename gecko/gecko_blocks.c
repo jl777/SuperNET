@@ -305,7 +305,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
     return(0);
 }
 
-int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,char *blockstr,bits256 hash2,int32_t height)
+int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,char *blockstr,bits256 hash2,int32_t height)
 {
     int32_t i,datalen,num,numerrs,numresults=0; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
     //printf("blocksubmit.(%s)\n",blockstr);
@@ -323,7 +323,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                     jaddnum(valsobj,"fanout",-1);
                     jaddnum(valsobj,"height",height);
                     jaddstr(valsobj,"symbol",virt->symbol);
-                    if ( (str2= basilisk_standardservice("BLK",myinfo,hash2,valsobj,blockstr,0)) != 0 )
+                    if ( (str2= basilisk_standardservice("BLK",myinfo,addr,hash2,valsobj,blockstr,0)) != 0 )
                     {
                         if ( 0 && (retarray= cJSON_Parse(str2)) != 0 )
                         {

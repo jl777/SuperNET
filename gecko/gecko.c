@@ -282,7 +282,7 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t
         retstr = basilisk_respond_geckotx(myinfo,"GTX",0,0,0,vals,data,datalen,txid,0);
     }
     if ( retstr == 0 )
-        retstr = basilisk_standardservice("GTX",myinfo,txid,vals,signedtx,1);
+        retstr = basilisk_standardservice("GTX",myinfo,0,txid,vals,signedtx,1);
     return(retstr);
 }
 

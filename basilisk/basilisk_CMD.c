@@ -120,7 +120,7 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 {
     cJSON *valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"timeout",-1);
-    basilisk_requestservice(myinfo,"BYE",0,valsobj,GENESIS_PUBKEY,0,0,0);
+    basilisk_requestservice(myinfo,0,"BYE",0,valsobj,GENESIS_PUBKEY,0,0,0);
     free_json(valsobj);
 }
 
@@ -212,13 +212,13 @@ char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *add
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("BAL",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
     //return(basilisk_standardcmd(myinfo,"BAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
 }
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("VAL",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
     //return(basilisk_standardcmd(myinfo,"VAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
 }
 
@@ -247,67 +247,67 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("ADD",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("ADD",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,relays,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("RLY",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("RLY",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,dispatch,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("RUN",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("RUN",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,publish,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("PUB",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("PUB",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("SUB",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("SUB",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("HOP",myinfo,hash,vals,hexstr,0));
+    return(basilisk_standardservice("HOP",myinfo,0,hash,vals,hexstr,0));
 }
 
 HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("BOX",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("BOX",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("VPN",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("VPN",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("ARC",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("ARC",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("GAB",myinfo,hash,vals,hexstr,0));
+    return(basilisk_standardservice("GAB",myinfo,0,hash,vals,hexstr,0));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("SAY",myinfo,hash,vals,hexstr,0));
+    return(basilisk_standardservice("SAY",myinfo,0,hash,vals,hexstr,0));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("EAR",myinfo,hash,vals,hexstr,1));
+    return(basilisk_standardservice("EAR",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("END",myinfo,hash,vals,hexstr,0));
+    return(basilisk_standardservice("END",myinfo,0,hash,vals,hexstr,0));
 }
 
 uint16_t basilisk_portavailable(struct supernet_info *myinfo,uint16_t port)

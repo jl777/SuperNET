@@ -360,14 +360,14 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                ptr = basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF);
+                ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF);
                 //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
                 return(ptr);
             }
         }
     }
     printf("bitcoinvalue issue remote tag.%u\n",basilisktag);
-    ptr = basilisk_issueremote(myinfo,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0,BASILISK_DEFAULTDIFF);
+    ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_valuemetric,0,0,0,BASILISK_DEFAULTDIFF);
     //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
     return(ptr);
 }
@@ -644,6 +644,6 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
         return(Lptr);
     }
-    return(basilisk_issueremote(myinfo,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0,BASILISK_DEFAULTDIFF));
+    return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0,BASILISK_DEFAULTDIFF));
 }
 

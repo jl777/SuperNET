@@ -269,7 +269,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
     }
 }
 
-struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t *numsentp,char *CMD,char *symbol,int32_t blockflag,cJSON *valsobj,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *_metricfunc,char *retstr,int32_t encryptflag,int32_t delaymillis,uint32_t nBits)
+struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct iguana_peer *addr,int32_t *numsentp,char *CMD,char *symbol,int32_t blockflag,cJSON *valsobj,int32_t fanout,int32_t minresults,uint32_t basilisktag,int32_t timeoutmillis,void *_metricfunc,char *retstr,int32_t encryptflag,int32_t delaymillis,uint32_t nBits)
 {
     struct basilisk_item *pending; uint8_t *allocptr,*data,space[4096]; int32_t datalen; cJSON *retarray;
     pending = basilisk_itemcreate(myinfo,CMD,symbol,basilisktag,minresults,valsobj,timeoutmillis,0);
@@ -283,7 +283,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     else
     {
         data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
-        *numsentp = pending->numsent = basilisk_sendcmd(myinfo,0,CMD,&pending->basilisktag,encryptflag,delaymillis,data,datalen,1,pending->nBits);
+        *numsentp = pending->numsent = basilisk_sendcmd(myinfo,addr != 0 ? addr->ipaddr : 0,CMD,&pending->basilisktag,encryptflag,delaymillis,data,datalen,1,pending->nBits);
         if ( blockflag != 0 )
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
@@ -316,7 +316,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,int32_t 
     return(pending);
 }
 
-struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
+struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struct iguana_peer *addr,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
@@ -346,15 +346,15 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,char 
         symbol = "BTCD";
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    ptr = basilisk_issueremote(myinfo,&numsent,CMD,symbol,blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
+    ptr = basilisk_issueremote(myinfo,addr,&numsent,CMD,symbol,blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
     return(ptr);
 }
 
-char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
+char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_addr,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
     uint32_t nBits = 0; uint8_t space[8192],*allocptr=0,*data = 0; struct basilisk_item *ptr; int32_t datalen = 0; cJSON *retjson; char *retstr=0;
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
-    ptr = basilisk_requestservice(myinfo,CMD,blockflag,valsobj,hash,data,datalen,nBits);
+    ptr = basilisk_requestservice(myinfo,_addr,CMD,blockflag,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
         free(allocptr);
     if ( ptr != 0 )
@@ -436,7 +436,7 @@ int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *vi
         {
             vals = cJSON_CreateObject();
             jaddstr(vals,"symbol",virt->symbol);
-            if ( (retstr= basilisk_standardservice(CMD,myinfo,hash,vals,hexstr,0)) != 0 )
+            if ( (retstr= basilisk_standardservice(CMD,myinfo,addr,hash,vals,hexstr,0)) != 0 )
                 free(retstr);
             free_json(vals);
             if ( allocptr != 0 )
@@ -589,9 +589,25 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
     return(datalen);
 }
 
+int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
+{
+    int32_t blocklen; bits256 hash2; char str[65],strbuf[8192],*blockstr,*allocptr = 0;
+    hash2 = iguana_blockhash(virt,height);
+    if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,hash2,0)) > 0 )
+    {
+        printf("RELAYID.%d send block.%d -> (%s)\n",myinfo->RELAYID,blocklen,addr->ipaddr);
+        blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),&virt->blockspace[sizeof(struct iguana_msghdr)],blocklen);
+        basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,virt->blocks.hwmchain.RO.hash2,height);
+        if ( allocptr != 0 )
+            free(allocptr);
+        return(0);
+    } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,virt->blocks.hwmchain.RO.hash2));
+    return(-1);
+}
+
 void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,n,blocklen,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7],str[65]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
+    int32_t diff,i,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
     for (i=0; i<myinfo->numrelays; i++)
@@ -617,17 +633,10 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
         memcpy(symbol,&data[len],6), len += 6;
         len += iguana_rwvarint32(0,&data[len],&height);
         printf("(%s %d).%p ",symbol,height,addr);
-        if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 && virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
+        if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
-            if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,virt->blocks.hwmchain.RO.hash2,0)) > 0 )
-            {
-                char strbuf[8192],*blockstr,*allocptr = 0;
-                printf("RELAYID.%d send block.%d -> (%s)\n",myinfo->RELAYID,blocklen,addr->ipaddr);
-                blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),&virt->blockspace[sizeof(struct iguana_msghdr)],blocklen);
-                basilisk_blocksubmit(myinfo,btcd,virt,blockstr,virt->blocks.hwmchain.RO.hash2,height);
-                if ( allocptr != 0 )
-                    free(allocptr);
-            } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,virt->blocks.hwmchain.RO.hash2));
+            if ( virt->blocks.hwmchain.height > height && (height % myinfo->numrelays) == myinfo->RELAYID )
+                basilisk_blocksend(myinfo,btcd,virt,addr,height);
         }
     }
     for (i=0; i<datalen; i++)
