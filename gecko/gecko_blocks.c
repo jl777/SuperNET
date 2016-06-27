@@ -59,7 +59,7 @@ struct iguana_bundle *gecko_bundleset(struct iguana_info *virt,struct iguana_blo
     {
         bp->blocks[bundlei] = block;
         bp->hashes[bundlei] = block->RO.hash2;
-        char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
+        //char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
         iguana_hash2set(virt,"ensure",bp,bundlei,block->RO.hash2);
     }
     return(bp);
@@ -299,7 +299,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
 char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash2,int32_t from_basilisk)
 {
     char *symbol; struct iguana_info *virt; bits256 checkhash2; int32_t hdrsize; struct iguana_msgblock msg; struct iguana_block *block;
-    printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
+    //printf("got geckoblock len.%d from (%s) %s\n",datalen,remoteaddr!=0?remoteaddr:"",jprint(valsobj,0));
     if ( (symbol= jstr(valsobj,"symbol")) != 0 && (virt= iguana_coinfind(symbol)) != 0 )
     {
         if ( (block= iguana_blockfind("geckoblock",virt,hash2)) != 0 )
@@ -329,7 +329,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
 int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,char *blockstr,bits256 hash2,int32_t height)
 {
     int32_t i,datalen,num,numerrs,numresults=0; uint8_t *data,space[16384],*allocptr; cJSON *valsobj=0,*retjson,*retarray,*item; char *str,*str2,*othercoin; bits256 othertip;
-    printf("blocksubmit.(%s)\n",blockstr);
+    //printf("blocksubmit.(%s)\n",blockstr);
     if ( (data= get_dataptr(sizeof(struct iguana_msghdr) + BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),blockstr)) != 0 )
     {
         if ( (str= gecko_blockarrived(myinfo,virt,"127.0.0.1",data,datalen,hash2,0)) != 0 )
