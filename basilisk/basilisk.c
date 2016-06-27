@@ -591,17 +591,35 @@ int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
 {
-    int32_t blocklen; bits256 hash2; char str[65],strbuf[8192],*blockstr,*allocptr = 0;
+    int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[8192],*blockstr,*allocptr = 0; struct iguana_block *block;
     hash2 = iguana_blockhash(virt,height);
-    if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,hash2,0)) > 0 )
+    if ( (block= iguana_blockfind("bsend",virt,hash2)) != 0 )
     {
-        blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),&virt->blockspace[sizeof(struct iguana_msghdr)],blocklen);
+        if ( block->height != height )
+        {
+            printf("basilisk_blocksend: height.%d mismatch %d\n",block->height,height);
+            return(-1);
+        }
+        else if ( block->queued != 0 && block->req != 0 )
+        {
+            memcpy(&blocklen,block->req,sizeof(blocklen));
+            data = (uint8_t *)(void *)((long)block->req + sizeof(blocklen));
+        }
+    }
+    if ( data == 0 )
+    {
+        if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,hash2,0)) > 0 )
+            data = &virt->blockspace[sizeof(struct iguana_msghdr)];
+    }
+    if ( data != 0 )
+    {
+        blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),data,blocklen);
         printf("RELAYID.%d send block.%d %s -> (%s) %s\n",myinfo->RELAYID,height,blockstr,addr->ipaddr,bits256_str(str,hash2));
-        basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,virt->blocks.hwmchain.RO.hash2,height);
+        basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,hash2,height);
         if ( allocptr != 0 )
             free(allocptr);
         return(0);
-    } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,virt->blocks.hwmchain.RO.hash2));
+    } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,hash2));
     return(-1);
 }
 

@@ -59,7 +59,7 @@ struct iguana_bundle *gecko_bundleset(struct iguana_info *virt,struct iguana_blo
     {
         bp->blocks[bundlei] = block;
         bp->hashes[bundlei] = block->RO.hash2;
-        //char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
+        char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
         iguana_hash2set(virt,"ensure",bp,bundlei,block->RO.hash2);
     }
     return(bp);
@@ -144,9 +144,19 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
             block->hdrsi = hdrsi;
             block->height =
             block->bundlei = (block->height % virt->chain->bundlesize);
+            if ( block->queued == 0 )
+            {
+                block->req = calloc(1,datalen + sizeof(datalen));
+                memcpy(block->req,&datalen,sizeof(datalen));
+                memcpy((void *)((long)block->req + sizeof(datalen)),data,datalen);
+                block->queued = 1;
+            }
             if ( (bp= virt->bundles[hdrsi]) != 0 )
             {
-                bp->numsaved++;
+                bp->numsaved = 0;
+                for (i=0; i<virt->chain->bundlesize; i++)
+                    if ( bp->blocks[i] != 0 && bp->blocks[i]->txvalid != 0 )
+                        bp->numsaved++;
                 virt->current = bp;
                 iguana_RTspendvectors(virt,bp);
                 iguana_RTramchainalloc("RTbundle",virt,bp);
