@@ -64,7 +64,7 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
 {
     uint32_t nBits = GECKO_DEFAULTDIFF,starttime,endtime,est; struct iguana_block *prev=0; int32_t i,diff; bits256 targetval;
     *prevtimestampp = 0;
-    //if ( virt->chain->estblocktime == 0 )
+    if ( virt->chain->estblocktime == 0 )
         return(GECKO_EASIESTDIFF);
     for (i=0; i<n; i++)
     {
@@ -96,12 +96,12 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
                 return(GECKO_EASIESTDIFF);
             targetval = bits256_ave(targetval,bits256_ave(targetval,bits256_lshift(targetval)));
         }
-        printf("diff.%d est.%d nBits.%08x <- %08x\n",diff,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
+        //printf("diff.%d est.%d nBits.%08x <- %08x\n",diff,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
         nBits = bits256_to_compact(targetval);
     }
-    if ( nBits > GECKO_EASIESTDIFF )
+    if ( 1 || nBits > GECKO_EASIESTDIFF )
     {
-        printf("nBits.%08x vs easiest %08x\n",nBits,GECKO_EASIESTDIFF);
+        //printf("nBits.%08x vs easiest %08x\n",nBits,GECKO_EASIESTDIFF);
         nBits = GECKO_EASIESTDIFF;
     }
     return(nBits);
