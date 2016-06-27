@@ -99,7 +99,7 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
         //printf("diff.%d est.%d nBits.%08x <- %08x\n",diff,virt->chain->estblocktime * i,bits256_to_compact(targetval),nBits);
         nBits = bits256_to_compact(targetval);
     }
-    if ( 1 || nBits > GECKO_EASIESTDIFF )
+    if ( nBits > GECKO_EASIESTDIFF )
     {
         //printf("nBits.%08x vs easiest %08x\n",nBits,GECKO_EASIESTDIFF);
         nBits = GECKO_EASIESTDIFF;
@@ -246,7 +246,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
                 }
             }
         }
-        *noncep = newblock->RO.nonce;
+        newblock->RO.nonce = *noncep;
         n = iguana_serialize_block(virt->chain,&newblock->RO.hash2,serialized,newblock);
         while ( 1 && time(NULL) <= newblock->RO.timestamp + GECKO_MAXFUTUREBLOCK )
         {
