@@ -51,7 +51,12 @@ int32_t gecko_blocknonce_verify(struct iguana_info *virt,uint8_t *serialized,int
     {
         printf("nonce worked crc.%x\n",calc_crc32(0,serialized,datalen));
         return(1);
-    } else printf("nonce failed crc.%x nBits.%08x\n",calc_crc32(0,serialized,datalen),nBits);
+    }
+    else
+    {
+        char str[65],str2[65];
+        printf("nonce failed crc.%x nBits.%08x %s vs %s\n",calc_crc32(0,serialized,datalen),nBits,bits256_str(str,threshold),bits256_str(str2,hash2));
+    }
     return(-1);
 }
 
