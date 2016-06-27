@@ -183,7 +183,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
             return(clonestr("{\"error\":\"gecko block hash2 mismatch\"}"));
         }
         if ( txdata.zblock.RO.bits >= GECKO_EASIESTDIFF )
-            bits256_from_compact(GECKO_EASIESTDIFF);
+            threshold = bits256_from_compact(GECKO_EASIESTDIFF);
         else threshold = bits256_from_compact(txdata.zblock.RO.bits);
         if ( bits256_cmp(threshold,hash2) <= 0 )
         {

@@ -64,7 +64,7 @@ uint32_t gecko_nBits(struct iguana_info *virt,uint32_t *prevtimestampp,struct ig
 {
     uint32_t nBits = GECKO_DEFAULTDIFF,starttime,endtime,est; struct iguana_block *prev=0; int32_t i,diff; bits256 targetval;
     *prevtimestampp = 0;
-    if ( virt->chain->estblocktime == 0 )
+    //if ( virt->chain->estblocktime == 0 )
         return(GECKO_EASIESTDIFF);
     for (i=0; i<n; i++)
     {
