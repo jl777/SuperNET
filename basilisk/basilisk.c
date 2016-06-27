@@ -741,14 +741,17 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
             break;
         len += n;
     }
-    len += iguana_rwnum(1,&data[len],sizeof(sn),&sn);
-    char src[16],dest[16],message[128]; bits256 hash; uint64_t amount; uint32_t timestamp;
-    for (i=0; i<n; i++)
+    if ( len < datalen-sizeof(sn) )
     {
-        clen = data[len++];
-        memcpy(serialized,&data[len],clen), len += clen;
-        len += basilisk_rwDEXquote(0,serialized,&hash,src,&amount,dest,&timestamp,message);
-        printf("(%s (%s %.8f) -> %s) ",message,src,dstr(amount),dest);
+        len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
+        char src[16],dest[16],message[128]; bits256 hash; uint64_t amount; uint32_t timestamp;
+        for (i=0; i<n; i++)
+        {
+            clen = data[len++];
+            memcpy(serialized,&data[len],clen), len += clen;
+            len += basilisk_rwDEXquote(0,serialized,&hash,src,&amount,dest,&timestamp,message);
+            printf("(%s (%s %.8f) -> %s) ",message,src,dstr(amount),dest);
+        }
     }
     if ( len != datalen )
         printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
