@@ -179,7 +179,7 @@ char *gecko_coinbasestr(struct supernet_info *myinfo,struct iguana_info *virt,bi
 
 char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_block *newblock,uint32_t *noncep,struct gecko_memtx **txptrs,int32_t txn_count,uint8_t *coinbase,int32_t coinbaselen,bits256 coinbasespend,double expiration,uint8_t *minerpubkey,int64_t blockreward)
 {
-    struct iguana_info *btcd; uint8_t serialized[sizeof(*newblock)],space[16384]; int32_t i,n,len,totaltxlen=0; char *coinbasestr,str[65],str2[65],*blockstr=0; bits256 *txids=0,txspace[256],threshold; struct gecko_memtx *memtx;
+    struct iguana_info *btcd; uint8_t serialized[sizeof(*newblock)],space[16384]; int32_t i,n,len,totaltxlen=0; char *coinbasestr,str[65],str2[65],*blockstr=0; bits256 *txids=0,txspace[256],threshold,hash2; struct gecko_memtx *memtx;
     if ( (btcd= iguana_coinfind("BTCD")) == 0 )
     {
         printf("basilisk needs BTCD\n");
@@ -211,23 +211,34 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
             printf("%s %s\n",bits256_str(str,txids[0]),bits256_str(str2,txids[1]));
         }
         if ( newblock->RO.bits >= GECKO_EASIESTDIFF )
-            bits256_from_compact(GECKO_EASIESTDIFF);
-        else threshold = bits256_from_compact(newblock->RO.bits);
+            newblock->RO.bits = GECKO_EASIESTDIFF;
+        threshold = bits256_from_compact(newblock->RO.bits);
         if ( (newblock->RO.nonce= *noncep) == 0 )
         {
+            struct iguana_msgblock msg;
+            memset(&msg,0,sizeof(msg));
+            msg.H.version = newblock->RO.version;
+            msg.H.prev_block = newblock->RO.prev_block;
+            msg.H.merkle_root = newblock->RO.merkle_root;
+            msg.H.timestamp = newblock->RO.timestamp;
+            msg.H.bits = newblock->RO.bits;
             for (i=0; i<GECKO_MAXMINERITERS; i++)
             {
-                newblock->RO.nonce = rand();
-                n = iguana_serialize_block(virt->chain,&newblock->RO.hash2,serialized,newblock);
+                OS_randombytes((void *)noncep,sizeof(*noncep));
+                msg.H.nonce = *noncep;
+                //n = iguana_serialize_block(virt->chain,&hash2,serialized,newblock);
                 //char str[65]; printf("nonce.%08x %s\n",newblock->RO.nonce,bits256_str(str,newblock->RO.hash2));
-                if ( bits256_cmp(threshold,newblock->RO.hash2) > 0 )
+                len = iguana_rwblockhdr(1,virt->chain->zcash,serialized,&msg);
+                hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,len);
+                if ( bits256_cmp(threshold,hash2) > 0 )
                 {
-                    //printf("FOUND NONCE\n");
+                    printf("FOUND NONCE %d iterations\n",i+1);
+                    newblock->RO.hash2 = hash2;
                     break;
                 }
                 if ( newblock->height != 0 && OS_milliseconds() > expiration )
                 {
-                    //printf("time limit exceeded %u\n",virt->blocks.hwmchain.RO.timestamp);
+                    printf("time limit exceeded %u %d iterations\n",virt->blocks.hwmchain.RO.timestamp,i+1);
                     free(coinbasestr);
                     if ( txids != txspace )
                         free(txids);
@@ -384,8 +395,9 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     newblock.RO.allocsize = iguana_ROallocsize(virt);
     if ( (nBits= gecko_nBits(virt,&prevtimestamp,(void *)&newblock,GECKO_DIFFITERS)) != 0 )
     {
-        newblock.RO.bits = nBits;
-        printf("mine.%s nBits.%x ht.%d maxmillis.%d\n",virt->symbol,nBits,newblock.height,maxmillis);
+        if ( (newblock.RO.bits= nBits) > GECKO_EASIESTDIFF )
+            newblock.RO.bits = GECKO_EASIESTDIFF;
+        char str[65]; printf("mine.%s %s nBits.%x ht.%d maxmillis.%d\n",virt->symbol,bits256_str(str,bits256_from_compact(newblock.RO.bits)),nBits,newblock.height,maxmillis);
         txptrs = gecko_mempool_txptrs(myinfo,virt,&reward,&txn_count,&ptr,space,(int32_t)(sizeof(space)/sizeof(*space)),newblock.height);
         //char str[65]; printf("HWM.%s %p\n",bits256_str(str,newblock.RO.prev_block),&newblock.RO.prev_block);
         if ( (blockstr= gecko_createblock(myinfo,virt->chain->estblocktime,prevtimestamp,btcd,virt->chain->isPoS,(void *)&newblock,virt->symbol,txptrs,txn_count,maxmillis,minerpubkey33,reward)) != 0 )
