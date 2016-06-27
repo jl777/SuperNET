@@ -625,7 +625,7 @@ int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd
 
 void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
+    int32_t diff,i,j,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays; uint32_t numvirts,height,now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
     for (i=0; i<myinfo->numrelays; i++)
@@ -661,7 +661,10 @@ void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr
                 diff *= diff;
                 diff++;
                 if ( (rand() % diff) == 0 )
-                    basilisk_blocksend(myinfo,btcd,virt,addr,height+1);
+                {
+                    for (j=1; height+j+myinfo->numrelays<virt->blocks.hwmchain.height; j+=myinfo->numrelays)
+                        basilisk_blocksend(myinfo,btcd,virt,addr,height+j);
+                }
             }
         }
     }
