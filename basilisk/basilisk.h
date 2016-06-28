@@ -53,6 +53,7 @@ struct basilisk_request
     uint64_t srcamount,destamount;
     bits256 hash; 
     char src[8],dest[8],message[48];
+    uint32_t relaybits;
 } __attribute__((packed));
 
 struct basilisk_relaystatus

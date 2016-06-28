@@ -201,11 +201,14 @@ int32_t basilisk_ping_genDEX(struct supernet_info *myinfo,uint8_t *data,int32_t 
     return(datalen);
 }
 
-char *basilisk_respond_incoming(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
+struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,int32_t *nump,uint8_t *space,int32_t spacesize)
 {
-    int32_t i,j,n,k,m; struct basilisk_relay *relay; cJSON *retjson,*array; struct basilisk_request requests[BASILISK_MAXRELAYS],*rp;
-    array = cJSON_CreateArray();
-    portable_mutex_lock(&myinfo->DEX_reqmutex);
+    int32_t i,j,n,k,m; struct basilisk_relay *relay; struct basilisk_request *requests,*rp;
+    for (j=m=0; j<myinfo->numrelays; j++)
+        m += myinfo->relays[j].numrequests;
+    if ( m*sizeof(*requests) <= spacesize )
+        requests = (void *)space;
+    else requests = calloc(m,sizeof(*requests));
     for (j=m=0; j<myinfo->numrelays; j++)
     {
         relay = &myinfo->relays[j];
@@ -214,21 +217,38 @@ char *basilisk_respond_incoming(struct supernet_info *myinfo,bits256 hash,uint32
             for (i=0; i<n; i++)
             {
                 rp = &relay->requests[i];
-                if ( (requestid == 0 || rp->requestid == requestid) && ((quoteid == 0 && rp->quoteid != 0) || quoteid == rp->quoteid) )
+                for (k=0; k<m; k++)
+                    if ( memcmp(&requests[k],rp,sizeof(requests[k])) == 0 )
+                        break;
+                if ( k == m )
                 {
-                    for (k=0; k<m; k++)
-                        if ( memcmp(&requests[k],rp,sizeof(requests[k])) == 0 )
-                            break;
-                    if ( k == m )
-                    {
-                        requests[m++] = *rp;
-                        jaddi(array,basilisk_requestjson(relay->ipbits,rp));
-                    }
+                    requests[m].relaybits = relay->ipbits;
+                    requests[m++] = *rp;
                 }
             }
         }
     }
+    *nump = m;
+    return(requests);
+}
+
+char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
+{
+    int32_t i,num=0; cJSON *retjson,*array; struct basilisk_request *requests,*rp; uint8_t space[16384];
+    array = cJSON_CreateArray();
+    portable_mutex_lock(&myinfo->DEX_reqmutex);
+    if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
+    {
+        for (i=0; i<num; i++)
+        {
+            rp = &requests[i];
+            if ( (requestid == 0 || rp->requestid == requestid) && ((quoteid == 0 && rp->quoteid != 0) || quoteid == rp->quoteid) )
+                jaddi(array,basilisk_requestjson(rp->relaybits,rp));
+        }
+    }
     portable_mutex_unlock(&myinfo->DEX_reqmutex);
+    if ( requests != (void *)space )
+        free(requests);
     retjson = cJSON_CreateObject();
     jadd(retjson,"result",array);
     return(jprint(retjson,1));
@@ -236,36 +256,33 @@ char *basilisk_respond_incoming(struct supernet_info *myinfo,bits256 hash,uint32
 
 char *basilisk_respond_choose(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint64_t destamount)
 {
-    int32_t i,n,j,alreadythere = 0; uint32_t quoteid; char *retstr; struct basilisk_relay *relay; struct basilisk_request *rp=0;
+    int32_t i,num=0,alreadythere = 0; uint32_t quoteid; char *retstr; struct basilisk_request *requests,*rp,*resprp=0; uint8_t space[16384];
     quoteid = (requestid ^ hash.uints[0]);
     portable_mutex_lock(&myinfo->DEX_reqmutex);
-    for (j=0; j<myinfo->numrelays; j++)
+    if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
     {
-        relay = &myinfo->relays[j];
-        if ( (n= relay->numrequests) > 0 )
+        for (i=0; i<num; i++)
         {
-            for (i=0; i<n; i++)
+            rp = &requests[i];
+            if ( rp->requestid == requestid )
             {
-                if ( relay->requests[i].requestid == requestid )
+                if ( rp->quoteid == 0 )
+                    resprp = rp;
+                else if ( rp->quoteid == quoteid )
                 {
-                    if ( relay->requests[i].quoteid == 0 )
-                        rp = &relay->requests[i];
-                    else if ( relay->requests[i].quoteid == quoteid )
-                    {
-                        alreadythere = 1;
-                        break;
-                    }
+                    alreadythere = 1;
+                    break;
                 }
             }
         }
-        if ( alreadythere != 0 )
-            break;
     }
+    if ( requests != (void *)space )
+        free(requests);
     if ( alreadythere == 0 )
     {
-        if ( rp == 0 )
+        if ( resprp == 0 )
             retstr = clonestr("{\"error\":\"couldnt find to requestid to choose\"}");
-        else retstr = basilisk_choose(myinfo,hash,rp,destamount,quoteid);
+        else retstr = basilisk_choose(myinfo,hash,resprp,destamount,quoteid);
     } else retstr = clonestr("{\"result\":\"quoteid already there\"}");
     portable_mutex_unlock(&myinfo->DEX_reqmutex);
     return(retstr);
@@ -275,12 +292,12 @@ char *basilisk_respond_choose(struct supernet_info *myinfo,bits256 hash,uint32_t
 
 char *basilisk_respond_RID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    return(basilisk_respond_incoming(myinfo,hash,juint(valsobj,"requestid"),0));
+    return(basilisk_respond_requests(myinfo,hash,juint(valsobj,"requestid"),0));
 }
 
 char *basilisk_respond_QID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    return(basilisk_respond_incoming(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
+    return(basilisk_respond_requests(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
 }
 
 char *basilisk_respond_CHS(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
@@ -348,7 +365,7 @@ INT_ARG(InstantDEX,incoming,requestid)
 {
     cJSON *vals; char *retstr;
     if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_incoming(myinfo,myinfo->myaddr.persistent,requestid,0));
+        return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
     else
     {
         vals = cJSON_CreateObject();
@@ -364,7 +381,7 @@ TWO_INTS(InstantDEX,qstatus,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_incoming(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
+        return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
     else
     {
         vals = cJSON_CreateObject();
@@ -403,9 +420,7 @@ INT_AND_DOUBLE(InstantDEX,choose,requestid,destamount)
         return(retstr);
     }
 }
-
 #include "../includes/iguana_apiundefs.h"
-
 
 int32_t basilisk_request_pending(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t requestid)
 {
@@ -447,3 +462,22 @@ void basilisk_request_check(struct supernet_info *myinfo,struct basilisk_request
     }
 }
 
+void basilisk_requests_poll(struct supernet_info *myinfo)
+{
+    char *retstr; cJSON *retjson,*array,*item; int32_t i,n;
+    if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (array= jarray(&n,retjson,"result")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                }
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+}

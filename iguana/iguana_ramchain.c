@@ -2561,7 +2561,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
             }
             iguana_blockzcopyRO(coin->chain->zcash,destB,i,&block->RO,0);
             //destB[i] = block->RO;
-        } else printf("error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,bp->blocks[i]);
+        } else printf("bundlesave error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,bp->blocks[i]);
     }
     dest->H.txidind = dest->H.unspentind = dest->H.spendind = dest->pkind = dest->H.data->firsti;
     dest->externalind = dest->H.stacksize = 0;

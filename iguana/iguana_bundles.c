@@ -821,10 +821,10 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
         {
             if ( requiredflag != 0 )
                 printf("no block at [%d:%d]\n",bp->hdrsi,i);
-            iguana_blockunmark(coin,block,bp,i,0);
+            iguana_blockunmark(coin,block,bp,i,bp->queued != 0);
             if ( bp->queued != 0 )
             {
-                printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
+                //printf("error getting block (%d:%d) %p\n",bp->hdrsi,i,block);
                 return(-1);
             }
         }
