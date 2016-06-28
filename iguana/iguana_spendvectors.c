@@ -1102,7 +1102,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             bp->validated = (uint32_t)time(NULL);
             printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",bp->hdrsi,bp->bundleheight,bp->validated - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( bp == coin->current )
-                coin->RTdatabad = 1;
+                coin->RTdatabad = -1;
         }
         if ( errs == 0 && fp == 0 )
         {
