@@ -67,7 +67,7 @@ int32_t basilisk_ping_processvirts(struct supernet_info *myinfo,struct iguana_in
     {
         memcpy(symbol,&data[len],6), len += 6;
         len += iguana_rwvarint32(0,&data[len],&height);
-        printf("(%s %d).%p ",symbol,height,addr);
+        //printf("(%s %d).%p ",symbol,height,addr);
         if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             if ( height > virt->longestchain )
