@@ -47,6 +47,14 @@ struct basilisk_info
     struct basilisk_value values[8192]; int32_t numvalues;
 };
 
+struct basilisk_request
+{
+    uint32_t crc,timestamp,requestid,quoteid;
+    uint64_t srcamount,destamount;
+    bits256 hash; 
+    char src[8],dest[8],message[48];
+} __attribute__((packed));
+
 struct basilisk_relaystatus
 {
     uint8_t pingdelay;
@@ -54,8 +62,8 @@ struct basilisk_relaystatus
 
 struct basilisk_relay
 {
-    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping;
-    uint8_t pubkey33[33];
+    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping; uint8_t pubkey33[33];
+    struct basilisk_request *requests; int32_t maxrequests,numrequests;
     struct basilisk_relaystatus direct,reported[BASILISK_MAXRELAYS];
 };
 

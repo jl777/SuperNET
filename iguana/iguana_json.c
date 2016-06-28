@@ -112,6 +112,7 @@ cJSON *SuperNET_helpjson()
     
 #define IGUANA_HELP_I(agent,name,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#val,"int")))
 #define IGUANA_HELP_II(agent,name,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int")))
+#define IGUANA_HELP_ID(agent,name,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"float")))
 #define IGUANA_HELP_IA(agent,name,val,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#obj,"array")))
 #define IGUANA_HELP_IIA(agent,name,val,val2,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#obj,"array")))
 #define IGUANA_HELP_III(agent,name,val,val2,val3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#val3,"int")))
@@ -142,6 +143,7 @@ cJSON *SuperNET_helpjson()
     // API functions
 #define ZERO_ARGS IGUANA_HELP0
 #define INT_ARG IGUANA_HELP_I
+#define INT_AND_DOUBLE IGUANA_HELP_ID
 #define TWO_INTS IGUANA_HELP_II
 #define STRING_ARG IGUANA_HELP_S
 #define TWO_STRINGS IGUANA_HELP_SS
@@ -932,6 +934,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH0(agent,name) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
 #define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))
 #define IGUANA_DISPATCH_SS(agent,name,str,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2)))
+#define IGUANA_DISPATCH_ID(agent,name,dval,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jdouble(json,#dval),jdouble(json,#val)))
 #define IGUANA_DISPATCH_SD(agent,name,str,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#val)))
 #define IGUANA_DISPATCH_SSS(agent,name,str,str2,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3)))
 #define IGUANA_DISPATCH_SSSS(agent,name,str,str2,str3,str4) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3),jstr(json,#str4)))
@@ -985,6 +988,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
     // API functions
 #define ZERO_ARGS IGUANA_DISPATCH0
 #define INT_ARG IGUANA_DISPATCH_I
+#define INT_AND_DOUBLE IGUANA_DISPATCH_ID
 #define TWO_INTS IGUANA_DISPATCH_II
 #define STRING_ARG IGUANA_DISPATCH_S
 #define TWO_STRINGS IGUANA_DISPATCH_SS

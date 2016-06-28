@@ -17,8 +17,8 @@ ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
 THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount);
 INT_ARG(InstantDEX,incoming,requestid);
-INT_ARG(InstantDEX,choose,quoteid);
-INT_ARG(InstantDEX,qstatus,quoteid);
+INT_AND_DOUBLE(InstantDEX,choose,requestid,destamount);
+TWO_INTS(InstantDEX,qstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 

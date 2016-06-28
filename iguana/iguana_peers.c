@@ -639,9 +639,13 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 myfree(buf,len);
             return;
         }
-        int32_t i; for (i=0; i<sizeof(H); i++)
-            printf("%02x",((uint8_t *)&H)[i]);
-        printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
+        static uint32_t counter;
+        if ( counter++ < 10 )
+        {
+            int32_t i; for (i=0; i<sizeof(H); i++)
+                printf("%02x",((uint8_t *)&H)[i]);
+            printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
+        }
         //addr->dead = 1;
     }
    // printf("%s recv error on hdr errno.%d (%s) -> zombify\n",addr->ipaddr,-recvlen,strerror(-recvlen));

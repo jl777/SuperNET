@@ -699,8 +699,6 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
     iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
-    void test_ping(struct supernet_info *myinfo);
-    test_ping(myinfo);
 }
 
 void iguana_coinloop(void *arg)

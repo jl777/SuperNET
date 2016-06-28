@@ -1124,7 +1124,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         if ( _iguana_chainlink(coin,block) == 0 )
         {
             next = block;
-            for (i=n=0; i<coin->chain->bundlesize && n == 0; i++)
+            for (i=n=0; i<coin->chain->bundlesize && n < 60; i++)
             {
                 if ( (block= iguana_blockfind("recvblock",coin,block->RO.prev_block)) == 0 )
                     break;

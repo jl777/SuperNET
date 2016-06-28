@@ -529,6 +529,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_update_balances(struct iguana_info *coin);
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp);
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume);
 
 #include "../includes/iguana_api.h"
 

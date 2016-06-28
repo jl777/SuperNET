@@ -378,12 +378,23 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
     return(retstr);
 }
 
+int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
+{
+    int32_t j;
+    for (j=0; j<myinfo->numrelays; j++)
+        if ( myinfo->relays[j].ipbits == ipbits )
+            return(j);
+    return(-1);
+}
+
 #include "basilisk_bitcoin.c"
 #include "basilisk_nxt.c"
 #include "basilisk_ether.c"
 #include "basilisk_waves.c"
 #include "basilisk_lisk.c"
 #include "basilisk_CMD.c"
+#include "basilisk_DEX.c"
+#include "basilisk_ping.c"
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
@@ -560,209 +571,6 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relaystatus *reported,uint8_t pingdelay)
-{
-    if ( reported != 0 )
-    {
-        reported->pingdelay = pingdelay;
-    }
-    return(0);
-}
-
-int32_t basilisk_relay_ping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp)
-{
-    int32_t datalen = 0;
-    datalen = iguana_rwnum(1,&data[datalen],sizeof(rp->ipbits),&rp->ipbits);
-    data[datalen++] = rp->direct.pingdelay;
-    return(datalen);
-}
-int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
-{
-    int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[8192],*blockstr,*allocptr = 0; struct iguana_block *block;
-    hash2 = iguana_blockhash(virt,height);
-    if ( (block= iguana_blockfind("bsend",virt,hash2)) != 0 )
-    {
-        if ( block->height != height )
-        {
-            printf("basilisk_blocksend: height.%d mismatch %d\n",block->height,height);
-            return(-1);
-        }
-        else if ( block->queued != 0 && block->req != 0 )
-        {
-            memcpy(&blocklen,block->req,sizeof(blocklen));
-            data = (uint8_t *)(void *)((long)block->req + sizeof(blocklen));
-        }
-    }
-    if ( data == 0 )
-    {
-        if ( (blocklen= iguana_peerblockrequest(virt,virt->blockspace,IGUANA_MAXPACKETSIZE,0,hash2,0)) > 0 )
-            data = &virt->blockspace[sizeof(struct iguana_msghdr)];
-    }
-    if ( data != 0 )
-    {
-        blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),data,blocklen);
-        printf("RELAYID.%d send block.%d %s -> (%s) %s\n",myinfo->RELAYID,height,blockstr,addr->ipaddr,bits256_str(str,hash2));
-        basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,hash2,height);
-        if ( allocptr != 0 )
-            free(allocptr);
-        return(0);
-    } else printf("blocklen.%d for hwm.%d height.%d %s\n",blocklen,virt->blocks.hwmchain.height,height,bits256_str(str,hash2));
-    return(-1);
-}
-
-int32_t basilisk_relay_unping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
-{
-    uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits;
-    ipbits = rp->ipbits;
-    if ( maxlen < sizeof(ipbits)+1 )
-    {
-        printf("unping error maxlen.%d is too small\n",maxlen);
-        return(-1);
-    }
-    datalen = iguana_rwnum(1,&data[datalen],sizeof(ipbits),&ipbits);
-    pingdelay = data[datalen++];
-    for (j=0; j<myinfo->numrelays; j++)
-        if ( myinfo->relays[j].ipbits == ipbits )
-        {
-            datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,&rp->reported[j],pingdelay);
-            return(datalen);
-        }
-    datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,0,pingdelay);
-    return(datalen);
-}
-
-void basilisk_respond_ping(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
-{
-    int32_t diff,i,j,n,len = 0; struct iguana_info *btcd,*virt; char ipbuf[64],symbol[7]; struct basilisk_relay *rp; uint8_t numrelays,clen,serialized[256]; uint16_t sn; uint32_t numvirts,height,now = (uint32_t)time(NULL);
-    expand_ipbits(ipbuf,senderipbits);
-    btcd = iguana_coinfind("BTCD");
-    for (i=0; i<myinfo->numrelays; i++)
-    {
-        rp = &myinfo->relays[i];
-        rp->direct.pingdelay = 0;
-        if ( rp->ipbits == senderipbits )
-            rp->lastping = now;
-        if ( rp->lastping == now )
-            rp->direct.pingdelay = 1;
-        else
-        {
-            diff = (now - rp->lastping);
-            if ( diff < 0xff )
-                rp->direct.pingdelay = diff;
-        }
-    }
-    numrelays = data[len++];
-    len += iguana_rwvarint32(0,&data[len],&numvirts);
-    symbol[6] = 0;
-    for (i=0; i<numvirts; i++)
-    {
-        memcpy(symbol,&data[len],6), len += 6;
-        len += iguana_rwvarint32(0,&data[len],&height);
-        printf("(%s %d).%p ",symbol,height,addr);
-        if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
-        {
-            if ( height > virt->longestchain )
-                virt->longestchain = height;
-            if ( myinfo->numrelays > 0 && virt->blocks.hwmchain.height > height )
-            {
-                diff = ((height % myinfo->numrelays) - myinfo->RELAYID);
-                diff *= diff;
-                diff++;
-                if ( (rand() % diff) == 0 )
-                {
-                    for (j=1; height+j<virt->blocks.hwmchain.height && j<3; j++)
-                        basilisk_blocksend(myinfo,btcd,virt,addr,height+j);
-                }
-            }
-        }
-    }
-    for (i=0; i<numrelays; i++)
-    {
-        if ( len > datalen )
-            break;
-        if ( (n= basilisk_relay_unping(myinfo,&data[len],datalen-len,rp,i)) < 0 )
-            break;
-        len += n;
-    }
-    if ( len <= datalen-sizeof(sn) )
-    {
-        char src[16],dest[16],message[128]; bits256 hash; uint64_t amount; uint32_t timestamp;
-        len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
-        for (i=0; i<sn; i++)
-        {
-            clen = data[len++];
-            memcpy(serialized,&data[len],clen);
-            len += basilisk_rwDEXquote(0,serialized,&hash,src,&amount,dest,&timestamp,message);
-            printf("(%s (%s %.8f) -> %s) ",message,src,dstr(amount),dest);
-        }
-    }
-    if ( len != datalen )
-        printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
-    else printf("\n");
-    for (i=0; i<datalen; i++)
-        printf("%02x",data[i]);
-    printf(" <- input ping from.(%s) numrelays.%d numvirts.%d\n",ipbuf,numrelays,numvirts);
-}
-
-int32_t basilisk_relays_ping(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
-{
-    struct iguana_info *virt,*tmpcoin; struct queueitem *item,*tmp; uint8_t clen; int32_t i,iter,offset,datalen = 0; uint32_t n; uint16_t sn; uint32_t timestamp,now;
-    data[datalen++] = myinfo->numrelays;
-    for (iter=n=0; iter<2; iter++)
-    {
-        HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
-        {
-            if ( virt != 0 && virt->virtualchain != 0 )
-            {
-                if ( iter == 0 )
-                    n++;
-                else
-                {
-                    memcpy(&data[datalen],virt->symbol,6), datalen += 6;
-                    datalen += iguana_rwvarint32(1,&data[datalen],(uint32_t *)&virt->blocks.hwmchain.height);
-                }
-            }
-        }
-        if ( iter == 0 )
-            datalen += iguana_rwvarint32(1,&data[datalen],&n);
-    }
-    for (i=0; i<myinfo->numrelays; i++)
-        datalen += basilisk_relay_ping(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
-    offset = datalen, datalen += sizeof(uint16_t);
-    i = 0;
-    now = (uint32_t)time(NULL);
-    portable_mutex_lock(&myinfo->DEX_mutex);
-    DL_FOREACH_SAFE(myinfo->DEX_quotes,item,tmp)
-    {
-        memcpy(&clen,&item[1],sizeof(clen));
-        if ( datalen+clen < maxlen )
-        {
-            memcpy(&data[datalen],&item[1],clen+1), datalen += (clen + 1);
-            i++;
-        }
-        iguana_rwnum(0,(void *)((long)&item[1] + 1),sizeof(timestamp),&timestamp);
-        if ( now > timestamp + BASILISK_DEXDURATION )
-        {
-            DL_DELETE(myinfo->DEX_quotes,item);
-            free(item);
-        }
-    }
-    portable_mutex_unlock(&myinfo->DEX_mutex);
-    sn = i;
-    iguana_rwnum(1,&data[offset],sizeof(sn),&sn);
-    for (i=0; i<datalen; i++)
-        printf("%02x",data[i]);
-    printf(" <- output ping sn.%d\n",sn);
-    return(datalen);
-}
-
-void test_ping(struct supernet_info *myinfo)
-{
-    //uint8_t data[8192]; int32_t datalen;
-    //datalen = basilisk_relays_ping(myinfo,data,sizeof(data));
-    //basilisk_respond_ping(myinfo,0,0,data,datalen);
-}
-
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
@@ -783,7 +591,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
         //{ (void *)"RLY", &basilisk_respond_relays },
-        { (void *)"DEX", &basilisk_respond_instantdex },
+        { (void *)"DEX", &basilisk_respond_DEX },
+        { (void *)"RID", &basilisk_respond_RID },
+        { (void *)"CHS", &basilisk_respond_CHS },
+        { (void *)"QID", &basilisk_respond_QID },
         
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
@@ -920,7 +731,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     {
         if ( strcmp(type,"PIN") == 0 && myinfo->RELAYID >= 0 )
         {
-            basilisk_respond_ping(myinfo,_addr,ipbits,data,datalen);
+            basilisk_ping_process(myinfo,_addr,ipbits,data,datalen);
         }
     }
     else
@@ -966,23 +777,7 @@ void basilisks_loop(void *arg)
             //printf("my RELAYID.%d\n",myinfo->RELAYID);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
-            {
-                struct iguana_peer *addr; struct basilisk_relay *rp; int32_t i,datalen=0; uint8_t data[32768]; // need bigger buffer
-                datalen = basilisk_relays_ping(myinfo,&data[sizeof(struct iguana_msghdr)],sizeof(data)-sizeof(struct iguana_msghdr));
-                for (i=0; i<myinfo->numrelays; i++)
-                {
-                    rp = &myinfo->relays[i];
-                    addr = 0;
-                    if ( rp->ipbits == myinfo->myaddr.myipbits )
-                        basilisk_respond_ping(myinfo,0,myinfo->myaddr.myipbits,&data[sizeof(struct iguana_msghdr)],datalen);
-                    else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
-                    {
-                        if ( iguana_queue_send(addr,0,data,"SuperNETPIN",datalen) <= 0 )
-                            printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-                        //else printf("sent %d to (%s)\n",datalen,addr->ipaddr);
-                    }
-                }
-            }
+                basilisk_ping_send(myinfo,btcd);
         }
         //fprintf(stderr,"i ");
         //for (i=0; i<IGUANA_MAXCOINS; i++)
@@ -999,6 +794,7 @@ void basilisks_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->allcoins_mutex);
     portable_mutex_init(&myinfo->basilisk_mutex);
     portable_mutex_init(&myinfo->DEX_mutex);
+    portable_mutex_init(&myinfo->DEX_reqmutex);
     portable_mutex_init(&myinfo->gecko_mutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }

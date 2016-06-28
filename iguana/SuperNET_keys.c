@@ -86,11 +86,12 @@ char *SuperNET_parsemainargs(struct supernet_info *myinfo,bits256 *wallethashp,b
             exchanges = jarray(&n,json,"exchanges");
             if ( jobj(json,"coins") != 0 )
                 coinargs = argjsonstr;
-            free_json(json);
         }
     }
-    if ( exchanges != 0 )
+    //if ( exchanges != 0 )
         exchanges777_init(myinfo,exchanges,0);
+    if ( json != 0 )
+        free_json(json);
     *wallethashp = wallethash, *wallet2privp = wallet2priv;
     return(coinargs);
 }

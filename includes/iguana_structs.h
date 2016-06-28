@@ -463,12 +463,13 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex;
+    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex;
+    struct queueitem *DEX_quotes;
     void *ctx;
+    uint8_t *pingbuf;
     struct delayedPoW_info dPoW;
     struct basilisk_relay relays[BASILISK_MAXRELAYS];
     int32_t numrelays,RELAYID;
-    struct queueitem *DEX_quotes;
     // compatibility
     bits256 pangea_category,instantdex_category;
 };

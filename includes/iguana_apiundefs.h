@@ -17,6 +17,7 @@
 #undef DOUBLE_ARG
 #undef ARRAY_OBJ_INT
 #undef STRING_AND_ARRAY
+#undef INT_AND_DOUBLE
 #undef INT_AND_ARRAY
 #undef INT_ARRAY_STRING
 #undef TWO_ARRAYS

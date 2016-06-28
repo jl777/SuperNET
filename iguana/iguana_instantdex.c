@@ -506,7 +506,7 @@ char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *o
 int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
 {
     int32_t i; struct exchange_quote *quote;
-    //printf("instantdex_updatesources update dir.%d numquotes.%d\n",dir,numquotes);
+    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d\n",exchange->name,dir,numquotes);
     for (i=0; i<numquotes; i++)
     {
         quote = &quotes[i << 1];
@@ -1716,49 +1716,6 @@ TWO_STRINGS(InstantDEX,events,base,rel)
     return(jprint(array,1));
     
     //return(clonestr("[{\"h\":14,\"m\":44,\"s\":32,\"date\":1407877200000,\"bid\":30,\"ask\":35},{\"date\":1407877200000,\"bid\":40,\"ask\":44},{\"date\":1407877200000,\"bid\":49,\"ask\":45},{\"date\":1407877200000,\"ask\":28},{\"date\":1407877200000,\"ask\":52}]"));
-}
-
-ZERO_ARGS(InstantDEX,allcoins)
-{
-    return(clonestr("{\"result\":[\"BTC\", \"BTCD\", \"LTC\", \"SYS\", \"ZEC\"]}"));
-}
-
-STRING_ARG(InstantDEX,available,source)
-{
-    if ( (coin= iguana_coinfind(source)) != 0 )
-    {
-        if ( myinfo->expiration != 0 )
-            return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
-        else return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    } else return(clonestr("{\"error\":\"specified coin is not active\"}"));
-}
-
-THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount)
-{
-    char *retstr; cJSON *vals = cJSON_CreateObject();
-    jaddstr(vals,"dest",dest);
-    jaddstr(vals,"src",source);
-    if ( strlen(message) < 128 )
-        jaddstr(vals,"msg",message);
-    jadd64bits(vals,"satoshis",amount * SATOSHIDEN);
-    retstr = basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
-    free_json(vals);
-    return(retstr);
-}
-
-INT_ARG(InstantDEX,incoming,requestid)
-{
-    return(clonestr("{\"result\":\"this will return array of incoming request objects\"}"));
-}
-
-INT_ARG(InstantDEX,choose,quoteid)
-{
-    return(clonestr("{\"result\":\"this will choose one of the incoming requests and cancel the rest\"}"));
-}
-
-INT_ARG(InstantDEX,qstatus,quoteid)
-{
-    return(clonestr("{\"result\":\"this will return status of pending quote\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"

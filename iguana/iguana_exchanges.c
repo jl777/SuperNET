@@ -971,7 +971,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     int32_t i,n; cJSON *argjson,*item; struct exchange_info *exchange;
     if ( (exchange= exchanges777_find("bitcoin")) == 0 && (exchange= exchange_create("bitcoin",0)) != 0 )
         myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
-    if ( 0 && exchanges != 0 )
+    if ( exchanges != 0 )
     {
         n = cJSON_GetArraySize(exchanges);
         for (i=0; i<n; i++)
@@ -981,7 +981,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
                 myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         }
     }
-    if ( 0 )
+    if ( 1 )
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
