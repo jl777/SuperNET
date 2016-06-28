@@ -14,16 +14,16 @@
  *                                                                            *
  ******************************************************************************/
 
-// code mempool and tx (payment and opreturn protocol)
-
-// debug genesis balances
-// debug remote <-> server and p2p network
-// debug network port mode
-// debug virtual + network port mode
-// debug reorgs, detect when network is forked
-
+// + code mempool and tx (payment and opreturn protocol)
+// + debug remote <-> server and p2p network
 // port DEX to use geckochain
 // debug DEXchain
+// debug network port mode
+// debug virtual + network port mode
+
+// debug genesis balances
+// debug reorgs, detect when network is forked
+
 
 // code subchains synchronized with parent chain
 // port pangea to use gecko with subchains

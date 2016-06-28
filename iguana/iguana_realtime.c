@@ -360,7 +360,13 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1);
     if ( coin->RTdatabad != 0 )
     {
+        bits256 lastbundle;
         iguana_RTramchainfree(coin,bp);
+        if ( coin->RTdatabad < 0 )
+        {
+            memset(lastbundle.bytes,0,sizeof(lastbundle));
+            iguana_initfinal(coin,lastbundle);
+        }
         coin->RTdatabad = 0;
         //memset(bp->hashes,0,sizeof(bp->hashes));
         memset(bp->blocks,0,sizeof(bp->blocks));
