@@ -373,7 +373,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             //iguana_blast(coin,addr);
         }
     }
-    copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )

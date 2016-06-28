@@ -175,7 +175,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
         len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
     if ( len != datalen )
         printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
-    else printf("\n");
+    //else printf("\n");
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
     //printf(" <- input ping from.(%s) numrelays.%d numvirts.%d\n",ipbuf,numrelays,numvirts);
