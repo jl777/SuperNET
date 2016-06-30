@@ -98,8 +98,11 @@ char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int3
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
     {
-       if ( basilisk_addhexstr(&ptr,retjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
-           jaddstr(retjson,"result","success");
+        if ( basilisk_addhexstr(&ptr,retjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
+        {
+            jaddstr(retjson,"result","success");
+            printf("getmessage.(%s)\n",jprint(retjson,0));
+        }
         else jaddstr(retjson,"error","couldnt add message");
     } else jaddstr(retjson,"error","no message");
     portable_mutex_unlock(&myinfo->messagemutex);
