@@ -18,18 +18,22 @@
 char *basilisk_respond_sendmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping)
 {
     struct basilisk_message *msg;
-    msg = calloc(1,sizeof(*msg) + datalen);
-    msg->expiration = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME*2;
-    memcpy(msg->key,key,keylen);
-    msg->datalen = datalen;
-    memcpy(msg->data,data,datalen);
-    portable_mutex_lock(&myinfo->messagemutex);
-    HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
-    portable_mutex_unlock(&myinfo->messagemutex);
-    if ( sendping != 0 )
+    if ( keylen == sizeof(bits256)+sizeof(uint32_t)*2 )
     {
-        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
-        return(clonestr("{\"result\":\"message added to hashtable\"}"));
+        msg = calloc(1,sizeof(*msg) + datalen);
+        msg->expiration = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME*2;
+        msg->keylen = keylen;
+        memcpy(msg->key,key,keylen);
+        msg->datalen = datalen;
+        memcpy(msg->data,data,datalen);
+        portable_mutex_lock(&myinfo->messagemutex);
+        HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+        portable_mutex_unlock(&myinfo->messagemutex);
+        if ( sendping != 0 )
+        {
+            queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+            return(clonestr("{\"result\":\"message added to hashtable\"}"));
+        } else return(0);
     } else return(0);
 }
 
@@ -42,6 +46,8 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
         for (i=0; i<num; i++)
         {
             keylen = data[len++];
+            if ( keylen != sizeof(bits256)+sizeof(uint32_t)*2 )
+                return(0);
             key = &data[len], len += keylen;
             if ( len+sizeof(msglen) > datalen )
                 return(0);
