@@ -92,14 +92,16 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
-    cJSON *retjson; struct basilisk_message *msg; char *ptr = 0,strbuf[16384];
+    cJSON *retjson,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[16384];
     retjson = cJSON_CreateObject();
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
     {
-        if ( basilisk_addhexstr(&ptr,retjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
+        msgjson = cJSON_CreateObject();
+        if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
+            jadd(retjson,"message",msgjson);
             jaddstr(retjson,"result","success");
             printf("getmessage.(%s)\n",jprint(retjson,0));
         }
