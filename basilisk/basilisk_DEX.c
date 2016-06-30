@@ -327,7 +327,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
-            if ( rp->requestid == requestid && (quoteid == 0 || quoteid == rp->quoteid) && (bits256_cmp(hash,rp->hash) == 0 || bits256_cmp(hash,rp->desthash) == 0) )
+            if ( (requestid == 0 || rp->requestid == requestid) && (quoteid == 0 || quoteid == rp->quoteid) && (bits256_cmp(hash,rp->hash) == 0 || bits256_cmp(hash,rp->desthash) == 0) )
                 jaddi(array,basilisk_requestjson(rp->relaybits,rp));
         }
     }

@@ -38,12 +38,18 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
     int32_t i,msglen,len=0; uint8_t num,keylen,*msg,*key;
     if ( (num= data[len++]) > 0 )
     {
+        printf("processMSG num.%d datalen.%d\n",num,datalen);
         for (i=0; i<num; i++)
         {
             keylen = data[len++];
             key = &data[len], len += keylen;
+            if ( len+sizeof(msglen) > datalen )
+                return(0);
             len += iguana_rwnum(0,&data[len],sizeof(msglen),&msglen);
             msg = &data[len], len += msglen;
+            if ( msglen <= 0 || len > datalen )
+                return(0);
+            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
             basilisk_respond_sendmessage(myinfo,key,keylen,msg,msglen,0);
         }
     }
@@ -60,7 +66,10 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         memcpy(&data[datalen],msg->key,msg->keylen), datalen += msg->keylen;
         iguana_rwnum(1,data,sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
+        {
+            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
             memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
+        }
         else
         {
             printf("basilisk_ping_genMSG message doesnt fit %d vs %d\n",maxlen,datalen+msg->datalen);
@@ -103,6 +112,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
+    printf("keylen.%d datalen.%d\n",keylen,datalen);
     return(basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1));
 }
 

@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"basilisk\",\"method\":\"sendmessage\",\"vals\":{\"channel\":12345,\"msgid\":1},\"hexstr\":\"deadbeef\"}"
