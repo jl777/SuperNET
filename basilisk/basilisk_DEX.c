@@ -185,7 +185,7 @@ struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint
 
 int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t i,len=0; struct basilisk_relay *relay; struct basilisk_request R; uint8_t clen,serialized[256]; uint16_t sn; uint32_t crc;
+    int32_t i,n,len=0; struct basilisk_relay *relay; struct basilisk_request R; uint8_t clen,serialized[256]; uint16_t sn; uint32_t crc;
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
     if ( (relay= basilisk_request_ensure(myinfo,senderipbits,sn)) != 0 )
@@ -198,7 +198,10 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                 if ( relay->numrequests < relay->maxrequests )
                 {
                     memcpy(serialized,&data[len],clen);
-                    len += basilisk_rwDEXquote(0,serialized,&R);
+                    n = basilisk_rwDEXquote(0,serialized,&R);
+                    if ( n != clen )
+                        printf("n.%d clen.%d\n",n,clen);
+                    len += clen;
                     crc = basilisk_requestid(&R);
                     if ( crc == R.requestid )
                     {
