@@ -338,7 +338,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x40) == 0 ) // send fee
         {
-            datalen = strlen(swap->myfee->txbytes);
+            datalen = (int32_t)strlen(swap->myfee->txbytes) >> 1;
             if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,0x80,data,datalen) == 0 )
                 swap->statebits |= 0x40;
         }
@@ -356,7 +356,7 @@ void basilisk_swaploop(void *_swap)
             {
                 if ( (swap->statebits & 0x100) == 0 )
                 {
-                    datalen = strlen(swap->deposit->txbytes);
+                    datalen = (int32_t)strlen(swap->deposit->txbytes) >> 1;
                     if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,0x200,data,datalen) == 0 )
                         swap->statebits |= 0x100;
                 }
@@ -376,7 +376,7 @@ void basilisk_swaploop(void *_swap)
                 }
                 else if ( (swap->statebits & 0x4000) == 0 )
                 {
-                    datalen = strlen(swap->payment->txbytes);
+                    datalen = (int32_t)strlen(swap->payment->txbytes) >> 1;
                     if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,0x8000,data,datalen) == 0 )
                         swap->statebits |= 0x4000;
                 }
@@ -427,7 +427,7 @@ void basilisk_swaploop(void *_swap)
                 }
                 else if ( (swap->statebits & 0x800) == 0 )
                 {
-                    datalen = strlen(swap->alicepayment->txbytes);
+                    datalen = (int32_t)strlen(swap->alicepayment->txbytes) >> 1;
                     if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,0x1000,data,datalen) == 0 )
                         swap->statebits |= 0x800;
                 }
