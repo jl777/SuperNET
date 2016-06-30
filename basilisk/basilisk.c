@@ -170,7 +170,6 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
-    r = rand();
     //portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
@@ -179,10 +178,13 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
         else cmd[0] = 'S';
+        r = rand() % (coin->peers->numranked+1);
         for (l=0; l<IGUANA_MAXPEERS; l++)
         {
             i = (l + r) % IGUANA_MAXPEERS;
             addr = &coin->peers->active[i];
+            if ( 0 && addr->ipaddr[0] != 0 )
+                printf("%s %s s.%d vs n.%d iguana.%d\n",coin->symbol,addr->ipaddr,s,n,addr->supernet);
             if ( addr->usock >= 0 )
             {
                 if ( strcmp(type,"BLK") == 0 )
@@ -200,10 +202,9 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
                         continue;
-                //printf("%s s.%d vs n.%d\n",addr->ipaddr,s,n);
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    //printf("[%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    //printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -255,6 +256,8 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
         {
             jaddstr(valsobj,"origcmd",origCMD);
             jaddstr(valsobj,"symbol",symbol);
+            if ( myinfo->ipaddr[0] != 0 )
+                jaddstr(valsobj,"relay",myinfo->ipaddr);
             if ( (virt= iguana_coinfind(symbol)) != 0 )
             {
                 jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
