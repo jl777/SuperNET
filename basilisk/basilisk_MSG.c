@@ -70,7 +70,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         data[datalen++] = 1;
         data[datalen++] = msg->keylen;
         memcpy(&data[datalen],msg->key,msg->keylen), datalen += msg->keylen;
-        datalen += iguana_rwnum(1,data,sizeof(msg->datalen),&msg->datalen);
+        datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
         {
             printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
@@ -86,7 +86,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         for (i=0; i<datalen; i++)
             printf("%02x",data[i]);
         printf(" <- genMSG\n");
-    } data[datalen++] = 0;
+    } else data[datalen++] = 0;
     return(datalen);
 }
 
