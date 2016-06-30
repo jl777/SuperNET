@@ -392,48 +392,12 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_ether.c"
 #include "basilisk_waves.c"
 #include "basilisk_lisk.c"
-#include "basilisk_CMD.c"
+
+#include "basilisk_MSG.c"
+#include "basilisk_swap.c"
 #include "basilisk_DEX.c"
 #include "basilisk_ping.c"
-
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
-{
-    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
-    //return(basilisk_standardcmd(myinfo,"BAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_balances,coin->basilisk_balancesmetric));
-}
-
-HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
-{
-    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
-    //return(basilisk_standardcmd(myinfo,"VAL",activecoin,remoteaddr,basilisktag,vals,coin->basilisk_value,coin->basilisk_valuemetric));
-}
-
-HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
-{
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
-    {
-        if ( (coin= iguana_coinfind(symbol)) != 0 )
-        {
-            basilisktag = juint(vals,"basilisktag");
-            if ( juint(vals,"burn") == 0 )
-                jaddnum(vals,"burn",0.0001);
-            if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
-                timeoutmillis = BASILISK_TIMEOUT;
-            if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
-            {
-                retstr = ptr->retstr;
-            }
-            if ( ptr != &Lptr )
-                free(ptr);
-        }
-    }
-    return(retstr);
-}
-#include "../includes/iguana_apiundefs.h"
+#include "basilisk_CMD.c"
 
 void basilisk_functions(struct iguana_info *coin,int32_t protocol)
 {
@@ -579,23 +543,20 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
         // gecko chains
-        //{ (void *)"NEW", &basilisk_respond_newgeckochain }, // creates new virtual gecko chain
-        ///{ (void *)"GEN", &basilisk_respond_geckogenesis },  // returns genesis list
         { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
         { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
         { (void *)"BLK", &basilisk_respond_geckoblock },    // reports block
         { (void *)"MEM", &basilisk_respond_mempool },       // reports mempool
         { (void *)"GTX", &basilisk_respond_geckotx },       // reports tx
-        //{ (void *)"SEQ", &basilisk_respond_hashstamps }, // BTCD and BTC recent hashes from timestamp
         
-        // unencrypted low level functions, used by higher level protocols and virtual network funcs
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
-        //{ (void *)"RLY", &basilisk_respond_relays },
         { (void *)"DEX", &basilisk_respond_DEX },
         { (void *)"RID", &basilisk_respond_RID },
-        { (void *)"CHS", &basilisk_respond_CHS },
-        { (void *)"QID", &basilisk_respond_QID },
+        { (void *)"ACC", &basilisk_respond_ACC },
         
+        { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
+        { (void *)"MSG", &basilisk_respond_MSG }, // get MSG (hash, id, num)
+
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
         { (void *)"BOX", &basilisk_respond_mailbox },    // create/send/check mailbox pubkey
@@ -748,7 +709,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_item *tmp,*pending; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -783,18 +744,32 @@ void basilisks_loop(void *arg)
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
+        basilisk_requests_poll(myinfo);
+        now = (uint32_t)time(NULL);
+        portable_mutex_lock(&myinfo->messagemutex);
+        HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
+        {
+            if ( now > msg->expiration )
+            {
+                printf("delete expired message.%p\n",msg);
+                HASH_DELETE(hh,myinfo->messagetable,msg);
+                free(msg);
+            }
+        }
+        portable_mutex_unlock(&myinfo->messagemutex);
         usleep(100000);
     }
 }
 
 void basilisks_init(struct supernet_info *myinfo)
 {
-    //iguana_initQ(&myinfo->basilisks.submitQ,"submitQ");
-    //iguana_initQ(&myinfo->basilisks.resultsQ,"resultsQ");
+    iguana_initQ(&myinfo->msgQ,"messageQ");
     portable_mutex_init(&myinfo->allcoins_mutex);
     portable_mutex_init(&myinfo->basilisk_mutex);
     portable_mutex_init(&myinfo->DEX_mutex);
+    portable_mutex_init(&myinfo->DEX_swapmutex);
     portable_mutex_init(&myinfo->DEX_reqmutex);
     portable_mutex_init(&myinfo->gecko_mutex);
+    portable_mutex_init(&myinfo->messagemutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }

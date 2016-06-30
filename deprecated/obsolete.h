@@ -18214,6 +18214,44 @@ len = 0;
              return(basilisk_waitresponse(myinfo,"RAW",coin->symbol,remoteaddr,&Lptr,vals,ptr));
              } else return(clonestr("{\"error\":\"error issuing basilisk rawtx\"}"));
              } //else return(retstr);*/
+            /*int32_t basilisk_request_pending(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t requestid)
+             {
+             int32_t i,j,n,alreadystarted = 0; struct basilisk_relay *relay; uint32_t quoteid;
+             portable_mutex_lock(&myinfo->DEX_reqmutex);
+             for (j=0; j<myinfo->numrelays; j++)
+             {
+             relay = &myinfo->relays[j];
+             if ( (n= relay->numrequests) > 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             if ( relay->requests[i].requestid == requestid && relay->requests[i].quoteid == quoteid )
+             {
+             alreadystarted = 1;
+             break;
+             }
+             }
+             }
+             }
+             portable_mutex_unlock(&myinfo->DEX_reqmutex);
+             return(alreadystarted);
+             }
+             
+             void basilisk_request_check(struct supernet_info *myinfo,struct basilisk_request *rp)
+             {
+             double retvals[4],aveprice; struct basilisk_request R; struct iguana_info *src,*dest; char message[128]; uint32_t quoteid;
+             if ( (src= iguana_coinfind(rp->src)) != 0 && (dest= iguana_coinfind(rp->dest)) != 0 )
+             {
+             if ( basilisk_request_pending(myinfo,&R,rp->requestid) == 0 )
+             {
+             aveprice = instantdex_avehbla(myinfo,retvals,rp->src,rp->dest,dstr(rp->srcamount));
+             quoteid = rp->requestid ^ myinfo->myaddr.persistent.uints[0];
+             sprintf(message,"{\"price\":%.8f,\"requestid\":%u,\"quoteid\":%u}",aveprice,rp->requestid,quoteid);
+             if ( basilisk_request_enqueue(myinfo,rp->hash,rp->src,rp->srcamount*aveprice,myinfo->myaddr.persistent,rp->dest,rp->srcamount*aveprice,message,quoteid) != rp->requestid )
+             printf("error creating quoteid\n");
+             }
+             }
+             }*/
 
 #endif
 #endif

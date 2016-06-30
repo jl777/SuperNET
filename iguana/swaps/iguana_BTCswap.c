@@ -1120,12 +1120,12 @@ char *instantdex_statemachine(struct instantdex_stateinfo *states,int32_t numsta
             }
             else
             {
-                if ( 0 && strcmp(cmdstr,"poll") != 0 )
+                /*if ( 0 && strcmp(cmdstr,"poll") != 0 )
                 {
                     if ( swap->pollevent != 0 )
                         instantdex_eventfree(swap->pollevent);
                     swap->pollevent = instantdex_event("poll",argjson,newjson,serdata,serdatalen);
-                }
+                }*/
                 if ( jstr(newjson,"virtevent") != 0 )
                 {
                     printf("VIRTEVENT.(%s)\n",jstr(newjson,"virtevent"));

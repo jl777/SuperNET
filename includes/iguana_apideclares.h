@@ -15,20 +15,22 @@
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
-THREE_STRINGS_AND_DOUBLE(InstantDEX,request,message,dest,source,amount);
+//THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,request,message,dest,source,amount,mindestamount,autoflag);
+HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
+
 INT_ARG(InstantDEX,incoming,requestid);
-INT_AND_DOUBLE(InstantDEX,choose,requestid,destamount);
-TWO_INTS(InstantDEX,qstatus,requestid,quoteid);
+TWO_INTS(InstantDEX,accept,requestid,quoteid);
+TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
-//INT_AND_ARRAY(basilisk,result,basilisktag,vals);
-//HASH_ARRAY_STRING(basilisk,geckogenesis,hash,vals,hexstr);
 
-//HASH_ARRAY_STRING(basilisk,newgeckochain,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
+
 HASH_ARRAY_STRING(basilisk,geckoheaders,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,geckoblock,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr);
@@ -138,8 +140,8 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 STRING_AND_INT(iguana,bundleaddresses,activecoin,height);
 STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
+//TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
+//TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);
@@ -153,13 +155,13 @@ STRING_ARG(InstantDEX,tradehistory,exchange);
 
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
-TWO_STRINGS(InstantDEX,events,base,rel);
+//TWO_STRINGS(InstantDEX,events,base,rel);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 
-THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
-THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
+//THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
+//THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
 
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);

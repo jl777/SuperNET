@@ -761,7 +761,7 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
             }
             blockhashes[n++] = hash;
         }
-        else if ( type == MSG_QUOTE )
+        /*else if ( type == MSG_QUOTE )
         {
             if ( quotes == 0 )
             {
@@ -769,7 +769,7 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
                 q = 1;
             }
             quotes[q++] = hash;
-        }
+        }*/
         else if ( type == MSG_FILTERED_BLOCK )
             printf(" %d of %d: merkle.%llx\n",i,(int32_t)x,(long long)hash.txid);
         else printf("what type is %d\n",type);

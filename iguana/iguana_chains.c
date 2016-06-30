@@ -300,6 +300,8 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             chain->estblocktime = juint(argjson,"blocktime");
         if ( chain->estblocktime == 0 )
             chain->estblocktime = 60;
+        if ( chain->havecltv == 0 )
+            chain->havecltv = juint(argjson,"havecltv");
         path = jstr(argjson,"path");
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;
@@ -451,6 +453,7 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
     {
         chain->unitval = 0x1d;
         chain->txfee = 10000;
+        chain->havecltv = 1;
     }
     else chain->txfee = 1000000;
     if ( chain->unitval == 0 )

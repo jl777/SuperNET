@@ -29,6 +29,52 @@
 //#define BASILISK_MAXBLOCKLAG 600
 #define BASILISK_HDROFFSET ((int32_t)(sizeof(bits256)+sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
 
+#define INSTANTDEX_DECKSIZE 777
+#define INSTANTDEX_LOCKTIME (7200 + 600*2)
+#define INSTANTDEX_INSURANCEDIV ((7 * INSTANTDEX_DECKSIZE) >> 3)
+#define INSTANTDEX_PUBEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
+#define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
+#define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
+#define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
+#define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
+
+struct basilisk_request
+{
+    uint32_t requestid,timestamp,quoteid;
+    uint64_t srcamount;
+    bits256 hash;
+    char src[8],dest[8];
+    char volatile_start,message[43];
+    uint64_t destamount;
+    uint32_t relaybits;
+    bits256 desthash;
+} __attribute__((packed));
+
+struct bitcoin_statetx
+{
+    bits256 txid;
+    uint64_t amount,change,inputsum;
+    char destaddr[64];
+    char txbytes[];
+};
+
+struct basilisk_swap
+{
+    struct basilisk_request req;
+    struct supernet_info *myinfo; bits256 myhash,otherhash;
+    uint32_t statebits,started,expiration,finished,dead,reftime,locktime;
+    struct iguana_info *bobcoin,*alicecoin; char bobstr[64],alicestr[64];
+    int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
+    uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
+    
+    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
+    uint8_t secretAm[20],secretBn[20];
+    
+    struct bitcoin_statetx *deposit,*payment,*alicepayment,*myfee,*otherfee,*reclaim;
+};
+
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
 
 struct basilisk_item
@@ -39,6 +85,8 @@ struct basilisk_item
     char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 
+struct basilisk_message { struct queueitem DL; UT_hash_handle hh; uint32_t datalen,expiration; uint8_t key[63],keylen; uint8_t data[]; };
+
 struct basilisk_info
 {
     //queue_t resultsQ,submitQ;
@@ -46,15 +94,6 @@ struct basilisk_info
     struct basilisk_item *issued;
     struct basilisk_value values[8192]; int32_t numvalues;
 };
-
-struct basilisk_request
-{
-    uint32_t crc,timestamp,requestid,quoteid;
-    uint64_t srcamount,destamount;
-    bits256 hash; 
-    char src[8],dest[8],message[48];
-    uint32_t relaybits;
-} __attribute__((packed));
 
 struct basilisk_relaystatus
 {

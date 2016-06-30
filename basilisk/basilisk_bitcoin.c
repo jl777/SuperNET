@@ -13,13 +13,13 @@
  *                                                                            *
  ******************************************************************************/
 
-struct bitcoin_rawtxdependents
+/*struct bitcoin_rawtxdependents
 {
     int64_t spentsatoshis,outputsum,cost,change;
     int32_t numptrs,numresults;
     char **results,*coinaddrs;
     struct basilisk_item *ptrs[];
-};
+};*/
 
 #ifdef bitcoincancalculatebalances
 int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *coinaddr)
@@ -649,3 +649,338 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0,BASILISK_DEFAULTDIFF));
 }
 
+#ifdef later
+int32_t instantdex_outputinsurance(char *coinaddr,uint8_t addrtype,uint8_t *script,int64_t insurance,uint64_t r,uint64_t dest)
+{
+    uint8_t rmd160[20]; int32_t n = 0;
+    decode_hex(rmd160,sizeof(rmd160),(dest % 10) == 9 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
+    //script[n++] = sizeof(r);
+    //n += iguana_rwnum(1,&script[n],sizeof(r),&r);
+    //script[n++] = SCRIPT_OP_DROP;
+    bitcoin_address(coinaddr,addrtype,rmd160,20);
+    n = bitcoin_standardspend(script,n,rmd160);
+    return(n);
+}
+
+void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence)
+{
+    int32_t i,j,plen; uint8_t *pubkeyptrs[16];
+    for (i=0; i<spend->numinputs; i++)
+    {
+        spend->inputs[i].sequence = sequence;
+        for (j=0; j<16; j++)
+        {
+            if ( (plen= bitcoin_pubkeylen(spend->inputs[i].pubkeys[j])) < 0 )
+                break;
+            pubkeyptrs[j] = spend->inputs[i].pubkeys[j];
+        }
+        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
+    }
+}
+
+struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
+{
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; char coinaddr[64],wifstr[64]; char *rawtx=0,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins=0,*retjson=0,*privkey,*addresses;
+    if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
+    {
+        printf("no change addr error\n");
+        return(0);
+    }
+    privkey = cJSON_CreateArray();
+    addresses = cJSON_CreateArray();
+    if ( coin->changeaddr[0] == 0 )
+        bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
+    //bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
+    bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
+    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+    {
+        bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
+        jaddistr(privkey,waddr->wifstr);
+    }
+    basilisktag = (uint32_t)rand();
+    jaddistr(addresses,coinaddr);
+    valsobj = cJSON_CreateObject();
+    jadd(valsobj,"addresses",addresses);
+    jaddstr(valsobj,"coin",coin->symbol);
+    jaddstr(valsobj,"spendscript",scriptstr);
+    jaddstr(valsobj,"changeaddr",coin->changeaddr);
+    jadd64bits(valsobj,"satoshis",satoshis);
+    jadd64bits(valsobj,"txfee",txfee);
+    jaddnum(valsobj,"minconf",minconf);
+    jaddnum(valsobj,"basilisktag",basilisktag);
+    jaddnum(valsobj,"locktime",locktime);
+    jaddnum(valsobj,"timeout",30000);
+    if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
+    {
+        //printf("%s got.(%s)\n",str,retstr);
+        flag = 0;
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (rawtx= jstr(retjson,"rawtx")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
+                flag = 1;
+            else printf("missing rawtx.%p or vins.%p\n",rawtx,vins);
+        } else printf("error parsing.(%s)\n",retstr);
+        if ( flag != 0 && vins != 0 )
+        {
+            //printf("vins.(%s)\n",jprint(vins,0));
+            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,privkey)) != 0 )
+            {
+                iguana_unspentslock(myinfo,coin,vins);
+                tx = calloc(1,sizeof(*tx) + strlen(signedtx) + 1);
+                strcpy(tx->txbytes,signedtx);
+                tx->txid = signedtxid;
+                printf("%s %s.%s\n",myside != 0 ? "BOB" : "ALICE",str,signedtx);
+                free(signedtx);
+            } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
+        }
+        if ( retjson != 0 )
+            free_json(retjson);
+        if ( flag == 2 )
+        {
+            free_json(vins);
+            printf("Free rawtx\n");
+            free(rawtx);
+        }
+        free(retstr);
+    } else printf("error creating %s feetx\n",myside != 0 ? "BOB" : "ALICE");
+    free_json(addresses);
+    return(tx);
+}
+
+struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct basilisk_swap *swap,struct iguana_info *coin)
+{
+    int32_t n; uint8_t paymentscript[128]; char scriptstr[512],coinaddr[64]; struct bitcoin_statetx *ptr = 0; uint64_t r;
+    r = swap->mine.orderid;
+    n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,paymentscript,swap->insurance + swap->bobcoin->chain->txfee,r,r * (strcmp("BTC",coin->symbol) == 0));
+    init_hexbytes_noT(scriptstr,paymentscript,n);
+    printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance + swap->bobcoin->chain->txfee),scriptstr);
+    if ( (ptr= instantdex_signtx("feetx",myinfo,coin,0,scriptstr,swap->insurance + swap->bobcoin->chain->txfee,coin->txfee,0,A->offer.myside)) != 0 )
+        strcpy(ptr->destaddr,coinaddr);
+    return(ptr);
+}
+
+int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_swap *swap,cJSON *argjson)
+{
+    cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1,extralen=65536; int64_t insurance; uint64_t r;
+    struct iguana_msgtx msgtx; uint8_t script[512],serialized[8192],*extraspace=0; char coinaddr[64];
+    if ( swap->otherfee != 0 )
+    {
+        extraspace = calloc(1,extralen);
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->otherfee->txbytes,extraspace,extralen,serialized)) != 0 )
+        {
+            r = swap->other.orderid;
+            if ( strcmp(coin->symbol,"BTC") == 0 )
+                insurance = swap->insurance + swap->bobcoin->chain->txfee;
+            else insurance = swap->altinsurance + swap->alicecoin->chain->txfee;
+            n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,script,insurance,r,r * (strcmp("BTC",coin->symbol) == 0));
+            if ( n == msgtx.vouts[0].pk_scriptlen )
+            {
+                if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
+                {
+                    printf("feetx script verified.(%s)\n",swap->otherfee->txbytes);
+                    retval = 0;
+                }
+                else
+                {
+                    for (i=0; i<n; i++)
+                        printf("%02x",script[i]);
+                    printf(" fee script\n");
+                    for (i=0; i<n; i++)
+                        printf("%02x",msgtx.vouts[0].pk_script[i]);
+                    printf(" feetx mismatched\n");
+                    printf("FEETX.(%s)\n",jprint(txobj,0));
+                }
+            } else printf("pk_scriptlen %d mismatch %d\n",msgtx.vouts[0].pk_scriptlen,n);
+            free_json(txobj);
+        } else printf("error converting (%s) txobj\n",swap->otherfee->txbytes);
+    } else printf("no feetx to verify\n");
+    if ( extraspace != 0 )
+        free(extraspace);
+    return(retval);
+}
+
+struct bitcoin_statetx *instantdex_bobtx(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,int64_t amount,int32_t depositflag)
+{
+    int32_t n,secretstart; struct bitcoin_statetx *ptr = 0; uint8_t script[1024]; uint32_t locktime; int64_t satoshis; char scriptstr[512];
+    if ( coin == 0 )
+        return(0);
+    satoshis = amount + depositflag*swap->insurance*100 + swap->bobcoin->chain->txfee;
+    n = instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag);
+    if ( n < 0 )
+    {
+        printf("instantdex_bobtx couldnt generate bobscript deposit.%d\n",depositflag);
+        return(0);
+    }
+    printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(satoshis));
+    init_hexbytes_noT(scriptstr,script,n);
+    if ( (ptr= instantdex_signtx(depositflag != 0 ? "deposit" : "payment",myinfo,coin,locktime,scriptstr,satoshis,coin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
+    {
+        bitcoin_address(ptr->destaddr,coin->chain->p2shtype,script,n);
+        printf("BOBTX.%d (%s) -> %s\n",depositflag,ptr->txbytes,ptr->destaddr);
+    } else printf("sign error for bottx\n");
+    return(ptr);
+}
+
+int32_t instantdex_paymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_swap *swap,cJSON *argjson,int32_t depositflag)
+{
+    cJSON *txobj; bits256 txid; uint32_t n,locktime; int32_t i,secretstart,retval = -1,extralen=65536; uint64_t x;
+    struct iguana_msgtx msgtx; uint8_t script[512],serialized[8192],*extraspace=0; int64_t amount;
+    if ( coin != 0 && swap->deposit != 0 )
+    {
+        amount = swap->BTCsatoshis + depositflag*swap->insurance*100 + swap->bobcoin->chain->txfee;
+        if ( (n= instantdex_bobscript(script,0,&locktime,&secretstart,swap,depositflag)) <= 0 )
+            return(retval);
+        extraspace = calloc(1,extralen);
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->deposit->txbytes,extraspace,extralen,serialized)) != 0 )
+        {
+            memcpy(&script[secretstart],&msgtx.vouts[0].pk_script[secretstart],20);
+            printf("locktime.%u amount %.8f satoshis %.8f\n",locktime,dstr(amount),dstr(amount));
+            if ( msgtx.lock_time == locktime && msgtx.vouts[0].value == amount && n == msgtx.vouts[0].pk_scriptlen )
+            {
+                if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
+                {
+                    iguana_rwnum(0,&script[secretstart],sizeof(x),&x);
+                    printf("deposit script verified\n");
+                    if ( x == swap->otherdeck[swap->choosei][0] )
+                        retval = 0;
+                    else printf("deposit script verified but secret mismatch x.%llx vs otherdeck %llx\n",(long long)x,(long long)swap->otherdeck[swap->choosei][0]);
+                }
+                else
+                {
+                    for (i=0; i<n; i++)
+                        printf("%02x ",script[i]);
+                    printf("script\n");
+                    for (i=0; i<n; i++)
+                        printf("%02x ",msgtx.vouts[0].pk_script[i]);
+                    printf("deposit\n");
+                }
+            }
+            free_json(txobj);
+        }
+    }
+    if ( extraspace != 0 )
+        free(extraspace);
+    return(retval);
+}
+
+int32_t instantdex_altpaymentverify(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_swap *swap,cJSON *argjson)
+{
+    cJSON *txobj; bits256 txid; uint32_t n; int32_t i,retval = -1,extralen = 65536;
+    struct iguana_msgtx msgtx; uint8_t script[512],serialized[8192],*extraspace=0; char *altmsigaddr=0,msigaddr[64];
+    if ( swap->altpayment != 0 && (altmsigaddr= jstr(argjson,"altmsigaddr")) != 0 )
+    {
+        extraspace = calloc(1,extralen);
+        if ( (txobj= bitcoin_hex2json(coin,&txid,&msgtx,swap->altpayment->txbytes,extraspace,extralen,serialized)) != 0 )
+        {
+            n = instantdex_alicescript(script,0,msigaddr,coin->chain->p2shtype,swap->pubAm,swap->pubBn);
+            if ( strcmp(msigaddr,altmsigaddr) == 0 && n == msgtx.vouts[0].pk_scriptlen )
+            {
+                if ( memcmp(script,msgtx.vouts[0].pk_script,n) == 0 )
+                {
+                    printf("altpayment script verified\n");
+                    retval = 0;
+                }
+                else
+                {
+                    for (i=0; i<n; i++)
+                        printf("%02x ",script[i]);
+                    printf(" altscript\n");
+                    for (i=0; i<n; i++)
+                        printf("%02x ",msgtx.vouts[0].pk_script[i]);
+                    printf(" altpayment\n");
+                }
+            } else printf("msig mismatch.(%s %s) or n.%d != %d\n",msigaddr,altmsigaddr,n,msgtx.vouts[0].pk_scriptlen);
+            free_json(txobj);
+        } else printf("bitcoin_hex2json error\n");
+    } else printf("no altpayment.%p or no altmsig.%s\n",swap->altpayment,altmsigaddr!=0?altmsigaddr:"");
+    if ( extraspace != 0 )
+        free(extraspace);
+    return(retval);
+}
+
+struct bitcoin_statetx *instantdex_alicetx(struct supernet_info *myinfo,struct iguana_info *alicecoin,char *msigaddr,bits256 pubAm,bits256 pubBn,int64_t amount,struct basilisk_swap *swap)
+{
+    int32_t n; uint8_t script[1024]; char scriptstr[2048]; struct bitcoin_statetx *ptr = 0;
+    if ( alicecoin != 0 )
+    {
+        if ( bits256_nonz(pubAm) == 0 || bits256_nonz(pubBn) == 0 )
+        {
+            printf("instantdex_bobtx null pubAm.%llx or pubBn.%llx\n",(long long)pubAm.txid,(long long)pubBn.txid);
+            return(0);
+        }
+        n = instantdex_alicescript(script,0,msigaddr,alicecoin->chain->p2shtype,pubAm,pubBn);
+        init_hexbytes_noT(scriptstr,script,n);
+        if ( (ptr= instantdex_signtx("altpayment",myinfo,alicecoin,0,scriptstr,amount,alicecoin->txfee,swap->mine.minconfirms,swap->mine.offer.myside)) != 0 )
+        {
+            strcpy(ptr->destaddr,msigaddr);
+            printf("ALICETX (%s) -> %s\n",ptr->txbytes,ptr->destaddr);
+        }
+    }
+    return(ptr);
+}
+
+cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exchange,struct basilisk_swap *swap,cJSON *argjson,cJSON *newjson,uint8_t **serdatap,int32_t *serdatalenp)
+{
+    int32_t got_payment=1,bob_reclaimed=0;
+    *serdatap = 0, *serdatalenp = 0;
+    if ( instantdex_isbob(swap) == 0 )
+    {
+        // [BLOCKING: payfound] now Alice's turn to make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
+        if ( got_payment != 0 )
+        {
+            //swap->privAm = swap->privkeys[swap->otherchoosei];
+            // sign if/else payment
+        }
+        else if ( bob_reclaimed != 0 )
+        {
+            
+        }
+    }
+    else
+    {
+        // [BLOCKING: privM] Bob waits for privM either from Alice or alt blockchain
+        if ( bits256_nonz(swap->privAm) != 0 )
+        {
+            // a multisig tx for alicecoin
+        }
+    }
+    return(newjson);
+}
+#endif
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
+{
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+    {
+        if ( (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            basilisktag = juint(vals,"basilisktag");
+            if ( juint(vals,"burn") == 0 )
+                jaddnum(vals,"burn",0.0001);
+            if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+                timeoutmillis = BASILISK_TIMEOUT;
+            if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+            {
+                retstr = ptr->retstr;
+            }
+            if ( ptr != &Lptr )
+                free(ptr);
+        }
+    }
+    return(retstr);
+}
+#include "../includes/iguana_apiundefs.h"

@@ -42,7 +42,7 @@
 #define INSTANTDEX_MINPERC 50
 
 #define INSTANTDEX_OFFERDURATION 600
-#define INSTANTDEX_LOCKTIME 360
+//#define INSTANTDEX_LOCKTIME 3600
 
 #define EXCHANGES777_MINPOLLGAP 1
 #define EXCHANGES777_MAXDEPTH 200
@@ -133,13 +133,6 @@ struct instantdex_accept
     struct instantdex_offer offer;
 };
 
-struct bitcoin_statetx
-{
-    bits256 txid;
-    uint64_t amount,change,inputsum;
-    char destaddr[64];
-    char txbytes[];
-};
 
 struct instantdex_stateinfo
 {
@@ -155,7 +148,7 @@ struct bitcoin_eventitem { struct queueitem DL; cJSON *argjson,*newjson; int32_t
 struct bitcoin_swapinfo
 {
     struct bitcoin_swapinfo *next,*prev; portable_mutex_t mutex;
-    queue_t eventsQ; struct bitcoin_eventitem *pollevent;
+    queue_t eventsQ; //struct bitcoin_eventitem *pollevent;
     bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     bits256 myorderhash,otherorderhash,mypubkey,othertrader,bothorderhash;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];

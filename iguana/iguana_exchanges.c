@@ -22,6 +22,106 @@
 
 //char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
+int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+{
+    int32_t i; struct exchange_quote *quote;
+    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d\n",exchange->name,dir,numquotes);
+    for (i=0; i<numquotes; i++)
+    {
+        quote = &quotes[i << 1];
+        //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
+        if ( quote->price > SMALLVAL )
+        {
+            sortbuf[n] = *quote;
+            sortbuf[n].val = ind;
+            sortbuf[n].exchangebits = exchange->exchangebits;
+            //printf("sortbuf[%d] <-\n",n*2);
+            if ( ++n >= max )
+                break;
+        }
+    }
+    return(n);
+}
+
+double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson)
+{
+    char *str; double totalvol,pricesum; uint32_t timestamp;
+    struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
+    struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    timestamp = (uint32_t)time(NULL);
+    if ( basevolume < 0. )
+        basevolume = -basevolume, dir = -1;
+    else dir = 1;
+    memset(sortbuf,0,sizeof(*sortbuf) * max);
+    if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
+    {
+        for (i=num=0; i<myinfo->numexchanges && num < sizeof(active)/sizeof(*active); i++)
+        {
+            if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
+            {
+                if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) == 0 )
+                {
+                    if ( (str= exchanges777_Qprices(exchange,base,rel,30,1,depth,argjson,1,exchange->commission)) != 0 )
+                        free(str);
+                    req = exchanges777_baserelfind(exchange,base,rel,'M');
+                }
+                if ( req == 0 )
+                {
+                    if ( (*exchange->issue.supports)(exchange,base,rel,argjson) != 0 )
+                        printf("unexpected null req.(%s %s) %s\n",base,rel,exchange->name);
+                }
+                else
+                {
+                    //printf("active.%s\n",exchange->name);
+                    active[num++] = req;
+                }
+            }
+        }
+        for (i=n=0; i<num; i++)
+        {
+            if ( dir < 0 && active[i]->numbids > 0 )
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+            else if ( dir > 0 && active[i]->numasks > 0 )
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+        }
+        //printf("dir.%d %s/%s numX.%d n.%d\n",dir,base,rel,num,n);
+        if ( dir < 0 )
+            revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
+        {
+            quote = sortbuf[i];
+            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            if ( quote.satoshis != 0 )
+            {
+                pricesum += (quote.price * quote.volume);
+                totalvol += quote.volume;
+                printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
+            }
+        }
+        if ( totalvol > 0. )
+        {
+            *totalvolp = totalvol;
+            return(pricesum / totalvol);
+        }
+    }
+    *totalvolp = 0;
+    return(0);
+}
+
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume)
+{
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[256]; cJSON *argjson;
+    argjson = cJSON_CreateObject();
+    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&askvol,base,rel,basevolume,argjson);
+    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&bidvol,base,rel,-basevolume,argjson);
+    free_json(argjson);
+    retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+    if ( avebid > SMALLVAL && aveask > SMALLVAL )
+        return((avebid + aveask) * .5);
+    else return(0);
+}
+
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
 {
     
@@ -583,7 +683,7 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
     return(retstr);
 }
 
-void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info *exchange)
+/*void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info *exchange)
 {
     int32_t timemod,modwidth = 10; struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
     timemod = time(NULL) % modwidth;
@@ -603,7 +703,7 @@ void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info
             myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
     }
     //iguana_inv2poll(myinfo,coin);
-}
+}*/
 
 void exchanges777_loop(void *ptr)
 {
@@ -680,11 +780,11 @@ void exchanges777_loop(void *ptr)
         tradebot_timeslices(exchange);
         if ( time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
-            if ( strcmp(exchange->name,"bitcoin") == 0 )
+            /*if ( strcmp(exchange->name,"bitcoin") == 0 )
             {
                 iguana_statemachineupdate(myinfo,exchange);
                 //printf("InstantDEX call update\n");
-            }
+            }*/
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
                 //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
@@ -943,7 +1043,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         exchange->commission *= .01;
     printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
-    instantdex_FSMinit();
+    //instantdex_FSMinit();
     iguana_launch(0,"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
     return(exchange);
 }

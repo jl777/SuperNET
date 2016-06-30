@@ -110,7 +110,7 @@ void iguana_acceptloop(void *args)
                 coin->peers->active[i].A.port = cli_addr.sin_port;
                 coin->peers->active[i].ready = (uint32_t)time(NULL);
                 flag = 1;
-                instantdex_peerhas_clear(coin,&coin->peers->active[i]);
+                //instantdex_peerhas_clear(coin,&coin->peers->active[i]);
                 //iguana_iAkill(coin,&coin->peers->active[i],0);
                 //sleep(1);
                 break;
@@ -233,7 +233,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             {
                 
             }
-            else if ( msg->type == MSG_QUOTE )
+            /*else if ( msg->type == MSG_QUOTE )
             {
                 if ( (len= instantdex_quoterequest(myinfo,coin,&coin->blockspace[sizeof(struct iguana_msghdr)],coin->blockspacesize,msg->addr,msg->hash2)) > 0 )
                 {
@@ -241,7 +241,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
                     //iguana_msgparser(coin,msg->addr,0,0,0,(void *)coin->blockspace,&coin->blockspace[sizeof(struct iguana_msghdr)],len);
                     iguana_queue_send(msg->addr,0,coin->blockspace,"quote",len);
                 }
-            }
+            }*/
         }
         free(msg);
     }

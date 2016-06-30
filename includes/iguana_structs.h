@@ -49,7 +49,7 @@ struct iguana_chain
     char use_addmultisig,do_opreturn;
     int32_t estblocktime,protover;
     bits256 genesishash2,PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
-    uint8_t zcash,auxpow,alertpubkey[65];
+    uint8_t zcash,auxpow,havecltv,alertpubkey[65];
     uint16_t targetspacing,targettimespan; uint32_t nBits,normal_txversion,locktime_txversion;
 };
 
@@ -463,8 +463,10 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex;
+    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
     struct queueitem *DEX_quotes;
+    struct basilisk_swap *swaps[256]; int32_t numswaps;
+    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ;
     void *ctx;
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;

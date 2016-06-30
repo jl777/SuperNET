@@ -150,7 +150,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MSG_TX 1
 #define MSG_BLOCK 2
 #define MSG_FILTERED_BLOCK 3
-#define MSG_QUOTE 253
+//#define MSG_QUOTE 253
 #define MSG_BUNDLE 254
 #define MSG_BUNDLE_HEADERS 255
 
