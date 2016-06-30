@@ -70,7 +70,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         data[datalen++] = 1;
         data[datalen++] = msg->keylen;
         memcpy(&data[datalen],msg->key,msg->keylen), datalen += msg->keylen;
-        iguana_rwnum(1,data,sizeof(msg->datalen),&msg->datalen);
+        datalen += iguana_rwnum(1,data,sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
         {
             printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
@@ -81,6 +81,11 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
             printf("basilisk_ping_genMSG message doesnt fit %d vs %d\n",maxlen,datalen+msg->datalen);
             datalen = 0;
         }
+        printf("\n-> ");
+        int32_t i;
+        for (i=0; i<datalen; i++)
+            printf("%02x",data[i]);
+        printf(" <- genMSG\n");
     } data[datalen++] = 0;
     return(datalen);
 }
@@ -133,12 +138,12 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 #include "../includes/iguana_apideclares.h"
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("MSG",myinfo,0,hash,vals,hexstr,1));
+    return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
+    return(basilisk_standardservice("OUT",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
 
