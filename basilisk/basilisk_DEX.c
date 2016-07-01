@@ -21,11 +21,12 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
+    char str[65],str2[65]; printf("A REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
     R.destamount = R.requestid = R.quoteid = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash));
     memset(R.message,0,sizeof(R.message));
     memset(&R,0,(long)&R.volatile_start - (long)&R);
-    char str[65],str2[65]; printf("REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
+    printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
@@ -212,7 +213,7 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                     {
                         relay->requests[relay->numrequests++] = R;
                         printf("(%s (%s %.8f) -> (%s %.8f) r.%u q.%u) ",R.message,R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
-                    } else printf("crc.%08x error vs %08x\n",crc,R.requestid);
+                    } else printf("crc.%u error vs %u\n",crc,R.requestid);
                 } else printf("relay num.%d >= max.%d\n",relay->numrequests,relay->maxrequests);
             } else len += clen;
         }
