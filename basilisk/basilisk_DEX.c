@@ -396,7 +396,7 @@ char *basilisk_respond_ACC(struct supernet_info *myinfo,char *CMD,void *addr,cha
 char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     char *dest,*src,*msgstr=0,*retstr=0,buf[256]; uint32_t requestid,i; uint64_t destamount=0,satoshis; bits256 desthash; struct basilisk_request R;
-    if ( (dest= jstr(valsobj,"dest")) != 0 && (src= jstr(valsobj,"src")) != 0 && (satoshis= j64bits(valsobj,"satoshis")) != 0 )
+    if ( (dest= jstr(valsobj,"dest")) != 0 && (src= jstr(valsobj,"source")) != 0 && (satoshis= j64bits(valsobj,"satoshis")) != 0 )
     {
         memset(desthash.bytes,0,sizeof(desthash));
         if ( (destamount= j64bits(valsobj,"destsatoshis")) != 0 )
@@ -418,7 +418,7 @@ char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,cha
         } else retstr = clonestr("{\"error\":\"DEX quote couldnt be created\"}");
         if ( msgstr != 0 )
             free(msgstr);
-    }
+    } else retstr = clonestr("{\"error\":\"missing or invalid fields\"}");
     return(retstr);
 }
 
