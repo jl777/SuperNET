@@ -339,7 +339,7 @@ char *basilisk_respond_swapstatus(struct supernet_info *myinfo,bits256 hash,uint
 
 char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
 {
-    int32_t i,num=0; cJSON *retjson,*array; struct basilisk_request *requests,*rp; uint8_t space[16384];
+    int32_t i,qflag,num=0; cJSON *retjson,*array; struct basilisk_request *requests,*rp; uint8_t space[16384];
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
@@ -347,7 +347,10 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
-            if ( (requestid == 0 || rp->requestid == requestid) && (quoteid == 0 || quoteid == rp->quoteid) && (bits256_cmp(hash,rp->hash) == 0 || bits256_cmp(hash,rp->desthash) == 0) )
+            if ( quoteid == 0 || (quoteid == rp->quoteid && (bits256_cmp(hash,rp->hash) == 0 || bits256_cmp(hash,rp->desthash) == 0)) )
+                qflag = 1;
+            else qflag = 0;
+            if ( requestid == 0 || (rp->requestid == requestid && qflag != 0) )
                 jaddi(array,basilisk_requestjson(rp->relaybits,rp));
         }
     }
