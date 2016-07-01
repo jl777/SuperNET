@@ -413,7 +413,7 @@ char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,cha
             msgstr = jprint(jobj(valsobj,"message"),0);
         if ( (requestid= basilisk_request_enqueue(myinfo,1,&R,hash,src,satoshis,desthash,dest,destamount,msgstr,destamount != 0)) != 0 )
         {
-            sprintf(buf,"{\"result\":\"DEX request added\",\"request\":%u}",requestid);
+            sprintf(buf,"{\"result\":\"DEX request added\",\"requestid\":%u}",requestid);
             retstr = clonestr(buf);
         } else retstr = clonestr("{\"error\":\"DEX quote couldnt be created\"}");
         if ( msgstr != 0 )
@@ -503,6 +503,7 @@ TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
     else
     {
         vals = cJSON_CreateObject();
+        jaddnum(vals,"requestid",requestid);
         jaddnum(vals,"quoteid",quoteid);
         jaddbits256(vals,"hash",myinfo->myaddr.persistent);
         retstr = basilisk_standardservice("SWP",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
