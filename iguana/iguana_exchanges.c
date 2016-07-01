@@ -940,13 +940,16 @@ char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *ba
 int32_t exchanges777_id(char *exchangestr)
 {
     int32_t i;
-    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+    if ( exchangestr != 0 )
     {
-        //printf("%s ",Exchange_funcs[i]->name);
-        if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
-            return(i);
+        for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+        {
+            //printf("%s ",Exchange_funcs[i]->name);
+            if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
+                return(i);
+        }
+        //printf("cant find (%s)\n",exchangestr);
     }
-    //printf("cant find (%s)\n",exchangestr);
     return(-1);
 }
 
