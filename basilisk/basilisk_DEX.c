@@ -112,10 +112,10 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
     jaddbits256(item,"hash",rp->hash);
     jaddstr(item,"src",rp->src);
     if ( rp->srcamount != 0 )
-        jaddnum(item,"srcamount",dstr(rp->srcamount));
+        jadd64bits(item,"srcamount",rp->srcamount);
     jaddstr(item,"dest",rp->dest);
     if ( rp->destamount != 0 )
-        jaddnum(item,"destamount",dstr(rp->destamount));
+        jadd64bits(item,"destamount",rp->destamount);
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
