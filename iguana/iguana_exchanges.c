@@ -1089,7 +1089,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             {
                 if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforx") == 0 )
                     continue;
-                if ( ((exchange= exchanges777_find(jstr(item,"name"))) == 0 && (exchange= exchange_create(jstr(item,"name"),item)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
+                if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,item)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
                     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
             }
         free_json(argjson);
