@@ -259,12 +259,12 @@ int32_t basilisk_ping_genDEX(struct supernet_info *myinfo,uint8_t *data,int32_t 
             memcpy(&data[datalen],&item[1],clen+1), datalen += (clen + 1);
             i++;
         }
-        iguana_rwnum(0,(void *)((long)&item[1] + 1),sizeof(timestamp),&timestamp);
+        iguana_rwnum(0,(void *)((long)&item[1] + 1 + sizeof(uint32_t)),sizeof(timestamp),&timestamp);
         if ( now > timestamp + BASILISK_DEXDURATION )
         {
             DL_DELETE(myinfo->DEX_quotes,item);
             free(item);
-        }
+        } else printf("now.%u vs timestamp.%u, lag.%d\n",now,timestamp,now-timestamp);
     }
     portable_mutex_unlock(&myinfo->DEX_mutex);
     sn = i;
