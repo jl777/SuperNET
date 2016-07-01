@@ -32,7 +32,7 @@
 #define INSTANTDEX_DECKSIZE 777
 #define INSTANTDEX_LOCKTIME (7200 + 600*2)
 #define INSTANTDEX_INSURANCEDIV ((7 * INSTANTDEX_DECKSIZE) >> 3)
-#define INSTANTDEX_PUBEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
+#define INSTANTDEX_PUBKEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
@@ -50,12 +50,15 @@ struct basilisk_request
     bits256 desthash;
 } __attribute__((packed));
 
-struct bitcoin_statetx
+struct basilisk_rawtx
 {
-    bits256 txid;
+    bits256 txid,actualtxid;
+    struct iguana_info *coin;
     uint64_t amount,change,inputsum;
-    char destaddr[64];
-    char txbytes[];
+    int32_t datalen,vintype,vouttype,numconfirms,spendlen,secretstart;
+    uint32_t locktime;
+    char destaddr[64]; uint8_t addrtype,pubkey33[33],rmd160[20],spendscript[512];
+    uint8_t *txbytes;
 };
 
 struct basilisk_swap
@@ -72,7 +75,7 @@ struct basilisk_swap
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];
     
-    struct bitcoin_statetx *deposit,*payment,*alicepayment,*myfee,*otherfee,*reclaim;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,alicereclaim,alicespend,bobreclaim,bobspend;
 };
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };

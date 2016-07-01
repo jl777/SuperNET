@@ -15,9 +15,7 @@
 
 #include "../iguana/iguana777.h"
 
-//typedef char *basilisk_coinfunc(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen);
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
-//typedef struct basilisk_item *basilisk_requestfunc(struct basilisk_item *Lptr,struct supernet_info *myinfo,bits256 hash,cJSON *valsobj,uint8_t *data,int32_t datalen);
 
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
@@ -132,6 +130,13 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
     return(ptr);
 }
 
+int32_t basilisk_specialrelay_CMD(char *CMD)
+{
+    if ( strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )
+        return(1);
+    else return(0);
+}
+
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
     int32_t i,r,l,s,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
@@ -187,7 +192,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 printf("%s %s s.%d vs n.%d iguana.%d\n",coin->symbol,addr->ipaddr,s,n,addr->supernet);
             if ( addr->usock >= 0 )
             {
-                if ( strcmp(type,"BLK") == 0 )
+                if ( basilisk_specialrelay_CMD(type) > 0 )
                 {
                     for (s=0; s<myinfo->numrelays; s++)
                         if ( addr->ipbits != myinfo->myaddr.myipbits && myinfo->relays[s].ipbits == addr->ipbits )
@@ -204,7 +209,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         continue;
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    //printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -548,9 +553,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         // gecko chains
         { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
         { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
-        { (void *)"BLK", &basilisk_respond_geckoblock },    // reports block
-        { (void *)"MEM", &basilisk_respond_mempool },       // reports mempool
-        { (void *)"GTX", &basilisk_respond_geckotx },       // reports tx
+        { (void *)"BLK", &basilisk_respond_geckoblock },    // reports virtchain block
+        { (void *)"MEM", &basilisk_respond_mempool },       // reports virtchain mempool
+        { (void *)"GTX", &basilisk_respond_geckotx },       // reports virtchain tx
         
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
         { (void *)"DEX", &basilisk_respond_DEX },
@@ -761,7 +766,7 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->messagemutex);
-        usleep(100000);
+        usleep(1000000);
     }
 }
 

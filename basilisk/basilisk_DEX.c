@@ -452,7 +452,7 @@ ZERO_ARGS(InstantDEX,allcoins)
 
 STRING_ARG(InstantDEX,available,source)
 {
-    if ( (coin= iguana_coinfind(source)) != 0 )
+    if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
             return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
@@ -471,6 +471,12 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
     jadd64bits(vals,"destsatoshis",jdouble(vals,"destamount") * SATOSHIDEN);
     return(basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1));
+}
+
+INT_ARG(InstantDEX,automatched,requestid)
+{
+    // return quoteid
+    return(clonestr("{\"result\":\"automatched not yet\"}"));
 }
 
 INT_ARG(InstantDEX,incoming,requestid)

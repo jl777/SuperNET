@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"message\":\"message\",\"dest\":\"BTC\",\"source\":\"BTCD\",\"amount\":0.01}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"BTCD\",\"amount\":1,\"dest\":\"BTC\",\"minprice\":0.003,\"autoflag\":1}}"
 

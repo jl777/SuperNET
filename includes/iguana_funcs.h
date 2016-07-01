@@ -530,6 +530,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
 void iguana_update_balances(struct iguana_info *coin);
 void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp);
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume);
+int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
 
 #include "../includes/iguana_api.h"
 

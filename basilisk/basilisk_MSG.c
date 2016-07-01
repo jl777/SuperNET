@@ -148,7 +148,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("OUT",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
+    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
 

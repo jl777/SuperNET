@@ -15,10 +15,11 @@
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
-//THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,request,message,dest,source,amount,mindestamount,autoflag);
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
 
 INT_ARG(InstantDEX,incoming,requestid);
+INT_ARG(InstantDEX,automatched,requestid);
+
 TWO_INTS(InstantDEX,accept,requestid,quoteid);
 TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 

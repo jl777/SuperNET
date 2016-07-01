@@ -649,116 +649,65 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0,BASILISK_DEFAULTDIFF));
 }
 
-#ifdef later
-int32_t instantdex_outputinsurance(char *coinaddr,uint8_t addrtype,uint8_t *script,int64_t insurance,uint64_t r,uint64_t dest)
+#define SCRIPT_OP_IF 0x63
+#define SCRIPT_OP_ELSE 0x67
+#define SCRIPT_OP_ENDIF 0x68
+
+int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
 {
-    uint8_t rmd160[20]; int32_t n = 0;
-    decode_hex(rmd160,sizeof(rmd160),(dest % 10) == 9 ? TIERNOLAN_RMD160 : INSTANTDEX_RMD160);
-    //script[n++] = sizeof(r);
-    //n += iguana_rwnum(1,&script[n],sizeof(r),&r);
-    //script[n++] = SCRIPT_OP_DROP;
-    bitcoin_address(coinaddr,addrtype,rmd160,20);
-    n = bitcoin_standardspend(script,n,rmd160);
+    uint8_t pubkeyA[33],pubkeyB[33],*secret160; bits256 cltvpub,destpub; int32_t i;
+    *locktimep = swap->locktime;
+    if ( depositflag != 0 )
+    {
+        *locktimep += INSTANTDEX_LOCKTIME;
+        cltvpub = swap->pubA0;
+        destpub = swap->pubB0;
+        secret160 = swap->secretBn;
+        pubkeyA[0] = 0x02;
+        pubkeyB[0] = 0x03;
+    }
+    else
+    {
+        cltvpub = swap->pubB1;
+        destpub = swap->pubA0;
+        secret160 = swap->secretAm;
+        pubkeyA[0] = 0x03;
+        pubkeyB[0] = 0x02;
+    }
+    if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
+        return(-1);
+    for (i=0; i<20; i++)
+        if ( secret160[i] != 0 )
+            break;
+    if ( i == 20 )
+        return(-1);
+    memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
+    memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
+    script[n++] = SCRIPT_OP_IF;
+    n = bitcoin_checklocktimeverify(script,n,*locktimep);
+    n = bitcoin_pubkeyspend(script,n,pubkeyA);
+    script[n++] = SCRIPT_OP_ELSE;
+    if ( secretstartp != 0 )
+        *secretstartp = n + 2;
+    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_pubkeyspend(script,n,pubkeyB);
+    script[n++] = SCRIPT_OP_ENDIF;
     return(n);
 }
 
-void iguana_addinputs(struct iguana_info *coin,struct bitcoin_spend *spend,cJSON *txobj,uint32_t sequence)
+int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t altps2h,bits256 pubAm,bits256 pubBn)
 {
-    int32_t i,j,plen; uint8_t *pubkeyptrs[16];
-    for (i=0; i<spend->numinputs; i++)
-    {
-        spend->inputs[i].sequence = sequence;
-        for (j=0; j<16; j++)
-        {
-            if ( (plen= bitcoin_pubkeylen(spend->inputs[i].pubkeys[j])) < 0 )
-                break;
-            pubkeyptrs[j] = spend->inputs[i].pubkeys[j];
-        }
-        bitcoin_txinput(coin,txobj,spend->inputs[i].txid,spend->inputs[i].vout,spend->inputs[i].sequence,spend->inputs[i].spendscript,spend->inputs[i].spendlen,spend->inputs[i].p2shscript,spend->inputs[i].p2shlen,j>0?pubkeyptrs:0,j);
-    }
+    uint8_t p2sh160[20]; struct vin_info V;
+    memset(&V,0,sizeof(V));
+    memcpy(&V.signers[0].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[0].pubkey[0] = 0x02;
+    memcpy(&V.signers[1].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[1].pubkey[0] = 0x03;
+    V.M = V.N = 2;
+    n = bitcoin_MofNspendscript(p2sh160,script,n,&V);
+    bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));
+    return(n);
 }
 
-struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo,struct iguana_info *coin,uint32_t locktime,char *scriptstr,int64_t satoshis,int64_t txfee,int32_t minconf,int32_t myside)
-{
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct bitcoin_statetx *tx=0; char coinaddr[64],wifstr[64]; char *rawtx=0,*signedtx,*retstr; bits256 signedtxid; uint32_t basilisktag; int32_t flag,completed; cJSON *valsobj,*vins=0,*retjson=0,*privkey,*addresses;
-    if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
-    {
-        printf("no change addr error\n");
-        return(0);
-    }
-    privkey = cJSON_CreateArray();
-    addresses = cJSON_CreateArray();
-    if ( coin->changeaddr[0] == 0 )
-        bitcoin_address(coin->changeaddr,coin->chain->pubtype,waddr->rmd160,20);
-    //bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
-    bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
-    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
-    {
-        bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
-        jaddistr(privkey,waddr->wifstr);
-    }
-    basilisktag = (uint32_t)rand();
-    jaddistr(addresses,coinaddr);
-    valsobj = cJSON_CreateObject();
-    jadd(valsobj,"addresses",addresses);
-    jaddstr(valsobj,"coin",coin->symbol);
-    jaddstr(valsobj,"spendscript",scriptstr);
-    jaddstr(valsobj,"changeaddr",coin->changeaddr);
-    jadd64bits(valsobj,"satoshis",satoshis);
-    jadd64bits(valsobj,"txfee",txfee);
-    jaddnum(valsobj,"minconf",minconf);
-    jaddnum(valsobj,"basilisktag",basilisktag);
-    jaddnum(valsobj,"locktime",locktime);
-    jaddnum(valsobj,"timeout",30000);
-    if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
-    {
-        //printf("%s got.(%s)\n",str,retstr);
-        flag = 0;
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (rawtx= jstr(retjson,"rawtx")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
-                flag = 1;
-            else printf("missing rawtx.%p or vins.%p\n",rawtx,vins);
-        } else printf("error parsing.(%s)\n",retstr);
-        if ( flag != 0 && vins != 0 )
-        {
-            //printf("vins.(%s)\n",jprint(vins,0));
-            if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,privkey)) != 0 )
-            {
-                iguana_unspentslock(myinfo,coin,vins);
-                tx = calloc(1,sizeof(*tx) + strlen(signedtx) + 1);
-                strcpy(tx->txbytes,signedtx);
-                tx->txid = signedtxid;
-                printf("%s %s.%s\n",myside != 0 ? "BOB" : "ALICE",str,signedtx);
-                free(signedtx);
-            } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
-        }
-        if ( retjson != 0 )
-            free_json(retjson);
-        if ( flag == 2 )
-        {
-            free_json(vins);
-            printf("Free rawtx\n");
-            free(rawtx);
-        }
-        free(retstr);
-    } else printf("error creating %s feetx\n",myside != 0 ? "BOB" : "ALICE");
-    free_json(addresses);
-    return(tx);
-}
-
-struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct basilisk_swap *swap,struct iguana_info *coin)
-{
-    int32_t n; uint8_t paymentscript[128]; char scriptstr[512],coinaddr[64]; struct bitcoin_statetx *ptr = 0; uint64_t r;
-    r = swap->mine.orderid;
-    n = instantdex_outputinsurance(coinaddr,coin->chain->pubtype,paymentscript,swap->insurance + swap->bobcoin->chain->txfee,r,r * (strcmp("BTC",coin->symbol) == 0));
-    init_hexbytes_noT(scriptstr,paymentscript,n);
-    printf("instantdex_feetx %s %.8f (%s)\n",coin->symbol,dstr(swap->insurance + swap->bobcoin->chain->txfee),scriptstr);
-    if ( (ptr= instantdex_signtx("feetx",myinfo,coin,0,scriptstr,swap->insurance + swap->bobcoin->chain->txfee,coin->txfee,0,A->offer.myside)) != 0 )
-        strcpy(ptr->destaddr,coinaddr);
-    return(ptr);
-}
+#ifdef later
 
 int32_t instantdex_feetxverify(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_swap *swap,cJSON *argjson)
 {
@@ -968,7 +917,8 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
     {
         if ( (coin= iguana_coinfind(symbol)) != 0 )
         {
-            basilisktag = juint(vals,"basilisktag");
+            if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+                basilisktag = rand();
             if ( juint(vals,"burn") == 0 )
                 jaddnum(vals,"burn",0.0001);
             if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
