@@ -712,6 +712,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap = calloc(1,sizeof(*swap));
         swap->req = *rp;
         swap->myinfo = myinfo;
+        printf("START swap requestid.%u\n",rp->requestid);
         if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
             myinfo->swaps[myinfo->numswaps++] = swap;

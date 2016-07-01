@@ -576,7 +576,7 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; cJSON *statejson,*msgobj=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid,statebits; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; cJSON *statejson,*msgobj=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0,statebits; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
@@ -619,7 +619,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    printf("myrequest.%d pendingid.%d noquoteflag.%d havequoteflag.%d\n",myrequest,pendingid,noquoteflag,havequoteflag);
+    printf("myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d\n",myrequest,pendingid,noquoteflag,havequoteflag);
     if ( myrequest == 0 && pendingid == 0 && noquoteflag != 0 )
     {
         double retvals[4],aveprice;
