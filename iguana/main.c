@@ -1488,6 +1488,10 @@ void iguana_main(void *arg)
     iguana_urlinit(myinfo,ismainnet,usessl);
     //category_init(myinfo);
     exchange_create("bitcoin",0);
+    exchange_create("poloniex",0);
+    exchange_create("bittrex",0);
+    exchange_create("btc38",0);
+    exchange_create("huobi",0);
     argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
     //iguana_coinadd("BTC",argjson); dont do this here, coin args not set
     ///iguana_coinadd("LTC",argjson);

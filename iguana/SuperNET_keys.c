@@ -89,8 +89,6 @@ char *SuperNET_parsemainargs(struct supernet_info *myinfo,bits256 *wallethashp,b
         }
     }
     //if ( exchanges == 0 )
-        exchanges = cJSON_Parse("[{\"name\":\"poloniex\"}, {\"name\":\"bittrex\"}, {\"name\":\"btc38\"}]");
-    printf("EXCHANGES.(%s)\n",jprint(exchanges,0));
     if ( exchanges != 0 )
         exchanges777_init(myinfo,exchanges,0);
     if ( json != 0 )
