@@ -29,7 +29,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
             printf("%02x",((uint8_t *)&R)[i]);
         printf(" <- crc.%u\n",calc_crc32(0,(void *)&R,sizeof(R)));
     }
-    //printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
+    printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
