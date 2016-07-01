@@ -21,17 +21,20 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
+    R.destamount = R.requestid = R.quoteid = 0;
+    memset(R.desthash.bytes,0,sizeof(R.desthash));
+    memset(R.message,0,sizeof(R.message));
     memset(&R,0,(long)&R.volatile_start - (long)&R);
-    return(calc_crc32(0,(void *)((long)&R + sizeof(R.requestid)),sizeof(R) - sizeof(R.requestid)));
+    return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
 uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    memset(R.message,0,sizeof(R.message));
     R.relaybits = 0;
-    return(calc_crc32(0,(void *)((long)&R + sizeof(R.requestid)),sizeof(R) - sizeof(R.requestid)));
+    memset(R.message,0,sizeof(R.message));
+    return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp)
