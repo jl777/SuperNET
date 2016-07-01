@@ -209,7 +209,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         continue;
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    //printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -663,7 +663,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                 {
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
-                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
+                        //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         //if ( from_basilisk != 0 || strcmp(CMD,"GET") == 0 )
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
@@ -752,7 +752,7 @@ void basilisks_loop(void *arg)
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
-        if ( (rand() % 10) == 0 && time(NULL) < myinfo->DEXactive )
+        if ( (rand() % 10) == 0 && (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
