@@ -654,9 +654,15 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     char *retstr; cJSON *retjson,*array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,issueR,refR,list[BASILISK_MAXRELAYS*10]; double metric=0.,hwm = 0.;
     memset(&issueR,0,sizeof(issueR));
+    /*{
+        double retvals[4],aveprice; uint64_t destamount;
+        aveprice = instantdex_avehbla(myinfo,retvals,"BTCD","BTC",1);
+        destamount = 0.99 * aveprice * 1 * SATOSHIDEN;
+        printf("destamount %.8f aveprice %.8f\n",dstr(destamount),aveprice);
+    }*/
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        printf("poll.(%s)\n",retstr);
+        //printf("poll.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&n,retjson,"result")) != 0 )
