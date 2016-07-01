@@ -653,6 +653,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
+        printf("poll.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (array= jarray(&n,retjson,"result")) != 0 )
@@ -683,6 +684,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         free(retstr);
     }
+    printf("hwm %f\n",hwm);
     if ( hwm > 0. )
     {
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.hash) == 0 ) // my request
