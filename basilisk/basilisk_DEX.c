@@ -47,6 +47,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->desthash),rp->desthash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->destamount),&rp->destamount);
     len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(rp->message)-1,rp->message);
+    char str[65],str2[65]; printf("t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s)\n",rp->timestamp,rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),bits256_str(str,rp->hash),rp->dest,dstr(rp->destamount),bits256_str(str2,rp->desthash),rp->message);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf("basilisk_rwDEXquote: quoteid.%u mismatch %u\n",basilisk_quoteid(rp),rp->quoteid);
     if ( basilisk_requestid(rp) != rp->requestid )
