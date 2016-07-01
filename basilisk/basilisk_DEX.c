@@ -45,6 +45,8 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp)
 {
     int32_t len = 0;
+    if ( rwflag != 0 )
+        memset(serialized,0,sizeof(*rp));
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->requestid),&rp->requestid);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->timestamp),&rp->timestamp); // must be 2nd
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quoteid),&rp->quoteid);
