@@ -21,11 +21,9 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    char str[65],str2[65]; printf("A REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
-    R.destamount = R.requestid = R.quoteid = 0;
-    memset(R.desthash.bytes,0,sizeof(R.desthash));
-    memset(R.message,0,sizeof(R.message));
-    memset(&R,0,(long)&R.volatile_start - (long)&R);
+    char str[65],str2[65];
+    R.requestid = R.quoteid = 0;
+    memset(&R.volatile_start,0,(long)&R.volatile_start - (long)&R);
     printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
