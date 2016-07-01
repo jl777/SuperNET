@@ -480,6 +480,7 @@ STRING_ARG(InstantDEX,available,source)
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
     cJSON *msgobj = cJSON_CreateObject();
+    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     jadd64bits(msgobj,"min",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     jaddnum(msgobj,"auto",juint(vals,"autoflag"));
     jadd(vals,"message",msgobj);
@@ -493,12 +494,14 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 INT_ARG(InstantDEX,automatched,requestid)
 {
     // return quoteid
+    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     return(clonestr("{\"result\":\"automatched not yet\"}"));
 }
 
 INT_ARG(InstantDEX,incoming,requestid)
 {
     cJSON *vals; char *retstr;
+    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     if ( myinfo->RELAYID >= 0 )
         return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
     else
@@ -515,6 +518,7 @@ INT_ARG(InstantDEX,incoming,requestid)
 TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
+    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     if ( myinfo->RELAYID >= 0 )
         return(basilisk_respond_swapstatus(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
     else
@@ -532,6 +536,7 @@ TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
 TWO_INTS(InstantDEX,accept,requestid,quoteid)
 {
     struct basilisk_request R,*other; cJSON *vals,*retjson; char *retstr,*msgjsonstr = "{\"state\":1}";
+    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     if ( myinfo->RELAYID >= 0 )
         return(basilisk_respond_accept(myinfo,requestid,quoteid,msgjsonstr));
     else
@@ -570,7 +575,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
 {
     int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; cJSON *statejson,*msgobj=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid,statebits; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
-    printf("need to verify null quoteid is list[0]\n");
+    printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
         pendingid = active->req.quoteid;
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].hash) == 0 ) // my request
@@ -611,11 +616,13 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
+    printf("myrequest.%d pendingid.%d noquoteflag.%d havequoteflag.%d\n",myrequest,pendingid,noquoteflag,havequoteflag);
     if ( myrequest == 0 && pendingid == 0 && noquoteflag != 0 )
     {
         double retvals[4],aveprice;
         aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,dstr(list[0].srcamount));
         destamount = 0.99 * aveprice * list[0].srcamount;
+        printf("destamount %.8f aveprice %.8f minamount %.8f\n",dstr(destamount),aveprice,dstr(minamount));
         if ( destamount >= maxamount && destamount >= minamount )
         {
             metric = 1.;

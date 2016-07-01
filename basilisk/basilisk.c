@@ -752,7 +752,7 @@ void basilisks_loop(void *arg)
         //for (i=0; i<IGUANA_MAXCOINS; i++)
         //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
         //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
-        if ( (rand() % 10) == 0 )
+        if ( (rand() % 10) == 0 && time(NULL) < myinfo->DEXactive )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
