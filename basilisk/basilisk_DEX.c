@@ -21,7 +21,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.pad = 0;
+    R.requestid = R.quoteid = R.quotetime = 0;
     //R.volatile_start = 0;
     //memset(R.message,0,sizeof(R.message));
     R.destamount = 0;
@@ -42,7 +42,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.relaybits = R.pad = 0;
+    R.requestid = R.quoteid = R.relaybits = 0;
     //memset(R.message,0,sizeof(R.message));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
@@ -66,7 +66,6 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     }
     else
     {
-        rp->pad = 0;
         memcpy(rp->src,&serialized[len],sizeof(rp->src)), len += sizeof(rp->src);
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
@@ -701,6 +700,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             *issueR = list[0];
             issueR->desthash = myinfo->myaddr.persistent;
             issueR->destamount = destamount;
+            issueR->quotetime = (uint32_t)time(NULL);
         }
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
@@ -768,10 +768,10 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
         }
-        else if ( issueR.quoteid == 0 )
+        else //if ( issueR.quoteid == 0 )
         {
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
-        } else printf("basilisk_requests_poll unexpected hwm issueR\n");
+        } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
 }
