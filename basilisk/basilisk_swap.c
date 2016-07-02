@@ -99,7 +99,7 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct basilisk_swap 
                 memcpy(swap->mypubs[n].bytes,pubkey+1,sizeof(bits256));
             }
         }
-        if ( swap->numpubs < INSTANTDEX_DECKSIZE )
+        if ( m < INSTANTDEX_DECKSIZE )
         {
             swap->privkeys[m] = privkey;
             calc_rmd160_sha256(secret160,privkey.bytes,sizeof(privkey));
@@ -316,6 +316,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("couldnt generate privkeys\n");
         return(0);
     }
+return(swap);
     if ( swap->iambob != 0 )
     {
         basilisk_rawtx_setparms(myinfo,swap,&swap->myfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
