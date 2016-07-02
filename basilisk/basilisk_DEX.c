@@ -133,11 +133,14 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     return(rp);
 }
 
-cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
+cJSON *basilisk_requestjson(struct basilisk_request *rp)
 {
     char ipaddr[64]; cJSON *item = cJSON_CreateObject(); //*msgobj,
-    expand_ipbits(ipaddr,relaybits);
-    jaddstr(item,"relay",ipaddr);
+    if ( rp->relaybits != 0 )
+    {
+        expand_ipbits(ipaddr,rp->relaybits);
+        jaddstr(item,"relay",ipaddr);
+    }
     jaddbits256(item,"hash",rp->hash);
     if ( bits256_nonz(rp->desthash) != 0 )
         jaddbits256(item,"desthash",rp->desthash);
@@ -239,7 +242,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
-        jadd(retjson,"req",basilisk_requestjson(myinfo->myaddr.myipbits,rp));
+        //jadd(retjson,"req",basilisk_requestjson(rp));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
@@ -413,7 +416,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
                 qflag = 1;
             else qflag = 0;
             if ( requestid == 0 || (rp->requestid == requestid && qflag != 0) )
-                jaddi(array,basilisk_requestjson(rp->relaybits,rp));
+                jaddi(array,basilisk_requestjson(rp));
         }
     }
     portable_mutex_unlock(&myinfo->DEX_reqmutex);
@@ -546,7 +549,9 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
         {
             printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
-            if ( (reqjson= basilisk_requestjson(R.relaybits,&R)) != 0 )
+            if ( myinfo->RELAYID >= 0 )
+                R.relaybits = myinfo->myaddr.myipbits;
+            if ( (reqjson= basilisk_requestjson(&R)) != 0 )
                 free_json(reqjson);
             printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
             basilisk_rwDEXquote(1,serialized,&R);
