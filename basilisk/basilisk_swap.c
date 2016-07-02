@@ -212,7 +212,7 @@ void basilisk_rawtx_setparms(struct supernet_info *myinfo,struct basilisk_swap *
     if ( rawtx->vouttype <= 1 && rawtx->destaddr[0] != 0 )
     {
         rawtx->spendlen = bitcoin_standardspend(rawtx->spendscript,0,rawtx->rmd160);
-        if ( vintype == 0 && basilisk_rawtx_gen("setparms",myinfo,swap,1,rawtx,0,rawtx->spendscript,rawtx->spendlen,coin->chain->txfee,1) < 0 )
+        if ( 0 && vintype == 0 && basilisk_rawtx_gen("setparms",myinfo,swap,1,rawtx,0,rawtx->spendscript,rawtx->spendlen,coin->chain->txfee,1) < 0 )
             printf("error generating vintype.%d vouttype.%d -> %s\n",vintype,vouttype,rawtx->destaddr);
     }
 }
@@ -289,7 +289,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         swap->otherhash = swap->req.desthash;
         if ( strcmp(swap->req.src,swap->bobstr) == 0 )
             swap->iambob = 1;
-        else if ( strcmp(swap->req.dest,swap->alicestr) != 0 )
+        else if ( strcmp(swap->req.dest,swap->alicestr) == 0 )
         {
             printf("neither bob nor alice error\n");
             return(0);
@@ -525,16 +525,12 @@ void basilisk_swaploop(void *_swap)
     uint8_t *data; int32_t i,j,maxlen,datalen,numconfirms; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     printf("start swap\n");
-#ifndef __APPLE__
-getchar();
-#endif
     if ( bitcoin_swapinit(myinfo,swap) == 0 )
     {
         printf("bitcoin_swapinit error\n");
         return;
     }
     printf("back from swapinit\n");
-
     maxlen = sizeof(*swap);
     data = malloc(maxlen);
     while ( time(NULL) < swap->expiration )
@@ -706,7 +702,7 @@ getchar();
     basilisk_swap_purge(myinfo,swap);
 }
 
-struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp)
+struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits)
 {
     int32_t i; struct basilisk_swap *swap = 0;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
@@ -721,9 +717,13 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap = calloc(1,sizeof(*swap));
         swap->req = *rp;
         swap->myinfo = myinfo;
+        swap->statebits = statebits;
         printf("START swap requestid.%u\n",rp->requestid);
-        myinfo->swaps[myinfo->numswaps++] = swap;
-        //iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+        //if ( bitcoin_swapinit(myinfo,swap) != 0 )
+        {
+            myinfo->swaps[myinfo->numswaps++] = swap;
+            iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+        }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
     return(swap);

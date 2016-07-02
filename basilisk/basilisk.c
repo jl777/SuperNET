@@ -291,7 +291,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
     else
     {
         data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
-        *numsentp = pending->numsent = basilisk_sendcmd(myinfo,addr != 0 ? addr->ipaddr : 0,CMD,&pending->basilisktag,encryptflag,delaymillis,data,datalen,1,pending->nBits);
+        *numsentp = pending->numsent = basilisk_sendcmd(myinfo,addr != 0 ? addr->ipaddr : 0,CMD,&pending->basilisktag,encryptflag,delaymillis,data,datalen,fanout,pending->nBits);
         if ( blockflag != 0 )
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
@@ -382,7 +382,8 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
+    if ( strcmp("RID",CMD) != 0 )
+        printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
 
@@ -505,7 +506,8 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     {
         retstr = jprint(vals,0);
         safecopy(CMD,jstr(vals,"origcmd"),sizeof(CMD));
-        printf("(%s) -> Q.%u results vals.(%s)\n",CMD,basilisktag,retstr);
+        if ( strcmp("RID",CMD) != 0 )
+            printf("(%s) -> Q.%u results vals.(%s)\n",CMD,basilisktag,retstr);
         if ( strcmp(CMD,"GET") == 0 )
             basilisk_geckoresult(myinfo,remoteaddr,retstr,data,datalen);
         else
@@ -878,7 +880,7 @@ void basilisks_loop(void *arg)
         portable_mutex_lock(&myinfo->basilisk_mutex);
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
-            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60) )
+            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
             {
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
                 free(pending);

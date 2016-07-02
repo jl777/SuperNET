@@ -225,17 +225,17 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
 {
     cJSON *retjson; //char msgjsonstr[64];
     //sprintf(rp->message,"{\"state\":%u\"}",statebits);
-    if ( myinfo->RELAYID >= 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
+    if ( myinfo->RELAYID < 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
-        printf("START thread to complete %u/%u for (%s %.8f) <- (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
-        if ( basilisk_thread_start(myinfo,rp) != 0 )
+        printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
+        if ( basilisk_thread_start(myinfo,rp,statebits) != 0 )
         {
             basilisk_request_enqueue(myinfo,rp);
             return(clonestr("{\"result\":\"started atomic swap thread\"}"));
         }
         else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
     }
-    else if ( myinfo->RELAYID < 0 )
+    else if ( myinfo->RELAYID >= 0 )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
@@ -572,7 +572,7 @@ INT_ARG(InstantDEX,incoming,requestid)
     else
     {
         vals = cJSON_CreateObject();
-        jaddnum(vals,"requestid",requestid);
+        jaddnum(vals,"requestid",(uint32_t)requestid);
         jaddbits256(vals,"hash",myinfo->myaddr.persistent);
         retstr = basilisk_standardservice("RID",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
         free_json(vals);
@@ -589,8 +589,8 @@ TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
     else
     {
         vals = cJSON_CreateObject();
-        jaddnum(vals,"requestid",requestid);
-        jaddnum(vals,"quoteid",quoteid);
+        jaddnum(vals,"requestid",(uint32_t)requestid);
+        jaddnum(vals,"quoteid",(uint32_t)quoteid);
         jaddbits256(vals,"hash",myinfo->myaddr.persistent);
         retstr = basilisk_standardservice("SWP",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
         free_json(vals);
@@ -607,8 +607,8 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid)
     else
     {
         vals = cJSON_CreateObject();
-        jaddnum(vals,"quoteid",quoteid);
-        jaddnum(vals,"requestid",requestid);
+        jaddnum(vals,"quoteid",(uint32_t)quoteid);
+        jaddnum(vals,"requestid",(uint32_t)requestid);
         if ( (retstr= basilisk_standardservice("ACC",myinfo,0,myinfo->myaddr.persistent,vals,"",1)) != 0 )
         {
             /*if ( (retjson= cJSON_Parse(retstr)) != 0 )
