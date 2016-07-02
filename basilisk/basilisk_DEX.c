@@ -182,7 +182,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
                 printf(" <- R mismatch\n");
                 for (i=0; i<sizeof(R); i++)
                     if ( ((uint8_t *)rp)[i] != ((uint8_t *)&R)[i] )
-                        printf("%d ",i);
+                        printf("(%02x %02x).%d ",((uint8_t *)rp)[i],((uint8_t *)&R)[i],i);
                 printf("mismatches\n");
             } else printf("matched JSON conv %u %u\n",basilisk_requestid(&R),basilisk_requestid(rp));
         }

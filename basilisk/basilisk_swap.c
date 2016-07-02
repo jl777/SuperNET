@@ -185,7 +185,6 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
         }
         free(retstr);
     } else printf("error creating %s feetx\n",swap->iambob != 0 ? "BOB" : "ALICE");
-    free_json(addresses);
     free_json(valsobj);
     return(retval);
 }
