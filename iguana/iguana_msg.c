@@ -889,7 +889,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         {
             struct iguana_msgblock msg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
-            if ( addr != 0 )
+            if ( addr != 0 && recvlen >= sizeof(bits256) )
             {
                 if ( ishost == 0 )
                 {

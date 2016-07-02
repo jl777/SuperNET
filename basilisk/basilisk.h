@@ -41,12 +41,12 @@
 struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid;
-    uint64_t srcamount;
+    uint64_t srcamount,minamount;
     bits256 hash;
     char src[8],dest[8];
     char volatile_start,message[43];
-    uint64_t destamount;
     uint32_t relaybits;
+    uint64_t destamount;
     bits256 desthash;
 } __attribute__((packed));
 
