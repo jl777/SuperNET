@@ -856,6 +856,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         {
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
+            if ( (retstr= basilisk_start(myinfo,&issueR,1)) != 0 )
+                free(retstr);
         }
         else //if ( issueR.quoteid == 0 )
         {
