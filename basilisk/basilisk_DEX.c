@@ -228,7 +228,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
 {
     cJSON *retjson; //char msgjsonstr[64];
     //sprintf(rp->message,"{\"state\":%u\"}",statebits);
-    if ( myinfo->RELAYID < 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
+    if ( (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
         printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
         if ( basilisk_thread_start(myinfo,rp,statebits) != 0 )
