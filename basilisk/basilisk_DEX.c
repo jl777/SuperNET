@@ -22,8 +22,8 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
     struct basilisk_request R;
     R = *rp;
     R.requestid = R.quoteid = R.pad = 0;
-    R.volatile_start = 0;
-    memset(R.message,0,sizeof(R.message));
+    //R.volatile_start = 0;
+    //memset(R.message,0,sizeof(R.message));
     R.destamount = 0;
     R.relaybits = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
@@ -33,7 +33,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
         for (i=0; i<sizeof(R); i++)
             printf("%02x",((uint8_t *)&R)[i]);
         printf(" <- crc.%u\n",calc_crc32(0,(void *)&R,sizeof(R)));
-        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s (%s) crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),R.message,calc_crc32(0,(void *)&R,sizeof(R)));
+        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)));
     }
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
@@ -42,8 +42,8 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.relaybits = R.pad = R.volatile_start = 0;
-    memset(R.message,0,sizeof(R.message));
+    R.requestid = R.quoteid = R.relaybits = R.pad = 0;
+    //memset(R.message,0,sizeof(R.message));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
@@ -66,11 +66,11 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     }
     else
     {
-        rp->pad = rp->volatile_start = 0;
+        rp->pad = 0;
         memcpy(rp->src,&serialized[len],sizeof(rp->src)), len += sizeof(rp->src);
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
-    len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(rp->message)-1,rp->message);
+    //len += iguana_rwvarstr(rwflag,&serialized[len],sizeof(rp->message)-1,rp->message);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf("basilisk_rwDEXquote.%d: quoteid.%u mismatch calc %u\n",rwflag,rp->quoteid,basilisk_quoteid(rp));
     if ( basilisk_requestid(rp) != rp->requestid )
@@ -78,11 +78,11 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     return(len);
 }
 
-uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp,char *message)
+uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
     printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
-    strcpy(rp->message,message);
+    //strcpy(rp->message,message);
     len = basilisk_rwDEXquote(1,serialized+1,rp);
     printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
@@ -99,7 +99,7 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
 
 struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *reqjson)
 {
-    uint32_t requestid,quoteid; char *msgstr;
+    uint32_t requestid,quoteid; //char *msgstr;
     memset(rp,0,sizeof(*rp));
     rp->hash = jbits256(reqjson,"hash");
     rp->desthash = jbits256(reqjson,"desthash");
@@ -113,14 +113,14 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->timestamp = juint(reqjson,"timestamp");
     safecopy(rp->src,jstr(reqjson,"src"),sizeof(rp->src));
     safecopy(rp->dest,jstr(reqjson,"dest"),sizeof(rp->dest));
-    if ( jobj(reqjson,"message") != 0 )
+    /*if ( jobj(reqjson,"message") != 0 )
     {
         msgstr = jprint(jobj(reqjson,"message"),0);
         if ( strlen(msgstr) > sizeof(rp->message)-1 )
             printf("basilisk_parsejson msgstr.(%s) too long\n",msgstr);
         safecopy(rp->message,msgstr,sizeof(rp->message));
         free(msgstr);
-    }
+    }*/
     if ( quoteid != 0 )
     {
         rp->quoteid = basilisk_quoteid(rp);
@@ -135,15 +135,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
 
 cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
 {
-    /*uint32_t requestid,timestamp,quoteid;
-    uint64_t srcamount,minamount;
-    bits256 hash;
-    char src[8],dest[8];
-    char volatile_start,message[43];
-    uint32_t relaybits;
-    uint64_t destamount;
-    bits256 desthash;*/
-    char ipaddr[64]; cJSON *msgobj,*item = cJSON_CreateObject();
+    char ipaddr[64]; cJSON *item = cJSON_CreateObject(); //*msgobj,
     expand_ipbits(ipaddr,relaybits);
     jaddstr(item,"relay",ipaddr);
     jaddbits256(item,"hash",rp->hash);
@@ -160,8 +152,8 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
-    if ( rp->message[0] != 0 && (msgobj= cJSON_Parse(rp->message)) != 0 )
-        jadd(item,"message",msgobj);
+    //if ( rp->message[0] != 0 && (msgobj= cJSON_Parse(rp->message)) != 0 )
+    //    jadd(item,"message",msgobj);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf("quoteid mismatch %u vs %u\n",basilisk_quoteid(rp),rp->quoteid);
     if ( basilisk_requestid(rp) != rp->requestid )
@@ -170,8 +162,6 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
         int32_t i; struct basilisk_request R;
         if ( basilisk_parsejson(&R,item) != 0 )
         {
-            memset(R.message,0,sizeof(R.message));
-            strcpy(R.message,rp->message);
             if ( memcmp(&R,rp,sizeof(*rp)) != 0 )
             {
                 for (i=0; i<sizeof(*rp); i++)
@@ -192,7 +182,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
 
 int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits256 hash,uint32_t timestamp)
 {
-    char *dest,*src,*msgstr=0; uint32_t i;
+    char *dest,*src; uint32_t i;
     memset(rp,0,sizeof(*rp));
     if ( (dest= jstr(valsobj,"dest")) != 0 && (src= jstr(valsobj,"source")) != 0 && (rp->srcamount= j64bits(valsobj,"satoshis")) != 0 )
     {
@@ -210,14 +200,14 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         rp->hash = hash;
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
-        if ( jobj(valsobj,"message") != 0 )
+        /*if ( jobj(valsobj,"message") != 0 )
         {
             msgstr = jprint(jobj(valsobj,"message"),0);
             if ( strlen(msgstr) > sizeof(rp->message)-1 )
                 printf("message.(%s) too long\n",rp->message);
             strncpy(rp->message,msgstr,sizeof(rp->message)-1);
             free(msgstr);
-        }
+        }*/
         rp->requestid = basilisk_requestid(rp);
         if ( rp->destamount != 0 && bits256_nonz(rp->desthash) != 0 )
         {
@@ -232,16 +222,16 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 
 char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits)
 {
-    cJSON *retjson; char msgjsonstr[64];
-    sprintf(rp->message,"{\"state\":%u\"}",statebits);
-    if ( basilisk_request_enqueue(myinfo,rp,msgjsonstr) == rp->requestid )
+    cJSON *retjson; //char msgjsonstr[64];
+    //sprintf(rp->message,"{\"state\":%u\"}",statebits);
+    if ( basilisk_request_enqueue(myinfo,rp) == rp->requestid )
     {
         if ( myinfo->RELAYID >= 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
         {
             printf("START thread to complete %u/%u for (%s %.8f) <- (%s %.8f)\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
             if ( basilisk_thread_start(myinfo,rp) != 0 )
             {
-                basilisk_request_enqueue(myinfo,rp,msgjsonstr);
+                basilisk_request_enqueue(myinfo,rp);
                 return(clonestr("{\"result\":\"started atomic swap thread\"}"));
             }
             else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
@@ -297,7 +287,7 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                     if ( crc == R.requestid )
                     {
                         relay->requests[relay->numrequests++] = R;
-                        printf("(%s (%s %.8f) -> (%s %.8f) r.%u q.%u) ",R.message,R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
+                        printf("[(%s %.8f) -> (%s %.8f) r.%u q.%u] ",R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
                     } else printf("crc.%u error vs %u\n",crc,R.requestid);
                 } else printf("relay num.%d >= max.%d\n",relay->numrequests,relay->maxrequests);
             } else len += clen;
@@ -493,7 +483,7 @@ char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,cha
     if ( basilisk_request_create(&R,valsobj,hash,juint(valsobj,"timestamp")) == 0 )
     {
         char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",R.src,dstr(R.srcamount),R.dest,bits256_str(str,hash));
-        if ( basilisk_request_enqueue(myinfo,&R,R.message) != 0 )
+        if ( basilisk_request_enqueue(myinfo,&R) != 0 )
         {
             sprintf(buf,"{\"result\":\"DEX request added\",\"requestid\":%u}",R.requestid);
             retstr = clonestr(buf);
@@ -652,18 +642,19 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; cJSON *statejson,*msgobj=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0,statebits; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
+    minamount = list[0].minamount;
     printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
         pendingid = active->req.quoteid;
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].hash) == 0 ) // my request
         myrequest = 1;
-    if ( list[0].message[0] != 0 && (msgobj= cJSON_Parse(list[0].message)) != 0 )
+    /*if ( list[0].message[0] != 0 && (msgobj= cJSON_Parse(list[0].message)) != 0 )
     {
         autoflag = juint(msgobj,"auto");
         minamount = j64bits(msgobj,"min");
-    }
+    }*/
     for (i=0; i<n; i++)
     {
         if ( basilisk_request_cmpref(&list[0],&list[i]) != 0 )
@@ -683,7 +674,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
             else if ( active != 0 && pendingid == list[i].quoteid )
             {
-                if ( (statejson= cJSON_Parse(list[i].message)) != 0 )
+                /*if ( (statejson= cJSON_Parse(list[i].message)) != 0 )
                 {
                     statebits = juint(statejson,"state");
                     if ( bitweight(statebits) > bitweight(active->statebits) )
@@ -693,7 +684,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
                         printf("req statbits.%x -> %x\n",active->statebits,statebits);
                     }
                     free(statejson);
-                }
+                }*/
             }
         } else noquoteflag++;
     }
@@ -723,8 +714,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             else metric = 1.;
         }
     }
-    if ( msgobj != 0 )
-        free_json(msgobj);
     return(metric);
 }
 
