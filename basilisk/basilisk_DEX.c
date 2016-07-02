@@ -77,9 +77,10 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp,char *message)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
-    printf("ENQUEUE\n");
+    printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     strcpy(rp->message,message);
     len = basilisk_rwDEXquote(1,serialized+1,rp);
+    printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
     {
         serialized[0] = len;
@@ -165,6 +166,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
         int32_t i; struct basilisk_request R;
         if ( basilisk_parsejson(&R,item) != 0 )
         {
+            memset(R.message,0,sizeof(R.message));
             strcpy(R.message,rp->message);
             if ( memcmp(&R,rp,sizeof(*rp)) != 0 )
             {
