@@ -83,7 +83,6 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
     printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     //strcpy(rp->message,message);
     len = basilisk_rwDEXquote(1,serialized+1,rp);
-    printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
     {
         serialized[0] = len;
@@ -223,26 +222,23 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
 {
     cJSON *retjson; //char msgjsonstr[64];
     //sprintf(rp->message,"{\"state\":%u\"}",statebits);
-    if ( basilisk_request_enqueue(myinfo,rp) == rp->requestid )
+    if ( myinfo->RELAYID >= 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
-        if ( myinfo->RELAYID >= 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
+        printf("START thread to complete %u/%u for (%s %.8f) <- (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
+        if ( basilisk_thread_start(myinfo,rp) != 0 )
         {
-            printf("START thread to complete %u/%u for (%s %.8f) <- (%s %.8f)\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
-            if ( basilisk_thread_start(myinfo,rp) != 0 )
-            {
-                basilisk_request_enqueue(myinfo,rp);
-                return(clonestr("{\"result\":\"started atomic swap thread\"}"));
-            }
-            else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
+            basilisk_request_enqueue(myinfo,rp);
+            return(clonestr("{\"result\":\"started atomic swap thread\"}"));
         }
-        else if ( myinfo->RELAYID < 0 )
-        {
-            retjson = cJSON_CreateObject();
-            jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
-            jadd(retjson,"req",basilisk_requestjson(myinfo->myaddr.myipbits,rp));
-            return(jprint(retjson,1));
-        } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
-    } else return(clonestr("{\"error\":\"couldnt enqueue chosen\"}"));
+        else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
+    }
+    else if ( myinfo->RELAYID < 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
+        jadd(retjson,"req",basilisk_requestjson(myinfo->myaddr.myipbits,rp));
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
 // end of swap code
 
@@ -770,6 +766,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
+            issueR.quoteid = basilisk_quoteid(&issueR);
+            issueR.desthash = myinfo->myaddr.persistent;
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
