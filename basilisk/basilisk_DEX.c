@@ -92,9 +92,9 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,int32_t queueflag
     }
     R.desthash = desthash;
     R.destamount = destamount;
+    R.requestid = basilisk_requestid(&R);
     if ( destamount != 0 && bits256_nonz(desthash) != 0 )
         R.quoteid = basilisk_quoteid(&R);
-    R.requestid = basilisk_requestid(&R);
     *finalR = R;
     len = basilisk_rwDEXquote(1,serialized+1,&R);
     if ( queueflag != 0 && (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
@@ -182,6 +182,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
         int32_t i; struct basilisk_request R;
         if ( basilisk_parsejson(&R,item) != 0 )
         {
+            strcpy(R.message,rp->message);
             if ( memcmp(&R,rp,sizeof(*rp)) != 0 )
             {
                 for (i=0; i<sizeof(*rp); i++)
@@ -638,6 +639,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(-1);
         if ( list[i].quoteid != 0 )
         {
+            if ( bits256_cmp(myinfo->myaddr.persistent,list[i].desthash) == 0 ) // my quoteid
+                myrequest |= 2;
             havequoteflag++;
             if ( pendingid == 0 )
             {
