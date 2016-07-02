@@ -723,7 +723,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap->myinfo = myinfo;
         printf("START swap requestid.%u\n",rp->requestid);
         myinfo->swaps[myinfo->numswaps++] = swap;
-        iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+        //iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
     return(swap);
