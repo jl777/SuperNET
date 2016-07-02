@@ -642,7 +642,7 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1,autoflag=0; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
     printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
@@ -705,7 +705,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
     {
-        if ( maxamount > minamount && autoflag != 0 && time(NULL) > BASILISK_DEXDURATION/2 )
+        if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
         {
             printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             *issueR = list[maxi];
