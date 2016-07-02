@@ -311,12 +311,11 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("neither src nor dest error\n");
         return(0);
     }
-    if ( bits256_nonz(myinfo->persistent_priv) == 0 || instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myhash,0x02+swap->iambob) != 2 + INSTANTDEX_DECKSIZE )
+    if ( bits256_nonz(myinfo->persistent_priv) == 0 )//|| instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myhash,0x02+swap->iambob) != 2 + INSTANTDEX_DECKSIZE )
     {
         printf("couldnt generate privkeys\n");
         return(0);
     }
-return(swap);
     if ( swap->iambob != 0 )
     {
         basilisk_rawtx_setparms(myinfo,swap,&swap->myfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
