@@ -719,10 +719,10 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap->myinfo = myinfo;
         swap->statebits = statebits;
         printf("START swap requestid.%u\n",rp->requestid);
-        //if ( bitcoin_swapinit(myinfo,swap) != 0 )
+        if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
             myinfo->swaps[myinfo->numswaps++] = swap;
-            iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+            //iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
         }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
