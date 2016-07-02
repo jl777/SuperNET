@@ -21,8 +21,12 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.relaybits = R.pad = 0;
-    memset(&R.volatile_start,0,(long)&R.volatile_start - (long)&R);
+    R.requestid = R.quoteid = R.pad = 0;
+    R.volatile_start = 0;
+    memset(R.message,0,sizeof(R.message));
+    R.destamount = 0;
+    R.relaybits = 0;
+    memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
     if ( 0 )
     {
         int32_t i;
