@@ -525,12 +525,6 @@ void basilisk_swaploop(void *_swap)
     uint8_t *data; int32_t i,j,maxlen,datalen,numconfirms; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     printf("start swap\n");
-    if ( bitcoin_swapinit(myinfo,swap) == 0 )
-    {
-        printf("bitcoin_swapinit error\n");
-        return;
-    }
-    printf("back from swapinit\n");
     maxlen = sizeof(*swap);
     data = malloc(maxlen);
     while ( time(NULL) < swap->expiration )
@@ -722,7 +716,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
             myinfo->swaps[myinfo->numswaps++] = swap;
-            //iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+            iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
         }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
