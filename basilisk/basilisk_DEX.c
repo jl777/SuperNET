@@ -145,7 +145,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
     if ( rp->srcamount != 0 )
         jadd64bits(item,"srcamount",rp->srcamount);
     if ( rp->minamount != 0 )
-        jadd64bits(item,"min",rp->minamount);
+        jadd64bits(item,"minamount",rp->minamount);
     jaddstr(item,"dest",rp->dest);
     if ( rp->destamount != 0 )
         jadd64bits(item,"destamount",rp->destamount);
@@ -196,7 +196,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
             if ( i != 4 )
                 rp->destamount = 0;
         }
-        rp->minamount = j64bits(valsobj,"min");
+        rp->minamount = j64bits(valsobj,"minamount");
         rp->timestamp = timestamp;
         rp->hash = hash;
         strncpy(rp->src,src,sizeof(rp->src)-1);
@@ -530,11 +530,8 @@ STRING_ARG(InstantDEX,available,source)
 
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
-    cJSON *msgobj = cJSON_CreateObject();
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    jadd64bits(msgobj,"min",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
-    jaddnum(msgobj,"auto",juint(vals,"autoflag"));
-    jadd(vals,"message",msgobj);
+    jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"desthash") == 0 )
         jaddbits256(vals,"desthash",hash);
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
@@ -693,7 +690,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,dstr(list[0].srcamount));
         destamount = 0.99 * aveprice * list[0].srcamount;
         printf("destamount %.8f aveprice %.8f minamount %.8f\n",dstr(destamount),aveprice,dstr(minamount));
-        if ( destamount >= maxamount && destamount >= minamount )
+        if ( destamount > 0 && destamount >= maxamount && destamount >= minamount )
         {
             metric = 1.;
             *issueR = list[0];

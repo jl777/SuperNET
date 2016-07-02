@@ -736,6 +736,7 @@ struct basilisk_swap *basilisk_request_started(struct supernet_info *myinfo,uint
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->req.requestid == requestid )
         {
+            printf("REQUEST STARTED.[%d] <- req.%u\n",i,requestid);
             active = myinfo->swaps[i];
             break;
         }
