@@ -794,9 +794,9 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     return(metric);
 }
 
-double basilisk_process_results(struct supernet_info *myinfo,cJSON *retjson,double hwm)
+double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
-    cJSON *array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,issueR,refR,list[BASILISK_MAXRELAYS*10]; double metric=0.;
+    cJSON *array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS*10]; double metric=0.;
     if ( (array= jarray(&n,retjson,"result")) != 0 )
     {
         for (i=m=0; i<n; i++)
@@ -810,7 +810,7 @@ double basilisk_process_results(struct supernet_info *myinfo,cJSON *retjson,doub
                 else
                 {
                     if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                        issueR = tmpR, hwm = metric;
+                        *issueR = tmpR, hwm = metric;
                     m = 0;
                 }
             }
@@ -819,7 +819,7 @@ double basilisk_process_results(struct supernet_info *myinfo,cJSON *retjson,doub
         }
         if ( m > 0 && m < sizeof(list)/sizeof(*list) )
             if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                issueR = tmpR, hwm = metric;
+                *issueR = tmpR, hwm = metric;
     }
     return(hwm);
 }
@@ -843,8 +843,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             {
                 n = cJSON_GetArraySize(outerarray);
                 for (i=0; i<n; i++)
-                    hwm = basilisk_process_results(myinfo,jitem(outerarray,i),hwm);
-            } else hwm = basilisk_process_results(myinfo,outerarray,hwm);
+                    hwm = basilisk_process_results(myinfo,&issueR,jitem(outerarray,i),hwm);
+            } else hwm = basilisk_process_results(myinfo,&issueR,outerarray,hwm);
             free_json(outerarray);
         }
         free(retstr);
