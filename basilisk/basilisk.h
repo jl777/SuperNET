@@ -40,14 +40,14 @@
 
 struct basilisk_request
 {
-    uint32_t requestid,timestamp,quoteid,pad;
-    uint64_t srcamount,minamount;
-    bits256 hash;
-    char src[8],dest[8];
-    char volatile_start,message[43];
-    uint32_t relaybits;
-    uint64_t destamount;
+    uint32_t requestid,timestamp,quoteid,pad; // 0 to 15
+    uint64_t srcamount,minamount; // 16 to 31
+    bits256 hash; // 32 to 63
+    char src[8],dest[8]; // 64 to 79
+    char volatile_start,message[43]; // 80 to 123
+    uint32_t relaybits; // 124 to 127
     bits256 desthash;
+    uint64_t destamount;
 } __attribute__((packed));
 
 struct basilisk_rawtx

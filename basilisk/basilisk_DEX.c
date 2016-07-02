@@ -21,7 +21,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = 0;
+    R.quoteid = R.relaybits = R.pad = R.volatile_start = 0;
     memset(&R.volatile_start,0,(long)&R.volatile_start - (long)&R);
     if ( 0 )
     {
@@ -38,7 +38,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.relaybits = 0;
+    R.quoteid = R.relaybits = R.pad = R.volatile_start = 0;
     memset(R.message,0,sizeof(R.message));
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
@@ -62,6 +62,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     }
     else
     {
+        rp->pad = rp->volatile_start = 0;
         memcpy(rp->src,&serialized[len],sizeof(rp->src)), len += sizeof(rp->src);
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
