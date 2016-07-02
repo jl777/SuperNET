@@ -53,6 +53,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->requestid),&rp->requestid);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->timestamp),&rp->timestamp); // must be 2nd
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quoteid),&rp->quoteid);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quotetime),&rp->quotetime);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->relaybits),&rp->relaybits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->srcamount),&rp->srcamount);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->minamount),&rp->minamount);
@@ -109,6 +110,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     if ( jstr(reqjson,"relay") != 0 )
         rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
     rp->timestamp = juint(reqjson,"timestamp");
+    rp->quotetime = juint(reqjson,"quotetime");
     safecopy(rp->src,jstr(reqjson,"src"),sizeof(rp->src));
     safecopy(rp->dest,jstr(reqjson,"dest"),sizeof(rp->dest));
     /*if ( jobj(reqjson,"message") != 0 )
@@ -147,6 +149,7 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
     jaddstr(item,"dest",rp->dest);
     if ( rp->destamount != 0 )
         jadd64bits(item,"destamount",rp->destamount);
+    jaddnum(item,"quotetime",rp->quotetime);
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
