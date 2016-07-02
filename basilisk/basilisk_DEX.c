@@ -76,6 +76,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,int32_t queueflag,struct basilisk_request *finalR,bits256 hash,char *src,uint64_t srcamount,uint64_t minamount,bits256 desthash,char *dest,uint64_t destamount,char *message)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item; struct basilisk_request R;
+    printf("ENQUEUE\n");
     memset(&R,0,sizeof(R));
     R.timestamp = (uint32_t)time(NULL);
     R.hash = hash;

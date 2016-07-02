@@ -40,7 +40,7 @@
 
 struct basilisk_request
 {
-    uint32_t requestid,timestamp,quoteid;
+    uint32_t requestid,timestamp,quoteid,pad;
     uint64_t srcamount,minamount;
     bits256 hash;
     char src[8],dest[8];
