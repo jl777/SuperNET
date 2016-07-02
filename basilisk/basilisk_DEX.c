@@ -73,7 +73,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     return(len);
 }
 
-uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,int32_t queueflag,struct basilisk_request *finalR,bits256 hash,char *src,uint64_t srcamount,uint64_t minamount,bits256 desthash,char *dest,uint64_t destamount,char *message,int32_t calcquoteid)
+uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,int32_t queueflag,struct basilisk_request *finalR,bits256 hash,char *src,uint64_t srcamount,uint64_t minamount,bits256 desthash,char *dest,uint64_t destamount,char *message)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item; struct basilisk_request R;
     memset(&R,0,sizeof(R));
@@ -91,7 +91,7 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,int32_t queueflag
     }
     R.desthash = desthash;
     R.destamount = destamount;
-    if ( calcquoteid != 0 )
+    if ( destamount != 0 && bits256_nonz(desthash) != 0 )
         R.quoteid = basilisk_quoteid(&R);
     R.requestid = basilisk_requestid(&R);
     *finalR = R;
@@ -189,6 +189,10 @@ cJSON *basilisk_requestjson(uint32_t relaybits,struct basilisk_request *rp)
                 for (i=0; i<sizeof(R); i++)
                     printf("%02x",((uint8_t *)&R)[i]);
                 printf(" <- R mismatch\n");
+                for (i=0; i<sizeof(R); i++)
+                    if ( ((uint8_t *)rp)[i] != ((uint8_t *)&R)[i] )
+                        printf("%d ",i);
+                printf("mismatches\n");
             } else printf("matched JSON conv\n");
         }
     }
@@ -199,14 +203,14 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
 {
     cJSON *retjson; struct basilisk_request R; char msgjsonstr[64];
     sprintf(msgjsonstr,"{\"state\":%u\"}",statebits);
-    if ( basilisk_request_enqueue(myinfo,1,&R,rp->hash,rp->src,rp->srcamount,rp->minamount,rp->desthash,rp->dest,rp->destamount,msgjsonstr,myinfo->RELAYID < 0) == rp->requestid )
+    if ( basilisk_request_enqueue(myinfo,1,&R,rp->hash,rp->src,rp->srcamount,rp->minamount,rp->desthash,rp->dest,rp->destamount,msgjsonstr) == rp->requestid )
     {
         if ( myinfo->RELAYID >= 0 && (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
         {
             printf("START thread to complete %u/%u for (%s %.8f) <- (%s %.8f)\n",rp->requestid,R.quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount));
             if ( basilisk_thread_start(myinfo,&R) != 0 )
             {
-                basilisk_request_enqueue(myinfo,1,&R,rp->hash,rp->src,rp->srcamount,rp->minamount,rp->desthash,rp->dest,rp->destamount,msgjsonstr,1);
+                basilisk_request_enqueue(myinfo,1,&R,rp->hash,rp->src,rp->srcamount,rp->minamount,rp->desthash,rp->dest,rp->destamount,msgjsonstr);
                 return(clonestr("{\"result\":\"started atomic swap thread\"}"));
             }
             else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
@@ -469,7 +473,7 @@ char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,cha
         char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",src,dstr(satoshis),dest,bits256_str(str,hash));
         if ( jobj(valsobj,"message") != 0 )
             msgstr = jprint(jobj(valsobj,"message"),0);
-        if ( (requestid= basilisk_request_enqueue(myinfo,1,&R,hash,src,satoshis,j64bits(valsobj,"min"),desthash,dest,destamount,msgstr,destamount != 0)) != 0 )
+        if ( (requestid= basilisk_request_enqueue(myinfo,1,&R,hash,src,satoshis,j64bits(valsobj,"min"),desthash,dest,destamount,msgstr)) != 0 )
         {
             sprintf(buf,"{\"result\":\"DEX request added\",\"requestid\":%u}",requestid);
             retstr = clonestr(buf);
