@@ -378,7 +378,7 @@ char *basilisk_respond_swapstatus(struct supernet_info *myinfo,bits256 hash,uint
 
 char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
 {
-    int32_t i,qflag,num=0; cJSON *retjson,*array; struct basilisk_request *requests,*rp; uint8_t space[16384];
+    int32_t i,qflag,num=0; cJSON *retjson,*array; struct basilisk_request *requests,*rp; uint8_t space[4096];
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
@@ -404,7 +404,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
 
 char *basilisk_respond_accept(struct supernet_info *myinfo,uint32_t requestid,uint32_t quoteid)
 {
-    int32_t i,num=0; char *retstr=0; struct basilisk_request *requests,*rp; uint8_t space[16384];
+    int32_t i,num=0; char *retstr=0; struct basilisk_request *requests,*rp; uint8_t space[4096];
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
     {
@@ -512,7 +512,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     hash = myinfo->myaddr.persistent;
     printf("service.(%s)\n",jprint(vals,0));
     {
-        uint8_t serialized[522]; struct basilisk_request R; cJSON *reqjson;
+        uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson;
         memset(&R,0,sizeof(R));
         if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
         {

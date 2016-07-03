@@ -26,7 +26,7 @@ int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
 {
-    int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[8192],*blockstr,*allocptr = 0; struct iguana_block *block;
+    int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[4096],*blockstr,*allocptr = 0; struct iguana_block *block;
     hash2 = iguana_blockhash(virt,height);
     if ( (block= iguana_blockfind("bsend",virt,hash2)) != 0 )
     {
