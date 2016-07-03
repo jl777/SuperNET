@@ -160,8 +160,10 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             retstr = basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1);
         if ( ptr != 0 )
             free(ptr);
-        return(retstr);
-    } else return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
+        if ( retstr != 0 )
+            free(retstr);
+    }
+    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
 
