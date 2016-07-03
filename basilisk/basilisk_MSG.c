@@ -92,7 +92,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
-    cJSON *retjson,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[16384];
+    cJSON *retjson,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
     retjson = cJSON_CreateObject();
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
@@ -103,7 +103,7 @@ char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int3
         {
             jadd(retjson,"message",msgjson);
             jaddstr(retjson,"result","success");
-            //printf("getmessage.(%s)\n",jprint(retjson,0));
+            printf("havemessage len.%d\n",msg->datalen);
         } else jaddstr(retjson,"error","couldnt add message");
     } else jaddstr(retjson,"error","no message");
     portable_mutex_unlock(&myinfo->messagemutex);
@@ -135,6 +135,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
+    printf("channel.%d msgid.%d\n",juint(valsobj,"channel"),juint(valsobj,"msgid"));
     return(basilisk_respond_getmessage(myinfo,key,keylen));
 }
 
@@ -194,7 +195,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
 
 int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t maxlen)
 {
-    char *retstr,*hexstr; cJSON *valsobj,*retjson,*msgobj; int32_t datalen,retval = -1;
+    char *retstr,*hexstr=0; cJSON *valsobj,*retjson,*msgobj; int32_t datalen=0,retval = -1;
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
@@ -211,13 +212,13 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
                     {
                         decode_hex(data,datalen,hexstr);
                         retval = datalen;
-                    }
-                }
-            }
+                    } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
+                } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
+            } else printf("no message object.(%s)\n",retstr);
             free_json(retjson);
-        }
+        } else printf("cant parse message\n");
         free(retstr);
-    }
+    } else printf("null getmessage\n");
     free_json(valsobj);
     return(retval);
 }
