@@ -65,7 +65,7 @@ struct basilisk_swap
 {
     struct basilisk_request req;
     struct supernet_info *myinfo; bits256 myhash,otherhash;
-    uint32_t statebits,started,expiration,finished,dead,reftime,locktime;
+    uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,locktime;
     struct iguana_info *bobcoin,*alicecoin; char bobstr[64],alicestr[64];
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;

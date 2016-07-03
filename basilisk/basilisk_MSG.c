@@ -135,12 +135,13 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
-    printf("channel.%d msgid.%d\n",juint(valsobj,"channel"),juint(valsobj,"msgid"));
+    char str[65]; printf("%s channel.%u msgid.%u\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"));
     return(basilisk_respond_getmessage(myinfo,key,keylen));
 }
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     int32_t keylen; uint8_t key[64];

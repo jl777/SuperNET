@@ -378,12 +378,19 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     else return(0);
 }
 
+int32_t basilisk_verify_statebits(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
+{
+    iguana_rwnum(0,data,sizeof(swap->otherstatebits),&swap->otherstatebits);
+    return(0);
+}
+
 int32_t basilisk_verify_choosei(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t otherchoosei;
     iguana_rwnum(0,data,sizeof(otherchoosei),&otherchoosei);
     if ( otherchoosei >= 0 && otherchoosei < INSTANTDEX_DECKSIZE )
     {
+        printf("otherchoosei.%d\n",otherchoosei);
         swap->otherchoosei = otherchoosei;
         return(0);
     }
@@ -529,20 +536,31 @@ void basilisk_swaploop(void *_swap)
     while ( time(NULL) < swap->expiration )
     {
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
-        if ( (swap->statebits & 0x01) == 0 ) // wait for pubkeys
+        iguana_rwnum(1,data,sizeof(swap->statebits),&swap->statebits);
+        basilisk_swapsend(myinfo,swap,0,data,datalen,0);
+        if ( basilisk_swapget(myinfo,swap,0,data,maxlen,basilisk_verify_statebits) == 0 )
         {
-            printf("send deck\n");
+            printf("got other statebits.%x\n",swap->otherstatebits);
+            if ( (swap->otherstatebits & 0x02) == 0 )
+            {
+                datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+                swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0);
+            }
+            if ( (swap->otherstatebits & 0x08) == 0 )
+            {
+                iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
+                basilisk_swapsend(myinfo,swap,0x08,data,datalen,0);
+            }
+        }
+        if ( (swap->statebits & 0x01) == 0 ) // send pubkeys
+        {
             datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
             swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
         }
-        else if ( (swap->statebits & 0x02) == 0 ) // send pubkeys
+        else if ( (swap->statebits & 0x02) == 0 ) // wait for pubkeys
         {
-            //printf("send deck again\n");
-            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-            basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
             if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
                 swap->statebits |= 0x02;
-            else printf("msg.2 not there\n");
         }
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
         {
@@ -551,12 +569,10 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x08) == 0 ) // wait for choosei
         {
-            iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
-            basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
             if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
                 swap->statebits |= 0x08;
         }
-        else if ( (swap->statebits & 0x10) == 0 ) // send all but one privkeys
+        else if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
         {
             for (i=0; i<INSTANTDEX_DECKSIZE; i++)
             {
