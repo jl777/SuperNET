@@ -639,7 +639,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    if ( 0 && strcmp(CMD,"RID") != 0 )
+    if ( 1 && strcmp(CMD,"RID") != 0 )
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
@@ -929,6 +929,7 @@ void basilisks_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->messagemutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 

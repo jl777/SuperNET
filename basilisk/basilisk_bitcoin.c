@@ -587,9 +587,9 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     locktime = juint(valsobj,"locktime");
     if ( (addresses= jobj(valsobj,"addresses")) == 0 )
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
+    printf("vals.(%s)\n",jprint(valsobj,0));
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
     {
-        printf("vals.(%s)\n",jprint(valsobj,0));
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
         return(Lptr);
     }
