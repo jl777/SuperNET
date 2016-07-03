@@ -305,6 +305,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
 char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,int32_t height,bits256 txid,int16_t vout)
 {
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
     jaddstr(retjson,"address",coinaddr);
     jadd64bits(retjson,"satoshis",value);
     jaddnum(retjson,"value",dstr(value));
@@ -582,7 +583,7 @@ int32_t basilisk_voutvin_validate(struct iguana_info *coin,char *rawtx,uint64_t 
 
 int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson,uint64_t amount,uint64_t txfee)
 {
-    cJSON *vins,*item,*argjson,*valobj; uint64_t value,inputsum=0; int32_t i=-1,vout,retval=-1,numvins=0; bits256 txid; char *valstr;
+    cJSON *vins,*item,*argjson,*valuearray; uint64_t value,inputsum=0; int32_t j,i=-1,vout,retval=-1,numvins=0; bits256 txid; char *valstr;
     if ( retjson != 0 )
     {
         if ( (vins= jarray(&numvins,retjson,"vins")) != 0 )
@@ -595,21 +596,35 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
                 argjson = cJSON_CreateObject();
                 jaddbits256(argjson,"txid",txid);
                 jaddnum(argjson,"vout",vout);
+                jaddstr(argjson,"coin",coin->symbol);
                 retval = -1;
                 if ( (valstr= basilisk_value(myinfo,coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
                 {
-                    printf("valstr.[%d] %s\n",i,valstr);
-                    if ( (valobj= cJSON_Parse(valstr)) != 0 )
+                    printf("valstr.(%d) %s\n",i,valstr);
+                    if ( (valuearray= cJSON_Parse(valstr)) != 0 )
                     {
-                        if ( jobj(valobj,"error") == 0 )
+                        if ( is_cJSON_Array(valuearray) != 0 )
                         {
-                            if ( (value= j64bits(retjson,"satoshis")) != 0 )
+                            for (j=0; j<cJSON_GetArraySize(valuearray); j++)
+                            {
+                                item = jitem(valuearray,j);
+                                if ( jobj(item,"error") == 0 && (value= j64bits(item,"satoshis")) != 0 )
+                                {
+                                    inputsum += value;
+                                    retval = 0;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if ( jobj(valuearray,"error") == 0 && (value= j64bits(valuearray,"satoshis")) != 0 )
                             {
                                 inputsum += value;
                                 retval = 0;
                             }
                         }
-                        free_json(valobj);
+                        free_json(valuearray);
                     }
                     free(valstr);
                 }
