@@ -55,7 +55,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
             msg = &data[len], len += msglen;
             if ( msglen <= 0 || len > datalen )
                 return(0);
-            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
+            //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
             basilisk_respond_sendmessage(myinfo,key,keylen,msg,msglen,0);
         }
     }
@@ -73,7 +73,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
         {
-            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
+            //printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
             memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
         }
         else
@@ -81,11 +81,11 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
             printf("basilisk_ping_genMSG message doesnt fit %d vs %d\n",maxlen,datalen+msg->datalen);
             datalen = 0;
         }
-        printf("\n-> ");
-        int32_t i;
-        for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
-        printf(" <- genMSG\n");
+        //printf("\n-> ");
+        //int32_t i;
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",data[i]);
+        //printf(" <- genMSG\n");
     } else data[datalen++] = 0;
     return(datalen);
 }
@@ -103,9 +103,8 @@ char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int3
         {
             jadd(retjson,"message",msgjson);
             jaddstr(retjson,"result","success");
-            printf("getmessage.(%s)\n",jprint(retjson,0));
-        }
-        else jaddstr(retjson,"error","couldnt add message");
+            //printf("getmessage.(%s)\n",jprint(retjson,0));
+        } else jaddstr(retjson,"error","couldnt add message");
     } else jaddstr(retjson,"error","no message");
     portable_mutex_unlock(&myinfo->messagemutex);
     return(jprint(retjson,1));
@@ -128,7 +127,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
-    printf("keylen.%d datalen.%d\n",keylen,datalen);
+    //printf("keylen.%d datalen.%d\n",keylen,datalen);
     return(basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1));
 }
 
@@ -199,7 +198,7 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
     jaddnum(valsobj,"msgid",msgid);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
-        printf("getmessage.(%s)\n",retstr);
+        //printf("getmessage.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (msgobj= jobj(retjson,"message")) != 0 )
