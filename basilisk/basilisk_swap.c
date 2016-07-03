@@ -527,13 +527,13 @@ void basilisk_swaploop(void *_swap)
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
         if ( (swap->statebits & 0x01) == 0 ) // wait for pubkeys
         {
-            if ( basilisk_swapget(myinfo,swap,0x01,data,maxlen,basilisk_verify_otherdeck) == 0 )
-                swap->statebits |= 0x01;
+            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+            swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
         }
         else if ( (swap->statebits & 0x02) == 0 ) // send pubkeys
         {
-            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-            swap->statebits |= basilisk_swapsend(myinfo,swap,0x01,data,datalen,0x02);
+            if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
+                swap->statebits |= 0x02;
         }
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
         {
