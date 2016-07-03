@@ -383,7 +383,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
     {
-        printf("numrequests.%d r.%u q.%u\n",num,requestid,quoteid);
+        //printf("numrequests.%d r.%u q.%u\n",num,requestid,quoteid);
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
@@ -441,7 +441,7 @@ char *basilisk_respond_SWP(struct supernet_info *myinfo,char *CMD,void *addr,cha
 
 char *basilisk_respond_ACC(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    uint32_t requestid,quoteid; char *retstr;
+    uint32_t requestid,quoteid;
     if ( (requestid= juint(valsobj,"requestid")) != 0 && (quoteid= juint(valsobj,"quoteid")) != 0 )
         return(basilisk_respond_accept(myinfo,requestid,quoteid));
     else return(clonestr("{\"error\":\"need nonzero requestid and quoteid\"}"));

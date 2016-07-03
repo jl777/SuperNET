@@ -183,8 +183,10 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
+    printf("getmessage\n");
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
+        printf("getmessage.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (hexstr= jstr(retjson,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )

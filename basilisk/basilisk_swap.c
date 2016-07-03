@@ -405,8 +405,10 @@ int32_t basilisk_swapdata_deck(struct supernet_info *myinfo,struct basilisk_swap
 int32_t basilisk_verify_otherdeck(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,len = 0;
+    printf("verify otherdeck.%d\n",datalen);
     for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
         len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
+    printf("verified\n");
     return(0);
 }
 
@@ -532,8 +534,10 @@ void basilisk_swaploop(void *_swap)
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
         if ( (swap->statebits & 0x01) == 0 ) // wait for pubkeys
         {
+            printf("call swapget\n");
             if ( basilisk_swapget(myinfo,swap,0x01,data,maxlen,basilisk_verify_otherdeck) == 0 )
                 swap->statebits |= 0x01;
+            printf("call swapget: state.%d\n",swap->statebits);
         }
         else if ( (swap->statebits & 0x02) == 0 ) // send pubkeys
         {
