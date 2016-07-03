@@ -694,7 +694,7 @@ void basilisk_swaploop(void *_swap)
     basilisk_swap_purge(myinfo,swap);
 }
 
-struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits)
+struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     int32_t i; struct basilisk_swap *swap = 0;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
@@ -709,7 +709,6 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap = calloc(1,sizeof(*swap));
         swap->req = *rp;
         swap->myinfo = myinfo;
-        swap->statebits = statebits;
         printf("START swap requestid.%u\n",rp->requestid);
         if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
