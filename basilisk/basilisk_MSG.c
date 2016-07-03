@@ -143,12 +143,26 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 #include "../includes/iguana_apideclares.h"
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
+    int32_t keylen; uint8_t key[64];
+    if ( myinfo->RELAYID >= 0 )
+    {
+        keylen = basilisk_messagekey(key,hash,vals);
+        return(basilisk_respond_getmessage(myinfo,key,keylen));
+    } else return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
-    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
+    int32_t keylen,datalen; uint8_t key[64],space[16384],*data,*ptr = 0; char *retstr=0;
+    if ( myinfo->RELAYID >= 0 )
+    {
+        keylen = basilisk_messagekey(key,hash,vals);
+        if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+            retstr = basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1);
+        if ( ptr != 0 )
+            free(ptr);
+        return(retstr);
+    } else return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
 
