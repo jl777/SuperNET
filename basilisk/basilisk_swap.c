@@ -743,7 +743,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
 //#ifdef __APPLE__
-            fprintf(stderr,"launch.%d %ld\n",myinfo->numswaps,sizeof(myinfo->swaps)/sizeof(*myinfo->swaps));
+            fprintf(stderr,"launch.%d %d\n",myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
             {
                 
