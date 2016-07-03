@@ -195,16 +195,19 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
 
 int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t maxlen)
 {
-    char *retstr,*hexstr=0; cJSON *valsobj,*retjson,*msgobj; int32_t datalen=0,retval = -1;
+    char *retstr,*hexstr=0; cJSON *valsobj,*retarray,*item,*msgobj; int32_t datalen=0,retval = -1;
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
         //printf("getmessage.(%s)\n",retstr);
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (msgobj= jobj(retjson,"message")) != 0 )
+            if ( is_cJSON_Array(retarray) != 0 )
+                item = jitem(retarray,0);
+            else item = retarray;
+            if ( (msgobj= jobj(item,"message")) != 0 )
             {
                 if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
                 {
@@ -215,7 +218,7 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
                     } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
                 } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
             } else printf("no message object.(%s)\n",retstr);
-            free_json(retjson);
+            free_json(retarray);
         } else printf("cant parse message\n");
         free(retstr);
     } else printf("null getmessage\n");

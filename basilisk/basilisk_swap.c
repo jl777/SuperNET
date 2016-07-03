@@ -537,7 +537,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x02) == 0 ) // send pubkeys
         {
-            printf("send deck again\n");
+            //printf("send deck again\n");
             datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
             basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
             if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
@@ -551,6 +551,8 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x08) == 0 ) // wait for choosei
         {
+            iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
+            basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
             if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
                 swap->statebits |= 0x08;
         }
