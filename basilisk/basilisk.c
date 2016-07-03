@@ -936,15 +936,29 @@ void basilisks_init(struct supernet_info *myinfo)
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( coin != 0 )
+    {
+        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+            basilisktag = rand();
+        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+            timeoutmillis = BASILISK_TIMEOUT;
+        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        {
+            retstr = ptr->retstr, ptr->retstr = 0;
+            ptr->finished = (uint32_t)time(NULL);
+            return(retstr);
+        }
+    }
     return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
-{
-    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
-}
-
-HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
     if ( coin == 0 )
@@ -956,13 +970,52 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
     {
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
+        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+            timeoutmillis = BASILISK_TIMEOUT;
+        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        {
+            retstr = ptr->retstr, ptr->retstr = 0;
+            ptr->finished = (uint32_t)time(NULL);
+            return(retstr);
+        }
+    }
+    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
+{
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis; uint64_t amount,txfee;
+    if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( coin != 0 )
+    {
         if ( juint(vals,"burn") == 0 )
             jaddnum(vals,"burn",0.0001);
+        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+            basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
         if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
-            retstr = ptr->retstr;
+            if ( (retstr= ptr->retstr) != 0 )
+            {
+                if ( (amount= j64bits(vals,"satoshis")) == 0 )
+                    amount = jdouble(vals,"value") * SATOSHIDEN;
+                if ( (txfee= j64bits(vals,"txfee")) == 0 )
+                    txfee = coin->chain->txfee;
+                if ( txfee == 0 )
+                    txfee = 10000;
+                if ( basilisk_vins_validate(myinfo,coin,retstr,amount,txfee) < 0 )
+                {
+                    free(retstr);
+                    retstr = clonestr("{\"error\":\"invalid vin in rawtx\"}");
+                }
+                ptr->retstr = 0;
+                ptr->finished = (uint32_t)time(NULL);
+            }
         }
     }
     return(retstr);
