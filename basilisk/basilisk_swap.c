@@ -386,7 +386,9 @@ int32_t basilisk_verify_choosei(struct supernet_info *myinfo,struct basilisk_swa
     {
         swap->otherchoosei = otherchoosei;
         return(0);
-    } else return(-1);
+    }
+    printf("illegal otherchoosei.%d\n",otherchoosei);
+    return(-1);
 }
 
 int32_t basilisk_swapdata_deck(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
@@ -400,6 +402,7 @@ int32_t basilisk_swapdata_deck(struct supernet_info *myinfo,struct basilisk_swap
 int32_t basilisk_verify_otherdeck(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,len = 0;
+    printf("verify otherdeck\n");
     for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
         len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
     return(0);
@@ -429,6 +432,7 @@ int32_t basilisk_verify_pubpair(int32_t *wrongfirstbytep,struct basilisk_swap *s
 int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,j,wrongfirstbyte,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; uint64_t txid;
+    printf("verify privkeys\n");
     if ( swap->cutverified == 0 && swap->choosei >= 0 && datalen == sizeof(swap->privkeys) )
     {
         for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
@@ -527,13 +531,18 @@ void basilisk_swaploop(void *_swap)
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
         if ( (swap->statebits & 0x01) == 0 ) // wait for pubkeys
         {
+            printf("send deck\n");
             datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
             swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
         }
         else if ( (swap->statebits & 0x02) == 0 ) // send pubkeys
         {
+            printf("send deck again\n");
+            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+            basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
             if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
                 swap->statebits |= 0x02;
+            else printf("msg.2 not there\n");
         }
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
         {

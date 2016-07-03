@@ -384,7 +384,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( strcmp("RID",CMD) != 0 )
+    if ( 0 && strcmp("RID",CMD) != 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
@@ -508,7 +508,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     {
         retstr = jprint(vals,0);
         safecopy(CMD,jstr(vals,"origcmd"),sizeof(CMD));
-        if ( strcmp("RID",CMD) != 0 )
+        if ( 0 && strcmp("RID",CMD) != 0 )
             printf("(%s) -> Q.%u results vals.(%s)\n",CMD,basilisktag,retstr);
         if ( strcmp(CMD,"GET") == 0 )
             basilisk_geckoresult(myinfo,remoteaddr,retstr,data,datalen);
@@ -637,7 +637,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    if ( strcmp(CMD,"RID") != 0 )
+    if ( 0 && strcmp(CMD,"RID") != 0 )
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
