@@ -15,7 +15,7 @@
 
 // included from basilisk.c
 
-char *basilisk_respond_sendmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping)
+char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping)
 {
     struct basilisk_message *msg;
     if ( keylen == sizeof(bits256)+sizeof(uint32_t)*2 )
@@ -56,7 +56,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
             if ( msglen <= 0 || len > datalen )
                 return(0);
             //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
-            basilisk_respond_sendmessage(myinfo,key,keylen,msg,msglen,0);
+            basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0);
         }
     }
     return(len);
@@ -128,7 +128,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
     //printf("keylen.%d datalen.%d\n",keylen,datalen);
-    return(basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1));
+    return(basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1));
 }
 
 char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
@@ -159,12 +159,14 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     {
         keylen = basilisk_messagekey(key,hash,vals);
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
-            retstr = basilisk_respond_sendmessage(myinfo,key,keylen,data,datalen,1);
+            retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1);
         if ( ptr != 0 )
             free(ptr);
         if ( retstr != 0 )
             free(retstr);
     }
+    if ( vals != 0 )
+        jaddnum(vals,"fanout",BASILISK_MAXFANOUT);
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
 }
 #include "../includes/iguana_apiundefs.h"
