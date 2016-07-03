@@ -183,13 +183,29 @@ char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,void *a
 
 char *basilisk_respond_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *retstr=0;
+    char *symbol,*retstr=0; struct basilisk_item Lptr,*ptr; int32_t timeoutmillis; struct iguana_info *coin = 0;
+    timeoutmillis = jint(valsobj,"timeout");
+    if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
+        coin = iguana_coinfind(symbol);
+    if ( coin != 0 && (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
+    {
+        retstr = ptr->retstr;
+        ptr->finished = (uint32_t)time(NULL);
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
     return(retstr);
 }
 
 char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    char *retstr=0;
+    char *symbol,*retstr=0; struct basilisk_item Lptr,*ptr; int32_t timeoutmillis; struct iguana_info *coin = 0;
+    timeoutmillis = jint(valsobj,"timeout");
+    if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
+        coin = iguana_coinfind(symbol);
+    if ( coin != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
+    {
+        retstr = ptr->retstr;
+        ptr->finished = (uint32_t)time(NULL);
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
     return(retstr);
 }
 

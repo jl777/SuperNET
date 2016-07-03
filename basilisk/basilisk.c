@@ -677,7 +677,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                         if ( retstr != 0 )
                             free(retstr);
                         break;
-                    } //else printf("services null return\n");
+                    } else printf("services null return\n");
                 } else printf("non-relay got unexpected.(%s)\n",type);
             }
         }
