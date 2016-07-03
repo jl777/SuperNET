@@ -219,7 +219,7 @@ void basilisk_rawtx_setparms(struct supernet_info *myinfo,struct basilisk_swap *
 
 struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
-    struct iguana_info *coin; uint8_t *alicepub33=0,*bobpub33=0;
+    struct iguana_info *coin; uint8_t *alicepub33=0,*bobpub33=0; int32_t x = -1;
     if ( strcmp("BTC",swap->req.src) == 0 )
     {
         swap->bobcoin = iguana_coinfind("BTC");
@@ -311,9 +311,9 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("neither src nor dest error\n");
         return(0);
     }
-    if ( bits256_nonz(myinfo->persistent_priv) == 0 || instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myhash,0x02+swap->iambob) != 2 + INSTANTDEX_DECKSIZE )
+    if ( bits256_nonz(myinfo->persistent_priv) == 0 || (x= instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myhash,0x02+swap->iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
-        printf("couldnt generate privkeys\n");
+        printf("couldnt generate privkeys %d\n",x);
         return(0);
     }
     if ( swap->iambob != 0 )
