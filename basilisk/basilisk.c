@@ -728,11 +728,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         pendingid = active->req.quoteid;
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].hash) == 0 ) // my request
         myrequest = 1;
-    /*if ( list[0].message[0] != 0 && (msgobj= cJSON_Parse(list[0].message)) != 0 )
-     {
-     autoflag = juint(msgobj,"auto");
-     minamount = j64bits(msgobj,"min");
-     }*/
     for (i=0; i<n; i++)
     {
         if ( basilisk_request_cmpref(&list[0],&list[i]) != 0 )
@@ -752,17 +747,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
             else if ( active != 0 && pendingid == list[i].quoteid )
             {
-                /*if ( (statejson= cJSON_Parse(list[i].message)) != 0 )
-                 {
-                 statebits = juint(statejson,"state");
-                 if ( bitweight(statebits) > bitweight(active->statebits) )
-                 {
-                 // advance statemachine
-                 //active->statebits = statebits;
-                 printf("req statbits.%x -> %x\n",active->statebits,statebits);
-                 }
-                 free(statejson);
-                 }*/
             }
         } else noquoteflag++;
     }
