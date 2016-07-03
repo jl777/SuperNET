@@ -536,10 +536,13 @@ void basilisk_swaploop(void *_swap)
     while ( time(NULL) < swap->expiration )
     {
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
-        datalen = iguana_rwnum(1,data,sizeof(swap->statebits),&swap->statebits);
+        data[0] = swap->statebits;
+        data[1] = swap->statebits >> 8;
+        datalen = 2;
         basilisk_swapsend(myinfo,swap,0,data,datalen,0);
         if ( basilisk_swapget(myinfo,swap,0,data,maxlen,basilisk_verify_statebits) == 0 )
         {
+            swap->otherstatebits = ((uint32_t)data[1] << 8) | data[0];
             printf("got other statebits.%x\n",swap->otherstatebits);
             if ( (swap->otherstatebits & 0x02) == 0 )
             {
