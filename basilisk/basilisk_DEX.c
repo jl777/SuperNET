@@ -81,7 +81,6 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
-    printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
     //strcpy(rp->message,message);
     len = basilisk_rwDEXquote(1,serialized+1,rp);
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
@@ -91,6 +90,7 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
         portable_mutex_lock(&myinfo->DEX_mutex);
         DL_APPEND(myinfo->DEX_quotes,item);
         portable_mutex_unlock(&myinfo->DEX_mutex);
+        printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
         return(rp->requestid);
     }
     return(0);
