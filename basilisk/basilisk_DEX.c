@@ -409,6 +409,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space))) != 0 )
     {
+        printf("numrequests.%d r.%u q.%u\n",num,requestid,quoteid);
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
@@ -572,6 +573,7 @@ INT_ARG(InstantDEX,incoming,requestid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
+    printf("incoming\n");
     if ( myinfo->RELAYID >= 0 )
         return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
     else
