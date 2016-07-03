@@ -290,7 +290,9 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
     }
     else
     {
+        valsobj = jduplicate(valsobj);
         data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
+        free_json(valsobj), valsobj = 0;
         *numsentp = pending->numsent = basilisk_sendcmd(myinfo,addr != 0 ? addr->ipaddr : 0,CMD,&pending->basilisktag,encryptflag,delaymillis,data,datalen,fanout,pending->nBits);
         if ( blockflag != 0 )
         {
