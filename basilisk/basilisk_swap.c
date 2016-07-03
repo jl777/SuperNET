@@ -536,7 +536,7 @@ void basilisk_swaploop(void *_swap)
     while ( time(NULL) < swap->expiration )
     {
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
-        iguana_rwnum(1,data,sizeof(swap->statebits),&swap->statebits);
+        datalen = iguana_rwnum(1,data,sizeof(swap->statebits),&swap->statebits);
         basilisk_swapsend(myinfo,swap,0,data,datalen,0);
         if ( basilisk_swapget(myinfo,swap,0,data,maxlen,basilisk_verify_statebits) == 0 )
         {
