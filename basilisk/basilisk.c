@@ -297,7 +297,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
         if ( blockflag != 0 )
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
-            printf("HASH_ADD.%p\n",pending);
+            //printf("HASH_ADD.%p\n",pending);
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(basilisktag),pending);
             portable_mutex_unlock(&myinfo->basilisk_mutex);
             //queue_enqueue("issuedQ",&myinfo->basilisks.issued,&pending->DL,0);
@@ -517,7 +517,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_FIND(hh,myinfo->basilisks.issued,&basilisktag,sizeof(basilisktag),pending);
-            printf("HASH_FIND.%p\n",pending);
+            //printf("HASH_FIND.%p\n",pending);
             portable_mutex_unlock(&myinfo->basilisk_mutex);
             if ( pending != 0 && retstr != 0 )
             {
@@ -668,7 +668,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( coin->RELAYNODE != 0 ) // iguana node
                 {
-                    printf("services %s\n",type);
+                    //printf("services %s\n",type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
@@ -872,7 +872,7 @@ void basilisks_loop(void *arg)
         {
             if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
             {
-                printf("HASH_DELETE.(%p)\n",pending);
+                //printf("HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
                 //memset(pending,0,sizeof(*pending));
                 //free(pending);
