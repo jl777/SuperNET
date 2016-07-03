@@ -743,8 +743,12 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap) != 0 )
         {
 //#ifdef __APPLE__
-            fprintf(stderr,"launch\n");
-            iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
+            fprintf(stderr,"launch.%d %ld\n",myinfo->numswaps,sizeof(myinfo->swaps)/sizeof(*myinfo->swaps));
+            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
+            {
+                
+            }
+            //iguana_launch(iguana_coinfind("BTCD"),"basilisk_swaploop",basilisk_swaploop,swap,IGUANA_PERMTHREAD);
 //#endif
             myinfo->swaps[myinfo->numswaps++] = swap;
         }
