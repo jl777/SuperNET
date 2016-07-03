@@ -202,7 +202,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         //printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
                     }
-                    printf("send to other relay.(%s)\n",addr->ipaddr);
+                    ///printf("send to other relay.(%s)\n",addr->ipaddr);
                 }
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
@@ -297,6 +297,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
         if ( blockflag != 0 )
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
+            printf("HASH_ADD.%p\n",pending);
             HASH_ADD(hh,myinfo->basilisks.issued,basilisktag,sizeof(basilisktag),pending);
             portable_mutex_unlock(&myinfo->basilisk_mutex);
             //queue_enqueue("issuedQ",&myinfo->basilisks.issued,&pending->DL,0);
@@ -516,6 +517,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
         {
             portable_mutex_lock(&myinfo->basilisk_mutex);
             HASH_FIND(hh,myinfo->basilisks.issued,&basilisktag,sizeof(basilisktag),pending);
+            printf("HASH_FIND.%p\n",pending);
             portable_mutex_unlock(&myinfo->basilisk_mutex);
             if ( pending != 0 && retstr != 0 )
             {
@@ -869,8 +871,10 @@ void basilisks_loop(void *arg)
         {
             if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
             {
+                printf("HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                free(pending);
+                //memset(pending,0,sizeof(*pending));
+                //free(pending);
             }
         }
         portable_mutex_unlock(&myinfo->basilisk_mutex);
@@ -925,3 +929,40 @@ void basilisks_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->messagemutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
+{
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( coin != 0 )
+    {
+        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+            basilisktag = rand();
+        if ( juint(vals,"burn") == 0 )
+            jaddnum(vals,"burn",0.0001);
+        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+            timeoutmillis = BASILISK_TIMEOUT;
+        if ( (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        {
+            retstr = ptr->retstr;
+        }
+    }
+    return(retstr);
+}
+#include "../includes/iguana_apiundefs.h"
