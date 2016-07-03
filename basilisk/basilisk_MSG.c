@@ -193,22 +193,24 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
 
 int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t maxlen)
 {
-    char *retstr,*hexstr; cJSON *valsobj,*retjson; int32_t datalen,retval = -1;
+    char *retstr,*hexstr; cJSON *valsobj,*retjson,*msgobj; int32_t datalen,retval = -1;
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
-    printf("getmessage\n");
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
         printf("getmessage.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (hexstr= jstr(retjson,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+            if ( (msgobj= jobj(retjson,"message")) != 0 )
             {
-                if ( datalen < maxlen )
+                if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
                 {
-                    decode_hex(data,datalen,hexstr);
-                    retval = datalen;
+                    if ( datalen < maxlen )
+                    {
+                        decode_hex(data,datalen,hexstr);
+                        retval = datalen;
+                    }
                 }
             }
             free_json(retjson);
