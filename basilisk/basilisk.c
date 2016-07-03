@@ -984,7 +984,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis; uint64_t amount,txfee;
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis,i,retval = -1; uint64_t amount,txfee; cJSON *retarray;
     if ( coin == 0 )
     {
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
@@ -1008,10 +1008,25 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
                     txfee = coin->chain->txfee;
                 if ( txfee == 0 )
                     txfee = 10000;
-                if ( basilisk_vins_validate(myinfo,coin,retstr,amount,txfee) < 0 )
+                retval = -1;
+                if ( (retarray= cJSON_Parse(retstr)) != 0 )
                 {
-                    free(retstr);
-                    retstr = clonestr("{\"error\":\"invalid vin in rawtx\"}");
+                    if ( is_cJSON_Array(retarray) != 0 )
+                    {
+                        for (i=0; i<cJSON_GetArraySize(retarray); i++)
+                        {
+                            if ( basilisk_vins_validate(myinfo,coin,jitem(retarray,i),amount,txfee) == 0 )
+                            {
+                                retval = 0;
+                                break;
+                            }
+                        }
+                    } else retval = basilisk_vins_validate(myinfo,coin,retarray,amount,txfee);
+                    if ( retval < 0 )
+                    {
+                        free(retstr);
+                        retstr = clonestr("{\"error\":\"invalid vin in rawtx\"}");
+                    }
                 }
                 ptr->retstr = 0;
                 ptr->finished = (uint32_t)time(NULL);
