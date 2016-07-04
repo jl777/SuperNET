@@ -200,6 +200,7 @@ int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
     {
         if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
         {
+            datalen <<= 1;
             if ( datalen < maxlen )
             {
                 decode_hex(data,datalen,hexstr);
@@ -231,7 +232,7 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
                     if ( (datalen= basilisk_message_returned(data,maxlen,item)) > 0 )
                         break;
                 }
-            } else datalen =  basilisk_message_returned(data,maxlen,retarray);
+            } else datalen = basilisk_message_returned(data,maxlen,retarray);
             free_json(retarray);
         } else printf("cant parse message\n");
         free(retstr);
