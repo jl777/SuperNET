@@ -685,7 +685,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                     } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
                 }
                 rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount);
-                //printf("generated.(%s) vins.(%s)\n",rawtx,vins!=0?jprint(vins,0):"");
+                printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
             }
             else
             {
@@ -1060,6 +1060,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
                     } else retval = basilisk_vins_validate(myinfo,coin,retarray,amount,txfee);
                     if ( retval < 0 )
                     {
+                        printf("ERROR.(%s)\n",retstr);
                         free(retstr);
                         retstr = clonestr("{\"error\":\"invalid vin in rawtx\"}");
                     }
