@@ -323,7 +323,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
-        if ( lastheight > 0 && bp->bundleheight+bp->n > lastheight )
+        if ( lastheight > 0 && bp->bundleheight > lastheight )
         {
             printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
             break;
