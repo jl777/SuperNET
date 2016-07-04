@@ -1,0 +1,3 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTC\",\"agent\":\"basilisk\",\"method\":\"rawtx\",\"vals\":{\"changeaddr\":\"1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY\",\"addresses\":[\"16jsjc1YvzDXqKf7PorMhTyK8ym3ra3uxm\", \"1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY\"],\"timeout\":15000,\"satoshis\":\"20000\",\"spendscript\":\"76a914ca1e04745e8ca0c60d8c5881531d51bec470743f88ac\"}}"
+
+#{"coin":"BTC","spendscript":"76a914ca1e04745e8ca0c60d8c5881531d51bec470743f88ac","changeaddr":"1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY","satoshis":"331","txfee":"10000","minconf":1,"locktime":0,"timeout":30000,"burn":0.00010000,"addresses":["16jsjc1YvzDXqKf7PorMhTyK8ym3ra3uxm", "1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY"]}
