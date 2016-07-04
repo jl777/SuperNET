@@ -141,7 +141,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     basilisktag = (uint32_t)rand();
     jaddistr(addresses,coinaddr);
     valsobj = cJSON_CreateObject();
-    jadd(valsobj,"addresses",addresses);
+    //jadd(valsobj,"addresses",addresses);
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
     jaddstr(valsobj,"changeaddr",rawtx->coin->changeaddr);
@@ -180,7 +180,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
         free(retstr);
     } else printf("error creating %s feetx\n",swap->iambob != 0 ? "BOB" : "ALICE");
     free_json(valsobj);
-    free_json(privkeyarray);
+    //free_json(privkeyarray);
     return(retval);
 }
 
@@ -591,7 +591,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x40) == 0 ) // send fee
         {
-            if ( swap->myfee.txbytes != 0 || basilisk_rawtx_gen("setparms",myinfo,swap,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
+            if ( swap->myfee.txbytes != 0 || basilisk_rawtx_gen("myfee",myinfo,swap,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
                 swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
         }
         else if ( (swap->statebits & 0x80) == 0 ) // wait for fee
@@ -718,7 +718,7 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        sleep(3);
+        usleep(1000000);
     }
     printf("swap finished statebits %x\n",swap->statebits);
     basilisk_swap_purge(myinfo,swap);

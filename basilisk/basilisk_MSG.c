@@ -207,7 +207,7 @@ int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
                 retval = datalen;
             } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
         } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
-    } else printf("no msgobj\n");
+    } //else printf("no msgobj\n");
     return(retval);
 }
 
@@ -220,7 +220,7 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
     jaddnum(valsobj,"fanout",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
-        printf("gotmessage.(%s)\n",retstr);
+        //printf("gotmessage.(%s)\n",retstr);
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) != 0 )

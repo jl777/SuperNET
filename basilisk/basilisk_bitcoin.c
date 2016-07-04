@@ -655,8 +655,8 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     locktime = juint(valsobj,"locktime");
     if ( (addresses= jobj(valsobj,"addresses")) == 0 )
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
-    //printf("vals.(%s)\n",jprint(valsobj,0));
-    if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 || amount == 0 || addresses == 0 )
+    printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
+    if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )//|| amount == 0 || addresses == 0 )
     {
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
         return(Lptr);
@@ -1008,7 +1008,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = (uint32_t)time(NULL);

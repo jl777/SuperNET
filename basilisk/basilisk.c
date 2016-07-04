@@ -914,7 +914,7 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->messagemutex);
-        usleep(1000000);
+        usleep(100000);
     }
 }
 
