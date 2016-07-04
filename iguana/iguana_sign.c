@@ -621,19 +621,22 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
         if ( (p2shlen= vp->p2shlen) > 0 )
         {
             msgtx->vins[vini].redeemscript = &script[scriptlen];
-            if ( p2shlen < 76 )
-                script[scriptlen++] = p2shlen;
-            else if ( p2shlen <= 0xff )
+            if ( vp->suppress_p2shlen == 0 )
             {
-                script[scriptlen++] = 0x4c;
-                script[scriptlen++] = p2shlen;
-            }
-            else if ( p2shlen <= 0xffff )
-            {
-                script[scriptlen++] = 0x4d;
-                script[scriptlen++] = (p2shlen & 0xff);
-                script[scriptlen++] = ((p2shlen >> 8) & 0xff);
-            } else return(-1);
+                if ( p2shlen < 76 )
+                    script[scriptlen++] = p2shlen;
+                else if ( p2shlen <= 0xff )
+                {
+                    script[scriptlen++] = 0x4c;
+                    script[scriptlen++] = p2shlen;
+                }
+                else if ( p2shlen <= 0xffff )
+                {
+                    script[scriptlen++] = 0x4d;
+                    script[scriptlen++] = (p2shlen & 0xff);
+                    script[scriptlen++] = ((p2shlen >> 8) & 0xff);
+                } else return(-1);
+            } // else case is for custom script params
             memcpy(&script[scriptlen],vp->p2shscript,p2shlen), scriptlen += p2shlen;
             if ( (msgtx->vins[vini].suffixlen= vp->suffixlen) > 0 )
             {

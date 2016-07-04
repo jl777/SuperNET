@@ -335,9 +335,6 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     max = 10000;
     satoshis += burnamount;
     unspents = calloc(max,sizeof(*unspents));
-    
-    //iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents);
-
     if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis,minconf,addresses)) <= 0 )
     {
         free(unspents);
