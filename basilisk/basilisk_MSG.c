@@ -128,6 +128,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
     //printf("keylen.%d datalen.%d\n",keylen,datalen);
+    char str[65]; printf("add message channel.%u msgid.%x %s\n",juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1));
 }
 
@@ -199,31 +200,46 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
     return(retval);
 }
 
+int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
+{
+    char *hexstr=0; cJSON *msgobj; int32_t datalen=0,retval = -1;
+    if ( (msgobj= jobj(item,"message")) != 0 )
+    {
+        if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+        {
+            if ( datalen < maxlen )
+            {
+                decode_hex(data,datalen,hexstr);
+                retval = datalen;
+            } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
+        } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
+    }
+    return(retval);
+}
+
 int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t maxlen)
 {
-    char *retstr,*hexstr=0; cJSON *valsobj,*retarray,*item,*msgobj; int32_t datalen=0,retval = -1;
+    char *retstr; cJSON *valsobj,*retarray,*item; int32_t i,datalen=0,retval = -1;
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
+    jaddnum(valsobj,"fanout",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
         //printf("getmessage.(%s)\n",retstr);
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) != 0 )
-                item = jitem(retarray,0);
-            else item = retarray;
-            if ( (msgobj= jobj(item,"message")) != 0 )
             {
-                if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+                for (i=0; i<cJSON_GetArraySize(retarray); i++)
                 {
-                    if ( datalen < maxlen )
-                    {
-                        decode_hex(data,datalen,hexstr);
-                        retval = datalen;
-                    } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
-                } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
-            } else printf("no message object.(%s)\n",retstr);
+                    item = jitem(retarray,i);
+                    if ( (datalen= basilisk_message_returned(data,maxlen,jitem(retarray,i))) > 0 )
+                        break;
+                }
+            } else datalen =  basilisk_message_returned(data,maxlen,retarray);
+            if ( datalen > 0 )
+                retval = 0;
             free_json(retarray);
         } else printf("cant parse message\n");
         free(retstr);
