@@ -174,7 +174,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 
 int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen)
 {
-    char *retstr,*hexstr,strbuf[4096],*ptr = 0; int32_t retval = -1; cJSON *retarray,*item,*valsobj;
+    char *retstr,*hexstr,strbuf[4096],*ptr = 0; int32_t retval = -1; cJSON *valsobj;
     if ( (hexstr= basilisk_addhexstr(&ptr,0,strbuf,sizeof(strbuf),data,datalen)) != 0 )
     {
         valsobj = cJSON_CreateObject();
@@ -183,15 +183,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s\n",datalen,channel,msgid,bits256_str(str,hash));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
         {
-            if ( (retarray= cJSON_Parse(retstr)) != 0 )
-            {
-                if ( is_cJSON_Array(retarray) != 0 )
-                    item = jitem(retarray,0);
-                else item = retarray;
-                if ( jobj(item,"error") == 0 )
-                    retval = 0;
-                free_json(retarray);
-            }
+            retval = 0;
             free(retstr);
         }
         free_json(valsobj);
