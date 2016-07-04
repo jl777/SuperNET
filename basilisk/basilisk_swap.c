@@ -431,7 +431,7 @@ int32_t basilisk_verify_choosei(struct supernet_info *myinfo,struct basilisk_swa
             return(0);
         }
     }
-    printf("illegal otherchoosei.%d datalen.%d vs %ld\n",otherchoosei,datalen,sizeof(otherchoosei)+sizeof(bits256)*2);
+    printf("illegal otherchoosei.%d datalen.%d vs %d\n",otherchoosei,datalen,(int32_t)(sizeof(otherchoosei)+sizeof(bits256)*2));
     return(-1);
 }
 
@@ -475,59 +475,36 @@ int32_t basilisk_verify_pubpair(int32_t *wrongfirstbytep,struct basilisk_swap *s
 
 int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t i,j,wrongfirstbyte,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33],pubkey[33]; uint64_t txid;
-    printf("verify privkeys choosei.%d otherchoosei.%d\n",swap->choosei,swap->otherchoosei);
-    if ( swap->cutverified == 0 && swap->choosei >= 0 && datalen == sizeof(swap->privkeys) )
+    int32_t i,j,wrongfirstbyte=0,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33]; uint64_t txid;
+    printf("verify privkeys choosei.%d otherchoosei.%d datalen.%d vs %d\n",swap->choosei,swap->otherchoosei,datalen,(int32_t)sizeof(swap->privkeys)+20);
+    if ( swap->cutverified == 0 && swap->choosei >= 0 && datalen == sizeof(swap->privkeys)+20 )
     {
-        for (i=wrongfirstbyte=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
+        for (i=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             for (j=0; j<32; j++)
                 otherpriv.bytes[j] = data[len++];
             pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             calc_rmd160_sha256(secret160,otherpriv.bytes,sizeof(otherpriv));
             memcpy(&txid,secret160,sizeof(txid));
-            if ( i == swap->otherchoosei )
-            {
-                if ( bits256_nonz(otherpriv) != 0 )
-                {
-                    printf("got privkey in slot.%d my choosei??\n",i);
-                    errs++;
-                }
-                if ( swap->iambob != 0 )
-                {
-                    if ( otherpubkey[0] == 0x02 )
-                    {
-                        if ( bits256_nonz(swap->privkeys[i]) != 0 )
-                        {
-                            swap->privBn = swap->privkeys[i];
-                            calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
-                            printf("set secretBn\n");
-                            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privBn);
-                        }
-                    } else printf("wrong first byte.%02x\n",otherpubkey[0]);
-                }
-                else
-                {
-                    if ( otherpubkey[0] == 0x03 )
-                    {
-                        if ( bits256_nonz(swap->privkeys[i]) != 0 )
-                        {
-                            swap->privAm = swap->privkeys[i];
-                            calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
-                            printf("set secretAm\n");
-                            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey,swap->privAm);
-                        }
-                    } else printf("wrong first byte.%02x\n",otherpubkey[0]);
-                }
-                continue;
-            }
-            errs += basilisk_verify_pubpair(&wrongfirstbyte,swap,i,otherpubkey[0],pubi,txid);
+            if ( i != swap->otherchoosei )
+                errs += basilisk_verify_pubpair(&wrongfirstbyte,swap,i,otherpubkey[0],pubi,txid);
         }
         if ( errs == 0 && wrongfirstbyte == 0 )
+        {
             swap->cutverified = 1, printf("CUT VERIFIED\n");
-        else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
+            if ( swap->iambob != 0 )
+            {
+                for (i=0; i<20; i++)
+                    swap->secretAm[i] = data[len++];
+            }
+            else
+            {
+                for (i=0; i<20; i++)
+                    swap->secretBn[i] = data[len++];
+            }
+        } else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
-    printf("privkeys errs.%d\n",errs);
+    printf("privkeys errs.%d wrongfirstbyte.%d\n",errs,wrongfirstbyte);
     return(errs);
 }
 
@@ -641,6 +618,16 @@ void basilisk_swaploop(void *_swap)
                 for (j=0; j<32; j++)
                     data[datalen++] = (i == swap->otherchoosei) ? 0 : swap->privkeys[i].bytes[j];
             }
+            if ( swap->iambob != 0 )
+            {
+                for (i=0; i<20; i++)
+                    data[datalen++] = swap->secretBn[i];
+            }
+            else
+            {
+                for (i=0; i<20; i++)
+                    data[datalen++] = swap->secretAm[i];
+            }
             swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10);
         }
         else if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
@@ -658,6 +645,24 @@ void basilisk_swaploop(void *_swap)
                     basilisk_rawtx_gen("deposit",myinfo,swap,1,&swap->bobdeposit,swap->bobdeposit.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.spendlen,swap->bobdeposit.coin->chain->txfee,1);
                     swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
                     basilisk_rawtx_gen("payment",myinfo,swap,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
+                    for (i=0; i<20; i++)
+                        printf("%02x",swap->secretAm[i]);
+                    printf(" <- secretAm\n");
+                    for (i=0; i<20; i++)
+                        printf("%02x",swap->secretBn[i]);
+                    printf(" <- secretBn\n");
+                    for (i=0; i<32; i++)
+                        printf("%02x",swap->pubA0.bytes[i]);
+                    printf(" <- pubA0\n");
+                    for (i=0; i<32; i++)
+                        printf("%02x",swap->pubA1.bytes[i]);
+                    printf(" <- pubA0\n");
+                    for (i=0; i<32; i++)
+                        printf("%02x",swap->pubB0.bytes[i]);
+                    printf(" <- pubA0\n");
+                    for (i=0; i<32; i++)
+                        printf("%02x",swap->pubB1.bytes[i]);
+                    printf(" <- pubA0\n");
                     if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
                     {
                         printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
