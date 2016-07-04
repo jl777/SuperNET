@@ -70,7 +70,7 @@ struct basilisk_swap
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
     
-    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
+    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];

@@ -721,6 +721,35 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,coin->basilisk_rawtxmetric,0,0,0,BASILISK_DEFAULTDIFF));
 }
 
+/*
+ both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
+ 
+ Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
+ 
+ Bob deposit:
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+ OP_ENDIF
+ 
+ Bob paytx:
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+ OP_ENDIF
+ 
+ Naming convention are pubAi are alice's pubkeys (seems only pubA0 and not pubA1)
+ pubBi are Bob's pubkeys
+ 
+ privN is Bob's privkey from the cut and choose deck as selected by Alice
+ privM is Alice's counterpart
+ pubN and pubM are the corresponding pubkeys for these chosen privkeys
+ 
+ Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
+ */
+
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
