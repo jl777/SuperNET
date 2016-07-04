@@ -203,23 +203,24 @@ int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
             if ( datalen < maxlen )
             {
                 decode_hex(data,datalen,hexstr);
+                printf("decoded hexstr.[%d]\n",datalen);
                 retval = datalen;
             } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
         } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
-    }
+    } else printf("no msgobj\n");
     return(retval);
 }
 
 int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t maxlen)
 {
-    char *retstr; cJSON *valsobj,*retarray,*item; int32_t i,datalen=0,retval = -1;
+    char *retstr; cJSON *valsobj,*retarray,*item; int32_t i,datalen=0;
     valsobj = cJSON_CreateObject();
     jaddnum(valsobj,"channel",channel);
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"fanout",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
-        //printf("getmessage.(%s)\n",retstr);
+        printf("gotmessage.(%s)\n",retstr);
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) != 0 )
@@ -227,16 +228,14 @@ int32_t basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t c
                 for (i=0; i<cJSON_GetArraySize(retarray); i++)
                 {
                     item = jitem(retarray,i);
-                    if ( (datalen= basilisk_message_returned(data,maxlen,jitem(retarray,i))) > 0 )
+                    if ( (datalen= basilisk_message_returned(data,maxlen,item)) > 0 )
                         break;
                 }
             } else datalen =  basilisk_message_returned(data,maxlen,retarray);
-            if ( datalen > 0 )
-                retval = 0;
             free_json(retarray);
         } else printf("cant parse message\n");
         free(retstr);
     } else printf("null getmessage\n");
     free_json(valsobj);
-    return(retval);
+    return(datalen);
 }
