@@ -486,7 +486,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,struct basilisk_sw
             pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
             calc_rmd160_sha256(secret160,otherpriv.bytes,sizeof(otherpriv));
             memcpy(&txid,secret160,sizeof(txid));
-            if ( i != swap->otherchoosei )
+            if ( i != swap->choosei )
                 errs += basilisk_verify_pubpair(&wrongfirstbyte,swap,i,otherpubkey[0],pubi,txid);
         }
         if ( errs == 0 && wrongfirstbyte == 0 )
