@@ -318,16 +318,26 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
         lastheight = IGUANA_MAXHEIGHT;
     if ( max > coin->bundlescount )
         max = coin->bundlescount;
+    printf("minconf.%d maxconf.%d max.%d addr.%s last.%d maxunspents.%d\n",minconf,maxconf,max,coinaddr,lastheight,maxunspents);
     for (total=n=i=0; i<max; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
         if ( lastheight > 0 && bp->bundleheight+bp->n > lastheight )
+        {
+            printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
             break;
+        }
         if ( (coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)) > maxconf )
+        {
+            printf("%d more than minconf.%d\n",(coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)),maxconf);
             continue;
+        }
         if ( (coin->blocks.hwmchain.height - bp->bundleheight) < minconf )
+        {
+            printf("%d less than minconf.%d\n",(coin->blocks.hwmchain.height - bp->bundleheight),minconf);
             break;
+        }
         if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,P != 0 ? &P[n] : &_p,rmd160,i,i) != 0 )
         {
             m = maxunspents >> 1;
