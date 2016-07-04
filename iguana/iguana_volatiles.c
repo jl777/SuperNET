@@ -218,7 +218,9 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         if ( coin->current != 0 && spent_hdrsi != coin->current->hdrsi )
             iguana_bundleremove(coin,spent_hdrsi,0);
-        exit(-1);
+        coin->spendvectorsaved = 0;
+        coin->started = 0;
+        coin->active = 0;
     } else printf("volatileupdate error null rdata [%d]\n",spentchain->height/coin->current->bundleheight);
     return(-1);
 }

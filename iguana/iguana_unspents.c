@@ -318,24 +318,24 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
         lastheight = IGUANA_MAXHEIGHT;
     if ( max > coin->bundlescount )
         max = coin->bundlescount;
-    printf("minconf.%d maxconf.%d max.%d addr.%s last.%d maxunspents.%d\n",minconf,maxconf,max,coinaddr,lastheight,maxunspents);
+    //printf("minconf.%d maxconf.%d max.%d addr.%s last.%d maxunspents.%d\n",minconf,maxconf,max,coinaddr,lastheight,maxunspents);
     for (total=n=i=0; i<max; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
         if ( lastheight > 0 && bp->bundleheight > lastheight )
         {
-            printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
+            //printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
             break;
         }
         if ( (coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)) > maxconf )
         {
-            printf("%d more than minconf.%d\n",(coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)),maxconf);
+            //printf("%d more than minconf.%d\n",(coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)),maxconf);
             continue;
         }
         if ( (coin->blocks.hwmchain.height - bp->bundleheight) < minconf )
         {
-            printf("%d less than minconf.%d\n",(coin->blocks.hwmchain.height - bp->bundleheight),minconf);
+            //printf("%d less than minconf.%d\n",(coin->blocks.hwmchain.height - bp->bundleheight),minconf);
             break;
         }
         if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,P != 0 ? &P[n] : &_p,rmd160,i,i) != 0 )
@@ -348,7 +348,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
@@ -390,7 +390,7 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
             iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents << 1],numunspentsp,maxunspents);
-            printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
+            //printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
             maxunspents -= *numunspentsp;
             numunspents += *numunspentsp;
             sum += total;
@@ -447,12 +447,12 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
-            printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+            //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
             total = 0;
             n = 0;
             bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
             iguana_pkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,coin->blocks.hwmchain.height - minconf,unspents,&n,max-1000);
-            printf("n.%d max.%d total %.8f\n",n,max,dstr(total));
+            //printf("n.%d max.%d total %.8f\n",n,max,dstr(total));
             if ( n > 0 )
             {
                 sum += total;

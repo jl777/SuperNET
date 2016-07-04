@@ -478,7 +478,6 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     memset(&txid,0,sizeof(txid));
     if ( txobj == 0 )
         return(txid);
-    fprintf(stderr,"parsetxobj serialized.%p\n",serialized);
     memset(msg,0,sizeof(*msg));
     vpnstr[0] = 0;
     if ( (msg->version= juint(txobj,"version")) == 0 )

@@ -345,7 +345,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
         {
             if ( iguana_unspentindfind(coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
             {
-                printf("bitcoinvalue found iguana\n");
+                //printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
                 return(Lptr);
             } else printf("unspentind couldnt find %s vout.%d\n",bits256_str(str,txid),vout);

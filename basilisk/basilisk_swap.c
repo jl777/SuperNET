@@ -54,6 +54,8 @@ bits256 basilisk_swap_broadcast(struct supernet_info *myinfo,struct basilisk_swa
 {
     bits256 txid;
     memset(txid.bytes,0,sizeof(txid));
+    if ( data != 0 && datalen != 0 )
+        txid = bits256_doublesha256(0,data,datalen);
     return(txid);
 }
 
@@ -532,6 +534,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
         rawtx->actualtxid = basilisk_swap_broadcast(myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
+        char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
         if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
             return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits));
     }
