@@ -1260,14 +1260,17 @@ STRING_ARG(bitcoinrpc,backupwallet,filename)
         if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
         {
             retstr = clonestr("{\"error\":\"couldnt backup wallet\"}");
-            free(loginstr);
-            loginstr = myinfo->decryptstr, myinfo->decryptstr = 0;
+            if ( myinfo->decryptstr != 0 )
+            {
+                free(loginstr);
+                loginstr = myinfo->decryptstr, myinfo->decryptstr = 0;
+            }
             if ( (retjson= cJSON_Parse(loginstr)) != 0 )
             {
                 if ( (payload= jobj(retjson,"wallet")) != 0 && iguana_walletemit(myinfo,filename,coin,payload) == 0 )
                     retstr = clonestr("{\"result\":\"wallet backup saved\"}");
                 free_json(retjson);
-            }
+            } else printf("couldnt parse.(%s)\n",loginstr);
             if ( loginstr != 0 )
                 scrubfree(loginstr);
             return(retstr);
