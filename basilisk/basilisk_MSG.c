@@ -200,7 +200,7 @@ int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
     {
         if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
         {
-            datalen <<= 1;
+            datalen >>= 1;
             if ( datalen < maxlen )
             {
                 decode_hex(data,datalen,hexstr);
