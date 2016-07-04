@@ -280,9 +280,11 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
 
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys)
 {
-    struct vin_info *V; char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs;
+    struct vin_info *V; char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs,flag = 0;
     *completedp = 0;
-    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && (privkeys != 0 || (privkeys= iguana_privkeysjson(myinfo,coin,vins)) != 0) )
+    if ( privkeys == 0 )
+        privkeys = iguana_privkeysjson(myinfo,coin,vins), flag = 1;
+    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && privkeys != 0 )
     {
         memset(&msgtx,0,sizeof(msgtx));
         //printf("SIGN.(%s) priv.(%s)\n",jprint(vins,0),jprint(privkeys,0));
@@ -293,7 +295,8 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bit
             else printf("signrawtransaction incomplete\n");
             free(V);
         }
-        free_json(privkeys);
+        if ( flag != 0 )
+            free_json(privkeys);
     }
     return(signedtx);
 }
