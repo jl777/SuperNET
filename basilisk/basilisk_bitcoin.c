@@ -655,6 +655,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     locktime = juint(valsobj,"locktime");
     if ( (addresses= jobj(valsobj,"addresses")) == 0 )
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
+    printf("use addresses.(%s)\n",jprint(addresses,0));
     printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )//|| amount == 0 || addresses == 0 )
     {

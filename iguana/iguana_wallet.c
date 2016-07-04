@@ -277,6 +277,7 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
             HASH_ITER(hh,subset->waddr,waddr,tmp2)
             {
                 bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,20);
+                printf("%s ",coinaddr);
                 jaddistr(array,coinaddr);
             }
         } else jaddstr(retjson,"result","cant find account");
