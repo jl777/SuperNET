@@ -406,7 +406,7 @@ int32_t basilisk_verify_statebits(struct supernet_info *myinfo,struct basilisk_s
 
 int32_t basilisk_verify_choosei(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    int32_t otherchoosei,i,len = 0;
+    int32_t otherchoosei=-1,i,len = 0;
     if ( datalen == sizeof(otherchoosei)+sizeof(bits256)*2 )
     {
         len += iguana_rwnum(0,data,sizeof(otherchoosei),&otherchoosei);
@@ -594,7 +594,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
         {
-            iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
+            datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
             swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
             if ( swap->iambob != 0 )
             {
