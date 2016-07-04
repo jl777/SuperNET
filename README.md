@@ -1,5 +1,16 @@
 #SuperNET Client "iguana"
 
+OS | Build Status
+-------------|------
+Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix)](https://jenkinsmaster.sprnt.pw/job/Unix)
+Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
+Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Android)](https://jenkinsmaster.sprnt.pw/job/Android/)
+iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iOS)](https://jenkinsmaster.sprnt.pw/job/iOS/)
+... | ...
+docs.supernet.org | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=docs.supernet.org-updating)](https://jenkinsmaster.sprnt.pw/job/docs.supernet.org-updating/)
+
+---
+
 Codebase is going under radical changes now and versions from mid-May should be used unless you are doing advanced testing. There will be four layers:
 
 gecko: abstracted bitcoin compatible blockchains that run via basilisk lite mode or as iguana core full network peers. I will try to get a geckochain to simultaneously have both virtual basilisk nodes and private iguana nodes, but at first will probably need to choose which mode a new chain will be and transition between the two via special suspend and resume functions that allow migration from virtual to physical. Each specific geckochain will be able to be enhanced into a datachain.
