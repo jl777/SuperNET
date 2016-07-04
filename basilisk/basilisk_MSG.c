@@ -128,7 +128,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
     //printf("keylen.%d datalen.%d\n",keylen,datalen);
-    char str[65]; printf("add message channel.%u msgid.%x %s\n",juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1));
 }
 
@@ -136,7 +136,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
-    char str[65]; printf("%s channel.%u msgid.%u\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"));
+    char str[65]; printf("%s channel.%u msgid.%u datalen.%d\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"),datalen);
     return(basilisk_respond_getmessage(myinfo,key,keylen));
 }
 
@@ -174,12 +174,13 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 
 int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen)
 {
-    char *retstr,*hexstr,strbuf[16384],*ptr = 0; int32_t retval = -1; cJSON *retarray,*item,*valsobj;
+    char *retstr,*hexstr,strbuf[4096],*ptr = 0; int32_t retval = -1; cJSON *retarray,*item,*valsobj;
     if ( (hexstr= basilisk_addhexstr(&ptr,0,strbuf,sizeof(strbuf),data,datalen)) != 0 )
     {
         valsobj = cJSON_CreateObject();
         jaddnum(valsobj,"channel",channel);
         jaddnum(valsobj,"msgid",msgid);
+        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s\n",datalen,channel,msgid,bits256_str(str,hash));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
         {
             if ( (retarray= cJSON_Parse(retstr)) != 0 )

@@ -371,13 +371,6 @@ void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
 }
 
-uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits)
-{
-    if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,msgbits,data,datalen) == 0 )
-        return(nextbits);
-    else return(0);
-}
-
 int32_t basilisk_verify_statebits(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     iguana_rwnum(0,data,sizeof(swap->otherstatebits),&swap->otherstatebits);
@@ -515,6 +508,13 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     else return(-1);
 }
 
+uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits)
+{
+    if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,msgbits,data,datalen) == 0 )
+        return(nextbits);
+    else return(0);
+}
+
 uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits)
 {
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
@@ -536,7 +536,7 @@ void basilisk_swaploop(void *_swap)
     while ( time(NULL) < swap->expiration )
     {
         fprintf(stderr,"swapstate.%x\n",swap->statebits);
-        data[0] = swap->statebits;
+        /*data[0] = swap->statebits;
         data[1] = swap->statebits >> 8;
         datalen = 2;
         basilisk_swapsend(myinfo,swap,0,data,datalen,0);
@@ -554,7 +554,7 @@ void basilisk_swaploop(void *_swap)
                 iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
                 basilisk_swapsend(myinfo,swap,0x08,data,datalen,0);
             }
-        }
+        }*/
         if ( (swap->statebits & 0x01) == 0 ) // send pubkeys
         {
             datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
