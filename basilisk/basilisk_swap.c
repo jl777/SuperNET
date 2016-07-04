@@ -477,7 +477,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,struct basilisk_sw
 {
     int32_t i,j,wrongfirstbyte=0,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33]; uint64_t txid;
     printf("verify privkeys choosei.%d otherchoosei.%d datalen.%d vs %d\n",swap->choosei,swap->otherchoosei,datalen,(int32_t)sizeof(swap->privkeys)+20);
-    if ( swap->cutverified == 0 && swap->choosei >= 0 && datalen == sizeof(swap->privkeys)+20 )
+    if ( swap->cutverified == 0 && swap->otherchoosei >= 0 && datalen == sizeof(swap->privkeys)+20 )
     {
         for (i=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
@@ -613,7 +613,8 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
         {
-            for (i=0; i<INSTANTDEX_DECKSIZE; i++)
+            datalen = 0;
+            for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
             {
                 for (j=0; j<32; j++)
                     data[datalen++] = (i == swap->otherchoosei) ? 0 : swap->privkeys[i].bytes[j];
@@ -639,30 +640,30 @@ void basilisk_swaploop(void *_swap)
         {
             if ( swap->myfee.txbytes == 0 )
             {
+                for (i=0; i<20; i++)
+                    printf("%02x",swap->secretAm[i]);
+                printf(" <- secretAm\n");
+                for (i=0; i<20; i++)
+                    printf("%02x",swap->secretBn[i]);
+                printf(" <- secretBn\n");
+                for (i=0; i<32; i++)
+                    printf("%02x",swap->pubA0.bytes[i]);
+                printf(" <- pubA0\n");
+                for (i=0; i<32; i++)
+                    printf("%02x",swap->pubA1.bytes[i]);
+                printf(" <- pubA1\n");
+                for (i=0; i<32; i++)
+                    printf("%02x",swap->pubB0.bytes[i]);
+                printf(" <- pubB0\n");
+                for (i=0; i<32; i++)
+                    printf("%02x",swap->pubB1.bytes[i]);
+                printf(" <- pubB1\n");
                 if ( swap->iambob != 0 )
                 {
                     swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
                     basilisk_rawtx_gen("deposit",myinfo,swap,1,&swap->bobdeposit,swap->bobdeposit.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.spendlen,swap->bobdeposit.coin->chain->txfee,1);
                     swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
                     basilisk_rawtx_gen("payment",myinfo,swap,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
-                    for (i=0; i<20; i++)
-                        printf("%02x",swap->secretAm[i]);
-                    printf(" <- secretAm\n");
-                    for (i=0; i<20; i++)
-                        printf("%02x",swap->secretBn[i]);
-                    printf(" <- secretBn\n");
-                    for (i=0; i<32; i++)
-                        printf("%02x",swap->pubA0.bytes[i]);
-                    printf(" <- pubA0\n");
-                    for (i=0; i<32; i++)
-                        printf("%02x",swap->pubA1.bytes[i]);
-                    printf(" <- pubA0\n");
-                    for (i=0; i<32; i++)
-                        printf("%02x",swap->pubB0.bytes[i]);
-                    printf(" <- pubA0\n");
-                    for (i=0; i<32; i++)
-                        printf("%02x",swap->pubB1.bytes[i]);
-                    printf(" <- pubA0\n");
                     if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
                     {
                         printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
