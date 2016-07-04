@@ -595,7 +595,6 @@ void basilisk_swaploop(void *_swap)
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
         {
             datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
-            swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
             if ( swap->iambob != 0 )
             {
                 for (i=0; i<32; i++)
@@ -610,6 +609,7 @@ void basilisk_swaploop(void *_swap)
                 for (i=0; i<32; i++)
                     data[datalen++] = swap->pubA1.bytes[i];
             }
+            swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
         }
         else if ( (swap->statebits & 0x08) == 0 ) // wait for choosei
         {
