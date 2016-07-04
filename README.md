@@ -1,8 +1,8 @@
 #SuperNET Client "iguana"
 
-OS | Build Status
+OS | Build Status 
 -------------|------
-Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix)](https://jenkinsmaster.sprnt.pw/job/Unix)
+Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix-jl777)](https://jenkinsmaster.sprnt.pw/job/Unix-jl777)
 Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
 Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Android)](https://jenkinsmaster.sprnt.pw/job/Android/)
 iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iOS)](https://jenkinsmaster.sprnt.pw/job/iOS/)
