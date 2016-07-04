@@ -52,10 +52,10 @@ struct basilisk_request
 
 struct basilisk_rawtx
 {
-    bits256 txid,actualtxid;
+    bits256 txid,signedtxid,actualtxid;
     struct iguana_info *coin;
     uint64_t amount,change,inputsum;
-    int32_t datalen,vintype,vouttype,numconfirms,spendlen,secretstart;
+    int32_t datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart;
     uint32_t locktime;
     char destaddr[64]; uint8_t addrtype,pubkey33[33],rmd160[20],spendscript[512];
     uint8_t *txbytes;
