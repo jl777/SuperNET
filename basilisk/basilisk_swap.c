@@ -14,6 +14,45 @@
  ******************************************************************************/
 
 // included from basilisk.c
+/* https://bitcointalk.org/index.php?topic=1340621.msg13828271#msg13828271
+ https://bitcointalk.org/index.php?topic=1364951
+ Tier Nolan's approach is followed with the following changes:
+ a) instead of cutting 1000 keypairs, only INSTANTDEX_DECKSIZE are a
+ b) instead of sending the entire 256 bits, it is truncated to 64 bits. With odds of collision being so low, it is dwarfed by the ~0.1% insurance factor.
+ c) D is set to 100x the insurance rate of 1/777 12.87% + BTC amount
+ d) insurance is added to Bob's payment, which is after the deposit and bailin
+ e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
+ */
+
+/*
+ both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
+ 
+ Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
+ 
+ Bob deposit:
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
+ OP_ENDIF
+ 
+ Bob paytx:
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
+ OP_ELSE
+ OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
+ OP_ENDIF
+ 
+ Naming convention are pubAi are alice's pubkeys (seems only pubA0 and not pubA1)
+ pubBi are Bob's pubkeys
+ 
+ privN is Bob's privkey from the cut and choose deck as selected by Alice
+ privM is Alice's counterpart
+ pubN and pubM are the corresponding pubkeys for these chosen privkeys
+ 
+ Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
+ */
+
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -72,6 +111,52 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
     return(n);
 }
 
+int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,uint8_t *userdata,int32_t userdatalen)
+{
+    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1,len=0; struct vin_info V;
+    memset(&V,0,sizeof(V));
+    V.signers[0].privkey = privkey;
+    privkeys = cJSON_CreateArray();
+    bitcoin_priv2wif(wifstr,privkey,rawtx->coin->chain->wiftype);
+    jaddistr(privkeys,wifstr);
+    if ( userdata != 0 && userdatalen > 0 )
+    {
+        V.suppress_pubkeys = 1;
+        memcpy(V.userdata,userdata,userdatalen);
+        V.userdatalen = len;
+    }
+    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,0,1);
+    vins = cJSON_CreateArray();
+    item = cJSON_CreateObject();
+    jaddbits256(item,"txid",rawtx->actualtxid);
+    jaddnum(item,"vout",0);
+    sobj = cJSON_CreateObject();
+    init_hexbytes_noT(hexstr,rawtx->spendscript,rawtx->spendlen);
+    jaddstr(sobj,"hex",hexstr);
+    jadd(item,"scriptPubKey",sobj);
+    jaddi(vins,item);
+    jdelete(txobj,"vin");
+    jadd(txobj,"vin",vins);
+    txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
+    if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
+    {
+        printf("spend rawtx.(%s)\n",rawtxbytes);
+        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
+        {
+            printf("rawtx spend signedtx.(%s)\n",signedtx);
+            dest->datalen = (int32_t)strlen(signedtx) >> 1;
+            dest->txbytes = calloc(1,dest->datalen);
+            decode_hex(dest->txbytes,dest->datalen,signedtx);
+            free(signedtx);
+            retval = 0;
+        }
+        free(rawtxbytes);
+    }
+    free_json(privkeys);
+    free_json(txobj);
+    return(retval);
+}
+
 struct basilisk_rawtx *basilisk_swapdata_rawtx(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx)
 {
     if ( rawtx->txbytes != 0 && rawtx->datalen <= maxlen )
@@ -100,57 +185,17 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,struct basilisk_
 
 int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    char *rawtx,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1,i,len=0; struct vin_info V;
+    uint8_t userdata[512]; int32_t i,len = 0;
     // add verification
     swap->bobpayment.txbytes = calloc(1,datalen);
     memcpy(swap->bobpayment.txbytes,data,datalen);
     swap->bobpayment.signedtxid = bits256_doublesha256(0,data,datalen);
     // OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
-    memset(&V,0,sizeof(V));
-    V.signers[0].privkey = swap->myprivs[0];
-    privkeys = cJSON_CreateArray();
-    bitcoin_priv2wif(wifstr,swap->myprivs[0],swap->bobcoin->chain->wiftype);
-    printf("wifstr.(%s)\n",wifstr);
-    jaddistr(privkeys,wifstr);
-    V.suppress_pubkeys = 1;
-    V.userdata[len++] = 32;
-    for (i=0; i<32; i++)
-        V.userdata[len++] = swap->privAm.bytes[i];
-    V.userdata[len++] = 0;
-    V.userdatalen = len;
-    txobj = bitcoin_txcreate(swap->bobcoin->chain->isPoS,0,1);
-    vins = cJSON_CreateArray();
-    item = cJSON_CreateObject();
-    jaddbits256(item,"txid",swap->bobpayment.signedtxid);
-    jaddnum(item,"vout",0);
-    jaddnum(item,"height",swap->bobcoin->blocks.hwmchain.height);
-    jaddnum(item,"checkind",swap->bobcoin->blocks.hwmchain.height);
-    sobj = cJSON_CreateObject();
-    init_hexbytes_noT(hexstr,swap->bobpayment.spendscript,swap->bobpayment.spendlen);
-    jaddstr(sobj,"hex",hexstr);
-    jadd(item,"scriptPubKey",sobj);
-    jaddi(vins,item);
-    jdelete(txobj,"vin");
-    jadd(txobj,"vin",vins);
-    txobj = bitcoin_txoutput(txobj,swap->alicespend.spendscript,swap->alicespend.spendlen,swap->alicespend.amount);
-    if ( (rawtx= bitcoin_json2hex(myinfo,swap->bobcoin,&swap->alicespend.txid,txobj,&V)) != 0 )
-    {
-        printf("alice spend rawtx.(%s)\n",rawtx);
-         if ( (signedtx= iguana_signrawtx(myinfo,swap->bobcoin,&swap->alicespend.signedtxid,&swap->alicespend.completed,vins,rawtx,privkeys,&V)) != 0 )
-        {
-            printf("alice spend signedtx.(%s)\n",signedtx);
-            swap->alicespend.datalen = (int32_t)strlen(signedtx) >> 1;
-            swap->alicespend.txbytes = calloc(1,swap->alicespend.datalen);
-            decode_hex(swap->alicespend.txbytes,swap->alicespend.datalen,signedtx);
-            free(signedtx);
-            retval = 0;
-        }
-        free(rawtx);
-    }
-    free_json(privkeys);
-    free_json(txobj);
-    // set alicespend
-    return(retval);
+    userdata[len++] = sizeof(swap->privAm);
+    for (i=0; i<sizeof(swap->privAm); i++)
+        userdata[len++] = swap->privAm.bytes[i];
+    userdata[len++] = 0; // false -> else path
+    return(basilisk_rawtx_spend(myinfo,swap,&swap->alicespend,&swap->bobpayment,swap->myprivs[0],userdata,len));
 }
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
@@ -421,7 +466,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     strcpy(swap->alicestr,swap->alicecoin->symbol);
     swap->started = (uint32_t)time(NULL);
     swap->expiration = swap->req.timestamp + INSTANTDEX_LOCKTIME*2;
-    swap->locktime = swap->expiration + INSTANTDEX_LOCKTIME;
+    swap->locktime = swap->req.timestamp + INSTANTDEX_LOCKTIME;
     OS_randombytes((uint8_t *)&swap->choosei,sizeof(swap->choosei));
     if ( swap->choosei < 0 )
         swap->choosei = -swap->choosei;
