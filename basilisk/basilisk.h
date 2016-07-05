@@ -75,7 +75,7 @@ struct basilisk_swap
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];
     
-    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,alicereclaim,alicespend,bobreclaim,bobspend,bobrefund;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
 };
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
