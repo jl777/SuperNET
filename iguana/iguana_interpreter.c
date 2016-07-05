@@ -1416,7 +1416,9 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
         else if ( iguana_isnonz(stacks->stack[--stacks->stackdepth]) != 0 )
         {
             printf("Evaluate true, depth.%d errs.%d\n",stacks->stackdepth,errs);
-            jadd(interpreter,"result",jtrue());
+            if ( errs == 0 )
+                jadd(interpreter,"result",jtrue());
+            else jadd(interpreter,"result",jfalse());
         }
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));

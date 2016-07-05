@@ -278,22 +278,25 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
     return(vins);
 }
 
-char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys)
+char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkeys,struct vin_info *V)
 {
-    struct vin_info *V; char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs,flag = 0;
+    char *signedtx = 0; struct iguana_msgtx msgtx; int32_t numinputs,flagV = 0,flag = 0;
     *completedp = 0;
     if ( privkeys == 0 )
         privkeys = iguana_privkeysjson(myinfo,coin,vins), flag = 1;
     if ( (numinputs= cJSON_GetArraySize(vins)) > 0 && privkeys != 0 )
     {
         memset(&msgtx,0,sizeof(msgtx));
+        if ( V == 0 )
+            V = calloc(numinputs,sizeof(*V)), flagV = 1;
         //printf("SIGN.(%s) priv.(%s)\n",jprint(vins,0),jprint(privkeys,0));
-        if ( (V= calloc(numinputs,sizeof(*V))) != 0 )
+        if ( V != 0 )
         {
             if ( iguana_signrawtransaction(myinfo,coin,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
                 *completedp = 1;
             else printf("signrawtransaction incomplete\n");
-            free(V);
+            if ( flagV != 0 )
+                free(V);
         }
         if ( flag != 0 )
             free_json(privkeys);
@@ -445,7 +448,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
             {
                 if ( (rawtx= jstr(retjson,"rawtx")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
                 {
-                    if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0)) != 0 )
+                    if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,0,0)) != 0 )
                     {
                         iguana_unspentslock(myinfo,coin,vins);
                         retjson = cJSON_CreateObject();

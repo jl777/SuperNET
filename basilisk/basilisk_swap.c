@@ -43,7 +43,7 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,struct basilisk_
 
 int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    char *rawtx,*signedtx,hexstr[999]; cJSON *txobj,*vins,*item,*sobj; int32_t retval = -1,i,len=0; struct vin_info V;
+    char *rawtx,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1,i,len=0; struct vin_info V;
     // add verification
     swap->bobpayment.txbytes = calloc(1,datalen);
     memcpy(swap->bobpayment.txbytes,data,datalen);
@@ -51,6 +51,10 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swa
     // OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
     memset(&V,0,sizeof(V));
     V.signers[0].privkey = swap->myprivs[0];
+    privkeys = cJSON_CreateArray();
+    bitcoin_priv2wif(wifstr,swap->myprivs[0],swap->bobcoin->chain->wiftype);
+    printf("wifstr.(%s)\n",wifstr);
+    jaddistr(privkeys,wifstr);
     V.suppress_p2shlen = 1;
     V.p2shscript[len++] = 32;
     for (i=0; i<32; i++)
@@ -62,6 +66,8 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swa
     item = cJSON_CreateObject();
     jaddbits256(item,"txid",swap->bobpayment.signedtxid);
     jaddnum(item,"vout",0);
+    jaddnum(item,"height",swap->bobcoin->blocks.hwmchain.height);
+    jaddnum(item,"checkind",swap->bobcoin->blocks.hwmchain.height);
     sobj = cJSON_CreateObject();
     init_hexbytes_noT(hexstr,swap->bobpayment.spendscript,swap->bobpayment.spendlen);
     jaddstr(sobj,"hex",hexstr);
@@ -73,7 +79,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swa
     if ( (rawtx= bitcoin_json2hex(myinfo,swap->bobcoin,&swap->alicespend.txid,txobj,&V)) != 0 )
     {
         printf("alice spend rawtx.(%s)\n",rawtx);
-         if ( (signedtx= iguana_signrawtx(myinfo,swap->bobcoin,&swap->alicespend.signedtxid,&swap->alicespend.completed,vins,rawtx,0)) != 0 )
+         if ( (signedtx= iguana_signrawtx(myinfo,swap->bobcoin,&swap->alicespend.signedtxid,&swap->alicespend.completed,vins,rawtx,privkeys,&V)) != 0 )
         {
             printf("alice spend signedtx.(%s)\n",signedtx);
             swap->alicespend.datalen = (int32_t)strlen(signedtx) >> 1;
@@ -84,6 +90,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swa
         }
         free(rawtx);
     }
+    free_json(privkeys);
     free_json(txobj);
     // set alicespend
     return(retval);
@@ -196,7 +203,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,struct basilisk_rawtx
     char *signedtx,*txbytes; cJSON *vins; int32_t retval = -1;
     if ( (txbytes= jstr(item,"rawtx")) != 0 && (vins= jobj(item,"vins")) != 0 )
     {
-        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray)) != 0 )
+        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray,0)) != 0 )
         {
             if ( lockinputs != 0 )
                 iguana_unspentslock(myinfo,rawtx->coin,vins);
@@ -919,7 +926,9 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        usleep(1000000);
+        if ( swap->iambob != 0 )
+            sleep(1);
+        else sleep(3);
     }
     if ( swap->iambob != 0 )
     {
