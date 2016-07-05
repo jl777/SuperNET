@@ -121,14 +121,16 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     jaddistr(privkeys,wifstr);
     if ( userdata != 0 && userdatalen > 0 )
     {
-        V.suppress_pubkeys = 1;
+        V.suppress_pubkeys = rawtx->suppress_pubkeys;
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
     }
     txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,0,1);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
-    jaddbits256(item,"txid",rawtx->actualtxid);
+    if ( bits256_nonz(rawtx->actualtxid) != 0 )
+        jaddbits256(item,"txid",rawtx->actualtxid);
+    else jaddbits256(item,"txid",rawtx->signedtxid);
     jaddnum(item,"vout",0);
     sobj = cJSON_CreateObject();
     init_hexbytes_noT(hexstr,rawtx->spendscript,rawtx->spendlen);
@@ -140,7 +142,7 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
-        printf("spend rawtx.(%s)\n",rawtxbytes);
+        printf("spend rawtx.(%s) userdatalen.%d\n",rawtxbytes,userdatalen);
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
         {
             printf("rawtx spend signedtx.(%s)\n",signedtx);
@@ -552,12 +554,16 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     }
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobdeposit,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis*1.1,4,0);
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobrefund,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,bobpub33);
+    swap->bobrefund.suppress_pubkeys = 1;
     basilisk_rawtx_setparms(myinfo,swap,&swap->aliceclaim,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,alicepub33);
-    
+    swap->aliceclaim.suppress_pubkeys = 1;
+
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobpayment,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis,3,0);
     basilisk_rawtx_setparms(myinfo,swap,&swap->alicespend,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,alicepub33);
+    swap->alicespend.suppress_pubkeys = 1;
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobreclaim,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,bobpub33);
-    
+    swap->bobreclaim.suppress_pubkeys = 1;
+
     basilisk_rawtx_setparms(myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
     basilisk_rawtx_setparms(myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
@@ -991,7 +997,7 @@ void basilisk_swaploop(void *_swap)
                             break;
                         }
                     }
-                    else if ( time(NULL) > swap->bobpayment.locktime )
+                    else if ( swap->bobpayment.locktime != 0 && time(NULL) > swap->bobpayment.locktime )
                     {
                         // submit reclaim of payment
                         swap->sleeptime = 1;
@@ -1027,11 +1033,11 @@ void basilisk_swaploop(void *_swap)
             else
             {
                 // [BLOCKING: depfound] Alice waits for deposit to confirm and sends altpayment
-                if ( time(NULL) > swap->bobdeposit.locktime )
+                if ( swap->bobdeposit.locktime != 0 && time(NULL) > swap->bobdeposit.locktime )
                 {
                     if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->aliceclaim,0) == 0 )
                     {
-                        printf("Alice clains deposit\n");
+                        printf("Alice claims deposit\n");
                         break;
                     }
                 }
