@@ -494,6 +494,8 @@ static int32_t iguana_num(struct iguana_stackdata Snum)
 static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,uint8_t *numbuf,int32_t numlen)
 {
     struct iguana_stackdata Snum; cJSON *item = 0; char tmpstr[2048]; int32_t num = (int32_t)num64;
+    if ( stacks->lastpath[stacks->ifdepth] < 0 )
+        return(0);
     if ( stacks->maxstackdepth > 0 )
     {
         /*if ( numbuf != 0 )
@@ -993,7 +995,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 else if ( dlen >= IGUANA_OP_1 && dlen <= IGUANA_OP_16 )
                 {
                     dlen -= 0x50;
-                    iguana_pushdata(stacks,0,&V->userdata[len],dlen), len += dlen;
+                    iguana_pushdata(stacks,dlen,0,0);
                 }
                 else if ( dlen == IGUANA_OP_PUSHDATA1 )
                 {
@@ -1010,7 +1012,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     iguana_pushdata(stacks,-1,0,0);
                 else
                 {
-                    printf("invalid data opcode %d\n",dlen);
+                    printf("invalid data opcode %02x\n",dlen);
                     free(stacks);
                     return(-1);
                 }
@@ -1154,7 +1156,6 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             errs++;
                         else
                         {
-                            args[0] = iguana_pop(stacks);
                             if ( stacks->ifdepth <= stacks->elsedepth )
                             {
                                 printf("unhandled opcode.%02x stacks->ifdepth %d <= %d stacks->elsedepth\n",op->opcode,stacks->ifdepth,stacks->elsedepth);
@@ -1174,9 +1175,6 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
                         break;
                     case IGUANA_OP_VERIFY:
-                        //if ( stacks->stackdepth > 0 )
-                        //    args[0] = iguana_pop(stacks);
-                        //else errs++;
                         break;
                     case IGUANA_OP_RETURN:
                         iguana_pushdata(stacks,0,0,0);
@@ -1265,7 +1263,17 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 {
                     if ( iguana_cmp(&args[0],&args[1]) == 0 )
                         iguana_pushdata(stacks,1,0,0);
-                    else iguana_pushdata(stacks,0,0,0);
+                    else
+                    {
+                        for (i=0; i<args[0].size; i++)
+                            printf("%02x",args[0].U.pubkey[i]);
+                        printf(" <- args[0]\n");
+                        for (i=0; i<args[1].size; i++)
+                            printf("%02x",args[1].U.pubkey[i]);
+                        printf(" <- args[1]\n");
+                        printf("OP_EQUAL compare error %d vs %d\n",args[0].size,args[1].size);
+                        iguana_pushdata(stacks,0,0,0);
+                    }
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
@@ -1382,11 +1390,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                                     iguana_stack(stacks,args,0,"","0");
                                 iguana_stack(stacks,args,1,"0","");
                                 break;
-                            case IGUANA_OP_DUP:
-                                                    printf("before dup stackdepth.%d\n",stacks->stackdepth);
-                                                    iguana_stack(stacks,args,1,"0","0");
-                                                    printf("after dup stackdepth.%d\n",stacks->stackdepth);
-                                break;
+                            case IGUANA_OP_DUP:   iguana_stack(stacks,args,1,"0","0"); break;
                             case IGUANA_OP_2DUP:  iguana_stack(stacks,args,2,"01","01"); break;
                             case IGUANA_OP_NIP:
                                 if ( args[0].data != 0 )
@@ -1501,6 +1505,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 jadd(interpreter,"result",jtrue());
             else jadd(interpreter,"result",jfalse());
         }
+        else printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));
         if ( numargs > 0 )

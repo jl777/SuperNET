@@ -708,7 +708,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
     iguana_msgtx_Vset(coin,serialized,maxlen,msgtx,V);
     cJSON *txobj = cJSON_CreateObject();
     *signedtx = iguana_rawtxbytes(coin,txobj,msgtx);
-    printf("SIGNEDTX.(%s)\n",jprint(txobj,1));
+    //printf("SIGNEDTX.(%s)\n",jprint(txobj,1));
     *signedtxidp = msgtx->txid;
     return(complete);
 }
