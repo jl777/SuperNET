@@ -1010,7 +1010,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     free(stacks);
                     return(-1);
                 }
-                printf("stackdepth.%d dlen.%d\n",stacks->stackdepth,dlen);
+                printf("user data stackdepth.%d dlen.%d\n",stacks->stackdepth,dlen);
             }
             if ( len != V->userdatalen )
             {
@@ -1142,16 +1142,92 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 if ( interpret == 0 || V == 0 )
                     continue;
-                if ( (numargs= op->stackitems) > 0 )
+                if ( (op->flags & IGUANA_NOPFLAG) != 0 )
+                    continue;
+                if ( (op->flags & IGUANA_CONTROLFLAG) != 0 )
                 {
-                    if ( stacks->stackdepth < op->stackitems )
+                    printf("control opcode depth.%d\n",stacks->stackdepth);
+                    switch ( op->opcode )
                     {
-                        printf("stackdepth.%d needed.%d (%s) at offset.%ld\n",stacks->stackdepth,op->stackitems,str,(long)str-(long)asmstr);
-                        errs++;
-                        break;
+                        case IGUANA_OP_IF: case IGUANA_OP_NOTIF:
+                            if ( stacks->ifdepth >= IGUANA_MAXSTACKDEPTH )
+                            {
+                                printf("ifdepth.%d >= MAXSTACKDEPTH.%d\n",stacks->ifdepth,IGUANA_MAXSTACKDEPTH);
+                                errs++;
+                            }
+                            else
+                            {
+                                if ( stacks->stackdepth <= 0 )
+                                    errs++;
+                                else
+                                {
+                                    args[0] = iguana_pop(stacks);
+                                    if ( iguana_isnonz(args[0]) == (op->opcode == IGUANA_OP_IF) )
+                                    {
+                                        val = 1;
+                                        printf("OP_IF enabled depth.%d\n",stacks->stackdepth);
+                                    }
+                                    else
+                                    {
+                                        val = -1;
+                                        printf("OP_IF disabled depth.%d\n",stacks->stackdepth);
+                                    }
+                                    stacks->lastpath[++stacks->ifdepth] = val;
+                                }
+                            }
+                            break;
+                        case IGUANA_OP_ELSE:
+                            if ( stacks->stackdepth <= 0 )
+                                errs++;
+                            else
+                            {
+                                args[0] = iguana_pop(stacks);
+                                if ( stacks->ifdepth <= stacks->elsedepth )
+                                {
+                                    printf("unhandled opcode.%02x stacks->ifdepth %d <= %d stacks->elsedepth\n",op->opcode,stacks->ifdepth,stacks->elsedepth);
+                                    errs++;
+                                }
+                                stacks->lastpath[stacks->ifdepth] *= -1;
+                                printf("OP_ELSE status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                            }
+                            break;
+                        case IGUANA_OP_ENDIF:
+                            if ( stacks->ifdepth <= 0 )
+                            {
+                                printf("endif without if offset.%ld\n",(long)str-(long)asmstr);
+                                errs++;
+                            }
+                            stacks->ifdepth--;
+                            printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                            break;
+                        case IGUANA_OP_VERIFY:
+                            if ( stacks->stackdepth > 0 )
+                                args[0] = iguana_pop(stacks);
+                            else errs++;
+                            break;
+                        case IGUANA_OP_RETURN:
+                            iguana_pushdata(stacks,0,0,0);
+                            errs++;
+                            break;
                     }
-                    for (i=0; i<numargs; i++)
-                        args[numargs - 1 - i] = iguana_pop(stacks);
+                    if ( errs != 0 )
+                        break;
+                    continue;
+                }
+                else if ( stacks->lastpath[stacks->ifdepth] >= 0 )
+                {
+                    if ( (numargs= op->stackitems) > 0 )
+                    {
+                        if ( stacks->stackdepth < op->stackitems )
+                        {
+                            printf("stackdepth.%d needed.%d (%s) at offset.%ld\n",stacks->stackdepth,op->stackitems,str,(long)str-(long)asmstr);
+                            errs++;
+                            break;
+                        }
+                        for (i=0; i<numargs; i++)
+                            args[numargs - 1 - i] = iguana_pop(stacks);
+                    }
+                    printf("%02x: numargs.%d depth.%d\n",op->opcode,numargs,stacks->stackdepth);
                 }
                 if ( stacks->logarray != 0 )
                 {
@@ -1167,67 +1243,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     jadd(item,(char *)op->hh.key,array);
                     jaddi(stacks->logarray,item);
                 }
-                if ( (op->flags & IGUANA_NOPFLAG) != 0 )
-                    continue;
-                if ( (op->flags & IGUANA_CONTROLFLAG) != 0 )
-                {
-                    switch ( op->opcode )
-                    {
-                        case IGUANA_OP_IF: case IGUANA_OP_NOTIF:
-                            if ( stacks->ifdepth >= IGUANA_MAXSTACKDEPTH )
-                            {
-                                printf("ifdepth.%d >= MAXSTACKDEPTH.%d\n",stacks->ifdepth,IGUANA_MAXSTACKDEPTH);
-                                errs++;
-                            }
-                            else
-                            {
-                                if ( iguana_isnonz(args[0]) == (op->opcode == IGUANA_OP_IF) )
-                                {
-                                    val = 1;
-                                    printf("OP_IF enabled depth.%d\n",stacks->stackdepth);
-                                }
-                                else
-                                {
-                                    val = -1;
-                                    printf("OP_IF disabled depth.%d\n",stacks->stackdepth);
-                                }
-                                stacks->lastpath[++stacks->ifdepth] = val;
-                            }
-                            break;
-                        case IGUANA_OP_ELSE:
-                            if ( stacks->ifdepth <= stacks->elsedepth )
-                            {
-                                printf("unhandled opcode.%02x stacks->ifdepth %d <= %d stacks->elsedepth\n",op->opcode,stacks->ifdepth,stacks->elsedepth);
-                                errs++;
-                            }
-                            stacks->lastpath[stacks->ifdepth] *= -1;
-                            printf("OP_ELSE status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
-                            break;
-                        case IGUANA_OP_ENDIF:
-                            if ( stacks->ifdepth <= 0 )
-                            {
-                                printf("endif without if offset.%ld\n",(long)str-(long)asmstr);
-                                errs++;
-                            }
-                            stacks->ifdepth--;
-                            printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
-                            break;
-                        case IGUANA_OP_VERIFY:
-                            break;
-                        case IGUANA_OP_RETURN:
-                            iguana_pushdata(stacks,0,0,0);
-                            errs++;
-                            break;
-                    }
-                    if ( errs != 0 )
-                        break;
-                    continue;
-                }
                 if ( stacks->lastpath[stacks->ifdepth] != 0 )
                 {
                     if ( stacks->lastpath[stacks->ifdepth] < 0 )
                     {
-                        printf("SKIP opcode.%02x\n",op->opcode);
+                        printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
                         if ( stacks->logarray )
                             jaddistr(stacks->logarray,"skip");
                         continue;

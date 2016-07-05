@@ -113,7 +113,7 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
 
 int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,uint8_t *userdata,int32_t userdatalen)
 {
-    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1,len=0; struct vin_info V;
+    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info V;
     memset(&V,0,sizeof(V));
     V.signers[0].privkey = privkey;
     privkeys = cJSON_CreateArray();
@@ -123,7 +123,7 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     {
         V.suppress_pubkeys = 1;
         memcpy(V.userdata,userdata,userdatalen);
-        V.userdatalen = len;
+        V.userdatalen = userdatalen;
     }
     txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,0,1);
     vins = cJSON_CreateArray();
@@ -1059,8 +1059,13 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        if ( swap->sleeptime > 0 )
-            sleep(swap->sleeptime);
+        if ( myinfo->RELAYID >= 0 )
+            usleep(100000);
+        else
+        {
+            if ( swap->sleeptime > 0 )
+                sleep(swap->sleeptime);
+        }
     }
     if ( swap->iambob != 0 )
     {
