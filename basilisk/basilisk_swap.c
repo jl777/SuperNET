@@ -1109,7 +1109,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
         if ( myinfo->RELAYID >= 0 )
-            usleep(100000);
+            sleep(1);
         else
         {
             if ( swap->sleeptime > 0 )
