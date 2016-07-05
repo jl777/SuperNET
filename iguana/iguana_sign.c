@@ -618,25 +618,27 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             }
         }
         msgtx->vins[vini].scriptlen = scriptlen;
+        if ( vp->userdatalen != 0 )
+        {
+            memcpy(&script[scriptlen],vp->userdata,vp->userdatalen);
+            scriptlen += vp->userdatalen;
+        }
         if ( (p2shlen= vp->p2shlen) > 0 )
         {
             msgtx->vins[vini].redeemscript = &script[scriptlen];
-            if ( vp->suppress_p2shlen == 0 )
+            if ( p2shlen < 76 )
+                script[scriptlen++] = p2shlen;
+            else if ( p2shlen <= 0xff )
             {
-                if ( p2shlen < 76 )
-                    script[scriptlen++] = p2shlen;
-                else if ( p2shlen <= 0xff )
-                {
-                    script[scriptlen++] = 0x4c;
-                    script[scriptlen++] = p2shlen;
-                }
-                else if ( p2shlen <= 0xffff )
-                {
-                    script[scriptlen++] = 0x4d;
-                    script[scriptlen++] = (p2shlen & 0xff);
-                    script[scriptlen++] = ((p2shlen >> 8) & 0xff);
-                } else return(-1);
-            } // else case is for custom script params
+                script[scriptlen++] = 0x4c;
+                script[scriptlen++] = p2shlen;
+            }
+            else if ( p2shlen <= 0xffff )
+            {
+                script[scriptlen++] = 0x4d;
+                script[scriptlen++] = (p2shlen & 0xff);
+                script[scriptlen++] = ((p2shlen >> 8) & 0xff);
+            } else return(-1);
             memcpy(&script[scriptlen],vp->p2shscript,p2shlen), scriptlen += p2shlen;
             if ( (msgtx->vins[vini].suffixlen= vp->suffixlen) > 0 )
             {
@@ -706,7 +708,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
     iguana_msgtx_Vset(coin,serialized,maxlen,msgtx,V);
     cJSON *txobj = cJSON_CreateObject();
     *signedtx = iguana_rawtxbytes(coin,txobj,msgtx);
-    //printf("SIGNEDTX.(%s)\n",jprint(txobj,1));
+    printf("SIGNEDTX.(%s)\n",jprint(txobj,1));
     *signedtxidp = msgtx->txid;
     return(complete);
 }

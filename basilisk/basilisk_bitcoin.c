@@ -554,63 +554,6 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-#define SCRIPT_OP_IF 0x63
-#define SCRIPT_OP_ELSE 0x67
-#define SCRIPT_OP_ENDIF 0x68
-
-int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
-{
-    uint8_t pubkeyA[33],pubkeyB[33],*secret160; bits256 cltvpub,destpub; int32_t i;
-    *locktimep = swap->locktime;
-    if ( depositflag != 0 )
-    {
-        *locktimep += INSTANTDEX_LOCKTIME;
-        cltvpub = swap->pubA0;
-        destpub = swap->pubB0;
-        secret160 = swap->secretBn;
-        pubkeyA[0] = 0x02;
-        pubkeyB[0] = 0x03;
-    }
-    else
-    {
-        cltvpub = swap->pubB1;
-        destpub = swap->pubA0;
-        secret160 = swap->secretAm;
-        pubkeyA[0] = 0x03;
-        pubkeyB[0] = 0x02;
-    }
-    if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
-        return(-1);
-    for (i=0; i<20; i++)
-        if ( secret160[i] != 0 )
-            break;
-    if ( i == 20 )
-        return(-1);
-    memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
-    memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
-    script[n++] = SCRIPT_OP_IF;
-    n = bitcoin_checklocktimeverify(script,n,*locktimep);
-    n = bitcoin_pubkeyspend(script,n,pubkeyA);
-    script[n++] = SCRIPT_OP_ELSE;
-    if ( secretstartp != 0 )
-        *secretstartp = n + 2;
-    n = bitcoin_revealsecret160(script,n,secret160);
-    n = bitcoin_pubkeyspend(script,n,pubkeyB);
-    script[n++] = SCRIPT_OP_ENDIF;
-    return(n);
-}
-
-int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t altps2h,bits256 pubAm,bits256 pubBn)
-{
-    uint8_t p2sh160[20]; struct vin_info V;
-    memset(&V,0,sizeof(V));
-    memcpy(&V.signers[0].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[0].pubkey[0] = 0x02;
-    memcpy(&V.signers[1].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[1].pubkey[0] = 0x03;
-    V.M = V.N = 2;
-    n = bitcoin_MofNspendscript(p2sh160,script,n,&V);
-    bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));
-    return(n);
-}
 
 #ifdef later
 

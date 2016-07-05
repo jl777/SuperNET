@@ -14,6 +14,63 @@
  ******************************************************************************/
 
 // included from basilisk.c
+#define SCRIPT_OP_IF 0x63
+#define SCRIPT_OP_ELSE 0x67
+#define SCRIPT_OP_ENDIF 0x68
+
+int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
+{
+    uint8_t pubkeyA[33],pubkeyB[33],*secret160; bits256 cltvpub,destpub; int32_t i;
+    *locktimep = swap->locktime;
+    if ( depositflag != 0 )
+    {
+        *locktimep += INSTANTDEX_LOCKTIME;
+        cltvpub = swap->pubA0;
+        destpub = swap->pubB0;
+        secret160 = swap->secretBn;
+        pubkeyA[0] = 0x02;
+        pubkeyB[0] = 0x03;
+    }
+    else
+    {
+        cltvpub = swap->pubB1;
+        destpub = swap->pubA0;
+        secret160 = swap->secretAm;
+        pubkeyA[0] = 0x03;
+        pubkeyB[0] = 0x02;
+    }
+    if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
+        return(-1);
+    for (i=0; i<20; i++)
+        if ( secret160[i] != 0 )
+            break;
+    if ( i == 20 )
+        return(-1);
+    memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
+    memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
+    script[n++] = SCRIPT_OP_IF;
+    n = bitcoin_checklocktimeverify(script,n,*locktimep);
+    n = bitcoin_pubkeyspend(script,n,pubkeyA);
+    script[n++] = SCRIPT_OP_ELSE;
+    if ( secretstartp != 0 )
+        *secretstartp = n + 2;
+    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_pubkeyspend(script,n,pubkeyB);
+    script[n++] = SCRIPT_OP_ENDIF;
+    return(n);
+}
+
+int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t altps2h,bits256 pubAm,bits256 pubBn)
+{
+    uint8_t p2sh160[20]; struct vin_info V;
+    memset(&V,0,sizeof(V));
+    memcpy(&V.signers[0].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[0].pubkey[0] = 0x02;
+    memcpy(&V.signers[1].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[1].pubkey[0] = 0x03;
+    V.M = V.N = 2;
+    n = bitcoin_MofNspendscript(p2sh160,script,n,&V);
+    bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));
+    return(n);
+}
 
 struct basilisk_rawtx *basilisk_swapdata_rawtx(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx)
 {
@@ -55,12 +112,12 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swa
     bitcoin_priv2wif(wifstr,swap->myprivs[0],swap->bobcoin->chain->wiftype);
     printf("wifstr.(%s)\n",wifstr);
     jaddistr(privkeys,wifstr);
-    V.suppress_p2shlen = 1;
-    V.p2shscript[len++] = 32;
+    V.suppress_pubkeys = 1;
+    V.userdata[len++] = 32;
     for (i=0; i<32; i++)
-        V.p2shscript[len++] = swap->privAm.bytes[i];
-    V.p2shscript[len++] = 0;
-    V.p2shlen = len;
+        V.userdata[len++] = swap->privAm.bytes[i];
+    V.userdata[len++] = 0;
+    V.userdatalen = len;
     txobj = bitcoin_txcreate(swap->bobcoin->chain->isPoS,0,1);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
@@ -423,6 +480,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     basilisk_rawtx_setparms(myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
     basilisk_rawtx_setparms(myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
     basilisk_rawtx_setparms(myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
+    swap->sleeptime = 3 - swap->iambob;
     return(swap);
 }
 // end of alice/bob code
@@ -787,14 +845,22 @@ void basilisk_swaploop(void *_swap)
             {
                 // verify and submit otherfee
                 swap->statebits |= 0x80;
+                swap->sleeptime = 1;
             }
+            else if ( swap->sleeptime < 60 )
+                swap->sleeptime++;
         }
         else // both sides have setup required data and paid txfee
         {
+            if ( swap->sleeptime < 60 )
+                swap->sleeptime++;
             if ( swap->iambob != 0 )
             {
                 if ( (swap->statebits & 0x100) == 0 )
+                {
                     swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x200,data,maxlen,&swap->bobdeposit,0x100);
+                    swap->sleeptime = 1;
+                }
                 // [BLOCKING: altfound] make sure altpayment is confirmed and send payment
                 else if ( (swap->statebits & 0x1000) == 0 )
                 {
@@ -803,16 +869,23 @@ void basilisk_swaploop(void *_swap)
                     {
                         // verify alicepayment and submit, set confirmed height
                         swap->statebits |= 0x1000;
+                        swap->sleeptime = 1;
                     }
                 }
                 else if ( (swap->statebits & 0x2000) == 0 )
                 {
                     // set bobspend
                     if ( basilisk_numconfirms(myinfo,&swap->alicepayment) >= swap->aliceconfirms )
+                    {
                         swap->statebits |= 0x2000;
+                        swap->sleeptime = 1;
+                    }
                 }
                 else if ( (swap->statebits & 0x4000) == 0 )
+                {
                     swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000);
+                    swap->sleeptime = 1;
+                }
                  // [BLOCKING: privM] Bob waits for privAm either from Alice or alice blockchain
                 else if ( (swap->statebits & 0x40000) == 0 )
                 {
@@ -820,6 +893,7 @@ void basilisk_swaploop(void *_swap)
                     // set alicespend from bobpayment
                     if ( basilisk_numconfirms(myinfo,&swap->alicespend) >= 0 || basilisk_swapget(myinfo,swap,0x40000,data,maxlen,basilisk_verify_privi) == 0 ) // divulges privAm
                     {
+                        swap->sleeptime = 1;
                         if ( bits256_nonz(swap->privAm) == 0 )
                             swap->privAm = basilisk_privAm_extract(myinfo,swap,&swap->alicespend);
                         swap->statebits |= 0x40000;
@@ -832,6 +906,7 @@ void basilisk_swaploop(void *_swap)
                     else if ( time(NULL) > swap->bobpayment.locktime )
                     {
                         // submit reclaim of payment
+                        swap->sleeptime = 1;
                         swap->statebits |= (0x40000 | 0x80000);
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobreclaim,0) == 0 )
                         {
@@ -844,6 +919,7 @@ void basilisk_swaploop(void *_swap)
                 {
                     if ( basilisk_numconfirms(myinfo,&swap->bobspend) >= swap->aliceconfirms )
                     {
+                        swap->sleeptime = 1;
                         swap->statebits |= 0x80000 | 0x100000;
                         printf("Bob confirms spend of Alice's payment\n");
                         break;
@@ -853,6 +929,7 @@ void basilisk_swaploop(void *_swap)
                 {
                     if ( basilisk_numconfirms(myinfo,&swap->bobreclaim) >= 1 )
                     {
+                        swap->sleeptime = 1;
                         swap->statebits |= 0x100000;
                         printf("Bob confirms reclain of payment\n");
                         break;
@@ -864,6 +941,7 @@ void basilisk_swaploop(void *_swap)
                 // [BLOCKING: depfound] Alice waits for deposit to confirm and sends altpayment
                 if ( (swap->statebits & 0x200) == 0 )
                 {
+                    swap->sleeptime = 1;
                     if ( basilisk_swapget(myinfo,swap,0x200,data,maxlen,basilisk_verify_bobdeposit) == 0 )
                     {
                         // verify deposit and submit, set confirmed height
@@ -873,11 +951,15 @@ void basilisk_swaploop(void *_swap)
                 else if ( (swap->statebits & 0x400) == 0 )
                 {
                     if ( basilisk_numconfirms(myinfo,&swap->bobdeposit) >= swap->bobconfirms )
+                    {
                         swap->statebits |= 0x400;
+                        swap->sleeptime = 1;
+                    }
                 }
                 else if ( (swap->statebits & 0x800) == 0 )
                 {
                     // set alicerefund from bobdeposit
+                    swap->sleeptime = 1;
                     swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x1000,data,maxlen,&swap->alicepayment,0x800);
                 }
                 // [BLOCKING: payfound] make sure payment is confrmed and send in claim or see bob's reclaim and reclaim
@@ -886,6 +968,7 @@ void basilisk_swaploop(void *_swap)
                     if ( basilisk_swapget(myinfo,swap,0x8000,data,maxlen,basilisk_verify_bobpaid) == 0 )
                     {
                         // verify payment and submit, set confirmed height
+                        swap->sleeptime = 1;
                         swap->statebits |= 0x8000;
                     }
                     /*else if ( basilisk_numconfirms(myinfo,&swap->bobreclaim) >= 0 )
@@ -904,7 +987,10 @@ void basilisk_swaploop(void *_swap)
                     }
                     else */
                         if ( basilisk_numconfirms(myinfo,&swap->bobpayment) >= swap->bobconfirms )
-                        swap->statebits |= 0x10000;
+                        {
+                            swap->statebits |= 0x10000;
+                            swap->sleeptime = 1;
+                        }
                 }
                 else if ( (swap->statebits & 0x20000) == 0 )
                 {
@@ -913,12 +999,14 @@ void basilisk_swaploop(void *_swap)
                         for (j=datalen=0; j<32; j++)
                             data[datalen++] = swap->privAm.bytes[j];
                         swap->statebits |= basilisk_swapsend(myinfo,swap,0x40000,data,datalen,0x20000);
+                        swap->sleeptime = 1;
                     }
                 }
                 else if ( (swap->statebits & 0x40000) == 0 )
                 {
                     if ( basilisk_numconfirms(myinfo,&swap->alicespend) >= swap->bobconfirms )
                     {
+                        swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
                         printf("Alice confirms spend of Bob's payment\n");
                         break;
@@ -926,9 +1014,8 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        if ( swap->iambob != 0 )
-            sleep(1);
-        else sleep(3);
+        if ( swap->sleeptime > 0 )
+            sleep(swap->sleeptime);
     }
     if ( swap->iambob != 0 )
     {

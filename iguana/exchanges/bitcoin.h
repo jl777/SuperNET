@@ -25,6 +25,7 @@
 #define SCRIPT_OP_TRUE 0x51
 #define SCRIPT_OP_2 0x52
 #define SCRIPT_OP_3 0x53
+#define SCRIPT_OP_4 0x54
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_RETURN 0x6a

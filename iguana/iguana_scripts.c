@@ -54,7 +54,11 @@ int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
 {
-    script[n++] = (locktime >> 24), script[n++] = (locktime >> 16), script[n++] = (locktime >> 8), script[n++] = locktime;
+    script[n++] = 4;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff;
     script[n++] = SCRIPT_OP_CHECKLOCKTIMEVERIFY;
     script[n++] = SCRIPT_OP_DROP;
     return(n);
