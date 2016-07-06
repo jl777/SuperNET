@@ -484,10 +484,12 @@ static int32_t iguana_isnonz(struct iguana_stackdata Snum)
     return(0);
 }
 
-static int32_t iguana_num(struct iguana_stackdata Snum)
+static int64_t iguana_num(struct iguana_stackdata Snum)
 {
     if ( Snum.size == sizeof(int32_t) )
         return(Snum.U.val);
+    else if ( Snum.size == sizeof(int64_t) )
+        return(Snum.U.val64);
     else return(0);
 }
 
@@ -751,7 +753,7 @@ int32_t iguana_checkprivatekey(struct iguana_info *coin,struct iguana_stackdata 
     return(0);
 }
 
-int32_t iguana_checkschnorrsig(struct iguana_info *coin,int32_t M,struct iguana_stackdata pubkeyarg,struct iguana_stackdata sigarg,bits256 sigtxid)
+int32_t iguana_checkschnorrsig(struct iguana_info *coin,int64_t M,struct iguana_stackdata pubkeyarg,struct iguana_stackdata sigarg,bits256 sigtxid)
 {
     uint8_t combined_pub[MAX_SCRIPT_ELEMENT_SIZE],sig[MAX_SCRIPT_ELEMENT_SIZE]; int32_t plen,siglen;
     plen = iguana_databuf(combined_pub,pubkeyarg);
@@ -811,10 +813,16 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
     return(0);
 }
 
-int32_t iguana_checklocktimeverify(struct iguana_info *coin,int64_t nLockTime,uint32_t nSequence,struct iguana_stackdata Snum)
+#define LOCKTIME_THRESHOLD 500000000
+int32_t iguana_checklocktimeverify(struct iguana_info *coin,int64_t tx_lockval,uint32_t nSequence,struct iguana_stackdata Snum)
 {
-    int64_t num = iguana_num(Snum);
-    if ( num < 0 || (num >= 500000000 && nLockTime < 500000000) || (num < 500000000 && nLockTime >= 500000000) || nSequence == 0xffffffff || num > nLockTime )
+    int64_t nLockTime = iguana_num(Snum);
+    if ( nLockTime < 0 )
+        return(-1);
+    else if ( ((tx_lockval < LOCKTIME_THRESHOLD && nLockTime < LOCKTIME_THRESHOLD) ||
+          (tx_lockval >= LOCKTIME_THRESHOLD && nLockTime >= LOCKTIME_THRESHOLD)) == 0 )
+        return(-1);
+    else if ( nLockTime > tx_lockval )
         return(-1);
     return(0);
 }
@@ -940,7 +948,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
     struct bitcoin_opcode *op; cJSON *array = 0; struct iguana_interpreter STACKS,*stacks = &STACKS;
     struct iguana_stackdata args[MAX_PUBKEYS_PER_MULTISIG];
     uint8_t databuf[MAX_SCRIPT_ELEMENT_SIZE]; char *asmstr,*str,*hexstr; cJSON *item;
-    int32_t c,numops,dlen,plen,numvars,numused,numargs=0,i,j,k,n,len,val,datalen,errs=0;
+    int32_t c,numops,dlen,plen,numvars,numused,numargs=0,i,j,k,n,len,datalen,errs=0; int64_t val;
     iguana_optableinit(coin);
     if ( (asmstr= jstr(interpreter,"interpreter")) == 0 )
         return(-1);
@@ -1345,7 +1353,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     {
                         if ( interpret != 0 && stacks->stackdepth < (val= iguana_num(args[0])) )
                         {
-                            printf("stack not deep enough %d < %d\n",stacks->stackdepth,iguana_num(args[0]));
+                            printf("stack not deep enough %d < %lld\n",stacks->stackdepth,(long long)iguana_num(args[0]));
                             errs++;
                             break;
                         }
@@ -1357,7 +1365,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         else
                         {
                             args[1] = stacks->stack[stacks->stackdepth - 1 - val];
-                            for (i=stacks->stackdepth-1-val; i<stacks->stackdepth-1; i++)
+                            for (i=(int32_t)(stacks->stackdepth-1-val); i<stacks->stackdepth-1; i++)
                                 stacks->stack[i] = stacks->stack[i+1];
                             stacks->stack[stacks->stackdepth - 1] = args[1];
                         }
@@ -1408,7 +1416,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_MATHFLAG) != 0 )
                 {
-                    int32_t numA,numB,numC;
+                    int64_t numA,numB,numC;
                     for (i=0; i<op->stackitems; i++)
                     {
                         if ( args[i].size != sizeof(int32_t) )

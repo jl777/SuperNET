@@ -456,7 +456,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         txfee = 10000;
     spendscriptstr = jstr(valsobj,"spendscript");
     minconf = juint(valsobj,"minconf");
-    locktime = juint(valsobj,"locktime");
+    locktime = jint(valsobj,"locktime");
     if ( (addresses= jobj(valsobj,"addresses")) == 0 )
     {
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");

@@ -298,7 +298,7 @@ char *gecko_createblock(struct supernet_info *myinfo,int32_t estblocktime,uint32
 cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valsobj,int32_t reusedaddrs)
 {
     cJSON *item,*array; char *coinaddr; uint64_t satoshis; uint8_t addrtype,pubkey33[33],rmd160[20],outputscript[512]; int32_t i,n,scriptlen; uint32_t locktime,txversion; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    locktime = juint(valsobj,"locktime");
+    locktime = jint(valsobj,"locktime");
     if ( (txversion= juint(valsobj,"txversion")) == 0 )
         txversion = (locktime == 0) ? IGUANA_NORMAL_TXVERSION : IGUANA_LOCKTIME_TXVERSION;
     if ( txjson == 0 )

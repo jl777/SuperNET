@@ -841,9 +841,17 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     return(clonestr("{\"error\":\"cant find txid\"}"));
 }
 
+int64_t iguana_lockval(int32_t finalized,int64_t locktime)
+{
+    int64_t lockval = -1;
+    if ( finalized == 0 )
+        return(locktime);
+    return(lockval);
+}
+
 char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool)
 {
-    bits256 signedtxid,txid; struct iguana_msgvin vin; cJSON *log,*vins,*vouts,*txobj,*retjson; char *checkstr,*signedtx; int32_t i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2; uint32_t sigsize,pubkeysize,p2shsize,suffixlen; int64_t inputsum,outputsum;
+    bits256 signedtxid,txid; struct iguana_msgvin vin; cJSON *log,*vins,*vouts,*txobj,*retjson; char *checkstr,*signedtx; int32_t finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2; uint32_t sigsize,pubkeysize,p2shsize,suffixlen; int64_t inputsum,outputsum,lockval;
     retjson = cJSON_CreateObject();
     inputsum = outputsum = numinputs = numoutputs = 0;
     if ( rawtx != 0 && rawtx[0] != 0 && coin != 0 )
@@ -901,6 +909,8 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                         V[i].suffixlen = suffixlen;
                         memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
                         V[i].spendlen = msgtx->vins[i].spendlen;
+                        if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
+                            finalized = 0;
                         //printf("V %.8f (%s) spendscript.[%d] scriptlen.%d\n",dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen);
                     }
                 }
@@ -908,7 +918,8 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                 {
                     msgtx->txid = signedtxid;
                     log = cJSON_CreateArray();
-                    if ( iguana_interpreter(coin,log,j64bits(txobj,"locktime"),V,numinputs) < 0 )
+                    lockval = iguana_lockval(finalized,jint(txobj,"locktime"));
+                    if ( iguana_interpreter(coin,log,lockval,V,numinputs) < 0 )
                     {
                         jaddstr(retjson,"error","interpreter rejects tx");
                     }
