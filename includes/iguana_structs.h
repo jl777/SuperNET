@@ -378,8 +378,8 @@ struct iguana_info
     UT_hash_handle hh;
     char name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers *peers; struct iguana_peer internaladdr;
-    basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
-    basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
+    //basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
+    //basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
     long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
@@ -441,39 +441,5 @@ struct bitcoin_spend
 };
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
-
-struct supernet_address
-{
-    bits256 pubkey,iphash,persistent;
-    uint32_t selfipbits,myipbits; int32_t confirmed,totalconfirmed; uint64_t nxt64bits;
-    char NXTADDR[32],BTC[64],BTCD[64];
-};
-
-struct supernet_info
-{
-    struct supernet_address myaddr;
-    bits256 persistent_priv,privkey;
-    uint8_t persistent_pubkey33[33];
-    char ipaddr[64],NXTAPIURL[512],secret[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
-    char *decryptstr;
-    int32_t maxdelay,IAMRELAY,publicRPC,basilisk_busy,genesisresults;
-    uint32_t expiration,dirty,DEXactive;
-    uint16_t argport,rpcport;
-    struct basilisk_info basilisks;
-    struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
-    struct iguana_waccount *wallet;
-    struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
-    struct queueitem *DEX_quotes;
-    struct basilisk_swap *swaps[256]; int32_t numswaps;
-    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ;
-    void *ctx;
-    uint8_t *pingbuf;
-    struct delayedPoW_info dPoW;
-    struct basilisk_relay relays[BASILISK_MAXRELAYS];
-    int32_t numrelays,RELAYID;
-    // compatibility
-    bits256 pangea_category,instantdex_category;
-};
 #endif
 

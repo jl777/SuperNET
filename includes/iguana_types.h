@@ -19,8 +19,8 @@
 
 typedef void (*iguana_func)(void *);
 typedef int32_t (*blockhashfunc)(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
-typedef void *(*basilisk_func)(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
-typedef double (*basilisk_metricfunc)(struct supernet_info *myinfo,struct basilisk_item *ptr,char *result);
+//typedef void *(*basilisk_func)(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals);
+//typedef double (*basilisk_metricfunc)(struct supernet_info *myinfo,struct basilisk_item *ptr,char *result);
 
 #endif
 

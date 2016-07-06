@@ -560,19 +560,15 @@ char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bit
     return(txbytes);
 }
 
-cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes,uint8_t *extraspace,int32_t extralen,uint8_t *origserialized)
+cJSON *bitcoin_data2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len)
 {
-    int32_t n,len; char vpnstr[64]; struct iguana_msgtx M; cJSON *txobj; uint8_t *serialized;
-    if ( coin == 0 || txbytes == 0 )
+    int32_t n; char vpnstr[64]; struct iguana_msgtx M; cJSON *txobj;
+    if ( coin == 0 || serialized == 0 )
         return(0);
     txobj = cJSON_CreateObject();
     if ( msgtx == 0 )
         msgtx = &M;
     memset(msgtx,0,sizeof(M));
-    len = (int32_t)strlen(txbytes) >> 1;
-    if ( (serialized= origserialized) == 0 )
-        serialized = calloc(1,len);
-    decode_hex(serialized,len,txbytes);
     vpnstr[0] = 0;
     memset(txidp,0,sizeof(*txidp));
     if ( (n= iguana_rwmsgtx(coin,0,txobj,serialized,len,msgtx,txidp,vpnstr,extraspace,extralen,0)) <= 0 )
@@ -582,6 +578,19 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_ms
         jaddstr(txobj,"error","couldnt decode transaction");
         jaddstr(txobj,"coin",coin->symbol);
     }
+    return(txobj);
+}
+
+cJSON *bitcoin_hex2json(struct iguana_info *coin,bits256 *txidp,struct iguana_msgtx *msgtx,char *txbytes,uint8_t *extraspace,int32_t extralen,uint8_t *origserialized)
+{
+    int32_t len; uint8_t *serialized; cJSON *txobj;
+    if ( coin == 0 || txbytes == 0 )
+        return(0);
+    len = (int32_t)strlen(txbytes) >> 1;
+    if ( (serialized= origserialized) == 0 )
+        serialized = calloc(1,len);
+    decode_hex(serialized,len,txbytes);
+    txobj = bitcoin_data2json(coin,txidp,msgtx,extraspace,extralen,serialized,len);
     if ( serialized != origserialized )
         free(serialized);
     return(txobj);

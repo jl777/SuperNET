@@ -89,6 +89,7 @@ struct iguana_txdatabits { uint64_t addrind:IGUANA_LOG2MAXPEERS,filecount:10,fpo
 #define IGUANA_MAXSENDTHREADS 16
 #define IGUANA_MAXRECVTHREADS 16
 #endif
+#define BASILISK_MAXRELAYS 64
 
 #define IGUANA_SUBDIRDIVISOR 28000
 #define NTARGETSPACING 60
