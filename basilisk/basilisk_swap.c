@@ -139,6 +139,7 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
+    printf("basilisk_rawtx_spend for %s spendscript.%s\n",rawtx->name,hexstr);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
@@ -181,7 +182,7 @@ int32_t basilisk_verify_otherfee(struct supernet_info *myinfo,struct basilisk_sw
 int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     uint8_t userdata[512]; int32_t len = 0;
-    // add verification
+    //add verification especially setting required fields in rawtx structs
     swap->bobdeposit.txbytes = calloc(1,datalen);
     memcpy(swap->bobdeposit.txbytes,data,datalen);
     swap->bobdeposit.signedtxid = bits256_doublesha256(0,data,datalen);
@@ -412,11 +413,13 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     return(retval);
 }
 
-void basilisk_rawtx_setparms(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33)
+void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33)
 {
+    strcpy(rawtx->name,name);
     rawtx->coin = coin;
     rawtx->numconfirms = numconfirms;
-    rawtx->amount = satoshis;
+    if ( (rawtx->amount= satoshis) < 10000 )
+        rawtx->amount = 10000;
     rawtx->vintype = vintype; // 0 -> std, 2 -> 2of2, 3 -> spend bobpayment, 4 -> spend bobdeposit
     rawtx->vouttype = vouttype; // 0 -> fee, 1 -> std, 2 -> 2of2, 3 -> bobpayment, 4 -> bobdeposit
     if ( rawtx->vouttype == 0 )
@@ -435,9 +438,8 @@ void basilisk_rawtx_setparms(struct supernet_info *myinfo,struct basilisk_swap *
     if ( rawtx->vouttype <= 1 && rawtx->destaddr[0] != 0 )
     {
         rawtx->spendlen = bitcoin_standardspend(rawtx->spendscript,0,rawtx->rmd160);
-        if ( 0 && vintype == 0 && basilisk_rawtx_gen("setparms",myinfo,swap,1,rawtx,0,rawtx->spendscript,rawtx->spendlen,coin->chain->txfee,1) < 0 )
-            printf("error generating vintype.%d vouttype.%d -> %s\n",vintype,vouttype,rawtx->destaddr);
-    }
+        printf("%s spendlen.%d %s <- %.8f\n",name,rawtx->spendlen,rawtx->destaddr,dstr(rawtx->amount));
+    } else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->vouttype,rawtx->destaddr);
 }
 
 struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basilisk_swap *swap)
@@ -543,31 +545,31 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     }
     if ( swap->iambob != 0 )
     {
-        basilisk_rawtx_setparms(myinfo,swap,&swap->myfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
-        basilisk_rawtx_setparms(myinfo,swap,&swap->otherfee,swap->alicecoin,0,0,swap->alicesatoshis/INSTANTDEX_DECKSIZE,0,0);
+        basilisk_rawtx_setparms("myfee",myinfo,swap,&swap->myfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
+        basilisk_rawtx_setparms("otherfee",myinfo,swap,&swap->otherfee,swap->alicecoin,0,0,swap->alicesatoshis/INSTANTDEX_DECKSIZE,0,0);
         bobpub33 = myinfo->persistent_pubkey33;
     }
     else
     {
-        basilisk_rawtx_setparms(myinfo,swap,&swap->otherfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
-        basilisk_rawtx_setparms(myinfo,swap,&swap->myfee,swap->alicecoin,0,0,swap->alicesatoshis/INSTANTDEX_DECKSIZE,0,0);
+        basilisk_rawtx_setparms("otherfee",myinfo,swap,&swap->otherfee,swap->bobcoin,0,0,swap->bobsatoshis/INSTANTDEX_DECKSIZE,0,0);
+        basilisk_rawtx_setparms("myfee",myinfo,swap,&swap->myfee,swap->alicecoin,0,0,swap->alicesatoshis/INSTANTDEX_DECKSIZE,0,0);
         alicepub33 = myinfo->persistent_pubkey33;
     }
-    basilisk_rawtx_setparms(myinfo,swap,&swap->bobdeposit,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis*1.1,4,0);
-    basilisk_rawtx_setparms(myinfo,swap,&swap->bobrefund,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("bobdeposit",myinfo,swap,&swap->bobdeposit,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis*1.1,4,0);
+    basilisk_rawtx_setparms("bobrefund",myinfo,swap,&swap->bobrefund,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,bobpub33);
     swap->bobrefund.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms(myinfo,swap,&swap->aliceclaim,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("aliceclaim",myinfo,swap,&swap->aliceclaim,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,alicepub33);
     swap->aliceclaim.suppress_pubkeys = 1;
 
-    basilisk_rawtx_setparms(myinfo,swap,&swap->bobpayment,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis,3,0);
-    basilisk_rawtx_setparms(myinfo,swap,&swap->alicespend,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("bobpayment",myinfo,swap,&swap->bobpayment,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis,3,0);
+    basilisk_rawtx_setparms("alicespend",myinfo,swap,&swap->alicespend,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,alicepub33);
     swap->alicespend.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms(myinfo,swap,&swap->bobreclaim,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("bobreclaim",myinfo,swap,&swap->bobreclaim,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,bobpub33);
     swap->bobreclaim.suppress_pubkeys = 1;
 
-    basilisk_rawtx_setparms(myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
-    basilisk_rawtx_setparms(myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
-    basilisk_rawtx_setparms(myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("alicepayment",myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
+    basilisk_rawtx_setparms("bobspend",myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
     swap->sleeptime = 3 - swap->iambob;
     return(swap);
 }
