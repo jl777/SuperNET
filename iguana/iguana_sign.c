@@ -966,6 +966,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     for (vini=0; vini<numvins; vini++)
     {
         spendscript = iguana_spendasm(coin,V[vini].spendscript,V[vini].spendlen);
+        printf("interpreter.(%s)\n",jprint(spendscript,0));
         if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) <= 0 )
         {
             errs++;
