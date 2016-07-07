@@ -133,34 +133,6 @@ double iguana_metric(struct iguana_peer *addr,uint32_t now,double decay)
     return(metric);
 }
 
-/*int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr; char myipaddr[64];
-    expand_ipbits(myipaddr,myinfo->myaddr.myipbits);
-    //printf("iguana_inv2poll exchange.%p %s maxpeers.%d\n",exchanges777_find("bitcoin"),coin->symbol,coin->MAXPEERS);
-    if ( coin != 0 && coin->peers != 0 && (exchange= exchanges777_find("bitcoin")) != 0 && strcmp(coin->symbol,"BTCD") == 0 )
-    {
-        if ( time(NULL) > coin->lastinv2+10 )
-        {
-            coin->lastinv2 = (uint32_t)time(NULL);
-            for (i=n=0; i<coin->MAXPEERS; i++)
-            {
-                addr = &coin->peers->active[i];
-                if ( addr->supernet != 0 )
-                {
-                    //printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
-                    if ( addr->usock >= 0 && addr->dead == 0 && addr->ready != 0 && addr->ipbits != 0 && strcmp(addr->ipaddr,myipaddr) != 0 )
-                    {
-                        instantdex_inv2data(myinfo,coin,addr,exchange);
-                        n++;
-                    }
-                }
-            }
-        }
-    }
-    return(n);
-}*/
-
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     int32_t i,ind,n; double *sortbuf,sum; uint32_t now; struct iguana_peer *addr,*slowest = 0;
@@ -632,30 +604,6 @@ void iguana_helper(void *arg)
                 myfree(ptr,ptr->allocsize);
             } else break;
         }
-        /*n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
-        printf("vQ is n.%d\n",n);
-        for (iter=0; iter<n; iter++)
-        {
-            if ( (ptr= queue_dequeue(&validateQ,0)) == 0 )
-                break;
-            printf("vQ.%d %d of %d\n",queue_size(&validateQ),iter,n);
-            if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
-            {
-                printf("helper.%d validate.[%d] %d vs %d\n",helperid,bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
-                if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-1)/coin->chain->bundlesize )
-                    flag += iguana_bundlevalidate(coin,bp,0);
-                else
-                {
-                    usleep(10000);
-                    printf("requeue vQ.[%d]\n",bp->hdrsi);
-                    iguana_validateQ(coin,bp);
-                }
-            }
-            else if ( coin->active != 0 )
-                printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
-            myfree(ptr,ptr->allocsize);
-            flag++;
-        }*/
         if ( queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
@@ -758,7 +706,7 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->bindsock >= 0 )
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible+3 )
                         {
                             //fprintf(stderr,"check possible\n");
                             if ( coin->peers->numranked > 0 && (now % 60) == 0 )
@@ -768,7 +716,7 @@ void iguana_coinloop(void *arg)
                     }
                     else
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible )
+                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible+10 )
                         {
                             if ( coin->peers->numranked > 0 && (now % 60) == 0 )
                                 iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);

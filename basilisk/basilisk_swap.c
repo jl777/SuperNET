@@ -128,9 +128,9 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
         bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
         jaddistr(privkeys,wifstr);
     }
+    V.suppress_pubkeys = dest->suppress_pubkeys;
     if ( userdata != 0 && userdatalen > 0 )
     {
-        V.suppress_pubkeys = rawtx->suppress_pubkeys;
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
     }
@@ -150,7 +150,7 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
-    printf("basilisk_rawtx_spend locktime.%u/%u for %s spendscript.%s -> %s\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name);
+    printf("basilisk_rawtx_spend locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name,dest->suppress_pubkeys);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {

@@ -328,6 +328,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,uint8_t *serialized,int32_t max
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
             sigtxid.bytes[31-i] = revsigtxid.bytes[i];
+        char str[65]; printf("SIGTXID.(%s)\n",bits256_str(str,sigtxid));
     }
     return(sigtxid);
 }
@@ -705,7 +706,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 }
                 else
                 {
-                    //printf("SIG.%d.%d VERIFIED \n",vini,j);//%s (%s)\n",vini,*signedtx,jprint(txobj,1));
+                    printf("SIG.%d.%d VERIFIED \n",vini,j);//%s (%s)\n",vini,*signedtx,jprint(txobj,1));
                     flag++;
                     numsigs++;
                 }
@@ -745,7 +746,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                     msgtx->vins[i].spendlen = vp->spendlen;
                     vp->hashtype = iguana_vinscriptparse(coin,V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vp->spendscript,vp->spendlen);
                     vp->suffixlen = suffixlen;
-                    //printf("V %.8f (%s) spendscript.[%d]\n",dstr(vp->amount),vp->coinaddr,vp->spendlen);
+                    printf("V %.8f (%s) spendscript.[%d]\n",dstr(vp->amount),vp->coinaddr,vp->spendlen);
                 }
             }
             else
@@ -756,6 +757,9 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                 if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) > 0 )
                     bitcoin_address(vp->coinaddr,coin->chain->pubtype,vp->signers[0].pubkey,plen);
             }
+            int32_t j; for (j=0; j<vp->spendlen; j++)
+                printf("%02x",vp->spendscript[j]);
+            printf(" <- spendscript vin.%d\n",i);
             if ( vp->coinaddr[i] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,vp->coinaddr)) != 0 )
             {
                 vp->signers[0].privkey = waddr->privkey;

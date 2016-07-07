@@ -18451,6 +18451,57 @@ len = 0;
              dependents->cost = cost;
              return(0.);
              }*/
-
+            /*n = queue_size(&validateQ) / IGUANA_NUMHELPERS + 1;
+             printf("vQ is n.%d\n",n);
+             for (iter=0; iter<n; iter++)
+             {
+             if ( (ptr= queue_dequeue(&validateQ,0)) == 0 )
+             break;
+             printf("vQ.%d %d of %d\n",queue_size(&validateQ),iter,n);
+             if ( (bp= ptr->bp) != 0 && (coin= ptr->coin) != 0 && coin->active != 0 )
+             {
+             printf("helper.%d validate.[%d] %d vs %d\n",helperid,bp->hdrsi,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-1)/coin->chain->bundlesize);
+             if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-1)/coin->chain->bundlesize )
+             flag += iguana_bundlevalidate(coin,bp,0);
+             else
+             {
+             usleep(10000);
+             printf("requeue vQ.[%d]\n",bp->hdrsi);
+             iguana_validateQ(coin,bp);
+             }
+             }
+             else if ( coin->active != 0 )
+             printf("helper validate missing param? %p %p\n",ptr->coin,ptr->bp);
+             myfree(ptr,ptr->allocsize);
+             flag++;
+             }*/
+                
+            /*int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin)
+             {
+             struct exchange_info *exchange; int32_t i,n=0; struct iguana_peer *addr; char myipaddr[64];
+             expand_ipbits(myipaddr,myinfo->myaddr.myipbits);
+             //printf("iguana_inv2poll exchange.%p %s maxpeers.%d\n",exchanges777_find("bitcoin"),coin->symbol,coin->MAXPEERS);
+             if ( coin != 0 && coin->peers != 0 && (exchange= exchanges777_find("bitcoin")) != 0 && strcmp(coin->symbol,"BTCD") == 0 )
+             {
+             if ( time(NULL) > coin->lastinv2+10 )
+             {
+             coin->lastinv2 = (uint32_t)time(NULL);
+             for (i=n=0; i<coin->MAXPEERS; i++)
+             {
+             addr = &coin->peers->active[i];
+             if ( addr->supernet != 0 )
+             {
+             //printf("iguana_inv2poll (%s) usock.%d dead.%u ready.%u ipbits.%u supernet.%d\n",addr->ipaddr,addr->usock,addr->dead,addr->ready,(uint32_t)addr->ipbits,addr->supernet);
+             if ( addr->usock >= 0 && addr->dead == 0 && addr->ready != 0 && addr->ipbits != 0 && strcmp(addr->ipaddr,myipaddr) != 0 )
+             {
+             instantdex_inv2data(myinfo,coin,addr,exchange);
+             n++;
+             }
+             }
+             }
+             }
+             }
+             return(n);
+             }*/
 #endif
 #endif
