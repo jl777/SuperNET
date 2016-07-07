@@ -1047,6 +1047,7 @@ void basilisk_swaploop(void *_swap)
                     {
                         swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
+                        basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend);
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                             printf("Bob error spending alice payment\n");
                         else printf("Bob spend alicepayment\n");
@@ -1059,6 +1060,7 @@ void basilisk_swaploop(void *_swap)
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                             printf("Bob error spending alice payment after privAm\n");
                         else printf("Bob spends alicepayment\n");
+                        break;
                     }
                     else if ( swap->bobpayment.locktime != 0 && time(NULL) > swap->bobpayment.locktime )
                     {
@@ -1132,7 +1134,6 @@ void basilisk_swaploop(void *_swap)
                 {
                     swap->sleeptime = 1;
                     swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x1000,data,maxlen,&swap->alicepayment,0x800);
-                    //basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim);
                 }
                 // [BLOCKING: payfound] make sure payment is confrmed and send in spend or see bob's reclaim and claim
                 else if ( (swap->statebits & 0x8000) == 0 )
