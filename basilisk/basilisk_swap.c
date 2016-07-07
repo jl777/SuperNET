@@ -278,9 +278,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    if ( basilisk_rawtx_spendscript(myinfo,&swap->alicepayment,0,data,datalen) == 0 )
-        return(basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend));
-    else return(-1);
+    return(0);
 }
 
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
@@ -296,6 +294,9 @@ bits256 basilisk_swap_broadcast(struct supernet_info *myinfo,struct basilisk_swa
     if ( data != 0 && datalen != 0 )
     {
         txid = bits256_doublesha256(0,data,datalen);
+        int32_t i; for (i=0; i<datalen; i++)
+            printf("%02x",data[i]);
+        char str[65]; printf(" <- sendrawtransaction.(%s)\n",bits256_str(str,txid));
         //txid = iguana_sendrawtransaction(coin,data,datalen);
     }
     return(txid);
@@ -836,6 +837,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
         char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
         if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
             return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits));
+        else return(nextbits);
     }
     return(0);
 }
@@ -1020,14 +1022,12 @@ void basilisk_swaploop(void *_swap)
                 {
                     if ( basilisk_swapget(myinfo,swap,0x1000,data,maxlen,basilisk_verify_alicepaid) == 0 )
                     {
-                        // verify alicepayment and submit, set confirmed height
                         swap->statebits |= 0x1000;
                         swap->sleeptime = 1;
                     }
                 }
                 else if ( (swap->statebits & 0x2000) == 0 )
                 {
-                    // set bobspend
                     if ( basilisk_numconfirms(myinfo,&swap->alicepayment) >= swap->aliceconfirms )
                     {
                         swap->statebits |= 0x2000;
@@ -1102,10 +1102,18 @@ void basilisk_swaploop(void *_swap)
                 if ( swap->bobdeposit.locktime != 0 && time(NULL) > swap->bobdeposit.locktime )
                 {
                     if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->aliceclaim,0) == 0 )
-                    {
                         printf("Alice claims deposit\n");
-                        break;
-                    }
+                    else printf("Alice couldnt claim deposit\n");
+                    break;
+                }
+                else if ( basilisk_privBn_extract(myinfo,swap,data,maxlen) == 0 )
+                {
+                    swap->sleeptime = 1;
+                    swap->statebits |= 0x80000000;
+                    if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicereclaim,0) == 0 )
+                        printf("Alice error sending alicereclaim\n");
+                    else printf("Alice couldnt reclaim her payment\n");
+                    break;
                 }
                 else if ( (swap->statebits & 0x200) == 0 )
                 {
@@ -1139,16 +1147,6 @@ void basilisk_swaploop(void *_swap)
                         swap->sleeptime = 1;
                         swap->statebits |= 0x8000;
                     }
-                    else if ( basilisk_privBn_extract(myinfo,swap,data,maxlen) == 0 )
-                    {
-                        swap->sleeptime = 1;
-                        swap->statebits |= 0x8000;
-                        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicereclaim,0) == 0 )
-                        {
-                            printf("Alice error sending alicereclaim\n");
-                            break;
-                        }
-                    }
                 }
                 else if ( (swap->statebits & 0x10000) == 0 )
                 {
@@ -1175,7 +1173,7 @@ void basilisk_swaploop(void *_swap)
                         swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
                         printf("Alice confirms spend of Bob's payment\n");
-                        break;
+                        //break;
                     }
                 }
             }
