@@ -328,7 +328,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,uint8_t *serialized,int32_t max
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
             sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-        char str[65]; printf("SIGTXID.(%s)\n",bits256_str(str,sigtxid));
+        //char str[65]; printf("SIGTXID.(%s)\n",bits256_str(str,sigtxid));
     }
     return(sigtxid);
 }

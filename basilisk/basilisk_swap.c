@@ -278,7 +278,9 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    return(0);
+    if ( basilisk_rawtx_spendscript(myinfo,&swap->alicepayment,0,data,datalen) == 0 )
+        return(0);
+    else return(-1);
 }
 
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
@@ -345,13 +347,12 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,struct basilisk_swap 
         calc_rmd160_sha256(secret160,privkey.bytes,sizeof(privkey));
         memcpy(&txid,secret160,sizeof(txid));
         pubi = bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
-        char str[65]; printf("verify privi %s\n",bits256_str(str,privkey));
         if ( basilisk_verify_pubpair(&wrongfirstbyte,swap,swap->choosei,pubkey33[0],pubi,txid) == 0 )
         {
             if ( swap->iambob != 0 )
                 swap->privAm = privkey;
             else swap->privBn = privkey;
-            printf("privi verified\n");
+            char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
         }
     }
