@@ -287,7 +287,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
     return(10);
 }
 
-bits256 basilisk_swap_broadcast(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
+bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
 {
     bits256 txid;
     memset(txid.bytes,0,sizeof(txid));
@@ -296,7 +296,7 @@ bits256 basilisk_swap_broadcast(struct supernet_info *myinfo,struct basilisk_swa
         txid = bits256_doublesha256(0,data,datalen);
         int32_t i; for (i=0; i<datalen; i++)
             printf("%02x",data[i]);
-        char str[65]; printf(" <- sendrawtransaction.(%s)\n",bits256_str(str,txid));
+        char str[65]; printf(" <- sendrawtransaction %s.(%s)\n",name,bits256_str(str,txid));
         //txid = iguana_sendrawtransaction(coin,data,datalen);
     }
     return(txid);
@@ -833,8 +833,8 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
 {
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
-        rawtx->actualtxid = basilisk_swap_broadcast(myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
-        char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
+        rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
+        //char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
         if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
             return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits));
         else return(nextbits);
@@ -1047,21 +1047,18 @@ void basilisk_swaploop(void *_swap)
                     {
                         swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
-                        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0) == 0 )
-                        {
+                        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                             printf("Bob error spending alice payment\n");
-                            break;
-                        }
+                        else printf("Bob spend alicepayment\n");
+                        break;
                     }
                     else if ( basilisk_privAm_extract(myinfo,swap) == 0 )
                     {
                         swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
-                        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0) == 0 )
-                        {
-                            printf("Bob error spending alice payment\n");
-                            break;
-                        }
+                        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
+                            printf("Bob error spending alice payment after privAm\n");
+                        else printf("Bob spends alicepayment\n");
                     }
                     else if ( swap->bobpayment.locktime != 0 && time(NULL) > swap->bobpayment.locktime )
                     {
@@ -1069,10 +1066,9 @@ void basilisk_swaploop(void *_swap)
                         swap->sleeptime = 1;
                         swap->statebits |= (0x40000 | 0x80000);
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobreclaim,0) == 0 )
-                        {
                             printf("Bob error reclaiming own payment after alice timed out\n");
-                            break;
-                        }
+                        else printf("Bob reclaimed own payment\n");
+                        break;
                     }
                 }
                 else if ( (swap->statebits & 0x80000) == 0 )
@@ -1102,17 +1098,17 @@ void basilisk_swaploop(void *_swap)
                 if ( swap->bobdeposit.locktime != 0 && time(NULL) > swap->bobdeposit.locktime )
                 {
                     if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->aliceclaim,0) == 0 )
-                        printf("Alice claims deposit\n");
-                    else printf("Alice couldnt claim deposit\n");
+                        printf("Alice couldnt claim deposit\n");
+                    else printf("Alice claimed deposit\n");
                     break;
                 }
                 else if ( basilisk_privBn_extract(myinfo,swap,data,maxlen) == 0 )
                 {
                     swap->sleeptime = 1;
                     swap->statebits |= 0x80000000;
-                    if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicereclaim,0) == 0 )
+                    if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicereclaim,0x80000000) == 0 )
                         printf("Alice error sending alicereclaim\n");
-                    else printf("Alice couldnt reclaim her payment\n");
+                    else printf("Alice reclaimed her payment\n");
                     break;
                 }
                 else if ( (swap->statebits & 0x200) == 0 )
@@ -1173,7 +1169,7 @@ void basilisk_swaploop(void *_swap)
                         swap->sleeptime = 1;
                         swap->statebits |= 0x40000;
                         printf("Alice confirms spend of Bob's payment\n");
-                        //break;
+                        break;
                     }
                 }
             }

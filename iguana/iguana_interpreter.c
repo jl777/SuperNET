@@ -498,7 +498,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     struct iguana_stackdata Snum; cJSON *item = 0; char tmpstr[2048]; int32_t num = (int32_t)num64;
     if ( stacks->lastpath[stacks->ifdepth] < 0 )
         return(0);
-    printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
+    //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
         /*if ( numbuf != 0 )
@@ -632,9 +632,9 @@ static int32_t iguana_dataparse(struct iguana_interpreter *stacks,uint8_t *scrip
                     tmp[1] = c;
                     tmp[2] = 0;
                     decode_hex(&script[k],1,tmp), (*lenp) = 1;
+                    iguana_pushdata(stacks,script[k],0,0);
                     if ( script[k] != 0 )
                         script[k++] += (IGUANA_OP_1 - 1);
-                    iguana_pushdata(stacks,c,0,0);
                     return(k);
                 }
                 else if ( n == 2 && c == '1' && str[1] == '0' && is_delim(str[2]) != 0 )
@@ -765,40 +765,68 @@ int32_t iguana_checkschnorrsig(struct iguana_info *coin,int64_t M,struct iguana_
 
 int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter *stacks,int32_t M,int32_t N,bits256 txhash2)
 {
-    int32_t i,j=0,len,valid=0,numsigners = 0,siglens[MAX_PUBKEYS_PER_MULTISIG]; uint8_t pubkeys[MAX_PUBKEYS_PER_MULTISIG][MAX_SCRIPT_ELEMENT_SIZE],sigs[MAX_PUBKEYS_PER_MULTISIG][MAX_SCRIPT_ELEMENT_SIZE];
+    int32_t i,j=0,len,n,m,valid=0,numsigners = 0,siglens[MAX_PUBKEYS_PER_MULTISIG]; uint8_t pubkeys[MAX_PUBKEYS_PER_MULTISIG][MAX_SCRIPT_ELEMENT_SIZE],sigs[MAX_PUBKEYS_PER_MULTISIG][MAX_SCRIPT_ELEMENT_SIZE];
     if ( M <= N && N <= MAX_PUBKEYS_PER_MULTISIG )
     {
+        if ( stacks->stackdepth <= 0 )
+            return(0);
+        n = (int32_t)iguana_num(iguana_pop(stacks));
+        if ( n != N )
+        {
+            printf("iguana_checkmultisig n.%d != N.%d\n",n,N);
+            return(0);
+        }
         for (i=0; i<N; i++)
         {
             if ( stacks->stackdepth <= 0 )
                 return(0);
             len = iguana_databuf(pubkeys[i],iguana_pop(stacks));
             if ( len == bitcoin_pubkeylen(pubkeys[i]) )
+            {
                 numsigners++;
+                //for (j=0; j<33; j++)
+                //    printf("%02x",pubkeys[i][j]);
+                //printf(" <- pubkey.[%d]\n",i);
+            }
             else
             {
+                printf("nonpubkey on stack\n");
+                return(0);
                 memcpy(sigs[0],pubkeys[i],len);
                 siglens[0] = len;
                 break;
             }
         }
-        for (i=1; i<numsigners; i++)
+        if ( stacks->stackdepth <= 0 )
+            return(0);
+        m = (int32_t)iguana_num(iguana_pop(stacks));
+        if ( m != M )
+        {
+            printf("iguana_checkmultisig m.%d != M.%d\n",m,M);
+            return(0);
+        }
+        for (i=0; i<numsigners; i++)
         {
             if ( stacks->stackdepth <= 0 )
                 return(0);
             siglens[i] = iguana_databuf(sigs[i],iguana_pop(stacks));
-            if ( siglens[i] > 0 && siglens[i] < 74 )
+            if ( siglens[i] <= 0 || siglens[i] > 74 )
                 break;
+            //for (j=0; j<siglens[i]; j++)
+            //    printf("%02x",sigs[i][j]);
+            //printf(" <- sigs[%d]\n",i);
         }
         if ( i == numsigners )
         {
-            iguana_pop(stacks);
+            //char str[65]; printf("sigtxid.(%s)\n",bits256_str(str,txhash2));
+            if ( stacks->stackdepth > 0 )
+                iguana_pop(stacks); // for backward compatibility
             j = numsigners-1;
             for (i=numsigners-1; i>=0; i--)
             {
                 for (; j>=0; j--)
                 {
-                    if ( bitcoin_verify(coin->ctx,sigs[i],siglens[i],txhash2,pubkeys[j],bitcoin_pubkeylen(pubkeys[j])) == 0 )
+                    if ( bitcoin_verify(coin->ctx,sigs[i],siglens[i]-1,txhash2,pubkeys[j],bitcoin_pubkeylen(pubkeys[j])) == 0 )
                     {
                         if ( ++valid >= M )
                             return(1);
@@ -978,7 +1006,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     free(stacks);
                     return(-1);
                 }
-                printf("pushdata siglen.%d depth.%d\n",V->signers[i].siglen,stacks->stackdepth);
+                //printf("pushdata siglen.%d depth.%d\n",V->signers[i].siglen,stacks->stackdepth);
             }
         }
         for (i=0; i<V->N; i++)
@@ -989,8 +1017,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 if ( V->suppress_pubkeys == 0 && (V->spendscript[0] != plen || V->spendscript[V->spendlen - 1] != IGUANA_OP_CHECKSIG || bitcoin_pubkeylen(&V->spendscript[1]) <= 0) )
                 {
                     iguana_pushdata(stacks,0,V->signers[i].pubkey,plen);
-                    printf("pushdata plen.%d depth.%d\n",plen,stacks->stackdepth);
-                } else printf("skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
+                    //printf("pushdata plen.%d depth.%d\n",plen,stacks->stackdepth);
+                } //else printf("skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
             }
         }
         if ( V->userdatalen != 0 )
@@ -1003,7 +1031,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     iguana_pushdata(stacks,0,&V->userdata[len],dlen), len += dlen;
                 else if ( dlen >= IGUANA_OP_1 && dlen <= IGUANA_OP_16 )
                 {
-                    dlen -= 0x50;
+                    dlen -= (IGUANA_OP_1 - 1);
                     iguana_pushdata(stacks,dlen,0,0);
                 }
                 else if ( dlen == IGUANA_OP_PUSHDATA1 )
@@ -1114,7 +1142,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        printf("{%s}\n",str);
+        //printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1248,7 +1276,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     for (i=0; i<numargs; i++)
                         args[numargs - 1 - i] = iguana_pop(stacks);
                 }
-                printf("%02x: numargs.%d depth.%d\n",op->opcode,numargs,stacks->stackdepth);
+                //printf("%02x: numargs.%d depth.%d\n",op->opcode,numargs,stacks->stackdepth);
                 if ( stacks->logarray != 0 )
                 {
                     char tmpstr[1096];

@@ -706,9 +706,15 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,bits256 *signedtxidp,char **
                 }
                 else
                 {
-                    printf("SIG.%d.%d VERIFIED \n",vini,j);//%s (%s)\n",vini,*signedtx,jprint(txobj,1));
                     flag++;
                     numsigs++;
+                    /*int32_t z;
+                    for (z=0; z<siglen-1; z++)
+                        printf("%02x",sig[z]);
+                    printf(" <- sig[%d]n\n",j);
+                    for (z=0; z<33; z++)
+                        printf("%02x",vp->signers[j].pubkey[z]);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);*/
                 }
             }
             if ( numsigs >= vp->M )
