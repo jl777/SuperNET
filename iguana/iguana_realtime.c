@@ -29,7 +29,6 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
             bp->ramchain = coin->RTramchain;
         iguana_mempurge(&coin->RTmem);
         iguana_mempurge(&coin->RThashmem);
-        coin->RTdatabad = 0;
         for (hdrsi=coin->bundlescount-1; hdrsi>0; hdrsi--)
             if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
             {
@@ -37,6 +36,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
                 if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
                     printf("error mapping bundle.[%d]\n",hdrsi);
             }
+        coin->RTdatabad = 0;
         printf("done RTramchain\n");
     }
 }

@@ -498,7 +498,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     struct iguana_stackdata Snum; cJSON *item = 0; char tmpstr[2048]; int32_t num = (int32_t)num64;
     if ( stacks->lastpath[stacks->ifdepth] < 0 )
         return(0);
-    printf("PUSH.(%lld %p %d\n",(long long)num64,numbuf,numlen);
+    printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
         /*if ( numbuf != 0 )
@@ -817,7 +817,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
 int32_t iguana_checklocktimeverify(struct iguana_info *coin,int64_t tx_lockval,uint32_t nSequence,struct iguana_stackdata Snum)
 {
     int64_t nLockTime = iguana_num(Snum);
-    if ( nLockTime < 0 )
+    if ( nLockTime < 0 || tx_lockval < 0 )
         return(-1);
     else if ( ((tx_lockval < LOCKTIME_THRESHOLD && nLockTime < LOCKTIME_THRESHOLD) ||
           (tx_lockval >= LOCKTIME_THRESHOLD && nLockTime >= LOCKTIME_THRESHOLD)) == 0 )

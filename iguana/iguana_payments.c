@@ -1023,9 +1023,14 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
                 init_hexbytes_noT(scriptstr,redeemscript,p2shlen);
                 jaddstr(newvin,"redeemScript",scriptstr);
             }
-            if ( jobj(item,"sequence") != 0 )
-                sequenceid = juint(item,"sequence");
-            else sequenceid = 0xffffffff;
+            if ( jint(txobj,"locktime") > 0 )
+                sequenceid = (uint32_t)time(NULL); // any value < 0xfffffffe should be fine
+            else
+            {
+                if ( jobj(item,"sequence") != 0 )
+                    sequenceid = juint(item,"sequence");
+                else sequenceid = 0xffffffff;
+            }
             jaddnum(newvin,"sequence",sequenceid);
             bitcoin_txinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0);
             jadd(newvin,"pubkeys",pubkeys);

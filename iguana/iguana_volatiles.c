@@ -221,10 +221,6 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         coin->spendvectorsaved = 0;
         coin->started = 0;
         coin->active = 0;
-        int32_t i; struct iguana_bundle *bp;
-        for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 )
-                iguana_RTramchainfree(coin,bp);
     } else printf("volatileupdate error null rdata [%d]\n",spentchain->height/coin->current->bundleheight);
     return(-1);
 }

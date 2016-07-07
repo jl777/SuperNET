@@ -78,6 +78,7 @@ int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t
         pubkeyA[0] = 0x03;
         pubkeyB[0] = 0x02;
     }
+    char str[65]; printf("bobtx dflag.%d %s\n",depositflag,bits256_str(str,cltvpub));
     if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
         return(-1);
     for (i=0; i<20; i++)
@@ -113,19 +114,27 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
 
 int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen)
 {
-    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info V;
+    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info V; uint32_t locktime=0;
     memset(&V,0,sizeof(V));
+    if ( dest == &swap->aliceclaim )
+        locktime = swap->locktime + INSTANTDEX_LOCKTIME;
     V.signers[0].privkey = privkey;
     privkeys = cJSON_CreateArray();
     bitcoin_priv2wif(wifstr,privkey,rawtx->coin->chain->wiftype);
     jaddistr(privkeys,wifstr);
+    if ( privkey2 != 0 )
+    {
+        V.signers[1].privkey = *privkey2;
+        bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
+        jaddistr(privkeys,wifstr);
+    }
     if ( userdata != 0 && userdatalen > 0 )
     {
         V.suppress_pubkeys = rawtx->suppress_pubkeys;
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
     }
-    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,0,1);
+    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
     if ( bits256_nonz(rawtx->actualtxid) != 0 )
@@ -136,10 +145,12 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
     init_hexbytes_noT(hexstr,rawtx->spendscript,rawtx->spendlen);
     jaddstr(sobj,"hex",hexstr);
     jadd(item,"scriptPubKey",sobj);
+    if ( locktime != 0 )
+        jaddnum(item,"sequence",0);
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
-    printf("basilisk_rawtx_spend for %s spendscript.%s -> %s\n",rawtx->name,hexstr,dest->name);
+    printf("basilisk_rawtx_spend locktime.%u/%u for %s spendscript.%s -> %s\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
@@ -195,6 +206,7 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
     }
     if ( (txobj= bitcoin_data2json(rawtx->coin,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),rawtx->txbytes,rawtx->datalen)) != 0 )
     {
+        rawtx->locktime = rawtx->msgtx.lock_time;
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
             vout = jitem(vouts,v);
@@ -418,6 +430,8 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     jaddnum(valsobj,"minconf",minconf);
     jaddnum(valsobj,"locktime",locktime);
     jaddnum(valsobj,"timeout",30000);
+    rawtx->locktime = locktime;
+    printf("%s locktime.%u\n",rawtx->name,locktime);
     if ( (retstr= basilisk_rawtx(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
     {
         //printf("%s got.(%s)\n",str,retstr);
@@ -664,6 +678,7 @@ int32_t basilisk_verify_choosei(struct supernet_info *myinfo,struct basilisk_swa
                     swap->pubA0.bytes[i] = data[len++];
                 for (i=0; i<32; i++)
                     swap->pubA1.bytes[i] = data[len++];
+                char str[65]; printf("GOT pubA0/1 %s\n",bits256_str(str,swap->pubA0));
             }
             else
             {
@@ -844,6 +859,7 @@ void basilisk_swaploop(void *_swap)
                     data[datalen++] = swap->pubA0.bytes[i];
                 for (i=0; i<32; i++)
                     data[datalen++] = swap->pubA1.bytes[i];
+                char str[65]; printf("SEND pubA0/1 %s\n",bits256_str(str,swap->pubA0));
             }
             swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
         }
