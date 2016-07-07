@@ -1129,9 +1129,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             }
             memset(args,0,sizeof(args));
             numargs = 0;
+            script[k++] = op->opcode;
             if ( (op->flags & IGUANA_CONTROLFLAG) != 0 )
             {
-                printf("control opcode depth.%d\n",stacks->stackdepth);
+                //printf("control opcode depth.%d\n",stacks->stackdepth);
                 switch ( op->opcode )
                 {
                     case IGUANA_OP_IF: case IGUANA_OP_NOTIF:
@@ -1150,12 +1151,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                                 if ( iguana_isnonz(args[0]) == (op->opcode == IGUANA_OP_IF) )
                                 {
                                     val = 1;
-                                    printf("OP_IF enabled depth.%d\n",stacks->stackdepth);
+                                    //printf("OP_IF enabled depth.%d\n",stacks->stackdepth);
                                 }
                                 else
                                 {
                                     val = -1;
-                                    printf("OP_IF disabled depth.%d\n",stacks->stackdepth);
+                                    //printf("OP_IF disabled depth.%d\n",stacks->stackdepth);
                                 }
                                 stacks->lastpath[++stacks->ifdepth] = val;
                             }
@@ -1172,7 +1173,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                                 errs++;
                             }
                             stacks->lastpath[stacks->ifdepth] *= -1;
-                            printf("OP_ELSE status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                            //printf("OP_ELSE status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
                         }
                         break;
                     case IGUANA_OP_ENDIF:
@@ -1182,7 +1183,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             errs++;
                         }
                         stacks->ifdepth--;
-                        printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                        //printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
                         break;
                     case IGUANA_OP_VERIFY:
                         break;
@@ -1199,16 +1200,15 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             {
                 if ( stacks->lastpath[stacks->ifdepth] < 0 )
                 {
-                    printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
+                    //printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
                     if ( stacks->logarray )
                         jaddistr(stacks->logarray,"skip");
                     continue;
                 }
-                printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
+                //printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
             }
             if ( op->opcode <= IGUANA_OP_16 || ++numops <= MAX_OPS_PER_SCRIPT )
             {
-                script[k++] = op->opcode;
                 if ( (op->flags & IGUANA_ALWAYSILLEGAL) != 0 )
                 {
                     printf("disabled opcode.%s at offset.%ld\n",str,(long)str-(long)asmstr);
@@ -1510,12 +1510,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
         }
         else if ( iguana_isnonz(stacks->stack[--stacks->stackdepth]) != 0 )
         {
-            printf("Evaluate true, depth.%d errs.%d\n",stacks->stackdepth,errs);
+            printf("Evaluate true, depth.%d errs.%d k.%d\n",stacks->stackdepth,errs,k);
             if ( errs == 0 )
                 jadd(interpreter,"result",jtrue());
             else jadd(interpreter,"result",jfalse());
-        }
-        else printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
+        } else printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));
         if ( numargs > 0 )

@@ -757,9 +757,8 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                 if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) > 0 )
                     bitcoin_address(vp->coinaddr,coin->chain->pubtype,vp->signers[0].pubkey,plen);
             }
-            int32_t j; for (j=0; j<vp->spendlen; j++)
-                printf("%02x",vp->spendscript[j]);
-            printf(" <- spendscript vin.%d\n",i);
+            if ( vp->M == 0 && vp->N == 0 )
+                vp->M = vp->N = 1;
             if ( vp->coinaddr[i] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,vp->coinaddr)) != 0 )
             {
                 vp->signers[0].privkey = waddr->privkey;
@@ -769,8 +768,6 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                         memcpy(vp->signers[0].pubkey,waddr->pubkey,plen);
                 }
             }
-            if ( vp->M == 0 && vp->N == 0 )
-                vp->M = vp->N = 1;
         }
     }
     /*for (i=0; i<msgtx->tx_out; i++)
@@ -972,8 +969,8 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     for (vini=0; vini<numvins; vini++)
     {
         spendscript = iguana_spendasm(coin,V[vini].spendscript,V[vini].spendlen);
-        printf("interpreter.(%s)\n",jprint(spendscript,0));
-        if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) <= 0 )
+        //printf("interpreter.(%s)\n",jprint(spendscript,0));
+        if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) < 0 )
         {
             errs++;
         }
@@ -988,7 +985,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
                 init_hexbytes_noT(str,script,scriptlen);
                 jaddstr(item,"reconstructed",str);
                 jaddi(logarray,item);
-            }
+            } else printf("scriptlen mismatch.%d vs %d or miscompare\n",scriptlen,V[vini].spendlen);
             errs++;
         }
     }
@@ -1115,9 +1112,10 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
                 if ( (complete= bitcoin_verifyvins(coin,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1)) > 0 && signedtx != 0 )
                 {
-                    if ( iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs) < 0 )
+                    int32_t tmp;
+                    if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
-                        printf("iguana_interpreter error.(%s)\n",signedtx);
+                        printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
                     }
                 }
