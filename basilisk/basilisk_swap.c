@@ -112,6 +112,62 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
     return(n);
 }
 
+int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
+{
+    cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n;
+    return(10);
+    argjson = cJSON_CreateObject();
+    jaddbits256(argjson,"txid",rawtx->actualtxid);
+    jaddnum(argjson,"vout",0);
+    jaddstr(argjson,"coin",rawtx->coin->symbol);
+    if ( (valstr= basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
+    {
+        char str[65]; printf("%s %s valstr.(%s)\n",rawtx->name,bits256_str(str,rawtx->actualtxid),valstr);
+        if ( (valuearray= cJSON_Parse(valstr)) != 0 )
+        {
+            if ( is_cJSON_Array(valuearray) != 0 )
+            {
+                n = cJSON_GetArraySize(valuearray);
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(valuearray,i);
+                    height = jint(valuearray,"height");
+                    numconfirms = jint(valuearray,"numconfirms");
+                    if ( height > 0 && numconfirms >= 0 )
+                    {
+                        free_json(argjson);
+                        free_json(valuearray);
+                        free(valstr);
+                        printf("%s height.%d -> numconfirms.%d\n",bits256_str(str,rawtx->actualtxid),height,numconfirms);
+                    }
+                }
+            }
+        }
+    }
+    free_json(argjson);
+    if ( valuearray != 0 )
+        free_json(valuearray);
+    free(valstr);
+    return(-1);
+}
+
+bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
+{
+    bits256 txid; char *signedtx;
+    memset(txid.bytes,0,sizeof(txid));
+    if ( data != 0 && datalen != 0 )
+    {
+        txid = bits256_doublesha256(0,data,datalen);
+        return(txid);
+        signedtx = malloc(datalen*2 + 1);
+        init_hexbytes_noT(signedtx,data,datalen);
+        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+        char str[65]; printf("%s <- sendrawtransaction %s.(%s)\n",name,signedtx,bits256_str(str,txid));
+        free(signedtx);
+    }
+    return(txid);
+}
+
 int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen)
 {
     char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info V; uint32_t locktime=0;
@@ -190,7 +246,7 @@ int32_t basilisk_verify_otherfee(struct supernet_info *myinfo,struct basilisk_sw
     // add verification
     swap->otherfee.txbytes = calloc(1,datalen);
     memcpy(swap->otherfee.txbytes,data,datalen);
-    swap->otherfee.signedtxid = bits256_doublesha256(0,data,datalen);
+    swap->otherfee.actualtxid = swap->otherfee.signedtxid = bits256_doublesha256(0,data,datalen);
     return(0);
 }
 
@@ -281,62 +337,6 @@ int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,struct basilisk_s
     if ( basilisk_rawtx_spendscript(myinfo,&swap->alicepayment,0,data,datalen) == 0 )
         return(0);
     else return(-1);
-}
-
-int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
-{
-    cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n;
-    /*int32_t height; struct iguana_txid T;
-    if ( iguana_txidfind(rawtx->coin,&height,&T,rawtx->actualtxid,rawtx->coin->bundlescount-1) != 0 )*/
-    argjson = cJSON_CreateObject();
-    jaddbits256(argjson,"txid",rawtx->actualtxid);
-    jaddnum(argjson,"vout",0);
-    jaddstr(argjson,"coin",rawtx->coin->symbol);
-    if ( (valstr= basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
-    {
-        printf("valstr.(%s)\n",valstr);
-        if ( (valuearray= cJSON_Parse(valstr)) != 0 )
-        {
-            if ( is_cJSON_Array(valuearray) != 0 )
-            {
-                n = cJSON_GetArraySize(valuearray);
-                for (i=0; i<n; i++)
-                {
-                    item = jitem(valuearray,i);
-                    height = jint(valuearray,"height");
-                    numconfirms = jint(valuearray,"numconfirms");
-                    if ( height > 0 && numconfirms >= 0 )
-                    {
-                        free_json(argjson);
-                        free_json(valuearray);
-                        free(valstr);
-                        char str[65]; printf("%s height.%d -> numconfirms.%d\n",bits256_str(str,rawtx->actualtxid),height,numconfirms);
-                    }
-                }
-            }
-        }
-    }
-    free_json(argjson);
-    if ( valuearray != 0 )
-        free_json(valuearray);
-    free(valstr);
-    return(-1);
-}
-
-bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
-{
-    bits256 txid; char *signedtx;
-    memset(txid.bytes,0,sizeof(txid));
-    if ( data != 0 && datalen != 0 )
-    {
-        //txid = bits256_doublesha256(0,data,datalen);
-        signedtx = malloc(datalen*2 + 1);
-        init_hexbytes_noT(signedtx,data,datalen);
-        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-        char str[65]; printf("%s <- sendrawtransaction %s.(%s)\n",name,signedtx,bits256_str(str,txid));
-        free(signedtx);
-    }
-    return(txid);
 }
 
 int32_t basilisk_privAm_extract(struct supernet_info *myinfo,struct basilisk_swap *swap)
@@ -870,11 +870,11 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
         rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
-        //char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
+        char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
         if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
             return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits));
         else return(nextbits);
-    }
+    } else printf("error from basilisk_swapdata_rawtx %p len.%d\n",rawtx->txbytes,rawtx->datalen);
     return(0);
 }
 

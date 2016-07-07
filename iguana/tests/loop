@@ -1,0 +1,7 @@
+cd ..
+pkill iguana
+./m_LP
+while true
+do ../../agents/iguana
+done
+
