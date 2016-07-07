@@ -10,5 +10,6 @@ tests/myip4;
 tests/addnode;
 coins/genbtc
 wait
+sleep 100
 done
 
