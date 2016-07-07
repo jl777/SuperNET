@@ -136,7 +136,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
-    char str[65]; printf("%s channel.%u msgid.%u datalen.%d\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"),datalen);
+    //char str[65]; printf("%s channel.%u msgid.%u datalen.%d\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"),datalen);
     return(basilisk_respond_getmessage(myinfo,key,keylen));
 }
 

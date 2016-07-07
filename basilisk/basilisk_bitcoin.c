@@ -310,6 +310,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
     jadd64bits(retjson,"satoshis",value);
     jaddnum(retjson,"value",dstr(value));
     jaddnum(retjson,"height",height);
+    jaddnum(retjson,"numconfirms",coin->blocks.hwmchain.height - height);
     jaddbits256(retjson,"txid",txid);
     jaddnum(retjson,"vout",vout);
     jaddstr(retjson,"coin",coin->symbol);
