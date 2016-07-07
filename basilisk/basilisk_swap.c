@@ -127,6 +127,7 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
         V.signers[1].privkey = *privkey2;
         bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
         jaddistr(privkeys,wifstr);
+        printf("add second privkey.(%s)\n",jprint(privkeys,0));
     }
     V.suppress_pubkeys = dest->suppress_pubkeys;
     if ( userdata != 0 && userdatalen > 0 )
@@ -301,7 +302,7 @@ int32_t basilisk_privAm_extract(struct supernet_info *myinfo,struct basilisk_swa
 {
     // need to scan blockchain for alicespend of bobpayment
     // search for swap->bobpayment.actualtxid in spends
-    basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend);
+    //basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend);
     return(-1);
 }
 
@@ -612,7 +613,9 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
 
     basilisk_rawtx_setparms("alicepayment",myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
     basilisk_rawtx_setparms("bobspend",myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
+    swap->bobspend.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
+    swap->alicereclaim.suppress_pubkeys = 1;
     swap->sleeptime = 3 - swap->iambob;
     return(swap);
 }
