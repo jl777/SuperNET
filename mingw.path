@@ -1,2 +1,0 @@
-TOOL_DIR := /usr/bin
-MINGW := i586-mingw32msvc

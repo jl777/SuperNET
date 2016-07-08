@@ -1,1 +1,0 @@
-$CC2 -o ../agents/iguana -O2 *.c ../agents/libcrypto777.a ../android/lib/libcurl.a -lssl -lcrypto -lm -lc -lz

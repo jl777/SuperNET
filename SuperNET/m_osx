@@ -1,1 +1,0 @@
-gcc -o ../agents/SuperNET -O2 *.c ../agents/libcrypto777.a -lnanomsg -lssl -lcrypto -lpthread -lm
