@@ -24,6 +24,7 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid);
 TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);

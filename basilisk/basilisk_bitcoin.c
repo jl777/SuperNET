@@ -783,32 +783,6 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
-{
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    if ( coin == 0 )
-    {
-        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
-            coin = iguana_coinfind(symbol);
-    }
-    if ( coin != 0 && vals != 0 )
-    {
-        if ( jobj(vals,"addresses") == 0 )
-            jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
-        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
-            basilisktag = rand();
-        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
-            timeoutmillis = BASILISK_TIMEOUT;
-        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
-        {
-            retstr = ptr->retstr, ptr->retstr = 0;
-            ptr->finished = (uint32_t)time(NULL);
-            return(retstr);
-        }
-    }
-    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
-}
-
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
@@ -817,6 +791,8 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
             coin = iguana_coinfind(symbol);
     }
+    if ( jobj(vals,"fanout") == 0 )
+        jaddnum(vals,"fanout",8);
     if ( coin != 0 )
     {
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
@@ -841,6 +817,8 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
             coin = iguana_coinfind(symbol);
     }
+    if ( jobj(vals,"fanout") == 0 )
+        jaddnum(vals,"fanout",8);
     if ( coin != 0 )
     {
         if ( juint(vals,"burn") == 0 )
@@ -887,4 +865,228 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
     }
     return(retstr);
 }
+
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
+{
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( vals == 0 )
+        return(clonestr("{\"error\":\"need vals object\"}"));
+    if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( jobj(vals,"fanout") == 0 )
+        jaddnum(vals,"fanout",8);
+    if ( jobj(vals,"numrequired") == 0 )
+        jaddnum(vals,"numrequired",myinfo->numrelays);
+    //printf("vals.(%s)\n",jprint(vals,0));
+    if ( coin != 0 )
+    {
+        if ( jobj(vals,"addresses") == 0 )
+            jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
+        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+            basilisktag = rand();
+        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+            timeoutmillis = BASILISK_TIMEOUT;
+        if ( (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        {
+            retstr = ptr->retstr, ptr->retstr = 0;
+            ptr->finished = (uint32_t)time(NULL);
+            return(retstr);
+        }
+    }
+    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
+{
+    struct basilisk_unspent *bu; int32_t i; int64_t total = 0; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char coinaddr[64],*symbol; cJSON *retjson,*array,*item,*details;
+    if ( vals == 0 )
+        return(clonestr("{\"error\":\"need vals object\"}"));
+    if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    array = cJSON_CreateArray();
+    portable_mutex_lock(&myinfo->bu_mutex);
+    HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+    {
+        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        {
+            for (i=0; i<waddr->numunspents; i++)
+            {
+                bu = &waddr->unspents[i];
+                if ( strcmp(bu->symbol,coin->symbol) == 0 )
+                {
+                    bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,sizeof(waddr->rmd160));
+                    item = cJSON_CreateObject();
+                    jaddstr(item,"address",coinaddr);
+                    jaddnum(item,"amount",dstr(bu->value));
+                    jaddnum(item,"numseconds",time(NULL) - bu->timestamp);
+                    details = cJSON_CreateObject();
+                    jaddbits256(details,"txid",bu->txid);
+                    jaddnum(details,"vout",bu->vout);
+                    jaddnum(details,"height",bu->height);
+                    if ( bu->spentheight != 0 )
+                        jaddnum(details,"spentheight",bu->spentheight);
+                    else total += bu->value;
+                    jaddnum(details,"relays",bitweight(bu->relaymask));
+                    jadd(item,"details",details);
+                    jaddi(array,item);
+                }
+            }
+            //printf("%s numunspents.%d\n",waddr->coinaddr,waddr->numunspents);
+        }
+    }
+    portable_mutex_unlock(&myinfo->bu_mutex);
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"history",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"balance",dstr(total));
+    return(jprint(retjson,1));
+}
 #include "../includes/iguana_apiundefs.h"
+
+int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,int16_t hdrsi,uint32_t unspentind,int64_t value)
+{
+    struct basilisk_unspent *bu; int32_t i,spendlen; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2;
+    memset(txidp,0,sizeof(*txidp));
+    *voutp = -1;
+    portable_mutex_lock(&myinfo->bu_mutex);
+    HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+    {
+        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        {
+            for (i=0; i<waddr->numunspents; i++)
+            {
+                bu = &waddr->unspents[i];
+                if ( bu->hdrsi == hdrsi && bu->unspentind == unspentind && bu->value == value )
+                {
+                    *txidp = bu->txid;
+                    *voutp = bu->vout;
+                    memcpy(spendscript,bu->script,bu->spendlen);
+                    spendlen = bu->spendlen;
+                    portable_mutex_unlock(&myinfo->bu_mutex);
+                    return(spendlen);
+                }
+            }
+        }
+    }
+    portable_mutex_unlock(&myinfo->bu_mutex);
+    return(-1);
+}
+
+void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *item,int32_t spentheight,int32_t relayid,int32_t RTheight)
+{
+    //{"txid":"4814dc8a357f93f16271eb43806a69416ec41ab1956b128d170402b0a1b37c7f","vout":2,"address":"RSyKVKNxrSDc1Vwvh4guYb9ZDEpvMFz2rm","scriptPubKey":"76a914c210f6711e98fe9971757ede2b2dcb0507f3f25e88ac","amount":9.99920000,"timestamp":1466684518,"height":1160306,"confirmations":22528,"checkind":1157,"spent":{"hdrsi":2320,"pkind":168,"unspentind":1157,"prevunspentind":0,"satoshis":"999920000","txidind":619,"vout":2,"type":2,"fileid":0,"scriptpos":0,"scriptlen":25},"spentheight":1161800,"dest":{"error":"couldnt find spent info"}}
+    int32_t i,n,already_spent=0; struct basilisk_unspent bu,bu2; char *address,*script; struct iguana_waccount *wacct; struct iguana_waddress *waddr;
+    if ( (address= jstr(item,"address")) != 0 && (script= jstr(item,"scriptPubKey")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
+    {
+        if ( relayid >= 64 )
+            relayid = 0;
+        memset(&bu,0,sizeof(bu));
+        bu.spendlen = (int32_t)strlen(script) >> 1;
+        if ( bu.spendlen > sizeof(bu.script) )
+        {
+            printf("spendscript too big.%d\n",bu.spendlen);
+            return;
+        }
+        strcpy(bu.symbol,coin->symbol);
+        bu.txid = jbits256(item,"txid");
+        bu.vout = jint(item,"vout");
+        bu.value = jdouble(item,"amount") * SATOSHIDEN;
+        bu.height = jint(item,"height");
+        bu.hdrsi = (bu.height / coin->chain->bundlesize);
+        bu.unspentind = juint(item,"checkind");
+        bu.timestamp = juint(item,"timestamp");
+        decode_hex(bu.script,bu.spendlen,script);
+        n = waddr->numunspents;
+        for (i=0; i<n; i++)
+        {
+            bu2 = waddr->unspents[i];
+            bu2.status = 0;
+            bu2.RTheight = bu2.spentheight = 0;
+            bu2.relaymask = 0;
+            if ( memcmp(&bu,&bu2,sizeof(bu)) == 0 )
+            {
+                if ( waddr->unspents[i].RTheight > RTheight )
+                    RTheight = waddr->unspents[i].RTheight;
+                already_spent = waddr->unspents[i].spentheight;
+                bu.relaymask = waddr->unspents[i].relaymask;
+                break;
+            }
+        }
+        bu.RTheight = RTheight;
+        bu.relaymask |= ((uint64_t)1 << relayid);
+        //printf("relayid.%d -> %llx wt.%d\n",relayid,(long long)bu.relaymask,bitweight(bu.relaymask));
+        if ( spentheight != 0 )
+            already_spent = spentheight;
+        if ( (bu.spentheight= already_spent) != 0 )
+            bu.status = 1;
+        if ( i == n )
+        {
+            if ( i >= waddr->maxunspents )
+            {
+                waddr->maxunspents += 16;
+                waddr->unspents = realloc(waddr->unspents,sizeof(*waddr->unspents) * waddr->maxunspents);
+                printf("allocate max.%d for %s\n",waddr->maxunspents,waddr->coinaddr);
+            }
+            waddr->numunspents++;
+            printf("new unspent.%s %d script.%p [%d]\n",waddr->coinaddr,waddr->numunspents,bu.script,bu.spendlen);
+        }
+        waddr->unspents[i] = bu;
+    }
+}
+
+void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr; cJSON *retarray,*vals,*relayjson,*unspents,*spends; int32_t oldest,i,j,n,num,RTheight,relayid;
+    if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+    {
+        vals = cJSON_CreateObject();
+        for (i=oldest=0; i<BASILISK_MAXRELAYS; i++)
+            if ( (RTheight= coin->relay_RTheights[i]) != 0 && (oldest == 0 || RTheight < oldest) )
+                oldest = RTheight;
+        jaddnum(vals,"firstheight",oldest);
+        jaddnum(vals,"history",3);
+        if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
+        {
+            //printf("GOT.(%s)\n",retstr);
+            portable_mutex_lock(&myinfo->bu_mutex);
+            if ( (retarray= cJSON_Parse(retstr)) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
+            {
+                if ( jobj(retarray,"error") == 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        relayjson = jitem(retarray,i);
+                        RTheight = jint(relayjson,"RTheight");
+                        if ( (relayid= basilisk_relayid(myinfo,(uint32_t)calc_ipbits(jstr(relayjson,"relay")))) < BASILISK_MAXRELAYS )
+                        {
+                            coin->relay_RTheights[relayid] = RTheight;
+                        }
+                        //printf("relayid.%d RT.%d\n",relayid,RTheight);
+                        if ( (unspents= jarray(&num,relayjson,"unspents")) != 0 )
+                        {
+                            for (j=0; j<num; j++)
+                                basilisk_unspent_update(myinfo,coin,jitem(unspents,j),0,relayid,RTheight);
+                        }
+                        if ( (spends= jarray(&num,relayjson,"spends")) != 0 )
+                        {
+                            for (j=0; j<num; j++)
+                                basilisk_unspent_update(myinfo,coin,jitem(spends,j),jint(jitem(spends,j),"spentheight"),relayid,RTheight);
+                        }
+                    }
+                }
+            }
+            if ( retarray != 0 )
+                free_json(retarray);
+            free(retstr);
+            portable_mutex_unlock(&myinfo->bu_mutex);
+        }
+        free_json(vals);
+    }
+}

@@ -308,9 +308,11 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
             strcpy(pending->CMD,CMD);
             while ( OS_milliseconds() < pending->expiration )
             {
-                //if ( (retstr= basilisk_iscomplete(ptr)) != 0 )
-                if ( pending->numresults >= pending->numrequired || (retstr= pending->retstr) != 0 )
+                if ( pending->numresults >= pending->numrequired )//|| (retstr= pending->retstr) != 0 )
+                {
+                    //printf("numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
                     break;
+                }
                 usleep(10000);
             }
             if ( (retarray= pending->retarray) != 0 )
@@ -329,7 +331,8 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struct iguana_peer *addr,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
-    int32_t minresults,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
+    int32_t numrequired,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
+    //printf("request.(%s)\n",jprint(valsobj,0));
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
     if ( bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0 )
     {
@@ -337,8 +340,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
             jdelete(valsobj,"hash");
         jaddbits256(valsobj,"hash",hash);
     }
-    if ( (minresults= jint(valsobj,"minresults")) <= 0 )
-        minresults = 1;
+    if ( (numrequired= jint(valsobj,"numrequired")) <= 0 )
+        numrequired = 1;
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
     if ( jobj(valsobj,"fanout") == 0 )
@@ -357,7 +360,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
         symbol = "BTCD";
     encryptflag = jint(valsobj,"encrypt");
     delaymillis = jint(valsobj,"delay");
-    ptr = basilisk_issueremote(myinfo,addr,&numsent,CMD,symbol,blockflag,valsobj,fanout,minresults,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
+    ptr = basilisk_issueremote(myinfo,addr,&numsent,CMD,symbol,blockflag,valsobj,fanout,numrequired,0,timeoutmillis,0,0,encryptflag,delaymillis,nBits);
     return(ptr);
 }
 
@@ -863,7 +866,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *virt,*tmpcoin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*coin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t i,iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -896,10 +899,17 @@ void basilisks_loop(void *arg)
             if ( (rand() % 100) == 0 && myinfo->RELAYID >= 0 )
                 basilisk_ping_send(myinfo,btcd);
         }
-        //fprintf(stderr,"i ");
-        //for (i=0; i<IGUANA_MAXCOINS; i++)
-        //    if ( (coin= Coins[i]) != 0 && coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && coin->active != 0 && coin->chain->userpass[0] != 0 && coin->MAXPEERS == 1 )
-        //        basilisk_bitcoinscan(coin,blockspace,&RAWMEM);
+        HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
+        {
+            if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+            {
+                for (i=0; i<BASILISK_MAXRELAYS; i++)
+                    if ( coin->relay_RTheights[i] != 0 )
+                        break;
+                if ( i == BASILISK_MAXRELAYS || (time(NULL) % 60) == 0 )
+                    basilisk_unspents_update(myinfo,coin);
+            }
+        }
         if ( (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
@@ -923,6 +933,7 @@ void basilisks_loop(void *arg)
 void basilisks_init(struct supernet_info *myinfo)
 {
     iguana_initQ(&myinfo->msgQ,"messageQ");
+    portable_mutex_init(&myinfo->bu_mutex);
     portable_mutex_init(&myinfo->allcoins_mutex);
     portable_mutex_init(&myinfo->basilisk_mutex);
     portable_mutex_init(&myinfo->DEX_mutex);

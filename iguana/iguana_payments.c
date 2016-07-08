@@ -200,9 +200,21 @@ int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *ab
     return(abovei >= 0 ? abovei : belowi);
 }
 
+cJSON *iguana_inputjson(bits256 txid,int32_t vout,uint8_t *spendscript,int32_t spendlen)
+{
+    char hexstr[IGUANA_MAXSCRIPTSIZE*2 + 1]; cJSON *sobj,*item = cJSON_CreateObject();
+    jaddbits256(item,"txid",txid);
+    jaddnum(item,"vout",vout);
+    sobj = cJSON_CreateObject();
+    init_hexbytes_noT(hexstr,spendscript,spendlen);
+    jaddstr(sobj,"hex",hexstr);
+    jadd(item,"scriptPubKey",sobj);
+    return(item);
+}
+
 cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,uint64_t amount,int64_t *unspents,int32_t num)
 {
-    cJSON *item,*vins,*sobj; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64],hexstr[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t height,abovei,belowi,i,spendlen,ind,hdrsi; uint32_t txidind,unspentind; struct iguana_ramchaindata *rdata; int64_t value,above,below,total = 0; int64_t remains = amount;
+    cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind,hdrsi; uint32_t txidind,unspentind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t value,above,below,total = 0; int64_t remains = amount;
     *totalp = 0;
     vins = cJSON_CreateArray();
     for (i=0; i<num; i++)
@@ -221,6 +233,19 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
         unspentind = (uint32_t)unspents[(ind << 1)];
         value = unspents[(ind << 1) + 1];
         unspents[(ind << 1) + 1] = -1;
+        if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+        {
+            if ( (spendlen= basilisk_unspentfind(myinfo,coin,&txid,&vout,spendscript,hdrsi,unspentind,value)) > 0 )
+            {
+                jaddi(vins,iguana_inputjson(txid,vout,spendscript,spendlen));
+                total += value;
+                remains -= value;
+                //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));
+                if ( remains <= 0 )
+                    break;
+            }
+            continue;
+        }
         if ( (bp= coin->bundles[hdrsi]) == 0 )
         {
             printf("no bundle.[%d]\n",hdrsi);
@@ -239,14 +264,7 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
             {
                 if ( iguana_unspentindfind(coin,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1,0) == unspentind && spendlen > 0 )
                 {
-                    item = cJSON_CreateObject();
-                    jaddbits256(item,"txid",T[txidind].txid);
-                    jaddnum(item,"vout",u->vout);
-                    sobj = cJSON_CreateObject();
-                    init_hexbytes_noT(hexstr,spendscript,spendlen);
-                    jaddstr(sobj,"hex",hexstr);
-                    jadd(item,"scriptPubKey",sobj);
-                    jaddi(vins,item);
+                    jaddi(vins,iguana_inputjson(T[txidind].txid,u->vout,spendscript,spendlen));
                     total += value;
                     remains -= value;
                     //printf("%s value %.8f -> remains %.8f\n",coinaddr,dstr(value),dstr(remains));

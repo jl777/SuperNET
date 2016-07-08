@@ -52,7 +52,7 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
+    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
     struct queueitem *DEX_quotes;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ;

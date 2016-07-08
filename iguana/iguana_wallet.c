@@ -687,9 +687,10 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
 
 cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t flag,cJSON *array,int32_t *goodp,int32_t *badp,int32_t *errors)
 {
-    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr=0,*tmp2; uint8_t errorflags; int32_t i,good=0,bad=0,_errors[8]; cJSON *item; char coinaddr[64];
+    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr=0,*tmp2; uint8_t errorflags; int32_t i,good=0,bad=0,_errors[8]; cJSON *item; char coinaddr[64]; 
     if ( errors == 0 )
         errors = _errors;
+    portable_mutex_lock(&myinfo->bu_mutex);
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
@@ -732,6 +733,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             myfree(wacct,sizeof(*wacct));
         }
     }
+    portable_mutex_unlock(&myinfo->bu_mutex);
     if ( goodp != 0 )
         *goodp = good;
     if ( badp != 0 )

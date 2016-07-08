@@ -364,7 +364,9 @@ struct iguana_bundlereq
 
 struct iguana_bitmap { int32_t width,height,amplitude; char name[52]; uint8_t data[IGUANA_WIDTH*IGUANA_HEIGHT*3]; };
 
-struct iguana_waddress { UT_hash_handle hh; uint64_t balance,*unspents; uint32_t maxunspents,numunspents; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
+struct basilisk_unspent { bits256 txid; uint64_t value,relaymask; uint32_t unspentind,timestamp; int32_t RTheight,height,spentheight; int16_t status,hdrsi,vout,spendlen; char symbol[16]; uint8_t script[256]; };
+
+struct iguana_waddress { UT_hash_handle hh; struct basilisk_unspent *unspents; uint64_t balance; uint32_t maxunspents,numunspents; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
 struct iguana_waccount { UT_hash_handle hh; char account[128]; struct iguana_waddress *waddr,*current; };
 struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 
@@ -413,6 +415,7 @@ struct iguana_info
     struct iguana_monitorinfo monitoring[256];
     struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
+    int32_t relay_RTheights[BASILISK_MAXRELAYS];
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
 };
 
