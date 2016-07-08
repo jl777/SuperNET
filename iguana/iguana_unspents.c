@@ -113,12 +113,62 @@ cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
     return(item);
 }
 
-cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t hdrsi,int32_t unspentind)
+cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t hdrsi,int32_t unspentind,bits256 txid,int32_t vout,int64_t uvalue)
 {
-    char coinaddr[64]; int64_t total = 0; cJSON *item = cJSON_CreateObject();
-    coinaddr[0] = 0;
-    jaddstr(item,"destaddr",coinaddr);
-    jaddnum(item,"total",dstr(total));
+    char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i; struct iguana_block *block; int64_t total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
+    item = cJSON_CreateObject();
+    hash2 = iguana_blockhash(coin,spentheight);
+    if ( (block= iguana_blockfind("spent",coin,hash2)) != 0 && (bp= coin->bundles[spentheight/coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
+    {
+        X = RAMCHAIN_PTR(rdata,Xoffset);
+        S = RAMCHAIN_PTR(rdata,Soffset);
+        U = RAMCHAIN_PTR(rdata,Uoffset);
+        P = RAMCHAIN_PTR(rdata,Poffset);
+        spentT = RAMCHAIN_PTR(rdata,Toffset);
+        for (i=0; i<block->RO.txn_count; i++)
+        {
+            if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
+            {
+                // struct iguana_txid { bits256 txid; uint32_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
+                // struct iguana_spend { uint64_t scriptpos:48,scriptlen:16; uint32_t spendtxidind,sequenceid; int16_t prevout; uint16_t fileid:15,external:1; } __attribute__((packed)); // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
+                s = &S[tx->firstvin];
+                for (j=0; j<tx->numvins; j++,s++)
+                {
+                    if ( s->prevout == vout )
+                    {
+                        if ( s->external != 0 )
+                        {
+                            if ( bits256_cmp(X[s->spendtxidind],txid) != 0 )
+                                continue;
+                        }
+                        else
+                        {
+                            spent_tx = &spentT[s->spendtxidind];
+                            if ( bits256_cmp(spent_tx->txid,txid) != 0 )
+                                continue;
+                        }
+                        jaddbits256(item,"spentfrom",tx->txid);
+                        jaddnum(item,"vin",j);
+                        u = &U[tx->firstvout];
+                        addrs = cJSON_CreateArray();
+                        for (j=0; j<tx->numvouts; j++,u++)
+                        {
+                            voutobj = cJSON_CreateObject();
+                            bitcoin_address(coinaddr,iguana_addrtype(coin,u->type),P[u->pkind].rmd160,sizeof(P[u->pkind].rmd160));
+                            jaddnum(voutobj,coinaddr,dstr(u->value));
+                            jaddi(addrs,voutobj);
+                            total += u->value;
+                        }
+                        jadd(item,"vouts",addrs);
+                        jaddnum(item,"total",dstr(total));
+                        jaddnum(item,"ratio",dstr(uvalue) / dstr(total));
+                        return(item);
+                    }
+                }
+            }
+        }
+    }
+    jaddstr(item,"error","couldnt find spent info");
     return(item);
 }
 
@@ -162,6 +212,8 @@ cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,
     {
         jadd(item,"spent",ramchain_unspentjson(up,unspentind));
         jaddnum(item,"spentheight",spentheight);
+        jadd(item,"dest",ramchain_spentjson(coin,spentheight,hdrsi,unspentind,T[up->txidind].txid,up->vout,up->value));
+
     } else jadd(item,"unspent",ramchain_unspentjson(up,unspentind));
     return(item);
 }
