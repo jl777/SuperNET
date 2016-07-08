@@ -60,6 +60,7 @@ struct supernet_info
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;
     struct basilisk_relay relays[BASILISK_MAXRELAYS];
+    struct basilisk_spend *spends; int32_t numspends;
     int32_t numrelays,RELAYID;
     // compatibility
     bits256 pangea_category,instantdex_category;

@@ -819,6 +819,10 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(myinfo->myaddr.NXTADDR,0,sizeof(myinfo->myaddr.NXTADDR));
     myinfo->myaddr.nxt64bits = 0;
     myinfo->expiration = 0;
+    portable_mutex_lock(&myinfo->bu_mutex);
+    if ( myinfo->spends != 0 )
+        free(myinfo->spends), myinfo->numspends = 0;
+    portable_mutex_unlock(&myinfo->bu_mutex);
     iguana_walletiterate(myinfo,coin,-2,0,0,0,0);
 }
 

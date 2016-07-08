@@ -364,6 +364,8 @@ struct iguana_bundlereq
 
 struct iguana_bitmap { int32_t width,height,amplitude; char name[52]; uint8_t data[IGUANA_WIDTH*IGUANA_HEIGHT*3]; };
 
+struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
+
 struct basilisk_unspent { bits256 txid; uint64_t value,relaymask; uint32_t unspentind,timestamp; int32_t RTheight,height,spentheight; int16_t status,hdrsi,vout,spendlen; char symbol[16]; uint8_t script[256]; };
 
 struct iguana_waddress { UT_hash_handle hh; struct basilisk_unspent *unspents; uint64_t balance; uint32_t maxunspents,numunspents; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };

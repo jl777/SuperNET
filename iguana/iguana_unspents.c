@@ -150,6 +150,7 @@ cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t h
                         }
                         jaddbits256(item,"spentfrom",tx->txid);
                         jaddnum(item,"vin",j);
+                        jaddnum(item,"timestamp",tx->timestamp);
                         u = &U[tx->firstvout];
                         addrs = cJSON_CreateArray();
                         for (j=0; j<tx->numvouts; j++,u++)
@@ -162,7 +163,7 @@ cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t h
                         }
                         jadd(item,"vouts",addrs);
                         jaddnum(item,"total",dstr(total));
-                        jaddnum(item,"ratio",dstr(uvalue) / dstr(total));
+                        jaddnum(item,"ratio",dstr(uvalue) / dstr(total+coin->txfee));
                         return(item);
                     }
                 }
