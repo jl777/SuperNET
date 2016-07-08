@@ -315,6 +315,9 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"total",dstr(total));
     jadd(retjson,"addresses",array);
+    jaddnum(retjson,"RTheight",coin->RTheight);
+    jaddnum(retjson,"longest",coin->longestchain);
+    jaddnum(retjson,"lag",coin->longestchain- coin->RTheight);
     Lptr->retstr = jprint(retjson,1);
     return(Lptr);
 }
