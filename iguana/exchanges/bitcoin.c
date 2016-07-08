@@ -454,7 +454,7 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
             minconfirms = coin->minconfirms;
         max = 100000;
         unspents = calloc(max,sizeof(*unspents));
-        if ( (numunspents= iguana_unspentslists(myinfo,coin,&avail,unspents,max,((uint64_t)1 << 62),minconfirms,addresses)) > 0 )
+        if ( (numunspents= iguana_unspentslists(myinfo,coin,&avail,unspents,max,((uint64_t)1 << 62),minconfirms,addresses,0)) > 0 )
         {
             array = cJSON_CreateArray();
             for (i=0; i<numunspents; i++)

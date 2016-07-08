@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"timeout\":20000,\"agent\":\"basilisk\",\"method\":\"balances\",\"vals\":{\"minconf\":1,\"history\":1}}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":20000,\"agent\":\"basilisk\",\"method\":\"balances\",\"vals\":{\"minconf\":1,\"history\":3}}"

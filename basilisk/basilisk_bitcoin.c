@@ -299,15 +299,20 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals)
 {
-    int64_t balance,total = 0; int32_t i,n,hist; cJSON *unspents,*retjson,*item,*addresses,*array = cJSON_CreateArray();
+    int64_t balance,total = 0; int32_t i,n,hist; cJSON *spends,*unspents,*retjson,*item,*addresses,*array = cJSON_CreateArray();
+    spends = unspents = 0;
     if ( (hist= juint(vals,"history")) != 0 )
-        unspents = cJSON_CreateArray();
-    else unspents = 0;
+    {
+        if ( (hist & 1) != 0 )
+            unspents = cJSON_CreateArray();
+        if ( (hist & 2) != 0 )
+            spends = cJSON_CreateArray();
+    }
     if ( (addresses= jarray(&n,vals,"addresses")) != 0 )
     {
         for (i=0; i<n; i++)
         {
-            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,jstri(addresses,i),juint(vals,"minconf"));
+            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,jstri(addresses,i),juint(vals,"minconf"));
             item = cJSON_CreateObject();
             jaddnum(item,jstri(addresses,i),dstr(balance));
             jaddi(array,item);
@@ -320,6 +325,8 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     jadd(retjson,"addresses",array);
     if ( unspents != 0 )
         jadd(retjson,"unspents",unspents);
+    if ( spends != 0 )
+        jadd(retjson,"spends",spends);
     jaddnum(retjson,"RTheight",coin->RTheight);
     jaddnum(retjson,"longest",coin->longestchain);
     jaddnum(retjson,"lag",coin->longestchain- coin->RTheight);
@@ -518,7 +525,7 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                         oplen = 0;
                     } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
                 }
-                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount);
+                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr);
                 printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
             }
             else

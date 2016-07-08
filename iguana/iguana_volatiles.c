@@ -142,9 +142,9 @@ int32_t iguana_spentflag(struct iguana_info *coin,int64_t *RTspendp,int32_t *spe
 {
     uint32_t numunspents; int32_t RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
     struct iguana_ramchaindata *rdata;
+    *spentheightp = -1;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
-    *spentheightp = 0;
     numunspents = rdata->numunspents;
     utxo = iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,0);
     if ( RTspentflag != 0 )
