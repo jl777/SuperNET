@@ -299,7 +299,24 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals)
 {
-    return(0);
+    int64_t balance,total = 0; int32_t i,n; cJSON *retjson,*item,*addresses,*array = cJSON_CreateArray();
+    if ( (addresses= jarray(&n,vals,"addresses")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,jstri(addresses,i),juint(vals,"minconf"));
+            item = cJSON_CreateObject();
+            jaddnum(item,jstri(addresses,i),dstr(balance));
+            jaddi(array,item);
+            total += balance;
+        }
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"total",dstr(total));
+    jadd(retjson,"addresses",array);
+    Lptr->retstr = jprint(retjson,1);
+    return(Lptr);
 }
 
 char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,int32_t height,bits256 txid,int16_t vout)
@@ -759,8 +776,10 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
             coin = iguana_coinfind(symbol);
     }
-    if ( coin != 0 )
+    if ( coin != 0 && vals != 0 )
     {
+        if ( jobj(vals,"addresses") == 0 )
+            jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
