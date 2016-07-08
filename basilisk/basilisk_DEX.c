@@ -480,13 +480,21 @@ THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume)
 
 ZERO_ARGS(InstantDEX,allcoins)
 {
-    struct iguana_info *tmp; cJSON *array,*retjson = cJSON_CreateObject();
-    array = cJSON_CreateArray();
+    struct iguana_info *tmp; cJSON *basilisk,*virtual,*full,*retjson = cJSON_CreateObject();
+    full = cJSON_CreateArray();
+    basilisk = cJSON_CreateArray();
+    virtual = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
-        jaddistr(array,coin->symbol);
+        if ( coin->virtualchain != 0 )
+            jaddistr(virtual,coin->symbol);
+        if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+            jaddistr(full,coin->symbol);
+        else jaddistr(basilisk,coin->symbol);
     }
-    jadd(retjson,"coins",array);
+    jadd(retjson,"basilisk",basilisk);
+    jadd(retjson,"full",full);
+    jadd(retjson,"virtual",virtual);
     return(jprint(retjson,1));
 }
 
