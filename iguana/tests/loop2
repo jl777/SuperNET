@@ -1,0 +1,15 @@
+cd ..
+pkill iguana
+./m_LP
+while true
+do ../agents/iguana &
+sleep 10
+coins/btcd
+tests/wp
+tests/myip2;
+tests/addnode;
+coins/genbtc
+wait
+sleep 100
+done
+
