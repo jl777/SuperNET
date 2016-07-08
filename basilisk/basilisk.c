@@ -901,7 +901,7 @@ void basilisks_loop(void *arg)
         }
         HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
         {
-            if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+            //if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
             {
                 for (i=0; i<BASILISK_MAXRELAYS; i++)
                     if ( coin->relay_RTheights[i] != 0 )

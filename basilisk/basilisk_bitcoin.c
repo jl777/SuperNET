@@ -321,6 +321,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
+    jaddstr(retjson,"ipaddr",myinfo->ipaddr);
     jaddnum(retjson,"total",dstr(total));
     jadd(retjson,"addresses",array);
     if ( unspents != 0 )
@@ -937,7 +938,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
                     jaddi(array,item);
                 }
             }
-            //printf("%s numunspents.%d\n",waddr->coinaddr,waddr->numunspents);
+            printf("%s numunspents.%d\n",waddr->coinaddr,waddr->numunspents);
         }
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
@@ -1041,10 +1042,31 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
     }
 }
 
+void basilisk_relay_unspentsprocess(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *relayjson)
+{
+    int32_t RTheight,relayid,num,j; cJSON *unspents,*spends;
+    RTheight = jint(relayjson,"RTheight");
+    if ( (relayid= basilisk_relayid(myinfo,(uint32_t)calc_ipbits(jstr(relayjson,"relay")))) < BASILISK_MAXRELAYS )
+    {
+        coin->relay_RTheights[relayid] = RTheight;
+    }
+    //printf("relayid.%d RT.%d (%s)\n",relayid,RTheight,jprint(relayjson,0));
+    if ( (unspents= jarray(&num,relayjson,"unspents")) != 0 )
+    {
+        for (j=0; j<num; j++)
+            basilisk_unspent_update(myinfo,coin,jitem(unspents,j),0,relayid,RTheight);
+    }
+    if ( (spends= jarray(&num,relayjson,"spends")) != 0 )
+    {
+        for (j=0; j<num; j++)
+            basilisk_unspent_update(myinfo,coin,jitem(spends,j),jint(jitem(spends,j),"spentheight"),relayid,RTheight);
+    }
+}
+
 void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    char *retstr; cJSON *retarray,*vals,*relayjson,*unspents,*spends; int32_t oldest,i,j,n,num,RTheight,relayid;
-    if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+    char *retstr; cJSON *retarray,*vals; int32_t oldest,i,n,RTheight;
+    //if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
     {
         vals = cJSON_CreateObject();
         for (i=oldest=0; i<BASILISK_MAXRELAYS; i++)
@@ -1052,34 +1074,20 @@ void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *c
                 oldest = RTheight;
         jaddnum(vals,"firstheight",oldest);
         jaddnum(vals,"history",3);
+        jaddstr(vals,"coin",coin->symbol);
         if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
         {
-            //printf("GOT.(%s)\n",retstr);
             portable_mutex_lock(&myinfo->bu_mutex);
-            if ( (retarray= cJSON_Parse(retstr)) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
+            if ( (retarray= cJSON_Parse(retstr)) != 0 )
             {
                 if ( jobj(retarray,"error") == 0 )
                 {
-                    for (i=0; i<n; i++)
+                    if ( (jstr(retarray,"ipaddr") == 0 || strcmp(jstr(retarray,"ipaddr"),myinfo->ipaddr) != 0) && (n= cJSON_GetArraySize(retarray)) > 0 )
                     {
-                        relayjson = jitem(retarray,i);
-                        RTheight = jint(relayjson,"RTheight");
-                        if ( (relayid= basilisk_relayid(myinfo,(uint32_t)calc_ipbits(jstr(relayjson,"relay")))) < BASILISK_MAXRELAYS )
-                        {
-                            coin->relay_RTheights[relayid] = RTheight;
-                        }
-                        //printf("relayid.%d RT.%d\n",relayid,RTheight);
-                        if ( (unspents= jarray(&num,relayjson,"unspents")) != 0 )
-                        {
-                            for (j=0; j<num; j++)
-                                basilisk_unspent_update(myinfo,coin,jitem(unspents,j),0,relayid,RTheight);
-                        }
-                        if ( (spends= jarray(&num,relayjson,"spends")) != 0 )
-                        {
-                            for (j=0; j<num; j++)
-                                basilisk_unspent_update(myinfo,coin,jitem(spends,j),jint(jitem(spends,j),"spentheight"),relayid,RTheight);
-                        }
-                    }
+                        //printf("n.%d GOT.(%s)\n",n,jprint(retarray,0));
+                        for (i=0; i<n; i++)
+                            basilisk_relay_unspentsprocess(myinfo,coin,jitem(retarray,i));
+                    } else basilisk_relay_unspentsprocess(myinfo,coin,retarray);
                 }
             }
             if ( retarray != 0 )

@@ -115,7 +115,7 @@ cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
 
 cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t hdrsi,int32_t unspentind,bits256 txid,int32_t vout,int64_t uvalue)
 {
-    char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i; struct iguana_block *block; int64_t total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
+    char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i,ind; struct iguana_block *block; int64_t total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
     item = cJSON_CreateObject();
     hash2 = iguana_blockhash(coin,spentheight);
     if ( (block= iguana_blockfind("spent",coin,hash2)) != 0 && (bp= coin->bundles[spentheight/coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
@@ -138,7 +138,8 @@ cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,int32_t h
                     {
                         if ( s->external != 0 )
                         {
-                            if ( bits256_cmp(X[s->spendtxidind],txid) != 0 )
+                            ind = s->spendtxidind & 0xfffffff;
+                            if ( bits256_cmp(X[ind],txid) != 0 )
                                 continue;
                         }
                         else
