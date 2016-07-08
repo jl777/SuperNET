@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 *.o
 
@@ -34,3 +35,5 @@ agents/win32/confs/.tmpmarker
 agents/win32/DB/.tmpmarker
 agents/win32/DB/purgeable/.tmpmarker
 agents/*
+=======
+>>>>>>> Switched to pure HTML/CSS/JS

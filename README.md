@@ -1,5 +1,6 @@
-#SuperNET Client "iguana"
+#SuperNET Client Iguana
 
+<<<<<<< HEAD
 OS | Build Status 
 -------------|------
 Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix-jl777)](https://jenkinsmaster.sprnt.pw/job/Unix-jl777)
@@ -155,4 +156,7 @@ once jsoncmp is built, then ./test shows how to use it
 ./jsoncmp <filename> {\"fields\":[{\"fieldA\":\"requiredvalueA\"},{\"fieldB\":\"requiredvalueB\"},...]}
 
 the idea is to issue a curl command into a /tmp/file and then use jsoncmp to verify the exact value of one or more fields. it will print to stdout JSON with "error" or "result" and to stderr if there is an error
+=======
+Iguana is an app providing advanced benefits from cryptocurrencies and blockchain. Iguana itself combines a set of tools (from multi-currency wallet to real-time exchange) and backend technologies (The Multigateway, InstatDEX, Teleport, Telepathy, etc.) to reveal new types operations with cryptocurrencies, enhance personal security and anonymity, to accelerate transactions clearing procedure speed.
+>>>>>>> Switched to pure HTML/CSS/JS
 
