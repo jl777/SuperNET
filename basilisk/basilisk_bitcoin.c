@@ -299,12 +299,15 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals)
 {
-    int64_t balance,total = 0; int32_t i,n; cJSON *retjson,*item,*addresses,*array = cJSON_CreateArray();
+    int64_t balance,total = 0; int32_t i,n,hist; cJSON *unspents,*retjson,*item,*addresses,*array = cJSON_CreateArray();
+    if ( (hist= juint(vals,"history")) != 0 )
+        unspents = cJSON_CreateArray();
+    else unspents = 0;
     if ( (addresses= jarray(&n,vals,"addresses")) != 0 )
     {
         for (i=0; i<n; i++)
         {
-            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,jstri(addresses,i),juint(vals,"minconf"));
+            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,jstri(addresses,i),juint(vals,"minconf"));
             item = cJSON_CreateObject();
             jaddnum(item,jstri(addresses,i),dstr(balance));
             jaddi(array,item);
@@ -315,6 +318,8 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"total",dstr(total));
     jadd(retjson,"addresses",array);
+    if ( unspents != 0 )
+        jadd(retjson,"unspents",unspents);
     jaddnum(retjson,"RTheight",coin->RTheight);
     jaddnum(retjson,"longest",coin->longestchain);
     jaddnum(retjson,"lag",coin->longestchain- coin->RTheight);

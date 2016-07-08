@@ -864,7 +864,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,char *coinaddr,int32_t minconf)
+int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,cJSON *unspents,char *coinaddr,int32_t minconf)
 {
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,-1,minconf)) != 0 )
@@ -873,7 +873,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
             balance = jdouble(balancejson,"balance") * SATOSHIDEN;
-            if ( (txids != 0 || vouts != 0) && (unspentsjson= jarray(&n,balancejson,"unspents")) != 0 )
+            if ( (txids != 0 || vouts != 0 || unspents != 0) && (unspentsjson= jarray(&n,balancejson,"unspents")) != 0 )
             {
                 for (i=0; i<n; i++)
                 {
@@ -882,6 +882,8 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
                         jaddibits256(txids,jbits256(item,"txid"));
                     if ( vouts != 0 )
                         jaddinum(vouts,jint(item,"vout"));
+                    if ( unspents != 0 )
+                        jaddi(unspents,jduplicate(item));
                 }
             }
             free_json(balancejson);
@@ -1412,7 +1414,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
                     {
                         vouts = cJSON_CreateArray();
                         txids = cJSON_CreateArray();
-                        iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,coinaddr,1);
+                        iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,0,coinaddr,1);
                         if ( (m= cJSON_GetArraySize(txids)) > 0 )
                         {
                             for (j=0; j<m; j++,total++)
@@ -1497,7 +1499,7 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
             jaddstr(item,"address",coinaddr);
             txids = cJSON_CreateArray();
             vouts = cJSON_CreateArray();
-            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,coinaddr,minconf)));
+            jaddnum(item,"amount",dstr(iguana_addressreceived(myinfo,coin,0,remoteaddr,txids,vouts,0,coinaddr,minconf)));
             jadd(item,"txids",txids);
             jadd(item,"vouts",vouts);
             jaddi(array,item);
