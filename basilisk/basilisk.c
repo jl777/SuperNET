@@ -824,7 +824,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        printf("poll.(%s)\n",retstr);
+        //printf("poll.(%s)\n",retstr);
         if ( (outerarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(outerarray) != 0 )

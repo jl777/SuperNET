@@ -438,7 +438,7 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
                 retval = -1;
                 if ( (valstr= basilisk_value(myinfo,coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
                 {
-                    printf("valstr.(%d) %s\n",i,valstr);
+                    //printf("valstr.(%d) %s\n",i,valstr);
                     if ( (valuearray= cJSON_Parse(valstr)) != 0 )
                     {
                         if ( is_cJSON_Array(valuearray) != 0 )
