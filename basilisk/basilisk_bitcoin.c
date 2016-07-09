@@ -496,8 +496,8 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
         jadd(valsobj,"addresses",addresses);
     }
-    printf("use addresses.(%s)\n",jprint(addresses,0));
-    printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
+    //printf("use addresses.(%s)\n",jprint(addresses,0));
+    //printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )//|| amount == 0 || addresses == 0 )
     {
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
