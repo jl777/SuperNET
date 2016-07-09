@@ -496,8 +496,8 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
         jadd(valsobj,"addresses",addresses);
     }
-    //printf("use addresses.(%s)\n",jprint(addresses,0));
-    //printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
+    printf("use addresses.(%s)\n",jprint(addresses,0));
+    printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )//|| amount == 0 || addresses == 0 )
     {
         Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
@@ -818,6 +818,8 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
             coin = iguana_coinfind(symbol);
     }
+    if ( jobj(vals,"numrequired") == 0 )
+        jaddnum(vals,"numrequired",myinfo->numrelays);
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",8);
     if ( coin != 0 )
@@ -947,7 +949,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
                 {
                     bitcoin_address(waddr->coinaddr,coin->chain->pubtype,waddr->rmd160,sizeof(waddr->rmd160));
                     jaddi(array,basilisk_history_item(&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
-                    //printf("%s numunspents.%d\n",waddr->coinaddr,waddr->numunspents);
+                    //printf("%s %s i.%d numunspents.%d\n",coin->symbol,waddr->coinaddr,i,waddr->numunspents);
                 }
             }
         }
@@ -959,7 +961,8 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
         {
             s = &myinfo->spends[i];
             //struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
-            jaddi(spends,basilisk_history_item(&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
+            if ( strcmp(s->symbol,coin->symbol) == 0 )
+                jaddi(spends,basilisk_history_item(&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
         }
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
@@ -1065,6 +1068,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                 struct basilisk_spend s;
                 //{"txid":"cd4fb72f871d481c534f15d7f639883958936d49e965f58276f0925798e762df","vin":1,"height":<spentheight>,"unspentheight":<bu.height>,"relays":2}},
                 s.vini = jint(dest,"vin");
+                strcpy(s.symbol,coin->symbol);
                 s.txid = jbits256(dest,"spentfrom");
                 s.height = spentheight;
                 s.timestamp = juint(dest,"timestamp");

@@ -910,7 +910,7 @@ void basilisks_loop(void *arg)
                     basilisk_unspents_update(myinfo,coin);
             }
         }
-        if ( (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
+        //if ( (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
