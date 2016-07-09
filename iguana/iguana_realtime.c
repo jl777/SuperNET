@@ -214,13 +214,13 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         block = coin->current->blocks[coin->current->n - 1];
         if ( _iguana_chainlink(coin,block) <= 0 )
         {
-            //printf("RT edge case couldnt link\n");
+            printf("RT edge case couldnt link\n");
         }
         else printf("RT edge case.%d\n",block->height);
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-//printf("spendvectorsaved not yet\n");
+printf("spendvectorsaved not yet\n");
         usleep(100000);
         return(0);
     }
