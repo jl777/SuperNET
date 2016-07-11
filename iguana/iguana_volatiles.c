@@ -209,7 +209,8 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             }
         }
         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
-        if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
+        coin->RTdatabad = 1;
+        /*if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;
         else
         {
@@ -218,9 +219,9 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         }
         if ( coin->current != 0 && spent_hdrsi != coin->current->hdrsi )
             iguana_bundleremove(coin,spent_hdrsi,0);
-        //coin->spendvectorsaved = 0;
-        //coin->started = 0;
-        //coin->active = 0;
+        coin->spendvectorsaved = 0;
+        coin->started = 0;
+        coin->active = 0;*/
     }
     else if ( coin->spendvectorsaved > 1 )
         printf("volatileupdate skip null rdata [%d]\n",spentchain->height/coin->current->bundleheight);
