@@ -1009,6 +1009,31 @@ int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *co
     return(-1);
 }
 
+struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symbol,bits256 txid,uint16_t vout)
+{
+    int32_t i; struct basilisk_spend *s;
+    // mutex
+    for (i=0; i<myinfo->numspends; i++)
+    {
+        if ( myinfo->spends[i].vout == vout && bits256_cmp(txid,myinfo->spends[i].txid) == 0 )
+            break;
+    }
+    if ( i == myinfo->numspends )
+    {
+        myinfo->spends = realloc(myinfo->spends,sizeof(*myinfo->spends) * (myinfo->numspends+1));
+        s = &myinfo->spends[myinfo->numspends++];
+        memset(s,0,sizeof(*s));
+        s->txid = txid;
+        s->vout = vout;
+        strcpy(s->symbol,symbol);
+        char str[65]; printf("ADDSPEND.%s %s/v%d\n",symbol,bits256_str(str,txid),vout);
+        // mutex
+        return(s);
+    }
+    // mutex
+    return(0);
+}
+
 void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *item,int32_t spentheight,int32_t relayid,int32_t RTheight)
 {
     //{"txid":"4814dc8a357f93f16271eb43806a69416ec41ab1956b128d170402b0a1b37c7f","vout":2,"address":"RSyKVKNxrSDc1Vwvh4guYb9ZDEpvMFz2rm","scriptPubKey":"76a914c210f6711e98fe9971757ede2b2dcb0507f3f25e88ac","amount":9.99920000,"timestamp":1466684518,"height":1160306,"confirmations":22528,"checkind":1157,"spent":{"hdrsi":2320,"pkind":168,"unspentind":1157,"prevunspentind":0,"satoshis":"999920000","txidind":619,"vout":2,"type":2,"fileid":0,"scriptpos":0,"scriptlen":25},"spentheight":1161800,"dest":{"error":"couldnt find spent info"}}
@@ -1070,17 +1095,20 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
             }
             waddr->numunspents++;
             printf("new unspent.%s %d script.%p [%d]\n",waddr->coinaddr,waddr->numunspents,bu.script,bu.spendlen);
-            if ( spentheight != 0 && (dest= jobj(item,"dest")) != 0 )
+        }
+        waddr->unspents[i] = bu;
+        if ( i == n && bu.spentheight != 0 && (dest= jobj(item,"dest")) != 0 )
+        {
+            struct basilisk_spend *s;
+            //{"txid":"cd4fb72f871d481c534f15d7f639883958936d49e965f58276f0925798e762df","vin":1,"height":<spentheight>,"unspentheight":<bu.height>,"relays":2}},
+            if ( (s= basilisk_addspend(myinfo,coin->symbol,bu.txid,bu.vout)) != 0 )
             {
-                struct basilisk_spend s;
-                //{"txid":"cd4fb72f871d481c534f15d7f639883958936d49e965f58276f0925798e762df","vin":1,"height":<spentheight>,"unspentheight":<bu.height>,"relays":2}},
-                s.vini = jint(dest,"vin");
-                strcpy(s.symbol,coin->symbol);
-                s.txid = jbits256(dest,"spentfrom");
-                s.height = spentheight;
-                s.timestamp = juint(dest,"timestamp");
-                s.unspentheight = bu.height;
-                s.relaymask = bu.relaymask;
+                s->spentfrom = jbits256(dest,"spentfrom");
+                s->vini = jint(dest,"vin");
+                s->height = bu.spentheight;
+                s->timestamp = juint(dest,"timestamp");
+                s->unspentheight = bu.height;
+                s->relaymask = bu.relaymask;
                 ratio = jdouble(dest,"ratio");
                 if ( (vouts= jobj(dest,"vouts")) != 0 && (m= cJSON_GetArraySize(vouts)) > 0 )
                 {
@@ -1089,19 +1117,16 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                         vitem = jitem(vouts,j);
                         if ( (destaddr= jfieldname(vitem)) != 0 )
                         {
-                            safecopy(s.destaddr,destaddr,sizeof(s.destaddr));
-                            s.ismine = (iguana_waddresssearch(myinfo,&wacct,destaddr) != 0);
-                            s.value = jdouble(vitem,jfieldname(vitem)) * SATOSHIDEN;
-                            printf("(%s %.8f) ",s.destaddr,dstr(s.value));
-                            myinfo->spends = realloc(myinfo->spends,sizeof(*myinfo->spends) * (myinfo->numspends+1));
-                            myinfo->spends[myinfo->numspends++] = s;
+                            safecopy(s->destaddr,destaddr,sizeof(s->destaddr));
+                            s->ismine = (iguana_waddresssearch(myinfo,&wacct,destaddr) != 0);
+                            s->value = jdouble(vitem,jfieldname(vitem)) * SATOSHIDEN;
+                            printf("(%s %.8f) ",s->destaddr,dstr(s->value));
                         }
                     }
-                    char str[65]; printf("dest.(%s) ratio %.8f (%s/v%d)\n",jprint(dest,0),ratio,bits256_str(str,s.txid),s.vini);
+                    char str[65]; printf("SPEND dest.(%s) ratio %.8f (%s/v%d)\n",jprint(dest,0),ratio,bits256_str(str,s->txid),s->vini);
                 }
             }
         }
-        waddr->unspents[i] = bu;
     }
 }
 
