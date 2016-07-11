@@ -545,7 +545,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     printf("%s locktime.%u\n",rawtx->name,locktime);
     if ( (retstr= basilisk_rawtx(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
     {
-        //printf("%s got.(%s)\n",str,retstr);
+        printf("%s got.(%s)\n",str,retstr);
         flag = 0;
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
@@ -564,6 +564,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     } else printf("error creating %s feetx\n",swap->iambob != 0 ? "BOB" : "ALICE");
     free_json(privkeyarray);
     free_json(valsobj);
+    printf("rawtx retval.%d\n",retval);
     return(retval);
 }
 
