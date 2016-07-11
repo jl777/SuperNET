@@ -510,7 +510,7 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
 
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    int64_t total,sum = 0; int32_t i,n,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
+    int64_t total,sum = 0; int32_t i,n,j,r,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -541,8 +541,10 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
             {
                 if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
                 {
-                    for (i=0; i<waddr->numunspents; i++)
+                    r = (rand() % waddr->numunspents);
+                    for (j=0; j<waddr->numunspents; j++)
                     {
+                        i = ((j + r) % waddr->numunspents);
                         bu = &waddr->unspents[i];
                         if ( bu->status == 0 )
                         {
@@ -552,7 +554,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                             bu->status = 1;
                             unspents++;
                             numunspents++;
-                        }
+                        } else printf("skip pending txid.%s/v%d\n",bits256_str(str,bu->txid),bu->vout);
                     }
                 }
             }

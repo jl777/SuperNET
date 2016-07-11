@@ -897,7 +897,7 @@ void basilisk_swaploop(void *_swap)
     data = malloc(maxlen);
     while ( time(NULL) < swap->expiration )
     {
-        fprintf(stderr,"swapstate.%x\n",swap->statebits);
+        fprintf(stderr,"r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
         if ( (swap->statebits & 0x01) == 0 ) // send pubkeys
         {
             datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
