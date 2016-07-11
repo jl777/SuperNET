@@ -780,8 +780,8 @@ void basilisks_loop(void *arg)
             {
                 printf("enable free for HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
-                //memset(pending,0,sizeof(*pending));
-                //free(pending);
+                memset(pending,0,sizeof(*pending));
+                free(pending);
             }
         }
         portable_mutex_unlock(&myinfo->basilisk_mutex);
