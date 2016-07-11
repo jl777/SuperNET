@@ -990,7 +990,7 @@ int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *co
             for (i=0; i<waddr->numunspents; i++)
             {
                 bu = &waddr->unspents[i];
-                if ( bu->hdrsi == hdrsi && bu->unspentind == unspentind && bu->value == value )
+                if ( bu->status == 0 && bu->hdrsi == hdrsi && bu->unspentind == unspentind && bu->value == value )
                 {
                     *txidp = bu->txid;
                     *voutp = bu->vout;
@@ -1044,7 +1044,9 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                 already_spent = waddr->unspents[i].spentheight;
                 bu.relaymask = waddr->unspents[i].relaymask;
                 if ( (bu.status= waddr->unspents[i].status) != 0 )
-                    printf("mempool spend for %s/%d\n",bits256_str(str,bu.txid),bu.vout);
+                {
+                    //printf("mempool spend for %s/%d\n",bits256_str(str,bu.txid),bu.vout);
+                }
                 break;
             }
         }
