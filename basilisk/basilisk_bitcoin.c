@@ -409,9 +409,9 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
 
 int32_t basilisk_voutvin_validate(struct iguana_info *coin,char *rawtx,uint64_t inputsum,uint64_t amount,uint64_t txfee)
 {
-    static int counter;
-    if ( counter++ < 10 )
-        printf("validate.(%s) vout's vin\n",rawtx);
+    //static int counter;
+    //if ( counter++ < 10 )
+    //    printf("validate.(%s) vout's vin\n",rawtx);
     if ( rawtx != 0 )
     {
         return(0); // convert rawtx, add up outputs, verify totals
@@ -1043,6 +1043,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                     RTheight = waddr->unspents[i].RTheight;
                 already_spent = waddr->unspents[i].spentheight;
                 bu.relaymask = waddr->unspents[i].relaymask;
+                bu.status = waddr->unspents[i].status;
                 break;
             }
         }
