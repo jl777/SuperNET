@@ -778,7 +778,7 @@ void basilisks_loop(void *arg)
         {
             if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
             {
-                printf("enable free for HASH_DELETE.(%p)\n",pending);
+                //printf("enable free for HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
                 memset(pending,0,sizeof(*pending));
                 free(pending);
