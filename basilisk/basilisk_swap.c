@@ -53,6 +53,7 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
+//#define BASILISK_DISABLETX
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -115,7 +116,9 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
 {
     cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n;
+#ifdef BASILISK_DISABLETX
     return(10);
+#endif
     argjson = cJSON_CreateObject();
     jaddbits256(argjson,"txid",rawtx->actualtxid);
     jaddnum(argjson,"vout",0);
@@ -157,8 +160,10 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
     memset(txid.bytes,0,sizeof(txid));
     if ( data != 0 && datalen != 0 )
     {
+#ifdef BASILISK_DISABLETX
         txid = bits256_doublesha256(0,data,datalen);
         return(txid);
+#endif
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
         txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
