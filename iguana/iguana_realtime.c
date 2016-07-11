@@ -220,7 +220,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-printf("spendvectorsaved not yet\n");
+//printf("spendvectorsaved not yet\n");
         usleep(100000);
         return(0);
     }

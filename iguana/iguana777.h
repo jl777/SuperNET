@@ -64,6 +64,7 @@ struct supernet_info
     int32_t numrelays,RELAYID;
     // compatibility
     bits256 pangea_category,instantdex_category;
+    uint8_t logs[256],exps[510];
 };
 
 #endif

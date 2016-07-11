@@ -175,7 +175,7 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 char *OS_portable_path(char *str);
 int32_t OS_nonportable_renamefile(char *fname,char *newfname);
 int32_t  OS_nonportable_launch(char *args[]);
-void OS_nonportable_randombytes(unsigned char *x,long xlen);
+void OS_nonportable_randombytes(uint8_t *x,long xlen);
 int32_t OS_nonportable_init();
 #endif
 
@@ -183,7 +183,7 @@ void OS_portable_init();
 void OS_init();
 
 double OS_portable_milliseconds();
-void OS_portable_randombytes(unsigned char *x,long xlen);
+void OS_portable_randombytes(uint8_t *x,long xlen);
 int32_t OS_portable_truncate(char *fname,long filesize);
 char *OS_portable_path(char *str);
 void OS_remove_directory(char *dirname);
@@ -203,7 +203,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 double OS_milliseconds();
 
-void OS_randombytes(unsigned char *x,long xlen);
+void OS_randombytes(uint8_t *x,long xlen);
 
 int32_t OS_truncate(char *fname,long filesize);
 char *OS_compatible_path(char *str);
@@ -261,12 +261,12 @@ int32_t is_decimalstr(char *str);
 void tolowercase(char *str);
 char *clonestr(char *str);
 int32_t is_hexstr(char *str,int32_t n);
-int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
+int32_t decode_hex(uint8_t *bytes,int32_t n,char *hex);
 void reverse_hexstr(char *str);
 int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
 int32_t bitweight(uint64_t x);
-unsigned char _decode_hex(char *hex);
+uint8_t _decode_hex(char *hex);
 char *uppercase_str(char *buf,char *str);
 char *lowercase_str(char *buf,char *str);
 int32_t strsearch(char *strs[],int32_t num,char *name);
@@ -371,7 +371,6 @@ bits256 bits256_from_compact(uint32_t c);
 uint32_t bits256_to_compact(bits256 x);
 bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
-void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
 void calc_hmac_sha256(uint8_t *mac,int32_t maclen,uint8_t *key,int32_t key_size,uint8_t *message,int32_t len);
 int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);

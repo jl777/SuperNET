@@ -64,9 +64,8 @@ void gfshare_ctx_enc_setsecret(gfshare_ctx* /* ctx */,
  * 'share' must be preallocated and at least 'size' bytes long.
  * 'sharenr' is the index into the 'sharenrs' array of the share you want.
  */
-void gfshare_ctx_enc_getshare(gfshare_ctx* /* ctx */,
-                              unsigned char /* sharenr */,
-                              unsigned char* /* share */);
+void gfshare_ctx_encgetshare(uint8_t *logs,uint8_t *exps,gfshare_ctx* /* ctx */, unsigned char /* sharenr */, unsigned char* /* share */);
+void gfshare_ctx_enc_getshare(gfshare_ctx* /* ctx */, unsigned char /* sharenr */, unsigned char* /* share */);
 
 /* ----------------------------------------------------[ Recombination ]---- */
 
@@ -84,8 +83,9 @@ void gfshare_ctx_dec_giveshare(gfshare_ctx* /* ctx */,
 /* Extract the secret by interpolation of the shares.
  * secretbuf must be allocated and at least 'size' bytes long
  */
-void gfshare_ctx_dec_extract(gfshare_ctx* /* ctx */,
-                             unsigned char* /* secretbuf */);
+
+void gfshare_ctx_decextract(uint8_t *logs,uint8_t *exps,gfshare_ctx* /* ctx */, unsigned char* /* secretbuf */);
+void gfshare_ctx_dec_extract(gfshare_ctx* /* ctx */, unsigned char* /* secretbuf */);
 
 #endif /* LIBGFSHARE_H */
 

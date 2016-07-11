@@ -17,33 +17,6 @@
 // requestid is invariant for a specific request
 // quoteid is invariant for a specific request after dest fields are set
 
-uint32_t basilisk_requestid(struct basilisk_request *rp)
-{
-    struct basilisk_request R;
-    R = *rp;
-    R.requestid = R.quoteid = R.quotetime = 0;
-    R.destamount = 0;
-    R.relaybits = 0;
-    memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
-    if ( 0 )
-    {
-        int32_t i;
-        for (i=0; i<sizeof(R); i++)
-            printf("%02x",((uint8_t *)&R)[i]);
-        printf(" <- crc.%u\n",calc_crc32(0,(void *)&R,sizeof(R)));
-        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)));
-    }
-    return(calc_crc32(0,(void *)&R,sizeof(R)));
-}
-
-uint32_t basilisk_quoteid(struct basilisk_request *rp)
-{
-    struct basilisk_request R;
-    R = *rp;
-    R.requestid = R.quoteid = R.relaybits = 0;
-    return(calc_crc32(0,(void *)&R,sizeof(R)));
-}
-
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp)
 {
     int32_t len = 0;
@@ -91,38 +64,9 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
     return(0);
 }
 
-struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *reqjson)
-{
-    uint32_t requestid,quoteid; //char *msgstr;
-    memset(rp,0,sizeof(*rp));
-    rp->hash = jbits256(reqjson,"hash");
-    rp->desthash = jbits256(reqjson,"desthash");
-    rp->srcamount = j64bits(reqjson,"srcamount");
-    rp->minamount = j64bits(reqjson,"minamount");
-    rp->destamount = j64bits(reqjson,"destamount");
-    requestid = juint(reqjson,"requestid");
-    quoteid = juint(reqjson,"quoteid");
-    if ( jstr(reqjson,"relay") != 0 )
-        rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
-    rp->timestamp = juint(reqjson,"timestamp");
-    rp->quotetime = juint(reqjson,"quotetime");
-    safecopy(rp->src,jstr(reqjson,"src"),sizeof(rp->src));
-    safecopy(rp->dest,jstr(reqjson,"dest"),sizeof(rp->dest));
-    if ( quoteid != 0 )
-    {
-        rp->quoteid = basilisk_quoteid(rp);
-        if ( quoteid != rp->quoteid )
-            printf("basilisk_parsejson quoteid.%u != %u error\n",quoteid,rp->quoteid);
-    }
-    rp->requestid = basilisk_requestid(rp);
-    if ( requestid != rp->requestid )
-        printf("basilisk_parsejson requestid.%u != %u error\n",requestid,rp->requestid);
-    return(rp);
-}
-
 cJSON *basilisk_requestjson(struct basilisk_request *rp)
 {
-    char ipaddr[64]; cJSON *item = cJSON_CreateObject(); //*msgobj,
+    char ipaddr[64]; cJSON *item = cJSON_CreateObject();
     if ( rp->relaybits != 0 )
     {
         expand_ipbits(ipaddr,rp->relaybits);
@@ -596,12 +540,3 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid)
     }
 }
 #include "../includes/iguana_apiundefs.h"
-
-int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_request *rp)
-{
-    if ( bits256_cmp(rp->hash,ref->hash) != 0 || memcmp(rp->src,ref->src,sizeof(ref->src)) != 0 || memcmp(rp->dest,ref->dest,sizeof(ref->dest)) != 0 || rp->srcamount != ref->srcamount || rp->timestamp != ref->timestamp )
-    {
-        printf("basilisk_request_listprocess mismatched hash\n");
-        return(-1);
-    } else return(0);
-}

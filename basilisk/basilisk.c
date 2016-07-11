@@ -409,6 +409,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "basilisk_tradebot.c"
 #include "basilisk_swap.c"
 #include "basilisk_DEX.c"
 #include "basilisk_ping.c"
@@ -726,98 +727,6 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         free(ptr);
 }
 
-double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
-{
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
-    memset(issueR,0,sizeof(*issueR));
-    minamount = list[0].minamount;
-    //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
-    if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
-        pendingid = active->req.quoteid;
-    if ( bits256_cmp(myinfo->myaddr.persistent,list[0].hash) == 0 ) // my request
-        myrequest = 1;
-    for (i=0; i<n; i++)
-    {
-        if ( basilisk_request_cmpref(&list[0],&list[i]) != 0 )
-            return(-1);
-        if ( list[i].quoteid != 0 )
-        {
-            if ( bits256_cmp(myinfo->myaddr.persistent,list[i].desthash) == 0 ) // my quoteid
-                myrequest |= 2;
-            havequoteflag++;
-            if ( pendingid == 0 )
-            {
-                if ( list[i].destamount > maxamount )
-                {
-                    maxamount = list[i].destamount;
-                    maxi = i;
-                }
-            }
-            else if ( active != 0 && pendingid == list[i].quoteid )
-            {
-            }
-        } else noquoteflag++;
-    }
-    //printf("myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    if ( myrequest == 0 && pendingid == 0 && noquoteflag != 0 )
-    {
-        double retvals[4],aveprice;
-        aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,dstr(list[0].srcamount));
-        destamount = 0.99 * aveprice * list[0].srcamount;
-        printf("destamount %.8f aveprice %.8f minamount %.8f\n",dstr(destamount),aveprice,dstr(minamount));
-        if ( destamount > 0 && destamount >= maxamount && destamount >= minamount )
-        {
-            metric = 1.;
-            *issueR = list[0];
-            issueR->desthash = myinfo->myaddr.persistent;
-            issueR->destamount = destamount;
-            issueR->quotetime = (uint32_t)time(NULL);
-        }
-    }
-    else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
-    {
-        if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
-        {
-            printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
-            *issueR = list[maxi];
-            if ( minamount > 0 )
-                metric = (dstr(maxamount) / dstr(minamount)) - 1.;
-            else metric = 1.;
-        }
-    }
-    return(metric);
-}
-
-double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
-{
-    cJSON *array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
-    if ( (array= jarray(&n,retjson,"result")) != 0 )
-    {
-        for (i=m=0; i<n; i++)
-        {
-            item = jitem(array,i);
-            if ( i != 0 )
-            {
-                basilisk_parsejson(&R,item);
-                if ( refR.requestid == R.requestid )
-                    list[m++] = R;
-                else
-                {
-                    if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                        *issueR = tmpR, hwm = metric;
-                    m = 0;
-                }
-            }
-            if ( m < sizeof(list)/sizeof(*list) )
-                basilisk_parsejson(&list[m++],item);
-        }
-        if ( m > 0 && m < sizeof(list)/sizeof(*list) )
-            if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                *issueR = tmpR, hwm = metric;
-    }
-    return(hwm);
-}
-
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     char *retstr; cJSON *outerarray; int32_t i,n; struct basilisk_request issueR; double hwm = 0.;
@@ -869,7 +778,7 @@ void basilisks_loop(void *arg)
         {
             if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
             {
-                //printf("HASH_DELETE.(%p)\n",pending);
+                printf("enable free for HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
                 //memset(pending,0,sizeof(*pending));
                 //free(pending);

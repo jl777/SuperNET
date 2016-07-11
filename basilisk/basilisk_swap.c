@@ -1088,7 +1088,11 @@ void basilisk_swaploop(void *_swap)
                         basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend);
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                             printf("Bob error spending alice payment\n");
-                        else printf("Bob spend alicepayment\n");
+                        else
+                        {
+                            basilisk_swap_balancingtrade(myinfo,swap,1);
+                            printf("Bob spends alicepayment\n");
+                        }
                         break;
                     }
                     else if ( basilisk_privAm_extract(myinfo,swap) == 0 )
@@ -1097,7 +1101,11 @@ void basilisk_swaploop(void *_swap)
                         swap->statebits |= 0x40000;
                         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                             printf("Bob error spending alice payment after privAm\n");
-                        else printf("Bob spends alicepayment\n");
+                        else
+                        {
+                            basilisk_swap_balancingtrade(myinfo,swap,1);
+                            printf("Bob spends alicepayment\n");
+                        }
                         break;
                     }
                     else if ( swap->bobpayment.locktime != 0 && time(NULL) > swap->bobpayment.locktime )
@@ -1199,6 +1207,7 @@ void basilisk_swaploop(void *_swap)
                             data[datalen++] = swap->privAm.bytes[j];
                         swap->statebits |= basilisk_swapsend(myinfo,swap,0x40000,data,datalen,0x20000);
                         swap->sleeptime = 1;
+                        basilisk_swap_balancingtrade(myinfo,swap,0);
                     }
                 }
                 else if ( (swap->statebits & 0x40000) == 0 )
@@ -1264,19 +1273,4 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
     return(swap);
-}
-
-struct basilisk_swap *basilisk_request_started(struct supernet_info *myinfo,uint32_t requestid)
-{
-    int32_t i; struct basilisk_swap *active = 0;
-    portable_mutex_lock(&myinfo->DEX_swapmutex);
-    for (i=0; i<myinfo->numswaps; i++)
-        if ( myinfo->swaps[i]->req.requestid == requestid )
-        {
-            //printf("REQUEST STARTED.[%d] <- req.%u\n",i,requestid);
-            active = myinfo->swaps[i];
-            break;
-        }
-    portable_mutex_unlock(&myinfo->DEX_swapmutex);
-    return(active);
 }

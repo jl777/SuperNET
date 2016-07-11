@@ -28,6 +28,7 @@ While it is not expected that there will be more than 256 such blockchains, by u
  'b' -> bitcoin/BitcoinDark (BTC)
  'c' -> colored coins
  'e' -> ethereum (ETH)
+ 'h' -> HEAT
  'n' -> NXT
  'o' -> open assets
  's' -> BURST

@@ -336,7 +336,7 @@ void pangea_encoded(PANGEA_HANDARGS)
         return;
     }
     hand->encodestarted = (uint32_t)time(NULL);//pm->sig.timestamp;
-    cards777_encode(tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->priv.myind],tp->G.M,(void *)data,tp->G.numcards,N);
+    cards777_encode(myinfo,tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->priv.myind],tp->G.M,(void *)data,tp->G.numcards,N);
     PNACL_message("player.%d ind.%d encodes into %p %llx -> %llx next.%d N %d\n",tp->priv.myind,tp->priv.myind,tp->priv.outcards,(long long)*(uint64_t *)data,(long long)tp->priv.outcards[0].txid,pangea_nextnode(tp),N);
     if ( tp->priv.myind > 0 )
     {

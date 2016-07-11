@@ -92,11 +92,13 @@ int32_t bits256_cmp(bits256 a,bits256 b)
     int32_t i;
     for (i=3; i>=0; i--)
     {
+        //printf("%llx %llx, ",(long long)a.ulongs[i],(long long)b.ulongs[i]);
         if ( a.ulongs[i] > b.ulongs[i] )
             return(1);
         else if ( a.ulongs[i] < b.ulongs[i] )
             return(-1);
     }
+    //printf("thesame\n");
     return(0);
 }
 

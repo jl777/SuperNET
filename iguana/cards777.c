@@ -130,11 +130,11 @@ void cards777_layer(bits256 *layered,bits256 *xoverz,bits256 *incards,int32_t nu
     }
 }
 
-int32_t cards777_calcmofn(uint8_t *allshares,uint8_t *myshares[],uint8_t *sharenrs,int32_t M,bits256 *xoverz,int32_t numcards,int32_t N)
+int32_t cards777_calcmofn(struct supernet_info *myinfo,uint8_t *allshares,uint8_t *myshares[],uint8_t *sharenrs,int32_t M,bits256 *xoverz,int32_t numcards,int32_t N)
 {
-    int32_t size,j;
+    int32_t size,j; uint8_t space[8192];
     size = N * sizeof(bits256) * numcards;
-    calc_shares(allshares,(void *)xoverz,size,size,M,N,sharenrs); // PM &allshares[playerj * size] to playerJ
+    calc_shares(myinfo,allshares,(void *)xoverz,size,size,M,N,sharenrs,space,sizeof(space)); // PM &allshares[playerj * size] to playerJ
     for (j=0; j<N; j++)
         myshares[j] = &allshares[j * size];
     return(size);
@@ -142,7 +142,7 @@ int32_t cards777_calcmofn(uint8_t *allshares,uint8_t *myshares[],uint8_t *sharen
 
 uint8_t *cards777_recover(uint8_t *shares[],uint8_t *sharenrs,int32_t M,int32_t numcards,int32_t N)
 {
-    void *G; int32_t i,size; uint8_t *recover,recovernrs[255];
+    void *G; int32_t i,size; uint8_t *recover,recovernrs[255],space[8192];
     size = N * sizeof(bits256) * numcards;
     if ( (recover= calloc(1,size)) == 0 )
     {
@@ -153,12 +153,12 @@ uint8_t *cards777_recover(uint8_t *shares[],uint8_t *sharenrs,int32_t M,int32_t 
     for (i=0; i<N; i++)
         if ( shares[i] != 0 )
             recovernrs[i] = sharenrs[i];
-    G = gfshare_ctx_init_dec(recovernrs,N,size);
+    G = gfshare_ctx_initdec(recovernrs,N,size,space,sizeof(space));
     for (i=0; i<N; i++)
         if ( shares[i] != 0 )
             gfshare_ctx_dec_giveshare(G,i,shares[i]);
     gfshare_ctx_dec_newshares(G,recovernrs);
-    gfshare_ctx_dec_extract(G,recover);
+    gfshare_ctx_decextract(0,0,G,recover);
     gfshare_ctx_free(G);
     return(recover);
 }
@@ -229,14 +229,14 @@ bits256 cards777_initdeck(bits256 *cards,bits256 *cardpubs,int32_t numcards,int3
     return(prod);
 }
 
-uint8_t *cards777_encode(bits256 *encoded,bits256 *xoverz,uint8_t *allshares,uint8_t *myshares[],uint8_t sharenrs[255],int32_t M,bits256 *ciphers,int32_t numcards,int32_t N)
+uint8_t *cards777_encode(struct supernet_info *myinfo,bits256 *encoded,bits256 *xoverz,uint8_t *allshares,uint8_t *myshares[],uint8_t sharenrs[255],int32_t M,bits256 *ciphers,int32_t numcards,int32_t N)
 {
     bits256 shuffled[CARDS777_MAXCARDS * CARDS777_MAXPLAYERS];
     cards777_shuffle(shuffled,ciphers,numcards,N);
     cards777_layer(encoded,xoverz,shuffled,numcards,N);
     memset(sharenrs,0,255);
     init_sharenrs(sharenrs,0,N,N);
-    cards777_calcmofn(allshares,myshares,sharenrs,M,xoverz,numcards,N);
+    cards777_calcmofn(myinfo,allshares,myshares,sharenrs,M,xoverz,numcards,N);
     memcpy(ciphers,shuffled,numcards * N * sizeof(bits256));
     if ( 0 )
     {

@@ -446,5 +446,11 @@ struct bitcoin_spend
 };
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
+
+struct _gfshare_ctx
+{
+    uint32_t sharecount,threshold,size,buffersize,allocsize;
+    uint8_t sharenrs[255],buffer[];
+};
 #endif
 

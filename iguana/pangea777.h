@@ -118,7 +118,6 @@ bits256 xoverz_donna(bits256 a);
 bits256 crecip_donna(bits256 a);
 bits256 fmul_donna(bits256 a,bits256 b);
 
-void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
 int32_t init_sharenrs(unsigned char sharenrs[255],unsigned char *orig,int32_t m,int32_t n);
 
 struct pangea_msghdr
@@ -146,7 +145,7 @@ bits256 cards777_pubkeys(bits256 *pubkeys,int32_t numcards,bits256 cmppubkey);
 int32_t cards777_checkcard(bits256 *cardprivp,int32_t cardi,int32_t slot,int32_t destplayer,bits256 playerpriv,bits256 *cardpubs,int32_t numcards,bits256 card);
 int32_t cards777_validate(bits256 cardpriv,bits256 final,bits256 *cardpubs,int32_t numcards,bits256 *audit,int32_t numplayers,bits256 playerpub);
 bits256 cards777_decode(bits256 *seedp,bits256 *xoverz,int32_t destplayer,bits256 cipher,bits256 *outcards,int32_t numcards,int32_t N);
-uint8_t *cards777_encode(bits256 *encoded,bits256 *xoverz,uint8_t *allshares,uint8_t *myshares[],uint8_t sharenrs[255],int32_t M,bits256 *ciphers,int32_t numcards,int32_t N);
+uint8_t *cards777_encode(struct supernet_info *myinfo,bits256 *encoded,bits256 *xoverz,uint8_t *allshares,uint8_t *myshares[],uint8_t sharenrs[255],int32_t M,bits256 *ciphers,int32_t numcards,int32_t N);
 
 void pangea_sendcmd(struct supernet_info *myinfo,struct table_info *tp,char *cmdstr,int32_t destplayer,uint8_t *data,int32_t datalen,int32_t cardi,int32_t turni);
 void pangea_summaryadd(struct supernet_info *myinfo,struct table_info *tp,uint8_t type,void *arg0,int32_t size0,void *arg1,int32_t size1);

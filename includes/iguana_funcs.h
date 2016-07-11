@@ -413,6 +413,7 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
 cJSON *iguana_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int32_t hdrsi,uint32_t unspentind,struct iguana_txid *T,struct iguana_unspent *up,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t spentheight,char *remoteaddr);
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struct iguana_waccount **wacctp,char *coinaddr);
+void calc_shares(struct supernet_info *myinfo,uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int32_t M,int32_t N,uint8_t *sharenrs,uint8_t *space,int32_t spacesize);
 int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,int16_t hdrsi,uint32_t unspentind,int64_t value);
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,cJSON *unspents,cJSON *spends,char *coinaddr,int32_t minconf,int32_t firstheight);
 cJSON *iguana_walletjson(struct supernet_info *myinfo);
@@ -536,6 +537,29 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp);
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume);
 int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
 int64_t iguana_lockval(int32_t finalized,int64_t locktime);
+
+// ------------------------------------------------------[ Preparation ]----
+// Initialise a gfshare context for producing shares
+gfshare_ctx *gfshare_ctx_initenc(uint8_t * /* sharenrs */,uint32_t /* sharecount */, uint8_t /* threshold */,uint32_t /* size */,void *,int32_t);
+// Initialise a gfshare context for recombining shares
+gfshare_ctx *gfshare_ctx_initdec(uint8_t * /* sharenrs */,uint32_t /* sharecount */,uint32_t /* size */,void *,int32_t);
+// Free a share context's memory
+void gfshare_ctx_free(gfshare_ctx * /* ctx */);
+// --------------------------------------------------------[ Splitting ]----
+// Provide a secret to the encoder. (this re-scrambles the coefficients)
+void gfshare_ctx_enc_setsecret(gfshare_ctx * /* ctx */,uint8_t * /* secret */);
+// Extract a share from the context. 'share' must be preallocated and at least 'size' bytes long. 'sharenr' is the index into the 'sharenrs' array of the share you want.
+void gfshare_ctx_encgetshare(uint8_t *logs,uint8_t *exps,gfshare_ctx * /* ctx */,uint8_t /* sharenr */,uint8_t * /* share */);
+// ----------------------------------------------------[ Recombination ]----
+// Inform a recombination context of a change in share indexes
+void gfshare_ctx_dec_newshares(gfshare_ctx * /* ctx */, uint8_t * /* sharenrs */);
+// Provide a share context with one of the shares. The 'sharenr' is the index into the 'sharenrs' array
+void gfshare_ctx_dec_giveshare(gfshare_ctx * /* ctx */,uint8_t /* sharenr */,uint8_t * /* share */);
+// Extract the secret by interpolation of the shares. secretbuf must be allocated and at least 'size' bytes long
+void gfshare_ctx_decextract(uint8_t *logs,uint8_t *exps,gfshare_ctx * /* ctx */,uint8_t * /* secretbuf */);
+void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510]);
+int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n);
+void iguana_schnorr(struct supernet_info *myinfo);
 
 #include "../includes/iguana_api.h"
 
