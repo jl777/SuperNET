@@ -134,7 +134,6 @@ extern int32_t IGUANA_NUMHELPERS;
 #define NODE_GETUTXO (1 << 1)
 #define NODE_BLOOM (1 << 2)
 
-#define PROTOCOL_VERSION 70002
 #define INIT_PROTO_VERSION 209 // initial proto version, to be increased after version/verack negotiation
 #define GETHEADERS_VERSION 31800 // In this version, 'getheaders' was introduced.
 #define MIN_PEER_PROTO_VERSION GETHEADERS_VERSION // disconnect from peers older than this proto version
@@ -148,6 +147,8 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MEMPOOL_GD_VERSION 60002 // "mempool" command, enhanced "getdata" behavior starts with this version
 #define NO_BLOOM_VERSION 70011 // "filter*" disabled without NODE_BLOOM after and including this version
 #define PROTOCOL_HEADERS_VERSION 70012
+//#define PROTOCOL_VERSION 70002
+#define PROTOCOL_VERSION PROTOCOL_HEADERS_VERSION
 
 #define MSG_TX 1
 #define MSG_BLOCK 2

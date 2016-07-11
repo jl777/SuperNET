@@ -271,6 +271,8 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
     }
     if ( (txobj= bitcoin_data2json(rawtx->coin,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),rawtx->txbytes,rawtx->datalen)) != 0 )
     {
+        rawtx->actualtxid = rawtx->signedtxid;
+        char str[65]; printf("got txid.%s\n",bits256_str(str,rawtx->signedtxid));
         rawtx->locktime = rawtx->msgtx.lock_time;
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
