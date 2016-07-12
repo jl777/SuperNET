@@ -56,25 +56,32 @@ struct iguana_waddress *iguana_waddressalloc(uint8_t addrtype,char *symbol,char 
 
 struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
-    struct iguana_waccount *wacct;
-    HASH_FIND(hh,myinfo->wallet,account,strlen(account)+1,wacct);
+    struct iguana_waccount *wacct = 0;
+    if ( account != 0 && wacct != 0 )
+        HASH_FIND(hh,myinfo->wallet,account,strlen(account)+1,wacct);
     //printf("waccountfind.(%s) -> wacct.%p\n",account,wacct);
     return(wacct);
 }
 
 struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
-    struct iguana_waccount *wacct,*ptr; int32_t len = (int32_t)strlen(account)+1;
-    HASH_FIND(hh,myinfo->wallet,account,len,wacct);
-    if ( wacct == 0 )
+    struct iguana_waccount *wacct=0,*ptr; int32_t len;
+    if ( account != 0 )
     {
-        wacct = mycalloc('w',1,sizeof(*wacct));
-        strcpy(wacct->account,account);
-        HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
-        printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
-        myinfo->dirty = (uint32_t)time(NULL);
-        if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
-            printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
+        if ( account[0] == 0 )
+            account = "default";
+        len = (int32_t)strlen(account)+1;
+        HASH_FIND(hh,myinfo->wallet,account,len,wacct);
+        if ( wacct == 0 )
+        {
+            wacct = mycalloc('w',1,sizeof(*wacct));
+            strcpy(wacct->account,account);
+            HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
+            printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+            myinfo->dirty = (uint32_t)time(NULL);
+            if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
+                printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
+        }
     }
     return(wacct);
 }

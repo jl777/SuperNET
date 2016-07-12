@@ -1097,6 +1097,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
             printf("new unspent.%s %d script.%p [%d]\n",waddr->coinaddr,waddr->numunspents,bu.script,bu.spendlen);
         }
         waddr->unspents[i] = bu;
+        //PREVENT DOUBLE SPENDS!!! and use p2sh
         if ( i == n && bu.spentheight != 0 && (dest= jobj(item,"dest")) != 0 )
         {
             struct basilisk_spend *s;
