@@ -1173,7 +1173,7 @@ void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *c
                 {
                     if ( (jstr(retarray,"ipaddr") == 0 || strcmp(jstr(retarray,"ipaddr"),myinfo->ipaddr) != 0) && (n= cJSON_GetArraySize(retarray)) > 0 )
                     {
-                        //printf("n.%d GOT.(%s)\n",n,jprint(retarray,0));
+                        printf("n.%d GOT.(%s)\n",n,jprint(retarray,0));
                         for (i=0; i<n; i++)
                             basilisk_relay_unspentsprocess(myinfo,coin,jitem(retarray,i));
                     } else basilisk_relay_unspentsprocess(myinfo,coin,retarray);
