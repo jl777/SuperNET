@@ -491,13 +491,30 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct basilisk_swap 
 
 int32_t basilisk_rawtx_return(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx,cJSON *item,cJSON *privkeyarray,int32_t lockinputs)
 {
-    char *signedtx,*txbytes; cJSON *vins; int32_t retval = -1;
+    char *signedtx,*txbytes; cJSON *vins; int32_t i,n,retval = -1;
     if ( (txbytes= jstr(item,"rawtx")) != 0 && (vins= jobj(item,"vins")) != 0 )
     {
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray,0)) != 0 )
         {
             if ( lockinputs != 0 )
+            {
                 iguana_unspentslock(myinfo,rawtx->coin,vins);
+                if ( (n= cJSON_GetArraySize(vins)) != 0 )
+                {
+                    bits256 txid; int32_t vout;
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(vins,i);
+                        txid = jbits256(item,"txid");
+                        vout = jint(item,"prevout");
+                        if ( bits256_nonz(txid) != 0 )
+                        {
+                            char str[65]; printf("call addspend.(%s) v.%d\n",bits256_str(str,txid),vout);
+                            basilisk_addspend(myinfo,rawtx->coin->symbol,txid,vout);
+                        }
+                    }
+                }
+            }
             rawtx->datalen = (int32_t)strlen(signedtx) >> 1;
             rawtx->txbytes = calloc(1,rawtx->datalen);
             decode_hex(rawtx->txbytes,rawtx->datalen,signedtx);
