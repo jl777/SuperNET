@@ -1017,7 +1017,7 @@ struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symb
     {
         if ( myinfo->spends[i].vout == vout && bits256_cmp(txid,myinfo->spends[i].txid) == 0 )
         {
-            char str[65]; printf("found spend.%s v%d skip it\n",bits256_str(Str,txid),vout);
+            char str[65]; printf("found spend.%s v%d skip it\n",bits256_str(str,txid),vout);
             return(&myinfo->spends[i]);
         }
     }
