@@ -1009,16 +1009,16 @@ int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *co
     return(-1);
 }
 
-struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symbol,bits256 txid,uint16_t vout)
+struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symbol,bits256 txid,uint16_t vout,int32_t addflag)
 {
     int32_t i; struct basilisk_spend *s;
     // mutex
     for (i=0; i<myinfo->numspends; i++)
     {
         if ( myinfo->spends[i].vout == vout && bits256_cmp(txid,myinfo->spends[i].txid) == 0 )
-            break;
+            return(&myinfo->spends[i]);
     }
-    if ( i == myinfo->numspends )
+    if ( addflag != 0 && i == myinfo->numspends )
     {
         myinfo->spends = realloc(myinfo->spends,sizeof(*myinfo->spends) * (myinfo->numspends+1));
         s = &myinfo->spends[myinfo->numspends++];
@@ -1102,7 +1102,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         {
             struct basilisk_spend *s;
             //{"txid":"cd4fb72f871d481c534f15d7f639883958936d49e965f58276f0925798e762df","vin":1,"height":<spentheight>,"unspentheight":<bu.height>,"relays":2}},
-            if ( (s= basilisk_addspend(myinfo,coin->symbol,bu.txid,bu.vout)) != 0 )
+            if ( (s= basilisk_addspend(myinfo,coin->symbol,bu.txid,bu.vout,1)) != 0 )
             {
                 s->spentfrom = jbits256(dest,"spentfrom");
                 s->vini = jint(dest,"vin");

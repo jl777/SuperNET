@@ -546,12 +546,12 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                     {
                         i = ((j + r) % waddr->numunspents);
                         bu = &waddr->unspents[i];
-                        if ( bu->status == 0 )
+                        if ( basilisk_addspend(myinfo,coin->symbol,bu->txid,bu->vout,0) == 0 )
                         {
                             unspents[0] = ((uint64_t)bu->hdrsi << 32) | bu->unspentind;
                             unspents[1] = bu->value;
                             sum += bu->value;
-                            basilisk_addspend(myinfo,coin->symbol,bu->txid,bu->vout);
+                            basilisk_addspend(myinfo,coin->symbol,bu->txid,bu->vout,1);
                             unspents++;
                             numunspents++;
                         } else printf("skip pending txid.%s/v%d\n",bits256_str(str,bu->txid),bu->vout);
