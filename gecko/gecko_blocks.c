@@ -158,7 +158,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
                     if ( bp->blocks[i] != 0 && bp->blocks[i]->txvalid != 0 )
                         bp->numsaved++;
                 virt->current = bp;
-                iguana_RTspendvectors(virt,bp);
+                iguana_RTspendvectors(myinfo,virt,bp);
                 iguana_RTramchainalloc("RTbundle",virt,bp);
                 iguana_update_balances(virt);
                 iguana_realtime_update(myinfo,virt);

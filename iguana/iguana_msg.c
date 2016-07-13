@@ -863,7 +863,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 }
                 else
                 {
-                    len = iguana_peergetrequest(coin,addr,data,recvlen,1);
+                    len = iguana_peergetrequest(myinfo,coin,addr,data,recvlen,1);
                 }
             }
         }
@@ -938,7 +938,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     } else printf("got unexpected n.%d for headers\n",n);
                 }
                 else if ( addr->headerserror == 0 )
-                    len = iguana_peergetrequest(coin,addr,data,recvlen,0);
+                    len = iguana_peergetrequest(myinfo,coin,addr,data,recvlen,0);
             }
         }
         else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )

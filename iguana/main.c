@@ -555,6 +555,21 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
                         free(str);
             }
             free_json(argjson);
+            if ( 0 )
+            {
+                uint32_t buf[81],c;
+                OS_randombytes((void *)buf,sizeof(buf));
+                printf("(");
+                for (i=0; i<81; i++)
+                {
+                    c = buf[i] % 27;
+                    if ( c == 26 )
+                        c = '9';
+                    else c += 'a';
+                    printf("%c",c);
+                }
+                printf(") <- IOTA random passphrase\n");
+            }
         } else printf("error parsing.(%s)\n",(char *)argstr);
         if ( argstr != arg )
             free(argstr);

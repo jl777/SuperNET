@@ -151,7 +151,7 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
     }
 }
 
-void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
+void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t iterate,lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
@@ -166,7 +166,7 @@ void iguana_RTspendvectors(struct iguana_info *coin,struct iguana_bundle *bp)
 #else
     iterate = 0;
 #endif
-    if ( iguana_spendvectors(coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
+    if ( iguana_spendvectors(myinfo,coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         coin->RTdatabad = 1;
@@ -228,7 +228,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     {
         if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) && bp != coin->current )
         {
-            if ( iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,0,0) < 0 )
+            if ( iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,0,0) < 0 )
             {
                 printf("error generating spendvectors.[%d], skipping\n",i);
                 return(0);
@@ -346,7 +346,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             //printf("RTgenesis verified\n");
             if ( (coin->RTheight % coin->chain->bundlesize) > 3 )
             {
-                iguana_RTspendvectors(coin,bp);
+                iguana_RTspendvectors(myinfo,coin,bp);
                 coin->RTgenesis = (uint32_t)time(NULL);
             }
         }

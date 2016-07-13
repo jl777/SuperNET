@@ -361,7 +361,7 @@ int32_t iguana_validated(struct iguana_info *coin)
     return(n);
 }
 
-int32_t iguana_helperA(struct iguana_info *coin,struct iguana_bundle *bp,int32_t convertflag)
+int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t convertflag)
 {
     int32_t retval,num = 0;
     if ( bp == 0 )
@@ -373,7 +373,7 @@ int32_t iguana_helperA(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
-        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
+        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
         {
             if ( retval > 0 )
             {
@@ -447,7 +447,7 @@ void iguana_update_balances(struct iguana_info *coin)
     }
 }
 
-int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convertflag)
+int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
     if ( coin->spendvectorsaved > 1 )
@@ -465,7 +465,7 @@ int32_t iguana_utxogen(struct iguana_info *coin,int32_t helperid,int32_t convert
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-            num += iguana_helperA(coin,coin->bundles[hdrsi],convertflag);
+            num += iguana_helperA(myinfo,coin,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
@@ -564,7 +564,7 @@ void iguana_helper(void *arg)
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
             if ( coin->spendvectorsaved == 1 )
-                iguana_utxogen(coin,helperid,0);
+                iguana_utxogen(myinfo,coin,helperid,0);
             else if ( coin->spendvectorsaved > 1 )
             {
                 for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
