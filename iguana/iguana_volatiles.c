@@ -146,11 +146,15 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     numunspents = rdata->numunspents;
-    if ( iguana_unspentind2txid(myinfo,coin,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
-          return(-1);
     utxo = iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,0);
     if ( RTspentflag != 0 )
         *RTspendp = (amount == 0) ? coin->txfee : amount;
+    if ( iguana_unspentind2txid(myinfo,coin,spentheightp,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
+    {
+        char str[65];
+        printf("found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
+        return(-1);
+    }
     if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);

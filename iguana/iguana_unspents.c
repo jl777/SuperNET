@@ -21,10 +21,10 @@
 #include "exchanges/bitcoin.h"
 
 
-int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,int16_t hdrsi,uint32_t unspentind)
+int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *spentheightp,bits256 *txidp,int32_t *voutp,int16_t hdrsi,uint32_t unspentind)
 {
     struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
-    *voutp = -1;
+    *voutp = *spentheightp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( hdrsi < coin->bundlescount-1 )
         rdata = coin->RTramchain.H.data;
@@ -41,6 +41,7 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
             if ( unspentind >= t->firstvout )
             {
                 *txidp = t->txid;
+                *spentheightp = (hdrsi * coin->chain->bundlesize) + t->bundlei;
                 *voutp = unspentind - t->firstvout;
                 return(0);
             }
