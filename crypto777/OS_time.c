@@ -45,9 +45,9 @@ struct tm *gmtime_r(const time_t *timep,struct tm *result)
 	return(p);
 }
 
-struct tm *_gmtime32(const time_t *timep,struct tm *result) { return(gmtime_r(timep,result)); }
-time_t _time32(struct tm *tm) { return(time(NULL)); }
-time_t _localtime32(struct tm *tm) { return(time(NULL)); }
+//struct tm *_gmtime32(const time_t *timep,struct tm *result) { return(gmtime_r(timep,result)); }
+//time_t _time32(struct tm *tm) { return(time(NULL)); }
+//time_t _localtime32(struct tm *tm) { return(time(NULL)); }
 
 #include <windows.h>
 #include <stdint.h> // portable: uint64_t   MSVC: __int64

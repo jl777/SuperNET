@@ -6,10 +6,10 @@ all: clean check build
 
 build:
 	@echo "\nBuilding iguana......"
-	$(TOOL_DIR)/$(MINGW)-gcc -w -o ../agents/win32/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS)  || (echo -e "\033[4mERROR: Failed to build iguana\033[0m"; exit 1; )
+	$(TOOL_DIR)/bin/$(MINGW) -w -o ../agents/win32/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS) -lws2_32 -lpthread -DHAVE_STRUCT_TIMESPEC || (echo -e "\033[4mERROR: Failed to build iguana\033[0m"; exit 1; )
 
  
-	$(TOOL_DIR)/$(MINGW)-strip --strip-all ../agents/win32/iguana.exe
+	$(TOOL_DIR)/bin/strip --strip-all ../agents/win32/iguana.exe
 	@echo "\nBuild successfully......"
 
 check:

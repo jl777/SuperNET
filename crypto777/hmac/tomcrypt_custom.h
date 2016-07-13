@@ -371,8 +371,8 @@
 
 /* THREAD management */
 #ifdef LTC_PTHREAD
-
-//#include <pthread.h>
+#define HAVE_STRUCT_TIMESPEC
+#include <pthread.h>
 
 #define LTC_MUTEX_GLOBAL(x)   pthread_mutex_t x = PTHREAD_MUTEX_INITIALIZER;
 #define LTC_MUTEX_PROTO(x)    extern pthread_mutex_t x;

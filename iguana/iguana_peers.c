@@ -408,7 +408,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     {
         while ( (result= bind(sock,(struct sockaddr*)&saddr,addrlen)) != 0 )
         {
-            if ( errno == EADDRINUSE )
+            /* if ( errno == EADDRINUSE )
             {
                 sleep(1);
                 printf("ERROR BINDING PORT.%d. this is normal tcp timeout, unless another process is using port\n",port);
@@ -421,7 +421,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 }
                 sleep(13);
                 //continue;
-            }
+            } */
             if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
             {
                 printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
