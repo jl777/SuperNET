@@ -141,7 +141,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
 int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
     uint32_t numunspents; int32_t vout,RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
-    struct iguana_ramchaindata *rdata; bits256 txid;
+    struct iguana_ramchaindata *rdata; bits256 txid; char str[65];
     *spentheightp = -1;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
@@ -151,10 +151,9 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
         *RTspendp = (amount == 0) ? coin->txfee : amount;
     if ( iguana_unspentind2txid(myinfo,coin,spentheightp,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
     {
-        char str[65];
-        printf("found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
+        printf("iguana_spentflag found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
         return(-1);
-    }
+    } else printf("iguana_spentflag %s not in mempool\n",bits256_str(str,txid));
     if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);
