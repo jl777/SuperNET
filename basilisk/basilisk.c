@@ -489,13 +489,13 @@ void basilisk_geckoresult(struct supernet_info *myinfo,char *remoteaddr,char *re
                 if ( (type= jstr(retjson,"type")) != 0 )
                 {
                     hash2 = jbits256(retjson,"hash");
-                    if ( strcmp(type,"HDR") == 0 )
+                    if ( strcmp(type,"HDR") == 0 && virt->virtualchain != 0 )
                         str = gecko_headersarrived(myinfo,virt,remoteaddr,data,datalen,hash2);
-                    else if ( strcmp(type,"MEM") == 0 )
+                    else if ( strcmp(type,"MEM") == 0 && virt->virtualchain != 0 )
                         str = gecko_mempoolarrived(myinfo,virt,remoteaddr,data,datalen,hash2);
-                    else if ( strcmp(type,"BLK") == 0 )
+                    else if ( strcmp(type,"BLK") == 0 && virt->virtualchain != 0 )
                         str = gecko_blockarrived(myinfo,virt,remoteaddr,data,datalen,hash2,0);
-                    else if ( strcmp(type,"GTX") == 0 )
+                    else if ( strcmp(type,"GTX") == 0 && virt->virtualchain != 0 )
                         str = gecko_txarrived(myinfo,virt,remoteaddr,data,datalen,hash2);
                 }
                 if ( str != 0 )
