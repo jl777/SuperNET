@@ -152,6 +152,7 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
     if ( iguana_unspentind2txid(myinfo,coin,spentheightp,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
     {
         printf("iguana_spentflag found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
+        (*RTspendp) += RTspend;
         return(-1);
     } else printf("iguana_spentflag %s not in mempool\n",bits256_str(str,txid));
     if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
