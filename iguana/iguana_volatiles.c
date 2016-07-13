@@ -154,7 +154,9 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
         printf("iguana_spentflag found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
         (*RTspendp) += RTspend;
         return(-1);
-    } else printf("iguana_spentflag %s not in mempool\n",bits256_str(str,txid));
+    }
+    else if ( bits256_nonz(txid) != 0 )
+        printf("iguana_spentflag %s not in mempool\n",bits256_str(str,txid));
     if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spent_unspentind,numunspents,spent_hdrsi);
