@@ -922,6 +922,8 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x02) == 0 ) // wait for pubkeys
         {
+            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+            basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
             if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
                 swap->statebits |= 0x02;
         }
@@ -1247,7 +1249,7 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        if ( myinfo->RELAYID >= 0 )
+        if ( 1 || myinfo->RELAYID >= 0 )
             sleep(1);
         else
         {
