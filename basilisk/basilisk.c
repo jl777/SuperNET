@@ -776,7 +776,7 @@ void basilisks_loop(void *arg)
         portable_mutex_lock(&myinfo->basilisk_mutex);
         HASH_ITER(hh,myinfo->basilisks.issued,pending,tmp)
         {
-            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+60000) )
+            if ( pending != 0 && (pending->finished != 0 || OS_milliseconds() > pending->expiration+600000) )
             {
                 //printf("enable free for HASH_DELETE.(%p)\n",pending);
                 HASH_DELETE(hh,myinfo->basilisks.issued,pending);
