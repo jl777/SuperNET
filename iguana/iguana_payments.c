@@ -162,7 +162,7 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
     return(scriptobj);
 }
 
-int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t *belowp,int64_t *unspents,int32_t numunspents,uint64_t value)
+int32_t iguana_bestunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t *belowp,int64_t *unspents,int32_t numunspents,uint64_t value)
 {
     int32_t i,abovei,belowi; int64_t above,below,gap,atx_value;
     abovei = belowi = -1;
@@ -170,6 +170,11 @@ int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *ab
     {
         if ( (atx_value= unspents[(i << 1) + 1]) <= 0 )
             continue;
+        if ( iguana_unspent_check(myinfo,coin,(uint16_t)(unspents[i << 1] >> 32),(uint32_t)unspents[i << 1]) != 0 )
+        {
+            printf("(%d u%d) %.8f already used\n",(uint16_t)(unspents[i << 1] >> 32),(uint32_t)unspents[i << 1],dstr(atx_value));
+            continue;
+        }
         //printf("(%.8f vs %.8f)\n",dstr(atx_value),dstr(value));
         if ( atx_value == value )
         {
@@ -185,8 +190,7 @@ int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *ab
                 above = gap;
                 abovei = i;
             }
-        }
-        gap = (value - atx_value);
+        } else gap = (value - atx_value);
         if ( below == 0 || gap < below )
         {
             below = gap;
@@ -220,7 +224,7 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
     for (i=0; i<num; i++)
     {
         below = above = 0;
-        if ( iguana_bestunspent(coin,&abovei,&above,&belowi,&below,unspents,num,remains) < 0 )
+        if ( iguana_bestunspent(myinfo,coin,&abovei,&above,&belowi,&below,unspents,num,remains) < 0 )
         {
             printf("error finding unspent i.%d of %d, %.8f vs %.8f\n",i,num,dstr(remains),dstr(amount));
             free_json(vins);
@@ -356,7 +360,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     max = 10000;
     satoshis += burnamount;
     unspents = calloc(max,sizeof(*unspents));
-    if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis,minconf,addresses,remoteaddr)) <= 0 )
+    if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis+txfee,minconf,addresses,remoteaddr)) <= 0 )
     {
         free(unspents);
         return(0);
@@ -392,9 +396,12 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(txobj,spendscript,spendlen,change);
+                int32_t i; for (i=0; i<oplen; i++)
+                    printf("%02x",spendscript[i]);
+                printf(" changeaddr.%s\n",changeaddr);
                 if ( opreturn != 0 )
                 {
-                    int32_t i; for (i=0; i<oplen; i++)
+                    for (i=0; i<oplen; i++)
                         printf("%02x",opreturn[i]);
                     printf(" <- got opret\n");
                     bitcoin_txoutput(txobj,opreturn,oplen,burnamount);
@@ -460,7 +467,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         jaddnum(valsobj,"timeout",30000);
         if ( comment != 0 && is_hexstr(comment,0) > 0 )
             jaddstr(valsobj,"opreturn",comment);
-        if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
+        if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,jint(valsobj,"timeout"),valsobj)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {

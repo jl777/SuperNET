@@ -588,7 +588,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"END", &basilisk_respond_VPNlogout },  // logout
         
         // coin services
-        { (void *)"RAW", &basilisk_respond_rawtx },
+        //{ (void *)"RAW", &basilisk_respond_rawtx },
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
     };

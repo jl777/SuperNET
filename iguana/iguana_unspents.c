@@ -23,14 +23,14 @@
 
 int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *spentheightp,bits256 *txidp,int32_t *voutp,int16_t hdrsi,uint32_t unspentind)
 {
-    struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
+    struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp=0; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
     *voutp = *spentheightp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( hdrsi < coin->bundlescount-1 )
         rdata = coin->RTramchain.H.data;
     else if ( (bp= coin->bundles[hdrsi]) != 0 )
         rdata = bp->ramchain.H.data;
-    if ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
+    while ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
         u = &U[unspentind];
@@ -46,6 +46,9 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
                 return(0);
             }
         }
+        else if ( bp == 0 && (bp= coin->bundles[hdrsi]) != 0 )
+            rdata = bp->ramchain.H.data;
+        else break;
     }
     return(-1);
 }
@@ -454,7 +457,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
             }
             else
             {
-                printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
+                //printf("%s pkhash balance.[%d] from m.%d check %.8f vs %.8f spent %.8f [%.8f]\n",coinaddr,i,m,dstr(netbalance),dstr(deposits),dstr(spent),dstr(deposits)-dstr(spent));
                 total += netbalance;
                 n++;
             }
@@ -465,7 +468,7 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
                     break;
             }
             numunspents += m;
-            printf("%d: balance %.8f, lastunspent.%u m.%d num.%d max.%d\n",i,dstr(total),lastunspentind,m,numunspents,maxunspents);
+            //printf("%d: balance %.8f, lastunspent.%u m.%d num.%d max.%d\n",i,dstr(total),lastunspentind,m,numunspents,maxunspents);
         }
     }
     if ( numunspentsp != 0 )
@@ -538,9 +541,26 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
     return(rmdarray);
 }
 
+int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *coin,uint16_t hdrsi,uint32_t unspentind)
+{
+    bits256 txid; int32_t vout,spentheight;
+    memset(&txid,0,sizeof(txid));
+    if ( iguana_unspentind2txid(myinfo,coin,&spentheight,&txid,&vout,hdrsi,unspentind) == 0 )
+    {
+        //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
+        if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
+        {
+            char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",hdrsi,unspentind,bits256_str(str,txid));
+            return(1);
+        } else return(0);
+    }
+    printf("iguana_unspent_check: couldnt find (%d %d)\n",hdrsi,unspentind);
+    return(-1);
+}
+
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    int64_t total,sum = 0; int32_t i,n,j,r,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
+    int64_t *candidates,total,sum = 0; uint32_t unspentind; int32_t i,n,j,r,hdrsi,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -553,7 +573,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
-            printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+            //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
             total = 0;
             n = 0;
             if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
@@ -562,9 +582,21 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                 iguana_pkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,coin->blocks.hwmchain.height - minconf,unspents,&n,max-1000,remoteaddr);
                 if ( n > 0 )
                 {
-                    sum += total;
-                    unspents += (n << 1);
-                    numunspents += n;
+                    candidates = unspents;
+                    for (j=0; j<n; j++)
+                    {
+                        hdrsi = (int32_t)(candidates[j << 1] >> 32);
+                        unspentind = (int32_t)candidates[j << 1];
+                        if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
+                        {
+                            //printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
+                            unspents[numunspents << 1] = candidates[j << 1];
+                            unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
+                            sum += candidates[(j << 1) + 1];
+                            unspents += 2;
+                            numunspents++;
+                        }
+                    }
                 }
             }
             else
@@ -589,7 +621,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                     }
                 }
             }
-            if ( numunspents > max )
+            if ( numunspents > max || sum > required )
                 break;
             //printf("n.%d max.%d total %.8f\n",n,max,dstr(total));
         }

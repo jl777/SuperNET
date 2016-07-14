@@ -28,7 +28,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
-HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+//HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);

@@ -47,15 +47,24 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
         {
             keylen = data[len++];
             if ( keylen != sizeof(bits256)+sizeof(uint32_t)*2 )
+            {
+                printf("invalid keylen.%d != %d\n",keylen,(int32_t)(sizeof(bits256)+sizeof(uint32_t)*2));
                 return(0);
+            }
             key = &data[len], len += keylen;
             if ( len+sizeof(msglen) > datalen )
+            {
+                printf("processMSG overflow len.%d msglen.%d %d > %d\n",len,msglen,(int32_t)(len+sizeof(msglen)),datalen);
                 return(0);
+            }
             len += iguana_rwnum(0,&data[len],sizeof(msglen),&msglen);
             msg = &data[len], len += msglen;
             if ( msglen <= 0 || len > datalen )
+            {
+                printf("illegal msglen.%d or len.%d > %d\n",msglen,len,datalen);
                 return(0);
-            //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
+            }
+            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
             basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0);
         }
     }
@@ -73,7 +82,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
         {
-            //printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
+            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
             memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
         }
         else
@@ -136,7 +145,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 {
     int32_t keylen; uint8_t key[64];
     keylen = basilisk_messagekey(key,hash,valsobj);
-    //char str[65]; printf("%s channel.%u msgid.%u datalen.%d\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"),datalen);
+    char str[65]; printf("%s channel.%u msgid.%u datalen.%d\n",bits256_str(str,hash),juint(valsobj,"channel"),juint(valsobj,"msgid"),datalen);
     return(basilisk_respond_getmessage(myinfo,key,keylen));
 }
 
