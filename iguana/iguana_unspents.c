@@ -23,14 +23,14 @@
 
 int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *spentheightp,bits256 *txidp,int32_t *voutp,int16_t hdrsi,uint32_t unspentind)
 {
-    struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
+    struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp=0; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
     *voutp = *spentheightp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( hdrsi < coin->bundlescount-1 )
         rdata = coin->RTramchain.H.data;
     else if ( (bp= coin->bundles[hdrsi]) != 0 )
         rdata = bp->ramchain.H.data;
-    if ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
+    while ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
         u = &U[unspentind];
@@ -46,6 +46,9 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
                 return(0);
             }
         }
+        else if ( bp == 0 && (bp= coin->bundles[hdrsi]) != 0 )
+            rdata = bp->ramchain.H.data;
+        else break;
     }
     return(-1);
 }

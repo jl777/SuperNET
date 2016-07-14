@@ -477,9 +477,9 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
-void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
+char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    uint8_t buf[4096]; int32_t oplen,offset,numsent,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
+    uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
@@ -498,43 +498,32 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
     }
     //printf("use addresses.(%s)\n",jprint(addresses,0));
     //printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
-    if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )//|| amount == 0 || addresses == 0 )
-    {
-        Lptr->retstr = clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}");
-        return(Lptr);
-    }
+    if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )
+        return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
-        //if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+        if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
         {
-            if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
+            spendlen = (int32_t)strlen(spendscriptstr) >> 1;
+            decode_hex(buf,spendlen,spendscriptstr);
+            bitcoin_txoutput(txobj,buf,spendlen,amount);
+            burnamount = offset = oplen = 0;
+            if ( (opreturn= jstr(valsobj,"opreturn")) != 0 && (oplen= is_hexstr(opreturn,0)) > 0 )
             {
-                spendlen = (int32_t)strlen(spendscriptstr) >> 1;
-                decode_hex(buf,spendlen,spendscriptstr);
-                bitcoin_txoutput(txobj,buf,spendlen,amount);
-                burnamount = offset = oplen = 0;
-                if ( (opreturn= jstr(valsobj,"opreturn")) != 0 && (oplen= is_hexstr(opreturn,0)) > 0 )
+                oplen >>= 1;
+                if ( (strcmp("BTC",coin->symbol) == 0 && oplen < 77) || coin->chain->do_opreturn == 0 )
                 {
-                    oplen >>= 1;
-                    if ( (strcmp("BTC",coin->symbol) == 0 && oplen < 77) || coin->chain->do_opreturn == 0 )
-                    {
-                        decode_hex(&buf[sizeof(buf) - oplen],oplen,opreturn);
-                        spendlen = datachain_datascript(coin,buf,&buf[sizeof(buf) - oplen],oplen);
-                        if ( (burnamount= SATOSHIDEN * jdouble(valsobj,"burn")) < 10000 )
-                            burnamount = 10000;
-                        bitcoin_txoutput(txobj,buf,spendlen,burnamount);
-                        oplen = 0;
-                    } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
-                }
-                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr);
-                printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
+                    decode_hex(&buf[sizeof(buf) - oplen],oplen,opreturn);
+                    spendlen = datachain_datascript(coin,buf,&buf[sizeof(buf) - oplen],oplen);
+                    if ( (burnamount= SATOSHIDEN * jdouble(valsobj,"burn")) < 10000 )
+                        burnamount = 10000;
+                    bitcoin_txoutput(txobj,buf,spendlen,burnamount);
+                    oplen = 0;
+                } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
-            else
-            {
-                Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx locally\"}");
-                return(Lptr);
-            }
-        } //else rawtx = bitcoin_calcrawtx(myinfo,coin,vinsp,satoshis,spendscriptstr,changeaddr,txfee,addresses,minconf,locktime);
+            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr);
+            printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
+        }
         if ( rawtx != 0 )
         {
             if ( vins != 0 )
@@ -545,18 +534,17 @@ void *basilisk_bitcoinrawtx(struct basilisk_item *Lptr,struct supernet_info *myi
                 jaddstr(valsobj,"rawtx",rawtx);
                 jaddstr(valsobj,"coin",coin->symbol);
                 free(rawtx);
-                Lptr->retstr = jprint(valsobj,1);
-                return(Lptr);
+                return(jprint(valsobj,1));
             } else free(rawtx);
         }
         if ( txobj != 0 )
             free_json(txobj);
         if ( vins != 0 )
             free_json(vins);
-        Lptr->retstr = clonestr("{\"error\":\"couldnt create rawtx\"}");
-        return(Lptr);
+        return(clonestr("{\"error\":\"couldnt create rawtx\"}"));
     }
-    return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF));
+    return(clonestr("{\"error\":\"dont have coin to create rawtx\"}"));
+    //return(basilisk_issueremote(myinfo,0,&numsent,"RAW",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF));
 }
 
 /*
@@ -810,7 +798,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
 }
 
-HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
+/*HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis,i,retval = -1; uint64_t amount,txfee; cJSON *retarray;
     //if ( coin == 0 )
@@ -867,7 +855,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
         }
     }
     return(retstr);
-}
+}*/
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
@@ -1172,16 +1160,26 @@ void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *c
             portable_mutex_lock(&myinfo->bu_mutex);
             if ( (retarray= cJSON_Parse(retstr)) != 0 )
             {
+                printf("%s UNSPENTS_UPDATE.(%s)\n",coin->symbol,retstr);
                 if ( jobj(retarray,"error") == 0 )
                 {
                     if ( (jstr(retarray,"ipaddr") == 0 || strcmp(jstr(retarray,"ipaddr"),myinfo->ipaddr) != 0) && (n= cJSON_GetArraySize(retarray)) > 0 )
                     {
-                        printf("n.%d GOT.(%s)\n",n,jprint(retarray,0));
                         for (i=0; i<n; i++)
                             basilisk_relay_unspentsprocess(myinfo,coin,jitem(retarray,i));
                     } else basilisk_relay_unspentsprocess(myinfo,coin,retarray);
+                    if ( 0 )
+                    {
+                        bits256 pubAm,pubBn; struct basilisk_rawtx test; struct basilisk_swap swap;
+                        memset(&swap,0,sizeof(swap));
+                        printf("create alicepayment\n");
+                        swap.alicecoin = iguana_coinfind("BTCD");
+                        swap.alicesatoshis = 100000;
+                        basilisk_rawtx_setparms("alicepayment",myinfo,&swap,&test,swap.alicecoin,swap.aliceconfirms,0,swap.alicesatoshis,2,0);
+                        basilisk_alicepayment(myinfo,swap.alicecoin,&test,pubAm,pubBn);
+                    }
                 }
-            }
+            } else printf("couldnt parse.(%s)\n",retstr);
             if ( retarray != 0 )
                 free_json(retarray);
             free(retstr);

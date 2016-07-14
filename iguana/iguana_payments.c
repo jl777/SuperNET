@@ -190,8 +190,7 @@ int32_t iguana_bestunspent(struct supernet_info *myinfo,struct iguana_info *coin
                 above = gap;
                 abovei = i;
             }
-        }
-        gap = (value - atx_value);
+        } else gap = (value - atx_value);
         if ( below == 0 || gap < below )
         {
             below = gap;
@@ -361,7 +360,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     max = 10000;
     satoshis += burnamount;
     unspents = calloc(max,sizeof(*unspents));
-    if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis,minconf,addresses,remoteaddr)) <= 0 )
+    if ( (num= iguana_unspentslists(myinfo,coin,&avail,unspents,max,satoshis+txfee,minconf,addresses,remoteaddr)) <= 0 )
     {
         free(unspents);
         return(0);
@@ -468,7 +467,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         jaddnum(valsobj,"timeout",30000);
         if ( comment != 0 && is_hexstr(comment,0) > 0 )
             jaddstr(valsobj,"opreturn",comment);
-        if ( (retstr= basilisk_rawtx(myinfo,coin,0,0,myinfo->myaddr.persistent,valsobj,"")) != 0 )
+        if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,jint(valsobj,"timeout"),valsobj)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {

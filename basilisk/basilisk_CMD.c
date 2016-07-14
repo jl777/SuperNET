@@ -181,7 +181,7 @@ char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,void *a
     return(retstr);
 }
 
-char *basilisk_respond_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+/*char *basilisk_respond_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     char *symbol,*retstr=0; struct basilisk_item Lptr,*ptr; int32_t timeoutmillis; struct iguana_info *coin = 0;
     timeoutmillis = jint(valsobj,"timeout");
@@ -193,7 +193,7 @@ char *basilisk_respond_rawtx(struct supernet_info *myinfo,char *CMD,void *addr,c
         ptr->finished = (uint32_t)time(NULL);
     } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
     return(retstr);
-}
+}*/
 
 char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
