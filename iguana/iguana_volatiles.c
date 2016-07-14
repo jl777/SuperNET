@@ -149,7 +149,7 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
     utxo = iguana_utxofind(coin,spent_hdrsi,spent_unspentind,&RTspentflag,0);
     if ( RTspentflag != 0 )
         *RTspendp = (amount == 0) ? coin->txfee : amount;
-    if ( iguana_unspentind2txid(myinfo,coin,spentheightp,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
+    if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && iguana_unspentind2txid(myinfo,coin,spentheightp,&txid,&vout,spent_hdrsi,spent_unspentind) == 0 && basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
     {
         printf("iguana_spentflag found unspentind (%u %d) %s\n",spent_hdrsi,spent_unspentind,bits256_str(str,txid));
         (*RTspendp) += RTspend;
