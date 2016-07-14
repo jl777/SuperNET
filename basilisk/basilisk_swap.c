@@ -58,7 +58,7 @@
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
 
-int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
+int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
 {
     uint8_t pubkeyA[33],pubkeyB[33],*secret160; bits256 cltvpub,destpub; int32_t i;
     *locktimep = swap->locktime;
@@ -89,15 +89,18 @@ int32_t basilisk_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32_t
         return(-1);
     memcpy(pubkeyA+1,cltvpub.bytes,sizeof(cltvpub));
     memcpy(pubkeyB+1,destpub.bytes,sizeof(destpub));
-    script[n++] = SCRIPT_OP_IF;
-    n = bitcoin_checklocktimeverify(script,n,*locktimep);
-    n = bitcoin_pubkeyspend(script,n,pubkeyA);
-    script[n++] = SCRIPT_OP_ELSE;
+    redeemscript[n++] = SCRIPT_OP_IF;
+    n = bitcoin_checklocktimeverify(redeemscript,n,*locktimep);
+    n = bitcoin_pubkeyspend(redeemscript,n,pubkeyA);
+    redeemscript[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
-    n = bitcoin_revealsecret160(script,n,secret160);
-    n = bitcoin_pubkeyspend(script,n,pubkeyB);
-    script[n++] = SCRIPT_OP_ENDIF;
+    n = bitcoin_revealsecret160(redeemscript,n,secret160);
+    n = bitcoin_pubkeyspend(redeemscript,n,pubkeyB);
+    redeemscript[n++] = SCRIPT_OP_ENDIF;
+    *redeemlenp = n;
+    calc_rmd160_sha256(rmd160,redeemscript,n);
+    n = bitcoin_p2shspend(script,0,rmd160);
     return(n);
 }
 
@@ -1070,8 +1073,8 @@ void basilisk_swaploop(void *_swap)
                 printf(" <- pubB1\n");
                 if ( swap->iambob != 0 )
                 {
-                    swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
-                    swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
+                    swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
+                    swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
                     basilisk_rawtx_gen("deposit",myinfo,1,1,&swap->bobdeposit,swap->bobdeposit.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.spendlen,swap->bobdeposit.coin->chain->txfee,1);
                     basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
                     if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
