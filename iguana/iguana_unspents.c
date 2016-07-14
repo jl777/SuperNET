@@ -538,9 +538,23 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
     return(rmdarray);
 }
 
+int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *coin,uint16_t hdrsi,uint32_t unspentind)
+{
+    bits256 txid; int32_t vout,spentheight;
+    memset(&txid,0,sizeof(txid));
+    if ( iguana_unspentind2txid(myinfo,coin,&spentheight,&txid,&vout,hdrsi,unspentind) == 0 )
+    {
+        if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
+        {
+            char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",hdrsi,unspentind,bits256_str(str,txid));
+            return(1);
+        } else return(0);
+    } else return(-1);
+}
+
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    int64_t total,sum = 0; int32_t i,n,j,r,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
+    int64_t total,sum = 0; uint32_t unspentind; int32_t i,n,j,r,hdrsi,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -562,9 +576,17 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                 iguana_pkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,coin->blocks.hwmchain.height - minconf,unspents,&n,max-1000,remoteaddr);
                 if ( n > 0 )
                 {
-                    sum += total;
-                    unspents += (n << 1);
-                    numunspents += n;
+                    for (j=0; j<n; j++)
+                    {
+                        hdrsi = (int32_t)(*unspents >> 32);
+                        unspentind = (int32_t)*unspents;
+                        if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
+                        {
+                            sum += unspents[1];
+                            unspents += 2;
+                            numunspents++;
+                        }
+                    }
                 }
             }
             else
