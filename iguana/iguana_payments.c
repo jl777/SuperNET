@@ -162,7 +162,7 @@ cJSON *iguana_scriptobj(struct iguana_info *coin,uint8_t rmd160[20],char *coinad
     return(scriptobj);
 }
 
-int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t *belowp,int64_t *unspents,int32_t numunspents,uint64_t value)
+int32_t iguana_bestunspent(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *aboveip,int64_t *abovep,int32_t *belowip,int64_t *belowp,int64_t *unspents,int32_t numunspents,uint64_t value)
 {
     int32_t i,abovei,belowi; int64_t above,below,gap,atx_value;
     abovei = belowi = -1;
@@ -170,6 +170,11 @@ int32_t iguana_bestunspent(struct iguana_info *coin,int32_t *aboveip,int64_t *ab
     {
         if ( (atx_value= unspents[(i << 1) + 1]) <= 0 )
             continue;
+        if ( iguana_unspent_check(myinfo,coin,(uint16_t)(unspents[i << 1] >> 32),(uint32_t)unspents[i << 1]) != 0 )
+        {
+            printf("(%d u%d) %.8f already used\n",(uint16_t)(unspents[i << 1] >> 32),(uint32_t)unspents[i << 1],dstr(atx_value));
+            continue;
+        }
         //printf("(%.8f vs %.8f)\n",dstr(atx_value),dstr(value));
         if ( atx_value == value )
         {
@@ -220,7 +225,7 @@ cJSON *iguana_inputsjson(struct supernet_info *myinfo,struct iguana_info *coin,i
     for (i=0; i<num; i++)
     {
         below = above = 0;
-        if ( iguana_bestunspent(coin,&abovei,&above,&belowi,&below,unspents,num,remains) < 0 )
+        if ( iguana_bestunspent(myinfo,coin,&abovei,&above,&belowi,&below,unspents,num,remains) < 0 )
         {
             printf("error finding unspent i.%d of %d, %.8f vs %.8f\n",i,num,dstr(remains),dstr(amount));
             free_json(vins);

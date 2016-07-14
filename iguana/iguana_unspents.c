@@ -544,12 +544,15 @@ int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *co
     memset(&txid,0,sizeof(txid));
     if ( iguana_unspentind2txid(myinfo,coin,&spentheight,&txid,&vout,hdrsi,unspentind) == 0 )
     {
+        char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
         if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
         {
             char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",hdrsi,unspentind,bits256_str(str,txid));
             return(1);
         } else return(0);
-    } else return(-1);
+    }
+    printf("iguana_unspent_check: couldnt find (%d %d)\n",hdrsi,unspentind);
+    return(-1);
 }
 
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
@@ -582,6 +585,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                         unspentind = (int32_t)*unspents;
                         if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
                         {
+                            printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(unspents[1]));
                             sum += unspents[1];
                             unspents += 2;
                             numunspents++;

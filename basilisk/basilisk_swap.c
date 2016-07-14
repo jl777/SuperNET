@@ -909,20 +909,24 @@ void basilisk_swap01(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 {
     int32_t datalen;
     datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+    printf("send deck.%d\n",datalen);
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
 }
 
 void basilisk_swap02(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    basilisk_swap01(myinfo,swap,data,maxlen);
+    if ( (rand() % 100) == 0 )
+        basilisk_swap01(myinfo,swap,data,maxlen);
+    printf("check for other deck\n");
     if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
         swap->statebits |= 0x02;
 }
 
 void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    int32_t i,datalen;
-    basilisk_swap02(myinfo,swap,data,maxlen);
+    int32_t i,datalen; char str[65];
+    if ( (rand() % 10) == 0 )
+        basilisk_swap02(myinfo,swap,data,maxlen);
     datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
     if ( swap->iambob != 0 )
     {
@@ -930,6 +934,7 @@ void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
             data[datalen++] = swap->pubB0.bytes[i];
         for (i=0; i<32; i++)
             data[datalen++] = swap->pubB1.bytes[i];
+        printf("SEND pubB0/1 %s\n",bits256_str(str,swap->pubB0));
     }
     else
     {
@@ -937,33 +942,40 @@ void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
             data[datalen++] = swap->pubA0.bytes[i];
         for (i=0; i<32; i++)
             data[datalen++] = swap->pubA1.bytes[i];
-        char str[65]; printf("SEND pubA0/1 %s\n",bits256_str(str,swap->pubA0));
+        printf("SEND pubA0/1 %s\n",bits256_str(str,swap->pubA0));
     }
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
 }
 
 void basilisk_swap08(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    uint8_t pubkey33[33];
-    basilisk_swap04(myinfo,swap,data,maxlen);
+    uint8_t pubkey33[33]; char str[65];
+    if ( (rand() % 10) == 0 )
+        basilisk_swap04(myinfo,swap,data,maxlen);
+    printf("check otherchoosei\n");
     if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
     {
-        char str[65];
         if ( swap->iambob != 0 )
         {
-            swap->privBn = swap->privkeys[swap->otherchoosei];
-            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-            calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
-            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
-            printf("set privBn.%s\n",bits256_str(str,swap->privBn));
+            if ( bits256_nonz(swap->privBn) == 0 )
+            {
+                swap->privBn = swap->privkeys[swap->otherchoosei];
+                memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+                calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
+                swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
+                printf("set privBn.%s\n",bits256_str(str,swap->privBn));
+            }
         }
         else
         {
-            swap->privAm = swap->privkeys[swap->otherchoosei];
-            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-            calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
-            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
-            printf("set privAm.%s\n",bits256_str(str,swap->privAm));
+            if ( bits256_nonz(swap->privAm) == 0 )
+            {
+                swap->privAm = swap->privkeys[swap->otherchoosei];
+                memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+                calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
+                swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
+                printf("set privAm.%s\n",bits256_str(str,swap->privAm));
+            }
         }
         swap->statebits |= 0x08;
     }
@@ -972,7 +984,8 @@ void basilisk_swap08(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 void basilisk_swap10(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,j,datalen;
-    basilisk_swap08(myinfo,swap,data,maxlen);
+    if ( (rand() % 10) == 0 )
+        basilisk_swap08(myinfo,swap,data,maxlen);
     datalen = 0;
     for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
     {
@@ -993,6 +1006,7 @@ void basilisk_swap10(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
         for (i=0; i<20; i++)
             data[datalen++] = swap->secretAm[i];
     }
+    printf("send privkeys.%d\n",datalen);
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10);
 }
 
