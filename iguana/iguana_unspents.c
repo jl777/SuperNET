@@ -544,7 +544,7 @@ int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *co
     memset(&txid,0,sizeof(txid));
     if ( iguana_unspentind2txid(myinfo,coin,&spentheight,&txid,&vout,hdrsi,unspentind) == 0 )
     {
-        char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
+        //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
         if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
         {
             char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",hdrsi,unspentind,bits256_str(str,txid));
@@ -570,7 +570,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
-            printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+            //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
             total = 0;
             n = 0;
             if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
@@ -586,7 +586,9 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                         unspentind = (int32_t)candidates[j << 1];
                         if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
                         {
-                            printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
+                            //printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
+                            unspents[numunspents << 1] = candidates[j << 1];
+                            unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
                             sum += candidates[(j << 1) + 1];
                             unspents += 2;
                             numunspents++;
@@ -616,7 +618,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                     }
                 }
             }
-            if ( numunspents > max )
+            if ( numunspents > max || sum > required )
                 break;
             //printf("n.%d max.%d total %.8f\n",n,max,dstr(total));
         }
