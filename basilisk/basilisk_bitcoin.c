@@ -1160,7 +1160,7 @@ void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *c
             portable_mutex_lock(&myinfo->bu_mutex);
             if ( (retarray= cJSON_Parse(retstr)) != 0 )
             {
-                printf("%s UNSPENTS_UPDATE.(%s)\n",coin->symbol,retstr);
+                //printf("%s UNSPENTS_UPDATE.(%s)\n",coin->symbol,retstr);
                 if ( jobj(retarray,"error") == 0 )
                 {
                     if ( (jstr(retarray,"ipaddr") == 0 || strcmp(jstr(retarray,"ipaddr"),myinfo->ipaddr) != 0) && (n= cJSON_GetArraySize(retarray)) > 0 )
