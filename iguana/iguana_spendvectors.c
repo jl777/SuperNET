@@ -469,7 +469,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
     emit = startemit;
-    if ( coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight )
+    if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
@@ -827,7 +827,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                                 if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
                                 {
                                     err = 0;
-                                    printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
+                                    if ( (hdrsi % 100) == 0 )
+                                        printf("[%d] of %d saved (%s) and (%s)\n",hdrsi,numhdrsi,fname,fname2);
                                 }
                             }
                         }
@@ -861,7 +862,8 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
                         return(-1);
                     }
-                    printf("%s -> %s\n",fname,destfname);
+                    if ( (hdrsi % 100) == 0 )
+                        printf("%s -> %s\n",fname,destfname);
                     OS_removefile(fname,0);
                     OS_removefile(fname2,0);
                 }
