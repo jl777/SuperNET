@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define HAVE_STRUCT_TIMESPEC
 #include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -42,6 +43,7 @@
 #include <time.h>
 #include <poll.h>
 #include <netdb.h>
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 //#include <netinet/in.h>
 //#include "in.h"

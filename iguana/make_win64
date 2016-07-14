@@ -1,16 +1,16 @@
 include iguana.sources
 include ../mingw.path64
 
-LIBS := ../win/libsecp256k1.a ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2_64.a ../agents/win64/libcrypto777.a ../win/libcurldll.a /usr/share/mingw-w64/lib/libws2_32.a /usr/share/mingw-w64/lib/libgdi32.a -I/usr/share/mingw-w64/include -I/usr/i386/include -I/usr/i386/include/curl -I/home/user/SuperNET/iguana -I/home/user/SuperNET/includes -I/home/user/SuperNET/crypto777 
+LIBS := ../win/libsecp256k1.a ../win/libcrypto.a ../win/libssl.a ../win/libpthreadGC2_64.a ../agents/win64/libcrypto777.a ../win/libcurldll.a $(TOOL_DIR)/lib/libws2_32.a  $(TOOL_DIR)/lib/libgdi32.a -I$(TOOL_DIR)/include -I/usr/i386/include -I/usr/i386/include/curl -I$(APP)/iguana -I$(APP)/includes -I$(APP)/crypto777 
 include mingw64_inc
 
 
 all: check build
  
 build:
-	$(TOOL_DIR)/$(MINGW)-gcc -w -o ../agents/win64/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS)  || (echo -e "\033[4mERROR: Failed to build iguana\033[0m"; exit 1; )
+	$(TOOL_DIR)/bin/$(MINGW) -w -o ../agents/win64/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS) -lws2_32 -lpthread -DHAVE_STRUCT_TIMESPEC || (echo -e "\033[4mERROR: Failed to build iguana\033[0m"; exit 1; )
 
-	$(TOOL_DIR)/$(MINGW)-strip --strip-all ../agents/win64/iguana.exe  || (echo -e "\033[4mERROR: Failed to strip iguana\033[0m"; exit 1; )
+	$(TOOL_DIR)/bin/strip --strip-all ../agents/win64/iguana.exe  || (echo -e "\033[4mERROR: Failed to strip iguana\033[0m"; exit 1; )
 
 
 check:

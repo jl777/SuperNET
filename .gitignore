@@ -28,3 +28,9 @@ iguana/tests/.priv2wif.swp
 agents/libiguana.a
 
 iguana/iguana_rpc.o-2ed461a0
+agents/win32/iguana.exe
+agents/win32/libcrypto777.a
+agents/win32/confs/.tmpmarker
+agents/win32/DB/.tmpmarker
+agents/win32/DB/purgeable/.tmpmarker
+agents/*
