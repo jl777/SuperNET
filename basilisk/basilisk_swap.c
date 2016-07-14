@@ -905,9 +905,100 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
     return(0);
 }
 
+void basilisk_swap01(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    int32_t datalen;
+    datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
+    swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
+}
+
+void basilisk_swap02(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    basilisk_swap01(myinfo,swap,data,maxlen);
+    if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
+        swap->statebits |= 0x02;
+}
+
+void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    int32_t i,datalen;
+    basilisk_swap02(myinfo,swap,data,maxlen);
+    datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
+    if ( swap->iambob != 0 )
+    {
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubB0.bytes[i];
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubB1.bytes[i];
+    }
+    else
+    {
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubA0.bytes[i];
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubA1.bytes[i];
+        char str[65]; printf("SEND pubA0/1 %s\n",bits256_str(str,swap->pubA0));
+    }
+    swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
+}
+
+void basilisk_swap08(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    uint8_t pubkey33[33];
+    basilisk_swap04(myinfo,swap,data,maxlen);
+    if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
+    {
+        char str[65];
+        if ( swap->iambob != 0 )
+        {
+            swap->privBn = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+            calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
+            swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
+            printf("set privBn.%s\n",bits256_str(str,swap->privBn));
+        }
+        else
+        {
+            swap->privAm = swap->privkeys[swap->otherchoosei];
+            memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
+            calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
+            swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
+            printf("set privAm.%s\n",bits256_str(str,swap->privAm));
+        }
+        swap->statebits |= 0x08;
+    }
+}
+
+void basilisk_swap10(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    int32_t i,j,datalen;
+    basilisk_swap08(myinfo,swap,data,maxlen);
+    datalen = 0;
+    for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
+    {
+        for (j=0; j<32; j++)
+            data[datalen++] = (i == swap->otherchoosei) ? 0 : swap->privkeys[i].bytes[j];
+    }
+    if ( swap->iambob != 0 )
+    {
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubBn.bytes[i];
+        for (i=0; i<20; i++)
+            data[datalen++] = swap->secretBn[i];
+    }
+    else
+    {
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->pubAm.bytes[i];
+        for (i=0; i<20; i++)
+            data[datalen++] = swap->secretAm[i];
+    }
+    swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10);
+}
+
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data,pubkey33[33]; int32_t i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -916,85 +1007,15 @@ void basilisk_swaploop(void *_swap)
     {
         fprintf(stderr,"r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
         if ( (swap->statebits & 0x01) == 0 ) // send pubkeys
-        {
-            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-            swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
-        }
+            basilisk_swap01(myinfo,swap,data,maxlen);
         else if ( (swap->statebits & 0x02) == 0 ) // wait for pubkeys
-        {
-            datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-            basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01);
-            if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
-                swap->statebits |= 0x02;
-        }
+            basilisk_swap02(myinfo,swap,data,maxlen);
         else if ( (swap->statebits & 0x04) == 0 ) // send choosei
-        {
-            datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
-            if ( swap->iambob != 0 )
-            {
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubB0.bytes[i];
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubB1.bytes[i];
-            }
-            else
-            {
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubA0.bytes[i];
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubA1.bytes[i];
-                char str[65]; printf("SEND pubA0/1 %s\n",bits256_str(str,swap->pubA0));
-            }
-            swap->statebits |= basilisk_swapsend(myinfo,swap,0x08,data,datalen,0x04);
-        }
+            basilisk_swap04(myinfo,swap,data,maxlen);
         else if ( (swap->statebits & 0x08) == 0 ) // wait for choosei
-        {
-            if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
-            {
-                char str[65];
-                if ( swap->iambob != 0 )
-                {
-                    swap->privBn = swap->privkeys[swap->otherchoosei];
-                    memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-                    calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
-                    swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
-                    printf("set privBn.%s\n",bits256_str(str,swap->privBn));
-                }
-                else
-                {
-                    swap->privAm = swap->privkeys[swap->otherchoosei];
-                    memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-                    calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
-                    swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
-                    printf("set privAm.%s\n",bits256_str(str,swap->privAm));
-                }
-                swap->statebits |= 0x08;
-            }
-        }
+            basilisk_swap08(myinfo,swap,data,maxlen);
         else if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
-        {
-            datalen = 0;
-            for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
-            {
-                for (j=0; j<32; j++)
-                    data[datalen++] = (i == swap->otherchoosei) ? 0 : swap->privkeys[i].bytes[j];
-            }
-            if ( swap->iambob != 0 )
-            {
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubBn.bytes[i];
-                for (i=0; i<20; i++)
-                    data[datalen++] = swap->secretBn[i];
-            }
-            else
-            {
-                for (i=0; i<32; i++)
-                    data[datalen++] = swap->pubAm.bytes[i];
-                for (i=0; i<20; i++)
-                    data[datalen++] = swap->secretAm[i];
-            }
-            swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10);
-        }
+            basilisk_swap10(myinfo,swap,data,maxlen);
         else if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
         {
             if ( basilisk_swapget(myinfo,swap,0x20,data,maxlen,basilisk_verify_privkeys) == 0 )
