@@ -506,7 +506,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,struct basilisk_rawtx
                     {
                         item = jitem(vins,i);
                         txid = jbits256(item,"txid");
-                        vout = jint(item,"prevout");
+                        vout = jint(item,"vout");
                         if ( bits256_nonz(txid) != 0 )
                         {
                             char str[65]; printf("call addspend.(%s) v.%d\n",bits256_str(str,txid),vout);
