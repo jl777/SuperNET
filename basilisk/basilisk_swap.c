@@ -841,7 +841,6 @@ int32_t basilisk_swapdata_deck(struct supernet_info *myinfo,struct basilisk_swap
 int32_t basilisk_verify_otherdeck(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,len = 0;
-    printf("verify otherdeck\n");
     for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
         len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
     return(0);
@@ -918,9 +917,12 @@ void basilisk_swap01(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 
 void basilisk_swap02(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    printf("check for other deck\n");
-    if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
-        swap->statebits |= 0x02;
+    if ( (swap->statebits & 0x02) == 0 )
+    {
+        printf("check for other deck\n");
+        if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
+            swap->statebits |= 0x02;
+    }
 }
 
 void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
@@ -1021,36 +1023,23 @@ void basilisk_swaploop(void *_swap)
     while ( time(NULL) < swap->expiration )
     {
         printf("r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
-        if ( swap->iambob != 0 )
+        if ( (swap->statebits & 0x08) == 0 )
         {
-            if ( (swap->statebits & 0x08) == 0 )
-            {
-                basilisk_swap01(myinfo,swap,data,maxlen); // send pubkeys
-                basilisk_swap08(myinfo,swap,data,maxlen); // wait for choosei
-            }
-            else
-            {
-                basilisk_swap02(myinfo,swap,data,maxlen); // check for other deck
-                basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
-                if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
-                    basilisk_swap10(myinfo,swap,data,maxlen);
-            }
+            basilisk_swap01(myinfo,swap,data,maxlen); // send pubkeys
+            basilisk_swap08(myinfo,swap,data,maxlen); // wait for choosei
         }
-        else
+        if ( (swap->statebits & 0x10) == 0 )
         {
-            if ( (swap->statebits & 0x10) == 0 )
-            {
-                basilisk_swap02(myinfo,swap,data,maxlen); // check for other deck
-                basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
-                if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
-                    basilisk_swap10(myinfo,swap,data,maxlen);
-            }
-            else
-            {
-                basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
-                basilisk_swap01(myinfo,swap,data,maxlen); // send pubkeys
-                basilisk_swap08(myinfo,swap,data,maxlen); // wait for choosei
-            }
+            basilisk_swap02(myinfo,swap,data,maxlen); // check for other deck
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
+            if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
+                basilisk_swap10(myinfo,swap,data,maxlen);
+        }
+        if ( (swap->statebits & 0x1f) != 0x1f )
+        {
+            printf("initial setup incomplete state.%x\n",swap->statebits);
+            sleep(1);
+            continue;
         }
         if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
         {
@@ -1128,8 +1117,8 @@ void basilisk_swaploop(void *_swap)
         }
         else // both sides have setup required data and paid txfee
         {
-            if ( swap->sleeptime < 60 )
-                swap->sleeptime++;
+            //if ( swap->sleeptime < 60 )
+            //    swap->sleeptime++;
             if ( swap->iambob != 0 )
             {
                 if ( (swap->statebits & 0x100) == 0 )
@@ -1305,13 +1294,8 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        if ( 1 || myinfo->RELAYID >= 0 )
-            sleep(1);
-        else
-        {
-            if ( swap->sleeptime > 0 )
-                sleep(swap->sleeptime);
-        }
+        printf("finished swapstate.%x\n",swap->statebits);
+        sleep(1);
     }
     if ( swap->iambob != 0 )
     {

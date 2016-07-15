@@ -197,7 +197,7 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                 if ( relay->numrequests < relay->maxrequests )
                 {
                     memcpy(serialized,&data[len],clen);
-                    printf("ping processDEX\n");
+                    //printf("ping processDEX\n");
                     n = basilisk_rwDEXquote(0,serialized,&R);
                     if ( n != clen )
                         printf("n.%d clen.%d\n",n,clen);
@@ -206,7 +206,7 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                     if ( crc == R.requestid )
                     {
                         relay->requests[relay->numrequests++] = R;
-                        printf("[(%s %.8f) -> (%s %.8f) r.%u q.%u] ",R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
+                        //printf("[(%s %.8f) -> (%s %.8f) r.%u q.%u] ",R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
                     } else printf("crc.%u error vs %u\n",crc,R.requestid);
                 } else printf("relay num.%d >= max.%d\n",relay->numrequests,relay->maxrequests);
             } else len += clen;
@@ -247,7 +247,7 @@ int32_t basilisk_ping_genDEX(struct supernet_info *myinfo,uint8_t *data,int32_t 
         {
             DL_DELETE(myinfo->DEX_quotes,item);
             free(item);
-        } else printf("now.%u vs timestamp.%u, lag.%d\n",now,timestamp,now-timestamp);
+        } //else printf("now.%u vs timestamp.%u, lag.%d\n",now,timestamp,now-timestamp);
     }
     portable_mutex_unlock(&myinfo->DEX_mutex);
     sn = i;
