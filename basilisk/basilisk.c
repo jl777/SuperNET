@@ -799,7 +799,7 @@ void basilisks_loop(void *arg)
             }
             //printf("my RELAYID.%d\n",myinfo->RELAYID);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            if ( (rand() % 100) == 0 && myinfo->RELAYID >= 0 )
+            if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
                 basilisk_ping_send(myinfo,btcd);
         }
         HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
