@@ -290,7 +290,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 else if ( pkind != 0 )
                     printf("[%d] not found pkind.%d vs num.%d RT.%d rdata.%p\n",i,pkind,rdata->numpkinds,bp->isRT,rdata);
             }
-            else if ( coin->spendvectorsaved > 1 )
+            else if ( coin->spendvectorsaved > 1 && bp != coin->current )
                 printf("%s.[%d] skip null rdata isRT.%d\n",coin->symbol,i,bp->isRT);
         }
     }
