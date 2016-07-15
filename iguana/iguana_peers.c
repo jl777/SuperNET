@@ -715,7 +715,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || (coin->peers != 0 && coin->peers->shuttingdown != 0) )
     {
         strcpy(ipaddr,addr->ipaddr);
-        //printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -740,7 +740,7 @@ void iguana_startconnection(void *arg)
                 coin->peers->ranked[0] = addr;
         } else n = 0;
         iguana_iAconnected(coin,addr);
-        //printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
 #ifdef IGUANA_DEDICATED_THREADS
         //iguana_launch("recv",iguana_dedicatedrecv,addr,IGUANA_RECVTHREAD);
         iguana_dedicatedloop(SuperNET_MYINFO(0),coin,addr);

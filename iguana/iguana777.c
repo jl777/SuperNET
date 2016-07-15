@@ -852,7 +852,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         strcpy(coin->name,"illegalcoin");
         coin->symbol[0] = 0;
         return(0);
-    } 
+    }
     if ( jobj(json,"RELAY") != 0 )
         coin->RELAYNODE = juint(json,"RELAY");
     else coin->RELAYNODE = (strcmp(coin->symbol,"BTCD") == 0);

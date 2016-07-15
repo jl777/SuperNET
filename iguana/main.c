@@ -1458,7 +1458,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; cJSON *argjson = 0;
+    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; //cJSON *argjson = 0;
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -1525,16 +1525,20 @@ void iguana_main(void *arg)
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("bittrex",0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("btc38",0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("huobi",0);
-    argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
+    //argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
     //iguana_coinadd("BTC",argjson); dont do this here, coin args not set
     ///iguana_coinadd("LTC",argjson);
-    free_json(argjson);
+    //free_json(argjson);
+    printf("helpinit\n");
     iguana_helpinit(myinfo);
+    printf("basilisks_init\n");
     basilisks_init(myinfo);
+    printf("iguana_commandline\n");
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
     iguana_appletests(myinfo);
 #endif
+    printf("iguana_launchdaemons\n");
     iguana_launchdaemons(myinfo);
 }
 
