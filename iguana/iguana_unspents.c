@@ -497,14 +497,14 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
                 }
                 //printf("%.8f ",dstr(U[unspentind].value));
                 (*nump)++;
+                if ( array != 0 )
+                    jaddi(array,iguana_unspentjson(myinfo,coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
             }
             else
             {
                 //printf("-%.8f ",dstr(U[unspentind].value));
                 spent += U[unspentind].value;
             }
-            if ( array != 0 )
-                jaddi(array,iguana_unspentjson(myinfo,coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
             if ( p->pkind != U[unspentind].pkind )
                 printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
         }

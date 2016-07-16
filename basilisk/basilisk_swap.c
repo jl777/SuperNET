@@ -1296,7 +1296,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
         printf("finished swapstate.%x\n",swap->statebits);
-        sleep(10);
+        sleep(1);
     }
     if ( swap->iambob != 0 )
     {
