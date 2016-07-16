@@ -1037,12 +1037,14 @@ void basilisk_swaploop(void *_swap)
         }
         if ( (swap->statebits & 0x1f) != 0x1f )
         {
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
             printf("initial setup incomplete state.%x\n",swap->statebits);
             sleep(1);
             continue;
         }
         if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
         {
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
             if ( basilisk_swapget(myinfo,swap,0x20,data,maxlen,basilisk_verify_privkeys) == 0 )
                 swap->statebits |= 0x20;
         }
