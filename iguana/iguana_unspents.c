@@ -736,6 +736,10 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                         bu = &waddr->unspents[i];
                         if ( basilisk_addspend(myinfo,coin->symbol,bu->txid,bu->vout,0) == 0 )
                         {
+                            for (k=0; k<numunspents; k++)
+                            {
+                                // filterout duplicates here
+                            }
                             unspents[0] = ((uint64_t)bu->hdrsi << 32) | bu->unspentind;
                             unspents[1] = bu->value;
                             sum += bu->value;

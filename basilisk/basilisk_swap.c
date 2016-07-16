@@ -1106,6 +1106,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x80) == 0 ) // wait for fee
         {
+            basilisk_swap10(myinfo,swap,data,maxlen);
             if ( basilisk_swapget(myinfo,swap,0x80,data,maxlen,basilisk_verify_otherfee) == 0 )
             {
                 // verify and submit otherfee
