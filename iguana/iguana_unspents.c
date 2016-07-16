@@ -680,7 +680,7 @@ int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *co
 
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    int64_t *candidates,total,sum = 0; uint32_t unspentind; int32_t i,n,j,r,hdrsi,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
+    int64_t *candidates,total,sum = 0; uint32_t unspentind; int32_t k,i,n,j,r,hdrsi,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -710,11 +710,17 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
                         if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
                         {
                             //printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
-                            unspents[numunspents << 1] = candidates[j << 1];
-                            unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
-                            sum += candidates[(j << 1) + 1];
-                            unspents += 2;
-                            numunspents++;
+                            for (k=0; k<numunspents; k++)
+                                if ( unspents[k << 1] == candidates[j << 1] )
+                                    break;
+                            if ( k == numunspents )
+                            {
+                                unspents[numunspents << 1] = candidates[j << 1];
+                                unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
+                                sum += candidates[(j << 1) + 1];
+                                unspents += 2;
+                                numunspents++;
+                            } else printf("found duplicate unspent j.%d numunspents.%d\n",j,numunspents);
                         }
                     }
                 }
