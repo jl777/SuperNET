@@ -141,6 +141,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,heightd,minconfd);
 P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC);
 STRING_AND_INT(iguana,bundleaddresses,activecoin,height);
 STRING_AND_INT(iguana,bundlehashes,activecoin,height);
+STRING_AND_INT(iguana,PoSweights,activecoin,height);
 
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);

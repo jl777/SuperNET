@@ -184,6 +184,31 @@ STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
     else return(clonestr("{\"error\":\"activecoin is not active\"}"));
 }
 
+STRING_AND_INT(iguana,PoSweights,activecoin,height)
+{
+    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; int64_t *weights,supply; cJSON *retjson;
+    if ( (ptr= iguana_coinfind(activecoin)) != 0 )
+    {
+        for (bundleheight=coin->chain->bundlesize; bundleheight<height; bundleheight+=coin->chain->bundlesize)
+        {
+            //bundleheight = (height / coin->chain->bundlesize) * coin->chain->bundlesize;
+            if ( (weights= iguana_PoS_weights(myinfo,ptr,&supply,&num,&nonz,&errs,bundleheight)) != 0 )
+            {
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result",errs == 0 ? "success" : "error");
+                jaddnum(retjson,"bundleheight",bundleheight);
+                jaddnum(retjson,"numaddresses",num);
+                jaddnum(retjson,"nonzero",nonz);
+                jaddnum(retjson,"errors",errs);
+                jaddnum(retjson,"supply",dstr(supply));
+                free(weights);
+                //return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"iguana_PoS_weights returned null\"}"));
+        }
+    }
+    return(clonestr("{\"error\":\"activecoin is not active\"}"));
+}
+
 STRING_AND_INT(iguana,bundlehashes,activecoin,height)
 {
     struct iguana_info *ptr; struct iguana_bundle *bp; int32_t i,hdrsi; cJSON *retjson,*array; struct iguana_ramchaindata *rdata;

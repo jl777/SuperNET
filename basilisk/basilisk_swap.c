@@ -137,18 +137,18 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
                 for (i=0; i<n; i++)
                 {
                     item = jitem(valuearray,i);
-                    height = jint(valuearray,"height");
-                    numconfirms = jint(valuearray,"numconfirms");
+                    height = jint(item,"height");
+                    numconfirms = jint(item,"numconfirms");
+                    printf("i.%d of %d: %s height.%d -> numconfirms.%d\n",i,n,bits256_str(str,rawtx->actualtxid),height,numconfirms);
                     if ( height > 0 && numconfirms >= 0 )
                     {
                         free_json(argjson);
                         free_json(valuearray);
                         free(valstr);
-                        printf("%s height.%d -> numconfirms.%d\n",bits256_str(str,rawtx->actualtxid),height,numconfirms);
                     }
                 }
-            }
-        }
+            } else printf("valstr not array\n");
+        } else printf("parse error\n");
     }
     free_json(argjson);
     if ( valuearray != 0 )

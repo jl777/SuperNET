@@ -340,9 +340,88 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
     return(num);
 }
 
+int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight)
+{
+    int64_t deposits,RTspend,total,supply,spent,*weights=0; uint32_t lastunspentind,unspentind,pkind; int32_t spentheight,i,neg,nonz,num=0; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash *refP,p; struct iguana_unspent *U; struct iguana_txid *T; uint8_t rmd160[20]; char coinaddr[64]; //struct iguana_account *A2; struct iguana_utxo *U2;
+    *supplyp = 0;
+    *numacctsp = *nonzp = 0;
+    *errsp = 1;
+    if ( (bp= coin->bundles[lastheight / coin->chain->bundlesize]) == 0 )
+        return(0);
+    if ( (rdata= bp->ramchain.H.data) == 0 )
+        return(0);
+    refP = RAMCHAIN_PTR(rdata,Poffset);
+    if ( (num= rdata->numpkinds) > 0 )
+    {
+        weights = calloc(num,sizeof(*weights));
+        for (pkind=1; pkind<num; pkind++)
+        {
+            total = 0;
+            memcpy(rmd160,refP[pkind].rmd160,sizeof(rmd160));
+            bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,sizeof(rmd160));
+            //printf("PKIND.%d %s\n",pkind,coinaddr);
+            for (i=bp->hdrsi; i>=0; i--)
+            {
+                if ( (bp= coin->bundles[i]) != 0 )
+                {
+                    ramchain = 0;
+                    if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&p,rmd160,i,i) != 0 && (rdata= ramchain->H.data) != 0 )
+                    {
+                        spent = 0;
+                        deposits = 0;
+                        unspentind = lastunspentind;
+                        U = RAMCHAIN_PTR(rdata,Uoffset);
+                        T = RAMCHAIN_PTR(rdata,Toffset);
+                        while ( unspentind > 0 )
+                        {
+                            if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,ramchain,i,unspentind,lastheight,0,1<<31,U[unspentind].value) == 0 )
+                                deposits += U[unspentind].value;
+                            else spent += U[unspentind].value;
+                            unspentind = U[unspentind].prevunspentind;
+                        }
+                        weights[pkind] += (deposits - spent);
+                        /*if ( (A2= ramchain->A2) != 0 && p.pkind > 0 && p.pkind < rdata->numpkinds && (U2= ramchain->Uextras) != 0 )
+                        {
+                            T = RAMCHAIN_PTR(rdata,Toffset);
+                            U = RAMCHAIN_PTR(rdata,Uoffset);
+                            unspentind = A2[p.pkind].lastunspentind;
+                            while ( unspentind > 0 )
+                            {
+                                uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
+                                if ( uheight < lastheight )
+                                    spent += U[unspentind].value;
+                                unspentind = U2[unspentind].prevunspentind;
+                            }
+                            weights[pkind] -= spent;
+                        } else printf("PoS.[%d] rdata.%p or A2.%p error [%d] pkind.%d\n",pkind,rdata,A2,i,p.pkind);*/
+                        if ( weights[pkind] != 0 )
+                            printf("wt %.8f P.%d -> [%d] pkind.%d deposits %.8f spent %.8f\n",dstr(weights[pkind]),pkind,i,p.pkind,dstr(deposits),dstr(spent));
+                    }
+                }
+            }
+        }
+    }
+    nonz = neg = 0;
+    supply = 0;
+    for (pkind=1; pkind<num; pkind++)
+        if ( weights[pkind] != 0 )
+        {
+            nonz++;
+            if ( weights[pkind] < 0 )
+                neg++, weights[pkind] = 0;
+            else supply += weights[pkind];
+        }
+    *numacctsp = num;
+    *errsp = neg;
+    *nonzp = nonz;
+    *supplyp = supply;
+    printf("ht.%d [%d] numaddrs.%d nonz.%d neg.%d supply %.8f\n",lastheight,lastheight/coin->chain->bundlesize,num,nonz,neg,dstr(supply));
+    return(weights);
+}
+
 int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int64_t *spentp,int64_t *unspents,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,uint32_t lastunspentind,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t hdrsi,int32_t lastheight,int32_t minconf,int32_t maxconf,char *remoteaddr)
 {
-    struct iguana_unspent *U; struct iguana_utxo *U2; struct iguana_spend *S; int32_t max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0;
+    struct iguana_unspent *U; struct iguana_utxo *U2; int32_t max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0; //struct iguana_spend *S;
     max = *nump;
     *spentp = *nump = 0;
     if ( 0 && coin->RTramchain_busy != 0 )
@@ -392,8 +471,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     }
     if ( lastheight > 0 && (A2= ramchain->A2) != 0 && (U2= ramchain->Uextras) != 0 )
     {
-        S = RAMCHAIN_PTR(rdata,Soffset);
-        //S = (void *)(long)((long)rdata + rdata->Soffset);
+        //S = RAMCHAIN_PTR(rdata,Soffset);
         unspentind = A2[pkind].lastunspentind;
         checkval = 0;
         while ( unspentind > 0 )
@@ -601,7 +679,7 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
             }
             else
             {
-                if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+                if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 && waddr->numunspents > 0 )
                 {
                     r = (rand() % waddr->numunspents);
                     for (j=0; j<waddr->numunspents; j++)

@@ -542,6 +542,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume);
 int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
 int64_t iguana_lockval(int32_t finalized,int64_t locktime);
+int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares
