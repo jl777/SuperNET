@@ -211,14 +211,17 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain)
 {
     uint32_t ind,retval=0; struct iguana_ramchaindata *rdata = ramchain->H.data;
-    //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
-    ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
-    if ( rdata != 0 && (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T),ramchain,rdata->numtxids)) != 0 )
+    if ( tablesize > 0 )
     {
-        char str[65];
-        if ( txidind != 0 && retval != txidind )
-            printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
-        return(retval);
+        //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
+        ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
+        if ( rdata != 0 && (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T),ramchain,rdata->numtxids)) != 0 )
+        {
+            char str[65];
+            if ( txidind != 0 && retval != txidind )
+                printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
+            return(retval);
+        }
     }
     return(retval);
 }
@@ -226,7 +229,7 @@ uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits2
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind,struct iguana_ramchain *ramchain)
 {
     uint32_t ind,key2; uint64_t key0,key1; struct iguana_ramchaindata *rdata;
-    if ( (rdata= ramchain->H.data) != 0 )
+    if ( (rdata= ramchain->H.data) != 0 && tablesize > 0 )
     {
         //int32_t i; for (i=0; i<20; i++)
         //    printf("%02x",rmd160[i]);
