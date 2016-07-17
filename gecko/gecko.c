@@ -212,10 +212,12 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
             if ( virt->blocks.hwmchain.height == 0 )
             {
                 memset(&txdata,0,sizeof(txdata));
-                iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen);
-                txdata.zblock.height = 0;
-                txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
-                gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids,0);
+                if ( iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen )
+                {
+                    txdata.zblock.height = 0;
+                    txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);
+                    gecko_hwmset(myinfo,virt,&txdata,virt->TXMEM.ptr,serialized,datalen,txdata.numtxids,0);
+                }
             }
             virt->started = virt;
             virt->active = (uint32_t)time(NULL);

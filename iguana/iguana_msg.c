@@ -689,14 +689,14 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
             if ( len+32 > recvlen )
             {
                 printf("gentxarrayB error len.%d > recvlen.%d\n",len,recvlen);
-                break;
+                return(-1);
             }
             if ( (n= iguana_rwtx(coin->chain->zcash,0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->isPoS,strcmp(coin->symbol,"VPN")==0)) < 0 )
             {
                 for (i=0; i<recvlen-hdrlen; i++)
                     printf("%02x",data[hdrlen+i]);
                 printf(" <- gentxarrayC error i.%d len.%d > recvlen.%d, n.%d hdrlen.%d\n",i,len,recvlen,n,hdrlen);
-                break;
+                return(-1);
             }
             numvouts += tx[i].tx_out;
             numvins += tx[i].tx_in;
