@@ -835,7 +835,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         retval = 0;
         if ( (ishost= (strcmp(H->command,"getblocks") == 0)) || strcmp(H->command,"block") == 0 )
         {
-            if ( addr != 0 )
+            if ( addr != 0 && rawmem->ptr != 0 )
             {
                 struct iguana_txblock txdata;
                 iguana_memreset(rawmem), iguana_memreset(txmem);
