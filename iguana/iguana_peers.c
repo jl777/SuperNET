@@ -646,7 +646,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                 printf("%02x",((uint8_t *)&H)[i]);
             printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
         }
-        addr->dead = 1;
+        //addr->dead = 1;
     }
    // printf("%s recv error on hdr errno.%d (%s) -> zombify\n",addr->ipaddr,-recvlen,strerror(-recvlen));
 #ifndef IGUANA_DEDICATED_THREADS
