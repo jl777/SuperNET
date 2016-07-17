@@ -4439,3 +4439,15 @@ bits256 mpz_muldivcmp(bits256 oldval,int32_t mulval,int32_t divval,bits256 targe
     return(newval);
 }
 
+bits256 mpz_div64(bits256 hash,uint64_t divval)
+{
+    mpz_t bn; bits256 newval;
+    mpz_init(bn);
+    mpz_from_bits256(bn,hash);
+    mpz_tdiv_qr_ui(bn,NULL,bn,divval);
+    newval = mpz_to_bits256(bn);
+    //char *bits256_str(char *,bits256);
+    //char str[65],str2[65]; printf("%s div.%lld -> %s size.%d\n",bits256_str(str,hash),(long long)divval,bits256_str(str2,newval),bn->_mp_size);
+    mpz_clear(bn);
+    return(newval);
+}

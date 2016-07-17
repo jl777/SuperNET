@@ -349,6 +349,7 @@ struct iguana_bundle
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative,validatehash;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
     struct iguana_spendvector *tmpspends; int32_t numtmpspends;
+    int64_t *weights,supply; int32_t numweights;
 };
 
 struct iguana_bundlereq

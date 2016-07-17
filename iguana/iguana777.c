@@ -732,7 +732,16 @@ void iguana_coinloop(void *arg)
                     //if ( coin->longestchain+10000 > coin->blocks.maxbits )
                     //    iguana_recvalloc(coin,coin->longestchain + 100000);
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
+                    {
                         flag += iguana_processrecv(myinfo,coin);
+                        if ( coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
+                        {
+                            int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
+                            hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
+                            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->weights == 0 )
+                                bp->weights = iguana_PoS_weights(myinfo,coin,&refP,&bp->supply,&bp->numweights,&nonz,&errs,bp->bundleheight);
+                        }
+                    }
                     iguana_jsonQ();
                 }
                 coin->idletime = (uint32_t)time(NULL);

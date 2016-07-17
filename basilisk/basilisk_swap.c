@@ -195,6 +195,8 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
         char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
     } else V.N = V.M = 1;
     V.suppress_pubkeys = dest->suppress_pubkeys;
+    if ( dest->redeemlen != 0 )
+        memcpy(V.p2shscript,dest->redeemscript,dest->redeemlen), V.p2shlen = dest->redeemlen;
     if ( userdata != 0 && userdatalen > 0 )
     {
         memcpy(V.userdata,userdata,userdatalen);

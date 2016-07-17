@@ -186,13 +186,13 @@ STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
 
 STRING_AND_INT(iguana,PoSweights,activecoin,height)
 {
-    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; int64_t *weights,supply; cJSON *retjson;
+    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; struct iguana_pkhash *refP; int64_t *weights,supply; cJSON *retjson;
     if ( (ptr= iguana_coinfind(activecoin)) != 0 )
     {
-        for (bundleheight=coin->chain->bundlesize; bundleheight<height; bundleheight+=coin->chain->bundlesize)
+        //for (bundleheight=coin->chain->bundlesize; bundleheight<height; bundleheight+=coin->chain->bundlesize)
         {
-            //bundleheight = (height / coin->chain->bundlesize) * coin->chain->bundlesize;
-            if ( (weights= iguana_PoS_weights(myinfo,ptr,&supply,&num,&nonz,&errs,bundleheight)) != 0 )
+            bundleheight = (height / ptr->chain->bundlesize) * ptr->chain->bundlesize;
+            if ( (weights= iguana_PoS_weights(myinfo,ptr,&refP,&supply,&num,&nonz,&errs,bundleheight)) != 0 )
             {
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result",errs == 0 ? "success" : "error");
@@ -202,9 +202,41 @@ STRING_AND_INT(iguana,PoSweights,activecoin,height)
                 jaddnum(retjson,"errors",errs);
                 jaddnum(retjson,"supply",dstr(supply));
                 free(weights);
-                //return(jprint(retjson,1));
+                return(jprint(retjson,1));
             } else return(clonestr("{\"error\":\"iguana_PoS_weights returned null\"}"));
         }
+    }
+    return(clonestr("{\"error\":\"activecoin is not active\"}"));
+}
+
+STRING_ARG(iguana,stakers,activecoin)
+{
+    struct iguana_info *ptr; int32_t i,datalen,pkind,hdrsi; bits256 hash2; struct iguana_bundle *bp; cJSON *retjson,*array; struct iguana_pkhash *refP; struct iguana_ramchaindata *rdata; char coinaddr[64]; uint8_t refrmd160[20]; bits256 *sortbuf;
+    if ( (ptr= iguana_coinfind(activecoin)) != 0 && ptr->RTheight > ptr->chain->bundlesize )
+    {
+        hdrsi = (ptr->RTheight / ptr->chain->bundlesize) - 1;
+        if ( (bp= ptr->bundles[hdrsi]) != 0 && bp->weights != 0 && (rdata= bp->ramchain.H.data) != 0 && bp->weights != 0 )
+        {
+            sortbuf = calloc(bp->numweights,2 * sizeof(*sortbuf));
+            for (i=datalen=0; i<bp->numweights; i++)
+                datalen += iguana_rwnum(1,&((uint8_t *)sortbuf)[datalen],sizeof(bp->weights[i]),(void *)&bp->weights[i]);
+            hash2 = bits256_doublesha256(0,(uint8_t *)sortbuf,datalen);
+            refP = RAMCHAIN_PTR(rdata,Poffset);
+            retjson = cJSON_CreateObject();
+            array = cJSON_CreateArray();
+            memset(refrmd160,0,sizeof(refrmd160));
+            for (i=0; i<ptr->chain->bundlesize; i++)
+            {
+                if ( (pkind= iguana_staker_sort(ptr,&hash2,refrmd160,refP,bp->weights,bp->numweights,sortbuf)) > 0 )
+                {
+                    bitcoin_address(coinaddr,ptr->chain->pubtype,refP[pkind].rmd160,sizeof(refP[pkind].rmd160));
+                    jaddistr(array,coinaddr);
+                } else jaddistr(array,"error");
+            }
+            jaddstr(retjson,"result","success");
+            jadd(retjson,"stakers",array);
+            return(jprint(retjson,1));
+        } else return(clonestr("{\"error\":\"iguana_stakers needs PoSweights and weights\"}"));
     }
     return(clonestr("{\"error\":\"activecoin is not active\"}"));
 }
