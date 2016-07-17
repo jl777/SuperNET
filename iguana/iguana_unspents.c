@@ -394,7 +394,8 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     }
     if ( ramchain->Uextras == 0 || (rdata= ramchain->H.data) == 0 )
     {
-        printf("iguana_pkhashbalance: unexpected null spents.%p or rdata.%p\n",ramchain->Uextras,rdata);
+        printf("iguana_pkhashbalance.[%d]: unexpected null spents.%p or rdata.%p\n",bp->hdrsi,ramchain->Uextras,rdata);
+        iguana_volatilesalloc(coin,ramchain,0);
         return(0);
     }
     unspentind = lastunspentind;
