@@ -575,12 +575,20 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
 int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin)
 {
     int32_t i,len = 0; uint8_t *txstart = serialized; char txidstr[65];
+    if ( maxsize < sizeof(msg->version) )
+        return(-1);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( hastimestamp != 0 )
+    {
+        if ( maxsize-len < sizeof(msg->timestamp) )
+            return(-1);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
+    }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     if ( rwflag == 0 )
         msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
+    if ( maxsize-len-msg->tx_in*sizeof(msg->vins[0]) <= 0 )
+        return(-1);
     for (i=0; i<msg->tx_in; i++)
     {
         if ( len+sizeof(msg->vins[i]) > maxsize )
@@ -590,6 +598,8 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         }
         len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
     }
+    if ( maxsize-len < sizeof(msg->vouts[0]) )
+        return(-1);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     //printf("numvouts.%d ",msg->tx_out);
     if ( rwflag == 0 )
