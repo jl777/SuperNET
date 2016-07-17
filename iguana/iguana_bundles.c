@@ -1020,6 +1020,8 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
             {
                 fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = 0;
+                coin->emitbusy--;
+                return(0);
             }
             coin->emitbusy--;
         }
