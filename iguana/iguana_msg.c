@@ -583,12 +583,12 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
     for (i=0; i<msg->tx_in; i++)
     {
-        len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
-        if ( len > maxsize )
+        if ( len+sizeof(msg->vins[i]) > maxsize )
         {
             printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
             return(-1);
         }
+        len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     //printf("numvouts.%d ",msg->tx_out);
@@ -596,12 +596,12 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
     {
-        len += iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i]);
-        if ( len > maxsize )
+        if ( len+sizeof(msg->vouts[i]) > maxsize )
         {
             printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
             return(-1);
         }
+        len += iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i]);
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
     if ( isvpncoin != 0 )
@@ -686,7 +686,7 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
         tx = iguana_memalloc(mem,msg.txn_count*sizeof(*tx),1);
         for (i=0; i<msg.txn_count; i++)
         {
-            if ( len > recvlen )
+            if ( len+32 > recvlen )
             {
                 printf("gentxarrayB error len.%d > recvlen.%d\n",len,recvlen);
                 break;
