@@ -31,21 +31,20 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
     if ( (len= bitcoin_base58decode(buf,coinaddr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
-        hash = bits256_doublesha256(0,buf,len - 4);
+        hash = bits256_doublesha256(0,buf,21);
         *addrtypep = *buf;
         memcpy(rmd160,buf+1,20);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        if ( (buf[21]&0xff) == hash.bytes[31] && (buf[22]&0xff) == hash.bytes[30] &&(buf[23]&0xff) == hash.bytes[29] && (buf[24]&0xff) == hash.bytes[28] )
         {
             //printf("coinaddr.(%s) valid checksum addrtype.%02x\n",coinaddr,*addrtypep);
             return(20);
         }
         else
         {
-            //char hexaddr[64];
-            //btc_convaddr(hexaddr,coinaddr);
-            //for (i=0; i<len; i++)
-            //    printf("%02x ",buf[i]);
-            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[len - 4]&0xff,buf[len - 3]&0xff,buf[len - 2]&0xff,buf[len - 1]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+            int32_t i;
+            for (i=0; i<len; i++)
+                printf("%02x ",buf[i]);
+            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[21]&0xff,buf[22]&0xff,buf[23]&0xff,buf[24]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
 	return(0);
