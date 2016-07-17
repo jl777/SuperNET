@@ -1066,8 +1066,10 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
         if ( coin->virtualchain != 0 || iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
+        {
+            printf("bundlefinalized done.[%d]\n",bp->hdrsi);
             return(0);
-        //else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
+        }
         retval = 1;
     }
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) )
@@ -1079,7 +1081,11 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     } else bp->nexttime += 3;
     if ( bp->emitfinish <= 1 )
         iguana_bundleQ(coin,bp,1000);
-    else bp->queued = 0;
+    else
+    {
+        printf("[%d] not queued\n",bp->hdrsi);
+        bp->queued = 0;
+    }
     return(retval);
 }
 
