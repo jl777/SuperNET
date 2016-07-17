@@ -1279,10 +1279,13 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         }
     }
     //printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
-    if ( addr->vinsfp != 0 )
-        fclose(addr->vinsfp), addr->vinsfp = 0;
-    if ( addr->voutsfp != 0 )
-        fclose(addr->voutsfp), addr->voutsfp = 0;
+    if ( 0 )
+    {
+        if ( addr->vinsfp != 0 )
+            fclose(addr->vinsfp), addr->vinsfp = 0;
+        if ( addr->voutsfp != 0 )
+            fclose(addr->voutsfp), addr->voutsfp = 0;
+    }
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )
