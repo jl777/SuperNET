@@ -69,7 +69,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
-ZERO_ARGS(bitcoinrpc,makekeypair);
+ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
 

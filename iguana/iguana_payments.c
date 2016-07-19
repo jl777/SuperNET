@@ -527,7 +527,7 @@ STRING_ARG(bitcoinrpc,submitblock,rawbytes)
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(bitcoinrpc,makekeypair)
+ZERO_ARGS(iguana,makekeypair)
 {
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
