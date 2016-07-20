@@ -394,8 +394,8 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
     }
     if ( ramchain->Uextras == 0 || (rdata= ramchain->H.data) == 0 )
     {
-        if ( ramchain->height < (coin->bundlescount-1)*coin->chain->bundlesize )
-            printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-1)*coin->chain->bundlesize,ramchain->Uextras,rdata);
+        if ( ramchain->height < (coin->bundlescount-2)*coin->chain->bundlesize )
+            printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-2)*coin->chain->bundlesize,ramchain->Uextras,rdata);
         else iguana_volatilesalloc(coin,ramchain,0);
         return(0);
     }
