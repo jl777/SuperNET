@@ -743,9 +743,9 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         }
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
-    //if ( coin->balanceswritten > 1 )
+    if ( coin->balanceswritten > 1 )
         coin->balanceswritten = iguana_volatilesinit(coin);
-    //if ( coin->balanceswritten > 1 )
+    if ( coin->balanceswritten > 1 )
     {
         for (i=0; i<coin->balanceswritten; i++)
         {
@@ -756,7 +756,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     printf("i.%d balanceswritten.%d\n",i,coin->balanceswritten);
     if ( coin->balanceswritten < coin->bundlescount )
     {
-        for (i=coin->balanceswritten; i<coin->bundlescount; i++)
+        for (i=0*coin->balanceswritten; i<coin->bundlescount; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
             {
