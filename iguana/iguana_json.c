@@ -480,8 +480,8 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     int32_t i,n,len,size = 0; long filesize; cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
     htmlstr[0] = 0;
     pretty_forms(fname,agentstr,"html");
-    printf("autocreate %s\n","_API.md");
-    pretty_forms("_API.md",0,"md");
+    printf("autocreate %s\n","autoAPI.md");
+    pretty_forms("autoAPI.md",0,"md");
 return(OS_filestr(&filesize,"index7778.html"));
     sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
     size = (int32_t)strlen(htmlstr);
