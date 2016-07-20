@@ -424,7 +424,8 @@ void mainloop(struct supernet_info *myinfo)
                             if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                             {
                                 for (j=0; j<n; j++)
-                                    iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
+                                    if ( coin->bundles[j] != 0 )
+                                        iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                                 sleep(3);
                             }
                             if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )

@@ -451,6 +451,8 @@ void iguana_update_balances(struct iguana_info *coin)
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
+    if ( helperid != 0 )
+        return(0);
     if ( coin->spendvectorsaved > 1 )
     {
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
@@ -470,7 +472,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
-        //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
+        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid < incr )
@@ -491,7 +493,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             for (i=0; i<max; i++)
                 if ( (bp= coin->bundles[i]) != 0 )
                 {
-                    //iguana_volatilespurge(coin,&bp->ramchain);
+                    iguana_volatilespurge(coin,&bp->ramchain);
                     iguana_volatilesmap(coin,&bp->ramchain);
                 }
         }
