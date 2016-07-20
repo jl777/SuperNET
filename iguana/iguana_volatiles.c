@@ -217,11 +217,17 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             printf("from.%d vs current.%d\n",fromheight,coin->current->bundleheight);
             iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
         }
-        if ( coin->current != 0 && spent_hdrsi != coin->current->hdrsi )
-            iguana_bundleremove(coin,spent_hdrsi,0);
         coin->spendvectorsaved = 0;
         coin->started = 0;
         coin->active = 0;*/
+        if ( coin->current != 0 && spent_hdrsi != coin->current->hdrsi && spent_hdrsi != fromheight/coin->chain->bundlesize )
+        {
+            iguana_bundleremove(coin,spent_hdrsi,0);
+            iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
+            printf("restart iguana\n");
+            sleep(3);
+            exit(-1);
+        }
     }
     else if ( coin->spendvectorsaved > 1 )
         printf("volatileupdate skip null rdata [%d]\n",spentchain->height/coin->current->bundleheight);
@@ -328,7 +334,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                 coin->balancehash = balancehash;
                 coin->allbundles = allbundles;
             }
-            if ( numhdrsi == coin->balanceswritten && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
+            if ( numhdrsi >= coin->balanceswritten-1 && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
             {
                 ramchain->A2 = (void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                 sprintf(fname,"%s/%s%s/accounts/lastspends.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,ramchain->height);
@@ -337,7 +343,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                     numhdrsi = *(int32_t *)ramchain->lastspendsfileptr;
                     memcpy(balancehash.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
                     memcpy(allbundles.bytes,(void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + sizeof(balancehash)),sizeof(allbundles));
-                    if ( numhdrsi == coin->balanceswritten && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
+                    if ( numhdrsi >= coin->balanceswritten-1 && memcmp(balancehash.bytes,coin->balancehash.bytes,sizeof(balancehash)) == 0 && memcmp(allbundles.bytes,coin->allbundles.bytes,sizeof(allbundles)) == 0 )
                     {
                         ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                         ramchain->from_roU = (iter == 0);
