@@ -390,9 +390,8 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 {
     static const bits256 zero;
     int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
-    if ( (rptr= bp->ramchain.H.data) != 0 || (bp == coin->current && (rptr= coin->RTramchain.H.data) != 0) )
+    if ( (rptr= bp->ramchain.H.data) != 0 )//|| (bp == coin->current && (rptr= coin->RTramchain.H.data) != 0) )
     {
-        //T = (void *)(long)((long)rptr + (long)rptr->Toffset);
         T = RAMCHAIN_PTR(rptr,Toffset);
         *tx = T[txidind];
         return(tx);
