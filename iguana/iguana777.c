@@ -561,7 +561,7 @@ void iguana_helper(void *arg)
     {
         flag = 0;
         //iguana_jsonQ(); cant do this here
-        allcurrent = 2;
+        allcurrent = 1;
         polltimeout = 100;
         //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
