@@ -225,7 +225,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             iguana_bundleremove(coin,spent_hdrsi,0);
             iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
             printf("restart iguana\n");
-            sleep(3);
+            //sleep(3);
             exit(-1);
         }
     }
