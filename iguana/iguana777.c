@@ -566,7 +566,7 @@ void iguana_helper(void *arg)
         //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
-            if ( coin->spendvectorsaved == 1 )
+            if ( 1 || coin->spendvectorsaved == 1 )
                 iguana_utxogen(myinfo,coin,helperid,0);
             else if ( coin->spendvectorsaved > 1 )
             {
