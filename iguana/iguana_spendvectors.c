@@ -715,7 +715,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         printf("req lastbundle.(%s)\n",hashstr);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
     }
-    /*for (i=0; i<coin->bundlescount-1; i++)
+    for (i=0; i<coin->bundlescount-1; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 )
         {
@@ -741,11 +741,6 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
             if ( (bp= coin->bundles[i]) != 0 )
                 bp->converted = (uint32_t)time(NULL);
         }
-    }*/
-    for (i=0; i<coin->bundlescount-1; i++)
-    {
-        if ( (bp= coin->bundles[i]) != 0 )
-            bp->converted = bp->startutxo = bp->utxofinish = 0;
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
     //if ( coin->balanceswritten > 1 )
