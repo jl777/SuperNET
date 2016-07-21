@@ -1,6 +1,5 @@
 include iguana.sources
 
 all: 
-	$(TOOL_DIR)/bin/$(MINGW) -w -o ../agents/win32/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS) -lws2_32 -lpthread   
+	$(TOOL_DIR)/bin/$(MINGW) -w -o ../agents/win32/iguana.exe -D __MINGW -D __CURL_CURLBUILD_H -D __CURL_CURL_H -D __CURL_EASY_H $(SOURCES) $(LIBS) 
 	$(TOOL_DIR)/bin/strip --strip-all ../agents/win32/iguana.exe
-

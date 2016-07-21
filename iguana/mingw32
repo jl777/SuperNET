@@ -1,4 +1,4 @@
 include ../mingw.path
-LIBS := $(TOOL_DIR)/lib/libpthread.a ../agents/win32/libcrypto777.a  $(TOOL_DIR)/lib/libws2_32.a  $(TOOL_DIR)/lib/libgdi32.a -I$(TOOL_DIR)/include -I$(APP)/iguana -I$(APP)/includes -I$(APP)/crypto777 
+LIBS := ../agents/win32/libcrypto777.a  $(TOOL_DIR)/lib/libws2_32.a -L../win  $(TOOL_DIR)/lib/libgdi32.a -I$(TOOL_DIR)/include -I../iguana -I../includes -I../crypto777 -lws2_32 -lpthreadGC2
 
 include mingw
