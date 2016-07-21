@@ -521,7 +521,7 @@ void iguana_appletests(struct supernet_info *myinfo)
 {
     char *str;
     //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
-    iguana_accounts(), getchar();
+    //iguana_accounts(), getchar();
     if ( 0 )
     {
     char genesisblock[1024];
