@@ -393,6 +393,7 @@ char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coi
 char *jsuccess()
 {
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
     return(jprint(retjson,1));
 }
 

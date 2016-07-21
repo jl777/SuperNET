@@ -471,10 +471,57 @@ void mainloop(struct supernet_info *myinfo)
     }
 }
 
+void iguana_accounts()
+{
+    long filesize; cJSON *json,*array,*item,*posting,*auths,*json2; int32_t i,n,m; char *str,*str2,*postingkey,*name,*key,fname[128],cmd[512]; FILE *postingkeys;
+    if ( (str= OS_filestr(&filesize,"accounts.txt")) != 0 )
+    {
+        if ( (json= cJSON_Parse(str)) != 0 )
+        {
+            if ( (array= jarray(&n,json,"result")) != 0 && (postingkeys= fopen("postingkeys.c","wb")) != 0 )
+            {
+                fprintf(postingkeys,"char *postingkeys[][2] = {\n");
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (name= jstr(item,"name")) != 0 && (posting= jobj(item,"posting")) != 0 )
+                    {
+                        if ( (auths= jarray(&m,posting,"key_auths")) != 0 )
+                        {
+                            item = jitem(auths,0);
+                            if ( is_cJSON_Array(item) != 0 && (key= jstri(item,0)) != 0 )
+                            {
+                                sprintf(fname,"\"/tmp/%s\"",name);
+                                sprintf(cmd,"curl --url \"http://127.0.0.1:8091\" --data \"{\\\"id\\\":444,\\\"method\\\":\\\"get_private_key\\\",\\\"params\\\":[\\\"%s\\\"]}\" > %s",key,fname);
+                                printf("%s\n",cmd);
+                                if ( (str2= OS_filestr(&filesize,fname)) != 0 )
+                                {
+                                    if ( (json2= cJSON_Parse(str2)) != 0 )
+                                    {
+                                        if ( (postingkey= jstr(json2,"result")) != 0 )
+                                            fprintf(postingkeys,"{ \"%s\", \"%s\" },",name,postingkey);
+                                        free_json(json2);
+                                    }
+                                }
+                                free(str2);
+                            }
+                        }
+                    }
+                }
+                fprintf(postingkeys,"\n};\n");
+                fclose(postingkeys);
+            }
+            free_json(json);
+        }
+        free(str);
+    }
+}
+
 void iguana_appletests(struct supernet_info *myinfo)
 {
     char *str;
     //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
+    iguana_accounts(), getchar();
     if ( 0 )
     {
     char genesisblock[1024];
