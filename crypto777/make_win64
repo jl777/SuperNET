@@ -5,13 +5,14 @@ all: clean build
 
 build:
 	mkdir -p ../agents/win64 || true
-	@echo "\nBuilding crypto......"
-	$(TOOL_DIR)/bin/$(MINGW) -w -D __MINGW -DHAVE_STRUCT_TIMESPEC -c $(CRYPTO777_SRCS) -I$(TOOL_DIR)/include -I$(APP)/includes/openssl || (echo "\033[4m ERROR: Compilation failed for win64\033[0m"; exit 1; )
+	@echo "\nBuilding crypto777......"
+	$(TOOL_DIR)/bin/$(MINGW) -w -D __MINGW -DHAVE_STRUCT_TIMESPEC -c $(CRYPTO777_SRCS) -I$(TOOL_DIR)/include -I../includes/openssl || (echo "\033[4m ERROR: Compilation failed for win64\033[0m"; exit 1; )
  
 	$(TOOL_DIR)/bin/$(MINGW)-ar rcu ../agents/win64/libcrypto777.a *.o || (echo "\033[4mERROR: Failed to create libcrypto777.a\033[0m"; exit 1; )
-
+	@echo "\Build Successful......"
 
 clean:
 	@echo "\nCleaning files......"
 	rm -f ../agents/win64/* || true
 	rm -f *.o || true
+	@echo "\nCleaned all files......"

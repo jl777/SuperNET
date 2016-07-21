@@ -1,3 +1,2 @@
-TOOL_DIR := /D/MinGW
-MINGW := mingw32-gcc
-APP := /C/Users/usamir/Documents/GitHub/SuperNET
+TOOL_DIR := C:/MinGW/64
+MINGW := gcc
