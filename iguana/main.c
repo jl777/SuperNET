@@ -491,19 +491,20 @@ void iguana_accounts()
                             item = jitem(auths,0);
                             if ( is_cJSON_Array(item) != 0 && (key= jstri(item,0)) != 0 )
                             {
-                                sprintf(fname,"\"/tmp/%s\"",name);
+                                sprintf(fname,"/tmp/%s",name);
                                 sprintf(cmd,"curl --url \"http://127.0.0.1:8091\" --data \"{\\\"id\\\":444,\\\"method\\\":\\\"get_private_key\\\",\\\"params\\\":[\\\"%s\\\"]}\" > %s",key,fname);
-                                printf("%s\n",cmd);
+                                system(cmd);
                                 if ( (str2= OS_filestr(&filesize,fname)) != 0 )
                                 {
                                     if ( (json2= cJSON_Parse(str2)) != 0 )
                                     {
                                         if ( (postingkey= jstr(json2,"result")) != 0 )
                                             fprintf(postingkeys,"{ \"%s\", \"%s\" },",name,postingkey);
+                                        else printf("no result in (%s)\n",jprint(json2,0));
                                         free_json(json2);
-                                    }
-                                }
-                                free(str2);
+                                    } else printf("couldnt parse (%s)\n",str2);
+                                    free(str2);
+                                } else printf("couldnt load (%s)\n",fname);
                             }
                         }
                     }
@@ -521,7 +522,6 @@ void iguana_appletests(struct supernet_info *myinfo)
 {
     char *str;
     //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
-    //iguana_accounts(), getchar();
     if ( 0 )
     {
     char genesisblock[1024];
