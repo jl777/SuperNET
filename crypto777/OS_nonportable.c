@@ -48,7 +48,7 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 #include <time.h>
 
 
-#include "../win/mman.h"
+#include "../OSlibs/win/mman.h"
 
 #ifndef FILE_MAP_EXECUTE
 #define FILE_MAP_EXECUTE    0x0020

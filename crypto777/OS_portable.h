@@ -32,11 +32,11 @@
 
 #ifdef __MINGW
 #define sleep(x) Sleep(1000*(x))
-#include "../win/mingw.h"
-#include "../win/mman.h"
-#include "../win/pthread.h"
+#include "../OSlibs/win/mingw.h"
+#include "../OSlibs/win/mman.h"
+#include "../OSlibs/win/pthread.h"
 
-//#define EADDRINUSE WSAEADDRINUSE
+#define EADDRINUSE WSAEADDRINUSE
 
 #else
 //#include <sys/poll.h>

@@ -3,10 +3,10 @@ include ../mingw.path
 
 all: clean copy build
 copy :
-	cp -f ../win/pthreadGC2.dll ../agents/win32/pthreadGC2.dll
+	mkdir -p ../agents/win32 || true
+	cp -f ../OSlibs/win/pthreadGC2.dll ../agents/win32/pthreadGC2.dll
 
 build :
-	mkdir -p ../agents/win32 || true
 	@echo "\nBuilding crypto777....."
 	$(TOOL_DIR)/bin/$(MINGW) -w -D __MINGW -DHAVE_STRUCT_TIMESPEC -c $(CRYPTO777_SRCS) -I$(TOOL_DIR)/include -I../includes/openssl -I../crypto777 || (echo -e "\033[4mERROR: Compilation failed for win32 \033[0m"; exit 1; )
 

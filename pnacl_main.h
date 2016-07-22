@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #ifdef _WIN32
-#include "win/pthread.h"
+#include "OSlibs/win/pthread.h"
 #include <windows.h>
 //static inline void sleep(unsigned ms) { Sleep(ms*1000); }
 
