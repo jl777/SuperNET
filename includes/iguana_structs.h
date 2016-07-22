@@ -349,6 +349,7 @@ struct iguana_bundle
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative,validatehash;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
     struct iguana_spendvector *tmpspends; int32_t numtmpspends;
+    int64_t *weights,supply; int32_t numweights;
 };
 
 struct iguana_bundlereq
@@ -400,7 +401,7 @@ struct iguana_info
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
     queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
-    portable_mutex_t peers_mutex,blocks_mutex;
+    portable_mutex_t peers_mutex,blocks_mutex,special_mutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;

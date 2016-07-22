@@ -390,13 +390,15 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 {
     static const bits256 zero;
     int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
+    portable_mutex_lock(&coin->special_mutex);
     if ( (rptr= bp->ramchain.H.data) != 0 || (bp == coin->current && (rptr= coin->RTramchain.H.data) != 0) )
     {
-        //T = (void *)(long)((long)rptr + (long)rptr->Toffset);
         T = RAMCHAIN_PTR(rptr,Toffset);
         *tx = T[txidind];
+        portable_mutex_unlock(&coin->special_mutex);
         return(tx);
     }
+    portable_mutex_unlock(&coin->special_mutex);
     printf("bundletx without ramchain\n");
     for (iter=0; iter<2; iter++)
     {
@@ -1020,6 +1022,8 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
             {
                 fprintf(stderr,"emitQ done coin.%p bp.[%d] ht.%d error\n",coin,bp->hdrsi,bp->bundleheight);
                 bp->emitfinish = 0;
+                coin->emitbusy--;
+                return(0);
             }
             coin->emitbusy--;
         }
@@ -1066,8 +1070,10 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
         if ( coin->virtualchain != 0 || iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
+        {
+            printf("bundlefinalized done.[%d]\n",bp->hdrsi);
             return(0);
-        //else printf("bundlefinalize not done.[%d]\n",bp->hdrsi);
+        }
         retval = 1;
     }
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) )
@@ -1079,7 +1085,11 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     } else bp->nexttime += 3;
     if ( bp->emitfinish <= 1 )
         iguana_bundleQ(coin,bp,1000);
-    else bp->queued = 0;
+    else
+    {
+        //printf("[%d] not queued\n",bp->hdrsi);
+        bp->queued = 0;
+    }
     return(retval);
 }
 

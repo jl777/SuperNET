@@ -145,7 +145,8 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
         addr = &coin->peers->active[i];
         if ( addr->usock < 0 || addr->dead != 0 || addr->ready == 0 || addr->ipbits == 0 )
             continue;
-        addr->pendblocks = 0;
+        addr->pendblocks >>= 1;
+        addr->pendhdrs >>= 1;
         if ( addr->recvblocks > coin->peers->mostreceived )
             coin->peers->mostreceived = addr->recvblocks;
         //printf("[%.0f %.0f] ",addr->recvblocks,addr->recvtotal);
@@ -450,6 +451,8 @@ void iguana_update_balances(struct iguana_info *coin)
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
+    if ( helperid != 0 )
+        return(0);
     if ( coin->spendvectorsaved > 1 )
     {
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
@@ -469,7 +472,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
-        //printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
+        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid < incr )
@@ -490,7 +493,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             for (i=0; i<max; i++)
                 if ( (bp= coin->bundles[i]) != 0 )
                 {
-                    //iguana_volatilespurge(coin,&bp->ramchain);
+                    iguana_volatilespurge(coin,&bp->ramchain);
                     iguana_volatilesmap(coin,&bp->ramchain);
                 }
         }
@@ -558,7 +561,7 @@ void iguana_helper(void *arg)
     {
         flag = 0;
         //iguana_jsonQ(); cant do this here
-        allcurrent = 2;
+        allcurrent = 1;
         polltimeout = 100;
         //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
@@ -731,7 +734,16 @@ void iguana_coinloop(void *arg)
                     //if ( coin->longestchain+10000 > coin->blocks.maxbits )
                     //    iguana_recvalloc(coin,coin->longestchain + 100000);
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
+                    {
                         flag += iguana_processrecv(myinfo,coin);
+                        if ( coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
+                        {
+                            int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
+                            hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
+                            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->weights == 0 )
+                                bp->weights = iguana_PoS_weights(myinfo,coin,&refP,&bp->supply,&bp->numweights,&nonz,&errs,bp->bundleheight);
+                        }
+                    }
                     iguana_jsonQ();
                 }
                 coin->idletime = (uint32_t)time(NULL);
@@ -851,7 +863,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         strcpy(coin->name,"illegalcoin");
         coin->symbol[0] = 0;
         return(0);
-    } 
+    }
     if ( jobj(json,"RELAY") != 0 )
         coin->RELAYNODE = juint(json,"RELAY");
     else coin->RELAYNODE = (strcmp(coin->symbol,"BTCD") == 0);

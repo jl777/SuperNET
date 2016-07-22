@@ -27,12 +27,12 @@ char *Iguana_validcommands[] =
 };
 
 #ifdef __PNACL__
-char GLOBAL_TMPDIR[512] = "/DB/tmp";
-char GLOBAL_DBDIR[512] = "/DB";
-char GLOBAL_GENESISDIR[512] = "/genesis";
-char GLOBAL_HELPDIR[512] = "/DB/help";
-char GLOBAL_VALIDATEDIR[512] = "/DB/purgeable";
-char GLOBAL_CONFSDIR[512] = "/DB/confs";
+char GLOBAL_TMPDIR[512] = "/tmp";
+char GLOBAL_DBDIR[512] = "DB";
+char GLOBAL_GENESISDIR[512] = "genesis";
+char GLOBAL_HELPDIR[512] = "DB/help";
+char GLOBAL_VALIDATEDIR[512] = "DB/purgeable";
+char GLOBAL_CONFSDIR[512] = "DB";
 int32_t IGUANA_NUMHELPERS = 1;
 #else
 char GLOBAL_TMPDIR[512] = "tmp";

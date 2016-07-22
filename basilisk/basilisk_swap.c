@@ -118,7 +118,7 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
 
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
 {
-    cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n;
+    cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n,retval = -1;
 #ifdef BASILISK_DISABLETX
     return(10);
 #endif
@@ -128,7 +128,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
     jaddstr(argjson,"coin",rawtx->coin->symbol);
     if ( (valstr= basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
     {
-        char str[65]; printf("%s %s valstr.(%s)\n",rawtx->name,bits256_str(str,rawtx->actualtxid),valstr);
+        //char str[65]; printf("%s %s valstr.(%s)\n",rawtx->name,bits256_str(str,rawtx->actualtxid),valstr);
         if ( (valuearray= cJSON_Parse(valstr)) != 0 )
         {
             if ( is_cJSON_Array(valuearray) != 0 )
@@ -137,24 +137,22 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
                 for (i=0; i<n; i++)
                 {
                     item = jitem(valuearray,i);
-                    height = jint(valuearray,"height");
-                    numconfirms = jint(valuearray,"numconfirms");
+                    height = jint(item,"height");
+                    numconfirms = jint(item,"numconfirms");
+                    char str[65]; printf("i.%d of %d: %s height.%d -> numconfirms.%d\n",i,n,bits256_str(str,rawtx->actualtxid),height,numconfirms);
                     if ( height > 0 && numconfirms >= 0 )
                     {
-                        free_json(argjson);
-                        free_json(valuearray);
-                        free(valstr);
-                        printf("%s height.%d -> numconfirms.%d\n",bits256_str(str,rawtx->actualtxid),height,numconfirms);
+                        retval = numconfirms;
+                        break;
                     }
-                }
-            }
-        }
+               }
+            } else printf("valstr not array\n");
+            free_json(valuearray);
+        } else printf("parse error\n");
+        free(valstr);
     }
     free_json(argjson);
-    if ( valuearray != 0 )
-        free_json(valuearray);
-    free(valstr);
-    return(-1);
+    return(retval);
 }
 
 bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
@@ -197,6 +195,8 @@ int32_t basilisk_rawtx_spend(struct supernet_info *myinfo,struct basilisk_swap *
         char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
     } else V.N = V.M = 1;
     V.suppress_pubkeys = dest->suppress_pubkeys;
+    if ( dest->redeemlen != 0 )
+        memcpy(V.p2shscript,dest->redeemscript,dest->redeemlen), V.p2shlen = dest->redeemlen;
     if ( userdata != 0 && userdatalen > 0 )
     {
         memcpy(V.userdata,userdata,userdatalen);
@@ -841,7 +841,6 @@ int32_t basilisk_swapdata_deck(struct supernet_info *myinfo,struct basilisk_swap
 int32_t basilisk_verify_otherdeck(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     int32_t i,len = 0;
-    printf("verify otherdeck\n");
     for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
         len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
     return(0);
@@ -918,17 +917,17 @@ void basilisk_swap01(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 
 void basilisk_swap02(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    basilisk_swap01(myinfo,swap,data,maxlen);
-    printf("check for other deck\n");
-    if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
-        swap->statebits |= 0x02;
+    if ( (swap->statebits & 0x02) == 0 )
+    {
+        printf("check for other deck\n");
+        if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
+            swap->statebits |= 0x02;
+    }
 }
 
 void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen; char str[65];
-    //if ( (rand() % 10) == 0 )
-        basilisk_swap02(myinfo,swap,data,maxlen);
     datalen = iguana_rwnum(1,data,sizeof(swap->choosei),&swap->choosei);
     if ( swap->iambob != 0 )
     {
@@ -952,8 +951,6 @@ void basilisk_swap04(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 void basilisk_swap08(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     uint8_t pubkey33[33]; char str[65];
-    //if ( (rand() % 10) == 0 )
-        basilisk_swap04(myinfo,swap,data,maxlen);
     printf("check otherchoosei\n");
     if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
     {
@@ -986,8 +983,6 @@ void basilisk_swap08(struct supernet_info *myinfo,struct basilisk_swap *swap,uin
 void basilisk_swap10(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,j,datalen;
-    if ( (rand() % 10) == 0 )
-        basilisk_swap08(myinfo,swap,data,maxlen);
     datalen = 0;
     for (i=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
     {
@@ -1027,19 +1022,29 @@ void basilisk_swaploop(void *_swap)
     data = malloc(maxlen);
     while ( time(NULL) < swap->expiration )
     {
-        fprintf(stderr,"r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
-        if ( (swap->statebits & 0x01) == 0 ) // send pubkeys
-            basilisk_swap01(myinfo,swap,data,maxlen);
-        else if ( (swap->statebits & 0x02) == 0 ) // wait for pubkeys
-            basilisk_swap02(myinfo,swap,data,maxlen);
-        else if ( (swap->statebits & 0x04) == 0 ) // send choosei
-            basilisk_swap04(myinfo,swap,data,maxlen);
-        else if ( (swap->statebits & 0x08) == 0 ) // wait for choosei
-            basilisk_swap08(myinfo,swap,data,maxlen);
-        else if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
-            basilisk_swap10(myinfo,swap,data,maxlen);
-        else if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
+        printf("r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
+        if ( (swap->statebits & 0x08) == 0 )
         {
+            basilisk_swap01(myinfo,swap,data,maxlen); // send pubkeys
+            basilisk_swap08(myinfo,swap,data,maxlen); // wait for choosei
+        }
+        if ( (swap->statebits & 0x10) == 0 )
+        {
+            basilisk_swap02(myinfo,swap,data,maxlen); // check for other deck
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
+            if ( (swap->statebits & 0x10) == 0 && swap->otherchoosei >= 0 && swap->otherchoosei < INSTANTDEX_DECKSIZE ) // send all but one privkeys
+                basilisk_swap10(myinfo,swap,data,maxlen);
+        }
+        if ( (swap->statebits & 0x1f) != 0x1f )
+        {
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
+            printf("initial setup incomplete state.%x\n",swap->statebits);
+            sleep(1);
+            continue;
+        }
+        if ( (swap->statebits & 0x20) == 0 ) // wait for all but one privkeys
+        {
+            basilisk_swap04(myinfo,swap,data,maxlen); // send choosei
             if ( basilisk_swapget(myinfo,swap,0x20,data,maxlen,basilisk_verify_privkeys) == 0 )
                 swap->statebits |= 0x20;
         }
@@ -1103,6 +1108,7 @@ void basilisk_swaploop(void *_swap)
         }
         else if ( (swap->statebits & 0x80) == 0 ) // wait for fee
         {
+            basilisk_swap10(myinfo,swap,data,maxlen);
             if ( basilisk_swapget(myinfo,swap,0x80,data,maxlen,basilisk_verify_otherfee) == 0 )
             {
                 // verify and submit otherfee
@@ -1114,8 +1120,8 @@ void basilisk_swaploop(void *_swap)
         }
         else // both sides have setup required data and paid txfee
         {
-            if ( swap->sleeptime < 60 )
-                swap->sleeptime++;
+            //if ( swap->sleeptime < 60 )
+            //    swap->sleeptime++;
             if ( swap->iambob != 0 )
             {
                 if ( (swap->statebits & 0x100) == 0 )
@@ -1291,13 +1297,8 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        if ( 1 || myinfo->RELAYID >= 0 )
-            sleep(1);
-        else
-        {
-            if ( swap->sleeptime > 0 )
-                sleep(swap->sleeptime);
-        }
+        printf("finished swapstate.%x\n",swap->statebits);
+        sleep(1);
     }
     if ( swap->iambob != 0 )
     {

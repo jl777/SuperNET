@@ -575,12 +575,20 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
 int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin)
 {
     int32_t i,len = 0; uint8_t *txstart = serialized; char txidstr[65];
+    if ( maxsize < sizeof(msg->version) )
+        return(-1);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( hastimestamp != 0 )
+    {
+        if ( maxsize-len < sizeof(msg->timestamp) )
+            return(-1);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->timestamp),&msg->timestamp);
+    }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_in);
     if ( rwflag == 0 )
         msg->vins = iguana_memalloc(mem,msg->tx_in * sizeof(*msg->vins),1);
+    if ( maxsize-len <= 0 )
+        return(-1);
     for (i=0; i<msg->tx_in; i++)
     {
         len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
@@ -591,7 +599,7 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
-    //printf("numvouts.%d ",msg->tx_out);
+   //printf("numvouts.%d ",msg->tx_out);
     if ( rwflag == 0 )
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
@@ -686,17 +694,17 @@ int32_t iguana_gentxarray(struct iguana_info *coin,struct OS_memspace *mem,struc
         tx = iguana_memalloc(mem,msg.txn_count*sizeof(*tx),1);
         for (i=0; i<msg.txn_count; i++)
         {
-            if ( len > recvlen )
+            if ( len+32 > recvlen )
             {
                 printf("gentxarrayB error len.%d > recvlen.%d\n",len,recvlen);
-                break;
+                return(-1);
             }
             if ( (n= iguana_rwtx(coin->chain->zcash,0,mem,&data[len],&tx[i],recvlen - len,&tx[i].txid,coin->chain->isPoS,strcmp(coin->symbol,"VPN")==0)) < 0 )
             {
                 for (i=0; i<recvlen-hdrlen; i++)
                     printf("%02x",data[hdrlen+i]);
                 printf(" <- gentxarrayC error i.%d len.%d > recvlen.%d, n.%d hdrlen.%d\n",i,len,recvlen,n,hdrlen);
-                break;
+                return(-1);
             }
             numvouts += tx[i].tx_out;
             numvins += tx[i].tx_in;
@@ -835,7 +843,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         retval = 0;
         if ( (ishost= (strcmp(H->command,"getblocks") == 0)) || strcmp(H->command,"block") == 0 )
         {
-            if ( addr != 0 )
+            if ( addr != 0 && rawmem->ptr != 0 )
             {
                 struct iguana_txblock txdata;
                 iguana_memreset(rawmem), iguana_memreset(txmem);

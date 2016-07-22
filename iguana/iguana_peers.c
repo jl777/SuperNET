@@ -740,7 +740,7 @@ void iguana_startconnection(void *arg)
                 coin->peers->ranked[0] = addr;
         } else n = 0;
         iguana_iAconnected(coin,addr);
-        //printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s.PEER CONNECTED.%d:%d of max.%d! %s:%d usock.%d\n",coin->symbol,coin->peers->numconnected,n,coin->MAXPEERS,addr->ipaddr,coin->chain->portp2p,addr->usock);
 #ifdef IGUANA_DEDICATED_THREADS
         //iguana_launch("recv",iguana_dedicatedrecv,addr,IGUANA_RECVTHREAD);
         iguana_dedicatedloop(SuperNET_MYINFO(0),coin,addr);
@@ -1279,10 +1279,13 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         }
     }
     //printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
-    if ( addr->vinsfp != 0 )
-        fclose(addr->vinsfp), addr->vinsfp = 0;
-    if ( addr->voutsfp != 0 )
-        fclose(addr->voutsfp), addr->voutsfp = 0;
+    if ( 0 )
+    {
+        if ( addr->vinsfp != 0 )
+            fclose(addr->vinsfp), addr->vinsfp = 0;
+        if ( addr->voutsfp != 0 )
+            fclose(addr->voutsfp), addr->voutsfp = 0;
+    }
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )

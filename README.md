@@ -6,7 +6,8 @@ Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatu
 Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
 Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Android)](https://jenkinsmaster.sprnt.pw/job/Android/)
 iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iOS)](https://jenkinsmaster.sprnt.pw/job/iOS/)
-... | ...
+Windows 32 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win32/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win32/)
+Windows 64 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/)
 docs.supernet.org | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=docs.supernet.org-updating)](https://jenkinsmaster.sprnt.pw/job/docs.supernet.org-updating/)
 
 ---

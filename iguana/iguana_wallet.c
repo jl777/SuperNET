@@ -393,6 +393,7 @@ char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coi
 char *jsuccess()
 {
     cJSON *retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
     return(jprint(retjson,1));
 }
 
@@ -923,7 +924,7 @@ char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp
         if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,bitcoin_randkey(myinfo->ctx)) != 0 )
             retjson = iguana_walletadd(myinfo,waddrp,coin,retstr,account,&addr,1,0);
         else return(clonestr("{\"error\":\"couldnt calculate waddr\"}"));
-    } else return(clonestr("{\"error\":\"no wallet data\"}"));
+    } else return(clonestr("{\"error\":\"no wallet data, did you remember to do encryptwallet onetime?\"}"));
     return(jprint(retjson,1));
 }
 

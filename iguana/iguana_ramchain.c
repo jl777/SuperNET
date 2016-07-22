@@ -1863,7 +1863,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         if ( bits256_cmp(merkle_root,origtxdata->zblock.RO.merkle_root) != 0 )
         {
             char str[65],str2[65];
-            printf(">>>>>>>>>> merkle mismatch.[%d] calc.(%s) vs (%s)\n",txn_count,bits256_str(str,merkle_root),bits256_str(str2,origtxdata->zblock.RO.merkle_root));
+            printf(">>>>>>>>>> %s merkle mismatch.[%d] calc.(%s) vs (%s)\n",coin->symbol,txn_count,bits256_str(str,merkle_root),bits256_str(str2,origtxdata->zblock.RO.merkle_root));
             origtxdata->zblock.RO.recvlen = 0;
             origtxdata->zblock.issued = 0;
             return(-1);

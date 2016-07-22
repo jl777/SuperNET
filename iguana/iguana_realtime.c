@@ -273,11 +273,11 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         //char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
-        bp->lastRT = (uint32_t)time(NULL);
+        //bp->lastRT = (uint32_t)time(NULL);
         if ( coin->peers != 0 && coin->RTheight <= coin->longestchain-offset && coin->peers->numranked > 0 && time(NULL) > coin->RThdrstime+6 )
         {
             iguana_RThdrs(coin,bp,coin->peers->numranked);
-            coin->RThdrstime = bp->lastRT;
+            coin->RThdrstime = (uint32_t)time(NULL);
         }
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc("RTbundle",coin,bp);

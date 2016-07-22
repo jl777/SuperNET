@@ -725,7 +725,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         if ( i == 0 )
             bp->utxofinish = bp->startutxo = (uint32_t)time(NULL);
     }
-    if ( i < coin->bundlescount-1 )
+    if ( 1 || i < coin->bundlescount-1 )
     {
         printf("spendvectors.[%d] max.%d missing, will regen all of them\n",i,coin->bundlescount-1);
         for (i=0; i<coin->bundlescount-1; i++)
@@ -747,7 +747,8 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         coin->balanceswritten = iguana_volatilesinit(coin);
     if ( coin->balanceswritten > 1 )
     {
-        for (i=0; i<coin->balanceswritten; i++)
+        //for (i=0; i<coin->balanceswritten; i++)
+        for (i=0; i<coin->bundlescount; i++)
         {
             //printf("%d ",i);
             iguana_validateQ(coin,coin->bundles[i]);
@@ -756,7 +757,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     printf("i.%d balanceswritten.%d\n",i,coin->balanceswritten);
     if ( coin->balanceswritten < coin->bundlescount )
     {
-        for (i=coin->balanceswritten; i<coin->bundlescount; i++)
+        for (i=0*coin->balanceswritten; i<coin->bundlescount; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
             {

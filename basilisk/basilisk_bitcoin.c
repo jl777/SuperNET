@@ -343,7 +343,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
     jadd64bits(retjson,"satoshis",value);
     jaddnum(retjson,"value",dstr(value));
     jaddnum(retjson,"height",height);
-    jaddnum(retjson,"numconfirms",coin->blocks.hwmchain.height - height);
+    jaddnum(retjson,"numconfirms",coin->blocks.hwmchain.height - height + 1);
     jaddbits256(retjson,"txid",txid);
     jaddnum(retjson,"vout",vout);
     jaddstr(retjson,"coin",coin->symbol);
@@ -497,10 +497,10 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         jadd(valsobj,"addresses",addresses);
     }
     //printf("use addresses.(%s)\n",jprint(addresses,0));
-    //printf("vals.(%s) change.(%s) spend.%s\n",jprint(valsobj,0),changeaddr,spendscriptstr);
+    printf("(%s) vals.(%s) change.(%s) spend.%s\n",coin->symbol,jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
-    if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
+    if ( coin != 0 )//&& basilisk_bitcoinavail(coin) != 0 )
     {
         if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
         {

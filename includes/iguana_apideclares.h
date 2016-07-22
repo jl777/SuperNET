@@ -69,7 +69,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
 STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
-ZERO_ARGS(bitcoinrpc,makekeypair);
+ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
 
@@ -141,6 +141,8 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,heightd,minconfd);
 P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC);
 STRING_AND_INT(iguana,bundleaddresses,activecoin,height);
 STRING_AND_INT(iguana,bundlehashes,activecoin,height);
+STRING_AND_INT(iguana,PoSweights,activecoin,height);
+STRING_ARG(iguana,stakers,activecoin);
 
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
 //TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);

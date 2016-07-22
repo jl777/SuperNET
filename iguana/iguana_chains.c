@@ -36,6 +36,7 @@ static struct iguana_chain Chains[] =
         "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff001d1aa4ae180101000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000",
         18333,18334,0,
     },*/
+    // curl --data '{"jsonrpc": "2.0", "method": "get_order_book", "params": [], "id": 1}' http://127.0.0.1:8090/rpc
     //[CHAIN_BITCOIN] =
     {
 		//CHAIN_BITCOIN,
@@ -291,7 +292,9 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
     if ( strcmp(chain->symbol,"NXT") != 0 )
     {
         if ( strcmp(chain->symbol,"BTCD") == 0 )
-            chain->pubtype = 60, chain->p2shtype = 85;
+            chain->pubtype = 60, chain->p2shtype = 85, chain->portp2p = 14631, chain->rpcport = 14632;
+        else if ( strcmp(chain->symbol,"BTC") == 0 )
+            chain->pubtype = 0, chain->p2shtype = 5, chain->portp2p = 8333, chain->rpcport = 8332;
         else chain->do_opreturn = juint(argjson,"do_opreturn");
         if ( (chain->minoutput= j64bits(argjson,"minoutput")) == 0 )
             chain->minoutput = 10000;
@@ -322,6 +325,20 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         {
             if ( chain->portp2p != 0 )
                 chain->rpcport = chain->portp2p-1;
+        }
+        if ( chain->portp2p == 0 )
+        {
+            if ( strcmp("BTC",chain->symbol) == 0 )
+                chain->portp2p = 8333;
+            else if ( strcmp("BTCD",chain->symbol) == 0 )
+                chain->portp2p = 14631;
+        }
+        if ( chain->rpcport == 0 )
+        {
+            if ( strcmp("BTC",chain->symbol) == 0 )
+                chain->rpcport = 8332;
+            else if ( strcmp("BTCD",chain->symbol) == 0 )
+                chain->rpcport = 14632;
         }
         chain->zcash = juint(argjson,"zcash");
         if ( (chain->normal_txversion= juint(argjson,"normal_txversion")) == 0 )
@@ -429,7 +446,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             }
         }
         sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
-        printf("COIN.%s serverport.(%s) userpass.(%s) RPCport.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,*(uint32_t *)chain->netmagic);
+        printf("COIN.%s serverport.(%s) userpass.(%s) RPCport.%u P2P.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,chain->portp2p,*(uint32_t *)chain->netmagic);
     }
 }
 

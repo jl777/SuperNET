@@ -18503,5 +18503,101 @@ len = 0;
              }
              return(n);
              }*/
+                
+                continue;
+        for (i=bp->hdrsi; i>=0; i--)
+        {
+            if ( (bp= coin->bundles[i]) != 0 )
+            {
+                ramchain = 0;
+                if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&p,rmd160,i,i) != 0 && (rdata= ramchain->H.data) != 0 )
+                {
+                    spent = 0;
+                    deposits = 0;
+                    unspentind = lastunspentind;
+                    U = RAMCHAIN_PTR(rdata,Uoffset);
+                    T = RAMCHAIN_PTR(rdata,Toffset);
+                    while ( unspentind > 0 )
+                    {
+                        if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,ramchain,i,unspentind,lastheight,0,1<<31,U[unspentind].value) == 0 )
+                            deposits += U[unspentind].value;
+                            else spent += U[unspentind].value;
+                                unspentind = U[unspentind].prevunspentind;
+                                }
+                    weights[pkind] += (deposits - spent);
+                    /*if ( (A2= ramchain->A2) != 0 && p.pkind > 0 && p.pkind < rdata->numpkinds && (U2= ramchain->Uextras) != 0 )
+                     {
+                     T = RAMCHAIN_PTR(rdata,Toffset);
+                     U = RAMCHAIN_PTR(rdata,Uoffset);
+                     unspentind = A2[p.pkind].lastunspentind;
+                     while ( unspentind > 0 )
+                     {
+                     uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
+                     if ( uheight < lastheight )
+                     spent += U[unspentind].value;
+                     unspentind = U2[unspentind].prevunspentind;
+                     }
+                     weights[pkind] -= spent;
+                     } else printf("PoS.[%d] rdata.%p or A2.%p error [%d] pkind.%d\n",pkind,rdata,A2,i,p.pkind);*/
+                    if ( weights[pkind] != 0 )
+                        printf("wt %.8f P.%d -> [%d] pkind.%d deposits %.8f spent %.8f\n",dstr(weights[pkind]),pkind,i,p.pkind,dstr(deposits),dstr(spent));
+                        }
+            }
+            /*if ( (retstr= iguana_orderbook("bitfinex","BTC","USD",10)) != 0 )
+             {
+             if ( (aveprice= tradebots_update(&Fbtc_usd,"bitfinex","BTC","USD",retstr,1)) != 0 )
+             {
+             Fbtc = _pairaved(avebtc,aveprice);
+             avebtc = _pairaved(Ebtc,Fbtc);
+             }
+             free(retstr);
+             }
+             if ( (retstr= iguana_orderbook("btce","BTC","USD",10)) != 0 )
+             {
+             if ( (aveprice= tradebots_update(&Ebtc_usd,"btce","BTC","USD",retstr,1)) != 0 )
+             {
+             Ebtc = _pairaved(avebtc,aveprice);
+             avebtc = _pairaved(Ebtc,Fbtc);
+             }
+             free(retstr);
+             }
+             if ( (retstr= iguana_orderbook("bittrex","SBD","BTC",10)) != 0 )
+             {
+             if ( (aveprice= tradebots_update(&Bsbd_btc,"bittrex","SBD","BTC",retstr,10)) != 0 )
+             {
+             Bsbd = _pairaved(avesbd,aveprice);
+             avesbd = _pairaved(Bsbd,Psbd);
+             }
+             free(retstr);
+             }
+             if ( (retstr= iguana_orderbook("poloniex","SBD","BTC",10)) != 0 )
+             {
+             if ( (aveprice= tradebots_update(&Psbd_btc,"poloniex","SBD","BTC",retstr,10)) != 0 )
+             {
+             Psbd = _pairaved(avesbd,aveprice);
+             avesbd = _pairaved(Bsbd,Psbd);
+             }
+             free(retstr);
+             }
+             if ( (retstr= iguana_orderbook("bittrex","STEEM","BTC",10)) != 0 )
+             {
+             if ( (aveprice= tradebots_update(&Bsteem_btc,"bittrex","STEEM","BTC",retstr,100)) != 0 )
+             {
+             Bsteem = _pairaved(avesteem,aveprice);
+             avesteem = _pairaved(Bsteem,Psteem);
+             }
+             free(retstr);
+             }
+             if ( (retstr= iguana_orderbook("poloniex","STEEM","BTC",10)) != 0 )
+             {
+             //printf("retstr.(%s)\n",retstr);
+             if ( (aveprice= tradebots_update(&Psteem_btc,"poloniex","STEEM","BTC",retstr,100)) != 0 )
+             {
+             Psteem = _pairaved(avesteem,aveprice);
+             avesteem = _pairaved(Bsteem,Psteem);
+             }
+             free(retstr);
+             }*/
+
 #endif
 #endif

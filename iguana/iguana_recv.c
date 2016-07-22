@@ -1652,7 +1652,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     flag += iguana_processrecvQ(coin,&newhwm);
     //printf("reqhdrs\n");
     flag += iguana_reqhdrs(coin);
-    if ( coin->spendvectorsaved > 1 )
+    //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
@@ -1663,11 +1663,11 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
             coin->laststats = (uint32_t)time(NULL);
         }
     }
-    else
+    /*else
     {
         flag += iguana_reqblocks(coin);
         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-    }
+    }*/
     if ( time(NULL) > coin->spendvectorsaved )
     {
         for (i=0; i<coin->chain->bundlesize; i++)

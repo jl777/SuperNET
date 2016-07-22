@@ -418,12 +418,14 @@ void mainloop(struct supernet_info *myinfo)
                     if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
                     {
                         n = coin->bundlescount-1;
+                        //printf("%s n.%d emitfinished.%d\n",coin->symbol,n,iguana_emitfinished(coin,1));
                         if ( iguana_emitfinished(coin,1) >= n )
                         {
                             if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                             {
                                 for (j=0; j<n; j++)
-                                    iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
+                                    if ( coin->bundles[j] != 0 )
+                                        iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                                 sleep(3);
                             }
                             if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
@@ -464,8 +466,54 @@ void mainloop(struct supernet_info *myinfo)
         }
         //pangea_queues(SuperNET_MYINFO(0));
         if ( flag == 0 )
-            usleep(10000 + isRT*100000 + (numpeers == 0)*1000000);
+            usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
         //iguana_jsonQ(); // cant do this here safely, need to send to coin specific queue
+    }
+}
+
+void iguana_accounts()
+{
+    long filesize; cJSON *json,*array,*item,*posting,*auths,*json2; int32_t i,n,m; char *str,*str2,*postingkey,*name,*key,fname[128],cmd[512]; FILE *postingkeys;
+    if ( (str= OS_filestr(&filesize,"accounts.txt")) != 0 )
+    {
+        if ( (json= cJSON_Parse(str)) != 0 )
+        {
+            if ( (array= jarray(&n,json,"result")) != 0 && (postingkeys= fopen("postingkeys.c","wb")) != 0 )
+            {
+                fprintf(postingkeys,"char *postingkeys[][2] = {\n");
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (name= jstr(item,"name")) != 0 && (posting= jobj(item,"posting")) != 0 )
+                    {
+                        if ( (auths= jarray(&m,posting,"key_auths")) != 0 )
+                        {
+                            item = jitem(auths,0);
+                            if ( is_cJSON_Array(item) != 0 && (key= jstri(item,0)) != 0 )
+                            {
+                                sprintf(fname,"\"/tmp/%s\"",name);
+                                sprintf(cmd,"curl --url \"http://127.0.0.1:8091\" --data \"{\\\"id\\\":444,\\\"method\\\":\\\"get_private_key\\\",\\\"params\\\":[\\\"%s\\\"]}\" > %s",key,fname);
+                                printf("%s\n",cmd);
+                                if ( (str2= OS_filestr(&filesize,fname)) != 0 )
+                                {
+                                    if ( (json2= cJSON_Parse(str2)) != 0 )
+                                    {
+                                        if ( (postingkey= jstr(json2,"result")) != 0 )
+                                            fprintf(postingkeys,"{ \"%s\", \"%s\" },",name,postingkey);
+                                        free_json(json2);
+                                    }
+                                }
+                                free(str2);
+                            }
+                        }
+                    }
+                }
+                fprintf(postingkeys,"\n};\n");
+                fclose(postingkeys);
+            }
+            free_json(json);
+        }
+        free(str);
     }
 }
 
@@ -473,6 +521,7 @@ void iguana_appletests(struct supernet_info *myinfo)
 {
     char *str;
     //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
+    //iguana_accounts(), getchar();
     if ( 0 )
     {
     char genesisblock[1024];
@@ -504,7 +553,7 @@ void iguana_appletests(struct supernet_info *myinfo)
         if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":0,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":64,\"endpend\":64,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
-            if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+            if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
@@ -1458,7 +1507,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; cJSON *argjson = 0;
+    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; //cJSON *argjson = 0;
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -1525,16 +1574,20 @@ void iguana_main(void *arg)
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("bittrex",0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("btc38",0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create("huobi",0);
-    argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
+    //argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
     //iguana_coinadd("BTC",argjson); dont do this here, coin args not set
     ///iguana_coinadd("LTC",argjson);
-    free_json(argjson);
+    //free_json(argjson);
+    printf("helpinit\n");
     iguana_helpinit(myinfo);
+    printf("basilisks_init\n");
     basilisks_init(myinfo);
+    printf("iguana_commandline\n");
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
     iguana_appletests(myinfo);
 #endif
+    printf("iguana_launchdaemons\n");
     iguana_launchdaemons(myinfo);
 }
 

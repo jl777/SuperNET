@@ -1,0 +1,7 @@
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1192000}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1192500}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1193000}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1193500}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1194000}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1194500}"
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"PoSweights\",\"activecoin\":\"BTCD\",\"height\":1195000}"
