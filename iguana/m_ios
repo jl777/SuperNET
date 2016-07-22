@@ -6,4 +6,4 @@ git pull
 
 echo CC=$CC
 
-$CC -v -o ../agents/iguana -O2 *.c ../ios/lib/libssl.a ../ios/lib/libcrypto.a ../agents/libcrypto777.a  -L $(xcrun --sdk iphonesimulator --show-sdk-path)/usr/lib -L ../ios/lib -lcurl -lm 
+$CC -v -o ../agents/iguana -O2 *.c ../OSlibs/ios/lib/libssl.a ../OSlibs/ios/lib/libcrypto.a ../agents/libcrypto777.a  -L $(xcrun --sdk iphonesimulator --show-sdk-path)/usr/lib -L ../OSlibs/ios/lib -lcurl -lm 
