@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<title>Iguana / Login</title>
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/login.css">
+		<script type="text/javascript" src="js/jquery-3.0.0.min.js"></script>
+		<script type="text/javascript" src="js/api.js"></script>
+		<script type="text/javascript" src="js/login.js"></script>
+	</head>
+	<body>
+		<div class="container-fluid">
+	    <div class="row centered">
+				<section class="form-container login-form col-md-3">
+					<header class="form-header orange-gradient box-shadow-bottom">
+						<i class="icon-close text-shadow cursor-pointer">&times;</i>
+					</header>
+					<div class="form-content">
+						<div class="login-input-directions-error center offset-bottom-sm col-red hidden unselectable">Incorrect input. Passphrase must consist of 24 words. Try one more time.</div>
+						<div class="login-input-directions center offset-bottom-sm unselectable">Type or paste the passphrase to log in</div>
+						<textarea name="loginPassphrase" id="passphrase" class="login-passphrase-textarea offset-bottom-sm row center error"></textarea>
+						<button class="btn btn-block disabled orange-gradient box-shadow-all text-shadow row btn-signin">Log in</button>
+						<div class="login-or-delim center unselectable">or</div>
+						<button class="btn btn-block orange-gradient box-shadow-all text-shadow row btn-signup">Create an account</button>
+					</div>
+				</section>
+	    </div>
+		</div>
+	</body>
+</html>

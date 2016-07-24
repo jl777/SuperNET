@@ -1,0 +1,128 @@
+/*!
+ * Iguana custom styles
+ *
+ */
+
+	body,
+	html {
+		padding: 0;
+		margin: 0;
+		height: 100%;
+		width: 100%;
+		display: table;
+	}
+	.container-fluid {
+		display: table-cell;
+		vertical-align: middle;
+	}
+	.orange-gradient,
+	.btn.orange-gradient:focus {
+		/* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#fe640d+8,fe640d+25,fe4b0d+66,fe450d+100 */
+		background: rgb(254, 100, 13); /* Old browsers */
+		background: -moz-radial-gradient(center, ellipse cover, rgba(254, 100, 13, 1) 8%, rgba(254, 100, 13, 1) 25%, rgba(254, 75, 13, 1) 66%, rgba(254, 69, 13, 1) 100%); /* FF3.6-15 */
+		background: -webkit-radial-gradient(center, ellipse cover, rgba(254, 100, 13, 1) 8%, rgba(254, 100, 13, 1) 25%, rgba(254,75,13,1) 66%, rgba(254, 69, 13, 1) 100%); /* Chrome10-25,Safari5.1-6 */
+		background: radial-gradient(ellipse at center, rgba(254, 100, 13, 1) 8%, rgba(254, 100, 13, 1) 25%, rgba(254, 75, 13, 1) 66%, rgba(254, 69, 13, 1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+		filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe640d', endColorstr='#fe450d', GradientType=1); /* IE6-9 fallback on horizontal gradient */
+	}
+	.box-shadow-all {
+		box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+	}
+	.box-shadow-bottom {
+		box-shadow: 0 2px 2px 1px rgba(0, 0, 0, 0.2);
+	}
+	.form-container {
+		margin: 0 auto;
+		background-color: #f4f7fb;
+	}
+	.login-form {
+		padding: 0;
+		float: none;
+	}
+	.login-or-delim {
+		font-size: 18px;
+		padding: 26px 0;
+		letter-spacing: 1px;
+	}
+	.unselectable {
+		cursor: default;
+		user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		-webkit-user-select: none;
+	}
+	textarea {
+		width: 100%;
+		height: 120px;
+		border-radius: 4px;
+		border: solid 1px #C7CCD0;
+		padding: 15px 20px;
+		font-weight: bold;
+	}
+	.cursor-pointer {
+		cursor: pointer;
+		cursor: hand;
+	}
+	.icon-close {
+		color: #fff;
+		font-size: 40px;
+		position: relative;
+		top: -4px;
+		left: 12px;
+	}
+	.col-red {
+		color: #FF0000;
+	}
+	.textarea.error {
+		border: solid 1px #FF0000;
+	}
+	.center {
+		text-align: center;
+	}
+	.offset-bottom-sm {
+		margin-bottom: 15px;
+	}
+
+	.header {
+		background-color: #fe700d;
+		color: white;
+		padding: 15px 10px;
+		text-align: center;
+	}
+
+	.form-content {
+		padding: 25% 10px;
+		font-size: 16px;
+		color: #303033;
+	}
+	.form-content .row {
+		width: 99%;
+		margin-right: 0;
+		margin-left: 0;
+	}
+	.form-header {
+		height: 50px;
+	}
+	.btn {
+		color: #fff;
+		font-weight: bold;
+		font-size: 16px;
+		height: 46px;
+	}
+	.text-shadow {
+		text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.4);
+	}
+	.btn:hover,
+	.btn:focus {
+		color: #fff;
+		box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+	}
+	.btn.disabled,
+	.btn.disabled:focus {
+		pointer-events: none;
+		background: #C7CCD0;
+		text-shadow: none;
+	}
+	.btn.disabled:hover {
+		box-shadow: none;
+		text-shadow: none;
+	}
