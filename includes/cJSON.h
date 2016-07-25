@@ -53,6 +53,7 @@ extern "C"
 #define cJSON_Array 5
 #define cJSON_Object 6
 	
+#define is_cJSON_Null(json) ((json) != 0 && ((json)->type & 0xff) == cJSON_NULL)
 #define is_cJSON_Array(json) ((json) != 0 && ((json)->type & 0xff) == cJSON_Array)
 #define is_cJSON_String(json) ((json) != 0 && ((json)->type & 0xff) == cJSON_String)
 #define is_cJSON_Number(json) ((json) != 0 && ((json)->type & 0xff) == cJSON_Number)
