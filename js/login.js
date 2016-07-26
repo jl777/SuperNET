@@ -41,4 +41,5 @@ function toggleLoginErrorStyling(isError) {
     $("#passphrase").removeClass("error");
     $(".login-input-directions-error.col-red").addClass("hidden");
   }
+  $("#passphrase").val('');
 }
