@@ -15,12 +15,12 @@
 
 #include "../iguana/iguana777.h"
 
-void tradebots_LP(char *jsonstr);
+void tradebots_LP(char *jsonstr,char *arg);
 
 int main(int argc,char **argv)
 {
     long filesize;
     printf("Start Liquidity Provider\n");
-    tradebots_LP(OS_filestr(&filesize,"LP.conf"));
+    tradebots_LP(OS_filestr(&filesize,"LP.conf"),(argc > 1) ? argv[1]:"");
     return(0);
 }

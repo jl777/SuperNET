@@ -418,7 +418,7 @@ void mainloop(struct supernet_info *myinfo)
                     if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
                     {
                         n = coin->bundlescount-1;
-                        //printf("%s n.%d emitfinished.%d\n",coin->symbol,n,iguana_emitfinished(coin,1));
+                        printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(coin,1),coin->spendvectorsaved);
                         if ( iguana_emitfinished(coin,1) >= n )
                         {
                             if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
