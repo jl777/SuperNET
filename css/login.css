@@ -37,6 +37,7 @@
 	.login-form {
 		padding: 0;
 		float: none;
+		max-width: 375px;
 	}
 	.login-or-delim {
 		font-size: 18px;
