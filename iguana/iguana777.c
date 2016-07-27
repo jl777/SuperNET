@@ -676,7 +676,7 @@ void iguana_coinloop(void *arg)
             if ( (coin= coins[i]) != 0 )
             {
                 if ( strcmp(coin->symbol,"BTC") == 0 )
-                    printf("%s loop\n",coin->symbol);
+                    printf("%s mainloop\n",coin->symbol);
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
@@ -695,13 +695,16 @@ void iguana_coinloop(void *arg)
 #endif
                 }
                 if ( coin->started == 0 && coin->active != 0 )
+                {
+                    printf("callcoinstart\n");
                     iguana_callcoinstart(myinfo,coin);
+                }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
                     if ( strcmp(coin->symbol,"BTC") == 0 )
-                        printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain);
+                        printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
@@ -759,7 +762,8 @@ void iguana_coinloop(void *arg)
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        if ( flag == 0 && coin->isRT == 0 )
+        printf("flag.%d isRT.%d polltimeout.%d numranked.%d\n",flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
+        if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
             usleep(coin->polltimeout*1000 + 90000 + (coin->peers->numranked == 0)*1000000);
