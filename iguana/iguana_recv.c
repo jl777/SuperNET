@@ -1342,8 +1342,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
     while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         flag++;
-        if ( strcmp("BTC",coin->symbol) == 0 )
-        fprintf(stderr,"%s flag.%d %s recvQ.%p type.%c n.%d\n",coin->symbol,flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        //fprintf(stderr,"%s flag.%d %s recvQ.%p type.%c n.%d\n",coin->symbol,flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
         {
             netBLOCKS--;
