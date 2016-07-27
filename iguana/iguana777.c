@@ -451,15 +451,15 @@ void iguana_update_balances(struct iguana_info *coin)
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
-    if ( helperid != 0 )
-        return(0);
+    //if ( helperid != 0 )
+    //    return(0);
     if ( coin->spendvectorsaved > 1 )
     {
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
     }
     printf("helperid.%d start utxogen\n",helperid);
-    incr = 1;//IGUANA_NUMHELPERS;
+    incr = IGUANA_NUMHELPERS;
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;
     max = coin->bundlescount;
@@ -515,11 +515,11 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             } //else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
         }
     }
-    /*while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
+    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
         printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(IGUANA_NUMHELPERS+3);
-    }*/
+    }
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
@@ -530,7 +530,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    //printf("helper.%d helperdone\n",helperid);
+    printf("helper.%d helperdone\n",helperid);
     return(num);
 }
 
@@ -559,7 +559,6 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
-        printf("helperid.%d top of loop\n",helperid);
         flag = 0;
         //iguana_jsonQ(); cant do this here
         allcurrent = 1;
