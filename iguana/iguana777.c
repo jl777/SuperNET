@@ -675,7 +675,7 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                //printf("%s loop\n",coin->symbol);
+                printf("%s loop\n",coin->symbol);
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
