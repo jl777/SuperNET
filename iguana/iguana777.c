@@ -559,6 +559,7 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
+        printf("helperid.%d top of loop\n",helperid);
         flag = 0;
         //iguana_jsonQ(); cant do this here
         allcurrent = 1;
