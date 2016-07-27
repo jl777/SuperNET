@@ -12,16 +12,19 @@ $(document).ready(function() {
     var totalSubstrAlpha = passphraseInput.match(/\b[a-z]+\b/g); // count only words consisted of characters
     var totalSpaces = passphraseInput.match(/\s/g);
 
-    if (totalSubstr.length === 24 && totalSubstrAlpha.length === 24 && totalSpaces.length === 23) {
-      if (walletLogin(passphraseInput)) {
-        toggleLoginErrorStyling(false);
-        document.location = "dashboard.html";
+    if (totalSubstr && totalSubstrAlpha && totalSpaces)
+      if (totalSubstr.length === 24 && totalSubstrAlpha.length === 24 && totalSpaces.length === 23) {
+        if (walletLogin(passphraseInput)) {
+          toggleLoginErrorStyling(false);
+          document.location = "dashboard.html";
+        } else {
+          toggleLoginErrorStyling(true);
+        }
       } else {
         toggleLoginErrorStyling(true);
       }
-    } else {
+    else
       toggleLoginErrorStyling(true);
-    }
   });
   $("#passphrase").keyup(function() {
     if ($("#passphrase").val().length > 0) {
