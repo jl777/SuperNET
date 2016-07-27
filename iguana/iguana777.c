@@ -502,7 +502,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         sleep(3);
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
-    incr = 1;
+    //incr = 1;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -513,7 +513,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } //else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
+            } else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
         }
     }
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
