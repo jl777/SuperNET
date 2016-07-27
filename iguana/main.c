@@ -420,7 +420,7 @@ void mainloop(struct supernet_info *myinfo)
                     if ( time(NULL) > coin->startutc+60 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-2*coin->chain->bundlesize)/coin->chain->bundlesize )
                     {
                         n = coin->bundlescount-1;
-                        printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(coin,1),coin->spendvectorsaved);
+                        //printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(coin,1),coin->spendvectorsaved);
                         if ( iguana_emitfinished(coin,1) >= n )
                         {
                             if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
@@ -433,7 +433,7 @@ void mainloop(struct supernet_info *myinfo)
                             if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                             {
                                 coin->spendvectorsaved = 1;
-                                printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
+                                //printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
                             }
                             else
                             {
