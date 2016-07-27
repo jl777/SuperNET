@@ -519,20 +519,20 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
-        printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
+        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(IGUANA_NUMHELPERS+3);
     }
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
-        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
+        printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
     }
     else
     {
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    printf("helper.%d helperdone\n",helperid);
+    printf("%s helper.%d helperdone\n",coin->symbol,helperid);
     return(num);
 }
 
@@ -561,6 +561,7 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
+        printf("helperid.%d top of loop\n",helperid);
         flag = 0;
         //iguana_jsonQ(); cant do this here
         allcurrent = 1;
@@ -572,9 +573,11 @@ void iguana_helper(void *arg)
                 iguana_utxogen(myinfo,coin,helperid,0);
             else if ( coin->spendvectorsaved > 1 )
             {
+                printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
                 for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
                     if ( (bp= coin->bundles[j]) != 0 )
                         iguana_bundlevalidate(coin,bp,0);
+                printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
             }
         }
         //portable_mutex_unlock(&myinfo->allcoins_mutex);
