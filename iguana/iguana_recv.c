@@ -1651,21 +1651,13 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
     }
-    if ( strcmp("BTC",coin->symbol) == 0 )
-        fprintf(stderr,"recvQ\n");
     flag += iguana_processrecvQ(coin,&newhwm);
-    if ( strcmp("BTC",coin->symbol) == 0 )
-        fprintf(stderr,"reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
-            if ( strcmp("BTC",coin->symbol) == 0 )
-                printf("reqblocks\n");
             flag += iguana_reqblocks(coin);
-            if ( strcmp("BTC",coin->symbol) == 0 )
-                printf("bundlestats\n");
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }

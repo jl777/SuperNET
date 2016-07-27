@@ -675,8 +675,6 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                if ( strcmp(coin->symbol,"BTC") == 0 )
-                    printf("%s mainloop\n",coin->symbol);
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
@@ -696,16 +694,13 @@ void iguana_coinloop(void *arg)
                 }
                 if ( coin->started == 0 && coin->active != 0 )
                 {
-                    if ( strcmp(coin->symbol,"BTC") == 0 )
-                        printf("callcoinstart\n");
                     iguana_callcoinstart(myinfo,coin);
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
-                    if ( strcmp(coin->symbol,"BTC") == 0 )
-                        printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
+                    // printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
@@ -735,8 +730,6 @@ void iguana_coinloop(void *arg)
                     {
                         if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible+10 )
                         {
-                            if ( strcmp(coin->symbol,"BTC") == 0 )
-                                printf("%s send ping? %d\n",coin->symbol,coin->peers != 0 ? coin->peers->numranked : -1);
                             if ( coin->peers->numranked > 0 && (now % 60) == 0 )
                                 iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
                             coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
@@ -744,21 +737,13 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->MAXPEERS > 1 && now > coin->peers->lastmetrics+10 )
                     {
-                        if ( strcmp(coin->symbol,"BTC") == 0 )
-                            fprintf(stderr,"%s call updatemetrics\n",coin->symbol);
                         coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
-                        if ( strcmp(coin->symbol,"BTC") == 0 )
-                            fprintf(stderr,"%s back updatemetrics\n",coin->symbol);
                     }
                     //if ( coin->longestchain+10000 > coin->blocks.maxbits )
                     //    iguana_recvalloc(coin,coin->longestchain + 100000);
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
-                        if ( strcmp(coin->symbol,"BTC") == 0 )
-                            fprintf(stderr,"%s call processrecv\n",coin->symbol);
                         flag += iguana_processrecv(myinfo,coin);
-                        if ( strcmp(coin->symbol,"BTC") == 0 )
-                            fprintf(stderr,"%s back processrecv RTheight.%d\n",coin->symbol,coin->RTheight);
                         if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
@@ -767,16 +752,13 @@ void iguana_coinloop(void *arg)
                                 bp->weights = iguana_PoS_weights(myinfo,coin,&refP,&bp->supply,&bp->numweights,&nonz,&errs,bp->bundleheight);
                         }
                     }
-                    if ( strcmp(coin->symbol,"BTC") == 0 )
-                        printf("%s call jsonQ\n",coin->symbol);
                     iguana_jsonQ();
-                } else if ( strcmp(coin->symbol,"BTC") == 0 )
-                    printf("skip %s\n",coin->symbol);
+                } //else if ( strcmp(coin->symbol,"BTC") == 0 )
+                  //  printf("skip %s\n",coin->symbol);
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        if ( strcmp(coin->symbol,"BTC") == 0 )
-            printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
+        //printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
         if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
