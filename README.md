@@ -1,7 +1,6 @@
-#SuperNET Client Iguana
+#SuperNET Client "iguana"
 
-<<<<<<< HEAD
-OS | Build Status 
+OS | Build Status
 -------------|------
 Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix-jl777)](https://jenkinsmaster.sprnt.pw/job/Unix-jl777)
 Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
@@ -24,11 +23,11 @@ iguana: most efficient bitcoin core implementation that can simultaneously be fu
 komodo: this is the top secret project I cant talk about publicly yet
 
 > #TL;DR#
-> 
+>
 > ```sudo apt-get update; sudo apt-get install git build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
-> 
-> The above one line gets SuperNET installed, built and launched for unix. 
-> 
+>
+> The above one line gets SuperNET installed, built and launched for unix.
+>
 > After that ```./m_unix``` updates to latest.
 > *Continue below at "Running".*
 
@@ -104,14 +103,14 @@ Internally, all paths convert the request into a standard SuperNET JSON request.
 Another approach is to use the bitcoin RPC syntax via:
  curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"getinfo\",\"params\":[]}"
 the params:[] array is where the standard bitcoin parameters go, the only change that is needed is to specify the coin
-alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin 
+alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin
 to use for bitcoin RPC calls. this will suffice in single coin environments
 
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana",\"method\":\"test\"}"
 curl --url "http://127.0.0.1:7778/iguana/test" -> html page with results
 curl --url "http://127.0.0.1:7778/api/iguana/test" -> just json text
 http://127.0.0.1:7778 -> superugly GUI
-http://127.0.0.1:7778/iguana/test 
+http://127.0.0.1:7778/iguana/test
 http://127.0.0.1:7778/api/iguana/test
 postCall('{"agent":"iguana","method":"test"}'}
 iguana_JSON("{\"agent\":\"iguana",\"method\":\"test\"}"); -> direct C function call
@@ -125,7 +124,7 @@ iguana can be invoked with a command line argument. if it is a name of a file, i
 "exchanges" -> { "name":"<name of exchange>", ... }
     "apikey", "apisecret", "userid", "tradepassword" these are as expected
     "pollgap" -> gap between each access to exchange for getting prices
-    
+
 on OSX mksquashfs is not native, you will need to install fuse: https://osxfuse.github.io/ and a squashfs for mac: https://github.com/vasi/squashfuse
 
     **********
@@ -156,10 +155,3 @@ once jsoncmp is built, then ./test shows how to use it
 ./jsoncmp <filename> {\"fields\":[{\"fieldA\":\"requiredvalueA\"},{\"fieldB\":\"requiredvalueB\"},...]}
 
 the idea is to issue a curl command into a /tmp/file and then use jsoncmp to verify the exact value of one or more fields. it will print to stdout JSON with "error" or "result" and to stderr if there is an error
-=======
-Iguana is an app providing advanced benefits from cryptocurrencies and blockchain. Iguana itself combines a set of tools (from multi-currency wallet to real-time exchange) and backend technologies (The Multigateway, InstatDEX, Teleport, Telepathy, etc.) to reveal new types operations with cryptocurrencies, enhance personal security and anonymity, to accelerate transactions clearing procedure speed.
->>>>>>> Switched to pure HTML/CSS/JS
-
-#Dependencies 
-* SuperNET Client Iguana - found here: https://github.com/jl777/SuperNET
-
