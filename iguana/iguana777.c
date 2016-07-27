@@ -578,8 +578,7 @@ void iguana_helper(void *arg)
                 for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
                     if ( (bp= coin->bundles[j]) != 0 )
                         iguana_bundlevalidate(coin,bp,0);
-                if ( helperid == 0 )
-                    coin->spendvalidated |= (1 << helperid);
+                coin->spendvalidated |= (1 << helperid);
                 printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
             }
         }
