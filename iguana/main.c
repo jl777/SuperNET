@@ -701,7 +701,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
     {
         sprintf(helperstr,"{\"helperid\":%d}",i);
         helperargs = clonestr(helperstr);
-        printf("launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
+        printf("helper launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(0,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
     iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD);
