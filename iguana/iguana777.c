@@ -525,6 +525,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
+        coin->spendvalidated = 0;
         printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
     }
     else
@@ -571,12 +572,14 @@ void iguana_helper(void *arg)
         {
             if ( coin->spendvectorsaved == 1 )
                 iguana_utxogen(myinfo,coin,helperid,0);
-            else if ( coin->spendvectorsaved > 1 )
+            else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
             {
                 printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
                 for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
                     if ( (bp= coin->bundles[j]) != 0 )
                         iguana_bundlevalidate(coin,bp,0);
+                if ( helperid == 0 )
+                    coin->spendvalidated |= (1 << helperid);
                 printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
             }
         }

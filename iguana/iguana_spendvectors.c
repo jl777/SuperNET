@@ -970,6 +970,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         }
     }
     coin->spendvectorsaved = (uint32_t)time(NULL);
+    coin->spendvalidated = 0;
     return(0);
 }
 
