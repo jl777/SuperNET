@@ -1657,11 +1657,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         if ( time(NULL) > coin->laststats+5 )
         {
             flag += iguana_reqblocks(coin);
-            if ( strcmp("BTC",coin->symbol) == 0 )
-                printf("call bundlestats\n");
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-            if ( strcmp("BTC",coin->symbol) == 0 )
-                printf("back bundlestats\n");
             coin->laststats = (uint32_t)time(NULL);
         }
     }
