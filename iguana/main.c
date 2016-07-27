@@ -415,8 +415,9 @@ void mainloop(struct supernet_info *myinfo)
                     isRT *= coin->isRT;
                     if ( coin->peers != 0 )
                         numpeers += coin->peers->numranked;
-                    printf("main.%u vs %u, svs %u %d vs %d\n",time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
-                    if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->minconfirms)/coin->chain->bundlesize )
+                    if ( (rand() % 10) == 0 )
+                        printf("main.%u vs %u, svs %u %d vs %d\n",time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
+                    if ( time(NULL) > coin->startutc+10 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
                     {
                         n = coin->bundlescount-1;
                         printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(coin,1),coin->spendvectorsaved);
