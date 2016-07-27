@@ -1342,7 +1342,8 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
     while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         flag++;
-        //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        if ( strcmp("BTC",coin->symbol);
+        fprintf(stderr,"%s flag.%d %s recvQ.%p type.%c n.%d\n",coin->symbol,flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
         {
             netBLOCKS--;
@@ -1644,21 +1645,27 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
     {
+        fprintf(stderr,"%s call balanceflush\n",coin->symbol);
         if ( iguana_balanceflush(coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
+        fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
     }
-    //printf("recvQ\n");
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        fprintf(stderr,"recvQ\n");
     flag += iguana_processrecvQ(coin,&newhwm);
-    //printf("reqhdrs\n");
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        fprintf(stderr,"reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
-            //printf("reqblocks\n");
+            if ( strcmp("BTC",coin->symbol) == 0 )
+                printf("reqblocks\n");
             flag += iguana_reqblocks(coin);
-            //printf("bundlestats\n");
+            if ( strcmp("BTC",coin->symbol) == 0 )
+                printf("bundlestats\n");
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }
@@ -1677,6 +1684,8 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        printf("iguana_process_msgrequestQ\n");
     flag += iguana_process_msgrequestQ(myinfo,coin);
     //if ( strcmp("BTCD",coin->symbol) == 0 )
     //    instantdex_update(SuperNET_MYINFO(0));

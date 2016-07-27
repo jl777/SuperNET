@@ -755,8 +755,10 @@ void iguana_coinloop(void *arg)
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
                         if ( strcmp(coin->symbol,"BTC") == 0 )
-                            printf("%s call processrecv\n",coin->symbol);
+                            fprintf(stderr,"%s call processrecv\n",coin->symbol);
                         flag += iguana_processrecv(myinfo,coin);
+                        if ( strcmp(coin->symbol,"BTC") == 0 )
+                            fprintf(stderr,"%s back processrecv\n",coin->symbol);
                         if ( coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
