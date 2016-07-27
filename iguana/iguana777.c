@@ -459,7 +459,10 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         return(0);
     }
     printf("helperid.%d start utxogen\n",helperid);
-    incr = 1;
+    if ( (incr= IGUANA_NUMHELPERS) > 4 )
+        incr = 4;
+    //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
+    //    incr = 1;
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
