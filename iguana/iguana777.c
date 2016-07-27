@@ -514,7 +514,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
+            } else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
         }
     }
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
@@ -773,7 +773,8 @@ void iguana_coinloop(void *arg)
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+            printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
         if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
