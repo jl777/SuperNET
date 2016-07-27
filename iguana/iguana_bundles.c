@@ -1225,6 +1225,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
     iguana_recentpeers(coin,&capacity,0);
         //sortbuf = calloc(count,sizeof(*sortbuf)*2);
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        printf("inside bundlestats\n");
     for (i=n=m=numv=pending=0; i<count; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
@@ -1351,6 +1353,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        printf("before firstgap\n");
     if ( (bp= firstgap) != coin->current && bp != 0 )//&& coin->PREFETCHLAG < 0 )
     {
         printf("new 1st.%d\n",bp->hdrsi);
