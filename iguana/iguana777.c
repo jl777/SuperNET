@@ -370,7 +370,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,str
         printf("iguana_helperA unexpected null bp\n");
         return(-1);
     }
-    //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
+    printf("validate gen utxo.[%d] utxofinish.%u\n",bp->hdrsi,bp->utxofinish);
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
@@ -459,7 +459,8 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         return(0);
     }
     printf("helperid.%d start utxogen\n",helperid);
-    incr = IGUANA_NUMHELPERS;
+    if ( (incr= IGUANA_NUMHELPERS) > 4 )
+        incr = 4;
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;
     max = coin->bundlescount;
