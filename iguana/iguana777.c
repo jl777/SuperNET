@@ -362,7 +362,7 @@ int32_t iguana_validated(struct iguana_info *coin)
     return(n);
 }
 
-int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t convertflag)
+int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,struct iguana_bundle *bp,int32_t convertflag)
 {
     int32_t retval,num = 0;
     if ( bp == 0 )
@@ -370,7 +370,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,str
         printf("iguana_helperA unexpected null bp\n");
         return(-1);
     }
-    printf("validate gen utxo.[%d] utxofinish.%u\n",bp->hdrsi,bp->utxofinish);
+    printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
@@ -459,17 +459,14 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         return(0);
     }
     printf("helperid.%d start utxogen\n",helperid);
-    if ( (incr= IGUANA_NUMHELPERS) > 4 )
-        incr = 4;
-    //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
-    //    incr = 1;
+    incr = 1;
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-            num += iguana_helperA(myinfo,coin,coin->bundles[hdrsi],convertflag);
+            num += iguana_helperA(myinfo,coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
