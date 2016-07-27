@@ -1353,8 +1353,6 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    if ( strcmp("BTC",coin->symbol) == 0 )
-        printf("before firstgap\n");
     if ( (bp= firstgap) != coin->current && bp != 0 )//&& coin->PREFETCHLAG < 0 )
     {
         printf("new 1st.%d\n",bp->hdrsi);
@@ -1425,6 +1423,8 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     if ( coin->stucktime != 0 && time(NULL)-coin->stucktime > coin->maxstuck )
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d+c.%d b.%d v.%d (%d+%d/%d 1st.%d).s%d to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) (L.%d %d:%d) M.%d %s",coin->symbol,coin->RTheight,numutxo,numconverted,numbalances,iguana_validated(coin),firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,firstgap!=0?firstgap->numspec:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->longestchain/coin->chain->bundlesize,coin->longestchain%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2));
+    if( strcmp("BTC",coin->symbol) == 0 )
+        printf("%s\n",str);
     if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize && numemit == coin->current->hdrsi && numutxo == coin->bundlescount-1 )
     {
         //printf("have all utxo, generate balances\n");

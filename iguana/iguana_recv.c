@@ -1679,8 +1679,6 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
-    if ( strcmp("BTC",coin->symbol) == 0 )
-        printf("iguana_process_msgrequestQ\n");
     flag += iguana_process_msgrequestQ(myinfo,coin);
     //if ( strcmp("BTCD",coin->symbol) == 0 )
     //    instantdex_update(SuperNET_MYINFO(0));
