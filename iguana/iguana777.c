@@ -758,8 +758,8 @@ void iguana_coinloop(void *arg)
                             fprintf(stderr,"%s call processrecv\n",coin->symbol);
                         flag += iguana_processrecv(myinfo,coin);
                         if ( strcmp(coin->symbol,"BTC") == 0 )
-                            fprintf(stderr,"%s back processrecv\n",coin->symbol);
-                        if ( coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
+                            fprintf(stderr,"%s back processrecv RTheight.%d\n",coin->symbol,coin->RTheight);
+                        if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
                             hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
