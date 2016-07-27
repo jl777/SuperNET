@@ -502,6 +502,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         sleep(3);
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
+    incr = 1;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
