@@ -665,8 +665,8 @@ void iguana_coinloop(void *arg)
     myinfo = SuperNET_MYINFO(0);
     n = (int32_t)(long)coins[0];
     coins++;
-    printf("begin coinloop[%d]\n",n);
     coin = coins[0];
+    printf("begin coinloop[%d] %s\n",n,coin->symbol);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -675,7 +675,8 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                printf("%s loop\n",coin->symbol);
+                if ( strcmp(coin->symbol,"BTC") == 0 )
+                    printf("%s loop\n",coin->symbol);
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
@@ -699,7 +700,8 @@ void iguana_coinloop(void *arg)
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
-                    printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain);
+                    if ( strcmp(coin->symbol,"BTC") == 0 )
+                        printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
