@@ -362,7 +362,7 @@ int32_t iguana_validated(struct iguana_info *coin)
     return(n);
 }
 
-int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t convertflag)
+int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,struct iguana_bundle *bp,int32_t convertflag)
 {
     int32_t retval,num = 0;
     if ( bp == 0 )
@@ -370,7 +370,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,str
         printf("iguana_helperA unexpected null bp\n");
         return(-1);
     }
-    //printf("validate incr.%d and gen utxo.[%d] utxofinish.%u Xspends.%p\n",incr,hdrsi,bp->utxofinish,bp->ramchain.Xspendinds);
+    printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
@@ -451,15 +451,16 @@ void iguana_update_balances(struct iguana_info *coin)
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
 {
     int32_t hdrsi,n,i,max,incr,num = 0; struct iguana_bundle *bp;
-    if ( helperid != 0 )
-        return(0);
+    //if ( helperid != 0 )
+    //    return(0);
     if ( coin->spendvectorsaved > 1 )
     {
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
     }
     printf("helperid.%d start utxogen\n",helperid);
-    incr = 1;//IGUANA_NUMHELPERS;
+    if ( (incr= IGUANA_NUMHELPERS) > 8 )
+        incr = 8;
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;
     max = coin->bundlescount;
@@ -468,7 +469,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-            num += iguana_helperA(myinfo,coin,coin->bundles[hdrsi],convertflag);
+            num += iguana_helperA(myinfo,coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
@@ -502,6 +503,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         sleep(3);
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
+    //incr = 1;
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -512,42 +514,43 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } //else printf("helperid.%d validated.[%d]\n",helperid,hdrsi);
+            } else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
         }
     }
-    /*while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
+    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
     {
-        printf("helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
+        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(IGUANA_NUMHELPERS+3);
-    }*/
+    }
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
-        printf("UTXOGEN spendvectorsaved <- %u\n",coin->spendvectorsaved);
+        coin->spendvalidated = 0;
+        printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
     }
     else
     {
         while ( coin->spendvectorsaved <= 1 )
             sleep(IGUANA_NUMHELPERS+3);
     }
-    //printf("helper.%d helperdone\n",helperid);
+    printf("%s helper.%d helperdone\n",coin->symbol,helperid);
     return(num);
 }
 
 void iguana_helper(void *arg)
 {
-    static int32_t maxhelperid;
+    static uint64_t helperidbits;
     cJSON *argjson=0; int32_t iter,n,j,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    helperid %= 64;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
         helperid = juint(argjson,"helperid");
-    if ( helperid > maxhelperid )
-        maxhelperid = helperid;
-    if ( helperid < maxhelperid )
+    if ( ((1 << helperid) & helperidbits) != 0 )
     {
         printf("SKIP duplicate helper.%d\n",helperid);
         return;
     }
+    helperidbits |= (1 << helperid);
     if ( IGUANA_NUMHELPERS < 2 )
         type = 3;
     else type = (1 << (helperid % 2));
@@ -559,6 +562,7 @@ void iguana_helper(void *arg)
     sleep(2);
     while ( 1 )
     {
+        //printf("helperid.%d top of loop\n",helperid);
         flag = 0;
         //iguana_jsonQ(); cant do this here
         allcurrent = 1;
@@ -568,11 +572,14 @@ void iguana_helper(void *arg)
         {
             if ( coin->spendvectorsaved == 1 )
                 iguana_utxogen(myinfo,coin,helperid,0);
-            else if ( coin->spendvectorsaved > 1 )
+            else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
             {
+                //printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
                 for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
                     if ( (bp= coin->bundles[j]) != 0 )
                         iguana_bundlevalidate(coin,bp,0);
+                coin->spendvalidated |= (1 << helperid);
+                //printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
             }
         }
         //portable_mutex_unlock(&myinfo->allcoins_mutex);
@@ -658,8 +665,8 @@ void iguana_coinloop(void *arg)
     myinfo = SuperNET_MYINFO(0);
     n = (int32_t)(long)coins[0];
     coins++;
-    printf("begin coinloop[%d]\n",n);
     coin = coins[0];
+    printf("begin coinloop[%d] %s\n",n,coin->symbol);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -668,7 +675,6 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                //printf("%s loop\n",coin->symbol);
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
@@ -687,11 +693,14 @@ void iguana_coinloop(void *arg)
 #endif
                 }
                 if ( coin->started == 0 && coin->active != 0 )
+                {
                     iguana_callcoinstart(myinfo,coin);
+                }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
+                    // printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
@@ -701,12 +710,12 @@ void iguana_coinloop(void *arg)
                         if ( coin->MAXPEERS > IGUANA_MINPEERS )
                             coin->MAXPEERS = IGUANA_MINPEERS;
                     }
-                    if ( coin->isRT != 0 && coin->current != 0 && coin->numverified >= coin->current->hdrsi )
+                    /*if ( coin->isRT != 0 && coin->current != 0 && coin->numverified >= coin->current->hdrsi )
                     {
                         //static int32_t saved;
                         //if ( saved++ == 0 )
                         //    iguana_coinflush(coin,1);
-                    }
+                    }*/
                     if ( coin->bindsock >= 0 )
                     {
                         if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible+10 )
@@ -728,7 +737,6 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->MAXPEERS > 1 && now > coin->peers->lastmetrics+10 )
                     {
-                        //fprintf(stderr,"metrics\n");
                         coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
                     //if ( coin->longestchain+10000 > coin->blocks.maxbits )
@@ -736,7 +744,7 @@ void iguana_coinloop(void *arg)
                     if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
                         flag += iguana_processrecv(myinfo,coin);
-                        if ( coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
+                        if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
                             hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
@@ -745,11 +753,13 @@ void iguana_coinloop(void *arg)
                         }
                     }
                     iguana_jsonQ();
-                }
+                } //else if ( strcmp(coin->symbol,"BTC") == 0 )
+                  //  printf("skip %s\n",coin->symbol);
                 coin->idletime = (uint32_t)time(NULL);
             }
         }
-        if ( flag == 0 && coin->isRT == 0 )
+        //printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
+        if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
             usleep(coin->polltimeout*1000 + 90000 + (coin->peers->numranked == 0)*1000000);

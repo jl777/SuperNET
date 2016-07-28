@@ -16,6 +16,9 @@
     "128": "icon128.png"
   },
   "minimum_chrome_version": "36",
+  "web_accessible_resources":[
+      "help/*"
+  ],
   "permissions": [ 
       { "socket": [
         "tcp-listen:*:*",
@@ -26,7 +29,9 @@
       ]
     },
       "unlimitedStorage", 
-      {"fileSystem": ["write"]},
+      {"fileSystem": ["write",
+                "retainEntries", 
+                "directory"]},
       "storage",
       "system.storage",
       "system.display",

@@ -725,7 +725,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         if ( i == 0 )
             bp->utxofinish = bp->startutxo = (uint32_t)time(NULL);
     }
-    if ( 1 || i < coin->bundlescount-1 )
+    if ( i < coin->bundlescount-1 )
     {
         printf("spendvectors.[%d] max.%d missing, will regen all of them\n",i,coin->bundlescount-1);
         for (i=0; i<coin->bundlescount-1; i++)
@@ -970,6 +970,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         }
     }
     coin->spendvectorsaved = (uint32_t)time(NULL);
+    coin->spendvalidated = 0;
     return(0);
 }
 

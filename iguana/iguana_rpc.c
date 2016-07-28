@@ -822,7 +822,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize;
-    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
+    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],furl[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -837,6 +837,12 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     j = i = 0;
     filetype[0] = 0;
     //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    #ifdef __PNACL__
+    char *prefix="DB/";
+    snprintf(furl, sizeof furl, "%s%s", prefix,url+1);
+    #else
+    snprintf(furl, sizeof furl, "%s", url+1);
+    #endif
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         static int counter;
@@ -852,7 +858,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             return(filestr);
         else return(clonestr("{\"error\":\"cant find index7778\"}"));
     }
-    else if ( (filestr= OS_filestr(&filesize,url+1)) != 0 )
+    else if ( (filestr= OS_filestr(&filesize,furl)) != 0 )
     {
         *jsonflagp = 1;
         for (i=(int32_t)strlen(url)-1; i>0; i--)
