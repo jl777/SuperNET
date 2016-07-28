@@ -1342,7 +1342,7 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
     while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
         flag++;
-        //fprintf(stderr,"flag.%d %s recvQ.%p type.%c n.%d\n",flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
+        //fprintf(stderr,"%s flag.%d %s recvQ.%p type.%c n.%d\n",coin->symbol,flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
         {
             netBLOCKS--;
@@ -1644,21 +1644,19 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
     {
+        fprintf(stderr,"%s call balanceflush\n",coin->symbol);
         if ( iguana_balanceflush(coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
+        fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
     }
-    //printf("recvQ\n");
     flag += iguana_processrecvQ(coin,&newhwm);
-    //printf("reqhdrs\n");
     flag += iguana_reqhdrs(coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
-            //printf("reqblocks\n");
             flag += iguana_reqblocks(coin);
-            //printf("bundlestats\n");
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }
