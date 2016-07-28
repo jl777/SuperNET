@@ -837,12 +837,11 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     j = i = 0;
     filetype[0] = 0;
     //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
-    #ifdef __PNACL__
-    char *prefix="DB/";
-    snprintf(furl, sizeof furl, "%s%s", prefix,url+1);
-    #else
-    snprintf(furl, sizeof furl, "%s", url+1);
-    #endif
+#ifdef __PNACL__
+    snprintf(furl,sizeof(furl),"%s/%s",GLOBAL_DBDIR,url+1);
+#else
+    snprintf(furl,sizeof(furl),"%s",url+1);
+#endif
     if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
     {
         static int counter;
