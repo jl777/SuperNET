@@ -934,8 +934,12 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                         numrecv++;
                         datasize += block->RO.recvlen;
                     }
-                } else if ( bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+                }
+                else if ( bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+                {
                     printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
+                    iguana_blockunmark(coin,block,bp,bundlei,1);
+                }
             } //else printf("[null %d:%d] ",bp->hdrsi,bundlei);
         }
     }
