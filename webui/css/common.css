@@ -1,0 +1,40 @@
+/*!
+ * Iguana common
+ *
+ */
+
+  @font-face {
+    font-family: proxima-nova-semibold;
+    src: url(../fonts/proxima_nova_semibold.otf);
+  }
+
+  body,
+  html {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+  }
+  .orange-gradient,
+  .btn.orange-gradient:focus {
+    /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#fe640d+8,fe640d+26,fe4b0d+77,fe450d+100 */
+    background: #fe640d; /* Old browsers */
+    background: -moz-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* FF3.6-15 */
+    background: -webkit-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* Chrome10-25,Safari5.1-6 */
+    background: linear-gradient(to bottom, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe640d', endColorstr='#fe450d', GradientType=0); /* IE6-9 */
+  }
+  .cursor-pointer {
+    cursor: pointer;
+    cursor: hand;
+  }
+  .unselectable {
+    cursor: default;
+    user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-user-select: none;
+  }
+  .col-red {
+    color: #FF0000;
+  }
