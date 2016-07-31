@@ -449,7 +449,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     struct iguana_spendvector *spend; struct iguana_unspent *spentU,*u; struct iguana_spendvector *Xspendinds;
     struct iguana_txid *T; struct iguana_blockRO *B; struct iguana_bundle *spentbp;
     int32_t spent_hdrsi,spendind,n,numXspends,errs=0,emit=0; struct iguana_spend *S,*s;
-    ramchain = &bp->ramchain; //(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
         return(-1);
     S = (void *)(long)((long)rdata + rdata->Soffset);

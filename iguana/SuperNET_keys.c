@@ -209,7 +209,7 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         SuperNET_linehash(fname2fa); // maps special chars
         wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
         //char str[65],str2[65]; printf("(%s + %s) -> wallethash.%s 2.(%s)\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
-   }
+    }
     first = (bits256_nonz(wallethash) != 0 && bits256_cmp(wallethash,GENESIS_PRIVKEY) != 0);
     second = (bits256_nonz(wallet2priv) != 0 && bits256_cmp(wallet2priv,GENESIS_PRIVKEY) != 0);
     if ( first != 0 || second != 0 )
@@ -219,12 +219,12 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
         wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
         sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
-        //printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
+        printf("fname.(%s) wallet2pub.%s < [%s, %s]\n",destfname,bits256_str(str,wallet2pub),passphrase,fname2fa);
         if ( (confstr= OS_filestr(&allocsize,destfname)) != 0 )
         {
             if ( (filejson= cJSON_Parse(confstr)) != 0 )
             {
-                //printf("confstr.(%s)\n",confstr);
+                printf("confstr.(%s)\n",confstr);
                 if ( (deciphered= SuperNET_decipher(0,0,0,0,wallet2shared,curve25519(wallethash,curve25519_basepoint9()),jstr(filejson,"result"))) != 0 )
                 {
                     if ( (json= cJSON_Parse(deciphered)) == 0 )
@@ -269,7 +269,7 @@ int32_t _SuperNET_encryptjson(struct supernet_info *myinfo,char *destfname,char 
     wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
     wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
     sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
-    //printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
+    printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
     //printf("shared.%llx -> pub.%s\n",(long long)wallet2shared.txid,bits256_str(str,wallet2pub));
     SuperNET_savejsonfile(myinfo,destfname,wallethash,wallet2pub,argjson);
     return(0);
