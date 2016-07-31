@@ -1,7 +1,7 @@
 include iguana.sources
 include ../mingw.path64
 
-LIBS := ../OSlibs/win/libsecp256k1.a ../OSlibs/win/libcrypto.a ../OSlibs/win/libssl.a ../agents/win64/libcrypto777.a ../OSlibs/win/libcurldll.a $(TOOL_DIR)/x86_64-w64-mingw32/lib/libws2_32.a  $(TOOL_DIR)/x86_64-w64-mingw32/lib/libgdi32.a -I$(TOOL_DIR)/include -I../iguana -I../includes -I../crypto777 -I../OSlibs/win -I../OSlibs/win -L../OSlibs/win/x64 -lpthreadGC2
+LIBS := ../OSlibs/win/libsecp256k1.a ../OSlibs/win/libcrypto.a ../OSlibs/win/libssl.a ../agents/win64/libcrypto777.a ../OSlibs/win/libcurldll.a $(TOOL_DIR)/x86_64-w64-mingw32/lib/libws2_32.a  $(TOOL_DIR)/x86_64-w64-mingw32/lib/libgdi32.a -I$(TOOL_DIR)/include -I../iguana -I../includes -I../crypto777 -I../OSlibs/win -L../OSlibs/win/x64 -lpthreadGC2
 include mingw64_inc
 
 
