@@ -117,6 +117,7 @@ STRING_ARG(iguana,removecoin,activecoin)
             }
             sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
         }
+        return(clonestr("{\"result\":\"success\"}"));
     }
     return(clonestr("{\"error\":\"no active coin\"}"));
 }
