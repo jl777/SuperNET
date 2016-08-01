@@ -951,8 +951,7 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
         init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
         jaddstr(retjson,"pubkey",str);
         cJSON_AddTrueToObject(retjson,"ismine");
-    }
-    else cJSON_AddFalseToObject(retjson,"ismine");
+    } else cJSON_AddFalseToObject(retjson,"ismine");
     //portable_mutex_lock(&myinfo->allcoins_mutex);
     HASH_ITER(hh,myinfo->allcoins,other,tmp)
     {

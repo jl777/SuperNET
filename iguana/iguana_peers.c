@@ -480,7 +480,11 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     {
         if ( coin->peers != 0 && coin->peers->shuttingdown != 0 )
             return(-1);
+#ifdef _WIN32
+        if ( (numsent= (int32_t)send(usock,serialized,remains,0)) < 0 )
+#else
         if ( (numsent= (int32_t)send(usock,serialized,remains,MSG_NOSIGNAL)) < 0 )
+#endif
         {
             printf("send errno.%d %s\n",errno,strerror(errno));
             if ( errno != EAGAIN && errno != EWOULDBLOCK )
