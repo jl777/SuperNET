@@ -370,7 +370,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("iguana_helperA unexpected null bp\n");
         return(-1);
     }
-    printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
+    //printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
     if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(coin,bp,0) == bp->n ) //
     {
         retval = 0;
@@ -514,7 +514,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
+            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
         }
     }
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )

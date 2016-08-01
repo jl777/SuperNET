@@ -156,6 +156,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
     int32_t iterate,lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
         return;
+    printf("RTspendvectors [%d]\n",bp->hdrsi);
     bp->ramchain = coin->RTramchain;
     iguana_rdataset(&R,&RDATA,&coin->RTramchain);
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )

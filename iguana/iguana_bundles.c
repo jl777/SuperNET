@@ -816,7 +816,11 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                     if ( 0 && requiredflag != 0 )
                         printf("not ready altpath.(%d %d %d %d %d) [%d:%d]\n",block->txvalid == 0,block->fpipbits == 0 ,block->fpos < 0,(bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0),iguana_blockvalidate(coin,&valid,block,1) < 0,bp->hdrsi,i);
                 }
-                else printf("cant find (%s)\n",fname);
+                else
+                {
+                    iguana_blockunmark(coin,block,bp,i,1);
+                    printf("cant find (%s)\n",fname);
+                }
             }
         }
         else
