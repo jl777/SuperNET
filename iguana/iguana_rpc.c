@@ -30,6 +30,8 @@ char *sglue(GLUEARGS,char *agent,char *method)
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
+    if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
+        iguana_walletlock(myinfo,0);
     if ( (retstr= SuperNET_JSON(myinfo,json,remoteaddr,port)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
