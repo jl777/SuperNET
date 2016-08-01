@@ -269,6 +269,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
                 jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
             }
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
+            printf("sendback.%d -> %s\n",datalen,remoteaddr);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
                 free(allocptr);
@@ -643,7 +644,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    if ( 1 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
+    //if ( 1 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
@@ -682,7 +683,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             free(retstr);
                         break;
                     } else printf("services null return\n");
-                } else printf("non-relay got unexpected.(%s)\n",type);
+                }
+                else
+                    printf("non-relay got unexpected.(%s)\n",type);
             }
         }
         free_json(valsobj);
