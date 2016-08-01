@@ -132,7 +132,7 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
 
 int32_t basilisk_specialrelay_CMD(char *CMD)
 {
-    if ( strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )
+    if ( strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 || strcmp(CMD,"RID") == 0 )
         return(1);
     else return(0);
 }
@@ -254,7 +254,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,char *remoteaddr,uint32_t basilisktag,char *retstr)
 {
     uint8_t *data,space[4096],*allocptr; struct iguana_info *virt; cJSON *valsobj; int32_t datalen,encryptflag=0,delaymillis=0;
-    //printf("%s retstr.(%s) -> remote.(%s) basilisktag.%u\n",origCMD,retstr,remoteaddr,basilisktag);
+    printf("%s retstr.(%s) -> remote.(%s) basilisktag.%u\n",origCMD,retstr,remoteaddr,basilisktag);
     if ( retstr != 0 && remoteaddr != 0 && remoteaddr[0] != 0 && strcmp(remoteaddr,"127.0.0.1") != 0 )
     {
         if ( (valsobj= cJSON_Parse(retstr)) != 0 )
@@ -389,7 +389,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( 0 && strcmp("RID",CMD) != 0 )
+    //if ( 0 && strcmp("RID",CMD) != 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
