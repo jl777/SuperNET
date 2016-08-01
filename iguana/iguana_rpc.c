@@ -402,7 +402,12 @@ static char *importwallet(RPCARGS)
 
 static char *walletpassphrase(RPCARGS)
 {
-    sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",params[0],"permanentfile",params[2],"timeout",params[1]);
+    /*cJSON *a,*b,*c;
+    a = jduplicate(params[0]);
+    b = jduplicate(params[2]);
+    c = jduplicate(params[1]);
+    sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",a,"permanentfile",b,"timeout",c);
+    */
     return(sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",params[0],"permanentfile",params[2],"timeout",params[1]));
 }
 

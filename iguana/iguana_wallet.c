@@ -378,6 +378,8 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,struct ig
 char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     struct iguana_waccount *wacct; struct iguana_waddress *waddr; uint8_t addrtype; cJSON *retjson;
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"wallet must be unlocked to see accounts\"}"));
     if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
     if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) == 0 )
@@ -699,7 +701,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
     struct iguana_waccount *wacct,*tmp,*checkwacct; struct iguana_waddress *checkwaddr,*waddr=0,*tmp2; uint8_t persistent_rmd160[20],errorflags; int32_t i,persistent_flag=0,good=0,bad=0,_errors[8]; cJSON *item; char coinaddr[64],*retstr;
     if ( errors == 0 )
         errors = _errors;
-    if ( myinfo->decryptstr != 0 )
+    if ( myinfo->expiration != 0 )
         calc_rmd160_sha256(persistent_rmd160,myinfo->persistent_pubkey33,33);
     else memset(persistent_rmd160,0,sizeof(persistent_rmd160));
     portable_mutex_lock(&myinfo->bu_mutex);
@@ -737,7 +739,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
                         jaddi(array,item);
                     }
                 } else good++;
-                if ( myinfo->decryptstr != 0 && persistent_flag == 0 && memcmp(waddr->rmd160,persistent_rmd160,20) == 0 )
+                if ( myinfo->expiration != 0 && persistent_flag == 0 && memcmp(waddr->rmd160,persistent_rmd160,20) == 0 )
                 {
                     persistent_flag = 1;
                     bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,20);
@@ -751,7 +753,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             myfree(wacct,sizeof(*wacct));
         }
     }
-    if (  myinfo->decryptstr != 0 )
+    if ( myinfo->expiration != 0 )
     {
         if ( flag >= 0 && persistent_flag == 0 )
         {
