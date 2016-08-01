@@ -807,7 +807,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
     cJSON *payload,*item,*array,*child; char *account,coinaddr[128],*privstr,wifstr[128]; int32_t i,p2shflag,n; struct iguana_waccount *wacct; struct iguana_waddress waddr; bits256 privkey;
     if ( myinfo->wallet == 0 && myinfo->decryptstr != 0 && (payload= cJSON_Parse(myinfo->decryptstr)) != 0 )
     {
-        printf("WALLET.(%s)\n",myinfo->decryptstr);
+        //printf("WALLET.(%s)\n",myinfo->decryptstr);
         if ( (array= jobj(payload,"wallet")) != 0 )
         {
             n = cJSON_GetArraySize(array);

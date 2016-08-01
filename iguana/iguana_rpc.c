@@ -26,7 +26,7 @@ char *sglue(GLUEARGS,char *agent,char *method)
     char *retstr,*rpcretstr,*walletstr,checkstr[64],dcheckstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val; double dval;
     if ( json == 0 )
         json = cJSON_CreateObject();
-    printf("sglue.(%s)\n",jprint(json,0));
+    //printf("sglue.(%s)\n",jprint(json,0));
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
