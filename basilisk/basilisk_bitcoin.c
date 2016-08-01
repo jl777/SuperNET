@@ -957,8 +957,9 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"received",array);
-    if ( spends != 0 )
-        jadd(retjson,"sent",spends);
+    if ( spends == 0 )
+        spends = cJSON_CreateArray();
+    jadd(retjson,"sent",spends);
     jaddstr(retjson,"coin",coin->symbol);
     jaddnum(retjson,"balance",dstr(total));
     return(jprint(retjson,1));
