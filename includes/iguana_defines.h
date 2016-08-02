@@ -120,7 +120,7 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
 #endif
 
-#if _WIN32 || _WIN64
+#if defined(_WIN32) || defined(_WIN64)
 #define MSG_NOSIGNAL	0
 #endif
 
