@@ -116,9 +116,19 @@ int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t al
     return(n);
 }
 
+int32_t basilisk_confirmsobj(cJSON *item)
+{
+    int32_t height,numconfirms;
+    height = jint(item,"height");
+    numconfirms = jint(item,"numconfirms");
+    if ( height > 0 && numconfirms >= 0 )
+        return(numconfirms);
+    return(-1);
+}
+
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
 {
-    cJSON *argjson,*valuearray=0,*item; char *valstr; int32_t numconfirms,height,i,n,retval = -1;
+    cJSON *argjson,*valuearray=0; char *valstr; int32_t i,n,retval = -1;
 #ifdef BASILISK_DISABLETX
     return(10);
 #endif
@@ -136,17 +146,10 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
                 n = cJSON_GetArraySize(valuearray);
                 for (i=0; i<n; i++)
                 {
-                    item = jitem(valuearray,i);
-                    height = jint(item,"height");
-                    numconfirms = jint(item,"numconfirms");
-                    char str[65]; printf("i.%d of %d: %s height.%d -> numconfirms.%d\n",i,n,bits256_str(str,rawtx->actualtxid),height,numconfirms);
-                    if ( height > 0 && numconfirms >= 0 )
-                    {
-                        retval = numconfirms;
+                    if ( (retval= basilisk_confirmsobj(jitem(valuearray,i))) >= 0 )
                         break;
-                    }
                }
-            } else printf("valstr not array\n");
+            } else retval = basilisk_confirmsobj(valuearray);
             free_json(valuearray);
         } else printf("parse error\n");
         free(valstr);
@@ -1134,6 +1137,7 @@ void basilisk_swaploop(void *_swap)
     }
     while ( retval == 0 && time(NULL) < swap->expiration )  // both sides have setup required data and paid txfee
     {
+        printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits,swap->otherstatebits);
         if ( swap->iambob != 0 )
         {
             if ( (swap->statebits & 0x100) == 0 )
