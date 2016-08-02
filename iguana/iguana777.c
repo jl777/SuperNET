@@ -748,7 +748,7 @@ void iguana_coinloop(void *arg)
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
                             hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
-                            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->weights == 0 )
+                            if ( 0 && (bp= coin->bundles[hdrsi]) != 0 && bp->weights == 0 )
                                 bp->weights = iguana_PoS_weights(myinfo,coin,&refP,&bp->supply,&bp->numweights,&nonz,&errs,bp->bundleheight);
                         }
                     }

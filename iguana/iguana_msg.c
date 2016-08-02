@@ -817,7 +817,7 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
 int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
     uint8_t serialized[16384]; char *ipaddr; struct supernet_info *myinfo = SuperNET_MYINFO(0);
-    int32_t i,n,retval=-1,ishost,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
+    int32_t i,n=0,retval=-1,ishost,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
     bloom = intvectors = srvmsg = -1;
     if ( strncmp(H->command+1,"uperNET",strlen("uperNET")) == 0 || strncmp(H->command,"uperNet",strlen("uperNet")) == 0 )
     {
@@ -872,8 +872,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                 else
                 {
                     len = iguana_peergetrequest(myinfo,coin,addr,data,recvlen,1);
+                    //printf("peergetrequest len.%d\n",len);
                 }
-            }
+            } else printf("command.(%s) addr.%p rawmemptr.%p\n",H->command,addr,rawmem->ptr);
         }
         else if ( (ishost= (strncmp(H->command,"inv",3) == 0)) || strncmp(H->command,"getdata",7) == 0 )
         {

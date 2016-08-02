@@ -26,10 +26,12 @@ char *sglue(GLUEARGS,char *agent,char *method)
     char *retstr,*rpcretstr,*walletstr,checkstr[64],dcheckstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val; double dval;
     if ( json == 0 )
         json = cJSON_CreateObject();
-    printf("sglue.(%s)\n",jprint(json,0));
+    //printf("sglue.(%s)\n",jprint(json,0));
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
+    if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
+        iguana_walletlock(myinfo,0);
     if ( (retstr= SuperNET_JSON(myinfo,json,remoteaddr,port)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -402,6 +404,12 @@ static char *importwallet(RPCARGS)
 
 static char *walletpassphrase(RPCARGS)
 {
+    /*cJSON *a,*b,*c;
+    a = jduplicate(params[0]);
+    b = jduplicate(params[2]);
+    c = jduplicate(params[1]);
+    sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",a,"permanentfile",b,"timeout",c);
+    */
     return(sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",params[0],"permanentfile",params[2],"timeout",params[1]));
 }
 

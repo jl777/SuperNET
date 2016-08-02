@@ -112,7 +112,7 @@ char *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int3
         {
             jadd(retjson,"message",msgjson);
             jaddstr(retjson,"result","success");
-            printf("havemessage len.%d\n",msg->datalen);
+            //printf("havemessage len.%d\n",msg->datalen);
         } else jaddstr(retjson,"error","couldnt add message");
     } else jaddstr(retjson,"error","no message");
     portable_mutex_unlock(&myinfo->messagemutex);

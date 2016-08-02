@@ -159,7 +159,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->rmd160,sizeof(waddr->rmd160),waddr);
         myinfo->dirty = (uint32_t)time(NULL);
         printf("add (%s) scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,waddr->scriptlen,wacct->account,waddr->wifstr);
-    }
+    } else printf("(%s) already in account.(%s)\n",waddr->coinaddr,wacct->account);
     if ( waddr != 0 && waddr->symbol[0] == 0 )
         strcpy(waddr->symbol,coin->symbol);
     return(waddr);
@@ -194,7 +194,7 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
             }
             (*wacctp) = wacct;
             return(waddr);
-        }
+        } //else printf("not in (%s)\n",wacct->account);
     }
     (*wacctp) = 0;
     return(0);
@@ -222,7 +222,7 @@ struct iguana_waddress *iguana_waddresscalc(struct supernet_info *myinfo,uint8_t
 struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,char *redeemScript)
 {
     struct iguana_waccount *wacct = 0; struct iguana_waddress addr,*waddr = 0; int32_t flag = 0;
-    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 && wacct != 0 )
     {
         if ( strcmp(wacct->account,account) != 0 )
         {
@@ -234,9 +234,10 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
     if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
     {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
-        if ( flag != 0 && redeemScript == 0 )
+        if ( waddr != 0 && redeemScript == 0 )
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,addr.privkey);
     }
+    myinfo->dirty = (uint32_t)time(NULL);
     return(waddr);
 }
 
@@ -303,9 +304,9 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
     return(array);
 }
 
-struct iguana_waddress *iguana_ismine(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t addrtype,uint8_t pubkey[65],uint8_t rmd160[20])
+struct iguana_waddress *iguana_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t addrtype,uint8_t pubkey[65],uint8_t rmd160[20])
 {
-    char coinaddr[65]; struct iguana_waccount *wacct; struct iguana_waddress *waddr = 0;
+    struct iguana_waccount *wacct; struct iguana_waddress *waddr = 0;
     if ( bitcoin_address(coinaddr,addrtype,rmd160,20) > 0 )
         waddr = iguana_waddresssearch(myinfo,&wacct,coinaddr);
     return(waddr);
@@ -377,6 +378,8 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,struct ig
 char *getaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     struct iguana_waccount *wacct; struct iguana_waddress *waddr; uint8_t addrtype; cJSON *retjson;
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"wallet must be unlocked to see accounts\"}"));
     if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
     if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) == 0 )
@@ -695,9 +698,12 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
 
 cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t flag,cJSON *array,int32_t *goodp,int32_t *badp,int32_t *errors)
 {
-    struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr=0,*tmp2; uint8_t errorflags; int32_t i,good=0,bad=0,_errors[8]; cJSON *item; char coinaddr[64]; 
+    struct iguana_waccount *wacct,*tmp,*checkwacct; struct iguana_waddress *checkwaddr,*waddr=0,*tmp2; uint8_t persistent_rmd160[20],errorflags; int32_t i,persistent_flag=0,good=0,bad=0,_errors[8]; cJSON *item; char coinaddr[64],*retstr;
     if ( errors == 0 )
         errors = _errors;
+    if ( myinfo->expiration != 0 )
+        calc_rmd160_sha256(persistent_rmd160,myinfo->persistent_pubkey33,33);
+    else memset(persistent_rmd160,0,sizeof(persistent_rmd160));
     portable_mutex_lock(&myinfo->bu_mutex);
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
@@ -733,6 +739,12 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
                         jaddi(array,item);
                     }
                 } else good++;
+                if ( myinfo->expiration != 0 && persistent_flag == 0 && memcmp(waddr->rmd160,persistent_rmd160,20) == 0 )
+                {
+                    persistent_flag = 1;
+                    bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,20);
+                    printf("FOUND PERSISTENT.%s in %s\n",coinaddr,wacct->account);
+                }
             }
         }
         if ( flag < -1 )
@@ -740,6 +752,29 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             HASH_DELETE(hh,myinfo->wallet,wacct);
             myfree(wacct,sizeof(*wacct));
         }
+    }
+    if ( myinfo->expiration != 0 )
+    {
+        if ( flag >= 0 && persistent_flag == 0 )
+        {
+            bitcoin_address(coinaddr,coin->chain->pubtype,persistent_rmd160,20);
+            if ( (retstr= setaccount(myinfo,coin,0,"default",coinaddr,0)) != 0 )
+            {
+                free(retstr);
+                if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+                {
+                    memcpy(waddr->rmd160,persistent_rmd160,20);
+                    memcpy(waddr->pubkey,myinfo->persistent_pubkey33,33);
+                    waddr->privkey = myinfo->persistent_priv;
+                    strcpy(waddr->coinaddr,coinaddr);
+                    if ( (checkwaddr= iguana_waddresssearch(myinfo,&checkwacct,waddr->coinaddr)) != waddr || checkwacct != wacct )
+                        ;
+                }
+            }
+            printf("persistent address not found in wallet, autoadd.(%s)\n",coinaddr);
+        }
+        else if ( flag >= 0 )
+            printf("found persistent address in wallet\n");
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
     if ( goodp != 0 )
@@ -772,7 +807,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
     cJSON *payload,*item,*array,*child; char *account,coinaddr[128],*privstr,wifstr[128]; int32_t i,p2shflag,n; struct iguana_waccount *wacct; struct iguana_waddress waddr; bits256 privkey;
     if ( myinfo->wallet == 0 && myinfo->decryptstr != 0 && (payload= cJSON_Parse(myinfo->decryptstr)) != 0 )
     {
-        printf("WALLET.(%s)\n",myinfo->decryptstr);
+        //printf("WALLET.(%s)\n",myinfo->decryptstr);
         if ( (array= jobj(payload,"wallet")) != 0 )
         {
             n = cJSON_GetArraySize(array);
@@ -809,10 +844,11 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
             }
         }
         free_json(payload);
-        myinfo->decryptstr = 0;
         scrubfree(myinfo->decryptstr);
+        myinfo->decryptstr = 0;
         myinfo->dirty = 0;
     }
+    printf("call walletiterate from initcheck.%p\n",myinfo->decryptstr);
     iguana_walletiterate(myinfo,coin,1,0,0,0,0);
 }
 
@@ -931,7 +967,7 @@ char *getnewaddress(struct supernet_info *myinfo,struct iguana_waddress **waddrp
 
 STRING_ARG(bitcoinrpc,validateaddress,address)
 {
-    cJSON *retjson; uint8_t addrtype,rmd160[20],pubkey[65]; struct iguana_info *other,*tmp; char str[256];
+    cJSON *retjson; uint8_t addrtype,rmd160[20],pubkey[65]; char coinaddr[64],str[256];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( iguana_addressvalidate(coin,&addrtype,address) < 0 )
@@ -946,21 +982,22 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
     strcat(str,"88ac");
     jaddstr(retjson,"scriptPubKey",str);
     jadd(retjson,"isscript",(addrtype == coin->chain->p2shtype) ? jtrue() : jfalse());
-    if ( iguana_ismine(myinfo,coin,addrtype,pubkey,rmd160) > 0 )
+    if ( iguana_ismine(myinfo,coin,coinaddr,addrtype,pubkey,rmd160) > 0 )
     {
         init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
         jaddstr(retjson,"pubkey",str);
         cJSON_AddTrueToObject(retjson,"ismine");
     } else cJSON_AddFalseToObject(retjson,"ismine");
+    jaddstr(retjson,coin->symbol,coinaddr);
     //portable_mutex_lock(&myinfo->allcoins_mutex);
-    HASH_ITER(hh,myinfo->allcoins,other,tmp)
+    /*HASH_ITER(hh,myinfo->allcoins,other,tmp)
     {
         if ( strcmp(other->symbol,coin->symbol) != 0 )
         {
             iguana_addressconv(coin,str,other,addrtype == coin->chain->p2shtype,rmd160);
             jaddstr(retjson,other->symbol,str);
         }
-    }
+    }*/
     //portable_mutex_unlock(&myinfo->allcoins_mutex);
     return(jprint(retjson,1));
 }
@@ -1090,6 +1127,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( timeout <= 0 )
         return(clonestr("{\"error\":\"timeout must be positive\"}"));
+    iguana_walletlock(myinfo,coin);
     printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,password,permanentfile,0);
