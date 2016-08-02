@@ -53,7 +53,7 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-//#define BASILISK_DISABLETX
+#define BASILISK_DISABLETX
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -164,14 +164,16 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
     memset(txid.bytes,0,sizeof(txid));
     if ( data != 0 && datalen != 0 )
     {
+        char str[65];
 #ifdef BASILISK_DISABLETX
         txid = bits256_doublesha256(0,data,datalen);
+        printf("%s <- dont sendrawtransaction (%s)\n",name,bits256_str(str,txid));
         return(txid);
 #endif
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
         txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-        char str[65]; printf("%s <- sendrawtransaction %s.(%s)\n",name,signedtx,bits256_str(str,txid));
+        printf("%s <- sendrawtransaction %s.(%s)\n",name,signedtx,bits256_str(str,txid));
         free(signedtx);
     }
     return(txid);
@@ -1026,12 +1028,13 @@ void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; int32_t retval=0,i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration; int32_t retval=0,i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    while ( time(NULL) < swap->expiration )
+    expiration = (uint32_t)time(NULL) + 300;
+    while ( time(NULL) < expiration )
     {
         printf("A r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
         basilisk_sendpubkeys(myinfo,swap,data,maxlen); // send pubkeys
@@ -1043,7 +1046,7 @@ void basilisk_swaploop(void *_swap)
             break;
         sleep(1);
     }
-    while ( time(NULL) < swap->expiration )
+    while ( time(NULL) < expiration )
     {
         printf("B r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
         basilisk_sendmostprivs(myinfo,swap,data,maxlen);
@@ -1054,8 +1057,10 @@ void basilisk_swaploop(void *_swap)
         }
         sleep(1);
     }
+    if ( time(NULL) >= expiration )
+        retval = -9;
     printf("C r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
-    if ( (swap->statebits & 0x40) == 0 ) // send fee
+    if ( retval == 0 && (swap->statebits & 0x40) == 0 ) // send fee
     {
         if ( swap->myfee.txbytes == 0 )
         {
@@ -1137,6 +1142,8 @@ void basilisk_swaploop(void *_swap)
     }
     while ( retval == 0 && time(NULL) < swap->expiration )  // both sides have setup required data and paid txfee
     {
+        basilisk_sendstate(myinfo,swap,data,maxlen);
+        basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits,swap->otherstatebits);
         if ( swap->iambob != 0 )
         {
@@ -1312,8 +1319,8 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
-        printf("finished swapstate.%x\n",swap->statebits);
-        sleep(3);
+        //printf("finished swapstate.%x\n",swap->statebits);
+        sleep(30);
     }
     if ( swap->iambob != 0 )
     {

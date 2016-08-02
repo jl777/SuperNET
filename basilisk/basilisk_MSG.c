@@ -42,7 +42,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
     int32_t i,msglen,len=0; uint8_t num,keylen,*msg,*key;
     if ( (num= data[len++]) > 0 )
     {
-        printf("processMSG num.%d datalen.%d\n",num,datalen);
+        //printf("processMSG num.%d datalen.%d\n",num,datalen);
         for (i=0; i<num; i++)
         {
             keylen = data[len++];
@@ -64,7 +64,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
                 printf("illegal msglen.%d or len.%d > %d\n",msglen,len,datalen);
                 return(0);
             }
-            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
+            //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
             basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0);
         }
     }
@@ -82,7 +82,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->datalen),&msg->datalen);
         if ( maxlen > datalen+msg->datalen )
         {
-            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
+            //printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
             memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
         }
         else
@@ -213,7 +213,7 @@ int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
             if ( datalen < maxlen )
             {
                 decode_hex(data,datalen,hexstr);
-                printf("decoded hexstr.[%d]\n",datalen);
+                //printf("decoded hexstr.[%d]\n",datalen);
                 retval = datalen;
             } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
         } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
