@@ -1023,7 +1023,7 @@ void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; int32_t i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; int32_t retval=0,i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -1091,6 +1091,7 @@ void basilisk_swaploop(void *_swap)
                     if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
                     {
                         printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
+                        retval = -1;
                         break;
                     }
                 }
@@ -1100,6 +1101,7 @@ void basilisk_swaploop(void *_swap)
                     if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.spendlen == 0 )
                     {
                         printf("error alice generating payment.%d\n",swap->alicepayment.spendlen);
+                        retval = -2;
                         break;
                     }
                 }
@@ -1108,13 +1110,14 @@ void basilisk_swaploop(void *_swap)
                 else
                 {
                     printf("error creating myfee\n");
+                    retval = -3;
                     break;
                 }
             }
         }
         sleep(3);
     }
-    while ( time(NULL) < swap->expiration )
+    while ( retval == 0 && time(NULL) < swap->expiration )
     {
         printf("D r%u/q%u swapstate.%x otherstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits,swap->otherstatebits);
         if ( (swap->statebits & 0x80) == 0 ) // wait for fee
@@ -1136,10 +1139,8 @@ void basilisk_swaploop(void *_swap)
             basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
         basilisk_sendstate(myinfo,swap,data,maxlen);
     }
-    while ( time(NULL) < swap->expiration )  // both sides have setup required data and paid txfee
+    while ( retval == 0 && time(NULL) < swap->expiration )  // both sides have setup required data and paid txfee
     {
-        //if ( swap->sleeptime < 60 )
-        //    swap->sleeptime++;
         if ( swap->iambob != 0 )
         {
             if ( (swap->statebits & 0x100) == 0 )
@@ -1315,7 +1316,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
         printf("finished swapstate.%x\n",swap->statebits);
-        sleep(1);
+        sleep(3);
     }
     if ( swap->iambob != 0 )
     {
