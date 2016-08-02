@@ -1,0 +1,180 @@
+/*!
+ * Iguana authentication
+ *
+ */
+
+	body,
+	html {
+		display: table;
+	}
+	.container-fluid {
+		display: table-cell;
+		vertical-align: middle;
+	}
+	.box-shadow-all {
+		box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.15);
+	}
+	.box-shadow-bottom {
+		box-shadow: 0 1px 1px 0px rgba(0, 0, 0, 0.2);
+	}
+	.form-container {
+		margin: 0 auto;
+		background-color: #f4f7fb;
+	}
+	.login-form,
+	.create-account-form,
+	.verify-passphrase-form {
+		padding: 0;
+		float: none;
+		max-width: 375px;
+	}
+	.login-or-delim {
+		font-family: sans-serif;
+		padding: 26px 0;
+		letter-spacing: 1px;
+	}
+	textarea {
+		width: 100%;
+		height: 120px;
+		border-radius: 4px;
+		border: solid 1px #C7CCD0;
+		padding: 10px 12px;
+		font-family: proxima-nova-semibold, sans-serif;
+		font-size: 1.16em;
+	}
+	.passphrase-container {
+		width: 100%;
+		border-radius: 4px;
+		background: #fff;
+		box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+		padding: 40px 12px;
+		font-family: proxima-nova-semibold, sans-serif;
+		font-size: 1.16em;
+	}
+	.passphrase-container .title {
+		font-family: sans-serif;
+		font-size: 0.91em;
+		margin-bottom: 2px;
+	}
+	.bi_interface-cross {
+		color: #fff;
+		font-size: 20px;
+		position: relative;
+		top: 12px;
+		left: 10px;
+		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+	}
+	.bi_interface-arrow-left {
+		color: #fff;
+		font-size: 26px;
+		position: absolute;
+		z-index: 20;
+		margin-top: 8px;
+		margin-left: 10px;
+		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+	}
+	.form-header .title {
+		position: relative;
+		z-index: 10;
+		text-align: center;
+		font-family: proxima-nova-semibold, sans-serif;
+		color: #fff;
+		font-size: 1.30em;
+		padding-top: 12px;
+	}
+	textarea.error {
+		border: solid 1px #FF0000;
+	}
+	.center {
+		text-align: center;
+	}
+	.offset-bottom-sm {
+		margin: 0 auto;
+		margin-bottom: 15px;
+		width: 264px;
+	}
+	.offset-bottom-md {
+		margin: 0 auto;
+		margin-bottom: 30px;
+	}
+	.header {
+		background-color: #fe700d;
+		color: white;
+		padding: 15px 10px;
+		text-align: center;
+	}
+	.form-content {
+		padding: 115px 16px 158px 16px;
+		font-size: 1.05em;
+		color: #363639;
+	}
+	.form-content .row {
+		width: 99%;
+		margin-right: 0;
+		margin-left: 0;
+	}
+	.form-header {
+		height: 50px;
+	}
+	.btn {
+		font-family: proxima-nova-semibold, sans-serif;
+		color: #fff;
+		font-size: 1.20em;
+		height: 44px;
+	}
+	.text-shadow {
+		text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+	}
+	.btn:hover,
+	.btn:focus {
+		color: #fff;
+		box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+	}
+	.btn.disabled,
+	.btn.disabled:focus {
+		pointer-events: none;
+		background: #B2B4B7;
+		text-shadow: none;
+	}
+	.btn.disabled:hover {
+		box-shadow: none;
+		text-shadow: none;
+	}
+	.checkbox {
+		display: inline-block;
+	}
+	.label-text {
+		cursor: hand;
+		cursor: pointer;
+		font-size: 1.05em;
+	}
+	input[type="checkbox"] {
+	  display: none;
+	}
+	input[type="checkbox"] + label {
+		font-weight: normal;
+		display: block;
+		text-align: center;
+	}
+	input[type="checkbox"] + label .box {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin: -2px 17px 0 0;
+    vertical-align: middle;
+    background: transparent;
+    border: solid 2px #C7CCD0;
+    border-radius: 4px;
+	}
+	input[type="checkbox"]:checked + label .box {
+	  background: #FE450D;
+	  border-color: #FE450D;
+	}
+	input[type="checkbox"]:checked + label .box:before {
+	  font-family: "budicon";
+  	content: "\eb23";
+  	color: #fff;
+  	font-weight: bold;
+  	position: relative;
+  	top: -1px;
+	}
