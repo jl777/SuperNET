@@ -120,6 +120,10 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
 #endif
 
+#ifdef _WIN32 || _WIN64
+#define MSG_NOSIGNAL	0
+#endif
+
 #define BIP0031_VERSION	 60000
 #define CADDR_TIME_VERSION 31402
 #define MIN_PROTO_VERSION 209
