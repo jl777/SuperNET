@@ -1038,7 +1038,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
-        sleep(3);
+        sleep(1);
     }
     while ( time(NULL) < swap->expiration )
     {
@@ -1049,73 +1049,66 @@ void basilisk_swaploop(void *_swap)
             swap->statebits |= 0x20;
             break;
         }
-        sleep(3);
+        sleep(1);
     }
-    while ( time(NULL) < swap->expiration )
+    printf("C r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
+    if ( (swap->statebits & 0x40) == 0 ) // send fee
     {
-        printf("C r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
-        if ( (swap->statebits & 0x40) == 0 ) // send fee
+        if ( swap->myfee.txbytes == 0 )
         {
-            if ( swap->myfee.txbytes == 0 )
+            for (i=0; i<20; i++)
+                printf("%02x",swap->secretAm[i]);
+            printf(" <- secretAm\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubAm.bytes[i]);
+            printf(" <- pubAm\n");
+            for (i=0; i<20; i++)
+                printf("%02x",swap->secretBn[i]);
+            printf(" <- secretBn\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubBn.bytes[i]);
+            printf(" <- pubBn\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubA0.bytes[i]);
+            printf(" <- pubA0\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubA1.bytes[i]);
+            printf(" <- pubA1\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubB0.bytes[i]);
+            printf(" <- pubB0\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->pubB1.bytes[i]);
+            printf(" <- pubB1\n");
+            if ( swap->iambob != 0 )
             {
-                for (i=0; i<20; i++)
-                    printf("%02x",swap->secretAm[i]);
-                printf(" <- secretAm\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubAm.bytes[i]);
-                printf(" <- pubAm\n");
-                for (i=0; i<20; i++)
-                    printf("%02x",swap->secretBn[i]);
-                printf(" <- secretBn\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubBn.bytes[i]);
-                printf(" <- pubBn\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubA0.bytes[i]);
-                printf(" <- pubA0\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubA1.bytes[i]);
-                printf(" <- pubA1\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubB0.bytes[i]);
-                printf(" <- pubB0\n");
-                for (i=0; i<32; i++)
-                    printf("%02x",swap->pubB1.bytes[i]);
-                printf(" <- pubB1\n");
-                if ( swap->iambob != 0 )
+                swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
+                swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
+                basilisk_rawtx_gen("deposit",myinfo,1,1,&swap->bobdeposit,swap->bobdeposit.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.spendlen,swap->bobdeposit.coin->chain->txfee,1);
+                basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
+                if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
                 {
-                    swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
-                    swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
-                    basilisk_rawtx_gen("deposit",myinfo,1,1,&swap->bobdeposit,swap->bobdeposit.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.spendlen,swap->bobdeposit.coin->chain->txfee,1);
-                    basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
-                    if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.spendlen == 0 || swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
-                    {
-                        printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
-                        retval = -1;
-                        break;
-                    }
-                }
-                else
-                {
-                    basilisk_alicepayment(myinfo,swap->alicepayment.coin,&swap->alicepayment,swap->pubAm,swap->pubBn);
-                    if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.spendlen == 0 )
-                    {
-                        printf("error alice generating payment.%d\n",swap->alicepayment.spendlen);
-                        retval = -2;
-                        break;
-                    }
-                }
-                if ( basilisk_rawtx_gen("myfee",myinfo,swap->iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
-                    swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
-                else
-                {
-                    printf("error creating myfee\n");
-                    retval = -3;
-                    break;
+                    printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
+                    retval = -1;
                 }
             }
+            else
+            {
+                basilisk_alicepayment(myinfo,swap->alicepayment.coin,&swap->alicepayment,swap->pubAm,swap->pubBn);
+                if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.spendlen == 0 )
+                {
+                    printf("error alice generating payment.%d\n",swap->alicepayment.spendlen);
+                    retval = -2;
+                }
+            }
+            if ( basilisk_rawtx_gen("myfee",myinfo,swap->iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
+                swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
+            else
+            {
+                printf("error creating myfee\n");
+                retval = -3;
+            }
         }
-        sleep(3);
     }
     while ( retval == 0 && time(NULL) < swap->expiration )
     {
