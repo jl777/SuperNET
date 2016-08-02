@@ -1112,6 +1112,7 @@ void basilisk_swaploop(void *_swap)
                 }
             }
         }
+        sleep(3);
     }
     while ( time(NULL) < swap->expiration )
     {
