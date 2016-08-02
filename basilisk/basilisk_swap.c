@@ -1034,7 +1034,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_sendpubkeys(myinfo,swap,data,maxlen); // send pubkeys
         basilisk_checkdeck(myinfo,swap,data,maxlen); // check for other deck 0x02
         if ( (swap->statebits & 0x02) != 0 )
-            basilisk_sendstate(myinfo,swap,data,maxlen);
+            basilisk_sendchoosei(myinfo,swap,data,maxlen);
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
