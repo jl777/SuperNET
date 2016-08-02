@@ -54,16 +54,16 @@ struct iguana_waddress *iguana_waddressalloc(uint8_t addrtype,char *symbol,char 
     return(waddr);
 }
 
-struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,char *account)
 {
     struct iguana_waccount *wacct = 0;
-    if ( account != 0 && wacct != 0 )
+    if ( account != 0 )
         HASH_FIND(hh,myinfo->wallet,account,strlen(account)+1,wacct);
     //printf("waccountfind.(%s) -> wacct.%p\n",account,wacct);
     return(wacct);
 }
 
-struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
+struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,char *account)
 {
     struct iguana_waccount *wacct=0,*ptr; int32_t len;
     if ( account != 0 )
@@ -74,13 +74,18 @@ struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,struc
         HASH_FIND(hh,myinfo->wallet,account,len,wacct);
         if ( wacct == 0 )
         {
-            wacct = mycalloc('w',1,sizeof(*wacct));
+            wacct = mycalloc('w',1,sizeof(*wacct) + len);
             strcpy(wacct->account,account);
             HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
             printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+            if ( (ptr= iguana_waccountfind(myinfo,account)) != wacct )
+            {
+                printf("ERROR: iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
+                HASH_FIND(hh,myinfo->wallet,account,len,wacct);
+                printf("HASH_FIND.%p\n",wacct);
+                getchar();
+            }
             myinfo->dirty = (uint32_t)time(NULL);
-            if ( (ptr= iguana_waccountfind(myinfo,coin,account)) != wacct )
-                printf("iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
         }
     }
     return(wacct);
@@ -91,7 +96,7 @@ struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struc
     struct iguana_waddress *waddr,*ptr; uint8_t rmd160[20],addrtype;
     bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
     if ( wacct == 0 )
-        wacct = iguana_waccountcreate(myinfo,coin,"");
+        wacct = iguana_waccountcreate(myinfo,"");
     HASH_FIND(hh,wacct->waddr,rmd160,sizeof(rmd160),waddr);
     if ( waddr == 0 )
     {
@@ -231,7 +236,7 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
             iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
         }
     }
-    if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+    if ( (wacct= iguana_waccountcreate(myinfo,account)) != 0 )
     {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
         if ( waddr != 0 && redeemScript == 0 )
@@ -280,7 +285,7 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
         account = "*";
     if ( strcmp("*",account) != 0 )
     {
-        if ( (subset= iguana_waccountfind(myinfo,coin,account)) != 0 )
+        if ( (subset= iguana_waccountfind(myinfo,account)) != 0 )
         {
             HASH_ITER(hh,subset->waddr,waddr,tmp2)
             {
@@ -494,8 +499,8 @@ cJSON *iguana_payloadmerge(cJSON *loginjson,cJSON *importjson)
 cJSON *iguana_walletadd(struct supernet_info *myinfo,struct iguana_waddress **waddrp,struct iguana_info *coin,char *retstr,char *account,struct iguana_waddress *refwaddr,int32_t setcurrent,char *redeemScript)
 {
     cJSON *retjson=0; struct iguana_waccount *wacct; struct iguana_waddress *waddr;
-    if ( (wacct= iguana_waccountfind(myinfo,coin,account)) == 0 )
-        wacct = iguana_waccountcreate(myinfo,coin,account);
+    if ( (wacct= iguana_waccountfind(myinfo,account)) == 0 )
+        wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
     {
         //waddr = iguana_waddressfind(myinfo,wacct,refwaddr->coinaddr);
@@ -750,7 +755,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
         if ( flag < -1 )
         {
             HASH_DELETE(hh,myinfo->wallet,wacct);
-            myfree(wacct,sizeof(*wacct));
+            myfree(wacct,(int32_t)(sizeof(*wacct) + strlen(wacct->account) + 1));
         }
     }
     if ( myinfo->expiration != 0 )
@@ -820,7 +825,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                     child = item->child;
                     while ( child != 0 )
                     {
-                        if ( (wacct= iguana_waccountcreate(myinfo,coin,account)) != 0 )
+                        if ( (wacct= iguana_waccountcreate(myinfo,account)) != 0 )
                         {
                             if ( (privstr= iguana_walletfields(coin,&p2shflag,wifstr,coinaddr,child->string,child->valuestring)) != 0 )
                             {
@@ -1067,8 +1072,8 @@ struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,st
 {
     char *newstr,*retstr; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0;
     coinaddr[0] = 0;
-    if ( (wacct= iguana_waccountfind(myinfo,coin,account)) == 0 )
-        wacct = iguana_waccountcreate(myinfo,coin,account);
+    if ( (wacct= iguana_waccountfind(myinfo,account)) == 0 )
+        wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
     {
         if ( (waddr= wacct->current) == 0 )
@@ -1441,7 +1446,7 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,minconf)
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     retjson = cJSON_CreateObject();
-    if ( (wacct= iguana_waccountfind(myinfo,coin,account)) != 0 )
+    if ( (wacct= iguana_waccountfind(myinfo,account)) != 0 )
     {
         balance = iguana_waccountbalance(myinfo,coin,wacct,minconf,0);
         jaddnum(retjson,"result",dstr(balance));
@@ -1458,7 +1463,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     retjson = cJSON_CreateObject();
     retarray = cJSON_CreateArray();
-    if ( (wacct= iguana_waccountfind(myinfo,coin,account)) != 0 )
+    if ( (wacct= iguana_waccountfind(myinfo,account)) != 0 )
     {
         if ( (array= iguana_getaddressesbyaccount(myinfo,coin,account)) != 0 )
         {

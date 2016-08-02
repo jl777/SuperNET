@@ -1026,6 +1026,11 @@ void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin
     basilisk_rawtx_gen("alicepayment",myinfo,0,1,alicepayment,alicepayment->locktime,alicepayment->spendscript,alicepayment->spendlen,coin->chain->txfee,1);
 }
 
+// test all spend paths upfront
+// detect insufficient funds/inputs
+// mode to autocreate required outputs
+// send across or regenerate redeem scripts by alice
+
 void basilisk_swaploop(void *_swap)
 {
     uint8_t *data; uint32_t expiration; int32_t retval=0,i,j,maxlen,datalen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;

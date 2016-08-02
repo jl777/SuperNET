@@ -800,7 +800,7 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
         {
             memset(&addr,0,sizeof(addr));
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,privkey);
-            if ( (wacct= iguana_waccountfind(myinfo,coin,"default")) != 0 )
+            if ( (wacct= iguana_waccountfind(myinfo,"default")) != 0 )
                 waddr = iguana_waddressadd(myinfo,coin,wacct,&addr,0);
         }
         if ( waddr != 0 )
