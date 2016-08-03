@@ -321,7 +321,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                         }
                         if ( bits256_nonz(hash2) != 0 )
                             iguana_blockQ("RTerr",coin,bp,i,hash2,1);
-                        break;
+                        //break;
                     }
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
@@ -331,7 +331,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                 flag++;
                 //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
                 coin->RTheight++;
-                //printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
+                printf(">>>> RT.%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",coin->RTheight,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,(long)dest->H.data->allocsize);
                 if ( coin->RTramchain.H.data != 0 )
                     coin->RTramchain.H.data->numblocks = bundlei + 1;
                 else break;
