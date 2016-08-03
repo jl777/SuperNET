@@ -1,9 +1,14 @@
 set -x
 
-CC="$(xcrun --sdk iphoneos --find clang) -isysroot $(xcrun --sdk iphoneos --show-sdk-path)  -arch arm64  -ONLY_ACTIVE_ARCH=YES"
+CC="$(xcrun --sdk iphoneos --find clang) -isysroot $(xcrun --sdk iphoneos --show-sdk-path)  -arch arm64 -arch armv7 -arch armv7s"
 
 git pull
 
-echo CC=$CC
+cd secp256k1; ./m_ios; cd ..
 
-$CC -v -o ../agents/iguana -O2 *.c ../ios/lib/libssl.a ../ios/lib/libcrypto.a ../agents/libcrypto777.a  -L $(xcrun --sdk iphonesimulator --show-sdk-path)/usr/lib -L ../ios/lib -lcurl -lm 
+echo Compile rest ..
+$CC -v -Wno-deprecated -O2 -c *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
+$CC -v -Wno-deprecated -c main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
+
+echo Compile the end
+$CC -v -Wno-deprecated -o ../agents/iguana -O2 *.o ../ios/lib/libssl.a ../ios/lib/libcrypto.a ../agents/libcrypto777.a  -L $(xcrun --sdk iphoneos --show-sdk-path)/usr/lib -I ../ios/include ../ios/lib/libcurl.a -framework Foundation -lz -framework Security -lm

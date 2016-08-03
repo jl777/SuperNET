@@ -1,0 +1,5 @@
+set -x
+
+CC="$(xcrun --sdk iphoneos --find clang) -isysroot $(xcrun --sdk iphoneos --show-sdk-path)  -arch arm64 -arch armv7 -arch armv7s  -ONLY_ACTIVE_ARCH=YES"
+
+$CC -o ../secp256k1.o -I. -I./src  -I./include -I./src -O2 -c src/secp256k1.c

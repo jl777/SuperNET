@@ -34,3 +34,13 @@ agents/win32/confs/.tmpmarker
 agents/win32/DB/.tmpmarker
 agents/win32/DB/purgeable/.tmpmarker
 agents/*
+
+iguana/DB/*
+
+iguana/debug.log
+
+iguana/genesis/.tmpmarker
+
+iguana/help/.tmpmarker
+
+iguana/tmp/*
