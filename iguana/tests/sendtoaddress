@@ -1,2 +1,2 @@
-curl --url "http://127.0.0.1:7778" --data "{\"method\":\"sendtoaddress\",\"params\":[\"RAoMou7euzvDwa9dQwjrNB5A41hrAWgvBt\", 0.0001, \"testcomment\", \"sendcomment\"]}"
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"sendtoaddress\",\"params\":[\"RQCP1TcfevTQU35ZftPNx2TZpB9ZkSZQ3S\", 1.0001, \"testcomment\", \"sendcomment\"]}"
 

@@ -69,7 +69,7 @@ struct basilisk_swap
     struct supernet_info *myinfo; bits256 myhash,otherhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,locktime;
     struct iguana_info *bobcoin,*alicecoin; char bobstr[64],alicestr[64];
-    int32_t bobconfirms,aliceconfirms,iambob,reclaimed,sleeptime;
+    int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
     
     bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;

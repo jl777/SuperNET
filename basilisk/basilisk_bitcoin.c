@@ -382,7 +382,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
                 //printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
                 return(Lptr);
-            } else printf("unspentind couldnt find %s vout.%d\n",bits256_str(str,txid),vout);
+            } else printf("unspentind cant find %s vout.%d\n",bits256_str(str,txid),vout);
         } //else return(bitcoin_value(coin,txid,vout,coinaddr));
         Lptr->retstr = clonestr("{\"error\":\"basilisk value missing address\"}");
         return(Lptr);

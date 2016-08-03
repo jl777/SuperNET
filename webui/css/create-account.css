@@ -2,17 +2,16 @@ body {
 	font-family: proxima-nova, sans-serif;
   font-size: 15px;
   color: #252528;
-
 }
+
 .center {
-      
-       background-color: #f4f7fb;
-       color: #252528;
-  }
+ background-color: #f4f7fb;
+ color: #252528;
+}
 
 
-@media (min-width:320px) { 
-/* smartphones, Android phones, landscape iPhone */ 
+@media (min-width:320px) {
+/* smartphones, Android phones, landscape iPhone */
   .center {
     margin: 0;
     padding: 0;
@@ -38,10 +37,10 @@ body {
     line-height: 1.33;
     border-radius: 6px;
  }
- 
+
 }
-@media (min-width:480px) { 
-/* smartphones, Android phones, landscape iPhone */ 
+@media (min-width:480px) {
+/* smartphones, Android phones, landscape iPhone */
   .center {
     margin: 0;
     padding: 0;
@@ -67,10 +66,10 @@ body {
     line-height: 1.33;
     border-radius: 6px;
  }
- 
+
 }
-@media (min-width:600px) { 
-/* portrait tablets, portrait iPad, e-readers (Nook/Kindle), landscape 800x480 phones (Android) */ 
+@media (min-width:600px) {
+/* portrait tablets, portrait iPad, e-readers (Nook/Kindle), landscape 800x480 phones (Android) */
   .center {
     margin: 0;
     padding: 0;
@@ -97,10 +96,10 @@ body {
     line-height: 1.33;
     border-radius: 6px;
  }
- 
+
 }
-@media (min-width:801px) { 
-/* tablet, landscape iPad, lo-res laptops ands desktops */ 
+@media (min-width:801px) {
+/* tablet, landscape iPad, lo-res laptops ands desktops */
   .center {
        position: absolute;
        top: 0;
@@ -131,9 +130,9 @@ body {
     line-height: 1.5;
     border-radius: 3px;
  }
- 
+
 }
-@media (min-width:990px) { 
+@media (min-width:990px) {
 /* big landscape tablets, laptops, and desktops */
   .center {
        position: absolute;
@@ -171,9 +170,9 @@ body {
  #window-close {
     font-size: 15px;
    }
-   
+
  }
-@media (min-width:1025px) { 
+@media (min-width:1025px) {
 /* big landscape tablets, laptops, and desktops */
   .center {
        position: absolute;
@@ -211,10 +210,10 @@ body {
  #window-close {
     font-size: 15px;
    }
-   
+
  }
-@media (min-width:1281px) { 
-/* hi-res laptops and desktops */ 
+@media (min-width:1281px) {
+/* hi-res laptops and desktops */
   .center {
        position: absolute;
        top: 0;
@@ -251,11 +250,11 @@ body {
  #window-close {
     font-size: 15px;
    }
-   
- 
+
+
 }
-@media (min-width:1440px) { 
-/* hi-res laptops and desktops */ 
+@media (min-width:1440px) {
+/* hi-res laptops and desktops */
   .center {
        position: absolute;
        top: 0;
@@ -292,11 +291,11 @@ body {
  #window-close {
     font-size: 15px;
    }
-   
- 
+
+
 }
-@media (min-width:1600px) { 
-/* hi-res laptops and desktops */ 
+@media (min-width:1600px) {
+/* hi-res laptops and desktops */
   .center {
        position: absolute;
        top: 0;
@@ -333,8 +332,8 @@ body {
  #window-close {
     font-size: 15px;
    }
-   
- 
+
+
 }
 .btn-action {
     color: #ffffff;
@@ -365,26 +364,26 @@ body {
   #window-action {
   	margin-top: 10%;
   }
-  
+
   .btn-account {
   	background-color: #ffffff;
     color: #cb6d51;
     margin-bottom: 15px;
   }
-  #messages { 
+  #messages {
     color: #252528;
    }
-    
+
   a {
   	text-decoration: none;
   	color: #ffffff;
   }
-  button:hover, a:hover{ 
+  button:hover, a:hover{
     color: #252528 !important;
     opacity: 6% !important;
     /*text-shadow: 0px 0px 2px #000000;*/
   }
-  
+
   #content-hints{
   	text-align: center;
   	margin-bottom: 5%;
@@ -399,7 +398,7 @@ body {
 #passphrase textarea{
     font-weight: bold;
     text-align: center;
-}    
+}
 .disabled {
   background-color: #C7CCD0;
   background: -webkit-radial-gradient(#C7CCD0, #C7CCD0);  /*Safari 5.1 to 6.0 */
@@ -424,7 +423,8 @@ small.help-block {
 .has-error .form-control:focus {
     border-color: #fd2323;
 }
-.checkbox-inguana input[type="checkbox"]:checked + label::before, .checkbox-inguana input[type="radio"]:checked + label::before {
+.checkbox-inguana input[type="checkbox"]:checked + label::before,
+.checkbox-inguana input[type="radio"]:checked + label::before {
     background-color: #FE450D;
     border-color: #FE450D
     color:#ffffff;

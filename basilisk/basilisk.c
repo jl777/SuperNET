@@ -644,7 +644,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    if ( 1 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
+    if ( 0 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
@@ -832,7 +832,7 @@ void basilisks_loop(void *arg)
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( myinfo->RELAYID >= 0 )
             usleep(100000);
-        else sleep(10);
+        else sleep(1);
     }
 }
 

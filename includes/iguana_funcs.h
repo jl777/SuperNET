@@ -250,7 +250,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t delay);
 
-struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,char *account);
 struct iguana_waddress *iguana_waccountadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount **wacctp,char *walletaccount,char *coinaddr);
 struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,char *redeemScript);
 struct iguana_waddress *iguana_waddresscalc(struct supernet_info *myinfo,uint8_t pubval,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey);
