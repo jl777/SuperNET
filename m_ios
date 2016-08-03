@@ -1,3 +1,2 @@
 git pull
-cd crypto777; ./m_ios; 
-cd ../iguana; ./m_ios; cd ..
+cd iguana; ./m_ios; cd ..

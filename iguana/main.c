@@ -473,20 +473,20 @@ void mainloop(struct supernet_info *myinfo)
     }
 }
 
-void iguana_accounts()
+void iguana_accounts(char *keytype)
 {
     long filesize; cJSON *json,*array,*item,*posting,*auths,*json2; int32_t i,n,m; char *str,*str2,*postingkey,*name,*key,fname[128],cmd[512]; FILE *postingkeys;
     if ( (str= OS_filestr(&filesize,"accounts.txt")) != 0 )
     {
         if ( (json= cJSON_Parse(str)) != 0 )
         {
-            if ( (array= jarray(&n,json,"result")) != 0 && (postingkeys= fopen("postingkeys.c","wb")) != 0 )
+            if ( (array= jarray(&n,json,"result")) != 0 && (postingkeys= fopen("keys.c","wb")) != 0 )
             {
-                fprintf(postingkeys,"char *postingkeys[][2] = {\n");
+                fprintf(postingkeys,"char *%skeys[][2] = {\n",keytype);
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    if ( (name= jstr(item,"name")) != 0 && (posting= jobj(item,"posting")) != 0 )
+                    if ( (name= jstr(item,"name")) != 0 && (posting= jobj(item,keytype)) != 0 )
                     {
                         if ( (auths= jarray(&m,posting,"key_auths")) != 0 )
                         {
@@ -552,10 +552,10 @@ void iguana_appletests(struct supernet_info *myinfo)
             bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
         printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
        getchar();**/
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":0,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":64,\"endpend\":64,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":0,\"VALIDATE\":0,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":64,\"endpend\":64,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":1}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
-            if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+            if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
                 if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
@@ -1471,6 +1471,11 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             return(clonestr("{\"error\":\"cant parse decrypted json\"}"));
         }
     }
+    else if ( myinfo->decryptstr != 0 )
+    {
+        free(myinfo->decryptstr);
+        myinfo->decryptstr = 0;
+    }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
@@ -1500,7 +1505,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     } else return(clonestr("{\"error\":\"need passphrase\"}"));
-    printf("logged into (%s) %s %s\n",myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
+    printf("(%s) logged into (%s) %s %s\n",password,myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
     return(SuperNET_activehandle(IGUANA_CALLARGS));
 }
 
