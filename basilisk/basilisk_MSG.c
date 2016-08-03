@@ -189,7 +189,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         valsobj = cJSON_CreateObject();
         jaddnum(valsobj,"channel",channel);
         jaddnum(valsobj,"msgid",msgid);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s\n",datalen,channel,msgid,bits256_str(str,hash));
+        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s\n",datalen,channel,msgid,bits256_str(str,hash));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
         {
             retval = 0;
