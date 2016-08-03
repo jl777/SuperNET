@@ -800,7 +800,7 @@ void iguana_ensure_privkey(struct supernet_info *myinfo,struct iguana_info *coin
         {
             memset(&addr,0,sizeof(addr));
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,privkey);
-            if ( (wacct= iguana_waccountfind(myinfo,coin,"default")) != 0 )
+            if ( (wacct= iguana_waccountfind(myinfo,"default")) != 0 )
                 waddr = iguana_waddressadd(myinfo,coin,wacct,&addr,0);
         }
         if ( waddr != 0 )
@@ -971,22 +971,32 @@ cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
-    uint8_t script[IGUANA_MAXSCRIPTSIZE]; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,errs = 0; cJSON *spendscript,*item;
+    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,errs = 0; cJSON *spendscript,*item;
     for (vini=0; vini<numvins; vini++)
     {
-        spendscript = iguana_spendasm(coin,V[vini].spendscript,V[vini].spendlen);
+        if ( V[vini].p2shlen > 0 )
+        {
+            activescript = V[vini].p2shscript;
+            activescriptlen = V[vini].p2shlen;
+        }
+        else
+        {
+            activescript = V[vini].spendscript;
+            activescriptlen = V[vini].spendlen;
+        }
+        spendscript = iguana_spendasm(coin,activescript,activescriptlen);
         //printf("interpreter.(%s)\n",jprint(spendscript,0));
         if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) < 0 )
         {
             errs++;
         }
-        else if ( scriptlen != V[vini].spendlen || memcmp(script,V[vini].spendscript,scriptlen) != 0 )
+        else if ( scriptlen != activescriptlen || memcmp(script,activescript,scriptlen) != 0 )
         {
             if ( logarray != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"error","script reconstruction failed");
-                init_hexbytes_noT(str,V[vini].spendscript,V[vini].spendlen);
+                init_hexbytes_noT(str,activescript,activescriptlen);
                 jaddstr(item,"original",str);
                 init_hexbytes_noT(str,script,scriptlen);
                 jaddstr(item,"reconstructed",str);

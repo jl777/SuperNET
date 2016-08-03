@@ -92,28 +92,32 @@ STRING_ARG(iguana,removecoin,activecoin)
     {
         coin->active = 0;
         coin->started = 0;
-        for (i=0; i<IGUANA_MAXPEERS; i++)
+        if ( 0 )
         {
-            sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-            sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,i), OS_removefile(fname,0);
-        }
-        sprintf(fname,"%s/%s/vouts/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
-        sprintf(fname,"%s/%s/*",coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
-        for (i=0; i<coin->bundlescount; i++)
-        {
-            sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-            if ( (bp= coin->bundles[i]) != 0 )
+            for (i=0; i<IGUANA_MAXPEERS; i++)
             {
-                iguana_bundlepurgefiles(coin,bp);
-                iguana_bundleremove(coin,bp->hdrsi,1);
+                sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
+                sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,i), OS_removefile(fname,0);
             }
+            sprintf(fname,"%s/%s/vouts/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
+            sprintf(fname,"%s/%s/*",coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
+            for (i=0; i<coin->bundlescount; i++)
+            {
+                sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
+                if ( (bp= coin->bundles[i]) != 0 )
+                {
+                    iguana_bundlepurgefiles(coin,bp);
+                    iguana_bundleremove(coin,bp->hdrsi,1);
+                }
+            }
+            for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
+            {
+                sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
+                OS_remove_directory(fname);
+            }
+            sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
         }
-        for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
-        {
-            sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
-            OS_remove_directory(fname);
-        }
-        sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
+        return(clonestr("{\"result\":\"success\"}"));
     }
     return(clonestr("{\"error\":\"no active coin\"}"));
 }

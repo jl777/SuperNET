@@ -572,7 +572,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     memset(&checkH,0,sizeof(checkH));
     if ( iguana_sethdr(&checkH,coin->chain->netmagic,H->command,buf,len) > 0 && memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
-        if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"tx") == 0 )
+        if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"getblocks") == 0 || strcmp(H->command,"tx") == 0 )
         {
             if ( addr->RAWMEM.ptr == 0 )
                 iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);

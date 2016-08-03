@@ -925,7 +925,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             {
                 iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
                 coin->longestchain = block->height+1;
-                if ( bp->speculative != 0 && i < bp->n )
+                if ( bp != 0 && bp->speculative != 0 && i < bp->n )
                     bp->speculative[i] = blockhashes[i];
             }
     }

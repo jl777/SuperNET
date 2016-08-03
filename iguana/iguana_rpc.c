@@ -26,10 +26,12 @@ char *sglue(GLUEARGS,char *agent,char *method)
     char *retstr,*rpcretstr,*walletstr,checkstr[64],dcheckstr[64]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val; double dval;
     if ( json == 0 )
         json = cJSON_CreateObject();
-    printf("sglue.(%s)\n",jprint(json,0));
+    //printf("sglue.(%s)\n",jprint(json,0));
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
+    if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
+        iguana_walletlock(myinfo,0);
     if ( (retstr= SuperNET_JSON(myinfo,json,remoteaddr,port)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -402,6 +404,12 @@ static char *importwallet(RPCARGS)
 
 static char *walletpassphrase(RPCARGS)
 {
+    /*cJSON *a,*b,*c;
+    a = jduplicate(params[0]);
+    b = jduplicate(params[2]);
+    c = jduplicate(params[1]);
+    sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",a,"permanentfile",b,"timeout",c);
+    */
     return(sglue3(0,CALLGLUE,"bitcoinrpc","walletpassphrase","password",params[0],"permanentfile",params[2],"timeout",params[1]));
 }
 
@@ -1082,11 +1090,11 @@ void iguana_rpcloop(void *args)
     while ( bindsock >= 0 )
     {
         clilen = sizeof(cli_addr);
-        printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
+        //printf("ACCEPT (%s:%d) on sock.%d\n","127.0.0.1",port,bindsock);
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
+            //printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
@@ -1098,7 +1106,7 @@ void iguana_rpcloop(void *args)
         retstr = 0;
         while ( remains > 0 )
         {
-            printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
+            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
             if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
             {
                 if ( errno == EAGAIN )
@@ -1125,7 +1133,7 @@ void iguana_rpcloop(void *args)
                                     remains = (hdrsize + contentlen) - len;
                                     buf = &buf[len];
                                     flag = 1;
-                                    printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
+                                    //printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
                                     continue;
                                 }
                             }
@@ -1140,7 +1148,7 @@ void iguana_rpcloop(void *args)
                 else
                 {
                     usleep(10000);
-                    printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
+                //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
                 //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
                     if ( flag == 0 )
                         break;
@@ -1165,7 +1173,7 @@ void iguana_rpcloop(void *args)
                     if ( (typestr= jstr(mimejson,filetype)) != 0 )
                         sprintf(content_type,"Content-Type: %s\r\n",typestr);
                 } else printf("parse error.(%s)\n",tmp);
-                printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
+                //printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
             }
         }
         if ( retstr != 0 )
@@ -1191,7 +1199,6 @@ void iguana_rpcloop(void *args)
                 {
                     if ( errno != EAGAIN && errno != EWOULDBLOCK )
                     {
-                        printf("got error! errno.%d (%s)\n", errno, strerror(errno) );
                         //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
                         break;
                     }
@@ -1207,7 +1214,6 @@ void iguana_rpcloop(void *args)
             if ( retstr != space)
                 free(retstr);
         }
-        printf("close socket\n");
         closesocket(sock);
     }
 }

@@ -250,7 +250,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
 int32_t iguana_sendblockreq(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe);
 int32_t iguana_send_supernet(struct iguana_peer *addr,char *jsonstr,int32_t delay);
 
-struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,struct iguana_info *coin,char *account);
+struct iguana_waccount *iguana_waccountfind(struct supernet_info *myinfo,char *account);
 struct iguana_waddress *iguana_waccountadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount **wacctp,char *walletaccount,char *coinaddr);
 struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,char *redeemScript);
 struct iguana_waddress *iguana_waddresscalc(struct supernet_info *myinfo,uint8_t pubval,uint8_t wiftype,struct iguana_waddress *addr,bits256 privkey);
@@ -545,6 +545,7 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime);
 int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_pkhash **Ptrp,int64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight);
 int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,int64_t *weights,int32_t numweights,bits256 *sortbuf);
 bits256 mpz_div64(bits256 hash,uint64_t divval);
+void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares
