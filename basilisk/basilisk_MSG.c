@@ -169,7 +169,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     {
         keylen = basilisk_messagekey(key,hash,vals);
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
-            retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1);
+            retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0);
         if ( ptr != 0 )
             free(ptr);
         if ( retstr != 0 )
@@ -177,7 +177,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     }
     if ( vals != 0 )
         jaddnum(vals,"fanout",BASILISK_MAXFANOUT);
-    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,1));
+    return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
 
