@@ -765,7 +765,6 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     swap->bobspend.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
     swap->alicereclaim.suppress_pubkeys = 1;
-    swap->sleeptime = 3 - swap->iambob;
     return(swap);
 }
 // end of alice/bob code
@@ -910,7 +909,8 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
 {
     if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,msgbits,data,datalen) == 0 )
         return(nextbits);
-    else return(0);
+    printf("ERROR basilisk_channelsend\n");
+    return(0);
 }
 
 uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits)
@@ -1060,7 +1060,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
-        sleep(1);
+        sleep(3);
     }
     while ( time(NULL) < expiration )
     {
@@ -1071,7 +1071,7 @@ void basilisk_swaploop(void *_swap)
             swap->statebits |= 0x20;
             break;
         }
-        sleep(1 + (swap->iambob == 0)*10);
+        sleep(3 + (swap->iambob == 0)*10);
     }
     if ( time(NULL) >= expiration )
         retval = -1;
@@ -1157,7 +1157,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->otherstatebits & 0x80) != 0 && (swap->statebits & 0x80) != 0 )
             break;
-        sleep(1 + (swap->iambob == 0)*10);
+        sleep(3 + (swap->iambob == 0)*10);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->otherstatebits & 0x80) == 0 )
@@ -1332,7 +1332,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
         printf("finished swapstate.%x other.%x\n",swap->statebits,swap->otherstatebits);
-        sleep(1 + (swap->iambob == 0)*10);
+        sleep(3 + (swap->iambob == 0)*10);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
