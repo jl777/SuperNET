@@ -933,7 +933,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
         rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
         char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
         if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
-            return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits));
+            return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen+1+rawtx->redeemlen,nextbits));
         else return(nextbits);
     } else printf("error from basilisk_swapdata_rawtx %p len.%d\n",rawtx->txbytes,rawtx->datalen);
     return(0);
