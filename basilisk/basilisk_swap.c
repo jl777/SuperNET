@@ -1111,11 +1111,11 @@ void basilisk_swaploop(void *_swap)
                     printf("error bob generating deposit.%d or payment.%d\n",swap->bobdeposit.spendlen,swap->bobpayment.spendlen);
                     retval = -2;
                 }
-                if ( basilisk_bobpayment_reclaim(myinfo,swap) < 0 || basilisk_bobdeposit_refund(myinfo,swap) < 0 )
+                /*if ( basilisk_bobpayment_reclaim(myinfo,swap) < 0 || basilisk_bobdeposit_refund(myinfo,swap) < 0 )
                 {
                     printf("error bob reclaiming\n");
                     retval = -3;
-                }
+                }*/
             }
             else
             {
@@ -1124,11 +1124,6 @@ void basilisk_swaploop(void *_swap)
                 {
                     printf("error alice generating payment.%d\n",swap->alicepayment.spendlen);
                     retval = -4;
-                }
-                if ( basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim) < 0 )
-                {
-                    printf("error alice reclaiming\n");
-                    retval = -5;
                 }
             }
             if ( basilisk_rawtx_gen("myfee",myinfo,swap->iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
