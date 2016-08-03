@@ -283,7 +283,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         bp->lastRT = (uint32_t)time(NULL);
         iguana_RTramchainalloc("RTbundle",coin,bp);
         bp->isRT = 1;
-        //printf("RTheight.%d hwm.%d\n",coin->RTheight,coin->blocks.hwmchain.height);
+        printf("%s rdata.%p RTheight.%d hwm.%d RTdatabad.%d\n",coin->symbol,coin->RTramchain.H.data,coin->RTheight,coin->blocks.hwmchain.height,coin->RTdatabad);
         while ( (rdata= coin->RTramchain.H.data) != 0 && coin->RTheight <= coin->blocks.hwmchain.height-offset && coin->RTdatabad == 0 )
         {
             dest = &coin->RTramchain;
