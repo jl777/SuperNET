@@ -818,7 +818,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             if ( verbose != 0 )
             {
                 extraspace = calloc(1,extralen);
-                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes,extraspace,extralen,0);
+                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes,extraspace,extralen,0,0);
                 free(extraspace);
                 free(txbytes);
                 if ( txobj != 0 )
@@ -885,7 +885,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         memset(msgtx,0,sizeof(*msgtx));
-        if ( (txobj= bitcoin_hex2json(coin,&msgtx->txid,msgtx,rawtx,extraspace,extralen,0)) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&msgtx->txid,msgtx,rawtx,extraspace,extralen,0,0)) != 0 )
         {
             //printf("txobj.(%s)\n",jprint(txobj,0));
             if ( (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
@@ -900,7 +900,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                             break;
                     jaddnum(retjson,"mismatch position",i);
                     jadd(retjson,"origtx",txobj);
-                    if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,checkstr,extraspace,extralen,0)) != 0 )
+                    if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,checkstr,extraspace,extralen,0,0)) != 0 )
                         jadd(retjson,"checktx",txobj);
                     free(checkstr);
                     return(jprint(retjson,1));
@@ -986,7 +986,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         extraspace = calloc(1,extralen);
-        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0);
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0,0);
         free(extraspace);
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }
