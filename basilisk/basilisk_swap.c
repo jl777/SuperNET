@@ -53,7 +53,7 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-//#define BASILISK_DISABLETX
+#define BASILISK_DISABLETX
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -204,14 +204,16 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     V.suppress_pubkeys = dest->suppress_pubkeys;
     if ( dest->redeemlen != 0 )
         memcpy(V.p2shscript,dest->redeemscript,dest->redeemlen), V.p2shlen = dest->redeemlen;
+    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
+    vins = cJSON_CreateArray();
+    item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )
     {
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
+        init_hexbytes_noT(hexstr,userdata,userdatalen);
+        jaddstr(item,"suffix",hexstr);
     }
-    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
-    vins = cJSON_CreateArray();
-    item = cJSON_CreateObject();
     if ( bits256_nonz(rawtx->actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->actualtxid);
     else jaddbits256(item,"txid",rawtx->signedtxid);

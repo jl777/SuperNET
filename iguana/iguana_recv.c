@@ -1641,13 +1641,14 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
 {
     int32_t i,newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
-    portable_mutex_lock(&coin->RTmutex);
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
     {
         fprintf(stderr,"%s call balanceflush\n",coin->symbol);
+        portable_mutex_lock(&coin->RTmutex);
         if ( iguana_balanceflush(coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
+        portable_mutex_unlock(&coin->RTmutex);
         fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
     }
@@ -1676,7 +1677,6 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
-    portable_mutex_unlock(&coin->RTmutex);
     flag += iguana_process_msgrequestQ(myinfo,coin);
     //if ( strcmp("BTCD",coin->symbol) == 0 )
     //    instantdex_update(SuperNET_MYINFO(0));

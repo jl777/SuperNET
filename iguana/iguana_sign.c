@@ -120,6 +120,11 @@ cJSON *iguana_vinjson(struct iguana_info *coin,struct iguana_msgvin *vin,bits256
             iguana_addscript(coin,json,vin->spendscript,vin->spendlen,"scriptPubKey");
         if ( vin->p2shlen > 0 )
             iguana_addscript(coin,json,vin->redeemscript,vin->p2shlen,"redeemScript");
+        if ( vin->suffixlen > 0 )
+        {
+            iguana_addscript(coin,json,&vin->redeemscript[vin->p2shlen],vin->suffixlen,"suffix");
+            vin->p2shlen += vin->suffixlen;
+        }
     }
     return(json);
 }

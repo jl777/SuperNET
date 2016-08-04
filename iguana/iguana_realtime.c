@@ -225,18 +225,21 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         usleep(100000);
         return(0);
     }
+    portable_mutex_lock(&coin->RTmutex);
     for (i=0; i<coin->bundlescount-1; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && (i > 0 && bp->utxofinish == 0) && bp != coin->current )
         {
             if ( iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,0,0) < 0 )
             {
+                portable_mutex_unlock(&coin->RTmutex);
                 printf("error generating spendvectors.[%d], skipping\n",i);
                 return(0);
             } // else printf("generated UTXO.[%d]\n",i);
             coin->spendvectorsaved = 1;
         }
     }
+    portable_mutex_unlock(&coin->RTmutex);
     bp = coin->current;
     if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
     {
@@ -347,7 +350,9 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             //printf("RTgenesis verified\n");
             if ( (coin->RTheight % coin->chain->bundlesize) > 3 )
             {
+                portable_mutex_lock(&coin->RTmutex);
                 iguana_RTspendvectors(myinfo,coin,bp);
+                portable_mutex_unlock(&coin->RTmutex);
                 coin->RTgenesis = (uint32_t)time(NULL);
             }
         }
@@ -362,6 +367,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     if ( coin->RTdatabad != 0 )
     {
         bits256 lastbundle;
+        portable_mutex_lock(&coin->RTmutex);
+        printf("START DATABAD fixing\n");
         iguana_RTramchainfree(coin,bp);
         if ( coin->RTdatabad < 0 )
         {
@@ -379,6 +386,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             myfree(ptr,(bp->n+1)*sizeof(*bp->speculative));
         }
         iguana_RTramchainalloc("RTbundle",coin,bp);
+        printf("DONE DATABAD fixing\n");
+        portable_mutex_unlock(&coin->RTmutex);
     }
     return(flag);
 }
