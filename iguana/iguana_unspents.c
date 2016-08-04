@@ -524,11 +524,9 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
 int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,int64_t *unspents,int32_t *numunspentsp,char *remoteaddr)
 {
     int64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,numunspents,maxunspents,flag = 0; char coinaddr[64];
-    while ( coin->RTramchain_busy != 0 )
-    {
+    portable_mutex_lock(&coin->RTmutex);
+    if ( coin->RTramchain_busy != 0 )
         fprintf(stderr,"iguana_pkhasharray: unexpected access when RTramchain_busy\n");
-        sleep(3);
-    }
     numunspents = 0;
     maxunspents = *numunspentsp;
     if ( rmdarray == 0 )
@@ -553,6 +551,7 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
     *numunspentsp = numunspents;
     if ( flag != 0 && rmdarray != 0 )
         free(rmdarray);
+    portable_mutex_unlock(&coin->RTmutex);
     return(sum);
 }
 

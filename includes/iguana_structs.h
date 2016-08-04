@@ -401,7 +401,7 @@ struct iguana_info
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
     queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
-    portable_mutex_t peers_mutex,blocks_mutex,special_mutex;
+    portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
     struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;

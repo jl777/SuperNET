@@ -1641,6 +1641,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
 {
     int32_t i,newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
+    portable_mutex_lock(&coin->RTmutex);
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
     {
@@ -1675,6 +1676,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
+    portable_mutex_unlock(&coin->RTmutex);
     flag += iguana_process_msgrequestQ(myinfo,coin);
     //if ( strcmp("BTCD",coin->symbol) == 0 )
     //    instantdex_update(SuperNET_MYINFO(0));
