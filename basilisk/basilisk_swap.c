@@ -237,7 +237,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
-        printf("spend rawtx.(%s) userdatalen.%d\n",rawtxbytes,userdatalen);
+        printf("(%s) spend rawtx.(%s) userdatalen.%d p2shlen.%d\n",jprint(txobj,0),rawtxbytes,userdatalen,dest->redeemlen);
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
         {
             printf("rawtx spend signedtx.(%s)\n",signedtx);
