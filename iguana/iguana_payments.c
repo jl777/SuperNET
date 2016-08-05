@@ -940,6 +940,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                         //printf("V %.8f (%s) spendscript.[%d] scriptlen.%d\n",dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen);
                     }
                 }
+                V[0].suppress_pubkeys = suppress_pubkeys;
                 if ( (complete= bitcoin_verifyvins(coin,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,1,0,suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     msgtx->txid = signedtxid;

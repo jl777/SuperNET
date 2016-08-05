@@ -1017,8 +1017,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 if ( V->suppress_pubkeys == 0 && (V->spendscript[0] != plen || V->spendscript[V->spendlen - 1] != IGUANA_OP_CHECKSIG || bitcoin_pubkeylen(&V->spendscript[1]) <= 0) )
                 {
                     iguana_pushdata(stacks,0,V->signers[i].pubkey,plen);
-                    //printf("pushdata plen.%d depth.%d\n",plen,stacks->stackdepth);
-                } //else printf("skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
+                    printf(">>>>>>>>> suppress.%d pushdata plen.%d depth.%d\n",V->suppress_pubkeys,plen,stacks->stackdepth);
+                } else printf("<<<<<<<<<< skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
             }
         }
         if ( V->userdatalen != 0 )

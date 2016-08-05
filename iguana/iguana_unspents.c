@@ -529,7 +529,7 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
     //portable_mutex_lock(&coin->RTmutex);
     while ( coin->RTramchain_busy != 0 )
     {
-        fprintf(stderr,"iguana_pkhasharray: unexpected access when RTramchain_busy\n");
+        fprintf(stderr,"iguana_pkhasharray: %s unexpected access when RTramchain_busy\n",coin->symbol);
         sleep(1);
     }
     numunspents = 0;
