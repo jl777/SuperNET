@@ -943,6 +943,17 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                 {
                     printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
                     iguana_blockunmark(coin,block,bp,bundlei,1);
+                    if ( bundlei < coin->chain->bundlesize-1 )
+                    {
+                        if ( (block= iguana_blockfind("mismatch",coin,bp->hashes[bundlei+1])) != 0 )
+                        {
+                            if ( block->mainchain != 0 )
+                            {
+                                bp->hashes[bundlei] = block->RO.prev_block;
+                                printf("patch [%d:%d] from next block\n",bp->hdrsi,bundlei);
+                            }
+                        }
+                    }
                 }
             } //else printf("[null %d:%d] ",bp->hdrsi,bundlei);
         }
