@@ -18,7 +18,7 @@
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     int32_t hdrsi;
-    portable_mutex_lock(&coin->RTmutex);
+    //portable_mutex_lock(&coin->RTmutex);
     if ( coin->utxotable != 0 )
     {
         printf("free RTramchain\n");
@@ -40,7 +40,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
         coin->RTdatabad = 0;
         printf("done RTramchain\n");
     }
-    portable_mutex_unlock(&coin->RTmutex);
+    //portable_mutex_unlock(&coin->RTmutex);
 }
 
 void *iguana_ramchainfile(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
@@ -69,7 +69,7 @@ void *iguana_ramchainfile(struct supernet_info *myinfo,struct iguana_info *coin,
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
     uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B; struct iguana_bundle *tmpbp;
-    portable_mutex_lock(&coin->RTmutex);
+    //portable_mutex_lock(&coin->RTmutex);
     if ( (rdata= dest->H.data) != 0 )
     {
         i = 0;
@@ -111,7 +111,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
             sleep(1);
         }
     }
-    portable_mutex_unlock(&coin->RTmutex);
+    //portable_mutex_unlock(&coin->RTmutex);
 }
 
 void iguana_rdataset(struct iguana_ramchain *dest,struct iguana_ramchaindata *rdest,struct iguana_ramchain *src)
@@ -225,7 +225,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-//printf("spendvectorsaved not yet\n");
+printf("spendvectorsaved not yet\n");
         usleep(100000);
         return(0);
     }
@@ -345,10 +345,14 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             } else break;
         }
     }
+    else
+    {
+        printf("skip RT.(%d %d %d %d %d %d %d %u)\n",coin->RTdatabad,bp->hdrsi,coin->longestchain/coin->chain->bundlesize,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->blocks.hwmchain.height,bp->lastRT);
+    }
     n = 0;
     if ( coin->RTdatabad == 0 && dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain-offset )
     {
-        //printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
+        printf("ramchainiterate.[%d] ave %.2f micros, total %.2f seconds starti.%d num.%d\n",num0,(totalmillis0*1000.)/num0,totalmillis0/1000.,coin->RTstarti,coin->RTheight%bp->n);
         if ( (n= iguana_walkchain(coin,1)) == coin->RTheight-1+offset )
         {
             //printf("RTgenesis verified\n");
