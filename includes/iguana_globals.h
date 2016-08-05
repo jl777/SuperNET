@@ -42,9 +42,9 @@ char GLOBAL_GENESISDIR[512] = "genesis";
 char GLOBAL_VALIDATEDIR[512] = "DB/purgeable";
 char GLOBAL_CONFSDIR[512] = "confs";
 #ifdef __linux
-int32_t IGUANA_NUMHELPERS = 8;
+int32_t IGUANA_NUMHELPERS = 1;
 #else
-int32_t IGUANA_NUMHELPERS = 4;
+int32_t IGUANA_NUMHELPERS = 1;
 #endif
 #endif
 
