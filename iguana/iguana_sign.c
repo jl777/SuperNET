@@ -1099,7 +1099,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins)) != 0 )
         {
             printf("txobj.(%s)\n",jprint(txobj,0));
-            if ( (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
+            if ( 0 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
             {
                 if ( strcmp(rawtx,checkstr) != 0 )
                 {
