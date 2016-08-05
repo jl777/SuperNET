@@ -331,7 +331,6 @@ printf("%s spendvectorsaved not yet\n",coin->symbol);
                         //    iguana_blockQ("RTerr",coin,bp,i,hash2,1);
                         //break;
                     }
-                    iguana_ramchain_free(coin,&blockR,1);
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
                 B[bundlei] = block->RO;
