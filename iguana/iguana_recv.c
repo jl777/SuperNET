@@ -1639,7 +1639,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
 
 int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin) // single threaded
 {
-    int32_t i,newhwm = 0,hwmheight,flag = 0; char str[2000];
+    int32_t newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
     if ( coin->balanceflush != 0 )
