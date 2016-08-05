@@ -527,8 +527,11 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
 {
     int64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,numunspents,maxunspents,flag = 0; char coinaddr[64];
     //portable_mutex_lock(&coin->RTmutex);
-    if ( coin->RTramchain_busy != 0 )
+    while ( coin->RTramchain_busy != 0 )
+    {
         fprintf(stderr,"iguana_pkhasharray: unexpected access when RTramchain_busy\n");
+        sleep(1);
+    }
     numunspents = 0;
     maxunspents = *numunspentsp;
     if ( rmdarray == 0 )

@@ -137,11 +137,11 @@ struct gecko_memtx *gecko_unspentfind(struct gecko_memtx ***ptrpp,struct iguana_
     return(0);
 }
 
-struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct iguana_info *virt,char *rawtx,uint32_t senderbits)
+struct gecko_memtx *gecko_mempool_txadd(struct supernet_info *myinfo,struct iguana_info *virt,char *rawtx,uint32_t senderbits,int32_t suppress_pubkeys)
 {
     struct gecko_memtx *spentmemtx,**ptrp,*memtx = 0; uint8_t *extraspace; char *str; struct iguana_msgtx msgtx; int32_t i,len,extralen = 65536; cJSON *retjson; int64_t value;
     extraspace = calloc(1,extralen);
-    if ( (str= iguana_validaterawtx(myinfo,virt,&msgtx,extraspace,extralen,rawtx,1)) != 0 )
+    if ( (str= iguana_validaterawtx(myinfo,virt,&msgtx,extraspace,extralen,rawtx,1,suppress_pubkeys)) != 0 )
     {
         if ( (retjson= cJSON_Parse(str)) != 0 )
         {
@@ -261,7 +261,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         pool = virt->mempool = gecko_mempool_alloc(0);
     rawtx = calloc(1,datalen*2 + 1);
     init_hexbytes_noT(rawtx,serialized,datalen);
-    if ( (memtx= gecko_mempool_txadd(myinfo,virt,rawtx,(uint32_t)calc_ipbits(remoteaddr))) != 0 )
+    if ( (memtx= gecko_mempool_txadd(myinfo,virt,rawtx,(uint32_t)calc_ipbits(remoteaddr),0)) != 0 )
     {
         for (i=0; i<pool->numtx; i++)
         {
