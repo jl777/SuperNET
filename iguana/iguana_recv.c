@@ -1667,7 +1667,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     {
         flag += iguana_reqblocks(coin);
         iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
-    }*/
+    }
     if ( time(NULL) > coin->spendvectorsaved )
     {
         for (i=0; i<coin->chain->bundlesize; i++)
@@ -1675,7 +1675,8 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
             if ( coin->RTdatabad != 0 || iguana_realtime_update(myinfo,coin) <= 0 )
                 break;
         }
-    }
+    }*/
+    iguana_realtime_update(myinfo,coin);
     coin->RTramchain_busy = 0;//(coin->RTgenesis == 0);
     flag += iguana_process_msgrequestQ(myinfo,coin);
     //if ( strcmp("BTCD",coin->symbol) == 0 )

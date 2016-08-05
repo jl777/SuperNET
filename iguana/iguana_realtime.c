@@ -225,7 +225,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     }
     if ( coin->spendvectorsaved <= 1 )
     {
-printf("spendvectorsaved not yet\n");
+printf("%s spendvectorsaved not yet\n",coin->symbol);
         usleep(100000);
         return(0);
     }
@@ -347,7 +347,11 @@ printf("spendvectorsaved not yet\n");
     }
     else
     {
-        printf("skip RT.(%d %d %d %d %d %d %d %u)\n",coin->RTdatabad,bp->hdrsi,coin->longestchain/coin->chain->bundlesize,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->blocks.hwmchain.height,bp->lastRT);
+        if ( coin->virtualchain == 0 )
+        {
+            printf("%s skip RT.(%d %d %d %d %d %d %d %u)\n",coin->symbol,coin->RTdatabad,bp->hdrsi,coin->longestchain/coin->chain->bundlesize,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->blocks.hwmchain.height,bp->lastRT);
+            sleep(1);
+        }
     }
     n = 0;
     if ( coin->RTdatabad == 0 && dest != 0 && flag != 0 && coin->RTheight >= coin->longestchain-offset )
