@@ -214,7 +214,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
-    offset = 0;//(strcmp("BTCD",coin->symbol) == 0);
+    offset = (strcmp("BTC",coin->symbol) != 0);
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {
         block = coin->current->blocks[coin->current->n - 1];
@@ -356,8 +356,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     {
         if ( coin->virtualchain == 0 )
         {
-            printf("%s skip RT.(%d %d %d %d %d %d %d %u)\n",coin->symbol,coin->RTdatabad,bp->hdrsi,coin->longestchain/coin->chain->bundlesize,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->blocks.hwmchain.height,bp->lastRT);
-            sleep(1);
+            //printf("%s skip RT.(%d %d %d %d %d %d %d %u)\n",coin->symbol,coin->RTdatabad,bp->hdrsi,coin->longestchain/coin->chain->bundlesize,coin->balanceswritten,coin->RTheight,bp->bundleheight,coin->blocks.hwmchain.height,bp->lastRT);
+            //sleep(1);
         }
     }
     n = 0;
