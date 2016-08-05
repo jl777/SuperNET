@@ -144,13 +144,14 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
     int32_t datalen,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
     if ( coin->peers == 0 )
         return;
+    datalen = iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]));
     for (i=0; i<numaddrs && i<coin->peers->numranked; i++)
     {
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
-        if ( (addr= coin->peers->ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && (datalen= iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]))) > 0 )
+        if ( (addr= coin->peers->ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && datalen > 0 )
         {
             iguana_send(coin,addr,serialized,datalen);
-            addr->pendhdrs++;
+            //addr->pendhdrs++;
         }
     }
 }
@@ -298,13 +299,13 @@ printf("%s spendvectorsaved not yet\n",coin->symbol);
             bundlei = (coin->RTheight % coin->chain->bundlesize);
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
                 iguana_bundlehashadd(coin,bp,bundlei,block);
-            //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
+            printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
             if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
                 //printf("bundlei.%d blockht.%d RTheight.%d\n",bundlei,block->height,coin->RTheight);
                 iguana_blocksetcounters(coin,block,dest);
                 startmillis0 = OS_milliseconds();
-                if ( coin->RTdatabad == 0 && iguana_ramchainfile(myinfo,coin,dest,&blockR,bp,bundlei,block) == 0 )
+                if ( iguana_ramchainfile(myinfo,coin,dest,&blockR,bp,bundlei,block) == 0 )
                 {
                     for (i=0; i<bp->n; i++)
                         if ( GETBIT(bp->haveblock,i) == 0 )
@@ -317,7 +318,7 @@ printf("%s spendvectorsaved not yet\n",coin->symbol);
                         if ( bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0) )
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                            //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
                             if ( coin->peers != 0 )
                             {
                                 addr = coin->peers->ranked[rand() % 8];
@@ -326,10 +327,11 @@ printf("%s spendvectorsaved not yet\n",coin->symbol);
                             }
                             coin->RTgenesis = 0;
                         }
-                        if ( bits256_nonz(hash2) != 0 )
-                            iguana_blockQ("RTerr",coin,bp,i,hash2,1);
+                        //if ( bits256_nonz(hash2) != 0 )
+                        //    iguana_blockQ("RTerr",coin,bp,i,hash2,1);
                         //break;
                     }
+                    iguana_ramchain_free(coin,&blockR,1);
                     return(-1);
                 } else iguana_ramchain_free(coin,&blockR,1);
                 B[bundlei] = block->RO;
