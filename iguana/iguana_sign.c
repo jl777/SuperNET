@@ -42,6 +42,11 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
     else if ( msg->vinscript != 0 && msg->scriptlen > 0 )
     {
         memcpy(&serialized[len],msg->vinscript,msg->scriptlen), len += msg->scriptlen; // pubkeys here
+        if ( msg->suffixlen > 0 && msg->redeemscript != 0 )
+        {
+            printf("msgsuffixlen.%d\n",msg->suffixlen);
+            memcpy(&serialized[len],&msg->redeemscript[msg->scriptlen - msg->suffixlen],msg->suffixlen), len += msg->suffixlen;
+        }
         if ( (p2shlen= msg->p2shlen) > 0 && msg->redeemscript != 0 )
         {
             if ( p2shlen > msg->suffixlen )
@@ -62,8 +67,6 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
                 } else return(-1);
                 memcpy(&serialized[len],msg->redeemscript,p2shlen), len += p2shlen;
             }
-            if ( msg->suffixlen > 0 )
-                memcpy(&serialized[len],&msg->redeemscript[msg->scriptlen - msg->suffixlen],msg->suffixlen), len += msg->suffixlen;
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
@@ -633,6 +636,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             }
         }
         msgtx->vins[vini].scriptlen = scriptlen;
+        printf("USERDATALEN.%d\n",vp->userdatalen);
         if ( vp->userdatalen != 0 )
         {
             memcpy(&script[scriptlen],vp->userdata,vp->userdatalen);
@@ -657,9 +661,11 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             memcpy(&script[scriptlen],vp->p2shscript,p2shlen), scriptlen += p2shlen;
             if ( (msgtx->vins[vini].suffixlen= vp->suffixlen) > 0 )
             {
+                printf("suffixlen.%d\n",vp->suffixlen);
                 memcpy(&script[scriptlen],&vp->p2shscript[vp->p2shlen - vp->suffixlen],vp->suffixlen);
                 scriptlen += vp->suffixlen;
             }
+            msgtx->vins[vini].scriptlen = scriptlen;
         }
         len += scriptlen;
     }
