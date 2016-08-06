@@ -448,11 +448,12 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,char *asmstr,struct vin_info 
 
 //error memalloc mem.0x7f6fc6e4a2a8 94.242.229.158 alloc 1 used 2162688 totalsize.2162688 -> 94.242.229.158 (nil)
 
-int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
 {
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen;
+    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t *p2shscript;
     j = n = 0;
-    *suffixp = *pubkeysizep = 0;
+    *userdatap = 0;
+    *userdatalenp = *pubkeysizep = 0;
     *hashtypep = SIGHASH_ALL;
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {
@@ -476,7 +477,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     vp->type = spendtype;
     if ( j == 0 )
     {
-        *suffixp = len;
+        *userdatalenp = len;
         vp->spendlen = len;
         return(vp->spendlen);
     }
@@ -492,21 +493,28 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
         j++;
     }
     vp->numpubkeys = j;
-    if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
+    *userdatap = &scriptsig[n];
+    *userdatalenp = (len - n);
+    p2shscript = 0;
+    while ( n < len )
     {
-        if ( scriptsig[n] == 0x4c )
-            vp->p2shlen = scriptsig[n+1], n += 2;
-        else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
-        //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
-        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+        if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
         {
-            memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
-            n += vp->p2shlen;
-            vp->type = IGUANA_SCRIPT_P2SH;
-        } else vp->p2shlen = 0;
+            if ( scriptsig[n] == 0x4c )
+                vp->p2shlen = scriptsig[n+1], n += 2;
+            else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
+            //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
+            if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+            {
+                p2shscript = &scriptsig[n];
+                memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
+                n += vp->p2shlen;
+                vp->type = IGUANA_SCRIPT_P2SH;
+            } else vp->p2shlen = 0;
+        }
     }
-    if ( n < len )
-        *suffixp = (len - n);
+    if ( *userdatap == p2shscript )
+        *userdatap = 0;
     /*if ( len == 0 )
      {
      //  txid.(eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2).v1
@@ -518,15 +526,17 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     return(vp->spendlen);
 }
 
-int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen)
+int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *userdatalenp,uint8_t *vinscript,int32_t scriptlen)
 {
-    int32_t hashtype;
-    *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;
-    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,suffixp,vp,vinscript,scriptlen,0) < 0 )
+    int32_t hashtype; uint8_t *userdata = 0;
+    *sigsizep = *pubkeysizep = *p2shsizep = *userdatalenp = 0;
+    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,&userdata,userdatalenp,vp,vinscript,scriptlen,0) < 0 )
     {
         printf("iguana_vinscriptparse: error parsing vinscript?\n");
         return(-1);
     }
+    if ( userdata != 0 && *userdatalenp > 0 )
+        memcpy(vp->userdata,userdata,*userdatalenp);
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
         *p2shsizep = vp->p2shlen + 1 + (vp->p2shlen >= 0xfd)*2;

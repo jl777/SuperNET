@@ -91,6 +91,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
     ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 )
         return(utxo);
+    portable_mutex_lock(&coin->RTmutex);
     val = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
     if ( spent_unspentind > 0 && spent_unspentind < rdata->numunspents )
     {
@@ -106,6 +107,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
                     {
                         printf("iguana_hhutxofind warning: hhutxo.%p spentflag.%d\n",hhutxo,hhutxo->u.spentflag);
                         memset(&utxo,0,sizeof(utxo));
+                        portable_mutex_unlock(&coin->RTmutex);
                         return(utxo);
                     }
                     hhutxo = calloc(1,sizeof(*hhutxo));
@@ -135,6 +137,7 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
     {
         printf("illegal unspentind.%u vs %u hdrs.%d\n",spent_unspentind,rdata->numunspents,spent_hdrsi);
     }
+    portable_mutex_unlock(&coin->RTmutex);
     return(utxo);
 }
 

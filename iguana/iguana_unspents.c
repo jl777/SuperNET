@@ -98,6 +98,7 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
 int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
     struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int64_t value; int32_t pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = -1;
+    //portable_mutex_lock(&coin->RTmutex);
     if ( valuep != 0 )
         *valuep = 0;
     if ( coinaddr != 0 )
@@ -142,6 +143,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
             }
         }
     }
+    //portable_mutex_unlock(&coin->RTmutex);
     return(unspentind);
 }
 
@@ -524,10 +526,11 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
 int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,int64_t *unspents,int32_t *numunspentsp,char *remoteaddr)
 {
     int64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,numunspents,maxunspents,flag = 0; char coinaddr[64];
-    while ( coin->RTramchain_busy != 0 )
+    //portable_mutex_lock(&coin->RTmutex);
+    while ( 0 && coin->RTramchain_busy != 0 )
     {
-        fprintf(stderr,"iguana_pkhasharray: unexpected access when RTramchain_busy\n");
-        sleep(3);
+        fprintf(stderr,"iguana_pkhasharray: %s unexpected access when RTramchain_busy\n",coin->symbol);
+        sleep(1);
     }
     numunspents = 0;
     maxunspents = *numunspentsp;
@@ -553,6 +556,7 @@ int64_t iguana_unspents(struct supernet_info *myinfo,struct iguana_info *coin,cJ
     *numunspentsp = numunspents;
     if ( flag != 0 && rmdarray != 0 )
         free(rmdarray);
+    //portable_mutex_unlock(&coin->RTmutex);
     return(sum);
 }
 

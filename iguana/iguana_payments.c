@@ -818,7 +818,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             if ( verbose != 0 )
             {
                 extraspace = calloc(1,extralen);
-                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes,extraspace,extralen,0);
+                txobj = bitcoin_hex2json(coin,&checktxid,0,txbytes,extraspace,extralen,0,0,0);
                 free(extraspace);
                 free(txbytes);
                 if ( txobj != 0 )
@@ -875,7 +875,7 @@ int64_t iguana_lockval(int32_t finalized,int64_t locktime)
     return(lockval);
 }
 
-char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool)
+char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,char *rawtx,int32_t mempool,int32_t suppress_pubkeys)
 {
     bits256 signedtxid,txid; struct iguana_msgvin vin; cJSON *log,*vins,*vouts,*txobj,*retjson; char *checkstr,*signedtx; int32_t finalized = 1,i,len,maxsize,numinputs,numoutputs,complete; struct vin_info *V; uint8_t *serialized,*serialized2; uint32_t sigsize,pubkeysize,p2shsize,suffixlen; int64_t inputsum,outputsum,lockval;
     retjson = cJSON_CreateObject();
@@ -885,7 +885,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         memset(msgtx,0,sizeof(*msgtx));
-        if ( (txobj= bitcoin_hex2json(coin,&msgtx->txid,msgtx,rawtx,extraspace,extralen,0)) != 0 )
+        if ( (txobj= bitcoin_hex2json(coin,&msgtx->txid,msgtx,rawtx,extraspace,extralen,0,0,suppress_pubkeys)) != 0 )
         {
             //printf("txobj.(%s)\n",jprint(txobj,0));
             if ( (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
@@ -900,7 +900,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                             break;
                     jaddnum(retjson,"mismatch position",i);
                     jadd(retjson,"origtx",txobj);
-                    if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,checkstr,extraspace,extralen,0)) != 0 )
+                    if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,checkstr,extraspace,extralen,0,0,suppress_pubkeys)) != 0 )
                         jadd(retjson,"checktx",txobj);
                     free(checkstr);
                     return(jprint(retjson,1));
@@ -932,7 +932,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                         msgtx->vins[i].spendscript = V[i].spendscript;
                         msgtx->vins[i].spendlen = V[i].spendlen;
                         V[i].hashtype = iguana_vinscriptparse(coin,&V[i],&sigsize,&pubkeysize,&p2shsize,&suffixlen,msgtx->vins[i].vinscript,msgtx->vins[i].scriptlen);
-                        V[i].suffixlen = suffixlen;
+                        V[i].userdatalen = suffixlen;
                         memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
                         V[i].spendlen = msgtx->vins[i].spendlen;
                         if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
@@ -940,7 +940,8 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                         //printf("V %.8f (%s) spendscript.[%d] scriptlen.%d\n",dstr(V[i].amount),V[i].coinaddr,V[i].spendlen,V[i].spendlen);
                     }
                 }
-                if ( (complete= bitcoin_verifyvins(coin,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,1,0)) > 0 && signedtx != 0 )
+                V[0].suppress_pubkeys = suppress_pubkeys;
+                if ( (complete= bitcoin_verifyvins(coin,&signedtxid,&signedtx,msgtx,serialized2,maxsize,V,1,0,suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     msgtx->txid = signedtxid;
                     log = cJSON_CreateArray();
@@ -971,7 +972,7 @@ STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     extraspace = calloc(1,extralen);
-    retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0);
+    retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0,0);
     free(extraspace);
     return(retstr);
 }
@@ -986,7 +987,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         extraspace = calloc(1,extralen);
-        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0);
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0,0,0);
         free(extraspace);
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }

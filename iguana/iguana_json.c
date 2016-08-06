@@ -373,6 +373,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
     {
         sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
         sprintf(fname,"%s/%s_%s.json",GLOBAL_HELPDIR,agent,method);
+        OS_portable_path(fname);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (item= cJSON_Parse(docstr)) == 0 )
@@ -477,35 +478,13 @@ int32_t pretty_forms(char *fname,char *agentstr,char *suffix)
 
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
 {
-    int32_t i,n,len,size = 0; long filesize; cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
+    //int32_t i,n,len,size = 0;  cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
+    long filesize;
     htmlstr[0] = 0;
     pretty_forms(fname,agentstr,"html");
     //printf("autocreate %s\n","autoAPI.md");
     pretty_forms("autoAPI.md",0,"md");
-return(OS_filestr(&filesize,"index7778.html"));
-    sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
-    size = (int32_t)strlen(htmlstr);
-    if ( (helpjson= SuperNET_helpjson()) != 0 )
-    {
-        if ( (array= jarray(&n,helpjson,"API")) != 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(array,i);
-                str = jstr(item,"agent");
-                if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
-                {
-                    len = agentform(fp,&htmlstr[size],maxsize - size,str!=0?str:"agent",item);
-                    size += len;
-                } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
-            }
-        }
-        //free_json(helpjson);
-        return(jprint(helpjson,1));
-    }
-    strcat(htmlstr,"<br><br/></body></html><br><br/>");
-    printf("<br><br/></body></html><br><br/>\n");
-    return(htmlstr);
+    return(OS_filestr(&filesize,"index7778.html"));
 }
 
 cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)

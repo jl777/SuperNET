@@ -53,7 +53,7 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-//#define BASILISK_DISABLETX
+#define BASILISK_DISABLETX
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -204,14 +204,16 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     V.suppress_pubkeys = dest->suppress_pubkeys;
     if ( dest->redeemlen != 0 )
         memcpy(V.p2shscript,dest->redeemscript,dest->redeemlen), V.p2shlen = dest->redeemlen;
+    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
+    vins = cJSON_CreateArray();
+    item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )
     {
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
+        init_hexbytes_noT(hexstr,userdata,userdatalen);
+        jaddstr(item,"suffix",hexstr);
     }
-    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
-    vins = cJSON_CreateArray();
-    item = cJSON_CreateObject();
     if ( bits256_nonz(rawtx->actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->actualtxid);
     else jaddbits256(item,"txid",rawtx->signedtxid);
@@ -220,6 +222,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     init_hexbytes_noT(hexstr,rawtx->spendscript,rawtx->spendlen);
     jaddstr(sobj,"hex",hexstr);
     jadd(item,"scriptPubKey",sobj);
+    jaddnum(item,"suppress",dest->suppress_pubkeys);
     if ( locktime != 0 )
         jaddnum(item,"sequence",0);
     if ( (dest->redeemlen= rawtx->redeemlen) != 0 )
@@ -235,7 +238,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
-        printf("spend rawtx.(%s) userdatalen.%d\n",rawtxbytes,userdatalen);
+        printf("(%s) spend rawtx.(%s) userdatalen.%d p2shlen.%d\n",jprint(txobj,0),rawtxbytes,userdatalen,dest->redeemlen);
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
         {
             printf("rawtx spend signedtx.(%s)\n",signedtx);
@@ -271,7 +274,7 @@ int32_t basilisk_verify_otherfee(struct supernet_info *myinfo,struct basilisk_sw
     return(0);
 }
 
-int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *data,int32_t datalen)
+int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *data,int32_t datalen,int32_t suppress_pubkeys)
 {
     int32_t retval=-1,hexlen,n; cJSON *txobj,*skey,*vouts,*vout; char *hexstr;
     if ( rawtx->txbytes == 0 )
@@ -285,7 +288,7 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
         printf("%s rawtx data compare error, len %d vs %d\n",rawtx->name,rawtx->datalen,datalen);
         return(-1);
     }
-    if ( (txobj= bitcoin_data2json(rawtx->coin,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),rawtx->txbytes,rawtx->datalen)) != 0 )
+    if ( (txobj= bitcoin_data2json(rawtx->coin,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),rawtx->txbytes,rawtx->datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->actualtxid = rawtx->signedtxid;
         char str[65]; printf("got txid.%s\n",bits256_str(str,rawtx->signedtxid));
@@ -311,7 +314,7 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
 int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     uint8_t userdata[512]; int32_t len = 0;
-    if ( basilisk_rawtx_spendscript(myinfo,&swap->bobdeposit,0,data,datalen) == 0 )
+    if ( basilisk_rawtx_spendscript(myinfo,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
         userdata[len++] = 0x51; // true -> if path
         return(basilisk_rawtx_sign(myinfo,swap,&swap->aliceclaim,&swap->bobdeposit,swap->myprivs[0],0,userdata,len));
@@ -342,7 +345,7 @@ int32_t basilisk_bobpayment_reclaim(struct supernet_info *myinfo,struct basilisk
 int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
     uint8_t userdata[512]; int32_t i,len = 0;
-    if ( basilisk_rawtx_spendscript(myinfo,&swap->bobpayment,0,data,datalen) == 0 )
+    if ( basilisk_rawtx_spendscript(myinfo,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
         // OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
         userdata[len++] = sizeof(swap->privAm);
@@ -362,7 +365,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
 {
-    if ( basilisk_rawtx_spendscript(myinfo,&swap->alicepayment,0,data,datalen) == 0 )
+    if ( basilisk_rawtx_spendscript(myinfo,&swap->alicepayment,0,data,datalen,0) == 0 )
         return(0);
     else return(-1);
 }
