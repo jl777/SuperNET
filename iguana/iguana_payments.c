@@ -932,7 +932,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                         msgtx->vins[i].spendscript = V[i].spendscript;
                         msgtx->vins[i].spendlen = V[i].spendlen;
                         V[i].hashtype = iguana_vinscriptparse(coin,&V[i],&sigsize,&pubkeysize,&p2shsize,&suffixlen,msgtx->vins[i].vinscript,msgtx->vins[i].scriptlen);
-                        V[i].suffixlen = suffixlen;
+                        V[i].userdatalen = suffixlen;
                         memcpy(V[i].spendscript,msgtx->vins[i].spendscript,msgtx->vins[i].spendlen);
                         V[i].spendlen = msgtx->vins[i].spendlen;
                         if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
