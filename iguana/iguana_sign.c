@@ -514,7 +514,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     msg->lock_time = jint(txobj,"locktime");
     msg->txid = jbits256(txobj,"txid");
     *txstartp = len;
-    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0,0,V->suppress_pubkeys)) < 0 )
+    if ( (msg->allocsize= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0,0,V!=0?V->suppress_pubkeys:0)) < 0 )
     {
         memset(txid.bytes,0,sizeof(txid));
         printf("error parsing txobj\n");
