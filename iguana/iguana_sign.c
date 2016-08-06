@@ -43,7 +43,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         memcpy(&serialized[len],msg->vinscript,msg->scriptlen), len += msg->scriptlen; // pubkeys here
         if ( msg->userdatalen > 0 && msg->userdata != 0 )
         {
-            printf("userdata.%d\n",msg->userdatalen);
+            printf("userdata.%d p2shlen %d %x\n",msg->userdatalen,msg->p2shlen,msg->p2shlen);
             memcpy(&serialized[len],msg->userdata,msg->userdatalen);
             len += msg->userdatalen;
         }
@@ -1085,17 +1085,20 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         decode_hex(serialized,len,rawtx);
         if ( (txobj= bitcoin_hex2json(coin,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
-            printf("txobj.(%s)\n",jprint(txobj,0));
-            if ( 0 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
+            if ( jobj(txobj,"error") != 0 )
+            {
+                printf("txobj.(%s)\n",jprint(txobj,0));
+            }
+            if ( 1 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
             {
                 if ( strcmp(rawtx,checkstr) != 0 )
                 {
                     printf("RAW.(%s) ->\nNEW.(%s)\n",rawtx,checkstr);
-                    free_json(txobj);
-                    free(checkstr);
-                    free(serialized), free(serialized2), free(serialized3), free(serialized4);
-                    free(extraspace);
-                    return(-2);
+                    //free_json(txobj);
+                    //free(checkstr);
+                    //free(serialized), free(serialized2), free(serialized3), free(serialized4);
+                    //free(extraspace);
+                    //return(-2);
                 }
                 free(checkstr);
             }

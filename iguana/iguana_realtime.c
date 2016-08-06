@@ -335,8 +335,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                             }
                             coin->RTgenesis = 0;
                         }
-                        //if ( bits256_nonz(hash2) != 0 )
-                        //    iguana_blockQ("RTerr",coin,bp,i,hash2,1);
+                        if ( bits256_nonz(hash2) != 0 )
+                            iguana_blockQ("RTerr",coin,bp,i,hash2,1);
                         //break;
                     }
                     return(-1);
