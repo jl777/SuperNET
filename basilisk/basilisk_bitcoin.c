@@ -944,22 +944,19 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     }
     if ( myinfo->numspends > 0 )
     {
-        spends = cJSON_CreateArray();
+        //spends = cJSON_CreateArray();
         for (i=0; i<myinfo->numspends; i++)
         {
             s = &myinfo->spends[i];
             //struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
             if ( strcmp(s->symbol,coin->symbol) == 0 )
-                jaddi(spends,basilisk_history_item(&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
+                jaddi(array,basilisk_history_item(&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
         }
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
-    jadd(retjson,"received",array);
-    if ( spends == 0 )
-        spends = cJSON_CreateArray();
-    jadd(retjson,"sent",spends);
+    jadd(retjson,"history",array);
     jaddstr(retjson,"coin",coin->symbol);
     jaddnum(retjson,"balance",dstr(total));
     return(jprint(retjson,1));
