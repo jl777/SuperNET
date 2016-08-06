@@ -966,13 +966,13 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
     return(jprint(retjson,1));
 }
 
-STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
+STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress)
 {
     uint8_t *extraspace; char *retstr; struct iguana_msgtx msgtx; int32_t extralen=65536;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     extraspace = calloc(1,extralen);
-    retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0,0);
+    retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0,suppress);
     free(extraspace);
     return(retstr);
 }

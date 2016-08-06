@@ -524,7 +524,7 @@ static char *decoderawtransaction(RPCARGS)
 
 static char *validaterawtransaction(RPCARGS)
 {
-    return(sglue1(0,CALLGLUE,"bitcoinrpc","validaterawtransaction","rawtx",params[0]));
+    return(sglue2(0,CALLGLUE,"bitcoinrpc","validaterawtransaction","rawtx",params[0],"suppress",params[1]));
 }
 
 static char *decodescript(RPCARGS)

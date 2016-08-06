@@ -871,6 +871,8 @@ void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32
         return;
     scriptstr = scriptbuf, maxlen = sizeof(scriptbuf);
     init_hexbytes_noT(scriptstr,script,scriptlen);
+    if ( strcmp(fieldname,"userdata") == 0 )
+        printf("SCRIPT_USERDATA.(%s)\n",scriptstr);
     if ( strcmp(fieldname,"coinbase") == 0 )
         jaddstr(dest,"coinbase",scriptstr);
     else
