@@ -373,6 +373,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
     {
         sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
         sprintf(fname,"%s/%s_%s.json",GLOBAL_HELPDIR,agent,method);
+        OS_portable_path(fname);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (item= cJSON_Parse(docstr)) == 0 )
