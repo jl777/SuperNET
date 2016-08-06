@@ -212,7 +212,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
         init_hexbytes_noT(hexstr,userdata,userdatalen);
-        jaddstr(item,"suffix",hexstr);
+        jaddstr(item,"userdata",hexstr);
     }
     if ( bits256_nonz(rawtx->actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->actualtxid);
