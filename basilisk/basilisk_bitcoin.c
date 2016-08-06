@@ -913,7 +913,7 @@ cJSON *basilisk_history_item(int64_t *totalp,char *coinaddr,int64_t value,uint32
 
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
 {
-    struct basilisk_unspent *bu; int32_t i; int64_t totalspent=0,total = 0; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*array,*spends=0; struct basilisk_spend *s;
+    struct basilisk_unspent *bu; int32_t i; int64_t totalspent=0,total = 0; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*array; struct basilisk_spend *s;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
     //if ( coin == 0 )
