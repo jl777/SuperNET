@@ -129,7 +129,7 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
 {
     int32_t n;
     n = (int32_t)strlen(hexstr) >> 1;
-    printf("addhex.(%s) %d\n",hexstr,n);
+    //printf("addhex.(%s) %d\n",hexstr,n);
     if ( serialized == 0 )
         serialized = *destp;
     if ( serialized != 0 )
@@ -222,7 +222,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     if ( hexstr != 0 )
     {
         n = (int32_t)strlen(hexstr) >> 1;
-        printf("add.(%s) offset.%d\n",hexstr,len);
+        //printf("add.(%s) offset.%d\n",hexstr,len);
         decode_hex(serialized,n,hexstr);
         vin->vinscript = serialized;
         vin->scriptlen = n;
@@ -272,13 +272,13 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             }
         }
     }
-    printf("len.%d: ",len);
+    //printf("len.%d: ",len);
     if ( userdata != 0 )
     {
         n = iguana_parsehexstr(&vin->userdata,&vin->userdatalen,V!=0?V->userdata:0,V!=0?&V->userdatalen:0,serialized,userdata);
         len += n, serialized += n;
     }
-    printf("len.%d: ",len);
+    //printf("len.%d: ",len);
     if ( redeemstr != 0 )
     {
         n = (int32_t)strlen(redeemstr) >> 1;
@@ -301,12 +301,12 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         n = iguana_parsehexstr(&vin->redeemscript,&vin->p2shlen,V!=0?V->p2shscript:0,V!=0?&V->p2shlen:0,serialized,redeemstr);
         len += n, serialized += n;
     }
-    printf("len.%d: ",len);
+    //printf("len.%d: ",len);
     if ( spendstr != 0 )
     {
         n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,0,spendstr);
     }
-    printf("output sequence.[%d] <- %x\n",len,vin->sequence);
+    //printf("output sequence.[%d] <- %x\n",len,vin->sequence);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
     return(len);
 }
@@ -457,10 +457,10 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        printf("vin.%d starts offset.%d\n",i,len);
+        //printf("vin.%d starts offset.%d\n",i,len);
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
-        printf("vin.%d n.%d len.%d\n",i,n,len);
+        //printf("vin.%d n.%d len.%d\n",i,n,len);
         len += n;
         if ( len > maxsize )
         {
@@ -505,7 +505,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t rwflag,cJSON *json,uint8
     }
     for (i=0; i<msg->tx_out; i++)
     {
-        printf("vout.%d starts %d\n",i,len);
+        //printf("vout.%d starts %d\n",i,len);
         if ( (n= iguana_voutparse(rwflag,&serialized[len],&msg->vouts[i])) < 0 )
             return(-1);
         len += n;
@@ -586,7 +586,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             for (i=0; i<msg->tx_in; i++)
             {
-                printf("vinobj.%d starts offset.%d\n",i,len);
+                //printf("vinobj.%d starts offset.%d\n",i,len);
                 len += iguana_parsevinobj(myinfo,coin,&serialized[len],maxsize,&msg->vins[i],jitem(array,i),V!=0?&V[i]:0);
             }
         }
@@ -614,9 +614,9 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
     *txstartp = 0;
     msg->allocsize = len;
     msg->txid = txid = bits256_doublesha256(0,serialized,len);
-    for (i=0; i<len; i++)
-        printf("%02x",serialized[i]);
-    printf(" parsetxobj len.%d\n",len);
+    //for (i=0; i<len; i++)
+    //    printf("%02x",serialized[i]);
+    //printf(" parsetxobj len.%d\n",len);
     /*if ( (len= iguana_rwmsgtx(coin,1,0,&serialized[len],maxsize-len,msg,&txid,vpnstr,0,0,0,V!=0?V->suppress_pubkeys:0)) != msg->allocsize )
     {
         //memset(txid.bytes,0,sizeof(txid));
@@ -1194,7 +1194,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
             {
                 printf("txobj.(%s)\n",jprint(txobj,0));
             }
-            if ( 1 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
+            if ( juint(txobj,"suppress") == 0 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
             {
                 if ( strcmp(rawtx,checkstr) != 0 )
                 {
