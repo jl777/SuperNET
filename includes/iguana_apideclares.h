@@ -67,7 +67,8 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 STRING_ARG(bitcoinrpc,decodescript,scriptstr);
-STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+//STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
