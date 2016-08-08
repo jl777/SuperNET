@@ -212,7 +212,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
         memcpy(V.userdata,userdata,userdatalen);
         V.userdatalen = userdatalen;
         init_hexbytes_noT(hexstr,userdata,userdatalen);
-        jaddstr(item,"suffix",hexstr);
+        jaddstr(item,"userdata",hexstr);
     }
     if ( bits256_nonz(rawtx->actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->actualtxid);
@@ -238,7 +238,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,struct basilisk_swap *s
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
     {
-        printf("(%s) spend rawtx.(%s) userdatalen.%d p2shlen.%d\n",jprint(txobj,0),rawtxbytes,userdatalen,dest->redeemlen);
+        printf("(%s) spend.%s rawtx.(%s) userdatalen.%d p2shlen.%d\n",jprint(txobj,0),rawtx->name,rawtxbytes,userdatalen,dest->redeemlen);
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
         {
             printf("rawtx spend signedtx.(%s)\n",signedtx);

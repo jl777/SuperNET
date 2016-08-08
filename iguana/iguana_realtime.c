@@ -305,6 +305,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             else
             {
                 printf("cant find bundleblock [%d:%d]\n",bp->hdrsi,bundlei);
+                iguana_blockQ("RTmissing",coin,bp,bundlei,hash2,1);
+                //break;
             }
             if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
@@ -333,8 +335,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                             }
                             coin->RTgenesis = 0;
                         }
-                        //if ( bits256_nonz(hash2) != 0 )
-                        //    iguana_blockQ("RTerr",coin,bp,i,hash2,1);
+                        if ( bits256_nonz(hash2) != 0 )
+                            iguana_blockQ("RTerr",coin,bp,i,hash2,1);
                         //break;
                     }
                     return(-1);

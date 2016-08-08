@@ -966,18 +966,26 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
     return(jprint(retjson,1));
 }
 
-STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx)
+STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress)
 {
     uint8_t *extraspace; char *retstr; struct iguana_msgtx msgtx; int32_t extralen=65536;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    cJSON *txobj; char *teststr= "{\"version\":1,\"locktime\":0,\"vin\":[{\"userdata\":\"20ae439d344513eab8e718d8214fe6ae8133b8b5b594afd64da21d0e40b9c37cdd00\",\"txid\":\"2c1320315f4fb519cbf2b4d7b67855013b9a09a85e515df43b41d407a0083b09\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a9142e7674400d04217f770f2222126dc7fee44b06b487\"},\"suppress\":1,\"redeemScript\":\"63041686a657b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a914ed74c61c27656abc6c20687c3a9212ffdc6f34cd88210398a4cb9f6ea7c52a4e27455028a95e2e4e397a110fb75f072c2c58a8bdcbf4baac68\"}],\"vout\":[{\"satoshis\":\"16733\",\"scriptPubkey\":{\"hex\":\"76a91454a752f0d71b89d7c014ed0be29ca231c9546f9f88ac\"}}]}";
     extraspace = calloc(1,extralen);
-    retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0,0);
+    if ( (txobj= cJSON_Parse(teststr)) != 0 )
+    {
+        bits256 txid;
+        rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,0);
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0,0,suppress);
+        printf("RAWTX.(%s) -> (%s)\n",rawtx,jprint(txobj,0));
+    }
+    //retstr = iguana_validaterawtx(myinfo,coin,&msgtx,extraspace,extralen,rawtx,0,suppress);
     free(extraspace);
-    return(retstr);
+    return(rawtx);
 }
 
-STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
+STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress)
 {
     cJSON *txobj = 0; bits256 txid; uint8_t *extraspace; int32_t extralen = 65536;
     if ( remoteaddr != 0 )
@@ -987,7 +995,7 @@ STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx)
         if ( (strlen(rawtx) & 1) != 0 )
             return(clonestr("{\"error\":\"rawtx hex has odd length\"}"));
         extraspace = calloc(1,extralen);
-        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0,0,0);
+        txobj = bitcoin_hex2json(coin,&txid,0,rawtx,extraspace,extralen,0,0,suppress);
         free(extraspace);
         //char str[65]; printf("got txid.(%s)\n",bits256_str(str,txid));
     }

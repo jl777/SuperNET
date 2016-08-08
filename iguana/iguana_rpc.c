@@ -519,12 +519,12 @@ static char *createrawtransaction(RPCARGS)
 
 static char *decoderawtransaction(RPCARGS)
 {
-    return(sglue1(0,CALLGLUE,"bitcoinrpc","decoderawtransaction","rawtx",params[0]));
+    return(sglue2(0,CALLGLUE,"bitcoinrpc","decoderawtransaction","rawtx",params[0],"suppress",params[1]));
 }
 
 static char *validaterawtransaction(RPCARGS)
 {
-    return(sglue1(0,CALLGLUE,"bitcoinrpc","validaterawtransaction","rawtx",params[0]));
+    return(sglue2(0,CALLGLUE,"bitcoinrpc","validaterawtransaction","rawtx",params[0],"suppress",params[1]));
 }
 
 static char *decodescript(RPCARGS)
