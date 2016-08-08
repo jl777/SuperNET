@@ -498,7 +498,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     struct iguana_stackdata Snum; cJSON *item = 0; char tmpstr[2048]; int32_t num = (int32_t)num64;
     if ( stacks->lastpath[stacks->ifdepth] < 0 )
         return(0);
-    //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
+    printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
         /*if ( numbuf != 0 )
@@ -1143,7 +1143,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        //printf("{%s}\n",str);
+        printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1553,7 +1553,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
         else
         {
             jadd(interpreter,"result",jfalse());
-            printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
+            printf("Evaluate FALSE, depth.%d errs.%d [0] size.%d num.%d\n",stacks->stackdepth,errs,stacks->stack[0].size,stacks->stack[0].U.val);
         }
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));

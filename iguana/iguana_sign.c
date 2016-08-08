@@ -67,7 +67,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
-    if ( 1 )
+    if ( 0 )
     {
         int32_t i; char str[65];
         for (i=0; i<len; i++)
@@ -415,7 +415,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
     {
 #ifdef BTC2_VERSION
         if ( height >= BTC2_HARDFORK_HEIGHT )
-            hashtype |= (BTC2_MAGICBYTE << 24); // the 0xff can be any non-zero byte
+            hashtype |= (0x777 << 20);
 #endif
         len += iguana_rwnum(1,&serialized[len],sizeof(hashtype),&hashtype);
         revsigtxid = bits256_doublesha256(0,serialized,len);
@@ -1223,8 +1223,8 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         decode_hex(serialized,len,rawtx);
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
-            if ( vins != 0 )
-                printf("vins.(%s)\n",jprint(vins,0));
+            //if ( vins != 0 )
+            //    printf("vins.(%s)\n",jprint(vins,0));
             if ( jobj(txobj,"error") != 0 )
             {
                 printf("txobj.(%s)\n",jprint(txobj,0));

@@ -340,7 +340,8 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,struct basilisk_
     uint8_t userdata[512]; int32_t len = 0;
     if ( basilisk_rawtx_spendscript(myinfo,swap->bobcoin->blocks.hwmchain.height,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
-        len = basilisk_swapuserdata(userdata,0,GENESIS_PRIVKEY,0x02,swap->pubA0,1);
+        //len = basilisk_swapuserdata(userdata,0,GENESIS_PRIVKEY,0x02,swap->pubA0,1);
+        userdata[len++] = 0x51;
         return(basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->aliceclaim,&swap->bobdeposit,swap->myprivs[0],0,userdata,len));
     }
     printf("error with bobdeposit\n");
@@ -366,7 +367,8 @@ int32_t basilisk_bobpayment_reclaim(struct supernet_info *myinfo,struct basilisk
 {
     uint8_t userdata[512]; int32_t len = 0;
     printf("basilisk_bobpayment_reclaim\n");
-    len = basilisk_swapuserdata(userdata,0,GENESIS_PRIVKEY,0x03,swap->pubB1,1);
+    userdata[len++] = 0x51;
+    //len = basilisk_swapuserdata(userdata,0,GENESIS_PRIVKEY,0x03,swap->pubB1,1);
     return(basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobreclaim,&swap->bobpayment,swap->myprivs[1],0,userdata,len));
 }
 
@@ -1082,7 +1084,7 @@ void basilisk_swaploop(void *_swap)
         printf("A r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
         basilisk_sendpubkeys(myinfo,swap,data,maxlen); // send pubkeys
         basilisk_checkdeck(myinfo,swap,data,maxlen); // check for other deck 0x02
-        if ( (swap->statebits & 0x02) != 0 )
+        //if ( (swap->statebits & 0x02) != 0 )
             basilisk_sendchoosei(myinfo,swap,data,maxlen);
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->statebits & (0x08|0x02)) == (0x08|0x02) )
