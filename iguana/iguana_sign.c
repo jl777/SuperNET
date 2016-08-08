@@ -707,7 +707,7 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,int32_t height,bits256 *txidp,s
 
 int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,struct vin_info *V)
 {
-    int32_t vini,j,scriptlen,p2shlen,siglen,plen,len = 0; uint8_t *script; struct vin_info *vp;
+    int32_t vini,j,scriptlen,p2shlen,userdatalen,siglen,plen,len = 0; uint8_t *script,*redeemscript=0,*userdata=0; struct vin_info *vp;
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
         vp = &V[vini];
@@ -737,16 +737,27 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             }
             msgtx->vins[vini].scriptlen = scriptlen;
         }
-        if ( vp->userdatalen != 0 )
+        if ( (userdatalen= vp->userdatalen) == 0 )
         {
-            memcpy(&script[scriptlen],vp->userdata,vp->userdatalen);
+            userdatalen = vp->userdatalen = msgtx->vins[vini].userdatalen;
+            userdata = msgtx->vins[vini].userdata;
+        } else userdata = vp->userdata;
+        if ( userdatalen != 0 )
+        {
+            memcpy(&script[scriptlen],userdata,userdatalen);
             msgtx->vins[vini].userdata = &script[scriptlen];
-            msgtx->vins[vini].userdatalen = vp->userdatalen;
-            scriptlen += vp->userdatalen;
+            msgtx->vins[vini].userdatalen = userdatalen;
+            scriptlen += userdatalen;
         }
-        printf("USERDATALEN.%d scriptlen.%d redeemlen.%d\n",vp->userdatalen,scriptlen,vp->p2shlen);
-        if ( (p2shlen= vp->p2shlen) > 0 )
+        if ( (p2shlen= vp->p2shlen) == 0 )
         {
+            p2shlen = vp->p2shlen = msgtx->vins[vini].p2shlen;
+            redeemscript = msgtx->vins[vini].redeemscript;
+        } else redeemscript = vp->p2shscript;
+        printf("USERDATALEN.%d scriptlen.%d redeemlen.%d\n",userdatalen,scriptlen,p2shlen);
+        if ( p2shlen != 0 )
+        {
+            msgtx->vins[vini].redeemscript = &script[scriptlen];
             if ( p2shlen < 76 )
                 script[scriptlen++] = p2shlen;
             else if ( p2shlen <= 0xff )
@@ -760,10 +771,9 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
                 script[scriptlen++] = (p2shlen & 0xff);
                 script[scriptlen++] = ((p2shlen >> 8) & 0xff);
             } else return(-1);
-            msgtx->vins[vini].redeemscript = &script[scriptlen];
-            memcpy(&script[scriptlen],vp->p2shscript,p2shlen);
-            scriptlen += p2shlen;
             msgtx->vins[vini].p2shlen = p2shlen;
+            memcpy(&script[scriptlen],redeemscript,p2shlen);
+            scriptlen += p2shlen;
         }
         len += scriptlen;
     }
