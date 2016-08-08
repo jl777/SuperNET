@@ -38,12 +38,13 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         msg->vinscript = &serialized[len];
         len += msg->scriptlen;
     }
-    else if ( msg->vinscript != 0 && msg->scriptlen > 0 )
+    else
     {
+        if ( msg->vinscript != 0 && msg->scriptlen > 0 )
         memcpy(&serialized[len],msg->vinscript,msg->scriptlen), len += msg->scriptlen; // pubkeys here
         if ( msg->userdatalen > 0 && msg->userdata != 0 )
         {
-            printf("userdata.%d p2shlen %d %x\n",msg->userdatalen,msg->p2shlen,msg->p2shlen);
+            printf("userdata.%d p2shlen %d %x scriptlen.%d\n",msg->userdatalen,msg->p2shlen,msg->p2shlen,msg->scriptlen);
             memcpy(&serialized[len],msg->userdata,msg->userdatalen);
             len += msg->userdatalen;
         }
@@ -66,11 +67,11 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
-    if ( 0 )
+    if ( 1 )
     {
         int32_t i; char str[65];
-        for (i=0; i<msg->scriptlen; i++)
-            printf("%02x",msg->vinscript[i]);
+        for (i=0; i<len; i++)
+            printf("%02x",serialized[i]);
         printf(" prev_hash.(%s) vout.%d [%p] scriptlen.%d rwflag.%d\n",bits256_str(str,msg->prev_hash),msg->prev_vout,msg->vinscript,msg->scriptlen,rwflag);
     }
     return(len);
@@ -722,6 +723,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
                 scriptlen += siglen;
             }
         }
+        msgtx->vins[vini].scriptlen = scriptlen;
         if ( vp->suppress_pubkeys == 0 && (vp->N > 1 || bitcoin_pubkeylen(&vp->spendscript[1]) != vp->spendscript[0] || vp->spendscript[vp->spendlen-1] != 0xac) )
         {
             for (j=0; j<vp->N; j++)
@@ -733,10 +735,16 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
                     scriptlen += plen;
                 }
             }
+            msgtx->vins[vini].scriptlen = scriptlen;
         }
-        printf("USERDATALEN.%d\n",vp->userdatalen);
+        printf("USERDATALEN.%d scriptlen.%d redeemlen.%d\n",vp->userdatalen,scriptlen,vp->p2shlen);
         if ( vp->userdatalen != 0 )
-            memcpy(&script[scriptlen],vp->userdata,vp->userdatalen), scriptlen += vp->userdatalen;
+        {
+            memcpy(&script[scriptlen],vp->userdata,vp->userdatalen);
+            msgtx->vins[vini].userdata = &script[scriptlen];
+            msgtx->vins[vini].userdatalen = vp->userdatalen;
+            scriptlen += vp->userdatalen;
+        }
         if ( (p2shlen= vp->p2shlen) > 0 )
         {
             msgtx->vins[vini].redeemscript = &script[scriptlen];
@@ -753,9 +761,10 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
                 script[scriptlen++] = (p2shlen & 0xff);
                 script[scriptlen++] = ((p2shlen >> 8) & 0xff);
             } else return(-1);
-            memcpy(&script[scriptlen],vp->p2shscript,p2shlen), scriptlen += p2shlen;
+            memcpy(&script[scriptlen],vp->p2shscript,p2shlen);
+            scriptlen += p2shlen;
+            msgtx->vins[vini].p2shlen = p2shlen;
         }
-        msgtx->vins[vini].scriptlen = scriptlen;
         len += scriptlen;
     }
     return(len);

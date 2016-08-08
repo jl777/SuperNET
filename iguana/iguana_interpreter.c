@@ -1128,6 +1128,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             }
             else if ( n < 0 )
             {
+                printf("dataparse negative n.%d\n",n);
                 errs++;
                 break;
             }
@@ -1172,7 +1173,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         else
                         {
                             if ( stacks->stackdepth <= 0 )
+                            {
+                                printf("if invalid stackdepth %d\n",stacks->stackdepth);
                                 errs++;
+                            }
                             else
                             {
                                 args[0] = iguana_pop(stacks);
@@ -1191,9 +1195,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         }
                         break;
                     case IGUANA_OP_ELSE:
-                        if ( stacks->stackdepth <= 0 )
+                        /*if ( stacks->stackdepth <= 0 )
+                        {
+                            printf("else invalid stackdepth %d\n",stacks->stackdepth);
                             errs++;
-                        else
+                        }
+                        else*/
                         {
                             if ( stacks->ifdepth <= stacks->elsedepth )
                             {
