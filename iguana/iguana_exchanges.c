@@ -91,7 +91,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
         for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
         {
             quote = sortbuf[i];
-            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
             if ( quote.satoshis != 0 )
             {
                 pricesum += (quote.price * quote.volume);
