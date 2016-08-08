@@ -497,7 +497,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         jadd(valsobj,"addresses",addresses);
     }
     //printf("use addresses.(%s)\n",jprint(addresses,0));
-    printf("(%s) vals.(%s) change.(%s) spend.%s\n",coin->symbol,jprint(valsobj,0),changeaddr,spendscriptstr);
+    //printf("(%s) vals.(%s) change.(%s) spend.%s\n",coin->symbol,jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 )//&& basilisk_bitcoinavail(coin) != 0 )
