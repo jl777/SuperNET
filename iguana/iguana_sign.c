@@ -753,11 +753,15 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
         {
             p2shlen = vp->p2shlen = msgtx->vins[vini].p2shlen;
             redeemscript = msgtx->vins[vini].redeemscript;
-        } else redeemscript = vp->p2shscript;
+        }
+        else
+        {
+            redeemscript = vp->p2shscript;
+            msgtx->vins[vini].redeemscript = redeemscript;
+        }
         printf("USERDATALEN.%d scriptlen.%d redeemlen.%d\n",userdatalen,scriptlen,p2shlen);
         if ( p2shlen != 0 )
         {
-            msgtx->vins[vini].redeemscript = &script[scriptlen];
             if ( p2shlen < 76 )
                 script[scriptlen++] = p2shlen;
             else if ( p2shlen <= 0xff )
@@ -776,6 +780,11 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             scriptlen += p2shlen;
         }
         len += scriptlen;
+    }
+    {
+        int32_t i; for (i=0; i<len; i++)
+            printf("%02x",script[i]);
+        printf(" <-script len.%d\n",len);
     }
     return(len);
 }
@@ -839,7 +848,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
             if ( numsigs >= vp->M )
                 complete = 1;
         }
-    }
+    } //0398a4cb9f6ea7c52a4e27455028a95e2e4e397a110fb75f072c2c58a8bdcb
     iguana_msgtx_Vset(coin,serialized,maxlen,msgtx,V);
     cJSON *txobj = cJSON_CreateObject();
     *signedtx = iguana_rawtxbytes(coin,height,txobj,msgtx,suppress_pubkeys);

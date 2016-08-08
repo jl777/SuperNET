@@ -1549,7 +1549,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             if ( errs == 0 )
                 jadd(interpreter,"result",jtrue());
             else jadd(interpreter,"result",jfalse());
-        } else printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
+        }
+        else
+        {
+            jadd(interpreter,"result",jfalse());
+            printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
+        }
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));
         if ( numargs > 0 )
