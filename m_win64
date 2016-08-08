@@ -1,3 +1,2 @@
-git pull
-cd iguana; ./m_win64; cd ..
-cd SuperNET; ./m_win64; cd ..
+cd crypto777; make -f make_win64; cd ..
+cd iguana; make -f make_win64; cd ..
