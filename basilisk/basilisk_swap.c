@@ -314,16 +314,16 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,int32_t height,s
 int32_t basilisk_swapuserdata(uint8_t *userdata,int32_t pushpriv,bits256 privkey,uint8_t addrtype,bits256 pubkey,int32_t ifpath)
 {
     int32_t i,len = 0;
+    userdata[len++] = 33;
+    userdata[len++] = addrtype;
+    for (i=0; i<sizeof(pubkey); i++)
+        userdata[len++] = pubkey.bytes[i];
     if ( pushpriv != 0 )
     {
         userdata[len++] = sizeof(privkey);
         for (i=0; i<sizeof(privkey); i++)
             userdata[len++] = privkey.bytes[sizeof(privkey) - 1 - i];
     }
-    userdata[len++] = 33;
-    userdata[len++] = addrtype;
-    for (i=0; i<sizeof(pubkey); i++)
-        userdata[len++] = pubkey.bytes[i];
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
     return(len);
 }
