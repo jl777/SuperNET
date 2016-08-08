@@ -16,6 +16,8 @@
 #ifndef H_BASILISK_H
 #define H_BASILISK_H
 
+//#define BASILISK_DISABLETX
+
 #include "../iguana/iguana777.h"
 
 #define BASILISK_TIMEOUT 30000

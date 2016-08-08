@@ -53,7 +53,6 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-#define BASILISK_DISABLETX
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -314,10 +313,13 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,int32_t height,s
 int32_t basilisk_swapuserdata(uint8_t *userdata,int32_t pushpriv,bits256 privkey,uint8_t addrtype,bits256 pubkey,int32_t ifpath)
 {
     int32_t i,len = 0;
-    userdata[len++] = 33;
-    userdata[len++] = addrtype;
-    for (i=0; i<sizeof(pubkey); i++)
-        userdata[len++] = pubkey.bytes[i];
+    if ( 0 )
+    {
+        userdata[len++] = 33;
+        userdata[len++] = addrtype;
+        for (i=0; i<sizeof(pubkey); i++)
+            userdata[len++] = pubkey.bytes[i];
+    }
     if ( pushpriv != 0 )
     {
         userdata[len++] = sizeof(privkey);
