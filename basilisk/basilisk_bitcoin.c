@@ -890,7 +890,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
     return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
 }
 
-cJSON *basilisk_history_item(int64_t *totalp,char *coinaddr,int64_t value,uint32_t timestamp,bits256 txid,char *vinvoutstr,int32_t vinvout,int32_t height,char *otherheightstr,int32_t otherheight,uint64_t relaymask,int32_t ismine)
+cJSON *basilisk_history_item(struct iguana_info *coin,int64_t *totalp,char *coinaddr,int64_t value,uint32_t timestamp,bits256 txid,char *vinvoutstr,int32_t vinvout,int32_t height,char *otherheightstr,int32_t otherheight,uint64_t relaymask,int32_t ismine)
 {
     cJSON *item,*details;
     item = cJSON_CreateObject();
@@ -902,6 +902,9 @@ cJSON *basilisk_history_item(int64_t *totalp,char *coinaddr,int64_t value,uint32
         jaddnum(details,"ismine",ismine);
     jaddbits256(details,"txid",txid);
     jaddnum(details,vinvoutstr,vinvout);
+    jaddnum(details,"height",height);
+    if ( coin->blocks.hwmchain.height > 0 )
+        jaddnum(details,"confirms",coin->blocks.hwmchain.height - height);
     jaddnum(details,"height",height);
     if ( otherheight != 0 )
         jaddnum(details,otherheightstr,otherheight);
@@ -936,7 +939,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
                 if ( strcmp(bu->symbol,coin->symbol) == 0 )
                 {
                     bitcoin_address(waddr->coinaddr,coin->chain->pubtype,waddr->rmd160,sizeof(waddr->rmd160));
-                    jaddi(array,basilisk_history_item(&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
+                    jaddi(array,basilisk_history_item(coin,&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
                     //printf("%s %s i.%d numunspents.%d\n",coin->symbol,waddr->coinaddr,i,waddr->numunspents);
                 }
             }
@@ -950,7 +953,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
             s = &myinfo->spends[i];
             //struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
             if ( strcmp(s->symbol,coin->symbol) == 0 )
-                jaddi(array,basilisk_history_item(&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
+                jaddi(array,basilisk_history_item(coin,&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
         }
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
