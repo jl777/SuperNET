@@ -180,6 +180,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     struct iguana_account *A2; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
     if ( (rdata= spentchain->H.data) != 0 )
     {
+        portable_mutex_lock(&coin->RTmutex);
         if ( incremental == 0 )
         {
             if ( spentchain->Uextras == 0 || spentchain->A2 == 0 )
@@ -196,6 +197,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                     utxo->fromheight = fromheight;
                     A2[spent_pkind].total += spent_value;
                     A2[spent_pkind].lastunspentind = spent_unspentind;
+                    portable_mutex_unlock(&coin->RTmutex);
                     return(0);
                 }
                 else
@@ -212,9 +214,11 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 /*totalmillis += (OS_milliseconds() - startmillis);
                  if ( (++utxon % 100000) == 0 )
                  printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);*/
+                portable_mutex_unlock(&coin->RTmutex);
                 return(0);
             }
         }
+        portable_mutex_unlock(&coin->RTmutex);
         printf("iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
         /*if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;
