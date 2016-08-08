@@ -1346,7 +1346,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
     printf("end of atomic swap\n");
-    if ( swap->iambob != 0 )
+    if ( swap->iambob != 0 && bits256_nonz(swap->bobdeposit.txid) != 0 )
     {
         printf("BOB reclaims refund\n");
         basilisk_bobdeposit_refund(myinfo,swap);
