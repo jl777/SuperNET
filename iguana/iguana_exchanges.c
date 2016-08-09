@@ -84,7 +84,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
             else if ( dir > 0 && active[i]->numasks > 0 )
                 n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
         }
-        //printf("dir.%d %s/%s numX.%d n.%d\n",dir,base,rel,num,n);
+        printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
         if ( dir < 0 )
             revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
         else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
