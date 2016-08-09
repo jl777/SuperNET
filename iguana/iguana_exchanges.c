@@ -891,9 +891,15 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
 {
     struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
+    {
+        printf("%s doesnt have supports func\n",exchange->name);
         return(clonestr("{\"error\":\"no supports function\"}"));
+    }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
+    {
+        printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
+    }
     if ( depth <= 0 )
         depth = 1;
     req = calloc(1,sizeof(*req) + sizeof(*req->bidasks)*depth*2);
@@ -913,7 +919,10 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     if ( (req->commission= commission) == 0. )
         req->commission = exchange->commission;
     if ( monitor == 0 )
+    {
+        printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
         return(exchanges777_submit(exchange,req,'Q',maxseconds));
+    }
     else
     {
         req->func = 'M';
