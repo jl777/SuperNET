@@ -302,7 +302,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             {
                 printf("cant find bundleblock [%d:%d]\n",bp->hdrsi,bundlei);
                 iguana_blockQ("RTmissing",coin,bp,bundlei,hash2,1);
-                //break;
+                break;
             }
             if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
