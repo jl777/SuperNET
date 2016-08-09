@@ -16,6 +16,13 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+//#define BTC2_VERSION
+#define BTC2_HARDFORK_HEIGHT 444444
+#define BTC2_SIGHASH_FORKID 0xcf
+#define BTC2_NETMAGIC 0xaabbccdd
+#define BTC2_DEFAULT_PORT 8222
+#define BTC2_DIFF_WINDOW 60
+
 struct supernet_info;
 struct exchange_info;
 

@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-//INT_AND_ARRAY(iguana,rates,unused,quotes);
+INT_AND_ARRAY(iguana,rates,unused,quotes);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);

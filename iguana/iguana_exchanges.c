@@ -91,7 +91,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
         for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
         {
             quote = sortbuf[i];
-            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
             if ( quote.satoshis != 0 )
             {
                 pricesum += (quote.price * quote.volume);
@@ -1293,5 +1293,82 @@ STRING_ARG(InstantDEX,allpairs,exchange)
     if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 && ptr->issue.allpairs != 0 )
         return((*ptr->issue.allpairs)(ptr,json));
     else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+}
+
+INT_AND_ARRAY(iguana,rates,unused,quotes)
+{
+    int32_t i,n,len,j; char *retstr,*quote,base[16][64],rel[16][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+    if ( is_cJSON_Array(quotes) != 0 && (n= cJSON_GetArraySize(quotes)) > 0 )
+    {
+        if ( n > 16 )
+        {
+            jaddstr(retjson,"error","only 16 quotes at a time");
+            return(jprint(retjson,1));
+        }
+        memset(base,0,sizeof(base));
+        memset(rel,0,sizeof(rel));
+        for (i=0; i<n; i++)
+        {
+            if ( (quote= jstri(quotes,i)) != 0 )
+            {
+                len = (int32_t)strlen(quote);
+                if ( len >= 64 )
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","quote too long");
+                    return(jprint(retjson,1));
+                }
+                for (j=0; j<len; j++)
+                    if ( quote[j] == '/' )
+                    {
+                        if ( j > 0 && j < len-1 )
+                        {
+                            memcpy(base[i],quote,j);
+                            base[i][j] = 0;
+                            j++;
+                            strcpy(rel[i],&quote[j]);
+                            break;
+                        }
+                        else
+                        {
+                            if ( array != 0 )
+                                free_json(array);
+                            jaddstr(retjson,"error","no base error in quote item");
+                            return(jprint(retjson,1));
+                        }
+                    }
+                if ( j < len )
+                {
+                    aveprice = 0.;
+                    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",base[i],rel[i],1)) != 0 )
+                    {
+                        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+                        {
+                            aveprice = jdouble(tmpjson,"aveprice");
+                            free_json(tmpjson);
+                        }
+                        sprintf(field,"%s/%s",base[i],rel[i]);
+                        item = cJSON_CreateObject();
+                        jaddnum(item,field,aveprice);
+                        if ( array == 0 )
+                            array = cJSON_CreateArray();
+                        jaddi(array,item);
+                        free(retstr);
+                    }
+                }
+                else
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","syntax error in quote item");
+                    return(jprint(retjson,1));
+                }
+            }
+        }
+        jaddstr(retjson,"result","success");
+        jadd(retjson,"rates",array);
+    } else jaddstr(retjson,"error","no quotes array");
+    return(jprint(retjson,1));
 }
 #include "../includes/iguana_apiundefs.h"
