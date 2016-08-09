@@ -581,16 +581,15 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
 int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf)
 {
     struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],wifstr[64],*retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0,*privkeyarray,*addresses;
-    if ( (waddr= iguana_getaccountaddress(myinfo,rawtx->coin,0,0,rawtx->coin->changeaddr,"change")) == 0 )
+    //if ( (waddr= iguana_getaccountaddress(myinfo,rawtx->coin,0,0,rawtx->coin->changeaddr,"change")) == 0 )
+    if ( rawtx->coin->changeaddr[0] == 0 )
     {
-        printf("no change addr error\n");
-        return(-1);
+        bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+        printf("set change address.(%s)\n",rawtx->coin->changeaddr);
     }
     init_hexbytes_noT(scriptstr,script,scriptlen);
     privkeyarray = cJSON_CreateArray();
     addresses = cJSON_CreateArray();
-    if ( rawtx->coin->changeaddr[0] == 0 )
-        bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,waddr->rmd160,20);
     bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
     //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
