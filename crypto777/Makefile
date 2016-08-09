@@ -11,7 +11,7 @@ NACL_SDK_ROOT ?= $(abspath $(CURDIR))
 
 TARGET = crypto777
 
-EXTRA= -D__PNACL -O2
+EXTRA= -D__PNACL -O2 -DLIQUIDITY_PROVIDER=1
 
 #include $(NACL_SDK_ROOT)/tools/common.mk
 include tools/common.mk

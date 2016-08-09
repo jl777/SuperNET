@@ -19,7 +19,7 @@
 #define LIQUIDITY_PROVIDER 1
 #endif
 
-#ifdef LIQUIDITY_PROVIDER
+#if LIQUIDITY_PROVIDER
 #ifdef _WIN32
 #include <curl.h>
 #include <easy.h>
