@@ -1347,7 +1347,7 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                         {
                             aveprice = jdouble(tmpjson,"aveprice");
                             free_json(tmpjson);
-                        }
+                        } else printf("error parsing.(%s)\n",retstr);
                         sprintf(field,"%s/%s",base[i],rel[i]);
                         item = cJSON_CreateObject();
                         jaddnum(item,field,aveprice);
@@ -1355,7 +1355,7 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                             array = cJSON_CreateArray();
                         jaddi(array,item);
                         free(retstr);
-                    }
+                    } else printf("no return from aveprice\n");
                 }
                 else
                 {
