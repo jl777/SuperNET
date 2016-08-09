@@ -444,7 +444,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
     if ( coin->changeaddr[0] == 0 )
     {
         if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
-            return(clonestr("{\"error\":\"not enough funds\"}"));
+            return(clonestr("{\"error\":\"no change address specified\"}"));
         strcpy(coin->changeaddr,waddr->coinaddr);
     }
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )

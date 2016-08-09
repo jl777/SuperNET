@@ -16,7 +16,7 @@
 #include "OS_portable.h"
 
 #ifdef __APPLE__
-#define LIQUIDITY_PROVIDER
+#define LIQUIDITY_PROVIDER 1
 #endif
 
 #ifdef LIQUIDITY_PROVIDER
