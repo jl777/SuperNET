@@ -969,7 +969,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
 
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress)
 {
-    uint8_t *extraspace; int32_t extralen=65536; char *retstr; struct iguana_msgtx msgtx;
+    uint8_t *extraspace; int32_t extralen=65536;// char *retstr; struct iguana_msgtx msgtx;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     

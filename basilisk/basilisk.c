@@ -535,7 +535,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                     jaddi(pending->retarray,item);
                 } else printf("couldnt parse.(%s)\n",retstr);
                 pending->numresults++;
-            } else printf("couldnt find issued.%u\n",basilisktag);
+            } //else printf("couldnt find issued.%u\n",basilisktag);
         }
     }
 }
