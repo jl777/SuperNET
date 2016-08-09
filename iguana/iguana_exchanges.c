@@ -1346,6 +1346,7 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                         if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
                         {
                             aveprice = jdouble(tmpjson,"aveprice");
+                            printf("(%s) ",jprint(tmpjson,0));
                             free_json(tmpjson);
                         } else printf("error parsing.(%s)\n",retstr);
                         sprintf(field,"%s/%s",base[i],rel[i]);
@@ -1355,6 +1356,7 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                             array = cJSON_CreateArray();
                         jaddi(array,item);
                         free(retstr);
+                        printf(" <- aveprice %f\n",aveprice);
                     } else printf("no return from aveprice\n");
                 }
                 else
@@ -1364,7 +1366,7 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                     jaddstr(retjson,"error","syntax error in quote item");
                     return(jprint(retjson,1));
                 }
-            }
+            } else printf("i.%d of %d null quote\n",i,n);
         }
         jaddstr(retjson,"result","success");
         jadd(retjson,"rates",array);
