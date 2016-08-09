@@ -27,7 +27,17 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         tmp = msg->scriptlen + msg->userdatalen + msg->p2shlen;
     len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
     if ( rwflag == 0 )
+    {
+        if ( msg->p2shlen != 0 )
+        {
+            if ( msg->p2shlen < 76 )
+                tmp++;
+            else if ( msg->p2shlen < 0x100 )
+                tmp += 2;
+            else tmp += 3;
+        }
         msg->scriptlen = tmp;
+    }
     if ( msg->scriptlen > IGUANA_MAXSCRIPTSIZE )
     {
         printf("iguana_vinparse illegal scriptlen.%d\n",msg->scriptlen);
@@ -766,7 +776,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
     {
         int32_t i; for (i=0; i<len; i++)
             printf("%02x",script[i]);
-        printf(" <-script len.%d\n",len);
+        printf(" <-script len.%d scriptlen.%d p2shlen.%d user.%d\n",len,scriptlen,p2shlen,userdatalen);
     }
     return(len);
 }
