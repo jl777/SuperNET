@@ -303,6 +303,9 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         len += n;
     }
     tmp = (len - starti);
+    for (i=0; i<len; i++)
+        printf("%02x",serialized[i]);
+    printf(" <- offset.%d tmp.%d starti.%d\n",len,tmp,starti);
     serialized[starti-2] = (tmp & 0xff);
     serialized[starti-1] = ((tmp >> 8) & 0xff);
     if ( spendstr != 0 )
