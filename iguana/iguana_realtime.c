@@ -167,11 +167,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
-#ifdef __APPLE__
-    iterate = 0*(coin->bundlescount-1);
-#else
     iterate = 0;
-#endif
     if ( iguana_spendvectors(myinfo,coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
