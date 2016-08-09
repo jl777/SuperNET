@@ -233,18 +233,6 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
-    //010000000141f18ce3a5c90069a04ade56f3277dbaa2d141f8ff708543455d9d620be512ee00000000
-    //8b
-    //20fe936da3707c8c4cc7eb0352160ec3f50b9454d46425df6347b2fbc5b2ec87ea00
-    //4c676304165daa57b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a9143805600256ed8498ca1ec426759212e5835e8dc2882103a7b696908f77d69ec89887f8c4a0423b9e80b5974dc43301bd7d8abad07e1211ac68ffffffff013d55
-    //0000000000001976a9143ef4734c1141725c095342095f6e0e7748b6c16588ac00000000
-    //
-    //
-    // 010000000141f18ce3a5c90069a04ade56f3277dbaa2d141f8ff708543455d9d620be512ee00000000
-    //d147304402206b65cdd65f646bcc8ed3011e1d6bdb78d615c0f96f00b204d8561599ef77860c02202c5fca26317cc42ea037c1925530ac0e9ad22beda63717617da84107f833f30901
-    //20fe936da3707c8c4cc7eb0352160ec3f50b9454d46425df6347b2fbc5b2ec87ea00
-    //4c676304165daa57b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a9143805600256ed8498ca1ec426759212e5835e8dc2882103a7b696908f77d69ec89887f8c4a0423b9e80b5974dc43301bd7d8abad07e1211ac68ffffffff013d55
-    //0000000000001976a9143ef4734c1141725c095342095f6e0e7748b6c16588ac00000000
     printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name,dest->suppress_pubkeys);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )

@@ -89,7 +89,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         }
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
-    if ( 1 )
+    if ( 0 )
     {
         int32_t i; char str[65];
         for (i=0; i<len; i++)
@@ -171,7 +171,7 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
 
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint32_t tmp=0; int32_t i,n,starti,suppress_pubkeys,siglen,plen,m,rwflag=1,need_op0=0,len = 0; char *userdata,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte; uint32_t tmp=0; int32_t i,n,starti,suppress_pubkeys,siglen,plen,m,rwflag=1,need_op0=0,len = 0; char *userdata,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
     //printf("PARSEVIN.(%s) vin.%p\n",jprint(vinobj,0),vin);
     if ( V == 0 )
         memset(vin,0,sizeof(*vin));
@@ -189,12 +189,22 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         if ( ((spendstr= jstr(vinobj,"scriptPub")) == 0 && (spendstr= jstr(vinobj,"scriptPubkey")) == 0) || is_hexstr(spendstr,(int32_t)strlen(spendstr)) <= 0 )
         {
             if ( (obj= jobj(vinobj,"scriptPub")) != 0 || (obj= jobj(vinobj,"scriptPubkey")) != 0 )
+            {
                 spendstr = jstr(obj,"hex");
+                lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
+                if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
+                    need_op0 = 1;
+            }
         }
         if ( (redeemstr= jstr(vinobj,"redeemScript")) == 0 || is_hexstr(redeemstr,(int32_t)strlen(redeemstr)) <= 0 )
         {
             if ( (obj= jobj(vinobj,"redeemScript")) != 0 )
+            {
                 redeemstr = jstr(obj,"hex");
+                lastbyte = _decode_hex(&redeemstr[strlen(redeemstr)-2]);
+                if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
+                    need_op0 = 1;
+            }
         }
         if ( (userdata= jstr(vinobj,"userdata")) == 0 || is_hexstr(userdata,(int32_t)strlen(userdata)) <= 0 )
         {
@@ -236,6 +246,8 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             while ( m < n )
             {
                 siglen = serialized[len + m++];
+                if ( i == 0 && m == 1 && siglen == 0 ) // multisig backward compatible
+                    continue;
                 memcpy(V->signers[i].sig,&serialized[len + m],siglen);
                 m += siglen;
                 i++;
