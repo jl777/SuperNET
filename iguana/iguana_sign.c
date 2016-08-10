@@ -745,7 +745,7 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
             need_op0 = 1;
             printf("found multisig spendscript\n");
         }
-        if ( redeemscript[p2shlen - 1] == SCRIPT_OP_CHECKMULTISIG )
+        if ( redeemscript != 0 && p2shlen > 33 && redeemscript[p2shlen - 1] == SCRIPT_OP_CHECKMULTISIG )
         {
             need_op0 = 1;
             printf("found multisig redeemscript\n");
