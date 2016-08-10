@@ -898,7 +898,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         {
             struct iguana_msgblock msg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
-            if ( addr != 0 && recvlen >= sizeof(bits256) )
+            if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("BTCD",coin->symbol) != 0 )
             {
                 if ( ishost == 0 )
                 {
@@ -947,7 +947,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     } else printf("got unexpected n.%d for headers\n",n);
                 }
                 else if ( addr->headerserror == 0 )
+                {
                     len = iguana_peergetrequest(myinfo,coin,addr,data,recvlen,0);
+                }
             }
         }
         else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )

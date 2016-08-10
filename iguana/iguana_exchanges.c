@@ -897,7 +897,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
     {
-        printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
+        //printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     }
     if ( depth <= 0 )
@@ -1302,6 +1302,26 @@ STRING_ARG(InstantDEX,allpairs,exchange)
     if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 && ptr->issue.allpairs != 0 )
         return((*ptr->issue.allpairs)(ptr,json));
     else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+}
+
+TWO_STRINGS(iguana,rate,base,rel)
+{
+    cJSON *retjson,*tmpjson; char *retstr,baserel[128],_base[64],_rel[64]; double aveprice = 0.;
+    safecopy(_base,base,sizeof(_base));
+    safecopy(_rel,rel,sizeof(_rel));
+    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",_base,_rel,1)) != 0 )
+    {
+        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+        {
+            aveprice = jdouble(tmpjson,"aveprice");
+            retjson = cJSON_CreateObject();
+            sprintf(baserel,"%s/%s",_base,_rel);
+            jaddnum(retjson,baserel,aveprice);
+            jaddstr(retjson,"result","success");
+            free_json(tmpjson);
+            return(jprint(retjson,1));
+        } else return(clonestr("{\"error\":\"error parsing return from aveprice\"}"));
+    } else return(clonestr("{\"error\":\"null return from aveprice\"}"));
 }
 
 INT_AND_ARRAY(iguana,rates,unused,quotes)

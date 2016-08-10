@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);

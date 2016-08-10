@@ -830,8 +830,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         }
         if ( coin->startPEND > maxval*mult )
             coin->startPEND = maxval*mult;
-        else if ( coin->startPEND < 1 )
-            coin->startPEND = 1;
+        else if ( coin->startPEND < 2 )
+            coin->startPEND = 2;
         coin->MAXBUNDLES = coin->startPEND;
         if ( (coin->endPEND= juint(json,"endpend")) == 0 )
         {
@@ -841,8 +841,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         }
         if ( coin->endPEND > maxval*mult )
             coin->endPEND = maxval*mult;
-        else if ( coin->endPEND < 1 )
-            coin->endPEND = 1;
+        else if ( coin->endPEND < 2 )
+            coin->endPEND = 2;
 #ifdef __PNACL__
         coin->startPEND =  coin->endPEND = 1;
 #endif
@@ -859,7 +859,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
