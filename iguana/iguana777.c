@@ -617,13 +617,12 @@ void iguana_helper(void *arg)
         if ( queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
-            usleep(polltimeout * 100 + 1);
+            usleep(polltimeout * 1000 + 1);
         else if ( allcurrent > 0 )
         {
             //printf("bundlesQ allcurrent\n");
-            usleep(polltimeout * 10000);
-        }
-        else usleep(polltimeout * 5000);
+            usleep(polltimeout * 100000);
+        } else usleep(polltimeout * 50000);
     }
 }
 
@@ -859,7 +858,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

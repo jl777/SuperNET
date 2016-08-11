@@ -591,15 +591,27 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         return(-1);
     for (i=0; i<msg->tx_in; i++)
     {
+        if ( len+sizeof(bits256)+sizeof(int32_t) > maxsize )
+        {
+            {
+                printf("invalid tx_in.%d len.%d vs maxsize.%d before\n",msg->tx_in,len,maxsize);
+                return(-1);
+            }
+        }
         len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
-        if ( len > maxsize )
+        if ( len+sizeof(int32_t) > maxsize )
         {
             printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
             return(-1);
         }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
-   //printf("numvouts.%d ",msg->tx_out);
+    if ( len + msg->tx_out*32 > maxsize )
+    {
+        printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+        return(-1);
+    }
+ //printf("numvouts.%d ",msg->tx_out);
     if ( rwflag == 0 )
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
@@ -898,7 +910,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         {
             struct iguana_msgblock msg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
-            if ( addr != 0 && recvlen >= sizeof(bits256) )
+            if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("BTCD",coin->symbol) != 0 )
             {
                 if ( ishost == 0 )
                 {
@@ -947,7 +959,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     } else printf("got unexpected n.%d for headers\n",n);
                 }
                 else if ( addr->headerserror == 0 )
+                {
                     len = iguana_peergetrequest(myinfo,coin,addr,data,recvlen,0);
+                }
             }
         }
         else if ( (ishost= (strcmp(H->command,"version") == 0)) || strcmp(H->command,"verack") == 0 )

@@ -373,7 +373,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             //iguana_blast(coin,addr);
         }
     }
-    copyflag = 0;//(coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
+    copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
     bp = 0, bundlei = -2;
     bp = iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.hash2);
     if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
@@ -772,7 +772,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( num > 3 && num < bp->n )
+    if ( coin->RTheight > 0 && num > 3 && num < bp->n )
     {
         if ( coin->longestchain > bp->bundleheight+num+10*coin->chain->minconfirms )
         {
@@ -1436,7 +1436,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
     queue_t *Q; char *str; uint32_t now; int32_t n,height = -1; struct iguana_blockreq *req,*ptr; struct iguana_block *block = 0;
     if ( bits256_nonz(hash2) == 0 )
     {
-        printf("%s.cant queue zerohash bundlei.%d\n",argstr,bundlei);
+        //printf("%s.cant queue zerohash bundlei.%d\n",argstr,bundlei);
         //getchar();
         return(-1);
     }

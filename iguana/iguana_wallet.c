@@ -859,6 +859,8 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
 
 void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
 {
+    if ( coin != 0 )
+        memset(coin->changeaddr,0,sizeof(coin->changeaddr));
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
     memset(&myinfo->persistent_pubkey33,0,sizeof(myinfo->persistent_pubkey33));
     memset(myinfo->secret,0,sizeof(myinfo->secret));

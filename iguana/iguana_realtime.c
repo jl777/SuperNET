@@ -167,11 +167,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
     if ( (lasti= (coin->RTheight - ((coin->RTheight/bp->n)*bp->n))) >= bp->n-1 )
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
-#ifdef __APPLE__
-    iterate = 0*(coin->bundlescount-1);
-#else
     iterate = 0;
-#endif
     if ( iguana_spendvectors(myinfo,coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
@@ -300,13 +296,13 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
             if ( (block= iguana_bundleblock(coin,&hash2,bp,bundlei)) != 0 )
             {
                 iguana_bundlehashadd(coin,bp,bundlei,block);
-                printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
+                //printf("RT.%d vs hwm.%d starti.%d bp->n %d block.%p/%p ramchain.%p databad.%d prevnonz.%d\n",coin->RTheight,coin->blocks.hwmchain.height,coin->RTstarti,bp->n,block,bp->blocks[bundlei],dest->H.data,coin->RTdatabad,bits256_nonz(block->RO.prev_block));
             }
             else
             {
-                printf("cant find bundleblock [%d:%d]\n",bp->hdrsi,bundlei);
+                //printf("cant find bundleblock [%d:%d]\n",bp->hdrsi,bundlei);
                 iguana_blockQ("RTmissing",coin,bp,bundlei,hash2,1);
-                //break;
+                break;
             }
             if ( coin->RTdatabad == 0 && block != 0 && (block->height == 0 || bits256_nonz(block->RO.prev_block) != 0) )
             {
@@ -326,7 +322,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                         if ( bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0) )
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                            //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
                             if ( coin->peers != 0 )
                             {
                                 addr = coin->peers->ranked[rand() % 8];
