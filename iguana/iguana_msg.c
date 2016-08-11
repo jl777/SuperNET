@@ -599,14 +599,19 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
             }
         }
         len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
-        if ( len > maxsize )
+        if ( len+sizeof(int32_t) > maxsize )
         {
             printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
             return(-1);
         }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
-   //printf("numvouts.%d ",msg->tx_out);
+    if ( len + msg->tx_out*32 > maxsize )
+    {
+        printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+        return(-1);
+    }
+ //printf("numvouts.%d ",msg->tx_out);
     if ( rwflag == 0 )
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
