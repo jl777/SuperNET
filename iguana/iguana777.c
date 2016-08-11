@@ -621,7 +621,7 @@ void iguana_helper(void *arg)
         else if ( allcurrent > 0 )
         {
             //printf("bundlesQ allcurrent\n");
-            usleep(polltimeout * 100000);
+            usleep(polltimeout * 10000);
         } else usleep(polltimeout * 5000);
     }
 }
