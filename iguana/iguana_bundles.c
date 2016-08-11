@@ -211,9 +211,18 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         if ( bp->blocks[bundlei] != 0 && bp->blocks[bundlei] != block )
         {
             printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
-            iguana_blockunmark(coin,block,bp,bundlei,1);
-            bp->blocks[bundlei] = 0;
-            return(-1);
+            if ( block->mainchain != 0 && (block->height % coin->chain->bundlesize) == bundlei && (block->height / coin->chain->bundlesize) == bp->hdrsi )
+            {
+                printf("bundle block override [%d:%d]\n",bp->hdrsi,bundlei);
+                bp->blocks[bundlei] = block;
+                bp->hashes[bundlei] = block->RO.hash2;
+            }
+            else
+            {
+                iguana_blockunmark(coin,block,bp,bundlei,1);
+                bp->blocks[bundlei] = 0;
+                return(-1);
+            }
         }
         if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
