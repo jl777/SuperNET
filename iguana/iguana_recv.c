@@ -1436,7 +1436,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
     queue_t *Q; char *str; uint32_t now; int32_t n,height = -1; struct iguana_blockreq *req,*ptr; struct iguana_block *block = 0;
     if ( bits256_nonz(hash2) == 0 )
     {
-        printf("%s.cant queue zerohash bundlei.%d\n",argstr,bundlei);
+        //printf("%s.cant queue zerohash bundlei.%d\n",argstr,bundlei);
         //getchar();
         return(-1);
     }
