@@ -818,8 +818,8 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                 }
                 else
                 {
-                    iguana_blockunmark(coin,block,bp,i,1);
-                    printf("cant find (%s)\n",fname);
+                    iguana_blockunmark(coin,block,bp,i,0);
+                    //printf("cant find (%s)\n",fname);
                 }
             }
         }
