@@ -13,6 +13,6 @@ build:
 
 clean:
 	@echo "\nCleaning files......"
-	rm -f ../agents/win64/* || true
+	rm -rf ../agents/win64/* || true
 	rm -f *.o || true
 	@echo "\nCleaned all files......"

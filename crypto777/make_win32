@@ -1,11 +1,10 @@
 include crypto777.sources
 include ../mingw.path
 
-all: clean copy build
-copy :
-	mkdir -p ../agents/win32 || true
+all: clean build
 
 build :
+	mkdir -p ../agents/win32 || true
 	@echo "\nBuilding crypto777....."
 	$(TOOL_DIR)/bin/$(MINGW) -w -D__CLEANUP_C -DPTW32_STATIC_LIB -D __MINGW -DHAVE_STRUCT_TIMESPEC -c $(CRYPTO777_SRCS) -I$(TOOL_DIR)/include -I../includes/openssl -I../crypto777 -I../OSlibs/win -L../OSlibs/win -lpthreadGC2 || (echo -e "\033[4mERROR: Compilation failed for win32 \033[0m"; exit 1; )
 
