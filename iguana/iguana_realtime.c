@@ -322,7 +322,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                         if ( bits256_nonz(hash2) != 0 && (block == 0 || block->txvalid == 0) )
                         {
                             uint8_t serialized[512]; int32_t len; struct iguana_peer *addr;
-                            char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
+                            //char str[65]; printf("RT error [%d:%d] %s %p\n",bp->hdrsi,i,bits256_str(str,hash2),block);
                             if ( coin->peers != 0 )
                             {
                                 addr = coin->peers->ranked[rand() % 8];

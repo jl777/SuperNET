@@ -591,6 +591,13 @@ int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t
         return(-1);
     for (i=0; i<msg->tx_in; i++)
     {
+        if ( len+sizeof(bits256)+sizeof(int32_t) > maxsize )
+        {
+            {
+                printf("invalid tx_in.%d len.%d vs maxsize.%d before\n",msg->tx_in,len,maxsize);
+                return(-1);
+            }
+        }
         len += iguana_rwvin(rwflag,mem,&serialized[len],&msg->vins[i]);
         if ( len > maxsize )
         {
