@@ -417,7 +417,7 @@ void iguana_update_balances(struct iguana_info *coin)
 {
     int32_t i,hdrsi,max; struct iguana_bundle *bp;
     max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
     {
