@@ -210,7 +210,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
-    if ( coin->RTheight < coin->blocks.hwmchain.height )
+    if ( coin->RTheight > coin->blocks.hwmchain.height )
     {
         printf("inversion RT %d < %d\n",coin->RTheight,coin->blocks.hwmchain.height);
         coin->RTheight = 0;
