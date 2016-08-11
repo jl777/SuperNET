@@ -1021,10 +1021,10 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
             return(0);
         }
         bp->emitfinish = 1;
-        sleep(1); // make sure new incoming packet didnt overwrite
+        usleep(100000); // make sure new incoming packet didnt overwrite
         if ( iguana_bundleready(coin,bp,1) == bp->n )
         {
-            sleep(1); // make sure new incoming packet didnt overwrite
+            usleep(100000); // make sure new incoming packet didnt overwrite
             coin->emitbusy++;
             if ( iguana_bundlesaveHT(myinfo,coin,mem,memB,bp,(uint32_t)time(NULL)) == 0 )
             {
