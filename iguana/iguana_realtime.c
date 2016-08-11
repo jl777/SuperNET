@@ -211,9 +211,9 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
     offset = (strcmp("BTC",coin->symbol) != 0);
-    if ( coin->RTheight-offset > coin->blocks.hwmchain.height )
+    if ( coin->RTheight-offset > coin->blocks.hwmchain.height+1 )
     {
-        printf("inversion RT %d < %d\n",coin->RTheight,coin->blocks.hwmchain.height);
+        printf("inversion RT %d > %d\n",coin->RTheight,coin->blocks.hwmchain.height+1);
         coin->RTheight = 0;
     }
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
@@ -280,7 +280,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                 }
             }
         }
-        char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
+        //char str[65]; printf("check longest.%d RTheight.%d hwm.%d %s %p\n",coin->longestchain,coin->RTheight,coin->blocks.hwmchain.height,bits256_str(str,bp->hashes[0]),block);
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         //bp->lastRT = (uint32_t)time(NULL);
