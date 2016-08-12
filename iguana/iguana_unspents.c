@@ -854,11 +854,11 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
         memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
         HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
         HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        int32_t i; for (i=0; i<20; i++)
+            printf("%02x",utxoaddr->rmd160[i]);
+        printf(" %d of %d: %p\n",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
         if ( utxoaddr == 0 )
         {
-            int32_t i; for (i=0; i<20; i++)
-                printf("%02x",rmd160[i]);
-            printf(" %d of %d: %p ",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
             printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
         }
     }

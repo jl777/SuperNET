@@ -377,6 +377,8 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
                 iguana_RTspendvectors(myinfo,coin,bp);
                 //portable_mutex_unlock(&coin->RTmutex);
                 coin->RTgenesis = (uint32_t)time(NULL);
+                if ( coin->utxoaddrs == 0 )
+                    iguana_utxoaddr_gen(coin,1);
             }
         }
         else
