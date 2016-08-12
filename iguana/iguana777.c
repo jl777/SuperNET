@@ -430,13 +430,16 @@ void iguana_update_balances(struct iguana_info *coin)
                 iguana_volatilespurge(coin,&bp->ramchain);
                 iguana_volatilesalloc(coin,&bp->ramchain,1);//i < hdrsi);
             }
-        for (; hdrsi<max; hdrsi++)
+        for (hdrsi=0; hdrsi<max; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 )
             {
-                //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
-                if ( iguana_balancegen(coin,0,bp,0,bp->bundleheight + coin->chain->bundlesize-1,0) == 0 )
-                    bp->balancefinish = (uint32_t)time(NULL);
+                if ( bp != coin->current )
+                {
+                    //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
+                    if ( iguana_balancegen(coin,0,bp,0,bp->bundleheight + coin->chain->bundlesize-1,0) == 0 )
+                        bp->balancefinish = (uint32_t)time(NULL);
+                }
             } else printf("null bp.[%d]\n",hdrsi);
         }
         if ( max != coin->origbalanceswritten )

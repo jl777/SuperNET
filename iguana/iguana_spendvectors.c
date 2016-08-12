@@ -872,9 +872,9 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
                     break;
                 }
             }
-            else if ( hdrsi > 0 && (coin->current == 0 || hdrsi != coin->current->hdrsi) )
+            else if ( hdrsi > 0 && hdrsi != coin->bundlescount && (coin->current == 0 || hdrsi != coin->current->hdrsi ) )
             {
-                printf("balanceflush iter.%d error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",iter,hdrsi,Aptr,Uptr,numpkinds,numunspents);
+                printf("balanceflush num.%d iter.%d error loading [%d] Aptr.%p Uptr.%p numpkinds.%u numunspents.%u\n",coin->bundlescount,iter,hdrsi,Aptr,Uptr,numpkinds,numunspents);
                 return(-1);
             }
         }
@@ -884,7 +884,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
     coin->balanceswritten = numhdrsi;
     if ( 1 )
     {
-        for (hdrsi=0; hdrsi<numhdrsi; hdrsi++)
+        for (hdrsi=0; hdrsi<numhdrsi-1; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
