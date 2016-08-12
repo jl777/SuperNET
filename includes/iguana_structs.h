@@ -422,7 +422,7 @@ struct iguana_info
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
-    struct iguana_utxoaddr *utxoaddrs,*UTXOADDRDATA; uint32_t utxodatasize,utxoaddrind;
+    struct iguana_utxoaddr *utxoaddrs; uint32_t utxodatasize,utxoaddrind;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

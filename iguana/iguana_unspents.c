@@ -849,21 +849,18 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
     HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
     if ( utxoaddr == 0 && createflag != 0 )
     {
-        //if ( coin->utxoaddrind < coin->utxodatasize )
+        utxoaddr = calloc(1,sizeof(*utxoaddr));
+        ++coin->utxoaddrind;
+        memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
+        HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        if ( utxoaddr == 0 )
         {
-            utxoaddr = calloc(1,sizeof(*utxoaddr));//&coin->UTXOADDRDATA[++coin->utxoaddrind];
-            ++coin->utxoaddrind;
-            memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
-            HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
-            HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
-            if ( utxoaddr == 0 )
-            {
-                int32_t i; for (i=0; i<20; i++)
-                    printf("%02x",rmd160[i]);
-                printf(" %d of %d: %p ",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
-                printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
-            }
-        }// else printf("UTXOTABLE overflow?? %d vs %d\n",coin->utxoaddrind,coin->utxodatasize);
+            int32_t i; for (i=0; i<20; i++)
+                printf("%02x",rmd160[i]);
+            printf(" %d of %d: %p ",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
+            printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
+        }
     }
     return(utxoaddr);
 }
@@ -882,15 +879,20 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
     {
         if ( U2[unspentind].spentflag == 0 && (value= U[unspentind].value) != 0 )
         {
-            balance += value;
-            if ( maketable != 0 )
+            if ( value < 0 )
+                printf("[%d] u%u negative value %.8f??\n",hdrsi,unspentind,dstr(value));
+            else
             {
-                if ( (pkind= U[unspentind].pkind) < rdata->numpkinds && pkind > 0 )
+                balance += value;
+                if ( maketable != 0 )
                 {
-                    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[pkind].rmd160)) != 0 )
-                        utxoaddr->balance += value;
-                    else printf("cant find pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
-                } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                    if ( (pkind= U[unspentind].pkind) < rdata->numpkinds && pkind > 0 )
+                    {
+                        if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[pkind].rmd160)) != 0 )
+                            utxoaddr->balance += value;
+                        else printf("cant find pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                    } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                }
             }
         }
     }
@@ -899,10 +901,10 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
 
 int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
 {
-    struct iguana_utxoaddr *utxoaddr,*tmp; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t balance = 0;
+    struct iguana_utxoaddr *utxoaddr,*tmp; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     if ( maketable != 0 )
     {
-        if ( coin->utxoaddrs != 0 )//&& coin->UTXOADDRDATA != 0 )
+        if ( coin->utxoaddrs != 0 )
         {
             printf("free %s utxoaddrs\n",coin->symbol);
             HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
@@ -910,15 +912,12 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
                 HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
                 free(utxoaddr);
             }
-            //free(coin->UTXOADDRDATA);
-            //coin->UTXOADDRDATA = 0;
             coin->utxoaddrs = 0;
         }
         for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
                 tablesize += rdata->numpkinds;
         printf("allocate UTXOADDRS[%d]\n",tablesize);
-        //coin->UTXOADDRDATA = calloc(sizeof(*coin->UTXOADDRDATA),tablesize);
         coin->utxodatasize = tablesize;
         coin->utxoaddrind = 0;
     }
@@ -928,5 +927,12 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
     }
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize);
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
+    {
+        if ( utxoaddr > 0 )
+            checkbalance += utxoaddr->balance;
+        else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+    }
+    printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     return(balance);
 }
