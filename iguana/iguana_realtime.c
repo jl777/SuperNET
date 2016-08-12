@@ -190,7 +190,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
             num += iguana_convert(coin,IGUANA_NUMHELPERS,coin->bundles[hdrsi],1,orignumemit);
         }
         //printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
-        iguana_rdatarestore(&R,&RDATA,&bp->ramchain);
+        //iguana_rdatarestore(&R,&RDATA,&bp->ramchain);
         bp->converted = (uint32_t)time(NULL);
         if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
         {
