@@ -327,6 +327,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
 int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag,int32_t iterate);
 int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct iguana_bundle *bp,int32_t startheight,int32_t endheight,int32_t startemit);
+struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,uint8_t rmd160[20],struct iguana_utxoaddr **prevp);
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
 struct iguana_bloominds iguana_calcbloom(bits256 hash2);
@@ -430,7 +431,8 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
 int64_t iguana_fastfindcreate(struct iguana_info *coin);
 int32_t bitcoin_validaddress(struct iguana_info *coin,char *coinaddr);
 int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *spentchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight);
-int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight);
+void iguana_utxoaddrs_purge(struct iguana_info *coin);
+int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight,uint8_t *rmd160);
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr);
 int64_t iguana_unspentset(struct supernet_info *myinfo,struct iguana_info *coin);
 int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t lasthdrsi);

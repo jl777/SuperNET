@@ -29,7 +29,7 @@ struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint64_t 
     return(hhacct);
 }
 
-int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
+int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight,uint8_t *rmd160)
 {
     struct iguana_hhutxo *hhutxo,*tmputxo; struct iguana_hhaccount *hhacct,*tmpacct; uint64_t uval,pval;
     if ( spent_hdrsi < 0 )
@@ -78,6 +78,12 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
+    struct iguana_utxoaddr *utxoaddr;
+    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,rmd160,&coin->RTprev)) != 0 )
+    {
+        utxoaddr->RTdebits += spent_value;
+        coin->RTdebits += spent_value;
+    }
     return(0);
 }
 
@@ -177,7 +183,7 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
 
 int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *spentchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
 {
-    struct iguana_account *A2; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
+    struct iguana_account *A2; struct iguana_unspent *spentU; struct iguana_pkhash *spentP; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
     if ( (rdata= spentchain->H.data) != 0 )
     {
         portable_mutex_lock(&coin->RTmutex);
@@ -209,7 +215,9 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         else // do the equivalent of historical, ie mark as spent, linked list, balance
         {
             //double startmillis = OS_milliseconds(); static double totalmillis; static int32_t utxon;
-            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight) == 0 )
+            spentP = RAMCHAIN_PTR(rdata,Poffset);
+            spentU = RAMCHAIN_PTR(rdata,Uoffset);
+            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight,spentP[spentU[spent_unspentind].pkind].rmd160) == 0 )
             {
                 /*totalmillis += (OS_milliseconds() - startmillis);
                  if ( (++utxon % 100000) == 0 )
@@ -326,6 +334,7 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
         }
+        iguana_utxoaddrs_purge(coin);
     }
 }
 

@@ -956,5 +956,14 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         } else printf("null utxoaddr?\n");
     }
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
+    coin->histbalance = balance;
     return(balance);
+}
+
+void iguana_utxoaddrs_purge(struct iguana_info *coin)
+{
+    struct iguana_utxoaddr *utxoaddr;
+    coin->RTdebits = coin->RTdebits = 0;
+    for (utxoaddr=coin->RTprev; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+        utxoaddr->RTcredits = utxoaddr->RTdebits = 0;
 }

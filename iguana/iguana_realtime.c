@@ -22,7 +22,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     if ( coin->utxotable != 0 )
     {
         printf("free RTramchain\n");
-        iguana_utxoupdate(coin,-1,0,0,0,0,-1); // free hashtables
+        iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
         coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
         coin->RTgenesis = 0;
         iguana_ramchain_free(coin,&coin->RTramchain,1);
@@ -147,9 +147,8 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
     datalen = iguana_gethdrs(coin,serialized,coin->chain->gethdrsmsg,bits256_str(str,bp->hashes[0]));
     for (i=0; i<numaddrs && i<coin->peers->numranked; i++)
     {
-        if ( (rand() & 1) == 0 )
-            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
-        else queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,coin->blocks.hwmchain.RO.hash2)),1);
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,coin->blocks.hwmchain.RO.hash2)),1);
         if ( (addr= coin->peers->ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && datalen > 0 )
         {
             iguana_send(coin,addr,serialized,datalen);
@@ -170,7 +169,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
         lasti = bp->n - 1;
     orignumemit = bp->numtmpspends;
     iterate = 0;
-    if ( iguana_spendvectors(myinfo,coin,bp,&coin->RTramchain,coin->RTstarti,lasti,0,iterate) < 0 )
+    if ( iguana_spendvectors(myinfo,coin,bp,&coin->RTramchain,coin->RTstarti%coin->chain->bundlesize,lasti,0,iterate) < 0 )
     {
         printf("RTutxo error -> RTramchainfree\n");
         coin->RTdatabad = 1;
@@ -202,7 +201,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
         else if ( coin->RTgenesis == 0 && coin->firstRTgenesis == 0 )
             coin->firstRTgenesis++, printf(">>>>>> IGUANA %s READY FOR REALTIME RPC <<<<<<\n",coin->symbol);
         //printf("iguana_balancegen [%d] (%d to %d)\n",bp->hdrsi,coin->RTstarti,(coin->RTheight-1)%bp->n);
-        coin->RTstarti = (coin->RTheight % bp->n);
+        coin->RTstarti = coin->RTheight;
     }
 }
 
@@ -388,7 +387,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         }
     }
     if ( dest != 0 && flag != 0 )
-        printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1);
+        printf("<<<< flag.%d RT.%d:%d hwm.%d L.%d T.%d U.%d S.%d P.%d X.%d -> size.%ld balance %.8f + %.8f - %.8f = supply %.8f\n",flag,coin->RTheight,n,coin->blocks.hwmchain.height,coin->longestchain,dest->H.txidind,dest->H.unspentind,dest->H.spendind,dest->pkind,dest->externalind,dest->H.data!=0?(long)dest->H.data->allocsize:-1,dstr(coin->histbalance),dstr(coin->RTcredits),dstr(coin->RTdebits),dstr(coin->histbalance + coin->RTcredits - coin->RTdebits));
     if ( coin->RTdatabad != 0 )
     {
         bits256 lastbundle;
