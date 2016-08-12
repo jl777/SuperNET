@@ -930,7 +930,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],maketable);
         fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
     }
-#include "uthash.h"
+#include "../includes/uthash.h"
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d HASH_COUNT %d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,HASH_COUNT(coin->utxoaddrs));
     HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
     {
