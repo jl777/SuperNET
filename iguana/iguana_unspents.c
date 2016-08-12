@@ -851,11 +851,11 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
     {
         if ( coin->utxoaddrind < coin->utxodatasize )
         {
-            utxoaddr = &coin->UTXOADDRDATA[++coin->utxoaddrind];
+            utxoaddr = calloc(1,sizeof(*utxoaddr));//&coin->UTXOADDRDATA[++coin->utxoaddrind];
             memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
             int32_t i; for (i=0; i<20; i++)
                 printf("%02x",rmd160[i]);
-            printf("%d of %d: %p\n",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
+            printf(" %d of %d: %p\n",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
             HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
         } else printf("UTXOTABLE overflow?? %d vs %d\n",coin->utxoaddrind,coin->utxodatasize);
     }
@@ -896,22 +896,23 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
     struct iguana_utxoaddr *utxoaddr,*tmp; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t balance = 0;
     if ( maketable != 0 )
     {
-        if ( coin->utxoaddrs != 0 && coin->UTXOADDRDATA != 0 )
+        if ( coin->utxoaddrs != 0 )//&& coin->UTXOADDRDATA != 0 )
         {
             printf("free %s utxoaddrs\n",coin->symbol);
             HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
             {
                 HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+                free(utxoaddr);
             }
-            free(coin->UTXOADDRDATA);
-            coin->UTXOADDRDATA = 0;
+            //free(coin->UTXOADDRDATA);
+            //coin->UTXOADDRDATA = 0;
             coin->utxoaddrs = 0;
         }
         for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
                 tablesize += rdata->numpkinds;
         printf("allocate UTXOADDRS[%d]\n",tablesize);
-        coin->UTXOADDRDATA = calloc(sizeof(*coin->UTXOADDRDATA),tablesize);
+        //coin->UTXOADDRDATA = calloc(sizeof(*coin->UTXOADDRDATA),tablesize);
         coin->utxodatasize = tablesize;
         coin->utxoaddrind = 0;
     }
