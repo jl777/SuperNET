@@ -854,13 +854,13 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
             utxoaddr = calloc(1,sizeof(*utxoaddr));//&coin->UTXOADDRDATA[++coin->utxoaddrind];
             ++coin->utxoaddrind;
             memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
-            int32_t i; for (i=0; i<20; i++)
-                printf("%02x",rmd160[i]);
-            printf(" %d of %d: %p\n",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
             HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
             HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
             if ( utxoaddr == 0 )
             {
+                int32_t i; for (i=0; i<20; i++)
+                    printf("%02x",rmd160[i]);
+                printf(" %d of %d: %p ",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
                 printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
             }
         }// else printf("UTXOTABLE overflow?? %d vs %d\n",coin->utxoaddrind,coin->utxodatasize);
