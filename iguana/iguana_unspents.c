@@ -877,7 +877,9 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
     P = RAMCHAIN_PTR(rdata,Poffset);
     for (unspentind=1; unspentind<rdata->numunspents; unspentind++)
     {
-        if ( U2[unspentind].spentflag == 0 && (value= U[unspentind].value) != 0 )
+        value = U[unspentind].value;
+        //printf("[%d] u%d: (p%u %.8f) from.%d lock.%d prev.%u spent.%d\n",bp->hdrsi,unspentind,U[unspentind].pkind,dstr(value),U2[unspentind].fromheight,U2[unspentind].lockedflag,U2[unspentind].prevunspentind,U2[unspentind].spentflag);
+        if ( U2[unspentind].fromheight == 0 && U2[unspentind].lockedflag == 0 && U2[unspentind].prevunspentind == 0 && U2[unspentind].spentflag == 0 && value != 0 )
         {
             if ( value < 0 )
                 printf("[%d] u%u negative value %.8f??\n",bp->hdrsi,unspentind,dstr(value));
@@ -894,7 +896,7 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
                     } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
                 }
             }
-        }
+        } // else printf("[%d] u%u spent %.8f\n",bp->hdrsi,unspentind,dstr(value));
     }
     return(balance);
 }
@@ -914,9 +916,13 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
             }
             coin->utxoaddrs = 0;
         }
-        for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+        for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                iguana_volatilesmap(coin,&bp->ramchain);
                 tablesize += rdata->numpkinds;
+            }
         printf("allocate UTXOADDRS[%d]\n",tablesize);
         coin->utxodatasize = tablesize;
         coin->utxoaddrind = 0;

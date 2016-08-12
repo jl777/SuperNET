@@ -648,7 +648,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
         {
             int32_t i; for (i=0; i<sizeof(H); i++)
                 printf("%02x",((uint8_t *)&H)[i]);
-            printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
+            printf(" %s invalid header.%s received from (%s) len.%d\n",coin->symbol,H.command,addr->ipaddr,len);
         }
         //addr->dead = 1;
     }

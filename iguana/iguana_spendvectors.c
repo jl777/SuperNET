@@ -449,7 +449,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     struct iguana_spendvector *spend; struct iguana_unspent *spentU,*u; struct iguana_spendvector *Xspendinds;
     struct iguana_txid *T; struct iguana_blockRO *B; struct iguana_bundle *spentbp;
     int32_t spent_hdrsi,spendind,n,numXspends,errs=0,emit=0; struct iguana_spend *S,*s;
-    if ( starti != 0 || endheight != coin->chain->bundlesize-1 )
+    if ( (starti % coin->chain->bundlesize) != 0 || (endheight % coin->chain->bundlesize) != coin->chain->bundlesize-1 )
         ramchain = &coin->RTramchain;
     else ramchain = &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
@@ -471,7 +471,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     txidind = B[starti].firsttxidind;
     spendind = B[starti].firstvin;
     emit = startemit;
-    if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
+    //if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
@@ -540,7 +540,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 {
                     if ( 0 && bp == coin->current )
                         printf("[%d] spendind.%u -> [%d] u%d\n",bp->hdrsi,spendind,spent_hdrsi,spent_unspentind);
-                    if ( iguana_volatileupdate(coin,incremental,(spentbp == coin->current) ? &coin->RTramchain : &spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
+                    if ( iguana_volatileupdate(coin,incremental,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 ) //(spentbp == coin->current) ? &coin->RTramchain : 
                         errs++;
                 }
                 else //if ( Xspendinds != 0 )
