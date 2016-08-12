@@ -540,7 +540,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 {
                     if ( 0 && bp == coin->current )
                         printf("[%d] spendind.%u -> [%d] u%d\n",bp->hdrsi,spendind,spent_hdrsi,spent_unspentind);
-                    if ( iguana_volatileupdate(coin,incremental,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 ) //spentbp == coin->current ? &coin->RTramchain :
+                    if ( iguana_volatileupdate(coin,incremental,(spentbp == coin->current) ? &coin->RTramchain : &spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 )
                         errs++;
                 }
                 else //if ( Xspendinds != 0 )
@@ -551,14 +551,14 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
             }
         }
     }
-    if ( txidind != bp->ramchain.H.data->numtxids && (bp != coin->current || txidind != ramchain->H.txidind) )
+    if ( txidind != ramchain->H.data->numtxids && (bp != coin->current || txidind != ramchain->H.txidind) )
     {
-        printf("numtxid.%d != bp numtxids %d/%d\n",txidind,bp->ramchain.H.txidind,bp->ramchain.H.data->numtxids);
+        printf("numtxid.%d != bp numtxids %d/%d\n",txidind,ramchain->H.txidind,ramchain->H.data->numtxids);
         errs++;
     }
     if ( spendind != rdata->numspends && (bp != coin->current || spendind != ramchain->H.spendind) )
     {
-        printf("spendind.%d != bp numspends %d/%d\n",spendind,bp->ramchain.H.spendind,bp->ramchain.H.data->numspends);
+        printf("spendind.%d != bp numspends %d/%d\n",spendind,ramchain->H.spendind,ramchain->H.data->numspends);
         errs++;
     }
     if ( emit != numXspends )
