@@ -439,6 +439,7 @@ void iguana_update_balances(struct iguana_info *coin)
                     //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
                     if ( iguana_balancegen(coin,0,bp,bp->bundleheight,bp->bundleheight + coin->chain->bundlesize-1,0) == 0 )
                         bp->balancefinish = (uint32_t)time(NULL);
+                    else printf("balancegen error.[%d]\n",bp->hdrsi);
                 }
             } else printf("null bp.[%d]\n",hdrsi);
         }
