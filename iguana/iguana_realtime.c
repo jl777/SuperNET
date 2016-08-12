@@ -192,7 +192,7 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
         //printf("RTspendvectors converted.%d to %d\n",num,coin->RTheight);
         //iguana_rdatarestore(&R,&RDATA,&bp->ramchain);
         bp->converted = (uint32_t)time(NULL);
-        if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->n-1,orignumemit) < 0 )
+        if ( iguana_balancegen(coin,1,bp,coin->RTstarti,coin->RTheight > 0 ? coin->RTheight-1 : bp->bundleheight+bp->n-1,orignumemit) < 0 )
         {
             printf("balancegen error\n");
             coin->RTdatabad = 1;
