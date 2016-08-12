@@ -372,7 +372,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                         ramchain->Uextras = (void *)((long)ramchain->lastspendsfileptr + sizeof(numhdrsi) + 2*sizeof(bits256));
                         ramchain->from_roU = (iter == 0);
                         uint32_t unspentind,nonz=0; struct iguana_unspent *U; struct iguana_utxo *U2;
-                        if ( 1 )
+                        if ( iter == 1 && (ramchain->height % 100000) == 0 )
                         {
                             U2 = ramchain->Uextras;
                             U = RAMCHAIN_PTR(ramchain->H.data,Uoffset);
@@ -382,8 +382,8 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                                     nonz++;
                                 //printf("[%d] u%d: (p%u %.8f) from.%d lock.%d prev.%u spent.%d\n",ramchain->height/coin->chain->bundlesize,unspentind,U[unspentind].pkind,dstr(U[unspentind].value),U2[unspentind].fromheight,U2[unspentind].lockedflag,U2[unspentind].prevunspentind,U2[unspentind].spentflag);
                             }
+                            printf("nonz.%d %s volatilesmap.[%d] %p %p\n",nonz,fname,ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
                         }
-                        printf("nonz.%d %s volatilesmap.[%d] %p %p\n",nonz,fname,ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
                         err = 0;
                     } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 } else printf("ramchain map error3 %s\n",fname);

@@ -919,8 +919,6 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
             {
-                iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesmap(coin,&bp->ramchain);
                 tablesize += rdata->numpkinds;
             }
         printf("allocate UTXOADDRS[%d]\n",tablesize);
