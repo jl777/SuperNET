@@ -929,9 +929,12 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize);
     HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
     {
-        if ( utxoaddr > 0 )
-            checkbalance += utxoaddr->balance;
-        else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+        if ( utxoaddr != 0 )
+        {
+            if ( utxoaddr->balance > 0 )
+                checkbalance += utxoaddr->balance;
+            else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+        } else printf("null utxoaddr?\n");
     }
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     return(balance);
