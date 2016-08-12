@@ -853,6 +853,9 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
         {
             utxoaddr = &coin->UTXOADDRDATA[++coin->utxoaddrind];
             memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
+            int32_t i; for (i=0; i<20; i++)
+                printf("%02x",rmd160[i]);
+            printf("%d of %d: %p\n",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
             HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
         } else printf("UTXOTABLE overflow?? %d vs %d\n",coin->utxoaddrind,coin->utxodatasize);
     }
@@ -915,8 +918,8 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
     for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
     {
         balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],maketable);
-        fprintf(stderr,"%.8f ",dstr(balance));
+        fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
     }
-    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen\n",hdrsi);
+    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize);
     return(balance);
 }
