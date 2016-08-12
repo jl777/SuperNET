@@ -823,7 +823,7 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
         return(0);
     if ( (spentflag= iguana_spentflag(myinfo,coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,0,minconf,maxconf,0)) > 0 )
     {
-        printf("[%d].u%d was already spent ht.%d\n",hdrsi,(uint32_t)unspentind,spentheight);
+        printf("[%d].u%d was already spent ht.%d\n",bp->hdrsi,(uint32_t)unspentind,spentheight);
         return(-1);
     }
     else if ( spentflag == 0 )
@@ -880,7 +880,7 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
         if ( U2[unspentind].spentflag == 0 && (value= U[unspentind].value) != 0 )
         {
             if ( value < 0 )
-                printf("[%d] u%u negative value %.8f??\n",hdrsi,unspentind,dstr(value));
+                printf("[%d] u%u negative value %.8f??\n",bp->hdrsi,unspentind,dstr(value));
             else
             {
                 balance += value;
