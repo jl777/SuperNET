@@ -172,10 +172,21 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
 int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts,int32_t validatesigs)
 {
     int32_t i,rwflag=1,len = 0; char asmstr[512],txidstr[65];
-    uint32_t numvins,numvouts; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[IGUANA_MAXSCRIPTSIZE];
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->version),&tx->version);
+    uint32_t numvins,numvouts,version,locktime,timestamp=0; struct iguana_msgvin vin; struct iguana_msgvout vout; uint8_t space[IGUANA_MAXSCRIPTSIZE];
+    if ( rwflag != 0 )
+    {
+        version = tx->version;
+        locktime = tx->locktime;
+        timestamp = tx->timestamp;
+    }
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(version),&version);
     if ( coin->chain->isPoS != 0 )
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->timestamp),&tx->timestamp);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(timestamp),&timestamp);
+    if ( rwflag == 0 )
+    {
+        tx->version = version;
+        tx->timestamp = timestamp;
+    }
     numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
     memset(&vin,0,sizeof(vin));
@@ -209,7 +220,9 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         printf("len.%d > maxlenB.%d\n",len,maxlen);
         return(0);
     }
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(tx->locktime),&tx->locktime);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(locktime),&locktime);
+    if ( rwflag == 0 )
+        tx->locktime = locktime;
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
