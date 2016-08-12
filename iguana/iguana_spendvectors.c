@@ -521,14 +521,10 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                     {
                         spent_unspentind = T[s->spendtxidind].firstvout + s->prevout;
                         spentU = RAMCHAIN_PTR(rdata,Uoffset);
-                        //spentU = (void *)(long)((long)rdata + rdata->Uoffset);
                         u = &spentU[spent_unspentind];
                         if ( (spent_pkind= u->pkind) != 0 && spent_pkind < rdata->numpkinds )
                             spent_value = u->value;
-                        /*found spend d9151... txidind.1083097 [202] s3163977
-                         //found spend d9151... txidind.1083097 [202] s4033628
-                         if ( spent_hdrsi == 202 && (spendind == 3163977 || spendind == 4033628) )
-                         printf("internal spend.%d spendtxidind.%d 1st.%d U.(prevout.%d u%u pkind.%u %.8f)\n",spendind,txidind,T[s->spendtxidind].firstvout,s->prevout,spent_unspentind,u->pkind,dstr(u->value));*/
+                        // printf("internal spend.%d spendtxidind.%d 1st.%d U.(prevout.%d u%u pkind.%u %.8f)\n",spendind,txidind,T[s->spendtxidind].firstvout,s->prevout,spent_unspentind,u->pkind,dstr(u->value));*/
                     }
                     else //if ( i > 0 || j > 0 || k > 0 )
                     {
