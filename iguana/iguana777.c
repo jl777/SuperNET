@@ -513,12 +513,12 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
         {
             if ( (bp= coin->bundles[hdrsi]) == 0 )
-                break;
+                continue;
             if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
                 exit(-1);
-            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
+            } else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
         }
     }
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
