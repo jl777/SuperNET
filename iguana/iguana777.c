@@ -421,7 +421,7 @@ void iguana_update_balances(struct iguana_info *coin)
         max--;
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
     {
-        if ( 1 || coin->origbalanceswritten <= 1 )
+        if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
         else hdrsi = coin->origbalanceswritten;
         for (i=0; i<max; i++)
