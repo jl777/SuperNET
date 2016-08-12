@@ -72,7 +72,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
-        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
         if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= coin->RTramchain.H.data) != 0))) && i < tx->numvins )
         //if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
         {
@@ -125,7 +125,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  )
     {
-        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
         if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= coin->RTramchain.H.data) != 0))) && i < tx->numvouts )
         {
             U = RAMCHAIN_PTR(rdata,Uoffset);
