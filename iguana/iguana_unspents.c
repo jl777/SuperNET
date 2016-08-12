@@ -842,3 +842,75 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
     }
     else return(0);
 }
+
+struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,uint8_t rmd160[20])
+{
+    struct iguana_utxoaddr *utxoaddr;
+    HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr),utxoaddr);
+    if ( utxoaddr == 0 && createflag != 0 )
+    {
+        if ( coin->utxoaddrind < coin->utxodatasize )
+        {
+            utxoaddr = &coin->UTXOADDRDATA[++coin->utxoaddrind];
+            memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
+            HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        } else printf("UTXOTABLE overflow?? %d vs %d\n",coin->utxoaddrind,coin->utxodatasize);
+    }
+    return(utxoaddr);
+}
+
+int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp,int32_t maketable)
+{
+    struct iguana_utxoaddr *utxoaddr; int32_t unspentind; struct iguana_ramchaindata *rdata=0; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_utxo *U2=0; int64_t value,balance = 0;
+    if ( bp == 0 || (rdata= bp->ramchain.H.data) == 0 || (U2= bp->ramchain.Uextras) == 0 )
+    {
+        printf("missing ptr bp.%p rdata.%p U2.%p\n",bp,rdata,U2);
+        return(0);
+    }
+    U = RAMCHAIN_PTR(rdata,Uoffset);
+    P = RAMCHAIN_PTR(rdata,Poffset);
+    for (unspentind=1; unspentind<rdata->numunspents; unspentind++)
+    {
+        if ( U2[unspentind].spentflag == 0 && (value= U[unspentind].value) != 0 )
+        {
+            balance += value;
+            if ( maketable != 0 )
+            {
+                if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[U[unspentind].pkind].rmd160)) != 0 )
+                    utxoaddr->balance += value;
+            }
+        }
+    }
+    return(balance);
+}
+
+int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
+{
+    struct iguana_utxoaddr *utxoaddr,*tmp; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t balance = 0;
+    if ( maketable != 0 )
+    {
+        if ( coin->utxoaddrs != 0 && coin->UTXOADDRDATA != 0 )
+        {
+            HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
+            {
+                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+            }
+            free(coin->UTXOADDRDATA);
+            coin->UTXOADDRDATA = 0;
+            coin->utxoaddrs = 0;
+        }
+        for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+            if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
+                tablesize += rdata->numpkinds;
+        coin->UTXOADDRDATA = calloc(sizeof(*coin->UTXOADDRDATA),tablesize);
+        coin->utxodatasize = tablesize;
+        coin->utxoaddrind = 0;
+    }
+    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+    {
+        balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],maketable);
+        fprintf(stderr,"%.8f ",dstr(balance));
+    }
+    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen\n",hdrsi);
+    return(balance);
+}

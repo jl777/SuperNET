@@ -518,6 +518,7 @@ int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t ma
 int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB);
 bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V);
 int32_t iguana_ROallocsize(struct iguana_info *virt);
+int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable);
 long iguana_bundlesload(struct supernet_info *myinfo,struct iguana_info *coin);
 void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin);
 int32_t bitcoin_pubkey_combine(void *ctx,uint8_t *combined_pub,uint8_t *skipkey,bits256 *evenkeys,int32_t n,bits256 *oddkeys,int32_t m);

@@ -921,13 +921,15 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     else
     {
         for (i=1; i<num; i++)
+        {
             if ( (block= iguana_blockfind("prev",coin,blockhashes[i])) != 0 && block->height+1 > coin->longestchain )
             {
-                iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
                 coin->longestchain = block->height+1;
                 if ( bp != 0 && bp->speculative != 0 && i < bp->n )
                     bp->speculative[i] = blockhashes[i];
             }
+            iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
+        }
     }
     if ( bp != 0 )
     {

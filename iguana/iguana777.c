@@ -444,6 +444,7 @@ void iguana_update_balances(struct iguana_info *coin)
             coin->balanceflush = max+1;
             while ( coin->balanceflush != 0 )
                 sleep(3);
+            iguana_utxoaddr_gen(coin,1);
         } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
     }
 }
