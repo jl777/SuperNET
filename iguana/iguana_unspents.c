@@ -861,7 +861,7 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
 
 int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp,int32_t maketable)
 {
-    struct iguana_utxoaddr *utxoaddr; int32_t unspentind; struct iguana_ramchaindata *rdata=0; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_utxo *U2=0; int64_t value,balance = 0;
+    struct iguana_utxoaddr *utxoaddr; uint32_t unspentind,pkind; struct iguana_ramchaindata *rdata=0; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_utxo *U2=0; int64_t value,balance = 0;
     if ( bp == 0 || (rdata= bp->ramchain.H.data) == 0 || (U2= bp->ramchain.Uextras) == 0 )
     {
         printf("missing ptr bp.%p rdata.%p U2.%p\n",bp,rdata,U2);
@@ -876,8 +876,12 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
             balance += value;
             if ( maketable != 0 )
             {
-                if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[U[unspentind].pkind].rmd160)) != 0 )
-                    utxoaddr->balance += value;
+                if ( (pkind= U[unspentind].pkind) < rdata->numpkinds && pkind > 0 )
+                {
+                    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[pkind].rmd160)) != 0 )
+                        utxoaddr->balance += value;
+                    else printf("cant find pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
             }
         }
     }
@@ -891,6 +895,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
     {
         if ( coin->utxoaddrs != 0 && coin->UTXOADDRDATA != 0 )
         {
+            printf("free %s utxoaddrs\n",coin->symbol);
             HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
             {
                 HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
@@ -902,6 +907,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
             if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
                 tablesize += rdata->numpkinds;
+        printf("allocate UTXOADDRS[%d]\n",tablesize);
         coin->UTXOADDRDATA = calloc(sizeof(*coin->UTXOADDRDATA),tablesize);
         coin->utxodatasize = tablesize;
         coin->utxoaddrind = 0;
