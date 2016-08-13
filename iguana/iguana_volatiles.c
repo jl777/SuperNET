@@ -79,7 +79,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
     struct iguana_utxoaddr *utxoaddr;
-    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,rmd160,&coin->RTprev)) != 0 )
+    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,spent_hdrsi,spent_pkind,rmd160,&coin->RTprev)) != 0 )
     {
         utxoaddr->RTdebits += spent_value;
         coin->RTdebits += spent_value;
@@ -217,7 +217,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
             //double startmillis = OS_milliseconds(); static double totalmillis; static int32_t utxon;
             spentP = RAMCHAIN_PTR(rdata,Poffset);
             spentU = RAMCHAIN_PTR(rdata,Uoffset);
-            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight,spentP[spentU[spent_unspentind].pkind].rmd160) == 0 )
+            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight,spentP[spent_pkind].rmd160) == 0 )
             {
                 /*totalmillis += (OS_milliseconds() - startmillis);
                  if ( (++utxon % 100000) == 0 )

@@ -253,7 +253,7 @@ struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spent
 struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; } __attribute__((packed));
 struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
 
-struct iguana_utxoaddr { UT_hash_handle hh; int64_t balance,RTcredits,RTdebits; uint8_t rmd160[20]; } __attribute__((packed));
+struct iguana_utxoaddr { UT_hash_handle hh; int64_t balance,RTcredits,RTdebits; uint32_t pkind; uint16_t hdrsi; uint8_t rmd160[20]; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; } __attribute__((packed)); // unspentind

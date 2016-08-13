@@ -505,7 +505,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 for (k=0; k<T[txidind].numvouts && errs==0; k++,unspentind++)
                 {
                     u = &U[unspentind];
-                    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[u->pkind].rmd160,&coin->RTprev)) != 0 )
+                    if ( (utxoaddr= iguana_utxoaddrfind(1,coin,bp->hdrsi,u->pkind,P[u->pkind].rmd160,&coin->RTprev)) != 0 )
                     {
                         utxoaddr->RTcredits += u->value;
                         coin->RTcredits += u->value;
@@ -912,8 +912,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             }
     }
     char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
-    //if ( coin->utxoaddrs == 0 )
-        iguana_utxoaddr_gen(coin,1);
+    iguana_utxoaddr_gen(coin,(coin->balanceswritten-1) * coin->chain->bundlesize);
     if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;

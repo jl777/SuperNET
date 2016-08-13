@@ -843,7 +843,7 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
     else return(0);
 }
 
-struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
+struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
 {
     struct iguana_utxoaddr *utxoaddr;
     HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
@@ -851,6 +851,8 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
     {
         utxoaddr = calloc(1,sizeof(*utxoaddr));
         ++coin->utxoaddrind;
+        utxoaddr->hdrsi = hdrsi;
+        utxoaddr->pkind = pkind;
         memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
         HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
         if ( prevp != 0 )
@@ -897,7 +899,7 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
                 {
                     if ( (pkind= U[unspentind].pkind) < rdata->numpkinds && pkind > 0 )
                     {
-                        if ( (utxoaddr= iguana_utxoaddrfind(1,coin,P[pkind].rmd160,prevp)) != 0 )
+                        if ( (utxoaddr= iguana_utxoaddrfind(1,coin,bp->hdrsi,pkind,P[pkind].rmd160,prevp)) != 0 )
                         {
                             //printf("%.8f ",dstr(value));
                             utxoaddr->balance += value;
@@ -911,54 +913,48 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
     return(balance);
 }
 
-int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
+int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 {
     struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
-    if ( maketable != 0 )
+    printf("utxoaddr_gen.%d\n",maxheight);
+    if ( coin->utxoaddrs != 0 )
     {
-        if ( coin->utxoaddrs != 0 )
+        printf("free %s utxoaddrs\n",coin->symbol);
+        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
         {
-            printf("free %s utxoaddrs\n",coin->symbol);
-            HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+            if ( utxoaddr != 0 )
             {
-                if ( utxoaddr != 0 )
-                {
-                    HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
-                    free(utxoaddr);
-                }
+                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+                free(utxoaddr);
             }
-            coin->utxoaddrs = 0;
         }
-        for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
-            if ( (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
-            {
-                tablesize += rdata->numpkinds;
-            }
-        printf("allocate UTXOADDRS[%d]\n",tablesize);
-        coin->utxodatasize = tablesize;
-        coin->utxoaddrind = 0;
+        coin->utxoaddrs = 0;
     }
+    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight && (rdata= bp->ramchain.H.data) != 0 )
+        {
+            tablesize += rdata->numpkinds;
+        }
+    printf("allocate UTXOADDRS[%d]\n",tablesize);
+    coin->utxodatasize = tablesize;
+    coin->utxoaddrind = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
-        balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],maketable,&last);
+        balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],1,&last);
         fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
     }
-    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d %p\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
+    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
     for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
     {
-        if ( utxoaddr != 0 )
-        {
             if ( utxoaddr->balance > 0 )
-            {
-                //int32_t i; for (i=0; i<20; i++)
-                //    printf("%02x",utxoaddr->rmd160[i]);
-                //printf(" %.8f\n",dstr(utxoaddr->balance));
                 checkbalance += utxoaddr->balance;
-            }
             else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
-        } else printf("null utxoaddr?\n");
     }
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
+    if ( checkbalance == balance )
+    {
+        
+    }
     coin->histbalance = balance;
     return(balance);
 }
