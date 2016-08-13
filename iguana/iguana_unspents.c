@@ -921,8 +921,11 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
             printf("free %s utxoaddrs\n",coin->symbol);
             HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
             {
-                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
-                free(utxoaddr);
+                if ( utxoaddr != 0 )
+                {
+                    HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+                    free(utxoaddr);
+                }
             }
             coin->utxoaddrs = 0;
         }

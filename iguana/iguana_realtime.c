@@ -249,7 +249,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     }
     //portable_mutex_unlock(&coin->RTmutex);
     bp = coin->current;
-    if ( bp == 0 || iguana_validated(coin) < bp->hdrsi )
+    if ( bp == 0 )//|| iguana_validated(coin) < bp->hdrsi )
     {
         printf("bp.%p validated.%d vs hdrsi.%d\n",bp,iguana_validated(coin),bp->hdrsi);
         return(0);
