@@ -919,7 +919,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maketable)
         if ( coin->utxoaddrs != 0 )
         {
             printf("free %s utxoaddrs\n",coin->symbol);
-            HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp);
+            HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
             {
                 if ( utxoaddr != 0 )
                 {
