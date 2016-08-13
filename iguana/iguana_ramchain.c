@@ -1865,7 +1865,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         if ( bits256_cmp(merkle_root,origtxdata->zblock.RO.merkle_root) != 0 )
         {
             char str[65],str2[65];
-            printf(">>>>>>>>>> %s merkle mismatch.[%d] calc.(%s) vs (%s)\n",coin->symbol,txn_count,bits256_str(str,merkle_root),bits256_str(str2,origtxdata->zblock.RO.merkle_root));
+            printf(">>>>>>>>>> %s %s merkle mismatch.[%d] calc.(%s) vs (%s)\n",addr->ipaddr,coin->symbol,txn_count,bits256_str(str,merkle_root),bits256_str(str2,origtxdata->zblock.RO.merkle_root));
             origtxdata->zblock.RO.recvlen = 0;
             origtxdata->zblock.issued = 0;
             return(-1);
@@ -2011,12 +2011,12 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 fpos = -1;
             }
         }
-        iguana_ramchain_free(coin,ramchain,0);
     }
     if ( fpos < 0 )
         iguana_blockunmark(coin,block,bp,bundlei,1);
     //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,rdata->scriptspace);
     ramchain->H.ROflag = 0;
+    iguana_ramchain_free(coin,ramchain,0);
     return(fpos);
 }
 
