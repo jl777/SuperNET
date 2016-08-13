@@ -843,6 +843,41 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
     else return(0);
 }
 
+#define UTXOADDR_ITEMSIZE 32
+
+int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,uint32_t search_pkind,uint8_t rmd160[20])
+{
+    int32_t ind,num,i; uint32_t pkind; uint16_t hdrsi; int64_t histbalance=0; uint8_t *ptr;
+    ind = rmd160[0] + ((int32_t)rmd160[1] << 8);
+    num = (ind == 0xffff) ? coin->utxoaddrlastcount : (coin->utxoaddroffsets[ind+1] - coin->utxoaddroffsets[ind]);
+    if ( num > 0 )
+    {
+        for (i=0; i<num; i++)
+        {
+            ptr = &coin->utxoaddrtable[(coin->utxoaddroffsets[ind] + i) * UTXOADDR_ITEMSIZE];
+            iguana_rwnum(0,&ptr[0],sizeof(hdrsi),&hdrsi);
+            iguana_rwnum(0,&ptr[20],sizeof(pkind),&pkind);
+            if ( pkind == search_pkind && hdrsi == search_hdrsi )
+            {
+                iguana_rwnum(1,&ptr[24],sizeof(histbalance),&histbalance);
+                return(histbalance);
+            }
+        }
+        printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
+        for (i=0; i<num; i++)
+        {
+            ptr = &coin->utxoaddrtable[(coin->utxoaddroffsets[ind] + i) * UTXOADDR_ITEMSIZE];
+            if ( memcmp(&ptr[2],&rmd160[2],18) == 0 )
+            {
+                printf("rmd160 match i.%d of %d\n",i,num);
+                iguana_rwnum(0,&ptr[24],sizeof(histbalance),&histbalance);
+                return(histbalance);
+            }
+        }
+    }
+    return(0);
+}
+
 struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
 {
     struct iguana_utxoaddr *utxoaddr;
@@ -853,6 +888,11 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
         ++coin->utxoaddrind;
         utxoaddr->hdrsi = hdrsi;
         utxoaddr->pkind = pkind;
+        if ( coin->utxoaddrtable != 0 && coin->utxoaddroffsets != 0 )
+        {
+            utxoaddr->searchedhist = 1;
+            utxoaddr->histbalance = iguana_utxoaddrtablefind(coin,hdrsi,pkind,rmd160);
+        }
         memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
         HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
         if ( prevp != 0 )
@@ -863,11 +903,11 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
             *prevp = utxoaddr;
         }
         HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        int32_t i; for (i=0; i<20; i++)
+            printf("%02x",utxoaddr->rmd160[i]);
+        printf(" %d of %d: %.8f\n",coin->utxoaddrind,coin->utxodatasize,dstr(utxoaddr->histbalance));
         if ( utxoaddr == 0 )
         {
-            int32_t i; for (i=0; i<20; i++)
-                printf("%02x",utxoaddr->rmd160[i]);
-            printf(" %d of %d: %p ",coin->utxoaddrind,coin->utxodatasize,coin->utxoaddrs);
             printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
         }
     }
@@ -902,7 +942,7 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
                         if ( (utxoaddr= iguana_utxoaddrfind(1,coin,bp->hdrsi,pkind,P[pkind].rmd160,prevp)) != 0 )
                         {
                             //printf("%.8f ",dstr(value));
-                            utxoaddr->balance += value;
+                            utxoaddr->histbalance += value;
                         }
                         else printf("cant find pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
                     } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
@@ -938,9 +978,27 @@ static int _utxoaddr_cmp(const void *a,const void *b)
 #undef item_b
 }
 
+void iguana_utxoaddr_purge(struct iguana_info *coin)
+{
+    struct iguana_utxoaddr *utxoaddr,*tmp;
+    if ( coin->utxoaddrs != 0 )
+    {
+        printf("free %s utxoaddrs\n",coin->symbol);
+        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+        {
+            if ( utxoaddr != 0 )
+            {
+                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+                free(utxoaddr);
+            }
+        }
+        coin->utxoaddrs = 0;
+    }
+}
+
 int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
 {
-    uint32_t ind,total=0,offset,size,last=0,lastcount=0,count,prevoffset=0; uint8_t *item[32];
+    uint32_t ind,total=0,offset,size=0,last=0,lastcount=0,count,prevoffset=0;
     if ( (coin->utxoaddrfileptr= OS_mapfile(fname,&coin->utxoaddrfilesize,0)) != 0 && coin->utxoaddrfilesize > sizeof(bits256)+0x10000*sizeof(*coin->utxoaddroffsets) )
     {
         memcpy(&coin->histbalance,coin->utxoaddrfileptr,sizeof(coin->histbalance));
@@ -956,45 +1014,37 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
                 total += count;
             }
         }
-        size = (uint32_t)((total+1)*sizeof(item) + sizeof(bits256) + 0x10000*sizeof(*coin->utxoaddroffsets));
-        if ( size < coin->utxoaddrfilesize )
+        size = (uint32_t)((total+1)*UTXOADDR_ITEMSIZE);
+        size += sizeof(int64_t) + 2*sizeof(uint32_t) + sizeof(bits256);
+        size += 0x10000 * sizeof(*coin->utxoaddroffsets);
+        if ( size <= coin->utxoaddrfilesize )
         {
             lastcount = (uint32_t)(coin->utxoaddrfilesize - size);
-            if ( (lastcount % sizeof(item)) == 0 )
+            if ( (lastcount % UTXOADDR_ITEMSIZE) == 0 )
             {
-                lastcount /= sizeof(item);
+                lastcount /= UTXOADDR_ITEMSIZE;
                 coin->utxoaddrlastcount = lastcount;
                 coin->utxoaddrtable = (void *)&coin->utxoaddroffsets[0x10000];
+                iguana_utxoaddr_purge(coin);
             }
         }
     }
-    printf("LASTCOUNT %d vs total %d, last %d vs lastcount %d\n",coin->utxoaddrlastcount,total,last,lastcount);
+    printf("%.8f LASTCOUNT %d vs total %d, last %d vs lastcount %d, size.%d %ld\n",dstr(coin->histbalance),coin->utxoaddrlastcount,total,last,lastcount,size,coin->utxoaddrfilesize);
     return(total + 1 + lastcount);
 }
 
 int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 {
-    FILE *fp; char fname[1024]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[32]; uint32_t *counts,*offsets,pkind,offset,n; int32_t height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t value,checkbalance=0,balance = 0;
-    sprintf(fname,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,maxheight), OS_portable_path(fname);
+    FILE *fp; char fname[1024],fname2[1024]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,pkind,offset,n; int32_t height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t value,checkbalance=0,balance = 0;
+    sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     if ( iguana_utxoaddr_map(coin,fname) != 0 )
     {
-        printf("HIST BALANCE %.8f\n",dstr(coin->histbalance));
-        //return(coin->histbalance);
+        printf("(%s) HIST BALANCE %.8f\n",fname,dstr(coin->histbalance));
+        if ( coin->histbalance > 0 )
+            return(coin->histbalance);
     }
     printf("utxoaddr_gen.%d\n",maxheight);
-    if ( coin->utxoaddrs != 0 )
-    {
-        printf("free %s utxoaddrs\n",coin->symbol);
-        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
-        {
-            if ( utxoaddr != 0 )
-            {
-                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
-                free(utxoaddr);
-            }
-        }
-        coin->utxoaddrs = 0;
-    }
+    iguana_utxoaddr_purge(coin);
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight && (rdata= bp->ramchain.H.data) != 0 )
         {
@@ -1012,22 +1062,22 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
             height = bp->bundleheight + bp->n;
         }
     }
-    sprintf(fname,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,height), OS_portable_path(fname);
+    sprintf(fname2,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,height), OS_portable_path(fname2);
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
     counts = calloc(0x10000,sizeof(*counts));
     for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
     {
-        if ( utxoaddr->balance > 0 )
+        if ( utxoaddr->histbalance > 0 )
         {
-            checkbalance += utxoaddr->balance;
+            checkbalance += utxoaddr->histbalance;
             ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
             counts[ind]++;
-        } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+        } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
     }
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     if ( checkbalance == balance )
     {
-        table = calloc(coin->utxoaddrind+1,sizeof(item));
+        table = calloc(coin->utxoaddrind+1,UTXOADDR_ITEMSIZE);
         offsets = calloc(0x10000,sizeof(*offsets));
         offset = 1;
         for (ind=0; ind<0x10000; ind++)
@@ -1039,17 +1089,18 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
         }
         for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
         {
-            if ( utxoaddr->balance > 0 )
+            if ( utxoaddr->histbalance > 0 )
             {
-                memset(item,0,sizeof(item));
+                memset(item,0,UTXOADDR_ITEMSIZE);
                 iguana_rwnum(1,&item[0],sizeof(utxoaddr->hdrsi),&utxoaddr->hdrsi);
                 memcpy(&item[2],&utxoaddr->rmd160[2],18);
-                iguana_rwnum(1,&item[20],sizeof(utxoaddr->pkind),&utxoaddr->pkind);
-                iguana_rwnum(1,&item[24],sizeof(utxoaddr->balance),&utxoaddr->balance);
+                pkind = utxoaddr->pkind;
+                iguana_rwnum(1,&item[20],sizeof(pkind),&pkind);
+                iguana_rwnum(1,&item[24],sizeof(utxoaddr->histbalance),&utxoaddr->histbalance);
                 ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
-                memcpy(&table[(offsets[ind] + counts[ind]) * sizeof(item)],item,sizeof(item));
+                memcpy(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE);
                 counts[ind]++;
-            } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+            } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
         }
         offset = 1;
         for (ind=0; ind<0x10000; ind++)
@@ -1060,52 +1111,41 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
             {
                 if ( counts[ind] > 0 )
                 {
-                    qsort(&table[offsets[ind] * sizeof(item)],counts[ind],sizeof(item),_utxoaddr_cmp);
+                    qsort(&table[offsets[ind] * UTXOADDR_ITEMSIZE],counts[ind],UTXOADDR_ITEMSIZE,_utxoaddr_cmp);
                     continue;
                     for (j=0; j<counts[ind]; j++)
                     {
-                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item)],sizeof(hdrsi),&hdrsi);
-                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item) + 20],sizeof(pkind),&pkind);
-                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item) + 24],sizeof(value),&value);
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE],sizeof(hdrsi),&hdrsi);
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE + 20],sizeof(pkind),&pkind);
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE + 24],sizeof(value),&value);
                         for (k=0; k<18; k++)
-                            printf("%02x",table[(offsets[ind]+j) * sizeof(item) + 2 + k]);
+                            printf("%02x",table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE + 2 + k]);
                         printf(" [%4d] p%-5d %12.8f ind.%04x %d\n",hdrsi,pkind,dstr(value),ind,j);
                     }
                 }
             }
         } else printf("table has %d vs %d\n",offset,coin->utxoaddrind+1);
-        if ( (fp= fopen(fname,"wb")) != 0 )
+        if ( (fp= fopen(fname2,"wb")) != 0 )
         {
             fwrite(&balance,1,sizeof(balance),fp);
             fwrite(&counts[0xffff],1,sizeof(counts[0xffff]),fp);
             fwrite(&coin->utxoaddrind,1,sizeof(coin->utxoaddrind),fp);
-            vcalc_sha256cat(hash.bytes,(void *)offsets,(int32_t)(0x10000 * sizeof(*offsets)),table,(int32_t)((coin->utxoaddrind+1) * sizeof(item)));
+            vcalc_sha256cat(hash.bytes,(void *)offsets,(int32_t)(0x10000 * sizeof(*offsets)),table,(int32_t)((coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE));
             if ( fwrite(hash.bytes,1,sizeof(hash),fp) == sizeof(hash) )
             {
                 if ( fwrite(offsets,1,0x10000 * sizeof(*offsets),fp) == 0x10000 * sizeof(*offsets) )
                 {
-                    if ( fwrite(table,1,(coin->utxoaddrind+1) * sizeof(item),fp) != (coin->utxoaddrind+1) * sizeof(item) )
-                        printf("error writing %s table\n",fname);
+                    if ( fwrite(table,1,(coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE,fp) != (coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE )
+                        printf("error writing %s table\n",fname2);
                     else retval = 0;
-                } else printf("error writing %s offsets\n",fname);
-            } else printf("error writing %s hash\n",fname);
+                } else printf("error writing %s offsets\n",fname2);
+            } else printf("error writing %s hash\n",fname2);
             fclose(fp);
-        } else printf("error creating %s\n",fname);
+            if ( OS_copyfile(fname2,fname,1) < 0 )
+                printf("error copying file\n");
+        } else printf("error creating %s\n",fname2);
         free(offsets);
         free(table);
-        if ( 0 && coin->utxoaddrs != 0 )
-        {
-            printf("free %s utxoaddrs\n",coin->symbol);
-            HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
-            {
-                if ( utxoaddr != 0 )
-                {
-                    HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
-                    free(utxoaddr);
-                }
-            }
-            coin->utxoaddrs = 0;
-        }
         if ( iguana_utxoaddr_map(coin,fname) != 0 )
         {
             printf("HIST BALANCE %.8f\n",dstr(coin->histbalance));

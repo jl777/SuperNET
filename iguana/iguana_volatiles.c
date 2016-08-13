@@ -394,6 +394,9 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
                             printf("iter.%d nonz.%d %s volatilesmap.[%d] %p %p\n",iter,nonz,fname,ramchain->height/coin->chain->bundlesize,ramchain->debitsfileptr,ramchain->lastspendsfileptr);
                         }
                         err = 0;
+                        struct iguana_bundle *bp;
+                        if ( (bp= coin->bundles[ramchain->height / coin->chain->bundlesize]) != 0 )
+                            bp->balancefinish = (uint32_t)time(NULL);
                     } else printf("ramchain map error2 balanceswritten %d vs %d hashes %x %x\n",coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 } else printf("ramchain map error3 %s\n",fname);
             }
