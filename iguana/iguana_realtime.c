@@ -148,7 +148,8 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
     for (i=0; i<numaddrs && i<coin->peers->numranked; i++)
     {
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
-        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,coin->blocks.hwmchain.RO.hash2)),1);
+        if ( coin->chain->hasheaders == 0 )
+            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,coin->blocks.hwmchain.RO.hash2)),1);
         if ( (addr= coin->peers->ranked[i]) != 0 && addr->usock >= 0 && addr->dead == 0 && datalen > 0 )
         {
             iguana_send(coin,addr,serialized,datalen);
@@ -286,7 +287,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         if ( bits256_cmp(coin->RThash1,bp->hashes[1]) != 0 )
             coin->RThash1 = bp->hashes[1];
         //bp->lastRT = (uint32_t)time(NULL);
-        if ( coin->peers != 0 && coin->RTheight <= coin->longestchain-offset && coin->peers->numranked > 0 && time(NULL) > coin->RThdrstime+6 )
+        if ( coin->peers != 0 && coin->RTheight <= coin->longestchain-offset && coin->peers->numranked > 0 && time(NULL) > coin->RThdrstime+16 )
         {
             iguana_RThdrs(coin,bp,coin->peers->numranked);
             coin->RThdrstime = (uint32_t)time(NULL);

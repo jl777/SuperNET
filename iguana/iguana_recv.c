@@ -891,7 +891,7 @@ void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
         {
             if ( newbp->bundleheight != bp->bundleheight+bp->n )
             {
-                printf("found spurious extra hash for [%d:%d]\n",bp->hdrsi,bp->n);
+                printf("%d vs %d found spurious extra hash for [%d:%d]\n",newbp->bundleheight,bp->bundleheight,bp->hdrsi,bp->n);
                 memset(&bp->nextbundlehash2,0,sizeof(bp->nextbundlehash2));
                 return;
             }
