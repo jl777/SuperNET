@@ -1080,7 +1080,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
 int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
 {
     static int32_t totalerrs,totalvalidated;
-    FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
+    FILE *fp; char fname[1024]; uint8_t *blockspace; //uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
     if ( (coin->MAXPEERS > 1 && coin->VALIDATENODE == 0 && coin->RELAYNODE == 0) || bp->ramchain.from_ro != 0 || bp == coin->current )
     {
