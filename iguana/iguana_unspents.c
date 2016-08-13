@@ -930,7 +930,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
         }
         coin->utxoaddrs = 0;
     }
-    for (hdrsi=0; hdrsi<coin->bundlescount; hdrsi++)
+    for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight && (rdata= bp->ramchain.H.data) != 0 )
         {
             tablesize += rdata->numpkinds;
@@ -940,8 +940,11 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
     coin->utxoaddrind = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
-        balance += iguana_bundle_unspents(coin,coin->bundles[hdrsi],1,&last);
-        fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
+        {
+            balance += iguana_bundle_unspents(coin,bp,1,&last);
+            fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
+        }
     }
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
     for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
@@ -953,7 +956,13 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     if ( checkbalance == balance )
     {
-        
+        for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+        {
+            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
+            {
+                bp->balancefinish = (uint32_t)time(NULL);
+            }
+        }
     }
     coin->histbalance = balance;
     return(balance);
