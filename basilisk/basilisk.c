@@ -733,6 +733,10 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     char *retstr; cJSON *outerarray; int32_t i,n; struct basilisk_request issueR; double hwm = 0.;
+    if ( myinfo == 0 )
+    {
+        ;
+    }
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {

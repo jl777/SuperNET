@@ -48,6 +48,8 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     char *str; double totalvol,pricesum; uint32_t timestamp;
     struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     timestamp = (uint32_t)time(NULL);
     if ( basevolume < 0. )
         basevolume = -basevolume, dir = -1;
@@ -109,12 +111,18 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     return(0);
 }
 
-double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume)
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
 {
-    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[256]; cJSON *argjson;
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    if ( retvals == 0 )
+        return(0);
+    strcpy(base,_base);
+    strcpy(rel,_rel);
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     argjson = cJSON_CreateObject();
-    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&askvol,base,rel,basevolume,argjson);
-    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&bidvol,base,rel,-basevolume,argjson);
+    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&askvol,base,rel,basevolume,argjson);
+    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
     free_json(argjson);
     retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
     if ( avebid > SMALLVAL && aveask > SMALLVAL )

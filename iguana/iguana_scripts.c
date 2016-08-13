@@ -42,6 +42,7 @@ int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
     return(n);
 }
 
+// OP_DUP OP_HASH160 <hash of pubkey> OP_EQUALVERIFY OP_CHECKSIG
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 {
     script[n++] = SCRIPT_OP_DUP;
