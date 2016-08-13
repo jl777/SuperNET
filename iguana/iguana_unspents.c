@@ -859,17 +859,17 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
             iguana_rwnum(0,&ptr[20],sizeof(pkind),&pkind);
             if ( pkind == search_pkind && hdrsi == search_hdrsi )
             {
-                iguana_rwnum(1,&ptr[24],sizeof(histbalance),&histbalance);
+                iguana_rwnum(0,&ptr[24],sizeof(histbalance),&histbalance);
                 return(histbalance);
             }
         }
-        printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
+        //printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
         for (i=0; i<num; i++)
         {
             ptr = &coin->utxoaddrtable[(coin->utxoaddroffsets[ind] + i) * UTXOADDR_ITEMSIZE];
             if ( memcmp(&ptr[2],&rmd160[2],18) == 0 )
             {
-                printf("rmd160 match i.%d of %d\n",i,num);
+                //printf("rmd160 match i.%d of %d\n",i,num);
                 iguana_rwnum(0,&ptr[24],sizeof(histbalance),&histbalance);
                 return(histbalance);
             }
@@ -903,11 +903,11 @@ struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_inf
             *prevp = utxoaddr;
         }
         HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
-        int32_t i; for (i=0; i<20; i++)
-            printf("%02x",utxoaddr->rmd160[i]);
-        printf(" %d of %d: %.8f\n",coin->utxoaddrind,coin->utxodatasize,dstr(utxoaddr->histbalance));
         if ( utxoaddr == 0 )
         {
+            int32_t i; for (i=0; i<20; i++)
+                printf("%02x",utxoaddr->rmd160[i]);
+            printf(" %d of %d: %.8f\n",coin->utxoaddrind,coin->utxodatasize,dstr(utxoaddr->histbalance));
             printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
         }
     }
@@ -1035,7 +1035,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
 
 int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 {
-    FILE *fp; char fname[1024],fname2[1024]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,pkind,offset,n; int32_t height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t value,checkbalance=0,balance = 0;
+    FILE *fp; char fname[1024],fname2[1024]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,pkind,offset,n; int32_t height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t value,checkbalance=0,balance = 0;
     sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     if ( iguana_utxoaddr_map(coin,fname) != 0 )
     {
@@ -1065,7 +1065,8 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
     sprintf(fname2,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,height), OS_portable_path(fname2);
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
     counts = calloc(0x10000,sizeof(*counts));
-    for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+    //for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
     {
         if ( utxoaddr->histbalance > 0 )
         {
@@ -1087,7 +1088,8 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
             counts[ind] = 0;
             offset += n;
         }
-        for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+        //for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
         {
             if ( utxoaddr->histbalance > 0 )
             {
@@ -1164,8 +1166,11 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 
 void iguana_utxoaddrs_purge(struct iguana_info *coin)
 {
-    struct iguana_utxoaddr *utxoaddr;
+    struct iguana_utxoaddr *utxoaddr,*tmp;
     coin->RTdebits = coin->RTdebits = 0;
-    for (utxoaddr=coin->RTprev; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
-        utxoaddr->RTcredits = utxoaddr->RTdebits = 0;
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+    {
+        if ( utxoaddr != 0 )
+            utxoaddr->RTcredits = utxoaddr->RTdebits = 0;
+    }
 }
