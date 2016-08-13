@@ -915,7 +915,7 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
 
 int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 {
-    struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; int32_t hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    struct iguana_utxoaddr *utxoaddr,*table,*tmp,*last=0; uint32_t *counts,offset,n; int32_t ind,hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     printf("utxoaddr_gen.%d\n",maxheight);
     if ( coin->utxoaddrs != 0 )
     {
@@ -947,15 +947,27 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
         }
     }
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
+    counts = calloc(0x10000,sizeof(*counts));
     for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
     {
-            if ( utxoaddr->balance > 0 )
-                checkbalance += utxoaddr->balance;
-            else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+        if ( utxoaddr->balance > 0 )
+        {
+            checkbalance += utxoaddr->balance;
+            ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+            counts[ind]++;
+        } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
     }
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     if ( checkbalance == balance )
     {
+        table = calloc(coin->utxoaddrind+1,sizeof(*table));
+        offset = 1;
+        for (ind=0; ind<0x10000; ind++)
+        {
+            n = counts[ind];
+            counts[ind] = (counts[ind] != 0) ? offset : 0;
+            offset += n;
+        }
         for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
@@ -965,6 +977,7 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
         }
     }
     coin->histbalance = balance;
+    free(counts);
     return(balance);
 }
 
