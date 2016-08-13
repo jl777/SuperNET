@@ -258,8 +258,14 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     if ( 1 && coin->RTheight > 0 && coin->spendvectorsaved != 1 && coin->bundlescount-1 != coin->balanceswritten )
     {
         printf("RT mismatch %d != %d\n",coin->bundlescount-1,coin->balanceswritten);
+        iguana_RTramchainfree(coin,coin->current);
         coin->spendvectorsaved = 0;
-        //iguana_RTramchainfree(coin,coin->current);
+        coin->RTheight = 0;
+        while ( coin->spendvectorsaved <= 1 )
+        {
+            fprintf(stderr,"wait for spendvectorsaved\n");
+            sleep(3);
+        }
         return(0);
     }
     if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight < coin->blocks.hwmchain.height-offset && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+1) )
