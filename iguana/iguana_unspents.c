@@ -913,9 +913,34 @@ int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp
     return(balance);
 }
 
+static int _utxoaddr_cmp(const void *a,const void *b)
+{
+#define item_a ((uint8_t *)a)
+#define item_b ((uint8_t *)b)
+    uint16_t hdrsi_a,hdrsi_b; uint32_t pkind_a,pkind_b;
+    iguana_rwnum(0,&item_a[0],sizeof(hdrsi_a),&hdrsi_a);
+    iguana_rwnum(0,&item_a[20],sizeof(pkind_a),&pkind_a);
+    iguana_rwnum(0,&item_b[0],sizeof(hdrsi_b),&hdrsi_b);
+    iguana_rwnum(0,&item_b[20],sizeof(pkind_b),&pkind_b);
+	if ( hdrsi_b > hdrsi_a )
+		return(1);
+	else if ( hdrsi_b < hdrsi_a )
+		return(-1);
+    else
+    {
+        if ( pkind_b > pkind_a )
+            return(1);
+        else if ( pkind_b < pkind_a )
+            return(-1);
+        else return(0);
+    }
+#undef item_a
+#undef item_b
+}
+
 int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
 {
-    struct iguana_utxoaddr *utxoaddr,*table,*tmp,*last=0; uint32_t *counts,offset,n; int32_t ind,hdrsi,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[32]; uint32_t *counts,*offsets,pkind,offset,n; int32_t j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t value,checkbalance=0,balance = 0;
     printf("utxoaddr_gen.%d\n",maxheight);
     if ( coin->utxoaddrs != 0 )
     {
@@ -960,20 +985,59 @@ int64_t iguana_utxoaddr_gen(struct iguana_info *coin,int32_t maxheight)
     printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
     if ( checkbalance == balance )
     {
-        table = calloc(coin->utxoaddrind+1,sizeof(*table));
+        table = calloc(coin->utxoaddrind+1,sizeof(item));
+        offsets = calloc(0x10000,sizeof(*offsets));
         offset = 1;
         for (ind=0; ind<0x10000; ind++)
         {
             n = counts[ind];
-            counts[ind] = (counts[ind] != 0) ? offset : 0;
+            offsets[ind] = (counts[ind] != 0) ? offset : 0;
+            counts[ind] = 0;
             offset += n;
         }
+        for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
+        {
+            if ( utxoaddr->balance > 0 )
+            {
+                memset(item,0,sizeof(item));
+                iguana_rwnum(1,&item[0],sizeof(utxoaddr->hdrsi),&utxoaddr->hdrsi);
+                memcpy(&item[2],&utxoaddr->rmd160[2],18);
+                iguana_rwnum(1,&item[20],sizeof(utxoaddr->pkind),&utxoaddr->pkind);
+                iguana_rwnum(1,&item[24],sizeof(utxoaddr->balance),&utxoaddr->balance);
+                ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+                memcpy(&table[(offsets[ind] + counts[ind]) * sizeof(item)],item,sizeof(item));
+                counts[ind]++;
+            } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->balance));
+        }
+        offset = 1;
+        for (ind=0; ind<0x10000; ind++)
+            offset += counts[ind];
+        if ( offset == coin->utxoaddrind+1 )
+        {
+            for (ind=0; ind<0x10000; ind++)
+            {
+                if ( counts[ind] > 0 )
+                {
+                    qsort(&table[offsets[ind] * sizeof(item)],counts[ind],sizeof(item),_utxoaddr_cmp);
+                    continue;
+                    for (j=0; j<counts[ind]; j++)
+                    {
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item)],sizeof(hdrsi),&hdrsi);
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item) + 20],sizeof(pkind),&pkind);
+                        iguana_rwnum(0,&table[(offsets[ind]+j) * sizeof(item) + 24],sizeof(value),&value);
+                        for (k=0; k<18; k++)
+                            printf("%02x",table[(offsets[ind]+j) * sizeof(item) + 2 + k]);
+                        printf(" [%4d] p%-5d %12.8f ind.%04x %d\n",hdrsi,pkind,dstr(value),ind,j);
+                    }
+                }
+            }
+        } else printf("table has %d vs %d\n",offset,coin->utxoaddrind+1);
+        free(offsets);
+        free(table);
         for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
-            {
                 bp->balancefinish = (uint32_t)time(NULL);
-            }
         }
     }
     coin->histbalance = balance;
