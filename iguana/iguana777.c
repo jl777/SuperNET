@@ -430,7 +430,7 @@ void iguana_update_balances(struct iguana_info *coin)
                 iguana_volatilespurge(coin,&bp->ramchain);
                 iguana_volatilesalloc(coin,&bp->ramchain,1);//i < hdrsi);
             }
-        for (; hdrsi<max; hdrsi++)
+        for (hdrsi=0; hdrsi<max; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 )
             {
