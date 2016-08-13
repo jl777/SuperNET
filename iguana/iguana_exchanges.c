@@ -1116,6 +1116,12 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
     }
 }
 
+cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base,char *rel,int32_t period,uint32_t start,uint32_t end)
+{
+    cJSON *array = cJSON_CreateArray();
+    return(array);
+}
+
 #include "../includes/iguana_apidefs.h"
 
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore)
@@ -1330,6 +1336,26 @@ TWO_STRINGS(iguana,rate,base,rel)
             return(jprint(retjson,1));
         } else return(clonestr("{\"error\":\"error parsing return from aveprice\"}"));
     } else return(clonestr("{\"error\":\"null return from aveprice\"}"));
+}
+
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( period <= 0 )
+        period = 60;
+    if ( end <= 0 )
+        end = (uint32_t)time(NULL);
+    if ( start <= 0 || start >= end )
+        start = end - 1024*period;
+    jaddstr(retjson,"base",base);
+    jaddstr(retjson,"rel",rel);
+    jaddstr(retjson,"exchange",exchange[0] != 0 ? exchange : "all");
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"start",start);
+    jaddnum(retjson,"end",end);
+    jaddnum(retjson,"period",period);
+    jadd(retjson,"prices",iguana_pricesarray(myinfo,exchange,base,rel,period,start,end));
+    return(jprint(retjson,1));
 }
 
 INT_AND_ARRAY(iguana,rates,unused,quotes)

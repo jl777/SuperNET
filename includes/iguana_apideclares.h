@@ -15,6 +15,7 @@
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
 TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
