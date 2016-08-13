@@ -167,8 +167,10 @@ int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr
 uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,int16_t bundlei)
 {
     uint32_t txidind; struct iguana_txid *t; struct iguana_kvitem *ptr; struct iguana_ramchaindata *rdata;
+#ifndef WIN32
     if ( sizeof(*t) != 64 )
         printf("sizeof iguana_txid.%d != 64?\n",(int32_t)sizeof(*t));
+#endif
     txidind = ramchain->H.txidind;
     t = &T[txidind];
     if ( ramchain->H.ROflag != 0 )

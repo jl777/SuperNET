@@ -16,6 +16,11 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+#if (defined(_WIN32) || defined(__WIN32__)) && \
+!defined(WIN32) && !defined(__SYMBIAN32__)
+#define WIN32
+#endif
+
 //#define BTC2_VERSION
 #define BTC2_HARDFORK_HEIGHT 444444
 #define BTC2_SIGHASH_FORKID 0xcf
