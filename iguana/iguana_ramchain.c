@@ -2011,12 +2011,12 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                 fpos = -1;
             }
         }
+        iguana_ramchain_free(coin,ramchain,0);
     }
     if ( fpos < 0 )
         iguana_blockunmark(coin,block,bp,bundlei,1);
     //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,rdata->scriptspace);
     ramchain->H.ROflag = 0;
-    iguana_ramchain_free(coin,ramchain,0);
     return(fpos);
 }
 
