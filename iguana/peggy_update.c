@@ -620,7 +620,9 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTme
     }
     for (i=1; i<sizeof(cryptostrs)/sizeof(*cryptostrs); i++)
     {
-        if ( (vol= volumes[i][0]+volumes[i][1]) > SMALLVAL )
+        vol = volumes[i][0];
+        vol += volumes[i][1];
+        if ( vol > SMALLVAL )
         {
             price = ((prices[i][0] * volumes[i][0]) + (prices[i][1] * volumes[i][1])) / vol;
             if ( Debuglevel > 2 )
