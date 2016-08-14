@@ -543,7 +543,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
 
 void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *blockhashes,int32_t n)
 {
-    struct iguana_bundlereq *req; int32_t num;
+    struct iguana_bundlereq *req; int32_t i,num;
     if ( addr != 0 )
     {
         addr->recvhdrs++;
@@ -562,8 +562,16 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     if ( 0 && n > 2 && addr != 0 )
         printf("addr.%d %s [%d]\n",addr->rank,bits256_str(str,blockhashes[1]),n);
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-    if ( strcmp("BTC",coin->symbol) != 0 && n > coin->chain->bundlesize )
-        iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
+    if ( strcmp("BTC",coin->symbol) != 0 )
+    {
+        if ( coin->RTheight > 0 )
+        {
+            for (i=1; i<n; i++)
+                iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
+        }
+        else if ( n > coin->chain->bundlesize )
+            iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
+    }
 }
 
 uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits256 *blockhashes,int32_t num)
