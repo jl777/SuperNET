@@ -105,7 +105,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
             for (i=0; i<bp->hdrsi; i++)
                 if ( (tmpbp= coin->bundles[i]) != 0 )
                 {
-                    //iguana_volatilespurge(coin,&tmpbp->ramchain);
+                    iguana_volatilespurge(coin,&tmpbp->ramchain);
                     iguana_volatilesmap(coin,&tmpbp->ramchain);
                 }
             sleep(1);
