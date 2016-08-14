@@ -226,7 +226,13 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         {
             printf("RT edge case couldnt link\n");
         }
-        else printf("RT edge case.%d\n",block->height);
+        else
+        {
+            printf("RT edge case.%d\n",block->height);
+            if ( (bp= coin->bundles[coin->RTheight / coin->chain->bundlesize]) != 0 )
+                iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,0,0);
+            iguana_update_balances(coin);
+        }
     }
     if ( coin->spendvectorsaved <= 1 )
     {

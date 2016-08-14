@@ -1079,6 +1079,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
 
 int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *coin,int32_t lastheight,int64_t *unspents,int32_t max,struct iguana_utxoaddr *utxoaddr)
 {
+    static int32_t good,bad;
     char coinaddr[64]; int64_t sum,checkbalance; int32_t iter,i,numunspents = 0;
     sum = 0;
     for (iter=0; iter<2; iter++)
@@ -1093,8 +1094,9 @@ int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *c
             break;
         }
     }
-    if ( sum != utxoaddr->histbalance )
+    if ( sum != utxoaddr->histbalance || checkbalance != sum )
     {
+        bad++;
         for (i=0; i<numunspents; i++)
             printf("(%lld %lld %.8f) ",(long long)(unspents[i<<1]>>32)&0xffffffff,(long long)unspents[i<<1]&0xffffffff,dstr(unspents[(i<<1)+1]));
         for (i=0; i<20; i++)
@@ -1102,7 +1104,11 @@ int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *c
         bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
         printf(" %s: sum %.8f != %.8f numunspents.%d diff %.8f\n",coinaddr,dstr(sum),dstr(utxoaddr->histbalance),numunspents,dstr(utxoaddr->histbalance)-dstr(sum));
         return(-1);
-    } else return(0);
+    }
+    good++;
+    if ( ((good + bad) % 1000) == 0 )
+        printf("utxoaddr validate good.%d bad.%d\n",good,bad);
+    return(0);
 }
 
 int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t lastheight)

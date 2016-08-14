@@ -415,7 +415,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
 
 void iguana_update_balances(struct iguana_info *coin)
 {
-    int32_t i,hdrsi,max; struct iguana_bundle *bp;
+    int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
@@ -428,9 +428,13 @@ void iguana_update_balances(struct iguana_info *coin)
             if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesalloc(coin,&bp->ramchain,1);//i < hdrsi);
+                sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+                OS_removefile(fname,0);
+                sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+                OS_removefile(fname,0);
+                iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
-        for (; hdrsi<max; hdrsi++)
+        for (hdrsi=0; hdrsi<max; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 )
             {
