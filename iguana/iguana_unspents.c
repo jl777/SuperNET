@@ -893,7 +893,7 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
             if ( (UA.pkind == search_pkind && UA.hdrsi == search_hdrsi) || memcmp(UA.rmd160,rmd160,20) == 0 )
                 return(UA.histbalance);
         }
-        printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
+        //printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
     }
     return(0);
 }
