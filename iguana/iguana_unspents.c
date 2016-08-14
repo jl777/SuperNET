@@ -1048,7 +1048,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
 
 int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
 {
-    FILE *fp; char fname[1024],fname2[1024],coinaddr[64]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,pkind,offset,n; int32_t i,numunspents,max,iter,height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t *unspents,sum,value,checkbalance=0,balance = 0;
+    FILE *fp; char fname[1024],fname2[1024],coinaddr[64]; bits256 hash; struct iguana_utxoaddr *utxoaddr,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,pkind,offset,n,total; int32_t i,numunspents,max,iter,height=0,j,k,ind,tablesize=0,retval=-1; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t *unspents,sum,value,checkbalance=0,balance = 0;
     sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     if ( iguana_utxoaddr_map(coin,fname) != 0 )
     {
@@ -1107,13 +1107,14 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             max *= 1024;
         unspents = calloc(1,max);
         max /= sizeof(*unspents);
+        total = 0;
         HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
         {
             if ( utxoaddr->histbalance > 0 )
             {
                 sum = 0;
                 numunspents = 0;
-                for (iter=0; iter<1; iter++)
+                for (iter=0; iter<2; iter++)
                 {
                     bitcoin_address(coinaddr,iter == 0 ? coin->chain->pubtype : coin->chain->p2shtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
                     numunspents += iguana_addr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,0);
@@ -1136,6 +1137,9 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
                 ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
                 memcpy(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE);
                 counts[ind]++;
+                total++;
+                if ( (total % 10000) == 0 )
+                    fprintf(stderr,".");
             } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
         }
         offset = 1;
