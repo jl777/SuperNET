@@ -83,7 +83,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     {
         utxoaddr->RTdebits += spent_value;
         coin->RTdebits += spent_value;
-        printf("from.%d [%d] u%u -= %.8f\n",fromheight,spent_hdrsi,spent_pkind,dstr(spent_value));
+        //printf("from.%d [%d] u%u -= %.8f\n",fromheight,spent_hdrsi,spent_pkind,dstr(spent_value));
     }
     return(0);
 }
