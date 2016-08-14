@@ -509,7 +509,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                     {
                         utxoaddr->RTcredits += u->value;
                         coin->RTcredits += u->value;
-                    }
+                        printf("[%d] u%u += %.8f\n",bp->hdrsi,u->pkind,dstr(u->value));
+                    } else printf("cant find utxoaddr\n");
                 }
             } else unspentind += T[txidind].numvouts;
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)

@@ -209,7 +209,7 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
         }
         if ( ptr->hh.itemind != txidind )
         {
-            printf("iguana_ramchain_addtxid warning: adding txidind.%u vs %u\n",txidind,ptr->hh.itemind);
+            printf("iguana_ramchain_addtxid %d warning: adding txidind.%u vs %u\n",ramchain->height,txidind,ptr->hh.itemind);
         }
     }
     return(txidind);
