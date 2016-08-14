@@ -214,10 +214,10 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
     offset = 0;//(strcmp("BTC",coin->symbol) != 0);
-    if ( coin->RTheight-offset > coin->blocks.hwmchain.height+1 )
+    if ( coin->RTheight >= (coin->current->hdrsi+1)*coin->chain->bundlesize )
     {
-        //printf("inversion RT %d > %d\n",coin->RTheight,coin->blocks.hwmchain.height+1);
-        //coin->RTheight = 0;
+        printf("inversion RT %d >= %d\n",coin->RTheight,(coin->current->hdrsi+1)*coin->chain->bundlesize);
+        coin->RTheight = coin->current->hdrsi*coin->chain->bundlesize;
     }
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {
