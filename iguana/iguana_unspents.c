@@ -1046,7 +1046,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
     if ( (coin->utxoaddrfileptr= OS_mapfile(fname,&coin->utxoaddrfilesize,0)) != 0 && coin->utxoaddrfilesize > sizeof(bits256)+0x10000*sizeof(*coin->utxoaddroffsets) )
     {
         memcpy(&coin->histbalance,coin->utxoaddrfileptr,sizeof(coin->histbalance));
-        memcpy(&coin->utxoaddrlastcount,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)),sizeof(coin->utxoaddrlastcount));
+        memcpy(&last,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)),sizeof(last));
         memcpy(&coin->utxoaddrind,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)+sizeof(uint32_t)),sizeof(coin->utxoaddrind));
         coin->utxoaddroffsets = (void *)((long)coin->utxoaddrfileptr + sizeof(int64_t) + 2*sizeof(uint32_t) + sizeof(bits256));
         for (ind=total=count=0; ind<0x10000; ind++)
