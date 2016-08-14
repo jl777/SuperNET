@@ -213,11 +213,11 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
-    offset = (strcmp("BTC",coin->symbol) != 0);
+    offset = 0;//(strcmp("BTC",coin->symbol) != 0);
     if ( coin->RTheight-offset > coin->blocks.hwmchain.height+1 )
     {
         printf("inversion RT %d > %d\n",coin->RTheight,coin->blocks.hwmchain.height+1);
-        coin->RTheight = 0;
+        //coin->RTheight = 0;
     }
     if ( coin->current != 0 && (coin->blocks.hwmchain.height % coin->chain->bundlesize) == coin->chain->bundlesize-1 && coin->blocks.hwmchain.height/coin->chain->bundlesize == coin->longestchain/coin->chain->bundlesize )
     {
@@ -268,8 +268,10 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         }*/
         return(0);
     }
-    if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n && ((coin->RTheight < coin->blocks.hwmchain.height-offset && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+1) )
+    if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten-1 && ((coin->RTheight < coin->blocks.hwmchain.height-offset && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+1) ) //coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n &&
     {
+        if ( coin->RTheight == 0 )
+            coin->RTheight = bp->bundleheight;
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
             if ( block != 0 )

@@ -807,7 +807,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     }
 }
 
-int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
+int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coin,int32_t refhdrsi)
 {
     int32_t hdrsi,numpkinds,iter,numhdrsi,i,numunspents,err; struct iguana_bundle *bp;
     char fname[1024],fname2[1024],destfname[1024]; bits256 balancehash,allbundles; FILE *fp,*fp2;
@@ -912,7 +912,7 @@ int32_t iguana_balanceflush(struct iguana_info *coin,int32_t refhdrsi)
             }
     }
     char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
-    iguana_utxoaddr_gen(coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
+    iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;
