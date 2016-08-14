@@ -335,7 +335,6 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
             ramchain->lastspendsfileptr = 0;
             ramchain->lastspendsfilesize = 0;
         }
-        iguana_utxoaddrs_purge(coin);
     }
 }
 
