@@ -23,7 +23,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         printf("free RTramchain\n");
         iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
-        coin->RTheight = coin->balanceswritten * coin->chain->bundlesize;
+        coin->RTheight = (coin->bundlescount-1) * coin->chain->bundlesize;
         coin->RTgenesis = 0;
         iguana_ramchain_free(coin,&coin->RTramchain,1);
         if ( bp != 0 )
@@ -277,7 +277,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     if ( coin->RTdatabad == 0 && bp->hdrsi == coin->longestchain/coin->chain->bundlesize && bp->hdrsi >= coin->balanceswritten-2 && ((coin->RTheight < coin->blocks.hwmchain.height-offset && time(NULL) > bp->lastRT) || time(NULL) > bp->lastRT+1) ) //coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n &&
     {
         if ( coin->RTheight == 0 )
-            coin->RTheight = (coin->bundlescount - 2) * coin->chain->bundlesize;
+            coin->RTheight = (coin->bundlescount - 1) * coin->chain->bundlesize;
         if ( (block= bp->blocks[0]) == 0 || block->txvalid == 0 || block->mainchain == 0 )
         {
             if ( block != 0 )
