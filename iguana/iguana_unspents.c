@@ -431,7 +431,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
             }
             if ( p->pkind != U[unspentind].pkind )
                 printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
-        } else printf("skip uheight.%d lastheight.%d\n",uheight,lastheight);
+        } // else printf("skip uheight.%d lastheight.%d\n",uheight,lastheight);
         pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
@@ -1166,7 +1166,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     sprintf(fname2,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,height), OS_portable_path(fname2);
     if ( iguana_utxoaddr_map(coin,fname2) != 0 )
     {
-        errs = iguana_utxoaddr_validate(myinfo,coin,height);
+        errs = 0;//iguana_utxoaddr_validate(myinfo,coin,height);
         printf("HIST BALANCE %.8f errs %d\n",dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
             return(coin->histbalance);

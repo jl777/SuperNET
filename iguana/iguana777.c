@@ -434,6 +434,7 @@ void iguana_update_balances(struct iguana_info *coin)
                 OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
+        sleep(3);
         for (hdrsi=0; hdrsi<max; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 )
