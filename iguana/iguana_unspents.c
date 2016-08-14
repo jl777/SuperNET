@@ -1079,7 +1079,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
 
 int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *coin,int32_t lastheight,int64_t *unspents,int32_t max,struct iguana_utxoaddr *utxoaddr)
 {
-    char coinaddr[64]; int64_t sum; int32_t iter,i,numunspents = 0;
+    char coinaddr[64]; int64_t sum,checkbalance; int32_t iter,i,numunspents = 0;
     sum = 0;
     for (iter=0; iter<2; iter++)
     {
@@ -1087,10 +1087,9 @@ int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *c
         numunspents += iguana_addr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,0,lastheight);
         if ( sum == utxoaddr->histbalance )
         {
-            if ( sum > 0 )
-            {
-                ;
-            }
+            checkbalance = iguana_utxoaddrtablefind(coin,0,0,utxoaddr->rmd160);
+            if ( checkbalance != sum )
+                printf("%s checkbalance %.8f vs sum %.8f\n",coinaddr,dstr(checkbalance),dstr(sum));
             break;
         }
     }
