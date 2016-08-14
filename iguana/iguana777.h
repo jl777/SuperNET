@@ -74,6 +74,7 @@ struct supernet_info
     struct basilisk_relay relays[BASILISK_MAXRELAYS];
     struct basilisk_spend *spends; int32_t numspends;
     int32_t numrelays,RELAYID;
+    struct peggy_info *PEGS;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];

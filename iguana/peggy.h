@@ -235,7 +235,7 @@ struct peggy_info
     int32_t default_dailyrate,interesttenths,posboost,negpenalty,feediv,feemult;
     int32_t numpegs,numpairedpegs,numpricedpegs,numopreturns,numvoters;
     struct accts777_info *accts;
-    struct PAX_data data,tmp; double cryptovols[2][8][2],btcusd,btcdbtc,cnyusd;
+    struct PAX_data data,tmp; double cryptovols[2][9][2],btcusd,btcdbtc,cnyusd;
     char path[512],*genesis; uint32_t genesistime,BTCD_price0,lastupdate;
     struct PAX_spline splines[128];
     struct peggy_vote votes[PEGGY_MAXPRICEDPEGS][PEGGY_MAXVOTERS];
@@ -307,13 +307,13 @@ extern int32_t MINDENOMS[],Peggy_inds[],dailyrates[];
 
 struct price_resolution peggy_scaleprice(struct price_resolution price,int64_t peggymils);
 char *peggy_tx(char *jsonstr);
-void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][8][2],struct PAX_data *dp,int32_t selector,int32_t peggyflag);
+void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][9][2],struct PAX_data *dp,int32_t selector,int32_t peggyflag);
 int32_t PAX_idle(struct peggy_info *PEGS,int32_t peggyflag,int32_t idlegap);
 int32_t PAX_genspline(struct PAX_spline *spline,int32_t splineid,char *name,uint32_t *utc32,double *splinevals,int32_t maxsplines,double *refvals);
 int32_t PAX_contractnum(char *base,char *rel);
 int32_t PAX_basenum(char *base);
 int32_t PAX_ispair(char *base,char *rel,char *contract);
-void PAX_init(struct peggy_info *PEGS);
+struct peggy_info *PAX_init();
 uint32_t peggy_mils(int32_t i);
 void calc_smooth_code(int32_t smoothwidth,int32_t _maxprimes);
 struct peggy *peggy_find(struct peggy_entry *entry,struct peggy_info *PEGS,char *name,int32_t polarity);
@@ -368,10 +368,12 @@ int32_t peggy_init_contexts(struct txinds777_info *opreturns,uint32_t blocknum,u
 uint32_t peggy_clone(char *path,void *dest,void *src);
 void *peggy_replay(char *path,struct txinds777_info *opreturns,void *_PEGS,uint32_t blocknum,char *opreturnstr,uint8_t *data,int32_t datalen);
 uint32_t peggy_currentblock(void *globals);
+struct peggy_info *peggy_init(int32_t maxdays,char *maincurrency,uint64_t maincurrencyunitsize,uint64_t quorum,uint64_t decisionthreshold,struct price_resolution spread,uint32_t dailyrate,int32_t interesttenths,int32_t posboost,int32_t negpenalty,int32_t feediv,int32_t feemult,uint32_t firsttimestamp,uint32_t BTCD_price0);
 
 struct peggy_unit *peggy_match(struct accts777_info *accts,int32_t peg,uint64_t nxt64bits,bits256 lockhash,uint16_t lockdays);
 int32_t peggy_addunit(struct accts777_info *accts,struct peggy_unit *U,bits256 lockhash);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
+void peggy_priceinits(struct peggy_info *PEGS,uint32_t firsttimestamp,uint32_t *allprices);
 
 #endif

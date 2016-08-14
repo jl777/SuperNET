@@ -720,8 +720,8 @@ void exchanges777_loop(void *ptr)
     myinfo = SuperNET_MYINFO(0);
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
-        PEGS = calloc(1,sizeof(*PEGS));
-        PAX_init(PEGS);
+        PEGS = myinfo->PEGS; //calloc(1,sizeof(*PEGS));
+        //PAX_init(PEGS);
         exchange->privatedata = PEGS;
         peggyflag = 1;
         _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
@@ -934,7 +934,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     else
     {
         req->func = 'M';
-        printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
+        //printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
