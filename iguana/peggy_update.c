@@ -593,7 +593,10 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTme
     memset(volumes,0,sizeof(volumes));
     for (i=0; i<sizeof(cryptostrs)/sizeof(*cryptostrs); i++)
         for (iter=0; iter<2; iter++)
-            prices[i][iter] = cryptovols[0][i][iter], volumes[i][iter] = cryptovols[1][i][iter];
+        {
+            prices[i][iter] = cryptovols[0][i][iter];
+            volumes[i][iter] = cryptovols[1][i][iter];
+        }
     if ( prices[0][0] > SMALLVAL )
         dxblend(&btcdbtc,prices[0][0],.9);
     dxblend(&dp->btcdbtc,btcdbtc,.995);
