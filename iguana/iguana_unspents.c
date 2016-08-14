@@ -1103,6 +1103,8 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
         }
         //for (utxoaddr=last; utxoaddr!=0; utxoaddr=utxoaddr->hh.prev)
         max = 1024 * 1024;
+        if ( strcmp("BTC",coin->symbol) == 0 )
+            max *= 1024;
         unspents = calloc(1,max);
         max /= sizeof(*unspents);
         HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
