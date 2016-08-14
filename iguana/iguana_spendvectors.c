@@ -612,14 +612,14 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
-    for (i=0; i<coin->balanceswritten; i++)
+    for (i=0; i<coin->bundlescount; i++)//balanceswritten; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
-            break;
+            continue;
         if ( bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
-            break;
+            continue;
         }
         iguana_volatilesmap(coin,&bp->ramchain);
         if ( from_ro != 0 && (bp->ramchain.from_ro == 0 || (bp->hdrsi > 0 && bp->ramchain.from_roX == 0) || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0) )
@@ -628,12 +628,12 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             from_ro = 0;
         }
     }
-    if ( i < coin->balanceswritten-1 )
+    /*if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
         iguana_truncatebalances(coin);
     }
-    else
+    else*/
     {
         coin->balanceswritten = i;
         //printf("verify crc and sha256 hash for %d of %d\n",i,coin->balanceswritten);
@@ -912,7 +912,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             }
     }
     char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
-    iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
+    //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;
