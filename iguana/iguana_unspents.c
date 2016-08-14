@@ -1168,7 +1168,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( strcmp("BTC",coin->symbol) != 0 )
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
-        printf("HIST BALANCE %.8f errs %d\n",dstr(coin->histbalance),errs);
+        printf("nogen HIST BALANCE %.8f errs %d\n",dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
             return(coin->histbalance);
     }

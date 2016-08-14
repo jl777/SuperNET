@@ -429,9 +429,9 @@ void iguana_update_balances(struct iguana_info *coin)
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+                OS_removefile(fname,0);
                 sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+                OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
         sleep(3);
