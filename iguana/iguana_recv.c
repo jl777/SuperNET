@@ -1651,8 +1651,9 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         if ( iguana_balanceflush(myinfo,coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
         //portable_mutex_unlock(&coin->RTmutex);
-        fprintf(stderr,"%s back balanceflush\n",coin->symbol);
+        fprintf(stderr,"%s back balanceflush %d\n",coin->symbol,(coin->balanceswritten - 1) * coin->chain->bundlesize);
         coin->balanceflush = 0;
+        iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
     flag += iguana_processrecvQ(coin,&newhwm);
     flag += iguana_reqhdrs(coin);
