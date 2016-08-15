@@ -1161,7 +1161,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
 
 int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
 {
-    char fname[1024],fname2[1024],coinaddr[64],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
@@ -1172,7 +1172,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( strcmp("BTC",coin->symbol) != 0 )
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
-        char str[65]; printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
+        printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
         {
             coin->RTheight = height;
@@ -1284,7 +1284,7 @@ continue;
         if ( iguana_utxoaddr_map(coin,fname) != 0 )
         {
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
-            printf("%s HIST BALANCE %.8f errs %d\n",fname,dstr(coin->histbalance),errs);
+            printf("gen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
             if ( errs != 0 )
             {
                 printf("delete bad utxoaddr files\n");
