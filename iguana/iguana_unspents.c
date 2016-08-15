@@ -1051,6 +1051,7 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
         memcpy(&coin->histbalance,coin->utxoaddrfileptr,sizeof(coin->histbalance));
         memcpy(&last,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)),sizeof(last));
         memcpy(&coin->utxoaddrind,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)+sizeof(uint32_t)),sizeof(coin->utxoaddrind));
+        memcpy(&coin->utxoaddrhash.bytes,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)+2*sizeof(uint32_t)),sizeof(coin->utxoaddrhash));
         coin->utxoaddroffsets = (void *)((long)coin->utxoaddrfileptr + sizeof(int64_t) + 2*sizeof(uint32_t) + sizeof(bits256));
         for (ind=total=count=0; ind<0x10000; ind++)
         {
@@ -1171,7 +1172,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( strcmp("BTC",coin->symbol) != 0 )
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
-        printf("nogen %s HIST BALANCE %.8f errs %d\n",fname2,dstr(coin->histbalance),errs);
+        printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
         {
             coin->RTheight = height;

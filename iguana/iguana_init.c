@@ -227,7 +227,7 @@ int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,i
         if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
             coin->current = bp;
         bp->emitfinish = (uint32_t)time(NULL) + 1;
-        printf("[%d].%p ",bp->hdrsi,bp->ramchain.H.data);
+        //printf("[%d].%p ",bp->hdrsi,bp->ramchain.H.data);
         return(0);
     }
     else
