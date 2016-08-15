@@ -212,7 +212,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     double startmillis0; static double totalmillis0; static int32_t num0;
     struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
-    if ( coin->peers == 0 && coin->virtualchain == 0 )
+    //if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
     offset = 0;//(strcmp("BTC",coin->symbol) != 0);
     if ( coin->RTheight >= (coin->current->hdrsi+1)*coin->chain->bundlesize )
