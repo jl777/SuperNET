@@ -632,7 +632,7 @@ void iguana_helper(void *arg)
         {
             //printf("bundlesQ allcurrent\n");
             usleep(polltimeout * 10000);
-        } else usleep(polltimeout * 5000);
+        } else usleep(polltimeout * 50000);
     }
 }
 

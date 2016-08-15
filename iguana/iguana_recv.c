@@ -1421,10 +1421,13 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                             coin->numpendings++;
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                        if ( bp == coin->current )
+                        if ( bp == coin->current && coin->blocks.hwmchain.height > 100 )
                         {
                             printf("%s issue HWM HDRS %d\n",coin->symbol,coin->blocks.hwmchain.height);
                             init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
+                            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                            bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
+                            init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         }
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
@@ -1673,11 +1676,11 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
     flag += iguana_processrecvQ(coin,&newhwm);
-    flag += iguana_reqhdrs(coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
+            flag += iguana_reqhdrs(coin);
             flag += iguana_reqblocks(coin);
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
