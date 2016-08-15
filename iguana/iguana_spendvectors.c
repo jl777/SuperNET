@@ -708,7 +708,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             }
         }
     }
-    if ( (coin->RTheight= coin->balanceswritten * coin->chain->bundlesize) > coin->longestchain )
+    if ( (coin->RTheight= (coin->balanceswritten-1) * coin->chain->bundlesize) > coin->longestchain )
         coin->longestchain = coin->RTheight;
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )

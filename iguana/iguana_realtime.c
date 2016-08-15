@@ -24,7 +24,7 @@ return;
     {
         printf("free RTramchain\n");
         iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
-        coin->lastRTheight = coin->RTheight = (coin->bundlescount-1) * coin->chain->bundlesize;
+        coin->lastRTheight = coin->RTheight = 0;//(coin->bundlescount-1) * coin->chain->bundlesize;
         coin->RTgenesis = 0;
         iguana_utxoaddrs_purge(coin);
         iguana_ramchain_free(coin,&coin->RTramchain,1);
