@@ -67,7 +67,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 || memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
        // if ( (rand() % 10 ) != 0 )
             return(0);
     }
@@ -78,7 +78,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     {
         if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0) )
         {
-            //printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
+            printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
             return(0);
         }
     }
@@ -86,14 +86,14 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     {
         if ( block != 0 && block->hdrsi != 0 && block->bundlei != 0 )
         {
-            //printf("found valid [%d:%d] in blockreqPT txvalid.%d\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1,block->txvalid);
+            printf("found valid [%d:%d] in blockreqPT txvalid.%d\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1,block->txvalid);
             if ( block->txvalid != 0 )
                 return(0);
         }
     }
     if ( addr->msgcounts.verack == 0 )
     {
-        //printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
+        printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
         //iguana_send_version(coin,addr,coin->myservices);
         return(-1);
     }
@@ -110,7 +110,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         if ( block != 0 )
             block->issued = addr->pendtime;
         //if ( 0 && coin->current == bp )
-            printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
+            printf("REQ.(%s) bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
 }
