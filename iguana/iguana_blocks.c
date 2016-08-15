@@ -556,9 +556,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval) + prevPoW;
                 if ( (next= prev->hh.next) != 0 )
                 {
-                    //printf("block->PoW %f next %f\n",block->PoW,next->PoW);
                     if ( next->mainchain != 0 && block->PoW < next->PoW )
                         return(0);
+                    //printf("block->PoW %f next %f\n",block->PoW,next->PoW);
                     hwmchain = next;
                 }
                 height = prev->height + 1;
@@ -642,8 +642,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                                 {
                                     char str[65],str2[65];
                                     printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
-                                    if ( bp == coin->current && coin->RTheight > 0 )
-                                        coin->RTdatabad = 1;
+                                    //if ( bp == coin->current && coin->RTheight > 0 )
+                                    //    coin->RTdatabad = 1;
                                     //iguana_bundleremove(coin,bp->hdrsi,0);
                                     //exit(-1);
                                     //getchar();

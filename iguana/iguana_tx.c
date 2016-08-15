@@ -241,7 +241,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     {
         if ( (rdata= bp->ramchain.H.data) == 0 )//&& bp == coin->current )
         {
-            printf("iguana_peerblockrequest no ramchain data [%d] use RTcache\n",bp->hdrsi);
+            //printf("iguana_peerblockrequest no ramchain data [%d] use RTcache\n",bp->hdrsi);
             //rdata = coin->RTramchain.H.data;
             return(-1);
         }

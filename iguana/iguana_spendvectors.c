@@ -713,10 +713,12 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->bundlescount-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
     {
-        //char str[65];
-        //printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
         if ( block->height > coin->blocks.hwmchain.height )
+        {
+            char str[65];
+            printf("set hwmchain.%d <- %s %p\n",block->height,bits256_str(str,bp->hashes[bp->n-1]),block);
             iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
+        }
     }
     //printf("end volatilesinit\n");
     if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )

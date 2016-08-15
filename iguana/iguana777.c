@@ -768,7 +768,7 @@ void iguana_coinloop(void *arg)
         }
         //printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
         if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
-            usleep(coin->polltimeout*10000 + (coin->peers->numranked == 0)*1000000);
+            usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
             usleep(coin->polltimeout*5000 + 90000 + (coin->peers->numranked == 0)*1000000);
         else usleep(coin->polltimeout*1000);

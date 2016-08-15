@@ -14,10 +14,11 @@
  ******************************************************************************/
 
 #include "iguana777.h"
+#define ENABLE_RAMCHAIN
 
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     int32_t hdrsi;
     //portable_mutex_lock(&coin->RTmutex);
@@ -49,7 +50,7 @@ void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void *iguana_ramchainfile(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *R,struct iguana_bundle *bp,int32_t bundlei,struct iguana_block *block)
 {
-    return(0);
+    //return(0);
 #ifdef ENABLE_RAMCHAIN
     char fname[1024]; long filesize; int32_t err; void *ptr=0;
     if ( block == bp->blocks[bundlei] && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
@@ -69,13 +70,13 @@ void *iguana_ramchainfile(struct supernet_info *myinfo,struct iguana_info *coin,
         iguana_blockunmark(coin,block,bp,bundlei,1);
         iguana_ramchain_free(coin,R,1);
     } //else printf("ramchainfile ptr.%p block.%p\n",ptr,block);
-    return(0);
 #endif
+    return(0);
 }
 
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     uint32_t i,changed = 0; struct iguana_ramchaindata *rdata; struct iguana_ramchain *dest = &coin->RTramchain; struct iguana_blockRO *B; struct iguana_bundle *tmpbp;
     //portable_mutex_lock(&coin->RTmutex);
@@ -126,7 +127,7 @@ void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_b
 
 void iguana_rdataset(struct iguana_ramchain *dest,struct iguana_ramchaindata *rdest,struct iguana_ramchain *src)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     *dest = *src;
     dest->H.data = rdest;
@@ -142,7 +143,7 @@ void iguana_rdataset(struct iguana_ramchain *dest,struct iguana_ramchaindata *rd
 
 void iguana_rdatarestore(struct iguana_ramchain *dest,struct iguana_ramchaindata *rdest,struct iguana_ramchain *src)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     *src = *dest;
     *src->H.data = *rdest;
@@ -157,7 +158,7 @@ void iguana_rdatarestore(struct iguana_ramchain *dest,struct iguana_ramchaindata
 
 void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t numaddrs)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     int32_t datalen,i; uint8_t serialized[512]; char str[65]; struct iguana_peer *addr;
     if ( coin->peers == 0 )
@@ -179,7 +180,7 @@ void iguana_RThdrs(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num
 
 void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp)
 {
-    return;
+    //return;
 #ifdef ENABLE_RAMCHAIN
     int32_t iterate,lasti,num,hdrsi,orignumemit; struct iguana_ramchain R; struct iguana_ramchaindata RDATA;
     if ( bp->hdrsi <= 0 )
@@ -230,10 +231,11 @@ void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin
 
 int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    return(0);
+    int32_t flag = 0;
+    //return(0);
 #ifdef ENABLE_RAMCHAIN
     double startmillis0; static double totalmillis0; static int32_t num0;
-    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n,flag=0; bits256 hash2,*ptr; struct iguana_peer *addr;
+    struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t offset,bundlei,i,n; bits256 hash2,*ptr; struct iguana_peer *addr;
     struct iguana_block *block=0; struct iguana_blockRO *B; struct iguana_ramchain *dest=0,blockR;
     if ( coin->peers == 0 && coin->virtualchain == 0 )
         return(0);
@@ -458,6 +460,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         printf("DONE DATABAD fixing\n");
         //portable_mutex_unlock(&coin->RTmutex);
     }
-    return(flag);
 #endif
+    return(flag);
 }

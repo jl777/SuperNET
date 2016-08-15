@@ -440,6 +440,7 @@ void iguana_blockspurge(struct iguana_info *coin)
         coin->blocks.RO = 0;
     }
     coin->blocks.maxbits = */coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
+    printf("clear hwmchain\n");
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
 }
 
@@ -506,6 +507,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     //iguana_recvalloc(coin,initialheight);
     if ( coin->longestchain == 0 )
         coin->longestchain = 1;
+    printf("clear hwmchain\n");
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
     coin->blocks.hwmchain.RO.allocsize = coin->chain->zcash != 0 ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block);

@@ -233,7 +233,6 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
             bp->blocks[bundlei] = 0;
             //if ( block->mainchain != 0 )
             //    bp->hashes[bundlei] = block->RO.hash2;
-            
             return(-1);
         }
         /*if ( (block->hdrsi != bp->hdrsi || block->bundlei != bundlei) && (block->hdrsi != 0 || block->bundlei != 0) )
@@ -651,8 +650,8 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                      if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
                         struct iguana_blockreq *req = 0;
-                        //if ( bp == coin->current )
-                          //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
+                        if ( 0 && bp == coin->current )
+                            printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                         if ( priority > 2 || bp->numsaved > bp->n-10 )
                             iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
                         else
@@ -1373,13 +1372,15 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    if ( (bp= firstgap) != coin->current && bp != 0 )//&& coin->PREFETCHLAG < 0 )
+    if ( (bp= firstgap) != 0 )//&& coin->PREFETCHLAG < 0 )
     {
-        printf("new 1st.%d\n",bp->hdrsi);
+        if ( bp != coin->current )
+            printf("new 1st.%d\n",bp->hdrsi);
+        //else printf("issue 1st.%d\n",bp->hdrsi);
         for (i=0; i<bp->n; i++)
             if ( GETBIT(bp->haveblock,i) == 0 )
                 bp->issued[i] = 0;
-        iguana_bundleissuemissing(coin,bp,3,1.);
+        iguana_bundleissuemissing(coin,bp,1 + (rand() % 3),1.);
     }
     if ( (coin->current= firstgap) == 0 )
     {
