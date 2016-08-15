@@ -708,10 +708,10 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
             }
         }
     }
-    if ( (coin->RTheight= (coin->balanceswritten-1) * coin->chain->bundlesize) > coin->longestchain )
-        coin->longestchain = coin->RTheight;
+    //if ( (coin->RTheight= (coin->balanceswritten-1) * coin->chain->bundlesize) > coin->longestchain )
+    //    coin->longestchain = coin->RTheight;
     iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
-    if ( (bp= coin->bundles[coin->balanceswritten-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
+    if ( (bp= coin->bundles[coin->bundlescount-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
     {
         //char str[65];
         //printf("set hwmchain.%d <- %s %p\n",bp->bundleheight+bp->n-1,bits256_str(str,bp->hashes[bp->n-1]),block);
@@ -721,7 +721,7 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     //printf("end volatilesinit\n");
     if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )
         iguana_fastfindcreate(coin);
-    return(coin->balanceswritten);
+    return(coin->bundlescount);
 }
 
 void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
