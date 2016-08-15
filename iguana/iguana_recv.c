@@ -109,7 +109,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.%s bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
