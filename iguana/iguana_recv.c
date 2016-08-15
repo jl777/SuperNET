@@ -1423,7 +1423,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         if ( bp == coin->current )
                         {
-                            printf("issue HWM HDRS %d\n",coin->blocks.hwmchain.height);
+                            printf("%s issue HWM HDRS %d\n",coin->symbol,coin->blocks.hwmchain.height);
                             init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         }
@@ -1662,9 +1662,12 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     {
         fprintf(stderr,"%s call balanceflush\n",coin->symbol);
         //portable_mutex_lock(&coin->RTmutex);
+        coin->disableUTXO = 1;
+        iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
         if ( iguana_balanceflush(myinfo,coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
         //portable_mutex_unlock(&coin->RTmutex);
+        coin->disableUTXO = 0;
         fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);

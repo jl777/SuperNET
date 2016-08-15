@@ -72,8 +72,8 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
     memset(vin,0,sizeof(*vin));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0 )
     {
-        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-        if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= coin->RTramchain.H.data) != 0))) && i < tx->numvins )
+        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= ramchain->H.data) != 0))) && i < tx->numvins )
         //if ( (rdata= ramchain->H.data) != 0 && i < rdata->numspends )
         {
             S = RAMCHAIN_PTR(rdata,Soffset);
@@ -125,8 +125,8 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
     memset(vout,0,sizeof(*vout));
     if ( height >= 0 && height < coin->chain->bundlesize*coin->bundlescount && (bp= coin->bundles[height / coin->chain->bundlesize]) != 0  )
     {
-        ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-        if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= coin->RTramchain.H.data) != 0))) && i < tx->numvouts )
+        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        if ( ((rdata= ramchain->H.data) != 0 || ((bp == coin->current && (rdata= ramchain->H.data) != 0))) && i < tx->numvouts )
         {
             U = RAMCHAIN_PTR(rdata,Uoffset);
             P = RAMCHAIN_PTR(rdata,Poffset);
@@ -239,8 +239,12 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
-        if ( (rdata= bp->ramchain.H.data) == 0 && bp == coin->current )
-            rdata = coin->RTramchain.H.data;
+        if ( (rdata= bp->ramchain.H.data) == 0 )//&& bp == coin->current )
+        {
+            printf("no ramchain data [%d]\n",bp->hdrsi);
+            //rdata = coin->RTramchain.H.data;
+            return(-1);
+        }
         if ( (block= bp->blocks[bundlei]) != 0 && rdata != 0 )
         {
             iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);

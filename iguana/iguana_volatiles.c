@@ -55,6 +55,11 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         }
         return(0);
     }
+    if ( coin->disableUTXO != 0 )
+    {
+        printf("skip utxoupdate when disabled\n");
+        return(0);
+    }
     uval = ((uint64_t)spent_hdrsi << 32) | spent_unspentind;
     pval = ((uint64_t)spent_hdrsi << 32) | spent_pkind;
     if ( (hhutxo= iguana_hhutxofind(coin,uval)) != 0 && hhutxo->u.spentflag != 0 )
@@ -93,9 +98,14 @@ struct iguana_utxo iguana_utxofind(struct iguana_info *coin,int16_t spent_hdrsi,
     uint64_t val,uval; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int32_t flag;
     *RTspendflagp = 0;
     memset(&utxo,0,sizeof(utxo));
+    if ( coin->disableUTXO != 0 )
+    {
+        printf("skip utxofind when disabled\n");
+        return(utxo);
+    }
     if ( (bp= coin->bundles[spent_hdrsi]) == 0 )
         return(utxo);
-    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 )
         return(utxo);
     flag = (coin->RTheight > 0);
@@ -157,6 +167,11 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
     uint32_t numunspents; int32_t RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
     struct iguana_ramchaindata *rdata;
     *spentheightp = -1;
+    if ( coin->disableUTXO != 0 )
+    {
+        printf("skip spentflag when disabled\n");
+        return(0);
+    }
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     numunspents = rdata->numunspents;
@@ -185,6 +200,11 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
 int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struct iguana_ramchain *spentchain,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight)
 {
     struct iguana_account *A2; struct iguana_unspent *spentU; struct iguana_pkhash *spentP; struct iguana_ramchaindata *rdata; struct iguana_utxo *utxo;
+    if ( coin->disableUTXO != 0 )
+    {
+        printf("skip volatileupdate when disabled\n");
+        return(0);
+    }
     if ( (rdata= spentchain->H.data) != 0 )
     {
         portable_mutex_lock(&coin->RTmutex);

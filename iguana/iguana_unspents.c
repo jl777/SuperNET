@@ -26,10 +26,11 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
     struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp=0; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
     *voutp = *spentheightp = -1;
     memset(txidp,0,sizeof(*txidp));
-    if ( hdrsi == coin->bundlescount-1 )
-        rdata = coin->RTramchain.H.data;
-    else if ( (bp= coin->bundles[hdrsi]) != 0 )
-        rdata = bp->ramchain.H.data;
+    //if ( hdrsi == coin->bundlescount-1 )
+    //    rdata = coin->RTramchain.H.data;
+    //else if ( (bp= coin->bundles[hdrsi]) != 0 )
+    bp = coin->bundles[hdrsi];
+    rdata = bp->ramchain.H.data;
     while ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -116,7 +117,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
         {
             RTspend = 0;
             flag++;
-            if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,bp == coin->current ? &coin->RTramchain : &bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //
+            if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,&bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
             {
                 if ( valuep != 0 )
                     *valuep = U[unspentind].value;
@@ -809,7 +810,7 @@ int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguan
     struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[hdrsi]) == 0 )
         return(-1);
-    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) != 0 )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -834,7 +835,7 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
         return(-1);
     hdrsi = (int16_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
-    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     if ( (spentflag= iguana_spentflag(myinfo,coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,0,minconf,maxconf,0)) > 0 )
