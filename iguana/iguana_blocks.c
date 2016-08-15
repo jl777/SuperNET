@@ -541,6 +541,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         return(0);
     if ( (block= iguana_blockfind("chainlink",coin,newblock->RO.hash2)) != 0 )
     {
+        if ( block->RO.timestamp == 0 )
+            block->mainchain = block->valid = 0;
         iguana_blocksizecheck("chainlink",coin->chain->zcash,block);
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
             block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval), height = 0;
