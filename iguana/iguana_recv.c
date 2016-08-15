@@ -1408,7 +1408,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
         {
             for (i=0; i<coin->bundlescount; i++)
             {
-                if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->longestchain/coin->chain->bundlesize || i == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->speculative == 0)) )
+                if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->longestchain/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
                         lag = 7;
