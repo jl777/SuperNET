@@ -1421,6 +1421,12 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                             coin->numpendings++;
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                        if ( bp == coin->current )
+                        {
+                            printf("issue HWM HDRS %d\n",coin->blocks.hwmchain.height);
+                            init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
+                            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                        }
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
                         if ( 1 )
                         {

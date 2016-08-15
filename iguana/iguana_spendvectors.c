@@ -607,7 +607,7 @@ void iguana_truncatebalances(struct iguana_info *coin)
     coin->balanceswritten = 0;
 }
 
-int32_t iguana_volatilesinit(struct iguana_info *coin)
+int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     bits256 balancehash,allbundles; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
     struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
@@ -721,10 +721,19 @@ int32_t iguana_volatilesinit(struct iguana_info *coin)
     //printf("end volatilesinit\n");
     if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )
         iguana_fastfindcreate(coin);
+    /*for (j=0; j<coin->bundlescount; j++)
+        if ( (bp= coin->bundles[j]) != 0 )
+        {
+            iguana_volatilesalloc(coin,&bp->ramchain,1);
+            iguana_volatilesmap(coin,&bp->ramchain);
+        }
+    iguana_update_balances(coin);*/
+    iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
+    //iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);*/
     return(coin->bundlescount);
 }
 
-void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
+void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits256 lastbundle)
 {
     int32_t i,hdrsi,bundlei,height; struct iguana_bundle *bp; bits256 hash2; struct iguana_block *block; char hashstr[65];
     if ( bits256_nonz(lastbundle) > 0 )
@@ -762,7 +771,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
     }
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
     if ( coin->balanceswritten > 1 )
-        coin->balanceswritten = iguana_volatilesinit(coin);
+        coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     if ( coin->balanceswritten > 1 )
     {
         //for (i=0; i<coin->balanceswritten; i++)
@@ -786,7 +795,7 @@ void iguana_initfinal(struct iguana_info *coin,bits256 lastbundle)
         printf("iguana_bundlesQ %d to %d\n",coin->balanceswritten,coin->bundlescount);
     }
     if ( (coin->origbalanceswritten= coin->balanceswritten) > 0 )
-        iguana_volatilesinit(coin);
+        iguana_volatilesinit(myinfo,coin);
     iguana_savehdrs(coin);
     iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
     iguana_walkchain(coin,0);
@@ -946,7 +955,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
         }
         exit(-1);
     }
-    coin->balanceswritten = iguana_volatilesinit(coin);
+    coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     //printf("flush free\n");
     iguana_RTramchainfree(coin,bp);
     return(coin->balanceswritten);

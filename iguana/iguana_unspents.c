@@ -353,6 +353,8 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
+            //iguana_volatilesalloc(coin,&bp->ramchain,1);
+            //iguana_volatilesmap(coin,&bp->ramchain);
             ramchain = 0;
             if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&p,rmd160,i,i) != 0 )
             {
@@ -379,6 +381,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
             }
         }
     }
+    //iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
     return(num);
 }
 

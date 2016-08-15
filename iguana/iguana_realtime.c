@@ -426,7 +426,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
         if ( coin->RTdatabad < 0 )
         {
             memset(lastbundle.bytes,0,sizeof(lastbundle));
-            iguana_initfinal(coin,lastbundle);
+            iguana_initfinal(myinfo,coin,lastbundle);
         }
         coin->RTdatabad = 0;
         //memset(bp->hashes,0,sizeof(bp->hashes));
