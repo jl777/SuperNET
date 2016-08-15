@@ -1173,7 +1173,10 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
         printf("nogen %s HIST BALANCE %.8f errs %d\n",fname2,dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
+        {
+            coin->RTheight = height;
             return(coin->histbalance);
+        }
     }
     printf("utxoaddr_gen.%d\n",maxheight);
     iguana_utxoaddr_purge(coin);
@@ -1291,6 +1294,7 @@ continue;
         }
     }
     coin->histbalance = balance;
+    coin->RTheight = height;
     free(counts);
     return(balance);
 }
