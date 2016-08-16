@@ -86,7 +86,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
         hhacct->pval = pval;
         HASH_ADD_KEYPTR(hh,coin->accountstable,&hhacct->pval,sizeof(hhacct->pval),hhacct);
     }
-    printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
+    //printf("create hhutxo.%p hhacct.%p from.%d\n",hhutxo,hhacct,fromheight);
     hhutxo->u.spentflag = 1;
     hhutxo->u.lockedflag = 0;
     hhutxo->u.fromheight = fromheight;
@@ -180,7 +180,7 @@ int32_t iguana_spentflag(struct supernet_info *myinfo,struct iguana_info *coin,i
     *spentheightp = -1;
     if ( coin->disableUTXO != 0 )
     {
-        printf("skip spentflag when disabled\n");
+        //printf("skip spentflag when disabled\n");
         return(0);
     }
     if ( (rdata= ramchain->H.data) == 0 )
