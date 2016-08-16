@@ -243,6 +243,11 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65];
     struct iguana_spend *S,*s; //void *fastfind = 0;
     //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p txbits.%p\n",bp->hdrsi,bp->bundleheight,rdata,ramchain->txbits);
+    if ( ramchain->H.data == 0 )
+    {
+        printf("AUTO volatilesalloc [%d]\n",bp->hdrsi);
+        iguana_volatilesalloc(coin,ramchain,0);
+    }
     if ( (rdata= ramchain->H.data) == 0 || (n= rdata->numspends) < 1 )
     {
         printf("iguana_spendvectors.[%d]: no rdata.%p %d\n",bp->hdrsi,rdata,n);
@@ -251,9 +256,6 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     B = RAMCHAIN_PTR(rdata,Boffset);
     S = RAMCHAIN_PTR(rdata,Soffset);
     T = RAMCHAIN_PTR(rdata,Toffset);
-    //B = (void *)(long)((long)rdata + rdata->Boffset);
-    //S = (void *)(long)((long)rdata + rdata->Soffset);
-    //T = (void *)(long)((long)rdata + rdata->Toffset);
     if ( ramchain->Xspendinds != 0 )
     {
         bp->tmpspends = ramchain->Xspendinds;

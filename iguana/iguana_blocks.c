@@ -532,7 +532,7 @@ void iguana_setchain(void *chainparms)
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
-    bits256 *hash2p=0; double prevPoW = 0.; 
+    bits256 *hash2p=0; double prevPoW = 0.;
     if ( newblock == 0 )
         return(0);
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
@@ -552,9 +552,11 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         {
             if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
                 prev->mainchain = 1;
-            if ( prev->valid == 0 && iguana_blockvalidate(coin,&valid,prev,0) < 0  )
+            if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(coin,&valid,prev,0) < 0)  )
             {
-                char str[65]; printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
+                char str[65];
+                if ( 0 && bits256_nonz(prev->RO.hash2) != 0 )
+                    printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
                 return(0);
             } else prev->valid = 1;
             if ( prev->valid != 0 && prev->mainchain != 0 && prev->height >= 0 )
@@ -574,11 +576,13 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         else
         {
             char str[65];
-            //if ( 0 && bits256_nonz(block->RO.prev_block) != 0 )
+            if ( bits256_nonz(block->RO.prev_block) != 0 )
+            {
                 printf("chainlink error: cant find prev.(%s)\n",bits256_str(str,block->RO.prev_block));
-            iguana_blockunmark(coin,block,0,-1,0);
-            //memset(&block->RO.prev_block.bytes,0,sizeof(block->RO.prev_block));
-            //getchar();
+                iguana_blockunmark(coin,block,0,-1,0);
+                //memset(&block->RO.prev_block.bytes,0,sizeof(block->RO.prev_block));
+                //getchar();
+            }
             return(0);
         }
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
