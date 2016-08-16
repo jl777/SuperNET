@@ -43,7 +43,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
                 hhutxo->u.spentflag = 0;
                 hhutxo->u.fromheight = 0;
                 hhutxo->u.prevunspentind = 0;
-                free(hhutxo);
+                //free(hhutxo);
             }
         }
         if ( coin->accountstable != 0 )
@@ -52,7 +52,7 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
             {
                 hhacct->a.lastunspentind = 0;
                 hhacct->a.total = 0;
-                free(hhacct);
+                //free(hhacct);
             }
         }
         return(0);

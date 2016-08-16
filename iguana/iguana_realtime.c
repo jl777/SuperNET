@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-//#define ENABLE_RAMCHAIN
+#define ENABLE_RAMCHAIN
 
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
