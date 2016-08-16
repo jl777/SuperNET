@@ -500,7 +500,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     {
         txdata->zblock.serialized = calloc(1,recvlen);
         memcpy(txdata->zblock.serialized,data,recvlen);
-        txdata->zblock.RO.recvlen = recvlen;
+        txdata->zblock.datalen = recvlen;
     }
     portable_mutex_unlock(&coin->RTmutex);
     req->zblock = txdata->zblock;
@@ -1094,6 +1094,15 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
+        portable_mutex_lock(&coin->RTmutex);
+        if ( block->serialized != 0 && origblock->serialized != 0 )
+        {
+            free(block->serialized);
+            block->serialized = origblock->serialized;
+            origblock->serialized = 0;
+            block->datalen = origblock->datalen;
+        }
+        portable_mutex_unlock(&coin->RTmutex);
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;

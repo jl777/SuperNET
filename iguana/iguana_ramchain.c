@@ -2766,7 +2766,7 @@ void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next h
 
 int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDATA,struct OS_memspace *HASHMEM,int64_t polarity,struct iguana_block *block,struct iguana_msgtx *txarray,int32_t txn_count)
 {
-    RAMCHAIN_DECLARE; struct vin_info V; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024],str[65],coinaddr[64]; uint8_t *script; struct iguana_ramchaindata *rdata; int32_t hdrsi,bundlei,i,j,k,type,scriptlen,firsti = 1;
+    RAMCHAIN_DECLARE; struct vin_info V; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024],coinaddr[64]; uint8_t *script; struct iguana_ramchaindata *rdata; int32_t hdrsi,bundlei,i,j,k,type,scriptlen,firsti = 1;
     if ( block->RO.txn_count != txn_count )
     {
         printf("txn_count mismatch ht.%d %d != %d\n",block->height,block->RO.txn_count,txn_count);
@@ -2791,7 +2791,6 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
         for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
             tx = &txarray[i];
-            printf("txid.(%s) vouts.%d vins.%d\n",bits256_str(str,tx->txid),tx->tx_out,tx->tx_in);
             iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
             for (j=0; j<tx->tx_out; j++)
             {

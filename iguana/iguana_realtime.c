@@ -494,8 +494,8 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 
 void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
-    //char str[65];
-    //printf("txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+    char str[65];
+    printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
 }
                    
 void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
@@ -516,6 +516,9 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_
 void iguana_RTiterate(struct iguana_info *coin,struct iguana_block *block,int64_t polarity)
 {
     struct iguana_txblock txdata; int32_t n,len;
+    if ( block->serialized == 0 )
+        printf("load from tmpdir ht.%d polarity.%lld\n",block->height,(long long)polarity);
+    portable_mutex_lock(&coin->RTmutex);
     if ( block->serialized != 0 )
     {
         memset(&txdata,0,sizeof(txdata));
@@ -526,11 +529,12 @@ void iguana_RTiterate(struct iguana_info *coin,struct iguana_block *block,int64_
         if ( coin->RThashmem.ptr == 0 )
             iguana_meminit(&coin->RThashmem,"RThashmem",0,IGUANA_MAXPACKETSIZE * 2,0);
         iguana_memreset(&coin->RTrawmem), iguana_memreset(&coin->RTmem), iguana_memreset(&coin->RThashmem);
-        if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,block->serialized,block->RO.recvlen)) > 0 )
+        if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,block->serialized,block->datalen)) > 0 )
         {
             iguana_RTramchaindata(coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,block->RO.txn_count);
-        } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,block->RO.txn_count,block->RO.recvlen);
-    } else printf("so serialized for ht.%d %p\n",block->height,block);
+        } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,block->RO.txn_count,block->datalen);
+    } else printf("no serialized for ht.%d %p\n",block->height,block);
+    portable_mutex_unlock(&coin->RTmutex);
 
    /* struct iguana_utxoaddr *utxoaddr; struct iguana_pkhash *P; struct iguana_txid *T,*t; struct iguana_unspent20 *u,*U; struct iguana_spend256 *S,*s; int32_t i,prevout,hdrsi,bundlei,spent_hdrsi; int64_t spent_value; uint32_t spendind,pkind,unspentind,txidind,spent_txidind,spent_pkind; uint8_t rmd160[20]; char fname[1024],str[65]; long filesize; int32_t err; void *ptr=0; struct iguana_ramchain R; struct iguana_ramchaindata *rdata; bits256 prevhash2;
     memset(&R,0,sizeof(R));
