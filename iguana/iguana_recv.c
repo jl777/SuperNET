@@ -495,6 +495,14 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }*/
         } //else printf("cant save block\n");
     }
+    portable_mutex_lock(&coin->RTmutex);
+    if ( txdata->zblock.serialized == 0 )
+    {
+        txdata->zblock.serialized = calloc(1,recvlen);
+        memcpy(txdata->zblock.serialized,data,recvlen);
+        txdata->zblock.RO.recvlen = recvlen;
+    }
+    portable_mutex_unlock(&coin->RTmutex);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
@@ -787,12 +795,12 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( coin->RTheight > 0 && num > 3 && num < bp->n )
+    if ( coin->RTheight > 0 && num > 30 && num < bp->n )
     {
         if ( coin->longestchain > bp->bundleheight+num+10*coin->chain->minconfirms )
         {
             printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
-            if ( coin->longestchain_strange++ > 10 )
+            if ( coin->longestchain_strange++ > 100 )
             {
                 coin->badlongestchain = coin->longestchain;
                 coin->longestchain = bp->bundleheight+num;

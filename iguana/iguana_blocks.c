@@ -79,6 +79,8 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
         block->RO.timestamp = origblock->RO.timestamp;
     if ( block->RO.bits == 0 )
         block->RO.bits = origblock->RO.bits;
+    if ( block->serialized == 0 )
+        block->serialized = origblock->serialized;
     if ( block->RO.txn_count == 0 )
         block->RO.txn_count = origblock->RO.txn_count;
     if ( block->RO.version == 0 )
@@ -674,6 +676,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     process_iguanablock(block->serdata,CHAINPARMS);
                 }*/
                 iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
+                iguana_RTnewblock(coin,block);
                 return(block);
             }
         }

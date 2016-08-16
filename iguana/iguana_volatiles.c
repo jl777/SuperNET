@@ -94,13 +94,13 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
     hhutxo->u.prevunspentind = hhacct->a.lastunspentind;
     hhacct->a.lastunspentind = spent_unspentind;
     hhacct->a.total += spent_value;
-    struct iguana_utxoaddr *utxoaddr;
+    /*struct iguana_utxoaddr *utxoaddr;
     if ( (utxoaddr= iguana_utxoaddrfind(1,coin,spent_hdrsi,spent_pkind,rmd160,&coin->RTprev)) != 0 )
     {
         utxoaddr->RTdebits += spent_value;
         coin->RTdebits += spent_value;
         //printf("from.%d [%d] u%u -= %.8f\n",fromheight,spent_hdrsi,spent_pkind,dstr(spent_value));
-    }
+    }*/
     return(0);
 }
 
@@ -218,7 +218,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
     }
     if ( (rdata= spentchain->H.data) != 0 )
     {
-        portable_mutex_lock(&coin->RTmutex);
+        //portable_mutex_lock(&coin->RTmutex);
         if ( incremental == 0 )
         {
             if ( spentchain->Uextras == 0 || spentchain->A2 == 0 )
@@ -236,7 +236,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                     utxo->fromheight = fromheight;
                     A2[spent_pkind].total += spent_value;
                     A2[spent_pkind].lastunspentind = spent_unspentind;
-                    portable_mutex_unlock(&coin->RTmutex);
+                    //portable_mutex_unlock(&coin->RTmutex);
                     return(0);
                 }
                 else
@@ -245,7 +245,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                         printf("from.%d spent_unspentind[%d] in hdrs.[%d] is spent fromht.%d %.8f\n",fromheight,spent_unspentind,spent_hdrsi,utxo->fromheight,dstr(spent_value));
                     else
                     {
-                        portable_mutex_unlock(&coin->RTmutex);
+                        //portable_mutex_unlock(&coin->RTmutex);
                         return(0);
                     }
                 }
@@ -261,11 +261,11 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 /*totalmillis += (OS_milliseconds() - startmillis);
                  if ( (++utxon % 100000) == 0 )
                  printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);*/
-                portable_mutex_unlock(&coin->RTmutex);
+                //portable_mutex_unlock(&coin->RTmutex);
                 return(0);
             }
         }
-        portable_mutex_unlock(&coin->RTmutex);
+        //portable_mutex_unlock(&coin->RTmutex);
         printf("end iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
         /*if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
             coin->RTdatabad = 1;

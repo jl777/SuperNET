@@ -185,7 +185,7 @@ struct iguana_zblockRO
 #define iguana_blockfields      double PoW; \
 int32_t height,fpos; uint32_t fpipbits,issued,lag:19,protected:1,peerid:12; \
 uint16_t hdrsi:15,mainchain:1,bundlei:11,valid:1,queued:1,txvalid:1,newtx:1,processed:1; \
-UT_hash_handle hh; struct iguana_bundlereq *req; \
+UT_hash_handle hh; struct iguana_bundlereq *req; uint8_t *serialized; \
 struct iguana_blockRO RO
 
 struct iguana_block
@@ -406,12 +406,12 @@ struct iguana_info
     portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
-    struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem;
+    struct OS_memspace RTrawmem,RTmem,RThashmem; // struct iguana_ramchain RTramchain; 
     bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
-    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
+    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
@@ -423,8 +423,12 @@ struct iguana_info
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
-    struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind; int64_t histbalance,RTcredits,RTdebits;
-    void *utxoaddrfileptr; long utxoaddrfilesize; uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    
+    struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind;
+    int64_t histbalance,RTcredits,RTdebits;
+    void *utxoaddrfileptr; long utxoaddrfilesize;
+    uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    struct iguana_block *RTblocks[65536];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
