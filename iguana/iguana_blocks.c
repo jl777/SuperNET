@@ -531,7 +531,7 @@ void iguana_setchain(void *chainparms)
 
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
-    int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0,*next;
+    int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
     bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
     if ( newblock == 0 )
         return(0);
@@ -542,7 +542,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     if ( (block= iguana_blockfind("chainlink",coin,newblock->RO.hash2)) != 0 )
     {
         if ( block->RO.timestamp == 0 )
-            block->mainchain = block->valid = 0;
+            block->mainchain = block->valid = block->txvalid = 0;
         iguana_blocksizecheck("chainlink",coin->chain->zcash,block);
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
             block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval), height = 0;
@@ -554,13 +554,13 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             {
                 prevPoW = prev->PoW;
                 block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval) + prevPoW;
-                if ( (next= prev->hh.next) != 0 )
+                /*if ( (next= prev->hh.next) != 0 )
                 {
                     if ( next->mainchain != 0 && block->PoW < next->PoW )
                         return(0);
                     //printf("block->PoW %f next %f\n",block->PoW,next->PoW);
                     hwmchain = next;
-                }
+                }*/
                 height = prev->height + 1;
             }
             else
@@ -593,7 +593,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 //    iguana_blockunmain(coin,prev->hh.next);
                 prev->hh.next = block;
             }
-            if ( coin->isRT != 0 || block->height == hwmchain->height )
+            if ( coin->isRT != 0 || block->height >= hwmchain->height )
             {
                 coin->blocks.maxblocks = (block->height + 1);
                 //printf("[%s] <- ht.%d %f\n",bits256_str(str,block->RO.hash2),coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW);

@@ -1676,12 +1676,12 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
     flag += iguana_processrecvQ(coin,&newhwm);
+    flag += iguana_reqblocks(coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
             flag += iguana_reqhdrs(coin);
-            flag += iguana_reqblocks(coin);
             iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }
