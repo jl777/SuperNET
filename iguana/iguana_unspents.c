@@ -1151,7 +1151,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
                 iguana_rwutxoaddr(0,ind,item,&UA);
                 errs += iguana_utxoaddr_check(myinfo,coin,lastheight,unspents,max,&UA);
                 total++;
-                if ( (total % 10000) == 0 )
+                if ( (total % 1000) == 0 )
                     fprintf(stderr,".");
             }
         }
@@ -1284,6 +1284,7 @@ continue;
         iguana_utxoaddr_purge(coin);
         if ( iguana_utxoaddr_map(coin,fname) != 0 )
         {
+            printf("validating %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
             printf("gen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
             if ( errs != 0 )

@@ -288,7 +288,7 @@ int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *
     {
         if ( block->RO.allocsize == 0 || block->RO.allocsize < bsize )
         {
-            printf("%s block validate warning: mismatched size %d vs %d\n",debugstr,block->RO.allocsize,bsize);
+            //printf("%s block validate warning: mismatched size %d vs %d\n",debugstr,block->RO.allocsize,bsize);
             block->RO.allocsize = bsize;
         } else return(-1);
         return(bsize);
