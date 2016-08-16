@@ -543,7 +543,11 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             block->mainchain = block->valid = block->txvalid = 0;
         iguana_blocksizecheck("chainlink",coin->chain->zcash,block);
         if ( memcmp(coin->chain->genesis_hashdata,block->RO.hash2.bytes,sizeof(bits256)) == 0 )
+        {
             block->PoW = PoW_from_compact(block->RO.bits,coin->chain->unitval), height = 0;
+            if ( isnan(block->PoW) != 0 )
+                block->PoW = 0.;
+        }
         else if ( (prev= iguana_blockfind("chainprev",coin,block->RO.prev_block)) != 0 )
         {
             if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
@@ -577,7 +581,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
             //getchar();
             return(0);
         }
-        char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
+        //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
         if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
             return(0);
         block->height = height;
