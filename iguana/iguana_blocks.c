@@ -532,7 +532,7 @@ void iguana_setchain(void *chainparms)
 struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
-    bits256 *hash2p=0; double prevPoW = 0.; struct iguana_bundle *bp;
+    bits256 *hash2p=0; double prevPoW = 0.; 
     if ( newblock == 0 )
         return(0);
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
