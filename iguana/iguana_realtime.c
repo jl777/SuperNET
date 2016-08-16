@@ -533,7 +533,8 @@ void iguana_RTiterate(struct iguana_info *coin,struct iguana_block *block,int64_
         {
             iguana_RTramchaindata(coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,block->RO.txn_count);
         } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,block->RO.txn_count,block->datalen);
-    } else printf("no serialized for ht.%d %p\n",block->height,block);
+    }
+    else printf("no serialized for ht.%d %p\n",block->height,block);
     portable_mutex_unlock(&coin->RTmutex);
 
    /* struct iguana_utxoaddr *utxoaddr; struct iguana_pkhash *P; struct iguana_txid *T,*t; struct iguana_unspent20 *u,*U; struct iguana_spend256 *S,*s; int32_t i,prevout,hdrsi,bundlei,spent_hdrsi; int64_t spent_value; uint32_t spendind,pkind,unspentind,txidind,spent_txidind,spent_pkind; uint8_t rmd160[20]; char fname[1024],str[65]; long filesize; int32_t err; void *ptr=0; struct iguana_ramchain R; struct iguana_ramchaindata *rdata; bits256 prevhash2;

@@ -87,7 +87,7 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
     }
     if ( block->RO.txn_count == 0 )
         block->RO.txn_count = origblock->RO.txn_count;
-    portable_mutex_lock(&coin->RTmutex);
+    portable_mutex_unlock(&coin->RTmutex);
     if ( block->RO.version == 0 )
         block->RO.version = origblock->RO.version;
     if ( block->mainchain == 0 )
