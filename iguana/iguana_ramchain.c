@@ -2492,7 +2492,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
         {
             iguana_bundlemapfree(coin,0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
             iguana_blockunmark(coin,bp->blocks[bundlei],bp,bundlei,1);
-            printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
+            printf("saveHT error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
             return(-1);
         }
         //printf("done mapchain.[%d:%d]\n",bp->hdrsi,bundlei);
@@ -2519,7 +2519,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
     {
         iguana_bundlemapfree(coin,0,0,ipbits,ptrs,filesizes,num,R,starti,endi);
         iguana_blockunmark(coin,bp->blocks[bundlei],bp,bundlei,1);
-        printf("error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
+        printf("B error mapping hdrsi.%d bundlei.%d\n",bp->hdrsi,bundlei);
         return(-1);
     }
     dest = &bp->ramchain;
