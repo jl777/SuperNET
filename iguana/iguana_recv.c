@@ -1097,7 +1097,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
         portable_mutex_lock(&coin->RTmutex);
         if ( block->serialized != 0 && origblock->serialized != 0 )
         {
-            free(block->serialized);
+            //free(block->serialized);
             block->serialized = origblock->serialized;
             origblock->serialized = 0;
             block->datalen = origblock->datalen;
