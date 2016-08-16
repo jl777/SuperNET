@@ -494,22 +494,22 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 
 void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
-    char str[65];
-    printf("txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+    //char str[65];
+    //printf("txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
 }
                    
 void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
-    char str[65],str2[65];
-    printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    //char str[65],str2[65];
+    //printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,bits256 txid,int32_t vout,int64_t value)
 {
-    int32_t i;
-    for (i=0; i<20; i++)
-        printf("%02x",rmd160[i]);
-    printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
+    //int32_t i;
+    //for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
 
 }
 
