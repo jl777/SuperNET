@@ -76,7 +76,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
     {
-        if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->mainchain != 0) )
+        if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0) )
         {
             //printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
             return(0);
@@ -1130,7 +1130,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                 if ( (tmpblock= bp->blocks[i]) != 0 && tmpblock->fpipbits != 0 && tmpblock->fpos >= 0 && ((bp->hdrsi == 0 && i == 0) || bits256_nonz(tmpblock->RO.prev_block) != 0) )
                     numsaved++;
         }
-        //fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d mainchain.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req->copyflag,block->mainchain);
+       // fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d mainchain.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req!=0?req->copyflag:-1,block->mainchain);
         if ( _iguana_chainlink(coin,block) == 0 )
         {
             next = block;
@@ -1676,7 +1676,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
     flag += iguana_processrecvQ(coin,&newhwm);
-   //if ( coin->spendvectorsaved > 1 )
+    //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
