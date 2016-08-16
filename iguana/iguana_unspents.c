@@ -1173,7 +1173,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     if ( iguana_utxoaddr_map(coin,fname2) != 0 )
     {
         if ( strcmp("BTCD",coin->symbol) == 0 )
-            errs = 0;//iguana_utxoaddr_validate(myinfo,coin,height);
+            errs = iguana_utxoaddr_validate(myinfo,coin,height);
         printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
         if ( coin->histbalance > 0 )
         {
