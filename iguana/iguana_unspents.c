@@ -1019,6 +1019,7 @@ void iguana_utxoaddr_purge(struct iguana_info *coin)
         }
         coin->utxoaddrs = 0;
     }
+    memset(coin->utxoaddrhash.bytes,0,sizeof(coin->utxoaddrhash));
 }
 
 int32_t iguana_utxoaddr_save(struct iguana_info *coin,char *fname,int64_t balance,uint32_t *counts,uint32_t *offsets,uint8_t *table)
@@ -1185,6 +1186,11 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     }
     printf("utxoaddr_gen.%d\n",maxheight);
     iguana_utxoaddr_purge(coin);
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+    {
+        checkbalance += utxoaddr->histbalance;
+    }
+    printf("balance after purge %.8f\n",dstr(checkbalance));
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight && (rdata= bp->ramchain.H.data) != 0 )
         {
@@ -1205,6 +1211,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
     sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
     fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
     counts = calloc(0x10000,sizeof(*counts));
+    checkbalance = 0;
     HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
     {
         if ( utxoaddr->histbalance > 0 )

@@ -219,9 +219,16 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
             else
             {
                 printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
+                if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
+                {
+                    if ( (block= iguana_blockfind("reset",coin,bp->hashes[0])) != 0 )
+                    {
+                        printf("RESET HWM to %d\n",coin->firstRTheight);
+                        iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
+                        return(-1);
+                    }
+                }
                 iguana_blockunmark(coin,block,bp,bundlei,1);
-                bp->blocks[bundlei] = 0;
-                memset(bp->hashes[bundlei].bytes,0,sizeof(bp->hashes[bundlei]));
                 return(-1);
             }
         }
