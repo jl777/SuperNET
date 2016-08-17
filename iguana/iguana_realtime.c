@@ -527,14 +527,14 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
         {
             memcpy(&checklen,ptr,sizeof(checklen));
             memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
-            if ( checklen == (int32_t)(filesize - sizeof(checklen)) && checknumtx == *numtxp )
+            if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) && checknumtx == *numtxp )
             {
                 for (i=nonz=0; i<checklen; i++)
                     if ( ptr[2*sizeof(checklen) + i] != 0 )
                         nonz++;
                 *recvlenp = (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx));
                 return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
-            } else printf("checklen.%d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen)));
+            } else printf("checklen.%d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)));
             *numtxp = checknumtx;
         }
     }
