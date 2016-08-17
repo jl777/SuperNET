@@ -495,14 +495,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }*/
         } //else printf("cant save block\n");
     }
-    portable_mutex_lock(&coin->RTmutex);
-    if ( txdata->zblock.serialized == 0 )
-    {
-        txdata->zblock.serialized = calloc(1,recvlen);
-        memcpy(txdata->zblock.serialized,data,recvlen);
-        txdata->zblock.datalen = recvlen;
-    }
-    portable_mutex_unlock(&coin->RTmutex);
+    iguana_RTrawdata(coin,block->RO.hash2,data,recvlen);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));

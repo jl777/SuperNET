@@ -492,6 +492,27 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
     }
 }
 
+void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp)
+{
+    FILE *fp; char fname[1024],str[65]; long filesize;
+    sprintf(fname,"%s/%s/%s.raw",GLOBAL_TMPDIR,coin->symbol,bits256_str(str,hash2));
+    OS_compatible_path(fname);
+    if ( *recvlenp > 0 )
+    {
+        if ( (fp= fopen(fname,"wb")) != 0 )
+        {
+            if ( fwrite(data,1,*recvlenp,fp) != recvlen )
+                printf("error writing %s len.%d\n",bits256_str(str,hash2),*recvlenp);
+            fclose(fp);
+        }
+    }
+    else
+    {
+        if ( (coin->utxoaddrfileptr= OS_mapfile(fname,&coin->utxoaddrfilesize,0)) != 0 && coin->utxoaddrfilesize > sizeof(bits256)+0x10000*sizeof(*coin->utxoaddroffsets) )
+
+    }
+}
+
 void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
     //char str[65];
