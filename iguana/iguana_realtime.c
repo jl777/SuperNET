@@ -516,26 +516,24 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                 printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
             fclose(fp);
-            //printf("created %s\n",fname);
+            printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
         } else printf("couldnt create %s\n",fname);
     }
     else if ( *recvlenp == 0 )
     {
-        if ( numtxp != 0 )
-            *numtxp = 0;
         if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
         {
             memcpy(&checklen,ptr,sizeof(checklen));
             memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
-            if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) && checknumtx == *numtxp )
+            *numtxp = checknumtx;
+            if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) )//&& checknumtx == *numtxp )
             {
                 for (i=nonz=0; i<checklen; i++)
                     if ( ptr[2*sizeof(checklen) + i] != 0 )
                         nonz++;
                 *recvlenp = (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx));
                 return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
-            } else printf("checklen.%d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)));
-            *numtxp = checknumtx;
+            } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
         }
     }
     else if ( *recvlenp == -1 )
@@ -564,7 +562,7 @@ void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_bloc
     struct iguana_txblock txdata; uint8_t *serialized; int32_t n,numtx,len; uint32_t recvlen = 0;
     if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
-        printf("cant load from tmpdir ht.%d polarity.%lld numtx.%d\n",block->height,(long long)polarity,coin->RTnumtx[offset]);
+        printf("cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         return;
     }
     memset(&txdata,0,sizeof(txdata));
@@ -598,9 +596,9 @@ void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
     if ( block != 0 )
     {
         offset = block->height - coin->firstRTheight;
-        printf("%s RTblockadd.%d offset.%d\n",coin->symbol,block->height,offset);
         if ( coin->RTrawdata[offset] == 0 )
             coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset]);
+        printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
         coin->RTblocks[offset] = block;
         iguana_RTiterate(coin,offset,block,1);
     }
