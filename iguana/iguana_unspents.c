@@ -1167,6 +1167,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
         }
     }
     free(unspents);
+    printf("validate errs.%d\n",errs);
     return(errs);
 }
 
