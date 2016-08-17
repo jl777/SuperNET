@@ -1213,6 +1213,19 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    if ( (block= iguana_blockfind("hwmcheck",coin,coin->blocks.hwmchain.RO.hash2)) == 0 || block->mainchain == 0 || block->height != coin->blocks.hwmchain.height )
+    {
+        printf("HWM mismatch ht.%d vs %d\n",block->height,coin->blocks.hwmchain.height);
+        if ( coin->blocks.hwmchain.height > 0 )
+        {
+            if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
+            {
+                printf("decrement HWM\n");
+                iguana_blockzcopy(coin->chain->zcash,(struct iguana_block *)&coin->blocks.hwmchain,block);
+                return(0);
+            }
+        }
+    }
     if ( time(NULL) < coin->lastreqtime+2 )
         return(0);
     coin->lastreqtime = (uint32_t)time(NULL);
@@ -1220,12 +1233,12 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     hdrsi = (coin->blocks.hwmchain.height + 1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
     {
-        for (bundlei=0; bundlei<coin->chain->bundlesize; bundlei++)
+        /*for (bundlei=0; bundlei<coin->chain->bundlesize; bundlei++)
             if ( (block= bp->blocks[bundlei]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
             {
                 char str[65]; printf("%s [%d] bundlei.%d ht.%d vs expected %d\n",bits256_str(str,bp->hashes[bundlei]),hdrsi,bundlei,block->height,bp->bundleheight+bundlei);
                 bp->blocks[bundlei] = iguana_blockfind("fixit",coin,bp->hashes[bundlei]);
-            }
+            }*/
         bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
         if ( (next= bp->blocks[bundlei]) != 0 || (next= iguana_blockfind("reqblocks",coin,bp->hashes[bundlei])) != 0 )
         {

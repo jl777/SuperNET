@@ -464,6 +464,31 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
+void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
+{
+    char str[65];
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+}
+
+void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
+{
+    char str[65],str2[65];
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+}
+
+void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,bits256 txid,int32_t vout,int64_t value)
+{
+    int32_t i;
+    if ( strcmp("BTC",coin->symbol) != 0 )
+    {
+        for (i=0; i<20; i++)
+            printf("%02x",rmd160[i]);
+        printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
+    }
+}
+
 void iguana_RTreset(struct iguana_info *coin)
 {
     iguana_utxoaddrs_purge(coin);
@@ -525,31 +550,6 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
             iguana_RTrawdata(coin,bp->hashes[bundlei],0,&recvlen);
     }
     printf("end RTpurge.%d\n",lastheight);
-}
-
-void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
-{
-    char str[65];
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
-}
-                   
-void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
-{
-    char str[65],str2[65];
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
-}
-
-void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,bits256 txid,int32_t vout,int64_t value)
-{
-    int32_t i;
-    if ( strcmp("BTC",coin->symbol) != 0 )
-    {
-        for (i=0; i<20; i++)
-            printf("%02x",rmd160[i]);
-        printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
-    }
 }
 
 void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
