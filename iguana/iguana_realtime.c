@@ -466,9 +466,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 
 void iguana_RTreset(struct iguana_info *coin)
 {
-    char dirname[512];
-    sprintf(dirname,"%s/%s/RT",GLOBAL_TMPDIR,coin->symbol);
-    OS_ensure_directory(dirname);
     iguana_utxoaddrs_purge(coin);
     iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
     printf("%s RTreset\n",coin->symbol);
@@ -491,7 +488,8 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                 printf("error writing %s len.%d\n",bits256_str(str,hash2),*recvlenp);
             fclose(fp);
-        }
+            printf("created %s\n",fname);
+        } else printf("couldnt create %s\n",fname);
     }
     else if ( *recvlenp == 0 )
     {
@@ -523,7 +521,7 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
         if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
             iguana_RTrawdata(coin,bp->hashes[bundlei],0,&recvlen);
     }
-    printf("end RTpurge\n");
+    printf("end RTpurge.%d\n",lastheight);
 }
 
 void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)

@@ -658,6 +658,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
         sprintf(dirname,"%s/%s",coin->VALIDATEDIR,symbol), OS_ensure_directory(dirname);
     }
     sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,symbol), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/%s/RT",GLOBAL_TMPDIR,coin->symbol), OS_ensure_directory(dirname);
     iguana_coinstart(coin,coin->initialheight,coin->mapflags);
     coin->chain->minconfirms = coin->minconfirms;
     coin->started = coin;
