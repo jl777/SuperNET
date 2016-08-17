@@ -31,6 +31,7 @@
 struct supernet_info;
 struct exchange_info;
 
+#include <arpa/inet.h>
 #include "../crypto777/OS_portable.h"
 #include "../datachain/datachain.h"
 
