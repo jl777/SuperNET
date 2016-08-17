@@ -501,7 +501,7 @@ void iguana_RTreset(struct iguana_info *coin)
 
 void iguana_RTunmap(uint8_t *ptr,uint32_t len)
 {
-    OS_releasemap(&ptr[-sizeof(len)],len+sizeof(len));
+    OS_releasemap(&ptr[-2*sizeof(len)],len+2*sizeof(len));
 }
 
 void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp)
