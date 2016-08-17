@@ -634,9 +634,9 @@ struct iguana_block *iguana_RTblock(struct iguana_info *coin,int32_t height)
 void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
 {
     int32_t offset;
-    offset = block->height - coin->firstRTheight;
     if ( block != 0 )
     {
+        offset = block->height - coin->firstRTheight;
         printf("%s RTblockadd.%d offset.%d\n",coin->symbol,block->height,offset);
         if ( coin->RTrawdata[offset] == 0 )
             coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset]);
@@ -648,9 +648,9 @@ void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
 void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
 {
     int32_t offset;
-    offset = block->height - coin->firstRTheight;
     if ( block != 0 )
     {
+        offset = block->height - coin->firstRTheight;
         printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
         iguana_RTiterate(coin,offset,block,-1);
         if ( coin->RTrawdata[offset] != 0 && coin->RTrecvlens[offset] != 0 )
