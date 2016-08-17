@@ -326,7 +326,7 @@ int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *c
                 } else printf("cant find block at ht.%d\n",height+i);
             }
         }
-        if ( flag != 0 )
+        if ( 0 && flag != 0 && strcmp("BTCD",coin->symbol) != 0 )
             retval = iguana_queue_send(addr,0,serialized,"headers",len);
         //printf("hdrs request retval.%d len.%d\n",retval,len);
     } //else printf("couldnt find header\n");

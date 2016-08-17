@@ -23,13 +23,14 @@
 
 int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *spentheightp,bits256 *txidp,int32_t *voutp,int16_t hdrsi,uint32_t unspentind)
 {
-    /*struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp=0; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
+    struct iguana_ramchaindata *rdata=0; struct iguana_bundle *bp=0; struct iguana_unspent *U,*u; struct iguana_txid *T,*t;
     *voutp = *spentheightp = -1;
     memset(txidp,0,sizeof(*txidp));
-    if ( hdrsi < coin->bundlescount-1 )
-        rdata = coin->RTramchain.H.data;
-    else if ( (bp= coin->bundles[hdrsi]) != 0 )
-        rdata = bp->ramchain.H.data;
+    //if ( hdrsi == coin->bundlescount-1 )
+    //    rdata = coin->RTramchain.H.data;
+    //else if ( (bp= coin->bundles[hdrsi]) != 0 )
+    bp = coin->bundles[hdrsi];
+    rdata = bp->ramchain.H.data;
     while ( rdata != 0 && unspentind > 0 && unspentind < rdata->numunspents )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -50,7 +51,7 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
             rdata = bp->ramchain.H.data;
         else break;
     }
-    return(-1);*/
+    return(-1);
     //{"txid":"e34686afc17ec37a8438f0c9a7e48f98d0c625c7917a59c2d7fa22b53d570115","vout":1,"address":"16jsjc1YvzDXqKf7PorMhTyK8ym3ra3uxm","scriptPubKey":"76a9143ef4734c1141725c095342095f6e0e7748b6c16588ac","amount":0.01000000,"timestamp":0,"height":419261,"confirmations":1729,"checkind":4497018,"account":"default","spendable":true,"spent":{"hdrsi":209,"pkind":2459804,"unspentind":4497018,"prevunspentind":0,"satoshis":"1000000","txidind":1726947,"vout":1,"type":2,"fileid":0,"scriptpos":0,"scriptlen":25},"spentheight":419713,"dest":{"spentfrom":"22651e62f248fe2e72053d650f177e4b246ee016605102a40419e603b2bbeac8","vin":0,"timestamp":0,"vouts":[{"1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu":0.00010000}, {"1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY":0.00980000}],"total":0.00990000,"ratio":1}}
     cJSON *retarray,*item,*uitem,*sitem; char *retstr; int32_t i,n,retval = -1;
     *voutp = *spentheightp = -1;
@@ -116,7 +117,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
         {
             RTspend = 0;
             flag++;
-            if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,bp == coin->current ? &coin->RTramchain : &bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //
+            if ( iguana_spentflag(myinfo,coin,&RTspend,&spentheight,&bp->ramchain,bp->hdrsi,unspentind,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
             {
                 if ( valuep != 0 )
                     *valuep = U[unspentind].value;
@@ -312,7 +313,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 printf("iguana_pkhashfind: unexpected access when RTramchain_busy\n");
                 return(0);
             }
-            ramchain = (bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
+            ramchain = &bp->ramchain;//(bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
             if ( (rdata= ramchain->H.data) != 0 )
             {
                 numpkinds = rdata->numpkinds;
@@ -353,6 +354,8 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
+            //iguana_volatilesalloc(coin,&bp->ramchain,1);
+            //iguana_volatilesmap(coin,&bp->ramchain);
             ramchain = 0;
             if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,&p,rmd160,i,i) != 0 )
             {
@@ -379,6 +382,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
             }
         }
     }
+    //iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
     return(num);
 }
 
@@ -397,8 +401,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
         if ( ramchain->height < (coin->bundlescount-1)*coin->chain->bundlesize )
         {
             //printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-1)*coin->chain->bundlesize,ramchain->Uextras,rdata);
-        }
-        else iguana_volatilesalloc(coin,ramchain,0);
+        } else iguana_volatilesalloc(coin,ramchain,0);
         return(0);
     }
     unspentind = lastunspentind;
@@ -420,7 +423,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
                     unspents[*nump << 1] = ((uint64_t)hdrsi << 32) | unspentind;
                     unspents[(*nump << 1) + 1] = U[unspentind].value;
                 }
-                //printf("%.8f ",dstr(U[unspentind].value));
+                //printf("+%.8f ",dstr(U[unspentind].value));
                 (*nump)++;
                 if ( array != 0 )
                     jaddi(array,iguana_unspentjson(myinfo,coin,hdrsi,unspentind,T,&U[unspentind],rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
@@ -432,7 +435,7 @@ int64_t iguana_pkhashbalance(struct supernet_info *myinfo,struct iguana_info *co
             }
             if ( p->pkind != U[unspentind].pkind )
                 printf("warning: [%d] p->pkind.%u vs U->pkind.%u for u%d\n",hdrsi,p->pkind,U[unspentind].pkind,unspentind);
-        }
+        } // else printf("skip uheight.%d lastheight.%d\n",uheight,lastheight);
         pkind = p->pkind;
         unspentind = U[unspentind].prevunspentind;
     }
@@ -477,20 +480,23 @@ int32_t iguana_pkhasharray(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
-        if ( lastheight > 0 && bp->bundleheight > lastheight )
+        if ( 0 )
         {
-            //printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
-            break;
-        }
-        if ( (coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)) > maxconf )
-        {
-            //printf("%d more than minconf.%d\n",(coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)),maxconf);
-            continue;
-        }
-        if ( (coin->blocks.hwmchain.height - bp->bundleheight) < minconf )
-        {
-            //printf("%d less than minconf.%d\n",(coin->blocks.hwmchain.height - bp->bundleheight),minconf);
-            break;
+            if ( lastheight > 0 && bp->bundleheight > lastheight )
+            {
+                //printf("lastheight.%d less than %d\n",lastheight,bp->bundleheight+bp->n);
+                break;
+            }
+            if ( (coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)) > maxconf )
+            {
+                //printf("%d more than minconf.%d\n",(coin->blocks.hwmchain.height - (bp->bundleheight + bp->n - 1)),maxconf);
+                continue;
+            }
+            if ( (coin->blocks.hwmchain.height - bp->bundleheight) < minconf )
+            {
+                //printf("%d less than minconf.%d\n",(coin->blocks.hwmchain.height - bp->bundleheight),minconf);
+                break;
+            }
         }
         if ( iguana_pkhashfind(coin,&ramchain,&deposits,&lastunspentind,P != 0 ? &P[n] : &_p,rmd160,i,i) != 0 )
         {
@@ -706,9 +712,47 @@ int32_t iguana_unspent_check(struct supernet_info *myinfo,struct iguana_info *co
     return(-1);
 }
 
+int32_t iguana_addr_unspents(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *sump,int64_t *unspents,int32_t max,char *coinaddr,char *remoteaddr,int32_t lastheight)
+{
+    int32_t n,k,numunspents,minconf = 0; int64_t total; uint8_t rmd160[20],pubkey[65],addrtype;
+    total = 0;
+    n = numunspents = 0;
+    bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+    iguana_pkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,lastheight,unspents,&n,max-1000,remoteaddr);
+    /*if ( n > 0 )
+    {
+        candidates = unspents;
+        for (j=0; j<n; j++)
+        {
+            hdrsi = (int32_t)(candidates[j << 1] >> 32);
+            unspentind = (int32_t)candidates[j << 1];
+            if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
+            {
+                //printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
+                //for (k=0; k<numunspents; k++)
+                //    if ( &unspents[k<<1] != &candidates[j<<1] && unspents[k << 1] == candidates[j << 1] )
+                //        break;
+                //if ( k == numunspents )
+                {
+                    //unspents[numunspents << 1] = candidates[j << 1];
+                    //unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
+                    printf("[%d u%d %.8f] ",hdrsi,unspentind,dstr(unspents[(numunspents << 1) + 1]));
+                    (*sump) += unspents[(numunspents << 1) + 1];
+                    unspents += 2;
+                    numunspents++;
+                } else printf("found duplicate unspent j.%d numunspents.%d\n",j,numunspents);
+            } else printf("found spent unspent j.%d numunspents.%d\n",j,numunspents);
+        }
+    }*/
+    numunspents = n;
+    for (k=0; k<n; k++)
+        (*sump) += unspents[(k << 1) + 1];
+    return(numunspents);
+}
+
 int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    int64_t *candidates,total,sum = 0; uint32_t unspentind; int32_t k,i,n,j,r,hdrsi,numunspents,numaddrs; uint8_t addrtype,pubkey[65],rmd160[20]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
+    int64_t sum = 0; int32_t k,i,j,r,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -722,36 +766,9 @@ int32_t iguana_unspentslists(struct supernet_info *myinfo,struct iguana_info *co
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
             //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
-            total = 0;
-            n = 0;
             if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
             {
-                bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
-                iguana_pkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,coin->blocks.hwmchain.height - minconf,unspents,&n,max-1000,remoteaddr);
-                if ( n > 0 )
-                {
-                    candidates = unspents;
-                    for (j=0; j<n; j++)
-                    {
-                        hdrsi = (int32_t)(candidates[j << 1] >> 32);
-                        unspentind = (int32_t)candidates[j << 1];
-                        if ( iguana_unspent_check(myinfo,coin,hdrsi,unspentind) == 0 )
-                        {
-                            //printf("(%d u%d) %.8f not in mempool\n",hdrsi,unspentind,dstr(candidates[(j << 1) + 1]));
-                            for (k=0; k<numunspents; k++)
-                                if ( unspents[k << 1] == candidates[j << 1] )
-                                    break;
-                            if ( k == numunspents )
-                            {
-                                unspents[numunspents << 1] = candidates[j << 1];
-                                unspents[(numunspents << 1) + 1] = candidates[(j << 1) + 1];
-                                sum += candidates[(j << 1) + 1];
-                                unspents += 2;
-                                numunspents++;
-                            } else printf("found duplicate unspent j.%d numunspents.%d\n",j,numunspents);
-                        }
-                    }
-                }
+                numunspents = iguana_addr_unspents(myinfo,coin,&sum,unspents,max,coinaddr,remoteaddr,coin->blocks.hwmchain.height - minconf);
             }
             else
             {
@@ -793,7 +810,7 @@ int32_t iguana_uvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguan
     struct iguana_bundle *bp; struct iguana_unspent *U,*u; struct iguana_txid *T; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[hdrsi]) == 0 )
         return(-1);
-    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) != 0 )
     {
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -818,12 +835,12 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
         return(-1);
     hdrsi = (int16_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
-    ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     if ( (spentflag= iguana_spentflag(myinfo,coin,&RTspend,&spentheight,ramchain,hdrsi,unspentind,0,minconf,maxconf,0)) > 0 )
     {
-        printf("[%d].u%d was already spent ht.%d\n",hdrsi,(uint32_t)unspentind,spentheight);
+        printf("[%d].u%d was already spent ht.%d\n",bp->hdrsi,(uint32_t)unspentind,spentheight);
         return(-1);
     }
     else if ( spentflag == 0 )
@@ -841,4 +858,457 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
         }
     }
     else return(0);
+}
+
+#define UTXOADDR_ITEMSIZE 32
+#define iguana_utxotable_numinds(ind) (((ind) == 0xffff) ? coin->utxoaddrlastcount : (coin->utxoaddroffsets[(ind) + 1] - coin->utxoaddroffsets[ind]))
+
+int32_t iguana_rwutxoaddr(int32_t rwflag,uint16_t ind,uint8_t *serialized,struct iguana_utxoaddr *utxoaddr)
+{
+    uint32_t pkind=0; int32_t len = 0;
+    len += iguana_rwnum(rwflag,&serialized[0],sizeof(utxoaddr->hdrsi),&utxoaddr->hdrsi);
+    if ( rwflag == 0 )
+    {
+        utxoaddr->rmd160[0] = (ind & 0xff);
+        utxoaddr->rmd160[1] = ((ind >> 8) & 0xff);
+        memcpy(&utxoaddr->rmd160[2],&serialized[2],18);
+    } else memcpy(&serialized[2],&utxoaddr->rmd160[2],18);
+    len += 18;
+    if ( rwflag != 0 )
+        pkind = utxoaddr->pkind;
+    len += iguana_rwnum(rwflag,&serialized[20],sizeof(pkind),&pkind);
+    if ( rwflag == 0 )
+        utxoaddr->pkind = pkind;
+    len += iguana_rwnum(rwflag,&serialized[24],sizeof(utxoaddr->histbalance),&utxoaddr->histbalance);
+    return(len);
+}
+
+int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,uint32_t search_pkind,uint8_t rmd160[20])
+{
+    struct iguana_utxoaddr UA; int32_t ind,num,i; uint8_t *ptr;
+    memset(&UA,0,sizeof(UA));
+    ind = rmd160[0] + ((int32_t)rmd160[1] << 8);
+    if ( (num= iguana_utxotable_numinds(ind)) > 0 )
+    {
+        for (i=0; i<num; i++)
+        {
+            ptr = &coin->utxoaddrtable[(coin->utxoaddroffsets[ind] + i) * UTXOADDR_ITEMSIZE];
+            iguana_rwutxoaddr(0,ind,ptr,&UA);
+            if ( (UA.pkind == search_pkind && UA.hdrsi == search_hdrsi) || memcmp(UA.rmd160,rmd160,20) == 0 )
+                return(UA.histbalance);
+        }
+        //printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
+    }
+    return(0);
+}
+
+struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
+{
+    struct iguana_utxoaddr *utxoaddr; char coinaddr[64];
+    HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+    if ( utxoaddr == 0 && createflag != 0 )
+    {
+        utxoaddr = calloc(1,sizeof(*utxoaddr));
+        ++coin->utxoaddrind;
+        utxoaddr->hdrsi = hdrsi;
+        utxoaddr->pkind = pkind;
+        if ( coin->utxoaddrtable != 0 && coin->utxoaddroffsets != 0 )
+        {
+            utxoaddr->searchedhist = 1;
+            utxoaddr->histbalance = iguana_utxoaddrtablefind(coin,hdrsi,pkind,rmd160);
+        }
+        memcpy(utxoaddr->rmd160,rmd160,sizeof(utxoaddr->rmd160));
+        HASH_ADD_KEYPTR(hh,coin->utxoaddrs,utxoaddr->rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        if ( prevp != 0 )
+        {
+            utxoaddr->hh.prev = *prevp;
+            if ( *prevp != 0 )
+                (*prevp)->hh.next = utxoaddr;
+            *prevp = utxoaddr;
+        }
+        HASH_FIND(hh,coin->utxoaddrs,rmd160,sizeof(utxoaddr->rmd160),utxoaddr);
+        if ( utxoaddr == 0 )
+        {
+            int32_t i; for (i=0; i<20; i++)
+                printf("%02x",utxoaddr->rmd160[i]);
+            bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
+            printf(" %d of %d: %s %.8f\n",coin->utxoaddrind,coin->utxodatasize,coinaddr,dstr(utxoaddr->histbalance));
+            printf("failed to find just added %d of %d\n",coin->utxoaddrind,coin->utxodatasize);
+        }
+    }
+    return(utxoaddr);
+}
+
+int64_t iguana_bundle_unspents(struct iguana_info *coin,struct iguana_bundle *bp,int32_t maketable,struct iguana_utxoaddr **prevp)
+{
+    struct iguana_utxoaddr *utxoaddr; uint32_t unspentind,pkind; struct iguana_ramchaindata *rdata=0; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_utxo *U2=0; int64_t value,balance = 0;
+    if ( bp == 0 || (rdata= bp->ramchain.H.data) == 0 || (U2= bp->ramchain.Uextras) == 0 )
+    {
+        printf("missing ptr bp.%p rdata.%p U2.%p\n",bp,rdata,U2);
+        return(0);
+    }
+    U = RAMCHAIN_PTR(rdata,Uoffset);
+    P = RAMCHAIN_PTR(rdata,Poffset);
+    for (unspentind=1; unspentind<rdata->numunspents; unspentind++)
+    {
+        value = U[unspentind].value;
+        //printf("[%d] u%d: (p%u %.8f) from.%d lock.%d prev.%u spent.%d\n",bp->hdrsi,unspentind,U[unspentind].pkind,dstr(value),U2[unspentind].fromheight,U2[unspentind].lockedflag,U2[unspentind].prevunspentind,U2[unspentind].spentflag);
+        if ( U2[unspentind].fromheight == 0 && U2[unspentind].lockedflag == 0 && U2[unspentind].prevunspentind == 0 && U2[unspentind].spentflag == 0 && value != 0 )
+        {
+            if ( value <= 0 )
+                printf("[%d] u%u negative value %.8f??\n",bp->hdrsi,unspentind,dstr(value));
+            else
+            {
+                balance += value;
+                if ( maketable != 0 )
+                {
+                    if ( (pkind= U[unspentind].pkind) < rdata->numpkinds && pkind > 0 )
+                    {
+                        if ( (utxoaddr= iguana_utxoaddrfind(1,coin,bp->hdrsi,pkind,P[pkind].rmd160,prevp)) != 0 )
+                        {
+                            //printf("%.8f ",dstr(value));
+                            utxoaddr->histbalance += value;
+                        }
+                        else printf("cant find pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                    } else printf("illegal pkind.%u for unspentind.%u hdrsi.%d\n",pkind,unspentind,bp->hdrsi);
+                }
+            }
+        } // else printf("[%d] u%u spent %.8f\n",bp->hdrsi,unspentind,dstr(value));
+    }
+    return(balance);
+}
+
+static int _utxoaddr_cmp(const void *a,const void *b)
+{
+#define item_a ((uint8_t *)a)
+#define item_b ((uint8_t *)b)
+    uint16_t hdrsi_a,hdrsi_b; uint32_t pkind_a,pkind_b;
+    iguana_rwnum(0,&item_a[0],sizeof(hdrsi_a),&hdrsi_a);
+    iguana_rwnum(0,&item_a[20],sizeof(pkind_a),&pkind_a);
+    iguana_rwnum(0,&item_b[0],sizeof(hdrsi_b),&hdrsi_b);
+    iguana_rwnum(0,&item_b[20],sizeof(pkind_b),&pkind_b);
+	if ( hdrsi_b > hdrsi_a )
+		return(1);
+	else if ( hdrsi_b < hdrsi_a )
+		return(-1);
+    else
+    {
+        if ( pkind_b > pkind_a )
+            return(1);
+        else if ( pkind_b < pkind_a )
+            return(-1);
+        else return(0);
+    }
+#undef item_a
+#undef item_b
+}
+
+void iguana_utxoaddr_purge(struct iguana_info *coin)
+{
+    struct iguana_utxoaddr *utxoaddr,*tmp;
+    if ( coin->utxoaddrs != 0 )
+    {
+        printf("free %s utxoaddrs\n",coin->symbol);
+        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+        {
+            if ( utxoaddr != 0 )
+            {
+                HASH_DELETE(hh,coin->utxoaddrs,utxoaddr);
+                free(utxoaddr);
+            }
+        }
+        coin->utxoaddrs = 0;
+    }
+}
+
+int32_t iguana_utxoaddr_save(struct iguana_info *coin,char *fname,int64_t balance,uint32_t *counts,uint32_t *offsets,uint8_t *table)
+{
+    FILE *fp; bits256 hash; int32_t retval = -1;
+    if ( (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(&balance,1,sizeof(balance),fp);
+        fwrite(&counts[0xffff],1,sizeof(counts[0xffff]),fp);
+        fwrite(&coin->utxoaddrind,1,sizeof(coin->utxoaddrind),fp);
+        vcalc_sha256cat(hash.bytes,(void *)offsets,(int32_t)(0x10000 * sizeof(*offsets)),table,(int32_t)((coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE));
+        if ( fwrite(hash.bytes,1,sizeof(hash),fp) == sizeof(hash) )
+        {
+            if ( fwrite(offsets,1,0x10000 * sizeof(*offsets),fp) == 0x10000 * sizeof(*offsets) )
+            {
+                if ( fwrite(table,1,(coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE,fp) != (coin->utxoaddrind+1) * UTXOADDR_ITEMSIZE )
+                    printf("error writing %s table\n",fname);
+                else retval = 0;
+            } else printf("error writing %s offsets\n",fname);
+        } else printf("error writing %s hash\n",fname);
+        fclose(fp);
+    } else printf("error creating %s\n",fname);
+    return(retval);
+}
+
+int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
+{
+    uint32_t ind,total=0,offset,size=0,last=0,lastcount=0,count,prevoffset=0;
+    if ( (coin->utxoaddrfileptr= OS_mapfile(fname,&coin->utxoaddrfilesize,0)) != 0 && coin->utxoaddrfilesize > sizeof(bits256)+0x10000*sizeof(*coin->utxoaddroffsets) )
+    {
+        memcpy(&coin->histbalance,coin->utxoaddrfileptr,sizeof(coin->histbalance));
+        memcpy(&last,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)),sizeof(last));
+        memcpy(&coin->utxoaddrind,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)+sizeof(uint32_t)),sizeof(coin->utxoaddrind));
+        memcpy(&coin->utxoaddrhash.bytes,(void *)((long)coin->utxoaddrfileptr+sizeof(int64_t)+2*sizeof(uint32_t)),sizeof(coin->utxoaddrhash));
+        coin->utxoaddroffsets = (void *)((long)coin->utxoaddrfileptr + sizeof(int64_t) + 2*sizeof(uint32_t) + sizeof(bits256));
+        for (ind=total=count=0; ind<0x10000; ind++)
+        {
+            if ( (offset= coin->utxoaddroffsets[ind]) != 0 )
+            {
+                count = offset - prevoffset;
+                prevoffset = offset;
+                total += count;
+            }
+        }
+        size = (uint32_t)((total+1)*UTXOADDR_ITEMSIZE);
+        size += sizeof(int64_t) + 2*sizeof(uint32_t) + sizeof(bits256);
+        size += 0x10000 * sizeof(*coin->utxoaddroffsets);
+        if ( size <= coin->utxoaddrfilesize )
+        {
+            lastcount = (uint32_t)(coin->utxoaddrfilesize - size);
+            if ( (lastcount % UTXOADDR_ITEMSIZE) == 0 )
+            {
+                lastcount /= UTXOADDR_ITEMSIZE;
+                coin->utxoaddrlastcount = lastcount;
+                coin->utxoaddrtable = (void *)&coin->utxoaddroffsets[0x10000];
+                //iguana_utxoaddr_purge(coin);
+            }
+        }
+    }
+    printf("%.8f LASTCOUNT %d vs total %d, last %d vs lastcount %d, size.%d %ld\n",dstr(coin->histbalance),coin->utxoaddrlastcount,total,last,lastcount,size,coin->utxoaddrfilesize);
+    return(total + 1 + lastcount);
+}
+
+int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *coin,int32_t lastheight,int64_t *unspents,int32_t max,struct iguana_utxoaddr *utxoaddr)
+{
+    static int32_t good,bad;
+    char coinaddr[64]; int64_t sum,checkbalance; int32_t iter,i,numunspents = 0;
+    sum = 0;
+    for (iter=0; iter<2; iter++)
+    {
+        bitcoin_address(coinaddr,iter == 0 ? coin->chain->pubtype : coin->chain->p2shtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
+        numunspents += iguana_addr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,0,lastheight);
+        if ( sum == utxoaddr->histbalance )
+        {
+            checkbalance = iguana_utxoaddrtablefind(coin,0,0,utxoaddr->rmd160);
+            if ( checkbalance != sum )
+                printf("%s checkbalance %.8f vs sum %.8f\n",coinaddr,dstr(checkbalance),dstr(sum));
+            break;
+        }
+    }
+    if ( sum != utxoaddr->histbalance || checkbalance != sum )
+    {
+        bad++;
+        for (i=0; i<numunspents; i++)
+            printf("(%lld %lld %.8f) ",(long long)(unspents[i<<1]>>32)&0xffffffff,(long long)unspents[i<<1]&0xffffffff,dstr(unspents[(i<<1)+1]));
+        for (i=0; i<20; i++)
+            printf("%02x",utxoaddr->rmd160[i]);
+        bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
+        printf(" %s: sum %.8f != %.8f numunspents.%d diff %.8f\n",coinaddr,dstr(sum),dstr(utxoaddr->histbalance),numunspents,dstr(utxoaddr->histbalance)-dstr(sum));
+        return(-1);
+    }
+    good++;
+    if ( ((good + bad) % 1000) == 0 )
+        printf("utxoaddr validate good.%d bad.%d\n",good,bad);
+    return(0);
+}
+
+int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t lastheight)
+{
+    int64_t *unspents; uint8_t *item; struct iguana_bundle *bp; struct iguana_utxoaddr UA; int32_t i,num,max,ind,total,errs=0;
+    if ( coin->utxoaddrtable == 0 )
+    {
+        printf("no utxoaddrtable to validate?\n");
+        return(-1);
+    }
+    for (i=0; i<coin->bundlescount; i++)
+        if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
+        {
+            iguana_volatilespurge(coin,&bp->ramchain);
+            /*sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+            OS_removefile(fname,0);
+            sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+            OS_removefile(fname,0);*/
+            iguana_volatilesmap(coin,&bp->ramchain);
+        }
+    total = 0;
+    max = 1024 * 1024;
+    if ( strcmp("BTC",coin->symbol) == 0 )
+        max *= 1024;
+    unspents = calloc(1,max);
+    max /= sizeof(*unspents);
+    memset(&UA,0,sizeof(UA));
+    for (ind=0; ind<0x10000; ind++)
+    {
+        if ( (num= iguana_utxotable_numinds(ind)) > 0 )
+        {
+            for (i=0; i<num; i++)
+            {
+                item = &coin->utxoaddrtable[(coin->utxoaddroffsets[ind] + i) * UTXOADDR_ITEMSIZE];
+                iguana_rwutxoaddr(0,ind,item,&UA);
+                errs += iguana_utxoaddr_check(myinfo,coin,lastheight,unspents,max,&UA);
+                total++;
+                if ( (total % 1000) == 0 )
+                    fprintf(stderr,".");
+            }
+        }
+    }
+    free(unspents);
+    return(errs);
+}
+
+int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
+{
+    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+    {
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
+            height = bp->bundleheight + bp->n;
+    }
+    sprintf(fname2,"%s/%s/utxoaddrs.%d",GLOBAL_DBDIR,coin->symbol,height), OS_portable_path(fname2);
+    if ( iguana_utxoaddr_map(coin,fname2) != 0 )
+    {
+        if ( strcmp("BTC",coin->symbol) != 0 )
+            errs = iguana_utxoaddr_validate(myinfo,coin,height);
+        printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
+        if ( coin->histbalance > 0 )
+        {
+            coin->RTheight = height;
+            return(coin->histbalance);
+        }
+    }
+    printf("utxoaddr_gen.%d\n",maxheight);
+    iguana_utxoaddr_purge(coin);
+    for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight && (rdata= bp->ramchain.H.data) != 0 )
+        {
+            tablesize += rdata->numpkinds;
+        }
+    printf("allocate UTXOADDRS[%d]\n",tablesize);
+    coin->utxodatasize = tablesize;
+    coin->utxoaddrind = 0;
+    for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+    {
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
+        {
+            balance += iguana_bundle_unspents(coin,bp,1,&last);
+            fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
+            height = bp->bundleheight + bp->n;
+        }
+    }
+    sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
+    fprintf(stderr,"%d bundles for iguana_utxoaddr_gen.[%d] max.%d ht.%d\n",hdrsi,coin->utxoaddrind,coin->utxodatasize,maxheight);
+    counts = calloc(0x10000,sizeof(*counts));
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+    {
+        if ( utxoaddr->histbalance > 0 )
+        {
+            checkbalance += utxoaddr->histbalance;
+            ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+            counts[ind]++;
+        } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
+    }
+    printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
+    if ( checkbalance == balance )
+    {
+        table = calloc(coin->utxoaddrind+1,UTXOADDR_ITEMSIZE);
+        offsets = calloc(0x10000,sizeof(*offsets));
+        offset = 0;
+        for (ind=0; ind<0x10000; ind++)
+        {
+            n = counts[ind];
+            offsets[ind] = offset;
+            counts[ind] = 0;
+            offset += n;
+        }
+        HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+        {
+            if ( utxoaddr->histbalance > 0 )
+            {
+                bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
+                memset(item,0,UTXOADDR_ITEMSIZE);
+                ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+                iguana_rwutxoaddr(1,ind,item,utxoaddr);
+                memcpy(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE);
+                iguana_rwutxoaddr(0,ind,&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],&UA);
+                iguana_rwutxoaddr(1,ind,item,&UA);
+                bitcoin_address(checkaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
+                if ( strcmp(checkaddr,coinaddr) != 0 )
+                    printf("rw coinaddr error %s != %s\n",coinaddr,checkaddr);
+                //else printf("ind.%04x %s %.8f %.8f %d\n",ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                if ( memcmp(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE) != 0 )
+                    printf("rwutxoaddr cmp error\n");
+                counts[ind]++;
+            } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
+        }
+        offset = 1;
+        for (ind=0; ind<0x10000; ind++)
+            offset += counts[ind];
+        if ( offset == coin->utxoaddrind+1 )
+        {
+            for (ind=0; ind<0x10000; ind++)
+            {
+                if ( counts[ind] > 0 )
+                {
+                    qsort(&table[offsets[ind] * UTXOADDR_ITEMSIZE],counts[ind],UTXOADDR_ITEMSIZE,_utxoaddr_cmp);
+continue;
+                    for (j=0; j<counts[ind]; j++)
+                    {
+                        iguana_rwutxoaddr(0,ind,&table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE],&UA);
+                        for (k=0; k<20; k++)
+                            printf("%02x",UA.rmd160[k]);
+                        bitcoin_address(coinaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
+                        printf(" [%4d] p%-5d %12.8f ind.%04x %d %s\n",UA.hdrsi,UA.pkind,dstr(UA.histbalance),ind,j,coinaddr);
+                    }
+                }
+            }
+            if ( iguana_utxoaddr_save(coin,fname,balance,counts,offsets,table) == 0 )
+            {
+                if ( OS_copyfile(fname,fname2,1) < 0 )
+                    printf("error copying file %s to %s\n",fname,fname2);
+                else
+                {
+                    for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
+                    {
+                        if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
+                            bp->balancefinish = (uint32_t)time(NULL);
+                    }
+                }
+            } else printf("error saving %s\n",fname);
+        } else printf("table has %d vs %d\n",offset,coin->utxoaddrind+1);
+        free(offsets);
+        free(table);
+        iguana_utxoaddr_purge(coin);
+        if ( iguana_utxoaddr_map(coin,fname) != 0 )
+        {
+            printf("validating %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
+            errs = iguana_utxoaddr_validate(myinfo,coin,height);
+            printf("gen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
+            if ( errs != 0 )
+            {
+                printf("delete bad utxoaddr files\n");
+                OS_removefile(fname,0);
+                OS_removefile(fname2,0);
+            }
+            return(coin->histbalance);
+        }
+    }
+    coin->histbalance = balance;
+    coin->RTheight = height;
+    free(counts);
+    return(balance);
+}
+
+void iguana_utxoaddrs_purge(struct iguana_info *coin)
+{
+    struct iguana_utxoaddr *utxoaddr,*tmp;
+    coin->RTdebits = coin->RTdebits = 0;
+    HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
+    {
+        if ( utxoaddr != 0 )
+            utxoaddr->RTcredits = utxoaddr->RTdebits = 0;
+    }
 }

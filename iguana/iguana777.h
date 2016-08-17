@@ -16,6 +16,11 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+#if (defined(_WIN32) || defined(__WIN32__)) && \
+!defined(WIN32) && !defined(__SYMBIAN32__)
+#define WIN32
+#endif
+
 //#define BTC2_VERSION
 #define BTC2_HARDFORK_HEIGHT 444444
 #define BTC2_SIGHASH_FORKID 0xcf
@@ -69,6 +74,7 @@ struct supernet_info
     struct basilisk_relay relays[BASILISK_MAXRELAYS];
     struct basilisk_spend *spends; int32_t numspends;
     int32_t numrelays,RELAYID;
+    struct peggy_info *PEGS;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];

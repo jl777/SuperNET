@@ -415,29 +415,38 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
 
 void iguana_update_balances(struct iguana_info *coin)
 {
-    int32_t i,hdrsi,max; struct iguana_bundle *bp;
+    int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
     max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
     {
-        if ( 1 || coin->origbalanceswritten <= 1 )
+        if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
         else hdrsi = coin->origbalanceswritten;
         for (i=0; i<max; i++)
             if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesalloc(coin,&bp->ramchain,i < hdrsi);
+                sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+                //OS_removefile(fname,0);
+                sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+                //OS_removefile(fname,0);
+                iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
-        for (; hdrsi<max; hdrsi++)
+        sleep(3);
+        for (hdrsi=0; hdrsi<max; hdrsi++)
         {
             if ( (bp= coin->bundles[hdrsi]) != 0 )
             {
-                //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
-                if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
-                    bp->balancefinish = (uint32_t)time(NULL);
-            }
+                if ( bp != coin->current )
+                {
+                    //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
+                    if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
+                        bp->balancefinish = (uint32_t)time(NULL);
+                    else printf("balancegen error.[%d]\n",bp->hdrsi);
+                }
+            } else printf("null bp.[%d]\n",hdrsi);
         }
         if ( max != coin->origbalanceswritten )
         {
@@ -509,7 +518,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
         {
             if ( (bp= coin->bundles[hdrsi]) == 0 )
-                break;
+                continue;
             if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
@@ -527,6 +536,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         coin->spendvectorsaved = (uint32_t)time(NULL);
         coin->spendvalidated = 0;
         printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
+        iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
     }
     else
     {
@@ -617,12 +627,12 @@ void iguana_helper(void *arg)
         if ( queue_size(&bundlesQ) > 1 )
             allcurrent = 0;
         if ( flag != 0 )
-            usleep(polltimeout * 1000 + 1);
+            usleep(polltimeout * 100 + 1);
         else if ( allcurrent > 0 )
         {
             //printf("bundlesQ allcurrent\n");
-            usleep(polltimeout * 100000);
-        } else usleep(polltimeout * 50000);
+            usleep(polltimeout * 10000);
+        } else usleep(polltimeout * 10000);
     }
 }
 
@@ -655,7 +665,6 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
-    iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
 }
 
 void iguana_coinloop(void *arg)
@@ -702,8 +711,8 @@ void iguana_coinloop(void *arg)
                     // printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
-                        fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
-                        coin->isRT = 1;
+                        //fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
+                        //coin->isRT = 1;
                         if ( coin->polltimeout > 100 )
                             coin->polltimeout = 100;
                         if ( coin->MAXPEERS > IGUANA_MINPEERS )
@@ -761,7 +770,7 @@ void iguana_coinloop(void *arg)
         if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
-            usleep(coin->polltimeout*1000 + 90000 + (coin->peers->numranked == 0)*1000000);
+            usleep(coin->polltimeout*5000 + 90000 + (coin->peers->numranked == 0)*1000000);
         else usleep(coin->polltimeout*1000);
     }
 }
@@ -804,7 +813,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin= iguana_coinfind(symbol)) == 0 )
         coin = iguana_coinadd(symbol,name,json,virtcoin);
     //printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 8 : 32;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 128;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( coin->virtualchain == 0 )
     {
@@ -858,7 +867,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

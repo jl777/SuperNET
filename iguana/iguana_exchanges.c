@@ -48,6 +48,8 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     char *str; double totalvol,pricesum; uint32_t timestamp;
     struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     timestamp = (uint32_t)time(NULL);
     if ( basevolume < 0. )
         basevolume = -basevolume, dir = -1;
@@ -109,12 +111,18 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     return(0);
 }
 
-double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume)
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
 {
-    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[256]; cJSON *argjson;
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    if ( retvals == 0 )
+        return(0);
+    strcpy(base,_base);
+    strcpy(rel,_rel);
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     argjson = cJSON_CreateObject();
-    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&askvol,base,rel,basevolume,argjson);
-    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&bidvol,base,rel,-basevolume,argjson);
+    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&askvol,base,rel,basevolume,argjson);
+    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
     free_json(argjson);
     retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
     if ( avebid > SMALLVAL && aveask > SMALLVAL )
@@ -712,8 +720,8 @@ void exchanges777_loop(void *ptr)
     myinfo = SuperNET_MYINFO(0);
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
-        PEGS = calloc(1,sizeof(*PEGS));
-        PAX_init(PEGS);
+        PEGS = myinfo->PEGS; //calloc(1,sizeof(*PEGS));
+        //PAX_init(PEGS);
         exchange->privatedata = PEGS;
         peggyflag = 1;
         _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
@@ -926,7 +934,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     else
     {
         req->func = 'M';
-        printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
+        //printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -1106,6 +1114,12 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             }
         free_json(argjson);
     }
+}
+
+cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base,char *rel,int32_t period,uint32_t start,uint32_t end)
+{
+    cJSON *array = cJSON_CreateArray();
+    return(array);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -1322,6 +1336,26 @@ TWO_STRINGS(iguana,rate,base,rel)
             return(jprint(retjson,1));
         } else return(clonestr("{\"error\":\"error parsing return from aveprice\"}"));
     } else return(clonestr("{\"error\":\"null return from aveprice\"}"));
+}
+
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( period <= 0 )
+        period = 60;
+    if ( end <= 0 )
+        end = (uint32_t)time(NULL);
+    if ( start <= 0 || start >= end )
+        start = end - 1024*period;
+    jaddstr(retjson,"base",base);
+    jaddstr(retjson,"rel",rel);
+    jaddstr(retjson,"exchange",exchange[0] != 0 ? exchange : "all");
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"start",start);
+    jaddnum(retjson,"end",end);
+    jaddnum(retjson,"period",period);
+    jadd(retjson,"prices",iguana_pricesarray(myinfo,exchange,base,rel,period,start,end));
+    return(jprint(retjson,1));
 }
 
 INT_AND_ARRAY(iguana,rates,unused,quotes)

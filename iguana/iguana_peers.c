@@ -648,7 +648,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
         {
             int32_t i; for (i=0; i<sizeof(H); i++)
                 printf("%02x",((uint8_t *)&H)[i]);
-            printf(" invalid header.%s received from (%s) len.%d\n",H.command,addr->ipaddr,len);
+            printf(" %s invalid header.%s received from (%s) len.%d\n",coin->symbol,H.command,addr->ipaddr,len);
         }
         //addr->dead = 1;
     }
@@ -701,6 +701,12 @@ void iguana_startconnection(void *arg)
     if ( strcmp(coin->name,addr->coinname) != 0 )
     {
         printf("iguana_startconnection.%s:%04x mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin->chain->portp2p,coin,coin->symbol,addr->coinname);
+        return;
+    }
+    if ( strcmp("85.25.217.233",addr->ipaddr) == 0 )
+    {
+        printf("temp blacklist %s\n",addr->ipaddr);
+        iguana_iAkill(coin,addr,1);
         return;
     }
     //printf("iguana_startconnection.%s:%04x (%s)\n",addr->ipaddr,coin->chain->portp2p,addr->coinstr);
@@ -868,7 +874,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 printf("%s possible peer.(%s) %x already there\n",coin->symbol,ipaddr,(uint32_t)coin->peers->active[i].ipbits);
                 return(0);
             }
-        //printf("Q possible.(%s)\n",ipaddr);
+        //printf("%s Q possible.(%s)\n",coin->symbol,ipaddr);
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }

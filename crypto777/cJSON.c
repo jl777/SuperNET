@@ -827,7 +827,25 @@ void jaddi64bits(cJSON *json,uint64_t nxt64bits) { char numstr[64]; sprintf(nums
 char *jstr(cJSON *json,char *field) { if ( json == 0 ) return(0); if ( field == 0 ) return(cJSON_str(json)); return(cJSON_str(cJSON_GetObjectItem(json,field))); }
 
 char *jstri(cJSON *json,int32_t i) { return(cJSON_str(cJSON_GetArrayItem(json,i))); }
-char *jprint(cJSON *json,int32_t freeflag) { char *str; if ( json == 0 ) return(clonestr("{}")); str = cJSON_Print(json), _stripwhite(str,' '); if ( freeflag != 0 ) free_json(json); return(str); }
+char *jprint(cJSON *json,int32_t freeflag)
+{
+    char *str;
+    /*static portable_mutex_t mutex; static int32_t initflag;
+    if ( initflag == 0 )
+    {
+        portable_mutex_init(&mutex);
+        initflag = 1;
+    }*/
+    if ( json == 0 )
+        return(clonestr("{}"));
+    //portable_mutex_lock(&mutex);
+    //usleep(5000);
+    str = cJSON_Print(json), _stripwhite(str,' ');
+    if ( freeflag != 0 )
+        free_json(json);
+    //portable_mutex_unlock(&mutex);
+    return(str);
+}
 
 bits256 get_API_bits256(cJSON *obj)
 {

@@ -312,7 +312,9 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     {
         for (i=0; i<n; i++)
         {
-            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,jstri(addresses,i),juint(vals,"minconf"),juint(vals,"firstheight"));
+            if ( coin->RTheight > 0 )
+                balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,jstri(addresses,i),juint(vals,"minconf"),juint(vals,"firstheight"));
+            else balance = 0;
             item = cJSON_CreateObject();
             jaddnum(item,jstri(addresses,i),dstr(balance));
             jaddi(array,item);

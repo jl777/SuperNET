@@ -421,7 +421,8 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
             printf("0x%02x%s",A->ip[i],i<15?",":"");
         printf("}, 14631},\n");
     }
-    iguana_possible_peer(coin,ipport);
+    if ( strcmp(coin->symbol,"BTC") != 0 || (rand() % 10) == 0 )
+        iguana_possible_peer(coin,ipport);
     //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
 }
 
@@ -1141,7 +1142,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
             if ( strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) )
                 printf("%s %s.%s len mismatch %d != %d\n",coin->symbol,addr!=0?addr->ipaddr:"local",H->command,len,recvlen);
         }
-        else if ( len != recvlen )
+        else if ( len != recvlen && recvlen > 1 )
         {
             printf("%s extra byte.[%02x] command.%s len.%d recvlen.%d\n",addr->ipaddr,data[recvlen-1],H->command,len,recvlen);
             //retval = -1;
