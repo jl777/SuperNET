@@ -1321,7 +1321,10 @@ continue;
         }
     }
     free(counts);
-    return(-1.);
+    sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,height/coin->chain->bundlesize - 1);
+    OS_removefile(fname,0);
+    printf("return neg one remove %s\n",fname);
+    return(-1);
 }
 
 void iguana_utxoaddrs_purge(struct iguana_info *coin)
