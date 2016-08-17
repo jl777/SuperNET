@@ -599,7 +599,7 @@ void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
         offset = block->height - coin->firstRTheight;
         if ( coin->RTrawdata[offset] == 0 )
             coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset]);
-        printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
+        //printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
         coin->RTblocks[offset] = block;
         iguana_RTiterate(coin,offset,block,1);
     }
@@ -611,7 +611,7 @@ void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
     if ( block != 0 )
     {
         offset = block->height - coin->firstRTheight;
-        printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
+        //printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
         iguana_RTiterate(coin,offset,block,-1);
         if ( coin->RTrawdata[offset] != 0 && coin->RTrecvlens[offset] != 0 )
             iguana_RTunmap(coin->RTrawdata[offset],coin->RTrecvlens[offset]);
