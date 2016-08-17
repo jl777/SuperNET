@@ -468,7 +468,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_
 {
     int32_t i;
     // fill in array element and update counters
-    if ( strcmp("BTC",coin->symbol) != 0 )
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
     {
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i]);
@@ -480,7 +480,7 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t 
 {
     char str[65],str2[65];
     // fill in array element and update counters
-    if ( strcmp("BTC",coin->symbol) != 0 )
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
         printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
@@ -488,7 +488,7 @@ void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t p
 {
     char str[65];
     // add to hashtable block <-> txids[]
-    if ( strcmp("BTC",coin->symbol) != 0 )
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
         printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
 }
 
@@ -516,7 +516,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                 printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
             fclose(fp);
-            printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
+            //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
         } else printf("couldnt create %s\n",fname);
     }
     else if ( *recvlenp == 0 )
@@ -565,6 +565,7 @@ void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_bloc
         printf("cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         return;
     }
+    printf("%s RTiterate.%lld offset.%d numtx.%d len.%d\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
     memset(&txdata,0,sizeof(txdata));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
