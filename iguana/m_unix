@@ -1,6 +1,10 @@
+#!/bin/bash
+
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 rm ../agents/iguana *.o
-git pull
+if [[ $# -eq 0 ]]; then
+    git pull
+fi
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_unix; cd ../iguana
 gcc -g -Wno-deprecated -c *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
