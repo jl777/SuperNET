@@ -79,15 +79,8 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
         block->RO.timestamp = origblock->RO.timestamp;
     if ( block->RO.bits == 0 )
         block->RO.bits = origblock->RO.bits;
-    portable_mutex_lock(&coin->RTmutex);
-    if ( block->serialized == 0 )
-    {
-        block->serialized = origblock->serialized;
-        block->datalen = origblock->datalen;
-    }
     if ( block->RO.txn_count == 0 )
         block->RO.txn_count = origblock->RO.txn_count;
-    portable_mutex_unlock(&coin->RTmutex);
     if ( block->RO.version == 0 )
         block->RO.version = origblock->RO.version;
     if ( block->mainchain == 0 )

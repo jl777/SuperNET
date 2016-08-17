@@ -183,9 +183,9 @@ struct iguana_zblockRO
 } __attribute__((packed));
 
 #define iguana_blockfields      double PoW; \
-int32_t height,fpos,datalen; uint32_t fpipbits,issued,lag:19,protected:1,peerid:12; \
+int32_t height,fpos; uint32_t fpipbits,issued,lag:19,protected:1,peerid:12; \
 uint16_t hdrsi:15,mainchain:1,bundlei:11,valid:1,queued:1,txvalid:1,newtx:1,processed:1; \
-UT_hash_handle hh; struct iguana_bundlereq *req; uint8_t *serialized; \
+UT_hash_handle hh; struct iguana_bundlereq *req; \
 struct iguana_blockRO RO
 
 struct iguana_block
@@ -428,7 +428,7 @@ struct iguana_info
     int64_t histbalance,RTcredits,RTdebits;
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
-    struct iguana_block *RTblocks[65536];
+    struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

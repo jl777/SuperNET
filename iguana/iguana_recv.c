@@ -495,7 +495,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }*/
         } //else printf("cant save block\n");
     }
-    iguana_RTrawdata(coin,block->RO.hash2,data,recvlen);
+    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
@@ -1087,15 +1087,6 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
     }
     if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
-        portable_mutex_lock(&coin->RTmutex);
-        if ( block->serialized != 0 && origblock->serialized != 0 )
-        {
-            //free(block->serialized);
-            block->serialized = origblock->serialized;
-            origblock->serialized = 0;
-            block->datalen = origblock->datalen;
-        }
-        portable_mutex_unlock(&coin->RTmutex);
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;
