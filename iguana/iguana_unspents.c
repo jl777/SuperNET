@@ -1311,14 +1311,17 @@ continue;
                 OS_removefile(fname,0);
                 OS_removefile(fname2,0);
             }
-            coin->RTheight = height;
-            if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-                iguana_RTnewblock(coin,block);
-            return(coin->histbalance);
+            else
+            {
+                coin->RTheight = height;
+                if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+                    iguana_RTnewblock(coin,block);
+                return(coin->histbalance);
+            }
         }
     }
     free(counts);
-    return(0.);
+    return(-1.);
 }
 
 void iguana_utxoaddrs_purge(struct iguana_info *coin)
