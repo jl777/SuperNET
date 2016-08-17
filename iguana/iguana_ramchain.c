@@ -2766,7 +2766,7 @@ void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next h
 
 int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDATA,struct OS_memspace *HASHMEM,int64_t polarity,struct iguana_block *block,struct iguana_msgtx *txarray,int32_t txn_count)
 {
-    RAMCHAIN_DECLARE; struct vin_info V; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024],coinaddr[64]; uint8_t *script; struct iguana_ramchaindata *rdata; int32_t hdrsi,bundlei,i,j,k,type,scriptlen,firsti = 1;
+    RAMCHAIN_DECLARE; struct vin_info V; void *unspents,*spends; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024],coinaddr[64]; uint8_t *script; struct iguana_ramchaindata *rdata; int32_t hdrsi,bundlei,i,j,k,type,scriptlen,firsti = 1;
     if ( block->RO.txn_count != txn_count )
     {
         printf("txn_count mismatch ht.%d %d != %d\n",block->height,block->RO.txn_count,txn_count);
@@ -2791,7 +2791,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
         for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
             tx = &txarray[i];
-            iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+            unspents = 0; // allocate space
             for (j=0; j<tx->tx_out; j++)
             {
                 script = tx->vouts[j].pk_script;
@@ -2810,6 +2810,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
         }
         //printf("scriptoffset.%d after %d txids\n",ramchain->H.scriptoffset,txn_count);
         ramchain->H.txidind = ramchain->H.spendind = rdata->firsti;
+        spends = 0; // allocate space
         for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
             tx = &txarray[i];
@@ -2818,6 +2819,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
                 iguana_RTspend(coin,block,polarity,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
             }
         }
+        iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,unspents,spends);
         iguana_ramchain_free(coin,ramchain,0);
         return(0);
     }

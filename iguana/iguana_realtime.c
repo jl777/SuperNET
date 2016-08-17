@@ -464,29 +464,32 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
-void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
-{
-    char str[65];
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
-}
-
-void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
-{
-    char str[65],str2[65];
-    if ( strcmp("BTC",coin->symbol) != 0 )
-        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
-}
-
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i;
+    // fill in array element and update counters
     if ( strcmp("BTC",coin->symbol) != 0 )
     {
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i]);
         printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
     }
+}
+
+void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
+{
+    char str[65],str2[65];
+    // fill in array element and update counters
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+}
+
+void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,void *unspents,void *spends)
+{
+    char str[65];
+    // add to hashtable block <-> txids[]
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
 }
 
 void iguana_RTreset(struct iguana_info *coin)
@@ -572,52 +575,6 @@ void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_bloc
     {
         iguana_RTramchaindata(coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,block->RO.txn_count);
     } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,block->RO.txn_count,recvlen);
-
-   /* struct iguana_utxoaddr *utxoaddr; struct iguana_pkhash *P; struct iguana_txid *T,*t; struct iguana_unspent20 *u,*U; struct iguana_spend256 *S,*s; int32_t i,prevout,hdrsi,bundlei,spent_hdrsi; int64_t spent_value; uint32_t spendind,pkind,unspentind,txidind,spent_txidind,spent_pkind; uint8_t rmd160[20]; char fname[1024],str[65]; long filesize; int32_t err; void *ptr=0; struct iguana_ramchain R; struct iguana_ramchaindata *rdata; bits256 prevhash2;
-    memset(&R,0,sizeof(R));
-    hdrsi = (block->height / coin->chain->bundlesize);
-    bundlei = (block->height % coin->chain->bundlesize);
-    if ( (bp= coin->bundles[hdrsi]) != 0 && (ptr= iguana_bundlefile(coin,fname,&filesize,bp,bundlei)) != 0 )
-    {
-        if ( iguana_mapchaininit(fname,coin,&R,bp,bundlei,block,ptr,filesize) >= 0 && (rdata= R.H.data) != 0 )
-        {
-            T = RAMCHAIN_PTR(rdata,Toffset);
-            P = RAMCHAIN_PTR(rdata,Poffset);
-            U = RAMCHAIN_PTR(rdata,Uoffset);
-            S = RAMCHAIN_PTR(rdata,Soffset);
-            unspentind = spendind = pkind = rdata->firsti;
-            for (txidind=rdata->firsti; txidind<rdata->numtxids; txidind++)
-            {
-                t = &T[txidind];
-                for (i=0; i<t->numvouts; i++,unspentind++)
-                {
-                    u = &U[unspentind];
-                    if ( (RTutxo= iguana_RTutxofind(1,coin,hdrsi,pkind,u->rmd160)) != 0 )
-                    {
-                        RTutxo->RTcredits += (polarity * u->value);
-                        coin->RTcredits += (polarity * u->value);
-                        //printf("[%d] u%u += %.8f\n",bp->hdrsi,u->pkind,dstr(u->value));
-                    } else printf("cant find utxoaddr\n");
-                }
-                for (i=0; i<t->numvins; i++,spendind++)
-                {
-                    s = &S[spendind];
-                    prevhash = s->prevhash2;
-                    prevout = s->prevout;
-                    if ( (spent_txidind= iguana_RTtxidind(coin,&spent_hdrsi,&spent_unspentind,prevhash)) > 0 )
-                    {
-                        //if ( iguana_volatileupdate(coin,incremental,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 ) //(spentbp == coin->current) ? &coin->RTramchain :
-                        if ( (utxoaddr= iguana_utxoaddrfind(1,coin,spent_hdrsi,spent_pkind,rmd160,&coin->RTprev)) != 0 )
-                        {
-                            utxoaddr->RTdebits += (polarity * spent_value);
-                            coin->RTdebits += (polarity * spent_value);
-                            //printf("from.%d [%d] u%u -= %.8f\n",fromheight,spent_hdrsi,spent_pkind,dstr(spent_value));
-                        }
-                    } else printf("cant find (%s)\n",bits256_str(str,prevhash2));
-                }
-            }
-        }
-    }*/
 }
 
 struct iguana_block *iguana_RTblock(struct iguana_info *coin,int32_t height)
