@@ -478,7 +478,7 @@ void iguana_RTunmap(uint8_t *ptr,uint32_t len)
 
 void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp)
 {
-    FILE *fp; char fname[1024],str[65]; long filesize; uint8_t *ptr; uint32_t checklen;
+    FILE *fp; char fname[1024],str[65]; long filesize; uint8_t *ptr; uint32_t i,nonz,checklen;
     sprintf(fname,"%s/%s/RT/%s.raw",GLOBAL_TMPDIR,coin->symbol,bits256_str(str,hash2));
     OS_compatible_path(fname);
     if ( *recvlenp > 0 )
@@ -488,7 +488,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                 printf("error writing %s len.%d\n",bits256_str(str,hash2),*recvlenp);
             fclose(fp);
-            printf("created %s\n",fname);
+            //printf("created %s\n",fname);
         } else printf("couldnt create %s\n",fname);
     }
     else if ( *recvlenp == 0 )
@@ -498,6 +498,9 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             memcpy(&checklen,ptr,sizeof(checklen));
             if ( checklen == (int32_t)(filesize - sizeof(checklen)) )
             {
+                for (i=nonz=0; i<checklen; i++)
+                    if ( ptr[sizeof(checklen) + i] != 0 )
+                        nonz++;
                 *recvlenp = (int32_t)(filesize - sizeof(checklen));
                 return(&ptr[sizeof(*recvlenp)]);
             } else printf("checklen.%d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen)));
