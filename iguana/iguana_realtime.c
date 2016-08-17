@@ -463,3 +463,217 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 #endif
     return(flag);
 }
+
+void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,bits256 txid,int32_t vout,int64_t value)
+{
+    int32_t i;
+    // fill in array element and update counters
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+    {
+        for (i=0; i<20; i++)
+            printf("%02x",rmd160[i]);
+        printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
+    }
+}
+
+void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
+{
+    char str[65],str2[65];
+    // fill in array element and update counters
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+}
+
+void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,void *unspents,void *spends)
+{
+    char str[65];
+    // add to hashtable block <-> txids[]
+    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+}
+
+void iguana_RTreset(struct iguana_info *coin)
+{
+    iguana_utxoaddrs_purge(coin);
+    iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
+    printf("%s RTreset\n",coin->symbol);
+}
+
+void iguana_RTunmap(uint8_t *ptr,uint32_t len)
+{
+    OS_releasemap(&ptr[-2*sizeof(len)],len+2*sizeof(len));
+}
+
+void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp)
+{
+    FILE *fp; char fname[1024],str[65]; long filesize; uint8_t *ptr; uint32_t i,nonz,checknumtx,checklen;
+    sprintf(fname,"%s/%s/RT/%s.raw",GLOBAL_TMPDIR,coin->symbol,bits256_str(str,hash2));
+    OS_compatible_path(fname);
+    if ( *recvlenp > 0 )
+    {
+        if ( (fp= fopen(fname,"wb")) != 0 )
+        {
+            if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
+                printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
+            fclose(fp);
+            //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
+        } else printf("couldnt create %s\n",fname);
+    }
+    else if ( *recvlenp == 0 )
+    {
+        if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
+        {
+            memcpy(&checklen,ptr,sizeof(checklen));
+            memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
+            *numtxp = checknumtx;
+            if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) )//&& checknumtx == *numtxp )
+            {
+                for (i=nonz=0; i<checklen; i++)
+                    if ( ptr[2*sizeof(checklen) + i] != 0 )
+                        nonz++;
+                *recvlenp = (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx));
+                return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
+            } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
+        }
+    }
+    else if ( *recvlenp == -1 )
+        OS_removefile(fname,0);
+    return(0);
+}
+
+void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
+{
+    int32_t hdrsi,bundlei,height,numtx=0,recvlen=-1; struct iguana_bundle *bp;
+    printf("start RTpurge from %d\n",lastheight - coin->chain->bundlesize*10);
+    for (height=lastheight-coin->chain->bundlesize*10; height<lastheight; height++)
+    {
+        if ( height < 0 )
+            height = 0;
+        hdrsi = (height / coin->chain->bundlesize);
+        bundlei = (height % coin->chain->bundlesize);
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+            iguana_RTrawdata(coin,bp->hashes[bundlei],0,&recvlen,&numtx); // delete file
+    }
+    printf("end RTpurge.%d\n",lastheight);
+}
+
+void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
+{
+    struct iguana_txblock txdata; uint8_t *serialized; int32_t n,numtx,len; uint32_t recvlen = 0;
+    if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
+    {
+        printf("cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        return;
+    }
+    printf("%s RTiterate.%lld offset.%d numtx.%d len.%d\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
+    memset(&txdata,0,sizeof(txdata));
+    if ( coin->RTrawmem.ptr == 0 )
+        iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
+    if ( coin->RTmem.ptr == 0 )
+        iguana_meminit(&coin->RTmem,"RTmem",0,IGUANA_MAXPACKETSIZE * 2,0);
+    if ( coin->RThashmem.ptr == 0 )
+        iguana_meminit(&coin->RThashmem,"RThashmem",0,IGUANA_MAXPACKETSIZE * 2,0);
+    iguana_memreset(&coin->RTrawmem), iguana_memreset(&coin->RTmem), iguana_memreset(&coin->RThashmem);
+    if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
+    {
+        iguana_RTramchaindata(coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,numtx);
+    } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,numtx,recvlen);
+}
+
+struct iguana_block *iguana_RTblock(struct iguana_info *coin,int32_t height)
+{
+    int32_t offset;
+    offset = height - coin->firstRTheight;
+    //printf("%s iguana_RTblock.%d offset.%d\n",coin->symbol,height,offset);
+    if ( offset < sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
+        return(coin->RTblocks[offset]);
+    else printf("RTblock offset.%d too big\n",offset);
+    return(0);
+}
+
+void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
+{
+    int32_t offset;
+    if ( block != 0 )
+    {
+        offset = block->height - coin->firstRTheight;
+        if ( coin->RTrawdata[offset] == 0 )
+            coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset]);
+        //printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
+        coin->RTblocks[offset] = block;
+        iguana_RTiterate(coin,offset,block,1);
+    }
+}
+
+void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
+{
+    int32_t offset;
+    if ( block != 0 )
+    {
+        offset = block->height - coin->firstRTheight;
+        //printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
+        iguana_RTiterate(coin,offset,block,-1);
+        if ( coin->RTrawdata[offset] != 0 && coin->RTrecvlens[offset] != 0 )
+            iguana_RTunmap(coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        coin->RTrawdata[offset] = 0;
+        coin->RTrecvlens[offset] = 0;
+        coin->RTblocks[offset] = 0;
+    }
+}
+
+void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
+{
+    int32_t i,n,height,hdrsi,bundlei; struct iguana_block *addblock,*subblock; struct iguana_bundle *bp;
+    if ( coin->RTheight > 0 )
+    {
+        if ( block->height > coin->lastRTheight )
+        {
+            if ( coin->lastRTheight == 0 )
+            {
+                coin->firstRTheight = coin->RTheight;
+                iguana_RTreset(coin);
+                iguana_RTpurge(coin,coin->firstRTheight);
+            }
+            n = (block->height - coin->RTheight) + 1;
+            for (i=0; i<n; i++)
+            {
+                height = (coin->RTheight + i);
+                hdrsi = (height / coin->chain->bundlesize);
+                bundlei = (height % coin->chain->bundlesize);
+                if ( (bp= coin->bundles[hdrsi]) != 0 && (addblock= bp->blocks[bundlei]) != 0 && addblock->height == coin->RTheight+i )
+                {
+                    iguana_RTblockadd(coin,addblock);
+                    coin->lastRTheight = addblock->height;
+                } else printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
+            }
+            coin->RTheight += n;
+            printf(">= RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
+        }
+        else if ( block->height == coin->lastRTheight )
+        {
+            if ( (subblock= iguana_RTblock(coin,block->height)) != 0 && subblock != block )
+            {
+                iguana_RTblocksub(coin,block);
+                iguana_RTblockadd(coin,block);
+                printf("== RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
+            }
+        }
+        else
+        {
+            if ( block->height < coin->firstRTheight )
+            {
+                if ( coin->lastRTheight > 0 )
+                    printf("ht.%d reorg past firstRTheight.%d\n",block->height,coin->firstRTheight);
+                coin->lastRTheight = 0;
+                iguana_RTreset(coin);
+            }
+            else
+            {
+                while ( coin->lastRTheight >= block->height )
+                    iguana_RTblocksub(coin,iguana_RTblock(coin,coin->lastRTheight--));
+                iguana_RTblockadd(coin,block);
+                coin->lastRTheight = block->height;
+            }
+        }
+    }
+}

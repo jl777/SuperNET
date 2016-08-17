@@ -449,7 +449,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     uint32_t spent_unspentind,spent_pkind,unspentind,txidind,h,i,j,endi,k,now; uint64_t spent_value;
     struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata;
     struct iguana_spendvector *spend; struct iguana_unspent *spentU,*u,*U; struct iguana_spendvector *Xspendinds;
-    struct iguana_txid *T; struct iguana_blockRO *B; struct iguana_bundle *spentbp; struct iguana_utxoaddr *utxoaddr; struct iguana_pkhash *P;
+    struct iguana_txid *T; struct iguana_blockRO *B; struct iguana_bundle *spentbp; struct iguana_pkhash *P; //struct iguana_utxoaddr *utxoaddr;
     int32_t spent_hdrsi,spendind,n,numXspends,errs=0,emit=0; struct iguana_spend *S,*s;
     /*if ( (starti % coin->chain->bundlesize) != 0 || (endheight % coin->chain->bundlesize) != coin->chain->bundlesize-1 )
         ramchain = &coin->RTramchain;
@@ -502,7 +502,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
             }
             if ( 0 && bp == coin->current )
                 printf("starti.%d txidind.%d txi.%d numvins.%d spendind.%d\n",i,txidind,j,T[txidind].numvins,spendind);
-            if ( bp == coin->current )//ramchain == &coin->RTramchain )
+            /*if ( bp == coin->current )//ramchain == &coin->RTramchain )
             {
                 for (k=0; k<T[txidind].numvouts && errs==0; k++,unspentind++)
                 {
@@ -514,7 +514,8 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         //printf("[%d] u%u += %.8f\n",bp->hdrsi,u->pkind,dstr(u->value));
                     } else printf("cant find utxoaddr\n");
                 }
-            } else unspentind += T[txidind].numvouts;
+            } else */
+            unspentind += T[txidind].numvouts;
             for (k=0; k<T[txidind].numvins && errs==0; k++,spendind++)
             {
                 s = &S[spendind];

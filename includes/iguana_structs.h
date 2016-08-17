@@ -406,12 +406,12 @@ struct iguana_info
     portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
-    struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem;
+    struct OS_memspace RTrawmem,RTmem,RThashmem; // struct iguana_ramchain RTramchain; 
     bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
-    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
+    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
@@ -423,8 +423,12 @@ struct iguana_info
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
-    struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind; int64_t histbalance,RTcredits,RTdebits;
-    void *utxoaddrfileptr; long utxoaddrfilesize; uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    
+    struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind;
+    int64_t histbalance,RTcredits,RTdebits;
+    void *utxoaddrfileptr; long utxoaddrfilesize;
+    uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

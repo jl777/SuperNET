@@ -310,7 +310,7 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 
 void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
 {
-    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag; struct iguana_block *block; struct iguana_bundle *bp; uint32_t now; char str[65];
+    struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag,numtx; struct iguana_block *block; struct iguana_bundle *bp; uint32_t now; char str[65];
     if ( recvlen < 0 || recvlen > IGUANA_MAXPACKETSIZE )
     {
         printf("iguana_getblockM: illegal recvlen.%d\n",recvlen);
@@ -495,6 +495,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }*/
         } //else printf("cant save block\n");
     }
+    numtx = origtxdata->zblock.RO.txn_count;
+    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
@@ -787,12 +789,12 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
 void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,int32_t num)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( coin->RTheight > 0 && num > 3 && num < bp->n )
+    if ( coin->RTheight > 0 && num > 30 && num < bp->n )
     {
         if ( coin->longestchain > bp->bundleheight+num+10*coin->chain->minconfirms )
         {
             printf("strange.%d suspicious longestchain.%d vs [%d:%d] %d bp->n %d\n",coin->longestchain_strange,coin->longestchain,bp->hdrsi,num,bp->bundleheight+num,bp->n);
-            if ( coin->longestchain_strange++ > 10 )
+            if ( coin->longestchain_strange++ > 100 )
             {
                 coin->badlongestchain = coin->longestchain;
                 coin->longestchain = bp->bundleheight+num;
@@ -1212,6 +1214,19 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
 int32_t iguana_reqblocks(struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
+    if ( (block= iguana_blockfind("hwmcheck",coin,coin->blocks.hwmchain.RO.hash2)) == 0 || block->mainchain == 0 || block->height != coin->blocks.hwmchain.height )
+    {
+        printf("HWM mismatch ht.%d vs %d\n",block->height,coin->blocks.hwmchain.height);
+        if ( coin->blocks.hwmchain.height > 0 )
+        {
+            if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
+            {
+                printf("decrement HWM\n");
+                iguana_blockzcopy(coin->chain->zcash,(struct iguana_block *)&coin->blocks.hwmchain,block);
+                return(0);
+            }
+        }
+    }
     if ( time(NULL) < coin->lastreqtime+2 )
         return(0);
     coin->lastreqtime = (uint32_t)time(NULL);
@@ -1219,12 +1234,12 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     hdrsi = (coin->blocks.hwmchain.height + 1) / coin->chain->bundlesize;
     if ( (bp= coin->bundles[hdrsi]) != 0 )
     {
-        for (bundlei=0; bundlei<coin->chain->bundlesize; bundlei++)
+        /*for (bundlei=0; bundlei<coin->chain->bundlesize; bundlei++)
             if ( (block= bp->blocks[bundlei]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[bundlei]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
             {
                 char str[65]; printf("%s [%d] bundlei.%d ht.%d vs expected %d\n",bits256_str(str,bp->hashes[bundlei]),hdrsi,bundlei,block->height,bp->bundleheight+bundlei);
                 bp->blocks[bundlei] = iguana_blockfind("fixit",coin,bp->hashes[bundlei]);
-            }
+            }*/
         bundlei = (coin->blocks.hwmchain.height+1) % coin->chain->bundlesize;
         if ( (next= bp->blocks[bundlei]) != 0 || (next= iguana_blockfind("reqblocks",coin,bp->hashes[bundlei])) != 0 )
         {
