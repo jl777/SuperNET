@@ -402,6 +402,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     //if ( bp != coin->current )
     {
         iguana_ramchain_prefetch(coin,&bp->ramchain,7);
+        printf("convert.%d [%d]\n",convertflag,bp->hdrsi);
         if ( convertflag == 0 )
         {
             bp->converted = 1;
@@ -425,7 +426,7 @@ void iguana_update_balances(struct iguana_info *coin)
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
-    if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
+    //if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
     {
         if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
@@ -483,7 +484,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         max--;
     if ( helperid < incr )
     {
-        for (hdrsi=helperid; hdrsi<=max; hdrsi+=incr)
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
             num += iguana_helperA(myinfo,coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
@@ -493,7 +494,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     if ( helperid < incr )
     {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        for (hdrsi=helperid; hdrsi<=max; hdrsi+=incr)
             num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_convertfinished(coin)) < max )
