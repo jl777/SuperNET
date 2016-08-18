@@ -1324,6 +1324,8 @@ continue;
     free(counts);
     sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,height/coin->chain->bundlesize - 1);
     OS_removefile(fname,0);
+    sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,height/coin->chain->bundlesize - 2);
+    OS_removefile(fname,0);
     printf("return neg one remove %s\n",fname);
     return(-1);
 }
