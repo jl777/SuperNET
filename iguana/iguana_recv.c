@@ -503,20 +503,23 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             }*/
         } //else printf("cant save block\n");
     }
-    numtx = origtxdata->zblock.RO.txn_count;
-    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
-    req->zblock = txdata->zblock;
-    if ( coin->virtualchain != 0 )
-        printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
-    req->zblock.RO.txn_count = req->numtx = txdata->zblock.RO.txn_count;
-    if ( fromcache == 0 )
+    if ( txdata->zblock.fpos == 0 )
     {
-        coin->recvcount++;
-        coin->recvtime = (uint32_t)time(NULL);
-        netBLOCKS++;
+        numtx = origtxdata->zblock.RO.txn_count;
+        iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
+        req->zblock = txdata->zblock;
+        if ( coin->virtualchain != 0 )
+            printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
+        req->zblock.RO.txn_count = req->numtx = txdata->zblock.RO.txn_count;
+        if ( fromcache == 0 )
+        {
+            coin->recvcount++;
+            coin->recvtime = (uint32_t)time(NULL);
+            netBLOCKS++;
+        }
+        req->addr = addr;
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     }
-    req->addr = addr;
-    queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
 
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n)

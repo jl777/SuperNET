@@ -1185,7 +1185,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
         if ( strcmp("BTC",coin->symbol) != 0 )
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
         printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
-        if ( errs == 0 && coin->histbalance > 0 )
+        if ( errs == 0 && coin->histbalance > 0 && height > 0 )
         {
             coin->firstRTheight = coin->RTheight = height;
             iguana_RTreset(coin);
@@ -1308,7 +1308,7 @@ continue;
             printf("validating %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
             printf("gen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
-            if ( errs != 0 )
+            if ( errs != 0 || height == 0 )
             {
                 printf("delete bad utxoaddr files\n");
                 OS_removefile(fname,0);

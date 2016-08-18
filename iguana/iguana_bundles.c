@@ -218,7 +218,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
             }
             else
             {
-                if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
+                //if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
                 {
                     if ( bundlei > 1 )
                         bundlei -= 2;
@@ -229,7 +229,8 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
                         return(-1);
                     } //else printf("couldnt find block at %d\n",bp->bundleheight+bundlei);
                 }
-                else if ( bundlei > 0 )
+                //else if ( bundlei > 0 )
+                if ( bp->blocks[bundlei] != 0 )
                 {
                     printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
                     bp->blocks[bundlei] = 0;
