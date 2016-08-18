@@ -402,7 +402,6 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     //if ( bp != coin->current )
     {
         iguana_ramchain_prefetch(coin,&bp->ramchain,7);
-        printf("convert.%d [%d]\n",convertflag,bp->hdrsi);
         if ( convertflag == 0 )
         {
             bp->converted = 1;
@@ -543,11 +542,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         coin->spendvectorsaved = (uint32_t)time(NULL);
         coin->spendvalidated = 0;
         printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
-        if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) < 0 )
-        {
-            printf("call again \n");
-            iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
-        }
+        iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
     }
     else
     {

@@ -47,10 +47,10 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
     longesthdrsi = virt->longestchain / virt->chain->bundlesize;
     if ( (bp= virt->bundles[hwmhdrsi]) != 0 )
     {
-        iguana_RTspendvectors(myinfo,virt,bp);
-        iguana_RTramchainalloc("RTbundle",virt,bp);
-        iguana_update_balances(virt);
-        iguana_realtime_update(myinfo,virt);
+        //iguana_RTspendvectors(myinfo,virt,bp);
+        //iguana_RTramchainalloc("RTbundle",virt,bp);
+        //iguana_update_balances(virt);
+        //iguana_realtime_update(myinfo,virt);
     }
     if ( 0 && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {

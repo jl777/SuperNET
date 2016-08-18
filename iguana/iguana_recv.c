@@ -552,7 +552,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
 
 void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *blockhashes,int32_t n)
 {
-    struct iguana_bundlereq *req; int32_t i,num;
+    struct iguana_bundlereq *req; int32_t i,num,j,flag; struct iguana_bundle *bp;
     if ( addr != 0 )
     {
         addr->recvhdrs++;
@@ -576,7 +576,27 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
         if ( coin->RTheight > 0 )
         {
             for (i=1; i<n; i++)
-                iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
+            {
+                flag = 0;
+                if ( (bp= coin->current) != 0 )
+                {
+                    for (j=0; j<bp->n; j++)
+                    {
+                        if ( j < bp->numspec && bp->speculative != 0 && bits256_cmp(bp->speculative[j],blockhashes[i]) == 0 )
+                        {
+                            flag = 1;
+                            break;
+                        }
+                        if ( bits256_cmp(bp->hashes[j],blockhashes[i]) == 0 )
+                        {
+                            flag = 1;
+                            break;
+                        }
+                    }
+                }
+                if ( flag == 0 )
+                    iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
+            }
         }
         else if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);

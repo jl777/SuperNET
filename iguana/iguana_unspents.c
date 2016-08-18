@@ -1122,7 +1122,7 @@ int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *c
     }
     good++;
     if ( ((good + bad) % 1000) == 0 )
-        printf("%s utxoaddr validate good.%d bad.%d\n",coin->symbol,good,bad);
+        printf("%s utxoaddr validate good.%d bad.%d | (if this is taking too long, just exit and restart iguana)\n",coin->symbol,good,bad);
     return(0);
 }
 
@@ -1161,8 +1161,8 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
                 iguana_rwutxoaddr(0,ind,item,&UA);
                 errs += iguana_utxoaddr_check(myinfo,coin,lastheight,unspents,max,&UA);
                 total++;
-                if ( (total % 1000) == 0 )
-                    fprintf(stderr,".");
+                //if ( (total % 1000) == 0 )
+                //    fprintf(stderr,".");
             }
         }
     }
