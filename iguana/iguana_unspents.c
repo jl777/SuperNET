@@ -1187,7 +1187,9 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
         printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
         if ( errs == 0 && coin->histbalance > 0 )
         {
-            coin->RTheight = height;
+            coin->firstRTheight = coin->RTheight = height;
+            iguana_RTreset(coin);
+            iguana_RTpurge(coin,coin->firstRTheight);
             if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
                 iguana_RTnewblock(coin,block);
             return(coin->histbalance);
@@ -1314,7 +1316,9 @@ continue;
             }
             else
             {
-                coin->RTheight = height;
+                coin->firstRTheight = coin->RTheight = height;
+                iguana_RTreset(coin);
+                iguana_RTpurge(coin,coin->firstRTheight);
                 if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
                     iguana_RTnewblock(coin,block);
                 return(coin->histbalance);

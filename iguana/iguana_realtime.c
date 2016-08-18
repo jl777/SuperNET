@@ -648,12 +648,6 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
     {
         if ( block->height > coin->lastRTheight )
         {
-            if ( coin->firstRTheight == 0 )
-            {
-                coin->firstRTheight = coin->RTheight;
-                iguana_RTreset(coin);
-                iguana_RTpurge(coin,coin->firstRTheight);
-            }
             n = (block->height - coin->RTheight) + 1;
             for (i=0; i<n; i++)
             {
