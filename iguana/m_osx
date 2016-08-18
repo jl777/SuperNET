@@ -1,5 +1,7 @@
 rm ../agents/iguana *.o
-git pull
+if [[ $# -eq 0 ]]; then
+    git pull
+fi
 cd secp256k1; ./m_osx; cd ..
 gcc -g -Wno-deprecated -c -O2 *.c databases/iguana_DB.c
 gcc -g -Wno-deprecated -c  main.c iguana777.c iguana_bundles.c
