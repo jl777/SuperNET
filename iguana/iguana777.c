@@ -435,11 +435,12 @@ void iguana_update_balances(struct iguana_info *coin)
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+            OS_removefile(fname,0);
                 sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+            OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
+        printf("accounts files purged\n");
         sleep(3);
         for (hdrsi=0; hdrsi<max; hdrsi++)
         {
@@ -449,17 +450,20 @@ void iguana_update_balances(struct iguana_info *coin)
                 {
                     //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
                     if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
+                    {
+                        fprintf(stderr,"%d ",hdrsi);
                         bp->balancefinish = (uint32_t)time(NULL);
+                    }
                     else printf("balancegen error.[%d]\n",bp->hdrsi);
                 }
             } else printf("null bp.[%d]\n",hdrsi);
         }
-        if ( max != coin->origbalanceswritten )
+        //if ( max != coin->origbalanceswritten )
         {
             coin->balanceflush = max+1;
             while ( coin->balanceflush != 0 )
                 sleep(3);
-        } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
+        }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
     }
 }
 
@@ -521,7 +525,9 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     if ( helperid == 0 )
     {
+        printf("start iguana_update_balances\n");
         iguana_update_balances(coin);
+        printf("iguana_update_balances completed\n");
         if ( 1 )
         {
             for (i=0; i<max; i++)
