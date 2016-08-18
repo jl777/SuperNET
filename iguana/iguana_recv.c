@@ -356,7 +356,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         received[addr->addrind] += recvlen;
         count[addr->addrind]++;
         now = (uint32_t)time(NULL);
-        if ( ((rand() % 1000) == 0 && now > last+10) || now > last+600 )
+        if ( ((rand() % 10000) == 0 && now > last+60) || now > last+600 )
         {
             int64_t sum2 = 0,sum = 0,diffr,diff; double bw = 0.;
             for (i=0; i<sizeof(received)/sizeof(*received); i++)

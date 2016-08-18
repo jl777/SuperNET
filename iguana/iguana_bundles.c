@@ -458,8 +458,6 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
             retjson = cJSON_CreateArray();
             PKbits = RAMCHAIN_PTR(rdata,PKoffset);
             P = RAMCHAIN_PTR(rdata,Poffset);
-            //PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
-            //P = (void *)(long)((long)rdata + rdata->Poffset);
             for (pkind=0; pkind<numpkinds; pkind++,P++)
             {
                 init_hexbytes_noT(rmdstr,P->rmd160,20);
