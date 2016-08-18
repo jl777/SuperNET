@@ -635,7 +635,7 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 iguana_RTpurge(coin,coin->firstRTheight);
             }
             n = (block->height - coin->RTheight) + 1;
-            for (i=0; i<n; i++)
+            for (i=0; i<n; i++,coin->RTheight++)
             {
                 height = (coin->RTheight + i);
                 hdrsi = (height / coin->chain->bundlesize);
@@ -644,9 +644,13 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 {
                     iguana_RTblockadd(coin,addblock);
                     coin->lastRTheight = addblock->height;
-                } else printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
+                }
+                else
+                {
+                    printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
+                    break;
+                }
             }
-            coin->RTheight += n;
             printf(">= RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
         }
         else if ( block->height == coin->lastRTheight )
