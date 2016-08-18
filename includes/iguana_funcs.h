@@ -546,7 +546,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
 void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block);
-void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp,int32_t fromcache);
+void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp,int32_t checkonly);
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_update_balances(struct iguana_info *coin);
 void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp);

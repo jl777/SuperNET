@@ -80,9 +80,9 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         {
             //char str[65];
             recvlen = numtx = 0;
-            if ( iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,0) != 0 )
+            if ( iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,1) != 0 )
             {
-                printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
+                //printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
                 return(0);
             } //else printf("no RTrawdata for %s\n",bits256_str(str,hash2));
         }
@@ -121,7 +121,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        //if ( 0 && coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -504,7 +504,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         } //else printf("cant save block\n");
     }
     numtx = origtxdata->zblock.RO.txn_count;
-    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,fromcache);
+    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));

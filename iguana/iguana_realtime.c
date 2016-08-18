@@ -506,58 +506,65 @@ void iguana_RTunmap(uint8_t *ptr,uint32_t len)
     OS_releasemap(&ptr[-2*sizeof(len)],len+2*sizeof(len));
 }
 
-void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp,int32_t fromcache)
+void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp,int32_t checkonly)
 {
     FILE *fp; char fname[1024],str[65]; long filesize; int32_t len; uint8_t *ptr; uint32_t i,nonz,checknumtx,checklen;
     sprintf(fname,"%s/%s/RT/%s.raw",GLOBAL_TMPDIR,coin->symbol,bits256_str(str,hash2));
     OS_compatible_path(fname);
-    if ( *recvlenp > 0 )
+    if ( *recvlenp == -1 )
+        OS_removefile(fname,0);
+    else
     {
-        if ( coin->RTheight == 0 )
-        {
-            printf("skip %s\n",bits256_str(str,hash2));
-            return(0);
-        }
-        if ( (fp= fopen(fname,"rb")) != 0 )
+        if ( (checkonly != 0 || *recvlenp > 0) && (fp= fopen(fname,"rb")) != 0 )
         {
             fseek(fp,0,SEEK_END);
             filesize = ftell(fp);
             rewind(fp);
-            if ( fread(&len,1,sizeof(len),fp) == sizeof(len) && len == filesize+sizeof(int32_t)*2 )
+            if ( fread(&len,1,sizeof(len),fp) == sizeof(len) && len == filesize-sizeof(int32_t)*2 )
             {
                 fclose(fp);
-                printf("already have %s\n",bits256_str(str,hash2));
+                //printf("already have %s\n",bits256_str(str,hash2));
+                *recvlenp = 0;
+                if ( checkonly != 0 )
+                    return((void *)"already have rawdata");
                 return(0);
             }
+            //printf("len.%d filesize.%ld\n",len,filesize);
             fclose(fp);
         }
-        if ( (fp= fopen(fname,"wb")) != 0 )
+        if ( *recvlenp > 0 )
         {
-            if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
-                printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
-            fclose(fp);
-            printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
-        } else printf("couldnt create %s\n",fname);
-    }
-    else if ( *recvlenp == 0 )
-    {
-        if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
-        {
-            memcpy(&checklen,ptr,sizeof(checklen));
-            memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
-            *numtxp = checknumtx;
-            if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) )//&& checknumtx == *numtxp )
+            if ( coin->RTheight == 0 )
             {
-                for (i=nonz=0; i<checklen; i++)
-                    if ( ptr[2*sizeof(checklen) + i] != 0 )
-                        nonz++;
-                *recvlenp = (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx));
-                return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
-            } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
+                //printf("skip %s\n",bits256_str(str,hash2));
+                return(0);
+            }
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
+                    printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
+                fclose(fp);
+                //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
+            } else printf("couldnt create %s\n",fname);
+        }
+        else if ( checkonly == 0 )
+        {
+            if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
+            {
+                memcpy(&checklen,ptr,sizeof(checklen));
+                memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
+                *numtxp = checknumtx;
+                if ( checklen == (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)) )//&& checknumtx == *numtxp )
+                {
+                    for (i=nonz=0; i<checklen; i++)
+                        if ( ptr[2*sizeof(checklen) + i] != 0 )
+                            nonz++;
+                    *recvlenp = (int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx));
+                    return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
+                } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
+            }
         }
     }
-    else if ( *recvlenp == -1 )
-        OS_removefile(fname,0);
     return(0);
 }
 
@@ -579,12 +586,19 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 
 int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
 {
-    struct iguana_txblock txdata; struct iguana_peer *addr; uint8_t *serialized; int32_t i,n,errs=0,numtx,len; uint32_t recvlen = 0;
-    while ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
+    struct iguana_txblock txdata; uint8_t *serialized; int32_t n,errs=0,numtx,len; uint32_t recvlen = 0;
+    if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
         char str[65];
-        printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
-        iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
+        //printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
+        if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
+        {
+            printf("B errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+            return(0);
+        }
+        /*struct iguana_peer *addr; 
+         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
         if ( coin->peers != 0 && coin->peers->numranked > 0 )
         {
             for (i=0; i<coin->peers->numranked&&i<8; i++)
@@ -596,7 +610,7 @@ int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_b
         {
             iguana_RTreset(coin);
             return(-1);
-        }
+        }*/
     }
     printf("%s RTiterate.%lld offset.%d numtx.%d len.%d\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
     memset(&txdata,0,sizeof(txdata));
