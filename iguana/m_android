@@ -15,4 +15,4 @@ echo "Compiling iguana ... "
 
 $CC2 -g -Wno-deprecated -O2 -c *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c 
 $CC2 -g -Wno-deprecated -c main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c
-$CC2 -g -o ../agents/iguana -O2 *.o ../agents/libcrypto777.a -lm
+$CC2 -g -o ../agents/iguana -O2 *.o ../agents/libcrypto777.a ../OSlibs/android/lib/libcurl.a -L../OSlibs/android/lib/ -lcurl -lssl -lcrypto -lm
