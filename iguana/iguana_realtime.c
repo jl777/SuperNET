@@ -509,12 +509,12 @@ void iguana_RTunmap(uint8_t *ptr,uint32_t len)
 void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp)
 {
     FILE *fp; char fname[1024],str[65]; long filesize; uint8_t *ptr; uint32_t i,nonz,checknumtx,checklen;
-    if ( coin->RTheight == 0 )
-        return(0);
     sprintf(fname,"%s/%s/RT/%s.raw",GLOBAL_TMPDIR,coin->symbol,bits256_str(str,hash2));
     OS_compatible_path(fname);
     if ( *recvlenp > 0 )
     {
+        if ( coin->RTheight == 0 )
+            return(0);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
@@ -563,12 +563,14 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 
 int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
 {
-    struct iguana_txblock txdata; uint8_t *serialized; int32_t n,errs=0,numtx,len; uint32_t recvlen = 0;
+    struct iguana_txblock txdata; struct iguana_peer *addr; uint8_t *serialized; int32_t n,errs=0,numtx,len; uint32_t recvlen = 0;
     while ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
         char str[65];
         printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
+        if ( coin->peers != 0 && coin->peers->numranked > 0 && (addr= coin->peers->ranked[rand() % coin->peers->numranked]) != 0 )
+            iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
         sleep(3);
         if ( errs++ > 10 )
         {

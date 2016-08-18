@@ -1122,7 +1122,7 @@ int32_t iguana_utxoaddr_check(struct supernet_info *myinfo,struct iguana_info *c
     }
     good++;
     if ( ((good + bad) % 1000) == 0 )
-        printf("%s utxoaddr validate good.%d bad.%d%s\n",coin->symbol,good,bad,strcmp(coin->symbol,"BTC") == 0 ? " | (if this is taking too long, just exit and restart iguana)" : "");
+        printf("%s total %d utxoaddr validate good.%d bad.%d%s\n",coin->symbol,coin->utxoaddrind,good,bad,strcmp(coin->symbol,"BTC") == 0 ? " | (if this is taking too long, just exit and restart iguana)" : "");
     return(0);
 }
 
