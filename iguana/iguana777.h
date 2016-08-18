@@ -19,6 +19,8 @@
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
 #define WIN32
+#else
+#include <arpa/inet.h>
 #endif
 
 //#define BTC2_VERSION

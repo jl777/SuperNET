@@ -428,7 +428,7 @@ struct iguana_info
     int64_t histbalance,RTcredits,RTdebits;
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
-    struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536];
+    struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

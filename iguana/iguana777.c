@@ -399,7 +399,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
         printf("iguana_helperB unexpected null bp\n");
         return(-1);
     }
-    if ( bp != coin->current )
+    //if ( bp != coin->current )
     {
         iguana_ramchain_prefetch(coin,&bp->ramchain,7);
         if ( convertflag == 0 )
@@ -416,10 +416,16 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
 void iguana_update_balances(struct iguana_info *coin)
 {
     int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
+    if ( coin->RTheight > 0 )
+    {
+        printf("Need to restart iguana to generate new balances files\n");
+        printf("RT dataset can expand past bundle boundary, so no need to update balance files now\n");
+        return;
+    }
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
-    if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
+    //if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
     {
         if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
@@ -429,11 +435,12 @@ void iguana_update_balances(struct iguana_info *coin)
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+            OS_removefile(fname,0);
                 sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                //OS_removefile(fname,0);
+            OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
+        printf("accounts files purged\n");
         sleep(3);
         for (hdrsi=0; hdrsi<max; hdrsi++)
         {
@@ -443,17 +450,20 @@ void iguana_update_balances(struct iguana_info *coin)
                 {
                     //iguana_ramchain_prefetch(coin,&bp->ramchain,3);
                     if ( iguana_balancegen(coin,0,bp,0,coin->chain->bundlesize-1,0) == 0 )
+                    {
+                        fprintf(stderr,"%d ",hdrsi);
                         bp->balancefinish = (uint32_t)time(NULL);
+                    }
                     else printf("balancegen error.[%d]\n",bp->hdrsi);
                 }
             } else printf("null bp.[%d]\n",hdrsi);
         }
-        if ( max != coin->origbalanceswritten )
+        //if ( max != coin->origbalanceswritten )
         {
             coin->balanceflush = max+1;
             while ( coin->balanceflush != 0 )
                 sleep(3);
-        } else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
+        }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
     }
 }
 
@@ -495,9 +505,29 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
         sleep(IGUANA_NUMHELPERS+3);
     }
+    if ( helperid < incr )
+    {
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        {
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+                continue;
+            if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
+            {
+                printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
+                exit(-1);
+            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
+        }
+    }
+    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max )
+    {
+        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
+        sleep(IGUANA_NUMHELPERS+3);
+    }
     if ( helperid == 0 )
     {
+        printf("start iguana_update_balances\n");
         iguana_update_balances(coin);
+        printf("iguana_update_balances completed\n");
         if ( 1 )
         {
             for (i=0; i<max; i++)
@@ -513,30 +543,20 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
     //incr = 1;
-    if ( helperid < incr )
-    {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-        {
-            if ( (bp= coin->bundles[hdrsi]) == 0 )
-                continue;
-            if ( iguana_bundlevalidate(coin,bp,0) != bp->n )
-            {
-                printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
-                exit(-1);
-            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
-        }
-    }
-    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max || iguana_balancefinished(coin) < max )
-    {
-        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
-        sleep(IGUANA_NUMHELPERS+3);
-    }
     if ( helperid == 0 )
     {
         coin->spendvectorsaved = (uint32_t)time(NULL);
         coin->spendvalidated = 0;
         printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
-        iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
+        if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) < 0 )
+        {
+            printf("retry utxoaddr_gen\n");
+            if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) < 0 )
+            {
+                printf("restart iguana: fatal error generating ledger file for %s\n",coin->symbol);
+                exit(1);
+            }
+        }
     }
     else
     {
@@ -682,6 +702,8 @@ void iguana_coinloop(void *arg)
         flag = 0;
         for (i=0; i<n; i++)
         {
+            if ( n > 1 && (rand() % (n*100)) > 100 )
+                continue;
             if ( (coin= coins[i]) != 0 )
             {
                 if ( coin->peers == 0 )
@@ -768,11 +790,13 @@ void iguana_coinloop(void *arg)
             }
         }
         //printf("%s flag.%d isRT.%d polltimeout.%d numranked.%d\n",coin->symbol,flag,coin->isRT,coin->polltimeout,coin->peers->numranked);
-        if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
+        /*if ( flag == 0 && coin->isRT == 0 && coin->peers != 0 )
             usleep(coin->polltimeout*1000 + (coin->peers->numranked == 0)*1000000);
         else if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize )
             usleep(coin->polltimeout*5000 + 90000 + (coin->peers->numranked == 0)*1000000);
-        else usleep(coin->polltimeout*1000);
+        else usleep(coin->polltimeout*1000);*/
+        if ( flag == 0 )
+            usleep(100000);
     }
 }
 

@@ -2804,7 +2804,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
                     printf(" script type.%d\n",type);
                 }
                 bitcoin_address(coinaddr,coin->chain->pubtype,V.rmd160,sizeof(V.rmd160));
-                iguana_RTunspent(coin,block,polarity,coinaddr,V.rmd160,tx->txid,j,tx->vouts[j].value);
+                iguana_RTunspent(coin,block,polarity,coinaddr,V.rmd160,type,script,scriptlen,tx->txid,j,tx->vouts[j].value);
             }
             ramchain->H.spendind += tx->tx_in;
         }
@@ -2816,7 +2816,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
             tx = &txarray[i];
             for (j=0; j<tx->tx_in; j++)
             {
-                iguana_RTspend(coin,block,polarity,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
+                iguana_RTspend(coin,block,polarity,tx->vins[i].vinscript,tx->vins[i].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
             }
         }
         iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,unspents,spends);

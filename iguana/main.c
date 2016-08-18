@@ -408,7 +408,7 @@ void mainloop(struct supernet_info *myinfo)
             //portable_mutex_lock(&myinfo->allcoins_mutex);
             HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
-                if ( coin->current != 0 && coin->active != 0 && coin->started != 0 )
+                if ( coin->RTheight == 0 && coin->current != 0 && coin->active != 0 && coin->started != 0 )
                 {
                     isRT *= coin->isRT;
                     if ( coin->peers != 0 )
