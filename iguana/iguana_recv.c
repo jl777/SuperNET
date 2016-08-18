@@ -608,7 +608,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
                         }
                     }
                 }
-           //     if ( flag == 0 )
+                if ( flag == 0 )
                     iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
             }
         }
@@ -748,10 +748,84 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
     return(retval);
 }
 
+void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32_t height)
+{
+    int32_t hdrsi,bundlei; struct iguana_bundle *bp;
+    if ( block->height < 0 || block->height == height )
+    {
+        hdrsi = (height / coin->chain->bundlesize);
+        bundlei = (height % coin->chain->bundlesize);
+        if ( hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
+        {
+            bp->blocks[bundlei] = block;
+            bp->hashes[bundlei] = block->RO.hash2;
+            if ( bp->speculative != 0 )
+                bp->speculative[bundlei] = block->RO.hash2;
+            printf("SET new HWM.%d in [%d:%d]\n",height,hdrsi,bundlei);
+        } else printf("iguana_bundle_set: no bundle at [%d]\n",hdrsi);
+    } else printf("iguana_bundle_set: mismatch ht.%d vs %d\n",block->height,height);
+}
+
+void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int32_t height)
+{
+    if ( block->height == height )
+        iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
+    else printf("iguana_hwmchain_set: mismatched ht.%d vs %d\n",block->height,height);
+}
+
+void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainchain,struct iguana_block *oldhwm,int32_t n)
+{
+    int32_t i,height; struct iguana_block *tmp = oldhwm;
+    if ( mainchain != oldhwm )
+    {
+        height = oldhwm->height;
+        for (i=0; i<n; i++,height--)
+        {
+            if ( tmp->mainchain == 0 )
+                printf("iguana_mainchain_clear: unexpected non-mainchain at ht.%d\n",tmp->height);
+            else if ( tmp->height != height )
+                printf("iguana_mainchain_clear: unexpected ht.%d vs %d\n",tmp->height,height);
+            else
+            {
+                tmp->mainchain = 0;
+                printf("CLEAR mainchain.%d\n",height);
+            }
+            if ( (tmp= iguana_blockfind("clear",coin,tmp->RO.prev_block)) == 0 )
+            {
+                printf("iguana_mainchain_clear: got null tmp i.%d of %d\n",i,n);
+                return;
+            }
+        }
+        if ( tmp != mainchain )
+            printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d\n",tmp->height,mainchain->height);
+    }
+}
+
+int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **mainchainp,struct iguana_block *block)
+{
+    int32_t i,n; struct iguana_block *tmp = block;
+    *mainchainp = 0;
+    for (i=n=0; i<coin->chain->bundlesize; i++)
+    {
+        if ( tmp != 0 && (tmp= iguana_blockfind("estimate",coin,tmp->RO.hash2)) != 0 )
+        {
+            if ( tmp->mainchain != 0 )
+            {
+                char str[65]; printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
+                *mainchainp = tmp;
+                return(tmp->height + n);
+            }
+            n++;
+            tmp = iguana_blockfind("prevestimate",coin,tmp->RO.prev_block);
+        } else return(0);
+    }
+    return(0);
+}
+
 // main context, ie single threaded
 struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock)
 {
-    struct iguana_block *block,*prevblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t prevbundlei,bundlei = -2; // struct iguana_ramchain blockR;
+    struct iguana_block *block,*prevblock,*tmp,*mainchain,*hwmblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t i,newheight,prevbundlei,bundlei = -2; // struct iguana_ramchain blockR;
     *bundleip = -2; *blockp = 0;
     if ( origblock == 0 )
         return(0);
@@ -766,6 +840,22 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%ld\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
         }
         *blockp = block;
+        if ( coin->firstRTheight > 0 && coin->blocks.hwmchain.height > 0 && (hwmblock= iguana_blockfind("hwm",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+        {
+            if ( (newheight= iguana_height_estimate(coin,&mainchain,block)) >= coin->blocks.hwmchain.height )
+            {
+                iguana_mainchain_clear(coin,mainchain,hwmblock,coin->blocks.hwmchain.height-mainchain->height+1);
+                tmp = block;
+                for (i=0; i<newheight-mainchain->height; i++)
+                {
+                    iguana_bundle_set(coin,tmp,newheight-i);
+                    if ( (tmp= iguana_blockfind("hwmprev",coin,tmp->RO.prev_block)) == 0 )
+                        break;
+                }
+                if ( mainchain != hwmblock )
+                    iguana_hwmchain_set(coin,mainchain,mainchain->height); // trigger reprocess
+            }
+        }
         //if ( 0 && bits256_nonz(prevhash2) > 0 )
         //    iguana_patch(coin,block);
         bp = 0, bundlei = -2;
@@ -1479,11 +1569,11 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         if ( bp == coin->current && coin->blocks.hwmchain.height > 100 )
                         {
-                            //printf("%s issue HWM HDRS %d\n",coin->symbol,coin->blocks.hwmchain.height);
                             init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                             bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
                             init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
+                            //printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         }
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);

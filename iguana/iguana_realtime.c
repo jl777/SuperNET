@@ -694,8 +694,7 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 else
                 {
                     printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
-                    iguana_RTreset(coin);
-                    return;
+                    break;
                 }
             }
             coin->RTheight += i;

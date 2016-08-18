@@ -603,16 +603,19 @@ void iguana_helper(void *arg)
         //portable_mutex_lock(&myinfo->allcoins_mutex);
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
-            if ( coin->spendvectorsaved == 1 && coin->firstRTheight == 0 )
-                iguana_utxogen(myinfo,coin,helperid,0);
-            else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
+            if ( coin->firstRTheight == 0 )
             {
-                //printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
-                for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
-                    if ( (bp= coin->bundles[j]) != 0 )
-                        iguana_bundlevalidate(coin,bp,0);
-                coin->spendvalidated |= (1 << helperid);
-                //printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
+                if ( coin->spendvectorsaved == 1 )
+                    iguana_utxogen(myinfo,coin,helperid,0);
+                else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
+                {
+                    //printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
+                    for (j=helperid; j<coin->bundlescount-1; j+=IGUANA_NUMHELPERS)
+                        if ( (bp= coin->bundles[j]) != 0 )
+                            iguana_bundlevalidate(coin,bp,0);
+                    coin->spendvalidated |= (1 << helperid);
+                    //printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
+                }
             }
         }
         //portable_mutex_unlock(&myinfo->allcoins_mutex);
