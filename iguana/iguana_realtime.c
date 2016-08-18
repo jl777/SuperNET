@@ -566,7 +566,8 @@ int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_b
     struct iguana_txblock txdata; uint8_t *serialized; int32_t n,errs=0,numtx,len; uint32_t recvlen = 0;
     while ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
-        printf("errs.%d cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        char str[65];
+        printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
         sleep(3);
         if ( errs++ > 10 )
