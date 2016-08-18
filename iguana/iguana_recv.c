@@ -605,7 +605,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
                         }
                     }
                 }
-                if ( flag == 0 )
+           //     if ( flag == 0 )
                     iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
             }
         }
