@@ -1241,7 +1241,48 @@ void iguana_bundlemissings(struct iguana_info *coin,struct iguana_bundle *bp,uin
         }
     }
 }
-        
+
+int32_t iguana_bundlehash2_check(struct iguana_info *coin,bits256 hash2)
+{
+    struct iguana_bundle *bp; int32_t j,flag=0; struct iguana_block *block;
+    if ( bits256_nonz(hash2) == 0 )
+        return(-1);
+    if ( (bp= coin->current) != 0 )
+    {
+        for (j=0; j<bp->n; j++)
+        {
+            if ( j < bp->numspec && bp->speculative != 0 && bits256_cmp(bp->speculative[j],hash2) == 0 )
+            {
+                flag = 1;
+                if ( (block= iguana_blockfind("hashspec",coin,hash2)) != 0 )
+                {
+                    if ( block->mainchain != 0 && block->txvalid != 0 && block->hdrsi != bp->hdrsi )
+                    {
+                        printf("found [%d:%d] in [%d:%d]'s place\n",block->hdrsi,block->bundlei,bp->hdrsi,j);
+                        memset(&bp->speculative[j],0,sizeof(bp->speculative[j]));
+                    }
+                }
+                break;
+            }
+            if ( bits256_cmp(bp->hashes[j],hash2) == 0 )
+            {
+                flag = 1;
+                if ( (block= iguana_blockfind("hashspec",coin,hash2)) != 0 )
+                {
+                    if ( block->mainchain != 0 && block->txvalid != 0 && block->hdrsi != bp->hdrsi )
+                    {
+                        printf("found [%d:%d] in [%d:%d]'s place\n",block->hdrsi,block->bundlei,bp->hdrsi,j);
+                        memset(&bp->hashes[j],0,sizeof(bp->hashes[j]));
+                        bp->blocks[j] = 0;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return(flag);
+}
+
 void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
 {
     int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2;
@@ -1488,6 +1529,15 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         //if ( (rand() % 100) == 0 )
         //    myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
+    }
+    if ( (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
+    {
+        for (i=coin->RTheight-bp->bundleheight; i<bp->n; i++)
+        {
+            iguana_bundlehash2_check(coin,bp->hashes[i]);
+            if ( bp->speculative != 0 )
+                iguana_bundlehash2_check(coin,bp->speculative[i]);
+        }
     }
     iguana_setmaxbundles(coin);
     strcpy(coin->statusstr,str);
