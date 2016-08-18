@@ -532,24 +532,24 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             //printf("len.%d filesize.%ld\n",len,filesize);
             fclose(fp);
         }
-        if ( *recvlenp > 0 )
-        {
-            if ( coin->RTheight == 0 && coin->blocks.hwmchain.height < coin->longestchain-coin->chain->bundlesize && iguana_utxofinished(coin) < coin->bundlescount-3 )
-            {
-                //printf("skip %s\n",bits256_str(str,hash2));
-                return(0);
-            }
-            if ( (fp= fopen(fname,"wb")) != 0 )
-            {
-                if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
-                    printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
-                fclose(fp);
-                //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
-            } else printf("couldnt create %s\n",fname);
-        }
         else if ( checkonly == 0 )
         {
-            if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
+            if ( *recvlenp > 0 )
+            {
+                if ( coin->RTheight == 0 && coin->blocks.hwmchain.height < coin->longestchain-coin->chain->bundlesize && iguana_utxofinished(coin) < coin->bundlescount-3 )
+                {
+                    //printf("skip %s\n",bits256_str(str,hash2));
+                    return(0);
+                }
+                if ( (fp= fopen(fname,"wb")) != 0 )
+                {
+                    if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
+                        printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
+                    fclose(fp);
+                    //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
+                } else printf("couldnt create %s\n",fname);
+            }
+            else if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
             {
                 memcpy(&checklen,ptr,sizeof(checklen));
                 memcpy(&checknumtx,&ptr[sizeof(checklen)],sizeof(checknumtx));
