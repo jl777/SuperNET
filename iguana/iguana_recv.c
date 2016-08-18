@@ -78,13 +78,13 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     {
         if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0) )
         {
-            char str[65];
+            //char str[65];
             recvlen = numtx = 0;
-            if ( iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx) != 0 )
+            if ( iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,0) != 0 )
             {
                 printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
                 return(0);
-            } else printf("no RTrawdata for %s\n",bits256_str(str,hash2));
+            } //else printf("no RTrawdata for %s\n",bits256_str(str,hash2));
         }
     }
     if ( 0 && coin->enableCACHE != 0 && iguana_speculativesearch(coin,&block,hash2) != 0 )
@@ -121,8 +121,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
-            printf("REQ.(%s) bundlei.%d hdrsi.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1);
+        //if ( 0 && coin->current == bp )
+            printf("REQ.(%s) [%d:%d] %s\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
 }
@@ -313,7 +313,7 @@ void iguana_bundletime(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
     }
 }
 
-void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
+void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen,int32_t fromcache)
 {
     struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t valid,speculative=0,i,j,bundlei,copyflag,numtx; struct iguana_block *block; struct iguana_bundle *bp; uint32_t now; char str[65];
     if ( recvlen < 0 || recvlen > IGUANA_MAXPACKETSIZE )
@@ -355,7 +355,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     else if ( 0 && coin->enableCACHE != 0 )
         printf("cache.%d validated.(%s)\n",coin->enableCACHE,bits256_str(str,origtxdata->zblock.RO.hash2));
     origtxdata->zblock.txvalid = 1;
-    if ( coin->virtualchain == 0 && addr != 0 && addr != &coin->internaladdr )
+    if ( fromcache == 0 && coin->virtualchain == 0 && addr != 0 && addr != &coin->internaladdr )
     {
         static uint64_t received[IGUANA_MAXPEERS],count[IGUANA_MAXPEERS],lastcount,lastreceived,last;
         received[addr->addrind] += recvlen;
@@ -475,11 +475,14 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     txdata = origtxdata;
     if ( addr != 0 )
     {
-        if ( addr->pendblocks > 0 )
-            addr->pendblocks--;
-        addr->lastblockrecv = (uint32_t)time(NULL);
-        addr->recvblocks += 1.;
-        addr->recvtotal += recvlen;
+        if ( fromcache == 0 )
+        {
+            if ( addr->pendblocks > 0 )
+                addr->pendblocks--;
+            addr->lastblockrecv = (uint32_t)time(NULL);
+            addr->recvblocks += 1.;
+            addr->recvtotal += recvlen;
+        }
         if ( speculative == 0 && iguana_ramchain_data(coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen) >= 0 )
         {
             txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
@@ -501,15 +504,18 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         } //else printf("cant save block\n");
     }
     numtx = origtxdata->zblock.RO.txn_count;
-    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx);
+    iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,fromcache);
     req->zblock = txdata->zblock;
     if ( coin->virtualchain != 0 )
         printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
     req->zblock.RO.txn_count = req->numtx = txdata->zblock.RO.txn_count;
-    coin->recvcount++;
-    coin->recvtime = (uint32_t)time(NULL);
+    if ( fromcache == 0 )
+    {
+        coin->recvcount++;
+        coin->recvtime = (uint32_t)time(NULL);
+        netBLOCKS++;
+    }
     req->addr = addr;
-    netBLOCKS++;
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
 

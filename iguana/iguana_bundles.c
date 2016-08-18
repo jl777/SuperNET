@@ -1167,7 +1167,7 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
                 iguana_meminit(&coin->internaladdr.TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
             if ( coin->internaladdr.HASHMEM.ptr == 0 )
                 iguana_meminit(&coin->internaladdr.HASHMEM,"HASHPTRS",0,256,0);
-            if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen) < 0 )
+            if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen,1) < 0 )
                 printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,bundlei);
         }
         free(data);

@@ -566,7 +566,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
     return(len);
 }
 
-void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len)
+void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len,int32_t fromcache)
 {
     struct iguana_msghdr checkH;
     memset(&checkH,0,sizeof(checkH));
@@ -582,7 +582,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
                 iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
             //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
         }
-        if ( iguana_msgparser(coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len) < 0 || addr->dead != 0 )
+        if ( iguana_msgparser(coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len,fromcache) < 0 || addr->dead != 0 )
         {
             printf("%p addr->dead.%d or parser break at %u\n",&addr->dead,addr->dead,(uint32_t)time(NULL));
             addr->dead = (uint32_t)time(NULL);
@@ -638,7 +638,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                     return;
                 }
             }
-            iguana_parsebuf(coin,addr,&H,buf,len);
+            iguana_parsebuf(coin,addr,&H,buf,len,0);
             if ( buf != _buf )
                 myfree(buf,len);
             return;
@@ -1200,7 +1200,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
             if ( req->datalen != 0 )
             {
                 //char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->zblock.RO.hash2));
-                iguana_parsebuf(coin,addr,&req->H,req->serializeddata,req->recvlen);
+                iguana_parsebuf(coin,addr,&req->H,req->serializeddata,req->recvlen,1);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
             myfree(req,req->allocsize);
