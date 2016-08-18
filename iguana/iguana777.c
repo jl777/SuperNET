@@ -493,10 +493,10 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     if ( helperid < incr )
     {
-        for (hdrsi=helperid; hdrsi<=max; hdrsi+=incr)
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
             num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
     }
-    while ( (n= iguana_convertfinished(coin)) <= max )
+    while ( (n= iguana_convertfinished(coin)) < max )
     {
         //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
         sleep(IGUANA_NUMHELPERS+3);
