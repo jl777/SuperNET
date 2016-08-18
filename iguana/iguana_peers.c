@@ -500,7 +500,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
             remains -= numsent;
             serialized += numsent;
             if ( remains > 0 )
-                printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,len);
+                printf("%s iguana sent.%d remains.%d of len.%d\n",addr->ipaddr,numsent,remains,len);
         }
     }
     addr->totalsent += len;
