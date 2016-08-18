@@ -793,8 +793,8 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
         {
             if ( tmp->mainchain != 0 )
             {
-                //char str[65];
-                //printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
+                char str[65];
+                printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
             }
