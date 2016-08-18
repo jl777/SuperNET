@@ -425,12 +425,12 @@ void iguana_update_balances(struct iguana_info *coin)
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
-    if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
+    if ( iguana_balancefinished(coin) <= max && iguana_spendvectorsaves(coin) == 0 )
     {
         if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
         else hdrsi = coin->origbalanceswritten;
-        for (i=0; i<max; i++)
+        for (i=0; i<=max; i++)
             if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
