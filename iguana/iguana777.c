@@ -416,6 +416,12 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
 void iguana_update_balances(struct iguana_info *coin)
 {
     int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
+    if ( coin->RTheight > 0 )
+    {
+        printf("Need to restart iguana to generate new balances files\n");
+        printf("RT dataset can expand past bundle boundary, so no need to update balance files now\n");
+        return;
+    }
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
