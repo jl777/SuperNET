@@ -479,7 +479,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;
     max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( 0 && coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
     if ( helperid < incr )
     {
@@ -786,7 +786,7 @@ void iguana_coinloop(void *arg)
             usleep(coin->polltimeout*5000 + 90000 + (coin->peers->numranked == 0)*1000000);
         else usleep(coin->polltimeout*1000);*/
         if ( flag == 0 )
-            usleep(10000);
+            usleep(100000);
     }
 }
 
