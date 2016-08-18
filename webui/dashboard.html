@@ -6,29 +6,92 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 		<title>Iguana / Dashboard</title>
 		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/common.css">
+		<link rel="stylesheet" href="css/budicon.css">
 		<link rel="stylesheet" href="css/dashboard.css">
+		<link rel="stylesheet" href="css/cryptocoins.css">
 		<script type="text/javascript" src="js/jquery-3.0.0.min.js"></script>
 		<script type="text/javascript" src="js/api.js"></script>
-		<script type="text/javascript" src="js/auth.js"></script>
+		<script type="text/javascript" src="js/localstorage.js"></script>
+		<script type="text/javascript" src="js/page-router.js"></script>
+		<script type="text/javascript" src="js/dashboard.js"></script>
+		<script type="text/javascript" src="js/helpers.js"></script>
 	</head>
 	<body>
-		<section class="dashboard">
+		<section class="dashboard unselectable">
 			<nav class="top">
-				<div class="right">Iguana</div>
+				<div class="left">Iguana</div>
 				<div class="center">
-					<ul>
-						<li>Dashboard</li>
-						<li>Payments</li>
-						<li>Contacts</li>
+					<ul class="top-menu">
+						<li class="item cursor-pointer active" data-url="dashboard">
+							<div class="text">Dashboard</div>
+							<div class="border"></div>
+						</li>
+						<li class="item cursor-pointer" data-url="payments">
+							<div class="text">Payments</div>
+							<div class="border"></div>
+						</li>
+						<li class="item cursor-pointer" data-url="contacts">
+							<div class="text">Contacts</div>
+							<div class="border"></div>
+						</li>
 					</ul>
 				</div>
-				<div class="left">Log out</div>
+				<div class="right cursor-pointer lnk-logout">Log out</div>
 			</nav>
-			<div class="balance-block">
-				<div class="label">Total balance</div>
-				<div class="balance">
-					<span id="value"></span>
-					<span id="currency"></span>
+			<div class="main-content">
+				<div class="balance-block">
+					<div class="label">Total balance:</div>
+					<div class="balance">
+						<span class="value"></span>
+						<span class="currency"></span>
+					</div>
+				</div>
+				<aside class="coins">
+					<div class="account-coins-repeater"></div>
+					<button class="btn btn-add-coin">Add coin</button>
+				</aside>
+				<div class="transactions-unit">
+					<div class="top-bar">
+						<div class="active-coin-balance">
+							<span class="value"></span>
+							<span class="coin-name"></span>
+						</div>
+						<div class="active-coin-balance-currency">
+							<span class="value"></span>
+							<span class="currency"></span>
+						</div>
+						<div class="action-buttons">
+							<button class="btn btn-send">Send</button>
+							<button class="btn btn-receive">Receive</button>
+						</div>
+						<div class="info">
+							<i class="bi_doc-book-a"></i>
+							<span>Information</span>
+						</div>
+					</div>
+					<div class="transactions-list">
+						<div class="title">History</div>
+						<div class="transactions-list-repeater"></div>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="form-container add-new-coin-form unselectable hidden fade">
+			<div class="modal-overlay"></div>
+			<div class="modal">
+				<header class="form-header orange-gradient box-shadow-bottom">
+					<i class="bi_interface-cross cursor-pointer btn-close"></i>
+					<div class="title text-shadow">Adding a new coin</div>
+				</header>
+				<div class="form-content">
+					<div class="coins-title">Select coins to add</div>
+					<div class="quick-search">
+						<i class="icon bi_tool-magnifier"></i>
+						<input type="text" class="input text" placeholder='For example, "Bitcoin"' />
+					</div>
+					<div class="supported-coins-repeater"></div>
+					<button class="btn btn-block orange-gradient box-shadow-all text-shadow row btn-next">Next</button>
 				</div>
 			</div>
 		</section>
