@@ -163,6 +163,11 @@ void _myfree(uint8_t type,int32_t origallocsize,void *origptr,int32_t allocsize)
 void myfree(void *_ptr,long allocsize)
 {
     struct allocitem *item = (void *)((long)_ptr - sizeof(struct allocitem));
+    if  ( allocsize == 0 )
+    {
+        printf("myfree zero allocsize %p?\n",_ptr);
+        return;
+    }
     _myfree(item->type,item->allocsize,item,(uint32_t)allocsize);
 }
 
@@ -349,7 +354,7 @@ void iguana_memreset(struct OS_memspace *mem)
 
 void iguana_mempurge(struct OS_memspace *mem)
 {
-    if ( mem->allocated != 0 && mem->ptr != 0 && mem->totalsize > 0 )
+    if ( mem->allocated > 0 && mem->ptr != 0 && mem->totalsize > 0 )
         myfree(mem->ptr,mem->totalsize), mem->ptr = 0;
     iguana_memreset(mem);
     mem->totalsize = 0;

@@ -121,7 +121,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -506,7 +506,12 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     if ( txdata->zblock.fpos == 0 )
     {
         numtx = origtxdata->zblock.RO.txn_count;
-        iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
+        if ( coin->RTheight > 0 )
+        {
+            portable_mutex_lock(&coin->RTmutex);
+            iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
+            portable_mutex_unlock(&coin->RTmutex);
+        }
         req->zblock = txdata->zblock;
         if ( coin->virtualchain != 0 )
             printf("%s recvlen.%d ipbits.%x prev.(%s)\n",coin->symbol,req->zblock.RO.recvlen,req->zblock.fpipbits,bits256_str(str,txdata->zblock.RO.prev_block));
@@ -518,7 +523,8 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             netBLOCKS++;
         }
         req->addr = addr;
-        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+        if ( req->zblock.mainchain == 0 )
+            queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     }
 }
 
@@ -775,29 +781,30 @@ void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int
 
 void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainchain,struct iguana_block *oldhwm,int32_t n)
 {
-    int32_t i,height; struct iguana_block *tmp = oldhwm;
+    int32_t i,height; char str[65]; struct iguana_block *tmp = oldhwm;
     if ( mainchain != oldhwm )
     {
         height = oldhwm->height;
         for (i=0; i<n; i++,height--)
         {
+            bits256_str(str,tmp->RO.hash2);
             if ( tmp->mainchain == 0 )
-                printf("iguana_mainchain_clear: unexpected non-mainchain at ht.%d\n",tmp->height);
+                printf("iguana_mainchain_clear: unexpected non-mainchain at ht.%d %s\n",tmp->height,str);
             else if ( tmp->height != height )
-                printf("iguana_mainchain_clear: unexpected ht.%d vs %d\n",tmp->height,height);
+                printf("iguana_mainchain_clear: unexpected ht.%d vs %d %s\n",tmp->height,height,str);
             else
             {
                 tmp->mainchain = 0;
-                printf("CLEAR mainchain.%d\n",height);
+                printf("CLEAR mainchain.%d %s\n",height,str);
             }
             if ( (tmp= iguana_blockfind("clear",coin,tmp->RO.prev_block)) == 0 )
             {
-                printf("iguana_mainchain_clear: got null tmp i.%d of %d\n",i,n);
+                printf("iguana_mainchain_clear: got null tmp i.%d of %d %s\n",i,n,str);
                 return;
             }
         }
         if ( tmp != mainchain )
-            printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d\n",tmp->height,mainchain->height);
+            printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d %s\n",tmp->height,mainchain->height,str);
     }
 }
 
@@ -811,7 +818,8 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
         {
             if ( tmp->mainchain != 0 )
             {
-                char str[65]; printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
+                char str[65];
+                printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
             }
@@ -844,7 +852,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
         {
             if ( (newheight= iguana_height_estimate(coin,&mainchain,block)) >= coin->blocks.hwmchain.height )
             {
-                iguana_mainchain_clear(coin,mainchain,hwmblock,coin->blocks.hwmchain.height-mainchain->height+1);
+                iguana_mainchain_clear(coin,mainchain,hwmblock,coin->blocks.hwmchain.height-mainchain->height);
                 tmp = block;
                 for (i=0; i<newheight-mainchain->height; i++)
                 {
@@ -1203,7 +1211,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
-    //printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
+    printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
     if ( bits256_nonz(origblock->RO.prev_block) != 0 )
     {
         if ( (prevblock= iguana_blockfind("prev",coin,origblock->RO.prev_block)) != 0 && prevblock->height+1 > coin->longestchain )
