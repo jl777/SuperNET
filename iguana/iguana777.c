@@ -479,11 +479,11 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     //if ( 1 || coin->PREFETCHLAG > 0 ) // data issues on slow systems
     //    incr = 1;
     max = coin->bundlescount;
-    if ( 0 && coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
         max--;
     if ( helperid < incr )
     {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        for (hdrsi=helperid; hdrsi<=max; hdrsi+=incr)
             num += iguana_helperA(myinfo,coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_utxofinished(coin)) < max )
