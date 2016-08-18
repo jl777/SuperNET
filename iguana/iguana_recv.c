@@ -572,7 +572,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
 
 void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *blockhashes,int32_t n)
 {
-    struct iguana_bundlereq *req; int32_t i,num,j,flag; struct iguana_bundle *bp;
+    struct iguana_bundlereq *req; int32_t num;
     if ( addr != 0 )
     {
         addr->recvhdrs++;
@@ -593,32 +593,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     if ( strcmp("BTC",coin->symbol) != 0 )
     {
-        if ( coin->RTheight > 0 )
-        {
-            for (i=1; i<n; i++)
-            {
-                flag = 0;
-                if ( (bp= coin->current) != 0 )
-                {
-                    for (j=0; j<bp->n; j++)
-                    {
-                        if ( j < bp->numspec && bp->speculative != 0 && bits256_cmp(bp->speculative[j],blockhashes[i]) == 0 )
-                        {
-                            flag = 1;
-                            break;
-                        }
-                        if ( bits256_cmp(bp->hashes[j],blockhashes[i]) == 0 )
-                        {
-                            flag = 1;
-                            break;
-                        }
-                    }
-                }
-                if ( flag == 0 )
-                    iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
-            }
-        }
-        else if ( n > coin->chain->bundlesize )
+        if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
     }
 }
@@ -1204,6 +1179,49 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     {
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[1],1);
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[num-1],1);
+    }
+    if ( coin->RTheight > 0 )
+    {
+        int32_t j,flag;
+        for (i=1; i<num; i++)
+        {
+            flag = 0;
+            if ( (bp= coin->current) != 0 )
+            {
+                for (j=0; j<bp->n; j++)
+                {
+                    if ( j < bp->numspec && bp->speculative != 0 && bits256_cmp(bp->speculative[j],blockhashes[i]) == 0 )
+                    {
+                        flag = 1;
+                        if ( (block= iguana_blockfind("hashspec",coin,blockhashes[i])) != 0 )
+                        {
+                            if ( block->mainchain != 0 && block->txvalid != 0 && block->hdrsi != bp->hdrsi )
+                            {
+                                printf("found [%d:%d] in [%d:%d]'s place\n",block->hdrsi,block->bundlei,bp->hdrsi,j);
+                                memset(&bp->speculative[j],0,sizeof(bp->speculative[j]));
+                            }
+                        }
+                        break;
+                    }
+                    if ( bits256_cmp(bp->hashes[j],blockhashes[i]) == 0 )
+                    {
+                        flag = 1;
+                        if ( (block= iguana_blockfind("hashspec",coin,blockhashes[i])) != 0 )
+                        {
+                            if ( block->mainchain != 0 && block->txvalid != 0 && block->hdrsi != bp->hdrsi )
+                            {
+                                printf("found [%d:%d] in [%d:%d]'s place\n",block->hdrsi,block->bundlei,bp->hdrsi,j);
+                                memset(&bp->hashes[j],0,sizeof(bp->hashes[j]));
+                                bp->blocks[j] = 0;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            if ( flag == 0 )
+                iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
+        }
     }
     return(req);
 }

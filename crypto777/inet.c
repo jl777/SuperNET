@@ -34,8 +34,11 @@ struct sockaddr_in6 {
     u_long  sin6_scope_id;
 };
 #else
+#ifndef __MINGW
 #include <arpa/inet.h>
 #endif
+#endif
+
 #ifdef _WIN32
 #ifdef AF_INET6
 #undef AF_INET6

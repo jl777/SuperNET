@@ -572,7 +572,7 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 {
     int32_t hdrsi,bundlei,height,numtx=0,recvlen=-1; struct iguana_bundle *bp;
     printf("start RTpurge from %d\n",lastheight - coin->chain->bundlesize*10);
-    for (height=lastheight-coin->chain->bundlesize*10; height<lastheight; height++)
+    for (height=lastheight-100000; height<lastheight; height++)
     {
         if ( height < 0 )
             height = 0;
@@ -688,7 +688,7 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (addblock= bp->blocks[bundlei]) != 0 && addblock->height == coin->RTheight+i )
                 {
                     if ( iguana_RTblockadd(coin,addblock) < 0 )
-                        return;
+                        break;
                     coin->lastRTheight = addblock->height;
                 }
                 else

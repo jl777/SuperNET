@@ -20,7 +20,9 @@
 !defined(WIN32) && !defined(__SYMBIAN32__)
 #define WIN32
 #else
+#ifndef __MINGW
 #include <arpa/inet.h>
+#endif
 #endif
 
 //#define BTC2_VERSION
