@@ -827,7 +827,7 @@ int32_t iguana_intvectors(struct iguana_info *coin,struct iguana_peer *addr,int3
     //printf("intvectors.%c recvlen.%d\n",intvectors,recvlen);
 }
 
-int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen)
+int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen,int32_t fromcache)
 {
     uint8_t serialized[16384]; char *ipaddr; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     int32_t i,n=0,retval=-1,ishost,srvmsg,bloom,sendlen=0,intvectors,len= -100; uint64_t nonce,x;  bits256 hash2;
@@ -873,7 +873,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                     if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
                     {
                         len = n;
-                        iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen);
+                        iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen,fromcache);
                     }
                     else
                     {

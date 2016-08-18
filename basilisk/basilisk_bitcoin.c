@@ -266,7 +266,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
                 if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,blockspace,datalen)) == datalen )
                 {
                     len = n;
-                    iguana_gotblockM(coin,0,&txdata,rawmem->ptr,&H,blockspace,datalen);
+                    iguana_gotblockM(coin,0,&txdata,rawmem->ptr,&H,blockspace,datalen,0);
                     flag = 1;
                     //if ( (rand() % 1000) == 0 )
                         printf("%s h.%-7d len.%-6d | HWM.%d\n",coin->symbol,h,datalen,coin->blocks.hwmchain.height);

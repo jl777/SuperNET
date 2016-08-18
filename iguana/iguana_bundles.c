@@ -218,15 +218,21 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
             }
             else
             {
-                printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
                 if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
                 {
-                    if ( (block= iguana_blockfind("reset",coin,bp->hashes[0])) != 0 )
+                    if ( bundlei > 1 )
+                        bundlei -= 2;
+                    if ( bp->bundleheight+bundlei > coin->blocks.hwmchain.height && (block= iguana_blockfind("reset",coin,bp->hashes[0])) != 0 )
                     {
-                        printf("RESET HWM to %d\n",coin->firstRTheight);
                         iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
+                        printf("RESET HWM to %d ht.%d\n",bp->bundleheight+bundlei,block->height);
                         return(-1);
-                    }
+                    } //else printf("couldnt find block at %d\n",bp->bundleheight+bundlei);
+                }
+                else if ( bundlei > 0 )
+                {
+                    printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
+                    bp->blocks[bundlei] = 0;
                 }
                 iguana_blockunmark(coin,block,bp,bundlei,1);
                 return(-1);
@@ -452,8 +458,6 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
             retjson = cJSON_CreateArray();
             PKbits = RAMCHAIN_PTR(rdata,PKoffset);
             P = RAMCHAIN_PTR(rdata,Poffset);
-            //PKbits = (void *)(long)((long)rdata + rdata->PKoffset);
-            //P = (void *)(long)((long)rdata + rdata->Poffset);
             for (pkind=0; pkind<numpkinds; pkind++,P++)
             {
                 init_hexbytes_noT(rmdstr,P->rmd160,20);
@@ -1163,7 +1167,7 @@ int32_t iguana_cacheprocess(struct iguana_info *coin,struct iguana_bundle *bp,in
                 iguana_meminit(&coin->internaladdr.TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
             if ( coin->internaladdr.HASHMEM.ptr == 0 )
                 iguana_meminit(&coin->internaladdr.HASHMEM,"HASHPTRS",0,256,0);
-            if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen) < 0 )
+            if ( iguana_msgparser(coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen,1) < 0 )
                 printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,bundlei);
         }
         free(data);
