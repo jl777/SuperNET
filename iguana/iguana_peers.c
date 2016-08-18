@@ -631,7 +631,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                     buf = mycalloc('p',1,len);
                 if ( (recvlen= iguana_recv(addr->ipaddr,usock,buf,len)) < 0 )
                 {
-                    printf("recv error on (%s) len.%d errno.%d (%s)\n",H.command,len,-recvlen,strerror(-recvlen));
+                    printf("%s recv error on (%s) len.%d errno.%d (%s)\n",addr->ipaddr,H.command,len,-recvlen,strerror(-recvlen));
                     if ( buf != _buf )
                         myfree(buf,len);
                     //addr->dead = (uint32_t)time(NULL);
