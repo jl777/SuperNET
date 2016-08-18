@@ -835,7 +835,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     if ( (tmp= iguana_blockfind("hwmprev",coin,tmp->RO.prev_block)) == 0 )
                         break;
                 }
-                if ( mainchain != hwmblock )
+                if ( mainchain != hwmblock && newheight >= coin->blocks.hwmchain.height )
                     iguana_hwmchain_set(coin,mainchain,mainchain->height); // trigger reprocess
             }
         }
