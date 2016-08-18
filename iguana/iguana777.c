@@ -399,7 +399,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
         printf("iguana_helperB unexpected null bp\n");
         return(-1);
     }
-    if ( bp != coin->current )
+    //if ( bp != coin->current )
     {
         iguana_ramchain_prefetch(coin,&bp->ramchain,7);
         if ( convertflag == 0 )
@@ -496,7 +496,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         for (hdrsi=helperid; hdrsi<=max; hdrsi+=incr)
             num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
     }
-    while ( (n= iguana_convertfinished(coin)) < max )
+    while ( (n= iguana_convertfinished(coin)) <= max )
     {
         //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
         sleep(IGUANA_NUMHELPERS+3);
