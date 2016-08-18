@@ -1300,9 +1300,12 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     myfree(buf,bufsize);
     if ( addr->filehash2 != 0 )
         myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2)), addr->filehash2 = 0;
-    iguana_mempurge(&addr->RAWMEM);
-    iguana_mempurge(&addr->TXDATA);
-    iguana_mempurge(&addr->HASHMEM);
+    if ( 0 )
+    {
+        iguana_mempurge(&addr->RAWMEM);
+        iguana_mempurge(&addr->TXDATA);
+        iguana_mempurge(&addr->HASHMEM);
+    }
 #ifdef IGUANA_PEERALLOC
     while ( (remaining= iguana_peerallocated(coin,addr)) > 0 )
     {
