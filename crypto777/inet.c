@@ -19,7 +19,9 @@
 #ifndef crypto777_inet_h
 #define crypto777_inet_h
 #include "OS_portable.h"
+#ifndef _WIN32
 #include <arpa/inet.h>
+#endif
 
 #ifdef _WIN32
 #define in6_addr sockaddr

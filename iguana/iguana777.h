@@ -30,8 +30,9 @@
 
 struct supernet_info;
 struct exchange_info;
-
+#ifndef _WIN32
 #include <arpa/inet.h>
+#endif
 #include "../crypto777/OS_portable.h"
 #include "../datachain/datachain.h"
 
