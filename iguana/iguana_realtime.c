@@ -496,6 +496,8 @@ void iguana_RTreset(struct iguana_info *coin)
 {
     iguana_utxoaddrs_purge(coin);
     iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
+    coin->lastRTheight = 0;
+    coin->RTheight = coin->firstRTheight;
     printf("%s RTreset\n",coin->symbol);
 }
 
@@ -559,13 +561,19 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
     printf("end RTpurge.%d\n",lastheight);
 }
 
-void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
+int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
 {
-    struct iguana_txblock txdata; uint8_t *serialized; int32_t n,numtx,len; uint32_t recvlen = 0;
-    if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
+    struct iguana_txblock txdata; uint8_t *serialized; int32_t n,errs=0,numtx,len; uint32_t recvlen = 0;
+    while ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
-        printf("cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
-        return;
+        printf("errs.%d cant load from tmpdir ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
+        sleep(3);
+        if ( errs++ > 10 )
+        {
+            iguana_RTreset(coin);
+            return(-1);
+        }
     }
     printf("%s RTiterate.%lld offset.%d numtx.%d len.%d\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
     memset(&txdata,0,sizeof(txdata));
@@ -579,7 +587,10 @@ void iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_bloc
     if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
     {
         iguana_RTramchaindata(coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,numtx);
+        return(0);
     } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,numtx,recvlen);
+    iguana_RTreset(coin);
+    return(-1);
 }
 
 struct iguana_block *iguana_RTblock(struct iguana_info *coin,int32_t height)
@@ -593,7 +604,7 @@ struct iguana_block *iguana_RTblock(struct iguana_info *coin,int32_t height)
     return(0);
 }
 
-void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
+int32_t iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
 {
     int32_t offset;
     if ( block != 0 )
@@ -604,11 +615,13 @@ void iguana_RTblockadd(struct iguana_info *coin,struct iguana_block *block)
         //printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
         block->RO.txn_count = coin->RTnumtx[offset];
         coin->RTblocks[offset] = block;
-        iguana_RTiterate(coin,offset,block,1);
+        if ( iguana_RTiterate(coin,offset,block,1) < 0 )
+            return(-1);
     }
+    return(0);
 }
 
-void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
+int32_t iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
 {
     int32_t offset;
     if ( block != 0 )
@@ -616,7 +629,8 @@ void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
         offset = block->height - coin->firstRTheight;
         block->RO.txn_count = coin->RTnumtx[offset];
         //printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
-        iguana_RTiterate(coin,offset,block,-1);
+        if ( iguana_RTiterate(coin,offset,block,-1) < 0 )
+            return(-1);
         if ( coin->RTrawdata[offset] != 0 && coin->RTrecvlens[offset] != 0 )
             iguana_RTunmap(coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         coin->RTrawdata[offset] = 0;
@@ -624,6 +638,7 @@ void iguana_RTblocksub(struct iguana_info *coin,struct iguana_block *block)
         coin->RTnumtx[offset] = 0;
         coin->RTblocks[offset] = 0;
     }
+    return(0);
 }
 
 void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
@@ -633,7 +648,7 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
     {
         if ( block->height > coin->lastRTheight )
         {
-            if ( coin->lastRTheight == 0 )
+            if ( coin->firstRTheight == 0 )
             {
                 coin->firstRTheight = coin->RTheight;
                 iguana_RTreset(coin);
@@ -647,13 +662,15 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 bundlei = (height % coin->chain->bundlesize);
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (addblock= bp->blocks[bundlei]) != 0 && addblock->height == coin->RTheight+i )
                 {
-                    iguana_RTblockadd(coin,addblock);
+                    if ( iguana_RTblockadd(coin,addblock) < 0 )
+                        return;
                     coin->lastRTheight = addblock->height;
                 }
                 else
                 {
                     printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
-                    break;
+                    iguana_RTreset(coin);
+                    return;
                 }
             }
             coin->RTheight += i;
@@ -663,8 +680,8 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
         {
             if ( (subblock= iguana_RTblock(coin,block->height)) != 0 && subblock != block )
             {
-                iguana_RTblocksub(coin,subblock);
-                iguana_RTblockadd(coin,block);
+                if ( iguana_RTblocksub(coin,subblock) < 0 || iguana_RTblockadd(coin,block) < 0 )
+                    return;
                 printf("== RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
             }
         }
@@ -674,14 +691,17 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
             {
                 if ( coin->lastRTheight > 0 )
                     printf("ht.%d reorg past firstRTheight.%d\n",block->height,coin->firstRTheight);
-                coin->lastRTheight = 0;
                 iguana_RTreset(coin);
             }
             else
             {
                 while ( coin->lastRTheight >= block->height )
-                    iguana_RTblocksub(coin,iguana_RTblock(coin,coin->lastRTheight--));
-                iguana_RTblockadd(coin,block);
+                {
+                    if ( iguana_RTblocksub(coin,iguana_RTblock(coin,coin->lastRTheight--)) < 0 )
+                        return;
+                }
+                if ( iguana_RTblockadd(coin,block) < 0 )
+                    return;
                 coin->lastRTheight = block->height;
             }
         }
