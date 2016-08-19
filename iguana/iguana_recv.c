@@ -513,7 +513,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         for (i=0; i<coin->bundlescount; i++)
             if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(bp->hashes[0],txdata->zblock.RO.hash2) == 0 )
                 break;
-        if ( i != coin->bundlescount || coin->RTheight > 0 )
+        //if ( i != coin->bundlescount || coin->RTheight > 0 )
         {
             portable_mutex_lock(&coin->RTmutex);
             iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
@@ -1203,7 +1203,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         {
             if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
             {
-                //iguana_blockQ("recvhashRT",coin,0,-8,blockhashes[i],1);
+                iguana_blockQ("recvhashRT",coin,0,-8,blockhashes[i],1);
                 iguana_sendblockreqPT(coin,0,0,-1,blockhashes[i],0);
             }
         }
