@@ -464,7 +464,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
-void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
+void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTdata *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i;
     // fill in array element and update counters
@@ -476,7 +476,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_block *block,int64_
     }
 }
 
-void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
+void iguana_RTspend(struct iguana_info *coin,struct iguana_RTdata *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
     char str[65],str2[65];
     // fill in array element and update counters
@@ -484,12 +484,13 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_block *block,int64_t 
         printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
-void iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,void *unspents,void *spends)
+void *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,void *unspents,void *spends)
 {
     char str[65];
     // add to hashtable block <-> txids[]
     if ( 0 && strcmp("BTC",coin->symbol) != 0 )
         printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+    return(0);
 }
 
 void iguana_RTreset(struct iguana_info *coin)
