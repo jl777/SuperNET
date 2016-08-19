@@ -546,7 +546,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                         printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
                     fclose(fp);
-                    //printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
+                    printf("numtx.%d len.%d %s\n",*numtxp,*recvlenp,fname);
                 } else printf("couldnt create %s\n",fname);
             }
             else if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
@@ -591,6 +591,7 @@ int32_t iguana_RTiterate(struct iguana_info *coin,int32_t offset,struct iguana_b
     {
         char str[65];
         //printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+        coin->RTrecvlens[offset] = 0;
         coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
         if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
         {

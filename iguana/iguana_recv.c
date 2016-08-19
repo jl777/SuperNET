@@ -527,7 +527,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             netBLOCKS++;
         }
         req->addr = addr;
-        if ( req->zblock.mainchain == 0 || req->zblock.valid == 0 || req->zblock.txvalid == 0 || iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
+        if ( (bits256_cmp(origtxdata->zblock.RO.hash2,coin->blocks.hwmchain.RO.hash2) == 0 || req->zblock.mainchain == 0 || req->zblock.valid == 0 || req->zblock.txvalid == 0) && iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
             queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     }
 }
@@ -599,7 +599,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        if ( 0 && coin->RTheight > 0 )
+        if ( 1 && coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
                 //if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
@@ -1211,7 +1211,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
-    //printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
+    printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
     if ( (block= iguana_blockfind("recv",coin,origblock->RO.hash2)) != 0 )
         iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
     if ( bits256_nonz(origblock->RO.prev_block) != 0 )
