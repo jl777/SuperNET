@@ -338,7 +338,9 @@ int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct igu
     {
         if ( dispflag != 0 )
         {
-            printf("iguana_blockvalidate: %s miscompare (%s) vs (%s)\n",coin->symbol,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            static uint32_t counter;
+            if ( (counter++ % 1000) == 999 )
+            printf("iguana_blockvalidate: %s miscompare.%d (%s) vs (%s)\n",coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
             //getchar();
         }
         return(-1);
