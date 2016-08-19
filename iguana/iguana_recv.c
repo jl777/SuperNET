@@ -800,7 +800,7 @@ void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainch
                 return;
             }
         }
-        if ( tmp != mainchain )
+        if ( tmp != mainchain && coin->RTheight > 0 )
             printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d %s\n",tmp->height,mainchain->height,bits256_str(str,tmp->RO.hash2));
     }
 }
