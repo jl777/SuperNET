@@ -1530,7 +1530,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
         //    myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
     }
-    if ( (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
+    if ( 0 && (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         for (i=coin->RTheight-bp->bundleheight; i<bp->n; i++)
         {
