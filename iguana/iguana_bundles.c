@@ -474,7 +474,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     static const bits256 zero;
-    char fname[1024]; FILE *fp; int32_t subdir,hdrsi,j,lasti,i,m = 0; uint32_t ipbits = 0;
+    char fname[1024]; FILE *fp; int32_t recvlen,numtx,subdir,hdrsi,j,lasti,i,m = 0; uint32_t ipbits = 0;
     if ( coin->current != 0 )
         lasti = coin->current->hdrsi;
     else lasti = 0;
@@ -482,6 +482,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
     {
         for (j=m=0; j<bp->n; j++)
         {
+            iguana_RTrawdata(coin,bp->hashes[j],0,&recvlen,&numtx,0); // delete file
             if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,ipbits,bp->hashes[j],zero,1,1) >= 0 )
             {
                 if ( (fp= fopen(fname,"rb")) != 0 )
