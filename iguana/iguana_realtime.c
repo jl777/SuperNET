@@ -484,7 +484,7 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_RTdata *RTptr,struct 
         printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
-void *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,void *unspents,void *spends)
+struct iguana_RTdata *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
     char str[65];
     // add to hashtable block <-> txids[]
