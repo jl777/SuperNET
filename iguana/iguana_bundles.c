@@ -143,8 +143,8 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
     {
         char str2[65],str3[65];
         bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
-        printf("WARNING iguana_hash2set overwrite [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
-        *orighash2p = newhash2;
+        printf("WARNING iguana_hash2set overwrite avoided [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+        //*orighash2p = newhash2;
        // getchar();
        // return(-1);
     }
@@ -180,7 +180,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         retval = 0;
     } else retval = (bundlei >= 0 && bundlei < coin->chain->bundlesize) ? 0 : 1;
     //printf("set [%d] <- %s\n",bundlei,bits256_str(str,newhash2));
-    if ( bits256_cmp(*orighash2p,newhash2) != 0 )
+    /*if ( bits256_cmp(*orighash2p,newhash2) != 0 )
     {
         if ( bits256_nonz(*orighash2p) != 0 && bp->bundleheight+bundlei <= coin->blocks.hwmchain.height )
         {
@@ -191,7 +191,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
             }
         }
         *orighash2p = newhash2;
-    }
+    }*/
     return(retval);
 }
 
@@ -212,13 +212,13 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         {
             if ( block->mainchain != 0 && (block->height % coin->chain->bundlesize) == bundlei && (block->height / coin->chain->bundlesize) == bp->hdrsi )
             {
-                printf("bundle block override [%d:%d]\n",bp->hdrsi,bundlei);
-                bp->blocks[bundlei] = block;
-                bp->hashes[bundlei] = block->RO.hash2;
+                printf("would have bundle block override [%d:%d]\n",bp->hdrsi,bundlei);
+                //bp->blocks[bundlei] = block;
+                //bp->hashes[bundlei] = block->RO.hash2;
             }
-            else
+            else if ( block->mainchain == 0 )
             {
-                //if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
+                /*if ( coin->RTheight > 0 && bp->bundleheight+bundlei > coin->firstRTheight )
                 {
                     if ( bundlei > 1 )
                         bundlei -= 2;
@@ -234,12 +234,12 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
                 {
                     printf("bp.[%d]->blocks[%d] mismatch %p != %p\n",bp->hdrsi,bundlei,bp->blocks[bundlei],block);
                     bp->blocks[bundlei] = 0;
-                }
+                }*/
                 iguana_blockunmark(coin,block,bp,bundlei,1);
                 return(-1);
             }
         }
-        if ( bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+        if ( 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
             //char str[65],str2[65];
             //printf("B bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
@@ -265,8 +265,8 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         {
             if ( (block->hdrsi != bp->hdrsi || block->bundlei != bundlei) && (block->hdrsi != 0 || block->bundlei != 0) )
             {
-                char str[65]; printf("blockadd warning: %d[%d] main.%d <- %d[%d] %s\n",block->hdrsi,block->bundlei,block->mainchain,bp->hdrsi,bundlei,bits256_str(str,hash2));
-                iguana_blockunmark(coin,block,bp,bundlei,block->mainchain != 0);
+                char str[65]; printf("blockadd warning: %d[%d] main.%d prevent <- %d[%d] %s\n",block->hdrsi,block->bundlei,block->mainchain,bp->hdrsi,bundlei,bits256_str(str,hash2));
+                //iguana_blockunmark(coin,block,bp,bundlei,block->mainchain != 0);
                 err |= 2;
                 return(-1);
                 //exit(-1);
@@ -665,7 +665,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                         if ( 0 && bp == coin->current )
                             printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                         if ( priority > 2 || bp->numsaved > bp->n-10 )
-                            iguana_sendblockreqPT(coin,addr,bp,i,hash2,0);
+                            iguana_sendblockreqPT(coin,0,bp,i,hash2,0);
                         else
                         {
                             req = mycalloc('y',1,sizeof(*req));
@@ -692,7 +692,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                     //if ( bp == coin->current )
                       //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                     n++;
-                    iguana_sendblockreqPT(coin,addr,bp,firsti,hash2,0);
+                    iguana_sendblockreqPT(coin,0,bp,firsti,hash2,0);
                 }
             }
         }
@@ -957,7 +957,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
                         datasize += block->RO.recvlen;
                     }
                 }
-                else if ( bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+                else if ( 0 && bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
                 {
                     printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
                     iguana_blockunmark(coin,block,bp,bundlei,1);
