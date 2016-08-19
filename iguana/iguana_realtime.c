@@ -464,11 +464,71 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
-void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *rmd160,int64_t value)
+void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,int32_t spendflag,int64_t value,struct iguana_RTunspent *unspent)
 {
-    char coinaddr[65];
-    bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,20);
-    printf("%lld %s %.8f\n",(long long)polarity,coinaddr,dstr(value));
+    struct iguana_RTaddr *RTaddr; int32_t i,len = (int32_t)strlen(coinaddr);
+    HASH_FIND(hh,coin->RTaddrs,coinaddr,len,RTaddr);
+    if ( RTaddr == 0 )
+    {
+        RTaddr = calloc(1,sizeof(*RTaddr));
+        strncpy(RTaddr->coinaddr,coinaddr,len);
+        RTaddr->histbalance = 0; // get hist
+        HASH_ADD_KEYPTR(hh,coin->RTaddrs,RTaddr->coinaddr,len,RTaddr);
+    }
+    //for (i=0; i<RTaddr->numunspents; i++)
+    //    if ( RTaddr->unspents[i] == unspent )
+    //        break;
+    if ( spendflag != 0 )
+    {
+        if ( 0 && (i == RTaddr->numunspents || unspent->validflag == 0) )
+        {
+            printf("Cant find unspent for polarity %lld %.8f valid.%d\n",(long long)polarity,dstr(value),unspent->validflag);
+        }
+        else
+        {
+            if ( polarity > 0 )
+            {
+                //unspent->spentflag = 1;
+                RTaddr->debits += value;
+            }
+            else
+            {
+                //unspent->spentflag = 0;
+                RTaddr->debits -= value;
+            }
+        }
+    }
+    else
+    {
+        if ( polarity > 0 )
+        {
+            if ( 0 && (i != RTaddr->numunspents || unspent->spentflag != 0) )
+            {
+                printf("i.%d != RTaddr->numunspents.%d when +polarity %.8f spentflag.%d\n",i,RTaddr->numunspents,dstr(value),unspent->spentflag);
+            }
+            else
+            {
+                //RTaddr->unspents = realloc(RTaddr->unspents,sizeof(*RTaddr->unspents)+(1+RTaddr->numunspents));
+                //RTaddr->unspents[RTaddr->numunspents++] = unspent;
+                RTaddr->credits += value;
+                //unspent->validflag = 1;
+            }
+        }
+        else
+        {
+            if ( 0 && (i == RTaddr->numunspents || RTaddr->numunspents <= 0 || unspent->validflag == 0) )
+            {
+                printf("i.%d == RTaddr->numunspents.%d when -polarity %.8f\n",i,RTaddr->numunspents,dstr(value));
+            }
+            else
+            {
+                //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
+                RTaddr->credits -= value;
+                //unspent->validflag = 0;
+            }
+        }
+    }
+    printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
 
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
@@ -497,7 +557,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
                     return;
                 }
             }
-            iguana_RTcoinaddr(coin,RTptr,block,polarity,rmd160,value);
+            iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,0,value,unspent);
         } else printf("iguana_RTunspent txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     }
     else
@@ -510,7 +570,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 
 void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
-    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent; char str[65],str2[65];
+    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent; char str[65],str2[65],coinaddr[64];
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
@@ -534,13 +594,23 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct 
                     return;
                 }
             }
-            HASH_FIND(hh,coin->RTdataset,prev_hash.bytes,sizeof(prev_hash),spentRTptr);
-            if ( spentRTptr != 0 )
+            if ( bits256_nonz(prev_hash) != 0 && prev_vout >= 0 )
             {
-                if ( (unspent= spentRTptr->unspents[prev_vout]) != 0 )
-                    iguana_RTcoinaddr(coin,RTptr,block,polarity,unspent->rmd160,unspent->value);
-                else printf("iguana_RTspend null unspent.(%s).%d\n",bits256_str(str,prev_hash),prev_vout);
-            } else printf("iguana_RTspend cant find spentRTptr.(%s)\n",bits256_str(str,prev_hash));
+                HASH_FIND(hh,coin->RTdataset,prev_hash.bytes,sizeof(prev_hash),spentRTptr);
+                if ( spentRTptr != 0 )
+                {
+                    if ( (unspent= spentRTptr->unspents[prev_vout]) != 0 )
+                    {
+                        bitcoin_address(coinaddr,coin->chain->pubtype,unspent->rmd160,sizeof(unspent->rmd160));
+                        iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,1,unspent->value,unspent);
+                        unspent->spend = spend;
+                    } else printf("iguana_RTspend null unspent.(%s).%d\n",bits256_str(str,prev_hash),prev_vout);
+                }
+                else
+                {
+                    printf("iguana_RTspend cant find spentRTptr.(%s) search history\n",bits256_str(str,prev_hash));
+                }
+            }
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
@@ -559,11 +629,18 @@ void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
 
 void iguana_RTdataset_free(struct iguana_info *coin)
 {
-    struct iguana_RTtxid *RTptr,*tmp;
+    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2;
     HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
     {
         HASH_DELETE(hh,coin->RTdataset,RTptr);
         iguana_RTtxid_free(RTptr);
+    }
+    HASH_ITER(hh,coin->RTaddrs,RTaddr,tmp2)
+    {
+        HASH_DELETE(hh,coin->RTaddrs,RTaddr);
+        if ( RTaddr->unspents != 0 )
+            free(RTaddr->unspents);
+        free(RTaddr);
     }
 }
 
@@ -586,9 +663,7 @@ struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block
         RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
-        // add to hashtable block <-> txids[]
-        if ( 0 && strcmp("BTC",coin->symbol) != 0 )
-            printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
     }
     else if ( RTptr->txn_count != txn_count || RTptr->numvouts != numvouts || RTptr->numvins != numvins )
     {

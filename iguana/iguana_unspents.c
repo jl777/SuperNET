@@ -1173,7 +1173,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
 
 int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
 {
-    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_block *block; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
@@ -1190,8 +1190,8 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             coin->firstRTheight = coin->RTheight = height;
             iguana_RTreset(coin);
             iguana_RTpurge(coin,coin->firstRTheight);
-            if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-                iguana_RTnewblock(coin,block);
+            //if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+            //    iguana_RTnewblock(coin,block);
             return(coin->histbalance);
         }
     }
@@ -1319,8 +1319,8 @@ continue;
                 coin->firstRTheight = coin->RTheight = height;
                 iguana_RTreset(coin);
                 iguana_RTpurge(coin,coin->firstRTheight);
-                if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-                    iguana_RTnewblock(coin,block);
+                //if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+                //    iguana_RTnewblock(coin,block);
                 return(coin->histbalance);
             }
         }

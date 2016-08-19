@@ -391,7 +391,18 @@ struct iguana_RTunspent
     uint8_t rmd160[20];
     int64_t value;
     int16_t scriptlen;
+    struct iguana_RTspend *spend;
+    uint8_t spentflag,validflag;
     uint8_t script[];
+};
+
+struct iguana_RTaddr
+{
+    UT_hash_handle hh;
+    char coinaddr[64];
+    int64_t histbalance,debits,credits;
+    int32_t numunspents;
+    struct iguana_RTunspent **unspents;
 };
 
 struct iguana_RTtxid
@@ -453,7 +464,7 @@ struct iguana_info
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
-    struct iguana_RTtxid *RTdataset;
+    struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

@@ -400,7 +400,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             sizeAfteremit += recvlen;
             if ( block != 0 )
                 iguana_bundletime(coin,bp,bundlei,block,1);
-            printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
+            //printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
             return;
         }
         bp->dirty++;
@@ -863,7 +863,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
             }
             else if ( coin->RTheight > 0 && newheight == coin->RTheight )
             {
-                printf("newheight.%d is RTheight\n",newheight);
+                //printf("newheight.%d is RTheight\n",newheight);
             }
         }
         //if ( 0 && bits256_nonz(prevhash2) > 0 )

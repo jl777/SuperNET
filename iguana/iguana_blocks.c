@@ -677,7 +677,9 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                     process_iguanablock(block->serdata,CHAINPARMS);
                 }*/
                 iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
+                portable_mutex_lock(&coin->RTmutex);
                 iguana_RTnewblock(coin,block);
+                portable_mutex_unlock(&coin->RTmutex);
                 return(block);
             }
         }
