@@ -766,11 +766,14 @@ void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32
 
 void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int32_t height)
 {
-    if ( block->height == height )
+    if ( coin->RTheight > 0 )
     {
-        iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
-        char str[65]; printf("SET HWM.%s ht.%d\n",bits256_str(str,block->RO.hash2),height);
-    } else printf("iguana_hwmchain_set: mismatched ht.%d vs %d\n",block->height,height);
+        if ( block->height == height )
+        {
+            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
+            char str[65]; printf("SET HWM.%s ht.%d\n",bits256_str(str,block->RO.hash2),height);
+        } else printf("iguana_hwmchain_set: mismatched ht.%d vs %d\n",block->height,height);
+    }
 }
 
 void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainchain,struct iguana_block *oldhwm,int32_t n)
