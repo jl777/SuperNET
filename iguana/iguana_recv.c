@@ -1566,8 +1566,8 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
-                        lag = 7;
-                    else lag = 13;
+                        lag = 17;
+                    else lag = 31;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
                         if ( 0 && bp == coin->current )
@@ -1580,10 +1580,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         {
                             init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                            printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
+                            //printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
                             bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
                             init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
-                            printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
+                            //printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         }
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
