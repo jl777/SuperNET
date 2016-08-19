@@ -380,6 +380,30 @@ struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t fir
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
 
+struct iguana_RTspend
+{
+    bits256 prev_hash; int16_t prev_vout,scriptlen;
+    uint8_t vinscript[];
+};
+
+struct iguana_RTunspent
+{
+    uint8_t rmd160[20];
+    int64_t value;
+    int16_t scriptlen;
+    uint8_t script[];
+};
+
+struct iguana_RTtxid
+{
+    UT_hash_handle hh;
+    bits256 txid;
+    int32_t txn_count,numvouts,numvins;
+    uint32_t locktime,version,timestamp;
+    struct iguana_RTunspent *unspents;
+    struct iguana_RTspend spends[];
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
@@ -429,6 +453,7 @@ struct iguana_info
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
+    struct iguana_RTtxid *RTdataset;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

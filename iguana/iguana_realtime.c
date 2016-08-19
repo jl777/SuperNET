@@ -464,11 +464,17 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
-void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTdata *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
+void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i;
-    // fill in array element and update counters
-    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+    if ( RTptr != 0 )
+    {
+        if ( bits256_cmp(RTptr->txid,txid) == 0 )
+        {
+            
+        } else printf("iguana_RTunspent txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
+    }
+    else
     {
         for (i=0; i<20; i++)
             printf("%02x",rmd160[i]);
@@ -476,21 +482,70 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTdata *RTptr,struc
     }
 }
 
-void iguana_RTspend(struct iguana_info *coin,struct iguana_RTdata *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
+void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
+    struct iguana_RTspend *spend;
     char str[65],str2[65];
-    // fill in array element and update counters
-    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
-        printf("%s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    if ( RTptr != 0 )
+    {
+        if ( bits256_cmp(RTptr->txid,txid) == 0 )
+        {
+            if ( polarity > 0 )
+            {
+                
+            }
+        } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
+    } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
-struct iguana_RTdata *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
+void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
 {
-    char str[65];
-    // add to hashtable block <-> txids[]
-    if ( 0 && strcmp("BTC",coin->symbol) != 0 )
-        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
-    return(0);
+    int32_t i;
+    for (i=0; i<RTptr->numvouts; i++)
+        if ( RTptr->unspents[i] != 0 )
+            free(RTptr->unspents[i]);
+    for (i=0; i<RTptr->numvins; i++)
+        if ( RTptr->spends[i] != 0 )
+            free(RTptr->spends[i]);
+    free(RTptr);
+}
+
+void iguana_RTdataset_free(struct iguana_info *coin)
+{
+    struct iguana_RTtxid *RTptr,*tmp;
+    HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
+    {
+        HASH_DELETE(hh,coin->RTdataset,RTptr);
+        iguana_RTtxid_free(RTptr);
+    }
+}
+
+struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
+{
+    struct iguana_RTtxid *RTptr; char str[65];
+    HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
+    if ( RTptr == 0 )
+    {
+        RTptr = calloc(1,sizeof(*RTptr) + sizeof(void *)*numvins + sizeof(void *)*numvouts);
+        RTptr->txid = txid;
+        RTptr->txn_count = txn_count;
+        RTptr->numvouts = numvouts;
+        RTptr->numvins = numvins;
+        RTptr->locktime = locktime;
+        RTptr->version = version;
+        RTptr->timestamp timestamp;
+        RTptr->unspents = (void *)&RTptr->spends[numvins];
+        HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
+        // add to hashtable block <-> txids[]
+        if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+            printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+    }
+    else if ( RTptr->txn_count != txn_count || RTptr->numvouts != numvouts || RTptr->numvins != numvins )
+    {
+        printf("%s inconsistent counts.(%d %d %d) vs (%d %d %d)\n",bits256_str(str,txid),RTptr->txn_count,RTptr->numvouts,RTptr->numvins,txn_count,numvouts,numvins);
+        return(0);
+    }
+    return(RTptr);
 }
 
 void iguana_RTreset(struct iguana_info *coin)
@@ -499,6 +554,7 @@ void iguana_RTreset(struct iguana_info *coin)
     iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
     coin->lastRTheight = 0;
     coin->RTheight = coin->firstRTheight;
+    iguana_RTdataset_free(coin);
     printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
 }
 
