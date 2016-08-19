@@ -396,9 +396,9 @@ struct iguana_RTunspent
 
 struct iguana_RTtxid
 {
-    UT_hash_handle hh;
+    UT_hash_handle hh; struct iguana_info *coin; struct iguana_block *block;
     bits256 txid;
-    int32_t txn_count,numvouts,numvins;
+    int32_t txi,txn_count,numvouts,numvins;
     uint32_t locktime,version,timestamp;
     struct iguana_RTunspent **unspents;
     struct iguana_RTspend *spends[];

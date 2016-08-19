@@ -464,14 +464,40 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
     return(flag);
 }
 
+void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *rmd160,int64_t value)
+{
+    char coinaddr[65];
+    bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,20);
+    printf("%lld %s %.8f\n",(long long)polarity,coinaddr,dstr(value));
+}
+
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
-    int32_t i;
+    int32_t i; struct iguana_RTunspent *unspent; char str[65];
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
         {
-            
+            if ( (unspent= RTptr->unspents[vout]) == 0 )
+            {
+                if ( polarity > 0 )
+                {
+                    unspent = calloc(1,sizeof(*unspent) + scriptlen);
+                    unspent->value = value;
+                    unspent->scriptlen = scriptlen;
+                    memcpy(unspent->rmd160,rmd160,sizeof(unspent->rmd160));
+                    memcpy(unspent->script,script,scriptlen);
+                } else printf("iguana_RTunspent missing vout.%d ptr\n",vout);
+            }
+            else
+            {
+                if ( memcmp(rmd160,unspent->rmd160,sizeof(unspent->rmd160)) != 0 || value != unspent->value || scriptlen != unspent->scriptlen || memcmp(unspent->script,script,scriptlen) != 0 )
+                {
+                    printf("iguana_RTunspent.%d of %d mismatch %s\n",vout,RTptr->numvouts,bits256_str(str,RTptr->txid));
+                    return;
+                }
+            }
+            iguana_RTcoinaddr(coin,RTptr,block,polarity,rmd160,value);
         } else printf("iguana_RTunspent txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     }
     else
@@ -484,8 +510,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 
 void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
-    struct iguana_RTspend *spend;
-    char str[65],str2[65];
+    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent; char str[65],str2[65];
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
@@ -494,9 +519,28 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct 
             {
                 if ( polarity > 0 )
                 {
-                    
+                    spend = calloc(1,sizeof(*spend) + scriptlen);
+                    spend->prev_hash = prev_hash;
+                    spend->prev_vout = prev_vout;
+                    spend->scriptlen = scriptlen;
+                    memcpy(spend->vinscript,script,scriptlen);
                 } else printf("iguana_RTspend missing vini.%d ptr\n",vini);
             }
+            else
+            {
+                if ( bits256_cmp(prev_hash,spend->prev_hash) != 0 || prev_vout != spend->prev_vout || scriptlen != spend->scriptlen || memcmp(spend->vinscript,script,scriptlen) != 0 )
+                {
+                    printf("RTspend.%d of %d mismatch %s\n",vini,RTptr->numvins,bits256_str(str,RTptr->txid));
+                    return;
+                }
+            }
+            HASH_FIND(hh,coin->RTdataset,prev_hash.bytes,sizeof(prev_hash),spentRTptr);
+            if ( spentRTptr != 0 )
+            {
+                if ( (unspent= spentRTptr->unspents[prev_vout]) != 0 )
+                    iguana_RTcoinaddr(coin,RTptr,block,polarity,unspent->rmd160,unspent->value);
+                else printf("iguana_RTspend null unspent.(%s).%d\n",bits256_str(str,prev_hash),prev_vout);
+            } else printf("iguana_RTspend cant find spentRTptr.(%s)\n",bits256_str(str,prev_hash));
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
@@ -523,13 +567,16 @@ void iguana_RTdataset_free(struct iguana_info *coin)
     }
 }
 
-struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
+struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
     struct iguana_RTtxid *RTptr; char str[65];
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
     if ( RTptr == 0 )
     {
         RTptr = calloc(1,sizeof(*RTptr) + sizeof(void *)*numvins + sizeof(void *)*numvouts);
+        RTptr->txi = txi, RTptr->txn_count = txn_count;
+        RTptr->coin = coin;
+        RTptr->block = block;
         RTptr->txid = txid;
         RTptr->txn_count = txn_count;
         RTptr->numvouts = numvouts;

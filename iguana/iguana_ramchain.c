@@ -2791,7 +2791,7 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
         for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
             tx = &txarray[i];
-            RTptr = iguana_RTtxid(coin,block,polarity,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+            RTptr = iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
             for (j=0; j<tx->tx_out; j++)
             {
                 script = tx->vouts[j].pk_script;
@@ -2813,10 +2813,10 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
         for (i=0; i<txn_count; i++,ramchain->H.txidind++)
         {
             tx = &txarray[i];
-            RTptr = iguana_RTtxid(coin,block,polarity,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+            RTptr = iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
             for (j=0; j<tx->tx_in; j++)
             {
-                iguana_RTspend(coin,RTptr,block,polarity,tx->vins[i].vinscript,tx->vins[i].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
+                iguana_RTspend(coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
             }
         }
         iguana_ramchain_free(coin,ramchain,0);
