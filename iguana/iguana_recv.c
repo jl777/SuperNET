@@ -599,7 +599,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        else if ( 1 )
+        else if ( 0 )
         {
             for (i=1; i<num; i++)
                 if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
@@ -1210,7 +1210,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
-    printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
+    //printf("%s received.(%s)\n",coin->symbol,bits256_str(str,origblock->RO.hash2));
     if ( (block= iguana_blockfind("recv",coin,origblock->RO.hash2)) != 0 )
         iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
     if ( bits256_nonz(origblock->RO.prev_block) != 0 )
