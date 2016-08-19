@@ -599,10 +599,10 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        else if ( coin->RTheight > 0 )
+        if ( coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
-                if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
+                //if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
                     iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
         }
     }
@@ -1578,10 +1578,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         if ( bp == coin->current && coin->blocks.hwmchain.height > 100 )
                         {
-                            init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
+                            init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                            bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
-                            init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
+                            printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
+                            init_hexbytes_noT(hashstr,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256));
                             printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                         }
