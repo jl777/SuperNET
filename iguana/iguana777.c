@@ -734,7 +734,7 @@ void iguana_coinloop(void *arg)
                 coin->idletime = 0;
                 if ( coin->started != 0 && coin->active != 0 )
                 {
-                    printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
+                    //printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
                     {
                         //fprintf(stderr,">>>>>>> %s isRT blockrecv.%d.%d\n",coin->symbol,coin->blocksrecv,coin->longestchain);
