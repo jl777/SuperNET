@@ -810,10 +810,10 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
     {
         if ( tmp != 0 && (tmp= iguana_blockfind("estimate",coin,tmp->RO.hash2)) != 0 )
         {
-            if ( tmp->mainchain != 0 )
+            if ( tmp->mainchain != 0 && tmp->height >= 0 )
             {
                 char str[65];
-                if ( n > 0 )
+                if ( n > 0 && coin->RTheight > 0 )
                     printf("%s M.%d dist.%d -> %d\n",bits256_str(str,block->RO.hash2),tmp->height,n,tmp->height+n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
