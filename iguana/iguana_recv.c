@@ -602,10 +602,9 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        if ( 1 && coin->RTheight > 0 )
+        if ( 0 && coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
-                //if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
                     iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[i],0);
         }
     }
@@ -1196,11 +1195,11 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     {
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[1],1);
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[num-1],1);
-        if ( 1 && coin->RTheight > 0 )
+        if ( 0 && coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
             {
-                //if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
+                if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
                 {
                     iguana_blockQ("recvhashRT",coin,0,-8,blockhashes[i],1);
                     iguana_sendblockreqPT(coin,0,0,-1,blockhashes[i],0);
