@@ -1,3 +1,5 @@
-git pull
-cd crypto777; ./m_ios; 
-cd ../iguana; ./m_ios; cd ..
+if [[ $# -eq 0 ]]; then
+    git pull
+fi
+cd iguana; ./m_ios; cd ..
+
