@@ -599,7 +599,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        else if ( 0 )
+        else if ( coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
                 if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
@@ -803,8 +803,8 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
         {
             if ( tmp->mainchain != 0 )
             {
-                char str[65];
-                printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
+                //char str[65];
+                //printf("%s found mainchain.%d dist.%d\n",bits256_str(str,block->RO.hash2),tmp->height,n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
             }
@@ -1194,7 +1194,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[1],1);
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[num-1],1);
     }
-    if ( coin->RTheight > 0 )
+    if ( 0 && coin->RTheight > 0 )
     {
         for (i=1; i<num; i++)
         {
