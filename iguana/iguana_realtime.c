@@ -723,11 +723,16 @@ void iguana_RTnewblock(struct iguana_info *coin,struct iguana_block *block)
                 while ( coin->lastRTheight >= block->height )
                 {
                     if ( iguana_RTblocksub(coin,iguana_RTblock(coin,coin->lastRTheight--)) < 0 )
+                    {
+                        coin->RTheight = coin->lastRTheight+1;
                         return;
+                    }
                 }
+                coin->RTheight = coin->lastRTheight+1;
                 if ( iguana_RTblockadd(coin,block) < 0 )
                     return;
                 coin->lastRTheight = block->height;
+                coin->RTheight = coin->lastRTheight+1;
             }
         }
     }
