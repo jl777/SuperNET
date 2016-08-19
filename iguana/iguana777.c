@@ -538,7 +538,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max )
     {
         printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
-        sleep(IGUANA_NUMHELPERS+3);
+        sleep(2*IGUANA_NUMHELPERS+3);
     }
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
