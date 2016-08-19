@@ -483,6 +483,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         for (j=m=0; j<bp->n; j++)
         {
             portable_mutex_lock(&coin->RTmutex);
+            recvlen = -1;
             iguana_RTrawdata(coin,bp->hashes[j],0,&recvlen,&numtx,0); // delete file
             portable_mutex_unlock(&coin->RTmutex);
             if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,ipbits,bp->hashes[j],zero,1,1) >= 0 )
