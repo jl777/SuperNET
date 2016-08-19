@@ -400,8 +400,8 @@ struct iguana_RTtxid
     bits256 txid;
     int32_t txn_count,numvouts,numvins;
     uint32_t locktime,version,timestamp;
-    struct iguana_RTunspent *unspents;
-    struct iguana_RTspend spends[];
+    struct iguana_RTunspent **unspents;
+    struct iguana_RTspend *spends[];
 };
 
 struct iguana_info

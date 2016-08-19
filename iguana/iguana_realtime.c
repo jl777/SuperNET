@@ -490,9 +490,12 @@ void iguana_RTspend(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct 
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
         {
-            if ( polarity > 0 )
+            if ( (spend= RTptr->spends[vini]) == 0 )
             {
-                
+                if ( polarity > 0 )
+                {
+                    
+                } else printf("iguana_RTspend missing vini.%d ptr\n",vini);
             }
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
@@ -533,7 +536,7 @@ struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block
         RTptr->numvins = numvins;
         RTptr->locktime = locktime;
         RTptr->version = version;
-        RTptr->timestamp timestamp;
+        RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
         // add to hashtable block <-> txids[]
