@@ -1369,7 +1369,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( (block= iguana_blockfind("hwmcheck",coin,coin->blocks.hwmchain.RO.hash2)) == 0 || block->mainchain == 0 || block->height != coin->blocks.hwmchain.height )
     {
-        printf("HWM mismatch ht.%d vs %d\n",block->height,coin->blocks.hwmchain.height);
+        printf("HWM mismatch ht.%d vs %d or not mainchain.%d\n",block->height,coin->blocks.hwmchain.height,block->mainchain);
         if ( coin->blocks.hwmchain.height > 0 )
         {
             if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
