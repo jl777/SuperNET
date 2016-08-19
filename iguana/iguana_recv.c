@@ -806,14 +806,15 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
 {
     int32_t i,n; struct iguana_block *tmp = block;
     *mainchainp = 0;
-    for (i=n=0; i<coin->chain->bundlesize*10; i++)
+    for (i=n=0; i<coin->chain->bundlesize; i++)
     {
         if ( tmp != 0 && (tmp= iguana_blockfind("estimate",coin,tmp->RO.hash2)) != 0 )
         {
             if ( tmp->mainchain != 0 )
             {
                 char str[65];
-                printf("%s M.%d dist.%d -> %d\n",bits256_str(str,block->RO.hash2),tmp->height,n,tmp->height+n);
+                if ( n > 0 )
+                    printf("%s M.%d dist.%d -> %d\n",bits256_str(str,block->RO.hash2),tmp->height,n,tmp->height+n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
             }
@@ -1221,7 +1222,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
 struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
-    printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
+    //printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
     if ( (block= iguana_blockfind("recv",coin,origblock->RO.hash2)) != 0 )
         iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
     else if ( (block= iguana_blockhashset("recvblock",coin,-1,origblock->RO.hash2,1)) == 0 )
