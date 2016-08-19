@@ -413,7 +413,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
                 //printf("duplicate [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,block->RO.hash2));
                 if ( bits256_cmp(origtxdata->zblock.RO.hash2,block->RO.hash2) != 0 )
                 {
-                    printf("mismatched tx %s received? mainchain.%d\n",bits256_str(str,block->RO.hash2),block->mainchain);
+                    //printf("mismatched tx %s received? mainchain.%d\n",bits256_str(str,block->RO.hash2),block->mainchain);
                     return;
                 }
                 else
