@@ -125,7 +125,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        //if ( 0 && coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -514,10 +514,10 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
     if ( txdata->zblock.fpos == 0 )
     {
         numtx = origtxdata->zblock.RO.txn_count;
-        for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(bp->hashes[0],txdata->zblock.RO.hash2) == 0 )
-                break;
-        if ( i != coin->bundlescount || coin->RTheight > 0 )
+        //for (i=0; i<coin->bundlescount; i++)
+        //    if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(bp->hashes[0],txdata->zblock.RO.hash2) == 0 )
+        //        break;
+        if ( coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize > 0 )
         {
             portable_mutex_lock(&coin->RTmutex);
             iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
