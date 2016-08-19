@@ -527,7 +527,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             netBLOCKS++;
         }
         req->addr = addr;
-        if ( req->zblock.mainchain == 0 )//&& iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
+        if ( req->zblock.mainchain == 0 && req->zblock.valid == 0 && req->zblock.txvalid == 0 && iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
             queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     }
 }
@@ -599,7 +599,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     {
         if ( n > coin->chain->bundlesize )
             iguana_sendblockreqPT(coin,addr,0,-1,blockhashes[1],0);
-        if ( coin->RTheight > 0 )
+        if ( 0 && coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
                 //if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
