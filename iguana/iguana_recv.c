@@ -527,7 +527,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
             netBLOCKS++;
         }
         req->addr = addr;
-        if ( req->zblock.mainchain == 0 && req->zblock.valid == 0 && req->zblock.txvalid == 0 && iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
+        if ( req->zblock.mainchain == 0 || req->zblock.valid == 0 || req->zblock.txvalid == 0 || iguana_RTrawdata(coin,origtxdata->zblock.RO.hash2,0,&len,&numtx,1) == 0 )
             queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
     }
 }
