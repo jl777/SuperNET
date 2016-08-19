@@ -425,7 +425,7 @@ void iguana_update_balances(struct iguana_info *coin)
     max = coin->bundlescount;
     if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
         max--;
-    //if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 )
+    if ( iguana_spendvectorsaves(coin) == 0 ) //iguana_balancefinished(coin) < max && 
     {
         if ( coin->origbalanceswritten <= 1 )
             hdrsi = 0;
@@ -898,7 +898,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

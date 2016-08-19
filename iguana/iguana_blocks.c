@@ -533,12 +533,13 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
     bits256 *hash2p=0; double prevPoW = 0.;
-    if ( newblock == 0 )
+    if ( newblock == 0 || newblock->RO.timestamp == 0 || bits256_nonz(newblock->RO.prev_block) == 0 )
         return(0);
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);
     hwmchain = (struct iguana_block *)&coin->blocks.hwmchain;
     if ( (block= iguana_blockfind("chainlink",coin,newblock->RO.hash2)) != 0 )
     {
+        iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,newblock);
         if ( block->RO.timestamp == 0 )
             block->mainchain = block->valid = block->txvalid = 0;
         iguana_blocksizecheck("chainlink",coin->chain->zcash,block);
@@ -550,8 +551,8 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
         }
         else if ( (prev= iguana_blockfind("chainprev",coin,block->RO.prev_block)) != 0 )
         {
-            if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
-                prev->mainchain = 1;
+            //if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
+            //    prev->mainchain = 1;
             if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(coin,&valid,prev,0) < 0)  )
             {
                 char str[65];
