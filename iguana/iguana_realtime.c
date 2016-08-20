@@ -729,6 +729,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             }
             //printf("len.%d filesize.%ld\n",len,filesize);
             fclose(fp);
+            OS_removefile(fname,0);
         }
         else if ( checkonly == 0 )
         {

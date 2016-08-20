@@ -970,7 +970,7 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
         }
         //printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
     }
-    return(-1);
+    return(0);
 }
 
 struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
