@@ -550,7 +550,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
         {
             if ( lockinputs != 0 )
             {
-                iguana_unspentslock(myinfo,rawtx->coin,vins);
+                iguana_RTunspentslock(myinfo,rawtx->coin,vins);
                 if ( (n= cJSON_GetArraySize(vins)) != 0 )
                 {
                     bits256 txid; int32_t vout;

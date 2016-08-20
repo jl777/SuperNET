@@ -16,6 +16,7 @@
 #include "iguana777.h"
 //#define ENABLE_RAMCHAIN
 
+#ifdef oldway
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     //return;
@@ -463,6 +464,21 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 #endif
     return(flag);
 }
+#endif
+
+int64_t iguana_RTbalance(struct iguana_info *coin,char *coinaddr)
+{
+    struct iguana_RTaddr *RTaddr; uint8_t addrtype,rmd160[20]; int32_t len;
+    len = (int32_t)strlen(coinaddr);
+    HASH_FIND(hh,coin->RTaddrs,coinaddr,len,RTaddr);
+    if ( RTaddr != 0 )
+        return(RTaddr->credits - RTaddr->debits + RTaddr->histbalance);
+    else
+    {
+        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+        return(iguana_utxoaddrtablefind(coin,-1,-1,rmd160));
+    }
+}
 
 void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t spendflag,int64_t value,struct iguana_RTunspent *unspent)
 {
@@ -476,10 +492,14 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         HASH_ADD_KEYPTR(hh,coin->RTaddrs,RTaddr->coinaddr,len,RTaddr);
     }
     if ( spendflag != 0 )
+    {
         RTaddr->debits += polarity * value;
+        coin->RTdebits += polarity * value;
+    }
     else
     {
         RTaddr->credits += polarity * value;
+        coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
             printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);

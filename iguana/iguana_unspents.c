@@ -148,7 +148,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     return(unspentind);
 }
 
-char *iguana_inputaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int16_t *spent_hdrsip,uint32_t *unspentindp,cJSON *vinobj)
+char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int16_t *spent_hdrsip,uint32_t *unspentindp,cJSON *vinobj)
 {
     bits256 txid; int32_t vout,checkind,height;
     *unspentindp = 0;
@@ -159,7 +159,7 @@ char *iguana_inputaddress(struct supernet_info *myinfo,struct iguana_info *coin,
         vout = jint(vinobj,"vout");
         height = jint(vinobj,"height");
         checkind = jint(vinobj,"checkind");
-        if ( (height != 0 && checkind != 0) || (checkind= iguana_unspentindfind(myinfo,coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
+        if ( (height != 0 && checkind != 0) || (checkind= iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
         {
             *spent_hdrsip = (height / coin->chain->bundlesize);
             *unspentindp = checkind;
@@ -858,6 +858,77 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
         }
     }
     else return(0);
+}
+
+int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *coin,uint16_t hdrsi,uint32_t unspentind)
+{
+    // check RT
+    return(iguana_unspent_check(myinfo,coin,hdrsi,unspentind));
+}
+
+int32_t iguana_RTuvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind)
+{
+    //check RT
+    return(iguana_uvaltxid(myinfo,txidp,coin,hdrsi,unspentind));
+}
+
+int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
+{
+    // check RT
+    return(iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,spendlenp,valuep,heightp,txid,vout,lasthdrsi,mempool));
+}
+
+int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
+{
+    // check RTlists
+    return(iguana_unspentslists(myinfo,coin,totalp,unspents,max,required,minconf,addresses,remoteaddr));
+}
+
+cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr)
+{
+    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *item,*retjson = cJSON_CreateArray();
+    rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr);
+    if ( rmdarray != 0 )
+        free(rmdarray);
+    /*{
+     "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
+     "vout" : 1,
+     "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
+     "account" : "test label",
+     "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
+     "amount" : 0.00010000,
+     "confirmations" : 6210,
+     "spendable" : true
+     },*/
+
+    return(retjson);
+}
+
+int64_t RTgettxout(struct iguana_info *coin,int32_t *height,int32_t *scriptlen,uint8_t *script,uint8_t *rmd160,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
+{
+    int64_t value = 0;
+    // RT only
+    return(value);
+}
+
+int32_t iguana_RTunspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,uint16_t hdrsi,uint32_t unspentind,int64_t value)
+{
+    int32_t spendlen = 0;
+    // only RT
+    return(spendlen);
+}
+
+struct iguana_utxo iguana_RTutxofind(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t *RTspendflagp,int32_t lockflag)
+{
+    // check RT
+    return(iguana_RTutxofind(coin,spent_hdrsi,spent_unspentind,RTspendflagp,lockflag));
+}
+
+int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
+{
+    // check RT
+    return(iguana_spentflag(myinfo,coin,RTspendp,spentheightp,ramchain,spent_hdrsi,spent_unspentind,height,minconf,maxconf,amount));
 }
 
 #define UTXOADDR_ITEMSIZE 32

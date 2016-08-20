@@ -962,7 +962,8 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
     }
     coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     //printf("flush free\n");
-    iguana_RTramchainfree(coin,bp);
+    iguana_RTdataset_free(coin);
+    //iguana_RTramchainfree(coin,bp);
     return(coin->balanceswritten);
 }
 

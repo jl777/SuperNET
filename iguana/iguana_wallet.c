@@ -281,7 +281,7 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
     struct iguana_waccount *subset,*tmp; char coinaddr[64]; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    if ( account == 0 )
+    if ( account == 0 || account[0] == 0 )
         account = "*";
     if ( strcmp("*",account) != 0 )
     {
@@ -890,6 +890,22 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
     return(balance);
 }
 
+int64_t oldiguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,int32_t minconf,int32_t lastheight)
+{
+    int64_t balance=0; int32_t i,n; cJSON *addrs=0;
+    if ( minconf == 0 )
+        minconf = 1;
+    if ( (addrs= iguana_getaddressesbyaccount(myinfo,coin,wacct->account)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(addrs)) > 0 )
+        {
+            for (i=0; i<n; i++)
+                balance += iguana_RTbalance(coin,jstri(addrs,i));
+        }
+    }
+    return(balance);
+}
+
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
     int32_t i,j,n,numinputs; uint32_t spent_unspentind; int16_t spent_hdrsi; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
@@ -898,7 +914,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
         addresses = calloc(numinputs,64);
         for (i=n=0; i<numinputs; i++)
         {
-            if ( (address= iguana_inputaddress(myinfo,coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i))) != 0 )
+            if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i))) != 0 )
             {
                 for (j=0; j<n; j++)
                 {

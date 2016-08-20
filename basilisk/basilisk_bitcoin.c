@@ -379,7 +379,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     {
         if ( (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
         {
-            if ( iguana_unspentindfind(myinfo,coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
+            if ( iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
             {
                 //printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);
@@ -1163,7 +1163,7 @@ void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *c
             portable_mutex_lock(&myinfo->bu_mutex);
             if ( (retarray= cJSON_Parse(retstr)) != 0 )
             {
-                //printf("%s UNSPENTS_UPDATE.(%s)\n",coin->symbol,retstr);
+                printf("%s UNSPENTS_UPDATE.(%s)\n",coin->symbol,retstr);
                 if ( jobj(retarray,"error") == 0 )
                 {
                     if ( (jstr(retarray,"ipaddr") == 0 || strcmp(jstr(retarray,"ipaddr"),myinfo->ipaddr) != 0) && (n= cJSON_GetArraySize(retarray)) > 0 )

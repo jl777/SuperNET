@@ -27,8 +27,9 @@ STRING_ARG(iguana,initfastfind,activecoin)
 
 TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
 {
-    int32_t lastheight,minconf,maxconf=SATOSHIDEN; int64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype;
-    struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
+    //int32_t lastheight,minconf,maxconf=SATOSHIDEN; int64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype;
+    //struct iguana_pkhash *P;
+    int32_t minconf,lastheight; cJSON *retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
@@ -42,7 +43,8 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
             jaddstr(retjson,"error","illegal address");
             return(jprint(retjson,1));
         }
-        if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
+        jaddnum(retjson,"balance",iguana_RTbalance(coin,address));
+        /*if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
         {
             jaddstr(retjson,"error","cant convert address");
             return(jprint(retjson,1));
@@ -56,9 +58,9 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
         iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr);
         free(P);
         jadd(retjson,"unspents",array);
-        jaddnum(retjson,"balance",dstr(total));
+        jaddnum(retjson,"balance",dstr(total));*/
         if ( lastheight > 0 )
-            jaddnum(retjson,"lastheight",lastheight);
+            jaddnum(retjson,"RTheight",coin->RTheight);
     }
     return(jprint(retjson,1));
 }
