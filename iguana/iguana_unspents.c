@@ -886,7 +886,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
 
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr)
 {
-    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *item,*retjson = cJSON_CreateArray();
+    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
     rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
     iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr);
     if ( rmdarray != 0 )

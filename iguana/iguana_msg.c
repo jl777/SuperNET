@@ -423,7 +423,8 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     }
     if ( strcmp(coin->symbol,"BTC") != 0 || (rand() % 10) == 0 )
         iguana_possible_peer(coin,ipport);
-    //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
+    if ( 0 && strncmp("BTC",coin->symbol,3) != 0 )
+        printf("%s\n",ipaddr);
 }
 
 void iguana_gotping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
@@ -854,7 +855,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     if ( addr != 0 )
     {
-        if ( strcmp("EAC",coin->symbol) == 0 )
+        if ( 0 && strcmp("DOGE",coin->symbol) == 0 )
             printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);
