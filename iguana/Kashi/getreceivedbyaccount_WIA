@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo ""
+
+echo "Dependencies:"
+echo "getaccoutaddress, setaccount"
+echo ""
+echo "Scenario: Verify that correct total amount is retured for mentioned account"
+echo ""
+
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"getreceivedbyaccount\",\"account\":\"R\",\"includeempty\":\"2\"}"
+
+echo ""

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+clear
+echo ""
+echo "
+The encryptwallet RPC encrypts the wallet with a passphrase. 
+This is only to enable encryption for the first time. After encryption is enabled, 
+you will need to enter the passphrase to use private keys"
+echo ""
+echo ""
+
+echo "Scenario: Test encryptwallet RPC without passphrase"
+echo "Result:  Should Return an error message indicating passphrase required"
+echo ""
+
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"encryptwallet\",\"passphrase\":\"\"}"
+echo ""
+echo ""
