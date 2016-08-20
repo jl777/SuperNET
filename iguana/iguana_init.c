@@ -86,7 +86,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     }
 }
 
-bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
+bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_chain *chain)
 {
     struct iguana_block *block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(*block->zRO)]; int32_t height,auxback;
     if ( coin == 0 || chain == 0 )
@@ -129,7 +129,7 @@ bits256 iguana_genesis(struct iguana_info *coin,struct iguana_chain *chain)
         ptr->mainchain = 1;
         ptr->height = 0;
         //coin->blocks.RO[0] = block.RO;
-        if ( coin->virtualchain != 0 || (height= iguana_chainextend(coin,ptr)) == 0 )
+        if ( coin->virtualchain != 0 || (height= iguana_chainextend(myinfo,coin,ptr)) == 0 )
         {
             iguana_blockzcopy(coin->chain->zcash,block,ptr);
             iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,ptr);
@@ -540,13 +540,13 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         }
     }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
-    iguana_genesis(coin,coin->chain);
+    iguana_genesis(myinfo,coin,coin->chain);
     int32_t bundlei = -2;
     static const bits256 zero;
     iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
     if ( coin->virtualchain == 0 )
     {
-        _iguana_chainlink(coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
+        _iguana_chainlink(myinfo,coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
         if ( coin->blocks.hwmchain.height != 0 || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,coin->chain->genesis_hashdata,sizeof(coin->chain->genesis_hashdata)) != 0 )
         {
             char str[65]; printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,coin->blocks.hwmchain.PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));

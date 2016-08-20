@@ -953,7 +953,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
     }
 }
 
-struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_zblock *zblocks,int32_t n,int32_t *newhwmp)
+struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_zblock *zblocks,int32_t n,int32_t *newhwmp)
 {
     int32_t i,bundlei,match; struct iguana_block *block; bits256 prevhash2; uint8_t serialized[sizeof(struct iguana_msgblock) + sizeof(struct iguana_msgblockhdr_zcash)]; struct iguana_peer *addr; struct iguana_bundle *bp,*firstbp = 0;
     if ( zblocks == 0 )
@@ -974,7 +974,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct iguana_info *coin,struct ig
                 {
                     if ( block->height >= 0 && block->height+1 > coin->longestchain )
                         coin->longestchain = block->height+1;
-                    _iguana_chainlink(coin,block);
+                    _iguana_chainlink(myinfo,coin,block);
                 }
                 //char str[65]; printf("HWM in hdr's prev[%d] bp.%p bundlei.%d block.%p %s\n",i,bp,bundlei,block,bp!=0?bits256_str(str,bp->hashes[bundlei]):"()");
             }
@@ -1222,7 +1222,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
     return(req);
 }
 
-struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
+struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
     //printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
@@ -1246,7 +1246,7 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
             bp->speculative[bundlei] = block->RO.hash2;
             bp->numspec = bundlei+1;
         }
-        while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(coin,block) != 0 )
+        while ( bundlei < bp->n && block != 0 && bp->bundleheight+bundlei == coin->blocks.hwmchain.height+1 && _iguana_chainlink(myinfo,coin,block) != 0 )
         {
             //printf("MAIN.%d ",bp->bundleheight+bundlei);
             bundlei++;
@@ -1293,16 +1293,16 @@ struct iguana_bundlereq *iguana_recvblock(struct iguana_info *coin,struct iguana
                     numsaved++;
         }
        // fprintf(stderr,"%s [%d:%d] block.%x | s.%d r.%d copy.%d mainchain.%d\n",bits256_str(str,origblock->RO.hash2),bp!=0?bp->hdrsi:-1,bundlei,block!=0?block->fpipbits:0,numsaved,numrecv,req!=0?req->copyflag:-1,block->mainchain);
-        if ( _iguana_chainlink(coin,block) == 0 )
+        if ( _iguana_chainlink(myinfo,coin,block) == 0 )
         {
             next = block;
             for (i=n=0; i<coin->chain->bundlesize && n < 60; i++)
             {
                 if ( (block= iguana_blockfind("recvblock",coin,block->RO.prev_block)) == 0 )
                     break;
-                if ( block->mainchain != 0 || _iguana_chainlink(coin,block) != 0 )
+                if ( block->mainchain != 0 || _iguana_chainlink(myinfo,coin,block) != 0 )
                 {
-                    _iguana_chainlink(coin,next);
+                    _iguana_chainlink(myinfo,coin,next);
                     n++;
                     break;
                 }
@@ -1364,7 +1364,7 @@ int32_t iguana_blockreq(struct iguana_info *coin,int32_t height,int32_t priority
     return(-1);
 }
 
-int32_t iguana_reqblocks(struct iguana_info *coin)
+int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( (block= iguana_blockfind("hwmcheck",coin,coin->blocks.hwmchain.RO.hash2)) == 0 || block->mainchain == 0 || block->height != coin->blocks.hwmchain.height )
@@ -1397,7 +1397,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
         if ( (next= bp->blocks[bundlei]) != 0 || (next= iguana_blockfind("reqblocks",coin,bp->hashes[bundlei])) != 0 )
         {
             if ( bits256_nonz(next->RO.prev_block) > 0 )
-                _iguana_chainlink(coin,next);
+                _iguana_chainlink(myinfo,coin,next);
             else if ( next->queued == 0 && next->fpipbits == 0 && (rand() % 100) == 0 )
             {
                 //printf("HWM next %d\n",coin->blocks.hwmchain.height+1);
@@ -1444,7 +1444,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
             if ( memcmp(next->RO.prev_block.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             {
                 coin->nextchecked = (uint32_t)time(NULL);
-                if ( _iguana_chainlink(coin,next) != 0 )
+                if ( _iguana_chainlink(myinfo,coin,next) != 0 )
                     lflag++, flag++;
                 //else printf("chainlink error for %d\n",coin->blocks.hwmchain.height+1);
             }
@@ -1481,7 +1481,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
                             if ( (block= iguana_blockfind("reqblocks",coin,hash2)) != 0 && bits256_cmp(block->RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
                             {
                                 //printf("speculative is next at %d\n",coin->backstop);
-                                if ( _iguana_chainlink(coin,block) != 0 )
+                                if ( _iguana_chainlink(myinfo,coin,block) != 0 )
                                     lflag++, flag++;//, printf("NEWHWM.%d\n",coin->backstop);
                             }
                         }
@@ -1520,7 +1520,7 @@ int32_t iguana_reqblocks(struct iguana_info *coin)
     return(flag);
 }
 
-int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single threaded
+int32_t iguana_processrecvQ(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *newhwmp) // single threaded
 {
     int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
@@ -1531,12 +1531,12 @@ int32_t iguana_processrecvQ(struct iguana_info *coin,int32_t *newhwmp) // single
         if ( req->type == 'B' ) // one block with all txdata
         {
             netBLOCKS--;
-            req = iguana_recvblock(coin,req->addr,req,&req->zblock,req->numtx,req->datalen,req->recvlen,newhwmp);
+            req = iguana_recvblock(myinfo,coin,req->addr,req,&req->zblock,req->numtx,req->datalen,req->recvlen,newhwmp);
         }
         else if ( req->type == 'H' ) // blockhdrs (doesnt have txn_count!)
         {
             HDRnet--;
-            if ( (req= iguana_recvblockhdrs(coin,req,req->blocks,req->n,newhwmp)) != 0 )
+            if ( (req= iguana_recvblockhdrs(myinfo,coin,req,req->blocks,req->n,newhwmp)) != 0 )
             {
                 if ( req->blocks != 0 )
                     myfree(req->blocks,sizeof(struct iguana_zblock) * req->n), req->blocks = 0;
@@ -1851,14 +1851,14 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         coin->balanceflush = 0;
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
-    flag += iguana_processrecvQ(coin,&newhwm);
-    flag += iguana_reqblocks(coin);
+    flag += iguana_processrecvQ(myinfo,coin,&newhwm);
+    flag += iguana_reqblocks(myinfo,coin);
     //if ( coin->spendvectorsaved > 1 )
     {
         if ( time(NULL) > coin->laststats+5 )
         {
             flag += iguana_reqhdrs(coin);
-            iguana_bundlestats(coin,str,IGUANA_DEFAULTLAG);
+            iguana_bundlestats(myinfo,coin,str,IGUANA_DEFAULTLAG);
             coin->laststats = (uint32_t)time(NULL);
         }
     }

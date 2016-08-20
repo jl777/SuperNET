@@ -713,7 +713,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     }
     //if ( (coin->RTheight= (coin->balanceswritten-1) * coin->chain->bundlesize) > coin->longestchain )
     //    coin->longestchain = coin->RTheight;
-    iguana_bundlestats(coin,buf,IGUANA_DEFAULTLAG);
+    iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
     if ( (bp= coin->bundles[coin->bundlescount-1]) != 0 && (block= bp->blocks[bp->n-1]) != 0 )
     {
         if ( block->height > coin->blocks.hwmchain.height )
@@ -809,7 +809,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
     {
         for (height=0; height<coin->bundlescount*coin->chain->bundlesize; height++)
         {
-            if ( _iguana_chainlink(coin,block) == 0 )
+            if ( _iguana_chainlink(myinfo,coin,block) == 0 )
                 break;
             if ( coin->virtualchain == 0 )
                 break;

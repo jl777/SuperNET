@@ -2764,9 +2764,25 @@ void iguana_ramchainmerge(struct iguana_info *coin) // jl777: verify prev/next h
 }
 #endif
 
-int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDATA,struct OS_memspace *HASHMEM,int64_t polarity,struct iguana_block *block,struct iguana_msgtx *txarray,int32_t txn_count)
+void iguana_RTvout(struct iguana_info *coin,int64_t polarity,struct iguana_RTtxid *RTptr,struct iguana_block *block,bits256 txid,int32_t j,struct iguana_msgvout *vout)
 {
-    RAMCHAIN_DECLARE; struct vin_info V; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024],coinaddr[64]; uint8_t *script; struct iguana_ramchaindata *rdata; void *RTptr; int32_t hdrsi,bundlei,i,j,k,type,scriptlen,firsti = 1;
+    int32_t scriptlen,type,k; uint8_t *script; struct vin_info V; char coinaddr[64];
+    script = vout->pk_script;
+    scriptlen = vout->pk_scriptlen;
+    type = iguana_calcrmd160(coin,0,&V,script,scriptlen,txid,j,0xffffffff);
+    //if ( (type == 12 && scriptlen == 0) || (type == 1 && bitcoin_pubkeylen(script+1) <= 0) )
+    {
+        for (k=0; k<scriptlen; k++)
+            printf("%02x",script[k]);
+        printf(" script type.%d scriptlen.%d\n",type,scriptlen);
+    }
+    bitcoin_address(coinaddr,coin->chain->pubtype,V.rmd160,sizeof(V.rmd160));
+    iguana_RTunspent(coin,RTptr,block,polarity,coinaddr,V.rmd160,type,script,scriptlen,txid,j,vout->value);
+}
+
+int32_t iguana_RTramchaindata(struct supernet_info *myinfo,struct iguana_info *coin,struct OS_memspace *TXDATA,struct OS_memspace *HASHMEM,int64_t polarity,struct iguana_block *block,struct iguana_msgtx *txarray,int32_t txn_count)
+{
+    RAMCHAIN_DECLARE; struct iguana_ramchain R,*ramchain = &R; struct iguana_msgtx *tx; char fname[1024]; struct iguana_ramchaindata *rdata; struct iguana_RTtxid *RTptr; int32_t iter,hdrsi,bundlei,i,j,firsti = 1;
     if ( block->RO.txn_count != txn_count )
     {
         printf("txn_count mismatch ht.%d %d != %d\n",block->height,block->RO.txn_count,txn_count);
@@ -2788,37 +2804,50 @@ int32_t iguana_RTramchaindata(struct iguana_info *coin,struct OS_memspace *TXDAT
             printf("fatal error getting txdataptrs %p %p %p %p\n",T,U,S,B);
             return(-1);
         }
-        for (i=0; i<txn_count; i++,ramchain->H.txidind++)
+        for (iter=0; iter<2; iter++)
         {
-            tx = &txarray[i];
-            RTptr = iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
-            for (j=0; j<tx->tx_out; j++)
+            ramchain->H.txidind = ramchain->H.spendind = ramchain->H.unspentind = rdata->firsti;
+            for (i=0; i<txn_count; i++,ramchain->H.txidind++)
             {
-                script = tx->vouts[j].pk_script;
-                scriptlen = tx->vouts[j].pk_scriptlen;
-                type = iguana_calcrmd160(coin,0,&V,script,scriptlen,tx->txid,j,0xffffffff);
-                if ( (type == 12 && scriptlen == 0) || (type == 1 && bitcoin_pubkeylen(script+1) <= 0) )
+                tx = &txarray[i];
+                RTptr = iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+                if ( polarity > 0 )
                 {
-                    for (k=0; k<scriptlen; k++)
-                        printf("%02x",script[k]);
-                    printf(" script type.%d\n",type);
+                    if ( iter == 0 )
+                    {
+                        for (j=0; j<tx->tx_out; j++)
+                            iguana_RTvout(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
+                        ramchain->H.spendind += tx->tx_in;
+                    }
+                    else
+                    {
+                        for (j=0; j<tx->tx_in; j++)
+                        {
+                            iguana_RTspend(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
+                        }
+                        ramchain->H.unspentind += tx->tx_out;
+                    }
                 }
-                bitcoin_address(coinaddr,coin->chain->pubtype,V.rmd160,sizeof(V.rmd160));
-                iguana_RTunspent(coin,RTptr,block,polarity,coinaddr,V.rmd160,type,script,scriptlen,tx->txid,j,tx->vouts[j].value);
+                else
+                {
+                    if ( iter == 0 )
+                    {
+                        for (j=tx->tx_in-1; j>=0; j--)
+                        {
+                            iguana_RTspend(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
+                        }
+                        ramchain->H.unspentind += tx->tx_out;
+                    }
+                    else
+                    {
+                        for (j=tx->tx_out-1; j>=0; j--)
+                            iguana_RTvout(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
+                        ramchain->H.spendind += tx->tx_in;
+                    }
+                }
             }
-            ramchain->H.spendind += tx->tx_in;
         }
         //printf("scriptoffset.%d after %d txids\n",ramchain->H.scriptoffset,txn_count);
-        ramchain->H.txidind = ramchain->H.spendind = rdata->firsti;
-        for (i=0; i<txn_count; i++,ramchain->H.txidind++)
-        {
-            tx = &txarray[i];
-            RTptr = iguana_RTtxid(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
-            for (j=0; j<tx->tx_in; j++)
-            {
-                iguana_RTspend(coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
-            }
-        }
         iguana_ramchain_free(coin,ramchain,0);
         return(0);
     }

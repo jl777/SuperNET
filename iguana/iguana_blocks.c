@@ -531,7 +531,7 @@ void iguana_setchain(void *chainparms)
     printf("RETURN iguana_setchain chainparms.%p\n",chainparms);
 }
 
-struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_block *newblock)
+struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *newblock)
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
     bits256 *hash2p=0; double prevPoW = 0.;
@@ -678,7 +678,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
                 }*/
                 iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
                 portable_mutex_lock(&coin->RTmutex);
-                iguana_RTnewblock(coin,block);
+                iguana_RTnewblock(myinfo,coin,block);
                 portable_mutex_unlock(&coin->RTmutex);
                 return(block);
             }
@@ -705,7 +705,7 @@ struct iguana_block *_iguana_chainlink(struct iguana_info *coin,struct iguana_bl
     }
 }*/
 
-int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newblock)
+int32_t iguana_chainextend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *newblock)
 {
     struct iguana_block *block,*prev; int32_t valid,oldhwm; char str[65];
     if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
@@ -740,7 +740,7 @@ int32_t iguana_chainextend(struct iguana_info *coin,struct iguana_block *newbloc
     {
         oldhwm = coin->blocks.hwmchain.height;
         //printf("link.%s\n",bits256_str(str,block->hash2));
-        while ( block != 0 && memcmp(block->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) != 0 && _iguana_chainlink(coin,block) == block && coin->blocks.hwmchain.height != oldhwm )
+        while ( block != 0 && memcmp(block->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) != 0 && _iguana_chainlink(myinfo,coin,block) == block && coin->blocks.hwmchain.height != oldhwm )
         {
             oldhwm = coin->blocks.hwmchain.height;
             block = block->hh.next;

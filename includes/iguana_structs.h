@@ -392,6 +392,7 @@ struct iguana_RTunspent
     int64_t value;
     int16_t scriptlen;
     struct iguana_RTspend *spend;
+    struct iguana_RTunspent *prevunspent;
     uint8_t spentflag,validflag;
     uint8_t script[];
 };
@@ -402,7 +403,7 @@ struct iguana_RTaddr
     char coinaddr[64];
     int64_t histbalance,debits,credits;
     int32_t numunspents;
-    struct iguana_RTunspent **unspents;
+    struct iguana_RTunspent *lastunspent;
 };
 
 struct iguana_RTtxid

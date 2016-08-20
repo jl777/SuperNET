@@ -1287,7 +1287,7 @@ int32_t iguana_bundlehash2_check(struct iguana_info *coin,bits256 hash2)
     return(flag);
 }
 
-void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
+void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,char *str,int32_t lag)
 {
     int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2;
     int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now;
@@ -1315,7 +1315,7 @@ void iguana_bundlestats(struct iguana_info *coin,char *str,int32_t lag)
                 {
                     if ( (block= iguana_bundleblock(coin,&hash2,bp,j)) == 0 && bits256_nonz(hash2) != 0 )
                         block = iguana_blockfind("bundlestats",coin,hash2);
-                    if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(coin,block) == 0 )
+                    if ( block == 0 || bits256_nonz(block->RO.prev_block) == 0 || _iguana_chainlink(myinfo,coin,block) == 0 )
                         break;
                 }
             }
