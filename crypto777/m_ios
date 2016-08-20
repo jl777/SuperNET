@@ -5,5 +5,5 @@ AR="$(xcrun --sdk iphoneos --find ar)"
 echo Compiling ..
 
 #$CC -I /usr/local/opt/curl/include/ -c  -O2 *.c jpeg/*.c jpeg/unix/*.c -I/usr/local/opt/ 
-$CC -Wno-deprecated -I /usr/local/opt/curl/include/ -c  -O2 *.c jpeg/*.c jpeg/unix/*.c -I/usr/local/opt/ 
+$CC -Wno-deprecated -I ../OSlibs/ios/include/ -c  -O2 *.c jpeg/*.c jpeg/unix/*.c -I/usr/local/opt/ 
 rm -f ../agents/libcrypto777.a; $AR -rcs ../agents/libcrypto777.a *.o 
