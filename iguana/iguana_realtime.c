@@ -502,7 +502,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
-            printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);
+            //printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);
             RTaddr->numunspents++;
             unspent->prevunspent = RTaddr->lastunspent;
             RTaddr->lastunspent = unspent;
@@ -517,7 +517,8 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
             //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
         }
     }
-    printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
 
 struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,uint8_t *script,int32_t scriptlen)
