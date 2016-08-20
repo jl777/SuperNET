@@ -814,6 +814,11 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     {
                         printf("issue missing ht.%d\n",height);
                         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
+                        if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
+                        {
+                            if ( (addr= coin->peers->ranked[rand() % n]) != 0 )
+                                iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
+                        }
                     }
                 }
             }
