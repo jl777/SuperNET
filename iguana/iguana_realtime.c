@@ -802,13 +802,13 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     if ( (addr= coin->peers->ranked[i]) != 0 )
                         iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
             }
-            recvlen = 0;
             for (height=block->height+1; height<=coin->blocks.hwmchain.height; height++)
             {
                 hdrsi = (height / coin->chain->bundlesize);
                 bundlei = (height % coin->chain->bundlesize);
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (block= bp->blocks[bundlei]) != 0 )
                 {
+                    recvlen = 0;
                     if ( iguana_RTrawdata(coin,block->RO.hash2,0,&recvlen,&numtx,0) == 0 )
                     {
                         printf("issue missing ht.%d\n",height);
