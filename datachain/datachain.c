@@ -99,7 +99,7 @@ int32_t datachain_checkpoint_update(struct supernet_info *myinfo,struct iguana_i
 void datachain_BTC_clock(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *btc,int32_t height,uint32_t hdrsi,uint32_t unspentind,uint32_t timestamp)
 {
     int32_t retval; struct iguana_info *btcd = iguana_coinfind("BTCD");
-    printf("datachain_BTC_clock\n");
+    //printf("datachain_BTC_clock\n");
     if ( (retval= datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTC,DATACHAIN_ISBTC,0)) < 0 )
     {
         myinfo->dPoW.BTC.numevents = datachain_events_rewind(myinfo,ordered,&myinfo->dPoW.BTC,height,hdrsi,unspentind);
@@ -230,7 +230,7 @@ void datachain_opreturn(struct supernet_info *myinfo,int32_t ordered,struct igua
     uint32_t hdrsi,unspentind; struct datachain_event *event;
     hdrsi = (uint32_t)(hdrsi_unspentind >> 32);
     unspentind = (uint32_t)hdrsi_unspentind;
-    printf("datachain_opreturn\n");
+    //printf("datachain_opreturn\n");
     if ( btc_or_btcd == DATACHAIN_ISBTC ) // BTC
     {
         if ( opreturn == 0 )
@@ -273,7 +273,7 @@ void datachain_opreturn(struct supernet_info *myinfo,int32_t ordered,struct igua
 int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen)
 {
     uint8_t type,scriptspace[IGUANA_MAXSCRIPTSIZE],opreturn[8192]; char fname[1024]; uint32_t oplen=0; int32_t btc_or_btcd=0,len = -1; struct vin_info V;
-    printf("iguana_opreturn\n");
+    //printf("iguana_opreturn\n");
     if ( strcmp("BTC",coin->symbol) == 0 )
         btc_or_btcd = DATACHAIN_ISBTC;
     else if ( strcmp("BTCD",coin->symbol) == 0 )
