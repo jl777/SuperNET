@@ -517,7 +517,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         for (i=0; i<coin->bundlescount; i++)
             if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
                 break;
-        if ( i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize > 0 )
+        if ( i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize )
         {
             portable_mutex_lock(&coin->RTmutex);
             iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
@@ -816,7 +816,7 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
             if ( tmp->mainchain != 0 && tmp->height >= 0 )
             {
                 char str[65];
-                if ( n > 0 && coin->RTheight > 0 )
+                if ( 0 && n > 0 && coin->RTheight > 0 )
                     printf("%s M.%d dist.%d -> %d\n",bits256_str(str,block->RO.hash2),tmp->height,n,tmp->height+n);
                 *mainchainp = tmp;
                 return(tmp->height + n);
@@ -1699,8 +1699,8 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
                 height = bp->bundleheight + bundlei;
                 bp->issued[bundlei] = 1;
             }
-            req->height = height;
-            req->bundlei = bundlei;
+            req->height = -1; //height;
+            req->bundlei = -1; //bundlei;
             char str2[65];
             //printf("%s %s %s [%d:%d] %d %s %d numranked.%d qsize.%d\n",coin->symbol,argstr,str,bp!=0?bp->hdrsi:-1,bundlei,req->height,bits256_str(str2,hash2),coin->blocks.recvblocks,coin->peers->numranked,queue_size(Q));
             if ( (n= queue_size(Q)) > 100000 )

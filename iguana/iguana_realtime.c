@@ -514,7 +514,7 @@ struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,u
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i; struct iguana_RTunspent *unspent; char str[65];
-    printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
+    //printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
@@ -552,8 +552,8 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 
 void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
-    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen,height; uint64_t value;
-    printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen,height; uint64_t value;
+    //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
     if ( RTptr != 0 )
@@ -594,13 +594,17 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
                 {
                     if ( iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,prev_hash,prev_vout,coin->bundlescount,0) == 0 )
                         printf("iguana_RTspend cant find spentRTptr.(%s) search history\n",bits256_str(str,prev_hash));
-                    else unspent = iguana_RTunspent_create(rmd160,value,spendscript,spendlen);
+                    else
+                    {
+                        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+                        //printf("found unspentind (%s %.8f).%d spendlen.%d\n",coinaddr,dstr(value),addrtype,spendlen);
+                        unspent = iguana_RTunspent_create(rmd160,value,spendscript,spendlen);
+                    }
                 }
                 if ( unspent != 0 )
                 {
                     bitcoin_address(coinaddr,coin->chain->pubtype,unspent->rmd160,sizeof(unspent->rmd160));
                     iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,1,unspent->value,unspent);
-                    printf("spent %s\n",coinaddr);
                     unspent->spend = spend;
                     unspent->spentflag = (polarity > 0);
                 }
@@ -790,14 +794,14 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
         iguana_meminit(&coin->RThashmem,"RThashmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     iguana_memreset(&coin->RTrawmem), iguana_memreset(&coin->RTmem), iguana_memreset(&coin->RThashmem);
     memset(&txdata,0,sizeof(txdata));
-    extern int32_t debugtest;
-    debugtest = 1;
+    //extern int32_t debugtest;
+    //debugtest = 1;
     if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
     {
         iguana_RTramchaindata(myinfo,coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,numtx);
         return(0);
     } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,numtx,recvlen);
-    debugtest = 0;
+    //debugtest = 0;
     iguana_RTreset(coin);
     return(-1);
 }
