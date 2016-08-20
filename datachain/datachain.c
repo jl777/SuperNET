@@ -118,7 +118,7 @@ void datachain_BTC_clock(struct supernet_info *myinfo,int32_t ordered,struct igu
 void datachain_KOMODO_newblock(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *btcd,int32_t height,uint32_t hdrsi,uint32_t unspentind,uint32_t timestamp)
 {
     int32_t retval; struct iguana_info *virt,*tmp;
-    printf("datachain_KOMODO_newblock\n");
+    //printf("datachain_KOMODO_newblock\n");
     if ( (retval= datachain_eventadd(myinfo,ordered,&myinfo->dPoW.BTCD,DATACHAIN_ISKOMODO,0)) < 0 )
     {
         myinfo->dPoW.BTCD.numevents = datachain_events_rewind(myinfo,ordered,&myinfo->dPoW.BTCD,height,hdrsi,unspentind);
