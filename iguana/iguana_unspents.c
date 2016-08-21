@@ -958,7 +958,7 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
 {
     struct iguana_utxoaddr UA; int32_t ind,num,i; uint8_t *ptr;
     memset(&UA,0,sizeof(UA));
-    ind = rmd160[0] + ((int32_t)rmd160[1] << 8);
+    ind = rmd160[0] + ((uint32_t)rmd160[1] << 8);
     if ( (num= iguana_utxotable_numinds(ind)) > 0 )
     {
         for (i=0; i<num; i++)
@@ -1303,7 +1303,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
         if ( utxoaddr->histbalance > 0 )
         {
             checkbalance += utxoaddr->histbalance;
-            ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+            ind = utxoaddr->rmd160[0] + ((uint32_t)utxoaddr->rmd160[1] << 8);
             counts[ind]++;
         } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
     }
@@ -1322,13 +1322,15 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             counts[ind] = 0;
             offset += n;
         }
+        printf("total %d offset %d\n",total,offset);
+        total = 0;
         HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
         {
             if ( utxoaddr->histbalance > 0 )
             {
                 bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
                 memset(item,0,UTXOADDR_ITEMSIZE);
-                ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+                ind = utxoaddr->rmd160[0] + ((uint32_t)utxoaddr->rmd160[1] << 8);
                 iguana_rwutxoaddr(1,ind,item,utxoaddr);
                 memcpy(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE);
                 iguana_rwutxoaddr(0,ind,&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],&UA);
@@ -1336,7 +1338,8 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
                 bitcoin_address(checkaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
                 if ( strcmp(checkaddr,coinaddr) != 0 )
                     printf("rw coinaddr error %s != %s\n",coinaddr,checkaddr);
-                //else printf("ind.%04x %s %.8f %.8f %d\n",ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                else printf("%d: ind.%04x %s %.8f %.8f %d\n",total,ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                total++;
                 if ( memcmp(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE) != 0 )
                     printf("rwutxoaddr cmp error\n");
                 counts[ind]++;
