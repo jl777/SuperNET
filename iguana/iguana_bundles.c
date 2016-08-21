@@ -144,6 +144,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         char str2[65],str3[65];
         bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
         printf("WARNING iguana_hash2set overwrite avoided [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+        return(-1);
         //*orighash2p = newhash2;
        // getchar();
        // return(-1);
@@ -1025,7 +1026,7 @@ int64_t iguana_bundlecalcs(struct iguana_info *coin,struct iguana_bundle *bp,int
 int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
     int32_t i; struct iguana_bundle *tmpbp;
-    if ( iguana_bundleready(coin,bp,0) == bp->n )
+    if ( coin->firstRTheight == 0 && iguana_bundleready(coin,bp,0) == bp->n )
     {
         printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS,(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
         if ( bp->emitfinish != 0 )
@@ -1530,8 +1531,8 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
         //if ( logfp != 0 )
             printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
-        //if ( (rand() % 100) == 0 )
-        //    myallocated(0,0);
+        if ( (rand() % 100) == 0 )
+            myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
     }
     if ( 0 && (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )

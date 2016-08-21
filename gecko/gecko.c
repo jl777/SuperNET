@@ -170,7 +170,7 @@ struct gecko_chain *gecko_chain(struct supernet_info *myinfo,char chainname[GECK
 
 struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj)
 {
-    int32_t datalen,hdrsize,len=0; struct iguana_info *virt=0; char *hexstr; uint8_t hexbuf[8192],*ptr,*serialized; struct iguana_peer *addr; struct iguana_txblock txdata;
+    int32_t n,datalen,hdrsize,len=0; struct iguana_info *virt=0; char *hexstr; uint8_t hexbuf[8192],*ptr,*serialized; struct iguana_peer *addr; struct iguana_txblock txdata;
     portable_mutex_lock(&myinfo->gecko_mutex);
     printf("basilisk_geckochain symbol.%s chain.%s (%s)\n",symbol,chainname,jprint(valsobj,0));
     if ( iguana_coinfind(symbol) == 0 && (hexstr= jstr(valsobj,"genesisblock")) != 0 && (virt= iguana_coinadd(symbol,chainname,valsobj,1)) != 0 )
@@ -212,7 +212,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
             if ( virt->blocks.hwmchain.height == 0 )
             {
                 memset(&txdata,0,sizeof(txdata));
-                if ( iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen )
+                if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen) || n == datalen-1 )
                 {
                     txdata.zblock.height = 0;
                     txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);

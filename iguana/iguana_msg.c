@@ -68,7 +68,7 @@ int32_t iguana_rwversion(int32_t rwflag,uint8_t *serialized,struct iguana_msgver
         printf("iVer.%d v_Network_id.%d wPort.%u bIsGui.%d wCtPort.%u wPrPort.%u\n",iVer,v_Network_id,wPort,bIsGui,wCtPort,wPrPort);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->relayflag),&msg->relayflag);
     }
-    else if ( msg->nVersion > 70000 )
+    else if ( msg->nVersion > 70002 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->relayflag),&msg->relayflag);
     //if ( rwflag == 0 )
     //printf("readsize.%d %-15s v.%llu srv.%llx %u ht.%llu [%s].R%d nonce.%llx\n",readsize,ipaddr,(long long)msg->nVersion,(long long)msg->nServices,(uint32_t)msg->nTime,(long long)msg->nStartingHeight,msg->strSubVer,msg->relayflag,(long long)msg->nonce);
@@ -311,7 +311,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
 void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)]; char *retstr;
-    //printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
+    printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
     if ( 0 && strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
     {
         addr->supernet = 1, addr->basilisk = 0;
@@ -423,7 +423,8 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     }
     if ( strcmp(coin->symbol,"BTC") != 0 || (rand() % 10) == 0 )
         iguana_possible_peer(coin,ipport);
-    //printf("gotaddr.(%s:%d) from (%s)\n",ipaddr,port,addr->ipaddr);
+    if ( 0 && strncmp("BTC",coin->symbol,3) != 0 )
+        printf("%s\n",ipaddr);
 }
 
 void iguana_gotping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)
@@ -854,7 +855,8 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
     }
     if ( addr != 0 )
     {
-        //printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
+        if ( 0 && strcmp("DOGE",coin->symbol) == 0 )
+            printf("iguana_msgparser from (%s) parse.(%s) len.%d\n",addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);
         strcpy(addr->lastcommand,H->command);
@@ -875,7 +877,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         printf(" auxblock\n");
                     }
                     addr->msgcounts.block++;
-                    if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen )
+                    if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )
                     {
                         len = n;
                         iguana_gotblockM(coin,addr,&txdata,rawmem->ptr,H,data,recvlen,fromcache);
@@ -929,7 +931,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         if ( rawmem->totalsize == 0 )
                             iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
                         memset(prevhash2.bytes,0,sizeof(prevhash2));
-                        zblocks = mycalloc('i',1,(int32_t)(sizeof(struct iguana_zblock) * n));
+                        zblocks = mycalloc('z',1,(int32_t)(sizeof(struct iguana_zblock) * n));
                         //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                         for (i=0; i<n; i++)
                         {
@@ -958,8 +960,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         }
                         free(coinbase_branch);
                         free(blockchain_branch);
-                        iguana_gotheadersM(coin,addr,zblocks,n);
-                        //myfree(blocks,sizeof(*blocks) * n);
+                        if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
+                            myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
+ //myfree(blocks,sizeof(*blocks) * n);
                         if ( len == recvlen && addr != 0 )
                             addr->msgcounts.headers++;
                     } else printf("got unexpected n.%d for headers\n",n);

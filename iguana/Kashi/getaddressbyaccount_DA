@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo ""
+echo "
+
+The getaddressesbyaccount RPC returns a list of every address assigned to a particular account.
+
+Parameter #1—the account name
+Result—a list of addresses
+"
+echo ""
+echo "Dependencies:"
+echo "getaccountaddress_WVA RPC"
+echo ""
+
+echo "Scenario: Verify the addresses associated with default account"
+echo "Result:   List of default account addresses"
+echo ""
+
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"getaddressesbyaccount\",\"account\":\"\"}"
+echo ""

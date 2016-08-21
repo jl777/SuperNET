@@ -656,7 +656,7 @@ double iguana_txidstatus(struct supernet_info *myinfo,struct iguana_info *coin,b
     int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
     if ( coin != 0 && coin->peers != 0 && (numranked= coin->peers->numranked) > 0 )
     {
-        if ( (firstvout= iguana_unspentindfind(myinfo,coin,0,0,0,0,&height,txid,0,coin->bundlescount-1,0)) != 0 )
+        if ( (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,0,coin->bundlescount-1,0)) != 0 )
         {
             if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
                 memset(ptr,0,sizeof(*ptr));

@@ -606,7 +606,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
 int64_t iguana_hashmemsize(int64_t numtxids,int64_t numunspents,int64_t numspends,int64_t numpkinds,int64_t numexternaltxids,int64_t scriptspace)
 {
     int64_t allocsize = 0;
-    allocsize += 1.5 * (scriptspace + IGUANA_MAXSCRIPTSIZE + ((numtxids + numpkinds) * (sizeof(UT_hash_handle)*2)) + (((sizeof(struct iguana_account)) * 2 * numpkinds)) + (2 * numunspents * sizeof(struct iguana_spendvector)));
+    allocsize += 2 * (scriptspace + IGUANA_MAXSCRIPTSIZE + ((numtxids + numpkinds) * (sizeof(UT_hash_handle)*2)) + (((sizeof(struct iguana_account)) * 2 * numpkinds)) + (2 * numunspents * sizeof(struct iguana_spendvector)));
     if ( allocsize >= (1LL << 32) )
     {
         printf("REALLY big hashmemsize %llu, truncate and hope for best\n",(long long)allocsize);
@@ -2770,7 +2770,7 @@ void iguana_RTvout(struct iguana_info *coin,int64_t polarity,struct iguana_RTtxi
     script = vout->pk_script;
     scriptlen = vout->pk_scriptlen;
     type = iguana_calcrmd160(coin,0,&V,script,scriptlen,txid,j,0xffffffff);
-    //if ( (type == 12 && scriptlen == 0) || (type == 1 && bitcoin_pubkeylen(script+1) <= 0) )
+    if ( (type == 12 && scriptlen == 0) || (type == 1 && bitcoin_pubkeylen(script+1) <= 0) )
     {
         for (k=0; k<scriptlen; k++)
             printf("%02x",script[k]);

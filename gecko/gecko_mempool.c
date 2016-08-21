@@ -237,7 +237,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
     {
         for (i=0; i<numvins; i++)
         {
-            if ( (unspentind= iguana_unspentindfind(myinfo,virt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1)) != 0 )
+            if ( (unspentind= iguana_RTunspentindfind(myinfo,virt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1)) != 0 )
             {
                 hdrsi = spentheight / virt->chain->bundlesize;
                 hdrsi_unspentind = ((uint64_t)hdrsi << 32) | unspentind;

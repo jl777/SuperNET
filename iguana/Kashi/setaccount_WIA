@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo ""
+echo "The setaccount RPC put the specified address in the given account"
+echo ""
+echo "Dependencies:"
+echo "Getnewaddress RPC, if you don't have an address already"
+echo "Getaccountaddress RPC, if account doesn't exist already"
+echo ""
+echo "Scenario: Verify that ERROR is returned incase of invalid or empty account name"
+echo "Result:   Need address and account "
+echo ""
+
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"setaccount\",\"params\":[\"RW8oinV4TjRobRWNcNx2cjoexnGS5g8yh5\", \"\"]}"

@@ -148,7 +148,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     return(unspentind);
 }
 
-char *iguana_inputaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int16_t *spent_hdrsip,uint32_t *unspentindp,cJSON *vinobj)
+char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int16_t *spent_hdrsip,uint32_t *unspentindp,cJSON *vinobj)
 {
     bits256 txid; int32_t vout,checkind,height;
     *unspentindp = 0;
@@ -159,7 +159,7 @@ char *iguana_inputaddress(struct supernet_info *myinfo,struct iguana_info *coin,
         vout = jint(vinobj,"vout");
         height = jint(vinobj,"height");
         checkind = jint(vinobj,"checkind");
-        if ( (height != 0 && checkind != 0) || (checkind= iguana_unspentindfind(myinfo,coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
+        if ( (height != 0 && checkind != 0) || (checkind= iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
         {
             *spent_hdrsip = (height / coin->chain->bundlesize);
             *unspentindp = checkind;
@@ -860,6 +860,77 @@ int64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coi
     else return(0);
 }
 
+int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *coin,uint16_t hdrsi,uint32_t unspentind)
+{
+    // check RT
+    return(iguana_unspent_check(myinfo,coin,hdrsi,unspentind));
+}
+
+int32_t iguana_RTuvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct iguana_info *coin,int16_t hdrsi,uint32_t unspentind)
+{
+    //check RT
+    return(iguana_uvaltxid(myinfo,txidp,coin,hdrsi,unspentind));
+}
+
+int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
+{
+    // check RT
+    return(iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,spendlenp,valuep,heightp,txid,vout,lasthdrsi,mempool));
+}
+
+int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,int64_t *unspents,int32_t max,int64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
+{
+    // check RTlists
+    return(iguana_unspentslists(myinfo,coin,totalp,unspents,max,required,minconf,addresses,remoteaddr));
+}
+
+cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr)
+{
+    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
+    rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
+    iguana_unspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr);
+    if ( rmdarray != 0 )
+        free(rmdarray);
+    /*{
+     "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
+     "vout" : 1,
+     "address" : "mgnucj8nYqdrPFh2JfZSB1NmUThUGnmsqe",
+     "account" : "test label",
+     "scriptPubKey" : "76a9140dfc8bafc8419853b34d5e072ad37d1a5159f58488ac",
+     "amount" : 0.00010000,
+     "confirmations" : 6210,
+     "spendable" : true
+     },*/
+
+    return(retjson);
+}
+
+int64_t RTgettxout(struct iguana_info *coin,int32_t *height,int32_t *scriptlen,uint8_t *script,uint8_t *rmd160,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
+{
+    int64_t value = 0;
+    // RT only
+    return(value);
+}
+
+int32_t iguana_RTunspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,uint16_t hdrsi,uint32_t unspentind,int64_t value)
+{
+    int32_t spendlen = 0;
+    // only RT
+    return(spendlen);
+}
+
+struct iguana_utxo iguana_RTutxofind(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t *RTspendflagp,int32_t lockflag)
+{
+    // check RT
+    return(iguana_RTutxofind(coin,spent_hdrsi,spent_unspentind,RTspendflagp,lockflag));
+}
+
+int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,int16_t spent_hdrsi,uint32_t spent_unspentind,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
+{
+    // check RT
+    return(iguana_spentflag(myinfo,coin,RTspendp,spentheightp,ramchain,spent_hdrsi,spent_unspentind,height,minconf,maxconf,amount));
+}
+
 #define UTXOADDR_ITEMSIZE 32
 #define iguana_utxotable_numinds(ind) (((ind) == 0xffff) ? coin->utxoaddrlastcount : (coin->utxoaddroffsets[(ind) + 1] - coin->utxoaddroffsets[ind]))
 
@@ -887,7 +958,7 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
 {
     struct iguana_utxoaddr UA; int32_t ind,num,i; uint8_t *ptr;
     memset(&UA,0,sizeof(UA));
-    ind = rmd160[0] + ((int32_t)rmd160[1] << 8);
+    ind = rmd160[0] + ((uint32_t)rmd160[1] << 8);
     if ( (num= iguana_utxotable_numinds(ind)) > 0 )
     {
         for (i=0; i<num; i++)
@@ -899,7 +970,7 @@ int64_t iguana_utxoaddrtablefind(struct iguana_info *coin,int16_t search_hdrsi,u
         }
         //printf("ind.%04x no [%d] p%u after num.%d\n",ind,search_hdrsi,search_pkind,num);
     }
-    return(-1);
+    return(0);
 }
 
 struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp)
@@ -1145,9 +1216,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
             iguana_volatilesmap(coin,&bp->ramchain);
         }
     total = 0;
-    max = 1024 * 1024;
-    if ( strcmp("BTC",coin->symbol) == 0 )
-        max *= 1024;
+    max = 1024 * 1024 * 1024;
     unspents = calloc(1,max);
     max /= sizeof(*unspents);
     memset(&UA,0,sizeof(UA));
@@ -1161,8 +1230,6 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
                 iguana_rwutxoaddr(0,ind,item,&UA);
                 errs += iguana_utxoaddr_check(myinfo,coin,lastheight,unspents,max,&UA);
                 total++;
-                //if ( (total % 1000) == 0 )
-                //    fprintf(stderr,".");
             }
         }
     }
@@ -1173,7 +1240,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
 
 int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
 {
-    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_block *block; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t total,errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_block *block; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
@@ -1232,11 +1299,13 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
         if ( utxoaddr->histbalance > 0 )
         {
             checkbalance += utxoaddr->histbalance;
-            ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+            ind = utxoaddr->rmd160[0] + ((uint32_t)utxoaddr->rmd160[1] << 8);
             counts[ind]++;
         } else printf("error neg or zero balance %.8f\n",dstr(utxoaddr->histbalance));
     }
-    printf("checkbalance %.8f vs %.8f\n",dstr(checkbalance),dstr(balance));
+    for (ind=total=0; ind<0x10000; ind++)
+        total += counts[ind];
+    printf("checkbalance %.8f vs %.8f, total %d\n",dstr(checkbalance),dstr(balance),total);
     if ( checkbalance == balance )
     {
         table = calloc(coin->utxoaddrind+1,UTXOADDR_ITEMSIZE);
@@ -1249,13 +1318,15 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             counts[ind] = 0;
             offset += n;
         }
+        printf("total %d offset %d\n",total,offset);
+        total = 0;
         HASH_ITER(hh,coin->utxoaddrs,utxoaddr,tmp)
         {
             if ( utxoaddr->histbalance > 0 )
             {
                 bitcoin_address(coinaddr,coin->chain->pubtype,utxoaddr->rmd160,sizeof(utxoaddr->rmd160));
                 memset(item,0,UTXOADDR_ITEMSIZE);
-                ind = utxoaddr->rmd160[0] + ((int32_t)utxoaddr->rmd160[1] << 8);
+                ind = utxoaddr->rmd160[0] + ((uint32_t)utxoaddr->rmd160[1] << 8);
                 iguana_rwutxoaddr(1,ind,item,utxoaddr);
                 memcpy(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE);
                 iguana_rwutxoaddr(0,ind,&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],&UA);
@@ -1263,7 +1334,8 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
                 bitcoin_address(checkaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
                 if ( strcmp(checkaddr,coinaddr) != 0 )
                     printf("rw coinaddr error %s != %s\n",coinaddr,checkaddr);
-                //else printf("ind.%04x %s %.8f %.8f %d\n",ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                //else printf("%d: ind.%04x %s %.8f %.8f %d\n",total,ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                total++;
                 if ( memcmp(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE) != 0 )
                     printf("rwutxoaddr cmp error\n");
                 counts[ind]++;
@@ -1286,7 +1358,7 @@ continue;
                         for (k=0; k<20; k++)
                             printf("%02x",UA.rmd160[k]);
                         bitcoin_address(coinaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
-                        printf(" [%4d] p%-5d %12.8f ind.%04x %d %s\n",UA.hdrsi,UA.pkind,dstr(UA.histbalance),ind,j,coinaddr);
+                        //printf(" [%4d] p%-5d %12.8f ind.%04x %d %s\n",UA.hdrsi,UA.pkind,dstr(UA.histbalance),ind,j,coinaddr);
                     }
                 }
             }

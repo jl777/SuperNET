@@ -776,7 +776,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *virt,*tmpcoin,*coin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t i,iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*coin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -813,10 +813,10 @@ void basilisks_loop(void *arg)
         {
             //if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
             {
-                for (i=0; i<BASILISK_MAXRELAYS; i++)
-                    if ( coin->relay_RTheights[i] != 0 )
-                        break;
-                if ( i == BASILISK_MAXRELAYS || (time(NULL) % 60) == 0 )
+                //for (i=0; i<BASILISK_MAXRELAYS; i++)
+                //    if ( coin->relay_RTheights[i] != 0 )
+                //        break;
+                if ( (time(NULL) % 10) == 0 ) //i == BASILISK_MAXRELAYS ||
                 {
                     basilisk_unspents_update(myinfo,coin);
                 }

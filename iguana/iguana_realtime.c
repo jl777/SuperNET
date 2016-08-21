@@ -16,6 +16,7 @@
 #include "iguana777.h"
 //#define ENABLE_RAMCHAIN
 
+#ifdef oldway
 void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp)
 {
     //return;
@@ -463,6 +464,21 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 #endif
     return(flag);
 }
+#endif
+
+int64_t iguana_RTbalance(struct iguana_info *coin,char *coinaddr)
+{
+    struct iguana_RTaddr *RTaddr; uint8_t addrtype,rmd160[20]; int32_t len;
+    len = (int32_t)strlen(coinaddr);
+    HASH_FIND(hh,coin->RTaddrs,coinaddr,len,RTaddr);
+    if ( RTaddr != 0 )
+        return(RTaddr->credits - RTaddr->debits + RTaddr->histbalance);
+    else
+    {
+        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+        return(iguana_utxoaddrtablefind(coin,-1,-1,rmd160));
+    }
+}
 
 void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t spendflag,int64_t value,struct iguana_RTunspent *unspent)
 {
@@ -476,13 +492,17 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         HASH_ADD_KEYPTR(hh,coin->RTaddrs,RTaddr->coinaddr,len,RTaddr);
     }
     if ( spendflag != 0 )
+    {
         RTaddr->debits += polarity * value;
+        coin->RTdebits += polarity * value;
+    }
     else
     {
         RTaddr->credits += polarity * value;
+        coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
-            printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);
+            //printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);
             RTaddr->numunspents++;
             unspent->prevunspent = RTaddr->lastunspent;
             RTaddr->lastunspent = unspent;
@@ -497,7 +517,8 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
             //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
         }
     }
-    printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
+    if ( strcmp("BTC",coin->symbol) != 0 )
+        printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
 
 struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,uint8_t *script,int32_t scriptlen)
@@ -659,7 +680,8 @@ struct iguana_RTtxid *iguana_RTtxid(struct iguana_info *coin,struct iguana_block
         RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
-        printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
+        if ( strcmp("BTC",coin->symbol) != 0 )
+            printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
     }
     else if ( RTptr->txn_count != txn_count || RTptr->numvouts != numvouts || RTptr->numvins != numvins )
     {
@@ -709,6 +731,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
             }
             //printf("len.%d filesize.%ld\n",len,filesize);
             fclose(fp);
+            OS_removefile(fname,0);
         }
         else if ( checkonly == 0 )
         {
@@ -782,17 +805,22 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     if ( (addr= coin->peers->ranked[i]) != 0 )
                         iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
             }
-            recvlen = 0;
             for (height=block->height+1; height<=coin->blocks.hwmchain.height; height++)
             {
                 hdrsi = (height / coin->chain->bundlesize);
                 bundlei = (height % coin->chain->bundlesize);
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (block= bp->blocks[bundlei]) != 0 )
                 {
+                    recvlen = 0;
                     if ( iguana_RTrawdata(coin,block->RO.hash2,0,&recvlen,&numtx,0) == 0 )
                     {
                         printf("issue missing ht.%d\n",height);
                         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
+                        if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
+                        {
+                            if ( (addr= coin->peers->ranked[rand() % n]) != 0 )
+                                iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
+                        }
                     }
                 }
             }
@@ -932,3 +960,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         }
     }
 }
+
+// infinite loops at bundle boundary?
+// >= RTnewblock RTheight 1254001 prev 1254000
+// B errs.0 cant load 15102564820405cd16506d2731567453c437af07cdd5954bc21b32304e39b1d4 ht.1254001 polarity.1 numtx.0 (nil) recvlen.0

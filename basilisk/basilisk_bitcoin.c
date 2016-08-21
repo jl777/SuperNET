@@ -263,7 +263,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
                 else iguana_memreset(rawmem);
                 memset(&txdata,0,sizeof(txdata));
                 memset(&H,0,sizeof(H));
-                if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,blockspace,datalen)) == datalen )
+                if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,blockspace,datalen)) == datalen || n == datalen-1 )
                 {
                     len = n;
                     iguana_gotblockM(coin,0,&txdata,rawmem->ptr,&H,blockspace,datalen,0);
@@ -379,7 +379,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     {
         if ( (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
         {
-            if ( iguana_unspentindfind(myinfo,coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
+            if ( iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
             {
                 //printf("bitcoinvalue found iguana\n");
                 Lptr->retstr = basilisk_valuestr(coin,coinaddr,value,height,txid,vout);

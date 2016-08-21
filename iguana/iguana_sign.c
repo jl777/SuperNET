@@ -218,7 +218,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( vin->vinscript == 0 )
         {
-            if ( (V->unspentind= iguana_unspentindfind(myinfo,coin,V->coinaddr,V->spendscript,&V->spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1,0)) > 0 )
+            if ( (V->unspentind= iguana_RTunspentindfind(myinfo,coin,V->coinaddr,V->spendscript,&V->spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1,0)) > 0 )
             {
                 if ( V->coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,V->coinaddr)) != 0 )
                 {
@@ -899,7 +899,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                 finalized = 0;
             if ( msgtx->vins[i].spendscript == 0 )
             {
-                if ( (vp->unspentind= iguana_unspentindfind(myinfo,coin,vp->coinaddr,vp->spendscript,&vp->spendlen,&vp->amount,&vp->height,msgtx->vins[i].prev_hash,msgtx->vins[i].prev_vout,coin->bundlescount-1,0)) > 0 )
+                if ( (vp->unspentind= iguana_RTunspentindfind(myinfo,coin,vp->coinaddr,vp->spendscript,&vp->spendlen,&vp->amount,&vp->height,msgtx->vins[i].prev_hash,msgtx->vins[i].prev_vout,coin->bundlescount-1,0)) > 0 )
                 {
                     msgtx->vins[i].spendscript = vp->spendscript;
                     msgtx->vins[i].spendlen = vp->spendlen;

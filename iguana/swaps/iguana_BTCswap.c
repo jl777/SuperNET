@@ -216,7 +216,7 @@ struct bitcoin_statetx *instantdex_signtx(char *str,struct supernet_info *myinfo
             //printf("vins.(%s)\n",jprint(vins,0));
             if ( (signedtx= iguana_signrawtx(myinfo,coin,&signedtxid,&completed,vins,rawtx,privkey)) != 0 )
             {
-                iguana_unspentslock(myinfo,coin,vins);
+                iguana_RTunspentslock(myinfo,coin,vins);
                 tx = calloc(1,sizeof(*tx) + strlen(signedtx) + 1);
                 strcpy(tx->txbytes,signedtx);
                 tx->txid = signedtxid;
