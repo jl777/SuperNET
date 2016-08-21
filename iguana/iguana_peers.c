@@ -792,7 +792,7 @@ struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int
             addr->addrind = i;
             if ( addr->usock >= 0 || addr->pending != 0 || addr->ipbits == ipbits || strcmp(ipaddr,addr->ipaddr) == 0 )
             {
-                printf("%s i.%d skip.(%s) usock.%d pending.%d ipbits.%llx lag.%ld\n",coin->symbol,i,addr->ipaddr,addr->usock,addr->pending,(long long)addr->ipbits,time(NULL)-addr->pending);
+                //printf("%s i.%d skip.(%s) usock.%d pending.%d ipbits.%llx lag.%ld\n",coin->symbol,i,addr->ipaddr,addr->usock,addr->pending,(long long)addr->ipbits,time(NULL)-addr->pending);
                 continue;
             }
             portable_mutex_lock(&coin->peers_mutex);
