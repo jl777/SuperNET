@@ -186,7 +186,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
     struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65],str2[65]; bits256 txid,threshold; struct iguana_msgtx *txs;
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&virt->TXMEM);
-    if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
+    if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen || n == datalen-1 )
     {
         if ( bits256_cmp(hash2,txdata.zblock.RO.hash2) != 0 )
         {

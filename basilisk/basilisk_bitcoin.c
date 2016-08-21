@@ -263,7 +263,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
                 else iguana_memreset(rawmem);
                 memset(&txdata,0,sizeof(txdata));
                 memset(&H,0,sizeof(H));
-                if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,blockspace,datalen)) == datalen )
+                if ( (n= iguana_gentxarray(coin,rawmem,&txdata,&len,blockspace,datalen)) == datalen || n == datalen-1 )
                 {
                     len = n;
                     iguana_gotblockM(coin,0,&txdata,rawmem->ptr,&H,blockspace,datalen,0);

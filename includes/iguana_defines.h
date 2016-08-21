@@ -147,8 +147,8 @@ extern int32_t IGUANA_NUMHELPERS;
 #define MEMPOOL_GD_VERSION 60002 // "mempool" command, enhanced "getdata" behavior starts with this version
 #define NO_BLOOM_VERSION 70011 // "filter*" disabled without NODE_BLOOM after and including this version
 #define PROTOCOL_HEADERS_VERSION 70012
-//#define PROTOCOL_VERSION 70002
-#define PROTOCOL_VERSION PROTOCOL_HEADERS_VERSION
+#define PROTOCOL_VERSION 70003
+//#define PROTOCOL_VERSION PROTOCOL_HEADERS_VERSION
 
 #define MSG_TX 1
 #define MSG_BLOCK 2
