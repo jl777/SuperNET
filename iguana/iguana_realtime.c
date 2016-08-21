@@ -960,3 +960,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         }
     }
 }
+
+// infinite loops at bundle boundary?
+// >= RTnewblock RTheight 1254001 prev 1254000
+// B errs.0 cant load 15102564820405cd16506d2731567453c437af07cdd5954bc21b32304e39b1d4 ht.1254001 polarity.1 numtx.0 (nil) recvlen.0
