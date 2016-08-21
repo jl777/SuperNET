@@ -113,7 +113,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin);
 struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bundleip,int32_t bundleheight,bits256 bundlehash2,bits256 allhash,int32_t issueflag);
 struct iguana_block *iguana_updatehdrs(struct iguana_info *coin,int32_t *newhwmp,struct iguana_block *block,bits256 prevhash2,bits256 hash2);
 void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int32_t iter,FILE *fp);
-void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n);
+int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n);
 void iguana_emittxdata(struct iguana_info *coin,struct iguana_bundle *bp);
 int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_avail(struct iguana_info *coin,int32_t height,int32_t n);

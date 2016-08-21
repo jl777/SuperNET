@@ -960,8 +960,9 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         }
                         free(coinbase_branch);
                         free(blockchain_branch);
-                        iguana_gotheadersM(coin,addr,zblocks,n);
-                        //myfree(blocks,sizeof(*blocks) * n);
+                        if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
+                            myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
+ //myfree(blocks,sizeof(*blocks) * n);
                         if ( len == recvlen && addr != 0 )
                             addr->msgcounts.headers++;
                     } else printf("got unexpected n.%d for headers\n",n);

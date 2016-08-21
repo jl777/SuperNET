@@ -550,7 +550,7 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
 }
 
-void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n)
+int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n)
 {
     struct iguana_bundlereq *req; int32_t i,num;
     if ( addr != 0 )
@@ -581,6 +581,7 @@ void iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct
     req->blocks = zblocks, req->n = n;
     HDRnet++;
     queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+    return(0);
 }
 
 void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *blockhashes,int32_t n)
@@ -1855,7 +1856,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     }
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
     flag += iguana_reqblocks(myinfo,coin);
-    if ( time(NULL) > coin->laststats+5 )
+    if ( time(NULL) > coin->laststats+15 )
     {
         flag += iguana_reqhdrs(coin);
         iguana_bundlestats(myinfo,coin,str,IGUANA_DEFAULTLAG);
