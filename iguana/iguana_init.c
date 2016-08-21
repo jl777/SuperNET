@@ -274,6 +274,8 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         }
     }
 #endif
+    OS_randombytes((void *)&m,sizeof(m));
+    srand(m);
     m = flag = 0;
     allhash = zero;
     memset(line,0,sizeof(line));
@@ -284,7 +286,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( m < coin->MAXPEERS/2 )//&& m < 77.7 )
+            if ( m < 3*coin->MAXPEERS/4 && (rand() % 2) == 0 )//&& m < 77.7 )
             {
                 if ( 0 && m == 0 )
                 {
