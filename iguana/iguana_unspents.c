@@ -1334,7 +1334,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
                 bitcoin_address(checkaddr,coin->chain->pubtype,UA.rmd160,sizeof(UA.rmd160));
                 if ( strcmp(checkaddr,coinaddr) != 0 )
                     printf("rw coinaddr error %s != %s\n",coinaddr,checkaddr);
-                else printf("%d: ind.%04x %s %.8f %.8f %d\n",total,ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
+                //else printf("%d: ind.%04x %s %.8f %.8f %d\n",total,ind,coinaddr,dstr(UA.histbalance),dstr(utxoaddr->histbalance),counts[ind]);
                 total++;
                 if ( memcmp(&table[(offsets[ind] + counts[ind]) * UTXOADDR_ITEMSIZE],item,UTXOADDR_ITEMSIZE) != 0 )
                     printf("rwutxoaddr cmp error\n");

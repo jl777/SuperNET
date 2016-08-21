@@ -890,7 +890,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
     }
 #endif
     ipbits = (uint32_t)calc_ipbits(ipaddr);
-    printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
+    //printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
     if ( iguana_peerslot(coin,(uint32_t)ipbits,0) != 0 )
         return((uint32_t)time(NULL));
     for (i=n=0; i<IGUANA_MAXPEERS; i++)
