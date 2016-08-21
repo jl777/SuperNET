@@ -1856,7 +1856,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     }
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
     flag += iguana_reqblocks(myinfo,coin);
-    if ( time(NULL) > coin->laststats+15 )
+    if ( time(NULL) > coin->laststats+30 )
     {
         flag += iguana_reqhdrs(coin);
         iguana_bundlestats(myinfo,coin,str,IGUANA_DEFAULTLAG);
