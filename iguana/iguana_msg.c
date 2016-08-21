@@ -931,7 +931,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
                         if ( rawmem->totalsize == 0 )
                             iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
                         memset(prevhash2.bytes,0,sizeof(prevhash2));
-                        zblocks = mycalloc('i',1,(int32_t)(sizeof(struct iguana_zblock) * n));
+                        zblocks = mycalloc('z',1,(int32_t)(sizeof(struct iguana_zblock) * n));
                         //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                         for (i=0; i<n; i++)
                         {

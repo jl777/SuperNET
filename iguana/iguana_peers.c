@@ -120,7 +120,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
     portable_mutex_lock(&coin->peers_mutex);
     if ( (item= _iguana_hashfind(coin,(uint32_t)iA->ipbits)) == 0 )
     {
-        tmp = mycalloc('i',1,sizeof(*iA));
+        tmp = mycalloc('p',1,sizeof(*iA));
         *tmp = *iA;
         iA = tmp;
         if ( ind <= 0 )

@@ -271,7 +271,7 @@ void iguana_bundleQ(struct iguana_info *coin,struct iguana_bundle *bp,int32_t ti
     if ( 0 && bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(coin,bp,0) == bp->n )
         printf("bundle.[%d] is ready\n",bp->hdrsi);
     bp->queued = (uint32_t)time(NULL);
-    ptr = mycalloc('i',1,sizeof(*ptr));
+    ptr = mycalloc('q',1,sizeof(*ptr));
     ptr->allocsize = sizeof(*ptr);
     ptr->coin = coin;
     ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
