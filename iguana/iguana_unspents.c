@@ -1270,6 +1270,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
                 iguana_RTnewblock(myinfo,coin,block);
                 portable_mutex_unlock(&coin->RTmutex);
             }
+            basilisk_unspents_update(myinfo,coin);
             return(coin->histbalance);
         }
     }
@@ -1408,6 +1409,7 @@ continue;
                     iguana_RTnewblock(myinfo,coin,block);
                     portable_mutex_unlock(&coin->RTmutex);
                 }
+                basilisk_unspents_update(myinfo,coin);
                 return(coin->histbalance);
             }
         }
