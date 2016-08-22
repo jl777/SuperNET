@@ -3,45 +3,59 @@
  *
  */
 
-var server = {
-  "protocol": "http://",
-  "ip": "localhost",
-  "port": "7778"
-};
-var apiRoutes = {
-  "bitcoinRPC" : {
-    "walletPassphrase" : "bitcoinrpc/walletpassphrase", // params: password String, timeout Int
-    "encryptWallet" : "bitcoinrpc/encryptwallet", // params: passphrase String
-    "listTransactions": "bitcoinrpc/listtransactions", // params: account String
-    "getTransaction": "bitcoinrpc/gettransaction", // params: txid String
-    "getBalance": "bitcoinrpc/getbalance" // params: account String
-  },
-  "iguana": {
-    "addCoin": "iguana/addcoin", // params newcoin, portp2p, services
-    "rates": "iguana/rates", // params: coin/curency or currency/currency or coin/coin, variable length
-    "rate": "iguana/rate" // params: base, rel e.g. base=BTC&rel=USD, !param values in CAPS!
-  }
-};
-var newCoinConf = {
-  "btc": {
-    "services": 129,
-    "portp2p": 8334
-  },
-  "btcd": {
-    "services": 0,
-    "portp2p": 14631
-  }
-};
+var apiProto = function() {};
 
-function getServerUrl() {
-  return server.protocol + server.ip + ":" + server.port + "/api/";
+var currentCoinPort = 0;
+
+apiProto.prototype.getConf = function() {
+  var conf = {
+      "server": {
+        "protocol": "http://",
+        "ip": "localhost",
+        "port": "7778"
+      },
+      "apiRoutes": {
+        "bitcoinRPC" : {
+          "walletPassphrase" : "bitcoinrpc/walletpassphrase", // params: password String, timeout Int
+          "encryptWallet" : "bitcoinrpc/encryptwallet", // params: passphrase String
+          "listTransactions": "bitcoinrpc/listtransactions", // params: account String
+          "getTransaction": "bitcoinrpc/gettransaction", // params: txid String
+          "getBalance": "bitcoinrpc/getbalance" // params: account String
+        },
+        "iguana": {
+          "addCoin": "iguana/addcoin", // params newcoin, portp2p, services
+          "rates": "iguana/rates", // params: coin/curency or currency/currency or coin/coin, variable length
+          "rate": "iguana/rate" // params: base, rel e.g. base=BTC&rel=USD, !param values in CAPS!
+        }
+      },
+      "newCoinConf": {
+        "btc": {
+          "services": 129,
+          "portp2p": 8333
+        },
+        "btcd": {
+          "services": 0,
+          "portp2p": 14631
+        }
+      }
+  };
+
+  // coin port switch hook
+  /*if (currentCoinPort !== 0)
+    conf.server.port = conf.newCoinConf.[currentCoinPort].portp2p;*/
+
+  return conf;
 }
 
-function walletLogin(passphrase) {
+apiProto.prototype.getServerUrl = function() {
+  return apiProto.prototype.getConf().server.protocol + apiProto.prototype.getConf().server.ip + ":" + apiProto.prototype.getConf().server.port + "/api/";
+}
+
+apiProto.prototype.walletLogin = function(passphrase, timeout) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.bitcoinRPC.walletPassphrase + "?password=" + passphrase + "&timeout=300",
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.walletPassphrase + "?password=" + passphrase + "&timeout=" + timeout,
     cache: false,
     dataType: "text",
     async: false
@@ -65,11 +79,11 @@ function walletLogin(passphrase) {
   return result;
 }
 
-function walletCreate(passphrase) {
+apiProto.prototype.walletCreate = function(passphrase) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.bitcoinRPC.encryptWallet + "?passphrase=" + passphrase,
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.encryptWallet + "?passphrase=" + passphrase,
     cache: false,
     dataType: "text",
     async: false
@@ -93,11 +107,11 @@ function walletCreate(passphrase) {
   return result;
 }
 
-function listTransactions(account) {
+apiProto.prototype.listTransactions = function(account) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.bitcoinRPC.listTransactions + "?account=" + account,
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.listTransactions + "?account=" + account,
     cache: false,
     dataType: "text",
     async: false
@@ -121,11 +135,11 @@ function listTransactions(account) {
   return result;
 }
 
-function getTransaction(txid) {
+apiProto.prototype.getTransaction = function(txid) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.bitcoinRPC.getTransaction + "?txid=" + txid,
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.getTransaction + "?txid=" + txid,
     cache: false,
     dataType: "text",
     async: false
@@ -149,11 +163,11 @@ function getTransaction(txid) {
   return result;
 }
 
-function getBalance(account) {
+apiProto.prototype.getBalance = function(account) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.bitcoinRPC.getBalance + "?account=" + account,
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.getBalance + "?account=" + account,
     cache: false,
     dataType: "text",
     async: false
@@ -177,11 +191,11 @@ function getBalance(account) {
   return result;
 }
 
-function addCoin(coin) {
+apiProto.prototype.addCoin = function(coin) {
   var result = false;
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.iguana.addCoin + "?newcoin=" + coin.toUpperCase() + "&services=" + newCoinConf[coin].services + "&portp2p=" + newCoinConf[coin].portp2p,
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.iguana.addCoin + "?newcoin=" + coin.toUpperCase() + "&services=" + newCoinConf[coin].services + "&portp2p=" + newCoinConf[coin].portp2p,
     cache: false,
     dataType: "text",
     async: false
@@ -206,12 +220,12 @@ function addCoin(coin) {
 }
 
 /* !requires the latest iguana build! */
-function getIguanaRate(quote) {
+apiProto.prototype.getIguanaRate = function(quote) {
   var result = false;
   var quoteComponents = quote.split("/");
 
   $.ajax({
-    url: getServerUrl() + apiRoutes.iguana.rate + "?base=" + quoteComponents[0] + "&rel=" +quoteComponents[1],
+    url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.iguana.rate + "?base=" + quoteComponents[0] + "&rel=" + quoteComponents[1],
     cache: false,
     dataType: "text",
     async: false
@@ -236,12 +250,11 @@ function getIguanaRate(quote) {
 }
 
 // get a quote form an external source
-function getExternalRate(quote) {
+// TODO: add secondary quote service
+apiProto.prototype.getExternalRate = function(quote) {
   var result = false;
   quote = quote.toLowerCase().replace("/", "-");
 
-  // "https://www.google.com/finance/info?q=CURRENCY%3aBTCUSD"
-  //_response = _response.replace("// [", "").replace("]", "");
   $.ajax({
     url: "https://www.cryptonator.com/api/full/" + quote,
     cache: false,

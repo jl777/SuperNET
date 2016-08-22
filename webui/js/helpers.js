@@ -1,4 +1,13 @@
-function timeConverter(UNIX_timestamp, format){
+/*!
+ * Iguana helpers
+ * info: various reusable functions go here
+ */
+
+var helperProto = function() {};
+
+var defaultSessionLifetime = 3600; // sec
+
+helperProto.prototype.convertUnixTime = function(UNIX_timestamp, format) {
   var a = new Date(UNIX_timestamp * 1000);
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var year = a.getFullYear();
@@ -14,8 +23,9 @@ function timeConverter(UNIX_timestamp, format){
     return hour + ':' + min;
 }
 
-function reindexAssocArray(array) {
+helperProto.prototype.reindexAssocArray = function(array) {
   var _array = [], index = 0;
+
   $.each(array, function(key, value) {
     if (value) {
       _array[index] = value;
@@ -26,7 +36,7 @@ function reindexAssocArray(array) {
   return _array;
 }
 
-function toggleModalWindow(formClassName, timeout) {
+helperProto.prototype.toggleModalWindow = function(formClassName, timeout) {
   var modalWindow = $("." + formClassName);
 
   if (modalWindow.hasClass("fade")) {
@@ -40,4 +50,45 @@ function toggleModalWindow(formClassName, timeout) {
       modalWindow.addClass("hidden");
     }, timeout);
   }
+}
+
+// simple page router
+helperProto.prototype.openPage = function(url) {
+  var localPageUrl;
+
+  switch (url) {
+    case "login":
+      localPageUrl = "login.html";
+      break;
+    case "create-account":
+      localPageUrl = "create-account.html";
+      break;
+    case "dashboard":
+      localPageUrl = "dashboard.html";
+      break;
+  }
+
+  document.location = localPageUrl;
+}
+
+helperProto.prototype.checkSession = function(returnVal) {
+  var localStorage = new localStorageProto();
+  var currentEpochTime = new Date(Date.now()) / 1000; // calc difference in seconds between current time and session timestamp
+  var secondsElapsedSinceLastAuth = Number(currentEpochTime) - Number(localStorage.getVal("iguana-auth").timestamp / 1000);
+
+  if (secondsElapsedSinceLastAuth > defaultSessionLifetime) {
+    if (!returnVal) {
+      if (!$(".login-form").width()) helperProto.prototype.openPage("login"); // redirect to login when session is expired
+    } else {
+      return false;
+    }
+  } else {
+    return true;
+  }
+}
+
+helperProto.prototype.logout = function() {
+  var localStorage = new localStorageProto();
+  localStorage.setVal("iguana-auth", { "timestamp" : 1471620867 }); // Jan 01 1970
+  helperProto.prototype.openPage("login");
 }

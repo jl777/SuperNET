@@ -3,20 +3,26 @@
  *
  */
 
+var passphraseToVerify;
+
 $(document).ready(function() {
-  // this should do as simple check whether it's a login or account create page
-  if ($(".login-form").width()) {
-    var savedPassphrase = JSON.parse(localstorageGetVal("iguanaPassphrase"));
+  var localStorage = new localStorageProto();
+  var helper = new helperProto();
+
+  // ugly login form check
+  if ($(".login-form")) {
+
+    if (helper.checkSession(true)) {
+      helper.openPage("dashboard");
+    } else {
+      $(".login-form").removeClass("hidden");
+    }
 
     addAuthorizationButtonAction("signin");
     watchPassphraseKeyUpEvent("signin");
 
-    if (savedPassphrase.passphrase && savedPassphrase.isConfirmed === "yes")
-      $("#passphrase").val(savedPassphrase.passphrase);
-      $(".btn-signin").removeClass("disabled");
-
     $(".login-form .btn-signup").click(function() {
-      openPage("create-account");
+      helper.openPage("create-account");
     });
   }
 
@@ -35,12 +41,21 @@ function addAuthorizationButtonAction(buttonClassName) {
     var totalSubstr = passphraseInput.match(/\b\w+\b/g);
     var totalSubstrAlpha = passphraseInput.match(/\b[a-z]+\b/g); // count only words consist of characters
     var totalSpaces = passphraseInput.match(/\s/g);
+    var api = new apiProto();
+    var helper = new helperProto();
+    var localStorage = new localStorageProto();
 
     if (totalSubstr && totalSubstrAlpha && totalSpaces)
-      if (totalSubstr.length === 24 && totalSubstrAlpha.length === 24 && totalSpaces.length === 23) {
-        if (buttonClassName === "signin" ? walletLogin(passphraseInput) : walletCreate(passphraseInput) && verifyNewPassphrase()) {
+      if (true/*totalSubstr.length === 24 && totalSubstrAlpha.length === 24 && totalSpaces.length === 23*/) {
+        if (buttonClassName === "signin" ? api.walletLogin(passphraseInput, defaultSessionLifetime) : api.walletCreate(passphraseInput) && verifyNewPassphrase()) {
           toggleLoginErrorStyling(false);
-          openPage("dashboard");
+
+          if (buttonClassName === "add-account") {
+            helper.openPage("login");
+          } else {
+            localStorage.setVal("iguana-auth", { "timestamp": Date.now() });
+            helper.openPage("dashboard");
+          }
         } else {
           toggleLoginErrorStyling(true);
         }
@@ -75,11 +90,9 @@ function toggleLoginErrorStyling(isError) {
 }
 
 function verifyNewPassphrase() {
-  var savedPassphrase = JSON.parse(localstorageGetVal("iguanaPassphrase"));
+  var localStorage = new localStorageProto();
 
-  if (savedPassphrase.passphrase === $("#passphrase").val() && savedPassphrase.isConfirmed === "no") {
-    savedPassphrase.isConfirmed = "yes";
-    localstorageSetVal("iguanaPassphrase", savedPassphrase);
+  if (passphraseToVerify === $("#passphrase").val()) {
     return true;
   } else {
     return false;
@@ -109,12 +122,12 @@ function initCreateAccountForm() {
   });
 
   $(".create-account-form .btn-back").click(function() {
-    openPage("login");
+    var helper = new helperProto();
+    helper.openPage("login");
   });
 
   $(".btn-verify-passphrase").click(function() {
-    // isConfirmed is required to check if a user can verify a passphrase on the 2nd step
-    localstorageSetVal("iguanaPassphrase", { "passphrase" : $(".generated-passhprase").text(), "isConfirmed": "no" });
+    passphraseToVerify = $(".generated-passhprase").text();
     $(".create-account-form").addClass("hidden");
     $(".verify-passphrase-form").removeClass("hidden");
   });

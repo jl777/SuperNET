@@ -3,14 +3,18 @@
  * info: simple local storage manager
  */
 
-function localstorageGetVal(name) {
-  return localStorage.getItem(name);
+ // TODO: add browser localstorage api compatibility check
+
+var localStorageProto = function() {};
+
+localStorageProto.prototype.getVal = function(name) {
+  return JSON.parse(localStorage.getItem(name));
 }
 
-function localstorageDeleteVal(name) {
+localStorageProto.prototype.deleteVal = function(name) {
   return localStorage.removeItem(name);
 }
 
-function localstorageSetVal(name, propArray) {           // TODO(?): encrypt
-  localStorage.setItem(name, JSON.stringify(propArray)); // potential security flaw
+localStorageProto.prototype.setVal = function(name, propArray) {
+  localStorage.setItem(name, JSON.stringify(propArray));
 }
