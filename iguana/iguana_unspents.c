@@ -442,7 +442,9 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
                 outpt.isptr = 1;
                 outpt.ptr = unspent;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
-                unspents[n++] = outpt;
+                if ( unspents != 0 )
+                    unspents[n] = outpt;
+                n++;
             } else *spentp += unspent->value;
         }
         unspent = unspent->prevunspent;
