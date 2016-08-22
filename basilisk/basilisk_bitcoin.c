@@ -308,7 +308,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
         if ( (hist & 2) != 0 )
             spends = cJSON_CreateArray();
     }
-    printf("hist.%d (%s) %p %p\n",hist,jprint(vals,0),unspents,spends);
+    //printf("hist.%d (%s) %p %p\n",hist,jprint(vals,0),unspents,spends);
     if ( (addresses= jarray(&n,vals,"addresses")) != 0 )
     {
         for (i=0; i<n; i++)
@@ -320,7 +320,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
             jaddnum(item,jstri(addresses,i),dstr(balance));
             jaddi(array,item);
             total += balance;
-            printf("%.8f ",dstr(balance));
+            //printf("%.8f ",dstr(balance));
         }
     }
     retjson = cJSON_CreateObject();
@@ -1024,7 +1024,7 @@ struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symb
         s->txid = txid;
         s->vout = vout;
         strcpy(s->symbol,symbol);
-        char str[65]; printf("ADDSPEND.%s %s/v%d\n",symbol,bits256_str(str,txid),vout);
+        //char str[65]; printf("ADDSPEND.%s %s/v%d\n",symbol,bits256_str(str,txid),vout);
         // mutex
         return(s);
     }
@@ -1089,10 +1089,10 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
             {
                 waddr->maxunspents += 16;
                 waddr->unspents = realloc(waddr->unspents,sizeof(*waddr->unspents) * waddr->maxunspents);
-                printf("allocate max.%d for %s\n",waddr->maxunspents,waddr->coinaddr);
+                //printf("allocate max.%d for %s\n",waddr->maxunspents,waddr->coinaddr);
             }
             waddr->numunspents++;
-            printf("new unspent.%s %d script.%p [%d]\n",waddr->coinaddr,waddr->numunspents,bu.script,bu.spendlen);
+            //printf("new unspent.%s %d script.%p [%d]\n",waddr->coinaddr,waddr->numunspents,bu.script,bu.spendlen);
         }
         waddr->unspents[i] = bu;
         //PREVENT DOUBLE SPENDS!!! and use p2sh
@@ -1119,10 +1119,10 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                             safecopy(s->destaddr,destaddr,sizeof(s->destaddr));
                             s->ismine = (iguana_waddresssearch(myinfo,&wacct,destaddr) != 0);
                             s->value = jdouble(vitem,jfieldname(vitem)) * SATOSHIDEN;
-                            printf("(%s %.8f) ",s->destaddr,dstr(s->value));
+                            //printf("(%s %.8f) ",s->destaddr,dstr(s->value));
                         }
                     }
-                    char str[65]; printf("SPEND dest.(%s) ratio %.8f (%s/v%d)\n",jprint(dest,0),ratio,bits256_str(str,s->txid),s->vini);
+                    //char str[65]; printf("SPEND dest.(%s) ratio %.8f (%s/v%d)\n",jprint(dest,0),ratio,bits256_str(str,s->txid),s->vini);
                 }
             }
         }
@@ -1137,7 +1137,7 @@ void basilisk_relay_unspentsprocess(struct supernet_info *myinfo,struct iguana_i
     {
         coin->relay_RTheights[relayid] = RTheight;
     }
-    printf("basilisk_relay_unspentsprocess relayid.%d RT.%d (%s)\n",relayid,RTheight,jprint(relayjson,0));
+    //printf("basilisk_relay_unspentsprocess relayid.%d RT.%d (%s)\n",relayid,RTheight,jprint(relayjson,0));
     if ( (unspents= jarray(&num,relayjson,"unspents")) != 0 )
     {
         for (j=0; j<num; j++)
