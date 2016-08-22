@@ -444,16 +444,17 @@ void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin
 
 char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
 {
-    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *retstr,spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*valsobj; uint32_t spendlen,locktime = 0; struct iguana_waddress *waddr; uint32_t basilisktag;
+    uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *retstr,spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*valsobj; uint32_t spendlen,locktime = 0; uint32_t basilisktag;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
     if ( account == 0 || account[0] == 0 )
         account = "*";
     addresses = iguana_getaddressesbyaccount(myinfo,coin,account);
     if ( coin->changeaddr[0] == 0 )
     {
-        if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
-            return(clonestr("{\"error\":\"no change address specified\"}"));
-        strcpy(coin->changeaddr,waddr->coinaddr);
+        //if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
+        //    return(clonestr("{\"error\":\"no change address specified\"}"));
+        bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+        printf("%s change %s\n",coin->symbol,coin->changeaddr);
     }
     if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
     {

@@ -1094,7 +1094,7 @@ struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,st
         wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
     {
-        if ( (waddr= wacct->current) == 0 )
+        if ( (waddr= wacct->current) == 0 || waddr->numunspents > 0 )
         {
             if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
             {
