@@ -1153,6 +1153,8 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     iguana_walletlock(myinfo,coin);
     printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
+    if ( password == 0 || password[0] == 0 )
+        password = "";
     strcpy(myinfo->secret,password);
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
@@ -1171,7 +1173,7 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( password == 0 || password[0] == 0 )
         password = passphrase;
-    else if ( passphrase == 0 || passphrase[0] == 0 )
+    if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = password;
     strcpy(myinfo->secret,passphrase);
     strcpy(myinfo->password,password);
@@ -1566,7 +1568,7 @@ THREE_INTS(bitcoinrpc,listreceivedbyaccount,minconf,includeempty,watchonly)
         item = cJSON_CreateObject();
         jaddstr(item,"account",wacct->account);
         jaddnum(item,"amount",dstr(balance));
-        jaddnum(item,"confirmations",minconf);
+        //jaddnum(item,"confirmations",coin->blocks.hwmchain.height - wacct->mostrecent);
         jaddi(array,item);
     }
     retjson = cJSON_CreateObject();
