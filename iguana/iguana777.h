@@ -59,7 +59,7 @@ struct supernet_info
     struct supernet_address myaddr;
     bits256 persistent_priv,privkey;
     uint8_t persistent_pubkey33[33];
-    char ipaddr[64],NXTAPIURL[512],secret[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
+    char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
     int32_t maxdelay,IAMRELAY,publicRPC,basilisk_busy,genesisresults;
     uint32_t expiration,dirty,DEXactive;

@@ -1074,7 +1074,7 @@ STRING_ARG(bitcoinrpc,getnewaddress,account)
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
-    if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+    if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
     {
         free(retstr);
         retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
@@ -1096,7 +1096,7 @@ struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,st
     {
         if ( (waddr= wacct->current) == 0 )
         {
-            if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+            if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
             {
                 free(retstr);
                 retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
@@ -1153,7 +1153,11 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     iguana_walletlock(myinfo,coin);
     printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
-    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,password,permanentfile,0);
+    strcpy(myinfo->secret,password);
+    strcpy(myinfo->password,password);
+    if ( permanentfile != 0 )
+        strcpy(myinfo->permanentfile,permanentfile);
+    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     iguana_walletinitcheck(myinfo,coin);
     basilisk_unspents_update(myinfo,coin);
@@ -1167,7 +1171,13 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( password == 0 || password[0] == 0 )
         password = passphrase;
-    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,password,permanentfile,passphrase);
+    else if ( passphrase == 0 || passphrase[0] == 0 )
+        passphrase = password;
+    strcpy(myinfo->secret,passphrase);
+    strcpy(myinfo->password,password);
+    if ( permanentfile != 0 )
+        strcpy(myinfo->permanentfile,permanentfile);
+    retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     //iguana_walletlock(myinfo);
     return(retstr);
 }
@@ -1177,13 +1187,13 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
     char destfname[1024],*tmpstr,*loginstr,*passphrase,*retstr = 0; cJSON *tmpjson,*loginjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( (tmpstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,oldpassword,oldpermanentfile,0)) != 0 )
+    if ( (tmpstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,oldpassword,oldpermanentfile,oldpassword)) != 0 )
     {
         free(tmpstr);
         tmpstr = myinfo->decryptstr, myinfo->decryptstr = 0;
         if ( (tmpjson= cJSON_Parse(tmpstr)) != 0 )
         {
-            if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,0)) != 0 )
+            if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,newpassword)) != 0 )
             {
                 if ( myinfo->decryptstr != 0 && (loginjson= cJSON_Parse(myinfo->decryptstr)) != 0 )
                 {
@@ -1191,7 +1201,7 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
                     {
                         _SuperNET_encryptjson(myinfo,destfname,passphrase,0,newpermanentfile,0,loginjson);
                         //iguana_walletlock(myinfo);
-                        retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,0);
+                        retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,newpassword);
                     }
                     free_json(loginjson);
                 }
@@ -1245,7 +1255,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         if ( myinfo->expiration == 0 )
             return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         myinfo->expiration++;
-        if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+        if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             free(retstr);
             retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
@@ -1308,7 +1318,7 @@ STRING_ARG(bitcoinrpc,dumpwallet,filename)
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
-        if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+        if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -1342,7 +1352,7 @@ STRING_ARG(bitcoinrpc,backupwallet,filename)
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
-        if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+        if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             retstr = clonestr("{\"error\":\"couldnt backup wallet\"}");
             if ( myinfo->decryptstr != 0 )
@@ -1377,7 +1387,7 @@ STRING_ARG(bitcoinrpc,importwallet,filename)
         {
             if ( (importjson= cJSON_Parse(importstr)) != 0 )
             {
-                if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
+                if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
                 {
                     free(loginstr);
                     loginstr = myinfo->decryptstr, myinfo->decryptstr = 0;

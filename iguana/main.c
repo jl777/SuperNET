@@ -1442,11 +1442,12 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         safecopy(myinfo->permanentfile,permanentfile,sizeof(myinfo->permanentfile));
     if ( (decryptstr= SuperNET_decryptjson(IGUANA_CALLARGS,password,myinfo->permanentfile)) != 0 )
     {
+        printf("decryptstr.(%s)\n",decryptstr);
         if ( (argjson= cJSON_Parse(decryptstr)) != 0 )
         {
             if ( jobj(argjson,"error") == 0 )
             {
-                //printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
+                printf("decrypted.(%s) exp.%u pass.(%s)\n",decryptstr,myinfo->expiration,password);
                 if ( myinfo->decryptstr != 0 )
                     free(myinfo->decryptstr);
                 myinfo->decryptstr = decryptstr;
@@ -1502,6 +1503,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         if ( (str= SuperNET_encryptjson(myinfo,coin,argjson,remoteaddr,password,myinfo->permanentfile,myinfo->decryptstr == 0 ? "" : myinfo->decryptstr)) != 0 )
             free(str);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
+        printf("(%s) logged into (%s) %s %s\n",password,myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     } else return(clonestr("{\"error\":\"need passphrase\"}"));
     printf("(%s) logged into (%s) %s %s\n",password,myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
