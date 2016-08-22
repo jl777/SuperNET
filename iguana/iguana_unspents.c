@@ -435,13 +435,13 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
             if ( unspent->spend == 0 )
             {
                 spentheight = unspent->height;
-                if ( array != 0 )
-                    jaddi(array,iguana_RTunspentjson(myinfo,coin,outpt,txid,unspent->vout,unspent->value,0,rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
-                *depositsp += unspent->value;
                 memset(&outpt,0,sizeof(outpt));
                 outpt.isptr = 1;
                 outpt.ptr = unspent;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
+                if ( array != 0 )
+                    jaddi(array,iguana_RTunspentjson(myinfo,coin,outpt,txid,unspent->vout,unspent->value,0,rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
+                *depositsp += unspent->value;
                 if ( unspents != 0 )
                     unspents[n] = outpt;
                 n++;
