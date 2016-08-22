@@ -58,7 +58,7 @@ int32_t datachain_events_rewind(struct supernet_info *myinfo,int32_t ordered,str
 int32_t datachain_checkpoint_update(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timestamp)
 {
     int32_t i,num,n,lastheight; bits256 *tree,hash2,lasthash2,merkle; struct iguana_block *block;
-    printf("datachain_checkpoint_update\n");
+    //printf("datachain_checkpoint_update\n");
     if ( coin->lastcheckpoint <= coin->blocks.hwmchain.height )
     {
         num = (coin->blocks.hwmchain.height - coin->lastcheckpoint) + 1;

@@ -884,7 +884,7 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
     if ( minconf == 0 )
         minconf = 1;
     rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,wacct->account),0);
-    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,0);
+    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,0);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(balance);
@@ -908,13 +908,13 @@ int64_t oldiguana_waccountbalance(struct supernet_info *myinfo,struct iguana_inf
 
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,j,n,numinputs; uint32_t spent_unspentind; int16_t spent_hdrsi; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
+    int32_t i,j,n,numinputs; struct iguana_waddress *waddr; struct iguana_outpoint spentpt; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
     if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
     {
         addresses = calloc(numinputs,64);
         for (i=n=0; i<numinputs; i++)
         {
-            if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spent_hdrsi,&spent_unspentind,jitem(vins,i))) != 0 )
+            if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spentpt,jitem(vins,i))) != 0 )
             {
                 for (j=0; j<n; j++)
                 {
@@ -943,7 +943,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,-1,minconf)) != 0 )
     {
-        //printf("balancestr.(%s) (%s)\n",balancestr,coinaddr);
+        printf("balancestr.(%s) (%s)\n",balancestr,coinaddr);
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
             balance = jdouble(balancejson,"balance") * SATOSHIDEN;
@@ -1436,7 +1436,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
     //if ( strcmp(account,"*") != 0 )
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,account),0);
     numunspents = 0;
-    balance = iguana_unspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,remoteaddr);
+    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,remoteaddr);
     if ( rmdarray != 0 )
         free(rmdarray);
     retjson = cJSON_CreateObject();

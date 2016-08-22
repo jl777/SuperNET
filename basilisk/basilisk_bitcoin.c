@@ -308,17 +308,19 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
         if ( (hist & 2) != 0 )
             spends = cJSON_CreateArray();
     }
+    printf("hist.%d (%s) %p %p\n",hist,jprint(vals,0),unspents,spends);
     if ( (addresses= jarray(&n,vals,"addresses")) != 0 )
     {
         for (i=0; i<n; i++)
         {
-            if ( coin->RTheight > 0 )
+            //if ( coin->RTheight > 0 )
                 balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,jstri(addresses,i),juint(vals,"minconf"),juint(vals,"firstheight"));
-            else balance = 0;
+            //else balance = 0;
             item = cJSON_CreateObject();
             jaddnum(item,jstri(addresses,i),dstr(balance));
             jaddi(array,item);
             total += balance;
+            printf("%.8f ",dstr(balance));
         }
     }
     retjson = cJSON_CreateObject();
@@ -873,11 +875,13 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         jaddnum(vals,"fanout",8);
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",myinfo->numrelays);
-    //printf("vals.(%s)\n",jprint(vals,0));
     if ( coin != 0 )
     {
         if ( jobj(vals,"addresses") == 0 )
+        {
             jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
+            //printf("added all addresses: %s\n",jprint(vals,0));
+        } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
@@ -888,7 +892,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             ptr->finished = (uint32_t)time(NULL);
             return(retstr);
         }
-    }
+    } else printf("no coin\n");
     return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
 }
 
@@ -968,7 +972,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
 }
 #include "../includes/iguana_apiundefs.h"
 
-int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,int16_t hdrsi,uint32_t unspentind,int64_t value)
+int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,struct iguana_outpoint outpt,int64_t value)
 {
     struct basilisk_unspent *bu; int32_t i,spendlen; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char str[65];
     memset(txidp,0,sizeof(*txidp));
@@ -981,7 +985,7 @@ int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *co
             for (i=0; i<waddr->numunspents; i++)
             {
                 bu = &waddr->unspents[i];
-                if ( bu->hdrsi == hdrsi && bu->unspentind == unspentind && bu->value == value )
+                if ( bu->hdrsi == outpt.hdrsi && bu->unspentind == outpt.unspentind && bu->value == value )
                 {
                     if ( bu->status == 0 )
                     {
@@ -1133,7 +1137,7 @@ void basilisk_relay_unspentsprocess(struct supernet_info *myinfo,struct iguana_i
     {
         coin->relay_RTheights[relayid] = RTheight;
     }
-    //printf("relayid.%d RT.%d (%s)\n",relayid,RTheight,jprint(relayjson,0));
+    printf("basilisk_relay_unspentsprocess relayid.%d RT.%d (%s)\n",relayid,RTheight,jprint(relayjson,0));
     if ( (unspents= jarray(&num,relayjson,"unspents")) != 0 )
     {
         for (j=0; j<num; j++)

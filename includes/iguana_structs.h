@@ -249,11 +249,13 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastunspentind; } __attribute__((packed));
-struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spentflag:1,spendind; } __attribute__((packed));
 struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; } __attribute__((packed));
-struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
+struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spentflag:1,spendind; } __attribute__((packed));
 
-struct iguana_utxoaddr { UT_hash_handle hh; int64_t histbalance,RTcredits,RTdebits; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; } __attribute__((packed));
+#ifdef DEPRECATED_HHUTXO
+struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
+#endif
+struct iguana_utxoaddr { UT_hash_handle hh; int64_t histbalance; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; } __attribute__((packed)); // unspentind
@@ -390,9 +392,11 @@ struct iguana_RTunspent
 {
     uint8_t rmd160[20];
     int64_t value;
-    int16_t scriptlen;
+    int32_t vout,height;
+    struct iguana_RTtxid *parent;
     struct iguana_RTspend *spend;
     struct iguana_RTunspent *prevunspent;
+    int16_t scriptlen;
     uint8_t spentflag,validflag;
     uint8_t script[];
 };
@@ -410,7 +414,7 @@ struct iguana_RTtxid
 {
     UT_hash_handle hh; struct iguana_info *coin; struct iguana_block *block;
     bits256 txid;
-    int32_t txi,txn_count,numvouts,numvins;
+    int32_t height,txi,txn_count,numvouts,numvins;
     uint32_t locktime,version,timestamp;
     struct iguana_RTunspent **unspents;
     struct iguana_RTspend *spends[];
@@ -452,7 +456,10 @@ struct iguana_info
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
     bits256 APIblockhash,APItxid; char *APIblockstr;
-    struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
+#ifdef DEPRECATED_HHUTXO
+    struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable;
+#endif
+    char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     struct datachain_info dPoW;
@@ -491,6 +498,8 @@ struct bitcoin_spend
     int64_t txfee,input_satoshis,satoshis,change;
     struct bitcoin_unspent inputs[];
 };
+
+struct iguana_outpoint { void *ptr; int64_t value; uint32_t unspentind:31,isptr:1; int16_t hdrsi; };
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 

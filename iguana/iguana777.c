@@ -841,7 +841,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin= iguana_coinfind(symbol)) == 0 )
         coin = iguana_coinadd(symbol,name,json,virtcoin);
     //printf("ensure directories maxval.%d mult.%d start.%d end.%d\n",maxval,mult,coin->startPEND,coin->endPEND);
-    mult = (strcmp("BTC",coin->symbol) != 0) ? 64 : 128;
+    mult = (strcmp("BTC",coin->symbol) != 0) ? 16 : 4;
     maxval = IGUANA_MAXPENDBUNDLES;
     if ( coin->virtualchain == 0 )
     {

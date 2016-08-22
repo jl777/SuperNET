@@ -445,7 +445,7 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    double balance; int16_t hdrsi; uint32_t unspentind; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t *unspents=0,value,avail;
+    double balance; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t avail; struct iguana_outpoint outpt,*unspents=0;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
     //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -463,12 +463,10 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
             for (i=0; i<numunspents; i++)
             {
                 item = cJSON_CreateArray();
-                hdrsi = (int16_t)(unspents[(i << 1)] >> 32);
-                unspentind = (uint32_t)unspents[(i << 1)];
-                value = unspents[(i << 1) + 1];
-                jaddinum(item,hdrsi);
-                jaddinum(item,unspentind);
-                jaddinum(item,dstr(value));
+                outpt = unspents[i];
+                jaddinum(item,outpt.hdrsi);
+                jaddinum(item,outpt.unspentind);
+                jaddinum(item,dstr(outpt.value));
                 jaddi(array,item);
             }
             item = cJSON_CreateObject();

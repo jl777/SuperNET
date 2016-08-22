@@ -517,7 +517,7 @@ void iguana_gotblockM(struct iguana_info *coin,struct iguana_peer *addr,struct i
         for (i=0; i<coin->bundlescount; i++)
             if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
                 break;
-        if ( i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2 )
+        if ( (i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2) || coin->RTheight > 0 )
         {
             portable_mutex_lock(&coin->RTmutex);
             iguana_RTrawdata(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx,0);
@@ -1845,7 +1845,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         fprintf(stderr,"%s call balanceflush\n",coin->symbol);
         //portable_mutex_lock(&coin->RTmutex);
         coin->disableUTXO = 1;
-        iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
+        //iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
         if ( iguana_balanceflush(myinfo,coin,coin->balanceflush) > 0 )
          printf("balanceswritten.%d flushed coin->balanceflush %d vs %d coin->longestchain/coin->chain->bundlesize\n",coin->balanceswritten,coin->balanceflush,coin->longestchain/coin->chain->bundlesize);
         //portable_mutex_unlock(&coin->RTmutex);

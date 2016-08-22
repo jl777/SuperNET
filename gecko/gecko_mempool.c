@@ -226,7 +226,7 @@ int32_t basilisk_respond_geckogettx(struct supernet_info *myinfo,struct iguana_i
 
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *serialized,int32_t datalen,bits256 txid)
 {
-    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t hdrsi_unspentind,value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind,hdrsi; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd;
+    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd; struct iguana_outpoint outpt;
     memset(&msg,0,sizeof(msg));
     iguana_memreset(&virt->TXMEM);
     txlen = iguana_rwtx(virt->chain->zcash,0,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
@@ -239,9 +239,10 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         {
             if ( (unspentind= iguana_RTunspentindfind(myinfo,virt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1)) != 0 )
             {
-                hdrsi = spentheight / virt->chain->bundlesize;
-                hdrsi_unspentind = ((uint64_t)hdrsi << 32) | unspentind;
-                if ( iguana_unspentavail(myinfo,virt,hdrsi_unspentind,minconf,maxconf) != value )
+                memset(&outpt,0,sizeof(outpt));
+                outpt.hdrsi = spentheight / virt->chain->bundlesize;
+                outpt.unspentind = unspentind;
+                if ( iguana_unspentavail(myinfo,virt,outpt,minconf,maxconf) != value )
                 {
                     printf("vin.%d already spent\n",i);
                     return(clonestr("{\"error\":\"gecko tx has double spend\"}"));

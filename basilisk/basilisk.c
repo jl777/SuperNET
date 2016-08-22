@@ -816,7 +816,7 @@ void basilisks_loop(void *arg)
                 //for (i=0; i<BASILISK_MAXRELAYS; i++)
                 //    if ( coin->relay_RTheights[i] != 0 )
                 //        break;
-                if ( (time(NULL) % 10) == 0 ) //i == BASILISK_MAXRELAYS ||
+               // if ( (time(NULL) % 10) == 0 ) //i == BASILISK_MAXRELAYS ||
                 {
                     basilisk_unspents_update(myinfo,coin);
                 }
