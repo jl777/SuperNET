@@ -853,7 +853,7 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
         if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
             iguana_RTrawdata(coin,bp->hashes[bundlei],0,&recvlen,&numtx,0); // delete file
     }
-    printf("end RTpurge.%d\n",lastheight);
+    printf("end %s RTpurge.%d\n",coin->symbol,lastheight);
 }
 
 int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
@@ -1009,7 +1009,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 }
             }
             coin->RTheight += i;
-            printf(">= RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
+            printf("%s >= RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
         }
         else if ( block->height == coin->lastRTheight )
         {
@@ -1017,7 +1017,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             {
                 if ( iguana_RTblocksub(myinfo,coin,subblock) < 0 || iguana_RTblockadd(myinfo,coin,block) < 0 )
                     return;
-                printf("== RTnewblock RTheight %d prev %d\n",coin->RTheight,coin->lastRTheight);
+                printf("%s == RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
             }
         }
         else
@@ -1025,7 +1025,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             if ( block->height < coin->firstRTheight )
             {
                 if ( coin->lastRTheight > 0 )
-                    printf("ht.%d reorg past firstRTheight.%d\n",block->height,coin->firstRTheight);
+                    printf("%s ht.%d reorg past firstRTheight.%d\n",coin->symbol,block->height,coin->firstRTheight);
                 iguana_RTreset(coin);
             }
             else
