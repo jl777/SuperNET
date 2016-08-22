@@ -818,7 +818,7 @@ void basilisks_loop(void *arg)
                 //        break;
                 if ( time(NULL) > coin->lastunspentsupdate+10 ) //i == BASILISK_MAXRELAYS ||
                 {
-                    printf(">>>>>>>>>>>>> update\n");
+                    //printf(">>>>>>>>>>>>> update\n");
                     basilisk_unspents_update(myinfo,coin);
                     coin->lastunspentsupdate = (uint32_t)time(NULL);
                 }

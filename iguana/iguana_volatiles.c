@@ -152,7 +152,7 @@ struct iguana_utxo iguana_RTutxofind(struct iguana_info *coin,struct iguana_outp
                 if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
                     *RTspendflagp = 1;
             }*/
-            printf("iguana_utxofind: need to change to new RT method\n");
+            //printf("iguana_utxofind: need to change to new RT method\n");
         }
     }
     else
