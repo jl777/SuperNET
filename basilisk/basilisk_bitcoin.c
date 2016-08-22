@@ -905,7 +905,12 @@ cJSON *basilisk_history_item(struct iguana_info *coin,int64_t *totalp,char *coin
     jaddnum(item,"numseconds",time(NULL) - timestamp);
     details = cJSON_CreateObject();
     if ( ismine > 0 )
+    {
         jaddnum(details,"ismine",ismine);
+        if ( strcmp(vinvoutstr,"spentheight") == 0 )
+            jaddstr(details,"category","sent");
+        else jaddstr(details,"category","received");
+    }
     jaddbits256(details,"txid",txid);
     jaddnum(details,vinvoutstr,vinvout);
     jaddnum(details,"height",height);

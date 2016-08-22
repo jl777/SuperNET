@@ -293,7 +293,7 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
     }
     else
     {
-        if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt.hdrsi,outpt.unspentind,txid,up->vout,rmd160,up->type,pubkey33) != 0 )
+        if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt.hdrsi,outpt.unspentind,txid,vout,rmd160,up!=0?up->type:2,pubkey33) != 0 )
             jaddstr(item,"scriptPubKey",scriptstr);
     }
     jaddnum(item,"amount",dstr(value));

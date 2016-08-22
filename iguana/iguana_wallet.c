@@ -1162,7 +1162,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     iguana_walletinitcheck(myinfo,coin);
-    basilisk_unspents_update(myinfo,coin);
+    //basilisk_unspents_update(myinfo,coin);
     return(retstr);
 }
 
