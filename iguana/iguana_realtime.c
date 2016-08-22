@@ -986,8 +986,9 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }
-    if ( coin->RTheight > 0 )
+    if ( block != 0 && coin->RTheight > 0 && coin->RTheight <= coin->blocks.hwmchain.height )
     {
+        portable_mutex_lock(&coin->RTmutex);
         if ( block->height > coin->lastRTheight )
         {
             n = (block->height - coin->RTheight) + 1;
@@ -1016,7 +1017,10 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             if ( (subblock= iguana_RTblock(coin,block->height)) != 0 && subblock != block )
             {
                 if ( iguana_RTblocksub(myinfo,coin,subblock) < 0 || iguana_RTblockadd(myinfo,coin,block) < 0 )
+                {
+                    portable_mutex_unlock(&coin->RTmutex);
                     return;
+                }
                 printf("%s == RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
             }
         }
@@ -1035,16 +1039,22 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                     if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->lastRTheight--)) < 0 )
                     {
                         coin->RTheight = coin->lastRTheight+1;
+                        portable_mutex_unlock(&coin->RTmutex);
                         return;
                     }
                 }
                 coin->RTheight = coin->lastRTheight+1;
                 if ( iguana_RTblockadd(myinfo,coin,block) < 0 )
+                {
+                    portable_mutex_unlock(&coin->RTmutex);
                     return;
+                }
                 coin->lastRTheight = block->height;
                 coin->RTheight = coin->lastRTheight+1;
             }
         }
+        portable_mutex_unlock(&coin->RTmutex);
+        //block = iguana_blockfind("next",coin,iguana_blockhash(coin,block->height+1));
     }
 }
 

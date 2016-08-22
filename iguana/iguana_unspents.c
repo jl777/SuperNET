@@ -1245,9 +1245,21 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
     return(errs);
 }
 
+int64_t iguana_RTstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
+{
+    struct iguana_block *block;
+    coin->firstRTheight = coin->RTheight = height;
+    iguana_RTreset(coin);
+    iguana_RTpurge(coin,coin->firstRTheight);
+    if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
+        iguana_RTnewblock(myinfo,coin,block);
+    basilisk_unspents_update(myinfo,coin);
+    return(coin->histbalance);
+}
+
 int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t maxheight)
 {
-    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t total,errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_block *block; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
+    char fname[1024],fname2[1024],coinaddr[64],str[65],checkaddr[64]; struct iguana_utxoaddr *utxoaddr,UA,*tmp,*last=0; uint16_t hdrsi; uint8_t *table,item[UTXOADDR_ITEMSIZE]; uint32_t *counts,*offsets,offset,n; int32_t total,errs=0,height=0,j,k,ind,tablesize=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t checkbalance=0,balance = 0;
     for (hdrsi=0; hdrsi<coin->bundlescount-1; hdrsi++)
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
@@ -1260,19 +1272,7 @@ int64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *coi
             errs = iguana_utxoaddr_validate(myinfo,coin,height);
         printf("nogen %s HIST BALANCE %s %.8f errs %d\n",fname2,bits256_str(str,coin->utxoaddrhash),dstr(coin->histbalance),errs);
         if ( errs == 0 && coin->histbalance > 0 && height > 0 )
-        {
-            coin->firstRTheight = coin->RTheight = height;
-            iguana_RTreset(coin);
-            iguana_RTpurge(coin,coin->firstRTheight);
-            if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-            {
-                portable_mutex_lock(&coin->RTmutex);
-                iguana_RTnewblock(myinfo,coin,block);
-                portable_mutex_unlock(&coin->RTmutex);
-            }
-            basilisk_unspents_update(myinfo,coin);
-            return(coin->histbalance);
-        }
+            return(iguana_RTstart(myinfo,coin,height));
     }
     printf("utxoaddr_gen.%d\n",maxheight);
     iguana_utxoaddr_purge(coin);
@@ -1398,20 +1398,7 @@ continue;
                 OS_removefile(fname,0);
                 OS_removefile(fname2,0);
             }
-            else
-            {
-                coin->firstRTheight = coin->RTheight = height;
-                iguana_RTreset(coin);
-                iguana_RTpurge(coin,coin->firstRTheight);
-                if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-                {
-                    portable_mutex_lock(&coin->RTmutex);
-                    iguana_RTnewblock(myinfo,coin,block);
-                    portable_mutex_unlock(&coin->RTmutex);
-                }
-                basilisk_unspents_update(myinfo,coin);
-                return(coin->histbalance);
-            }
+            else return(iguana_RTstart(myinfo,coin,height));
         }
     }
     free(counts);
