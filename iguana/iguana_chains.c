@@ -375,6 +375,7 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
             decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
         if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
             decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
+        printf("addrtypes.(%02x %02x %02x) (%d %d %d)\n",chain->pubtype,chain->p2shtype,chain->wiftype,chain->pubtype,chain->p2shtype,chain->wiftype);
         if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
             decode_hex((uint8_t *)chain->netmagic,4,hexstr);
         if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
