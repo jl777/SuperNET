@@ -1179,6 +1179,7 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         strcpy(myinfo->permanentfile,permanentfile);
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     //iguana_walletlock(myinfo);
+    myinfo->dirty = (uint32_t)time(NULL);
     return(retstr);
 }
 
@@ -1202,6 +1203,7 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
                         _SuperNET_encryptjson(myinfo,destfname,passphrase,0,newpermanentfile,0,loginjson);
                         //iguana_walletlock(myinfo);
                         retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,newpassword,newpermanentfile,newpassword);
+                        myinfo->dirty = (uint32_t)time(NULL);
                     }
                     free_json(loginjson);
                 }
@@ -1213,7 +1215,7 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
             scrubfree(tmpstr);
     }
     if ( retstr == 0 )
-        retstr = clonestr("{\"error\":\"error changing walletpassphrase\"}");
+        retstr = clonestr("{\"error\":\"need to call walletpassphrasechange again\"}");
     return(retstr);
 }
 

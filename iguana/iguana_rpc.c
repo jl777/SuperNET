@@ -415,7 +415,7 @@ static char *walletpassphrase(RPCARGS)
 
 static char *walletpassphrasechange(RPCARGS)
 {
-    return(sglue4(0,CALLGLUE,"bitcoinrpc","walletpassphrasechange","oldpassphrase",params[0],"newpassphrase",params[1],"oldpermanentfile",params[2],"oldpermanentfile",params[3]));
+return(sglue4(0,CALLGLUE,"bitcoinrpc","walletpassphrasechange","oldpassphrase",params[0],"newpassphrase",params[1],"oldpermanentfile",params[2],"oldpermanentfile",params[3]));
 }
 
 static char *walletlock(RPCARGS)
@@ -1038,7 +1038,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             }
             free_json(origargjson);
             retstr = jprint(retarray,1);
-        } else retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
+        }
+        else retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
         return(retstr);
     }
     *jsonflagp = 1;
