@@ -1399,8 +1399,7 @@ continue;
                 printf("delete bad utxoaddr files\n");
                 OS_removefile(fname,0);
                 OS_removefile(fname2,0);
-            }
-            else return(iguana_RTstart(myinfo,coin,height));
+            } else return(iguana_RTstart(myinfo,coin,height));
         }
     }
     free(counts);
