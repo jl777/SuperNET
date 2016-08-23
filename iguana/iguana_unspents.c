@@ -564,7 +564,7 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
         if ( i != max && (bp= coin->bundles[i]) == 0 )
             continue;
         else bp = 0;
-        if ( bp != 0 )
+        if ( 0 && bp != 0 )
         {
             if ( lastheight > 0 && bp->bundleheight > lastheight )
             {

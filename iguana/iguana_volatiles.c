@@ -191,6 +191,7 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
     } else utxo.lockedflag = 0;
     if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
         *RTspendflagp = 1;
+    *fromheightp = utxo.fromheight;
     return(utxo.spentflag);
 }
 
@@ -221,13 +222,16 @@ int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     numunspents = rdata->numunspents;
-    if ( height == 0 )
-    {
-        //printf("%s illegal unspentind.%u vs %u hdrs.%d zero fromheight.%d?\n",coin->symbol,spentpt.unspentind,numunspents,spentpt.hdrsi,fromheight);
-        height = spentpt.hdrsi*coin->chain->bundlesize + 1;
-    }
-    fromheight = height;
     spentflag = iguana_RTutxofunc(coin,&fromheight,&lockedflag,spentpt,&RTspentflag,0,0);
+    if ( spentflag != 0 && fromheight == 0 )
+    {
+        if ( height == 0 )
+        {
+            //printf("%s illegal unspentind.%u vs %u hdrs.%d zero fromheight.%d?\n",coin->symbol,spentpt.unspentind,numunspents,spentpt.hdrsi,fromheight);
+            height = spentpt.hdrsi*coin->chain->bundlesize + 1;
+        }
+        fromheight = height;
+    }
     if ( RTspentflag != 0 )
         *RTspendp += (amount == 0) ? coin->txfee : amount;
     //printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),fromheight,height,spentflag);

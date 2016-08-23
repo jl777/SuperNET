@@ -291,7 +291,7 @@ uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
-    struct iguana_waccount *subset,*tmp; char coinaddr[64]; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
+    struct iguana_waccount *subset,*tmp; char refaddr[64],coinaddr[64]; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( account == 0 || account[0] == 0 )
@@ -310,14 +310,19 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
     }
     else
     {
+        bitcoin_address(refaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
         HASH_ITER(hh,myinfo->wallet,subset,tmp)
         {
             HASH_ITER(hh,subset->waddr,waddr,tmp2)
             {
                 bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,20);
                 jaddistr(array,coinaddr);
+                if ( strcmp(coinaddr,refaddr) == 0 )
+                    refaddr[0] = 0;
             }
         }
+        if ( refaddr[0] != 0 )
+            jaddistr(array,refaddr);
     }
     return(array);
 }

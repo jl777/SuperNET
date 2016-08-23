@@ -857,3 +857,94 @@ void basilisks_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->messagemutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
 }
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
+{
+    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( vals == 0 )
+        return(clonestr("{\"error\":\"need vals object\"}"));
+    //if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( jobj(vals,"fanout") == 0 )
+        jaddnum(vals,"fanout",8);
+    if ( jobj(vals,"numrequired") == 0 )
+        jaddnum(vals,"numrequired",myinfo->numrelays);
+    if ( coin != 0 )
+    {
+        if ( jobj(vals,"addresses") == 0 )
+        {
+            jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
+            printf("added all addresses: %s\n",jprint(vals,0));
+        } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
+        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+            basilisktag = rand();
+        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+            timeoutmillis = BASILISK_TIMEOUT;
+        if ( (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        {
+            retstr = ptr->retstr, ptr->retstr = 0;
+            ptr->finished = (uint32_t)time(NULL);
+            return(retstr);
+        }
+    } else printf("no coin\n");
+    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
+}
+
+HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
+{
+    struct basilisk_unspent *bu; int32_t i; int64_t totalspent=0,total = 0; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*array; struct basilisk_spend *s;
+    if ( vals == 0 )
+        return(clonestr("{\"error\":\"need vals object\"}"));
+    //if ( coin == 0 )
+    {
+        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+            coin = iguana_coinfind(symbol);
+    }
+    if ( coin == 0 )
+        return(clonestr("{\"error\":\"couldnt find coin\"}"));
+    //printf("history for (%s)\n",coin->symbol);
+    basilisk_unspents_update(myinfo,coin);
+    array = cJSON_CreateArray();
+    portable_mutex_lock(&myinfo->bu_mutex);
+    HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+    {
+        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        {
+            for (i=0; i<waddr->numunspents; i++)
+            {
+                bu = &waddr->unspents[i];
+                if ( strcmp(bu->symbol,coin->symbol) == 0 )
+                {
+                    bitcoin_address(waddr->coinaddr,coin->chain->pubtype,waddr->rmd160,sizeof(waddr->rmd160));
+                    jaddi(array,basilisk_history_item(coin,&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
+                    //printf("%s %s i.%d numunspents.%d\n",coin->symbol,waddr->coinaddr,i,waddr->numunspents);
+                }
+            }
+        }
+    }
+    if ( myinfo->numspends > 0 )
+    {
+        //spends = cJSON_CreateArray();
+        for (i=0; i<myinfo->numspends; i++)
+        {
+            s = &myinfo->spends[i];
+            //struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
+            if ( strcmp(s->symbol,coin->symbol) == 0 )
+                jaddi(array,basilisk_history_item(coin,&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
+        }
+    }
+    portable_mutex_unlock(&myinfo->bu_mutex);
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"history",array);
+    jaddstr(retjson,"coin",coin->symbol);
+    jaddnum(retjson,"balance",dstr(total));
+    return(jprint(retjson,1));
+}
+
+#include "../includes/iguana_apiundefs.h"
