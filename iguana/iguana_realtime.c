@@ -703,7 +703,7 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
-        if ( strcmp("BTC",coin->symbol) != 0 )
+        if ( 0 && strcmp("BTC",coin->symbol) != 0 )
             printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);
     }
     else if ( RTptr->txn_count != txn_count || RTptr->numvouts != numvouts || RTptr->numvins != numvins )
