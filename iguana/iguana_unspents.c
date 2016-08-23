@@ -427,7 +427,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
 
 int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,cJSON *array,int64_t *spentp,int64_t *depositsp,struct iguana_outpoint *unspents,int32_t max,uint8_t *rmd160,char *coinaddr,uint8_t *pubkey33,struct iguana_outpoint lastpt,int32_t lastheight)
 {
-    int32_t spentheight,n = 0; struct iguana_outpoint outpt; bits256 txid; struct iguana_RTunspent *unspent = lastpt.ptr;
+    int32_t spentheight,n = 0; struct iguana_outpoint outpt; bits256 txid; struct iguana_RTtxid *parent; struct iguana_RTunspent *unspent = lastpt.ptr;
     while ( unspent != 0 )
     {
         if ( lastheight <= 0 || unspent->height < lastheight )
@@ -436,6 +436,10 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
             {
                 spentheight = unspent->height;
                 memset(&outpt,0,sizeof(outpt));
+                memset(&txid,0,sizeof(txid));
+                if ( (parent= unspent->parent) != 0 )
+                    txid = parent->txid;
+                else printf("unspent has no parent?\n");
                 outpt.isptr = 1;
                 outpt.ptr = unspent;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
