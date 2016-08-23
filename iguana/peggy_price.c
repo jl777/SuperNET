@@ -682,9 +682,9 @@ int32_t PAX_getmatrix(double *basevals,struct peggy_info *PEGS,double Hmatrix[32
             RTprices[i] = PEGS->data.cryptos[7];
         else if ( i < 32 )
         {
-            basevals[i] = Hmatrix[i][i];
+            PEGS->data.RTmatrix[i][i] = basevals[i] = Hmatrix[i][i];
             //if ( Debuglevel > 2 )
-            printf("(%s %f).%d ",CURRENCIES[i],basevals[i],i);
+            //printf("(%s %f).%d ",CURRENCIES[i],basevals[i],i);
         }
         else if ( (c= PAX_contractnum(contracts[i],0)) >= 0 )
         {
@@ -716,10 +716,12 @@ char *peggy_emitprices(int32_t *nonzp,struct peggy_info *PEGS,uint32_t blocktime
     double matrix[32][32],RTmatrix[32][32],cprices[64],basevals[64]; struct price_resolution prices[256];
     cJSON *json,*array; char *jsonstr,*opreturnstr = 0; int32_t i,nonz = 0;
     memset(cprices,0,sizeof(cprices));
-    //printf("peggy_emitprices\n");
+    printf("peggy_emitprices\n");
     if ( PAX_getmatrix(basevals,PEGS,matrix,cprices+1,peggy_bases+1,sizeof(peggy_bases)/sizeof(*peggy_bases)-1,blocktimestamp) > 0 )
     {
         cprices[0] = PEGS->btcdbtc;
+        for (i=0; i<32; i++)
+            PEGS->data.RTmatrix[i][i] = basevals[i];
         /*for (i=0; i<32; i++)
          printf("%f ",basevals[i]);
          printf("basevals\n");
@@ -824,6 +826,16 @@ double PAX_getprice(char *retbuf,char *base,char *rel,char *contract,struct pegg
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+
+double PAX_aveprice(struct supernet_info *myinfo,char *base)
+{
+    struct peggy_info *PEGS; int32_t basenum;
+    if ( (PEGS= myinfo->PEGS) != 0 && (basenum= PAX_basenum(base)) >= 0 )
+    {
+        return(PEGS->data.RTmatrix[basenum][basenum]);
+    }
+    return(0.);
+}
 
 struct peggy_info *PAX_init()
 {

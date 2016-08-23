@@ -91,9 +91,11 @@ int32_t PAX_ispair(char *base,char *rel,char *contract)
     return(-1);
 }
 
-int32_t PAX_basenum(char *base)
+int32_t PAX_basenum(char *_base)
 {
-    int32_t i,j;
+    int32_t i,j; char base[64];
+    strcpy(base,_base);
+    touppercase(base);
     if ( 1 )
     {
         for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)

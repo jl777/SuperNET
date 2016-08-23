@@ -54,6 +54,11 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     if ( basevolume < 0. )
         basevolume = -basevolume, dir = -1;
     else dir = 1;
+    if ( rel == 0 || rel[0] == 0 )
+    {
+        *totalvolp = 1.;
+        return(PAX_aveprice(myinfo,base));
+    }
     memset(sortbuf,0,sizeof(*sortbuf) * max);
     if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
     {
@@ -113,11 +118,13 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
 
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
 {
-    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    int32_t basenum,relnum; double baseval,relval,avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
     if ( retvals == 0 )
         return(0);
     strcpy(base,_base);
-    strcpy(rel,_rel);
+    if ( _rel == 0 )
+        strcpy(rel,"");
+    else strcpy(rel,_rel);
     if ( myinfo == 0 )
         myinfo = SuperNET_MYINFO(0);
     argjson = cJSON_CreateObject();
@@ -125,6 +132,11 @@ double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_
     avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
     free_json(argjson);
     retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+    if ( (basenum= PAX_basenum(base)) >= 0 && (relnum= PAX_basenum(rel)) >= 0 )
+    {
+        if ( myinfo->PEGS != 0 && (baseval= myinfo->PEGS->data.RTmatrix[basenum][basenum]) != 0. && (relval= myinfo->PEGS->data.RTmatrix[relnum][relnum]) != 0. )
+            return(baseval / relval);
+    }
     if ( avebid > SMALLVAL && aveask > SMALLVAL )
         return((avebid + aveask) * .5);
     else return(0);
@@ -733,7 +745,7 @@ void exchanges777_loop(void *ptr)
     {
         if ( peggyflag != 0 && PEGS != 0 )
         {
-            printf("nonz peggy\n");
+            //printf("nonz peggy\n");
             PAX_idle(PEGS,peggyflag,3);
             if ( time(NULL) > PEGS->lastupdate+100 )
             {
@@ -1361,10 +1373,12 @@ THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
 
 INT_AND_ARRAY(iguana,rates,unused,quotes)
 {
-    int32_t i,n,len,j; char *retstr,*quote,base[16][64],rel[16][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+    int32_t i,n,len,j,haveslash,nonz; char *str,*retstr,*quote,base[64][64],rel[64][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+    if ( myinfo->PEGS != 0 && (str= peggy_emitprices(&nonz,myinfo->PEGS,(uint32_t)time(NULL),PEGGY_MAXLOCKDAYS)) != 0 )
+        free(str);
     if ( is_cJSON_Array(quotes) != 0 && (n= cJSON_GetArraySize(quotes)) > 0 )
     {
-        if ( n > 16 )
+        if ( n > 64 )
         {
             jaddstr(retjson,"error","only 16 quotes at a time");
             return(jprint(retjson,1));
@@ -1383,9 +1397,11 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                     jaddstr(retjson,"error","quote too long");
                     return(jprint(retjson,1));
                 }
-                for (j=0; j<len; j++)
+                for (j=haveslash=0; j<len; j++)
+                {
                     if ( quote[j] == '/' )
                     {
+                        haveslash = 1;
                         if ( j > 0 && j < len-1 )
                         {
                             memcpy(base[i],quote,j);
@@ -1402,25 +1418,30 @@ INT_AND_ARRAY(iguana,rates,unused,quotes)
                             return(jprint(retjson,1));
                         }
                     }
-                if ( j < len )
+                }
+                if ( j < len || haveslash == 0 )
                 {
+                    if ( haveslash == 0 )
+                        strcpy(base[i],quote);
                     aveprice = 0.;
                     if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",base[i],rel[i],1)) != 0 )
                     {
                         if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
                         {
                             aveprice = jdouble(tmpjson,"aveprice");
-                            printf("(%s) ",jprint(tmpjson,0));
+                            //printf("(%s) ",jprint(tmpjson,0));
                             free_json(tmpjson);
                         } else printf("error parsing.(%s)\n",retstr);
-                        sprintf(field,"%s/%s",base[i],rel[i]);
+                        if ( haveslash == 0 )
+                            strcpy(field,base[i]);
+                        else sprintf(field,"%s/%s",base[i],rel[i]);
                         item = cJSON_CreateObject();
                         jaddnum(item,field,aveprice);
                         if ( array == 0 )
                             array = cJSON_CreateArray();
                         jaddi(array,item);
                         free(retstr);
-                        printf(" <- aveprice %f\n",aveprice);
+                        //printf(" <- aveprice %f\n",aveprice);
                     } else printf("no return from aveprice\n");
                 }
                 else

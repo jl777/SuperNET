@@ -375,5 +375,6 @@ int32_t peggy_addunit(struct accts777_info *accts,struct peggy_unit *U,bits256 l
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
 void peggy_priceinits(struct peggy_info *PEGS,uint32_t firsttimestamp,uint32_t *allprices);
+double PAX_aveprice(struct supernet_info *myinfo,char *base);
 
 #endif
