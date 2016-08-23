@@ -115,11 +115,12 @@ struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struc
 struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,struct iguana_waddress *addwaddr,char *redeemScript)
 {
     struct iguana_waddress *waddr,*ptr; uint8_t rmd160[20],addrtype;
+    printf("search for (%s)\n",addwaddr->coinaddr);
     bitcoin_addr2rmd160(&addrtype,rmd160,addwaddr->coinaddr);
     HASH_FIND(hh,wacct->waddr,rmd160,sizeof(rmd160),waddr);
     if ( waddr == 0 )
     {
-        if ( (waddr= iguana_waddressalloc(redeemScript==0?coin->chain->pubtype : coin->chain->p2shtype,coin->symbol,addwaddr->coinaddr,redeemScript)) == 0 )
+        if ( (waddr= iguana_waddressalloc(addrtype,coin->symbol,addwaddr->coinaddr,redeemScript)) == 0 )
         {
             printf("error iguana_waddressalloc null waddr\n");
             return(0);
@@ -140,31 +141,38 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
                 waddr->scriptlen = addwaddr->scriptlen;
                 decode_hex(waddr->redeemScript,waddr->scriptlen,redeemScript);
             }
-            waddr->addrtype = coin->chain->p2shtype;
+            waddr->addrtype = addrtype;//coin->chain->p2shtype;
             memset(&waddr->privkey,0,sizeof(waddr->privkey));
             memset(waddr->pubkey,0,sizeof(waddr->pubkey));
             calc_rmd160_sha256(waddr->rmd160,waddr->redeemScript,waddr->scriptlen);
         }
         else
         {
-            waddr->addrtype = coin->chain->pubtype;
+            waddr->addrtype = addrtype;//coin->chain->pubtype;
             waddr->wiftype = addwaddr->wiftype;
             if ( bits256_nonz(waddr->privkey) == 0 )
                 waddr->privkey = addwaddr->privkey;
             if ( addwaddr->wifstr[0] != 0 )
                 strcpy(waddr->wifstr,addwaddr->wifstr);
-            memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
-            calc_rmd160_sha256(waddr->rmd160,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
+            memcpy(waddr->rmd160,rmd160,sizeof(waddr->rmd160));
+            calc_rmd160_sha256(rmd160,addwaddr->pubkey,bitcoin_pubkeylen(addwaddr->pubkey));
+            if ( memcmp(rmd160,waddr->rmd160,sizeof(waddr->rmd160)) == 0 )
+                memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
         }
         bitcoin_address(waddr->coinaddr,waddr->addrtype,waddr->rmd160,sizeof(waddr->rmd160));
         myinfo->dirty = (uint32_t)time(NULL);
     }
-    if ( (ptr= iguana_waddressfind(myinfo,wacct,waddr->coinaddr)) != waddr )
+    if ( (ptr= iguana_waddressfind(myinfo,wacct,waddr->coinaddr)) == 0 )
     {
         HASH_ADD_KEYPTR(hh,wacct->waddr,waddr->rmd160,sizeof(waddr->rmd160),waddr);
         myinfo->dirty = (uint32_t)time(NULL);
         printf("add (%s) scriptlen.%d -> (%s) wif.(%s)\n",waddr->coinaddr,waddr->scriptlen,wacct->account,waddr->wifstr);
-    } else printf("(%s) already in account.(%s)\n",waddr->coinaddr,wacct->account);
+    }
+    else
+    {
+        waddr = ptr;
+        printf("(%s) already in account.(%s)\n",waddr->coinaddr,wacct->account);
+    }
     if ( waddr != 0 && waddr->symbol[0] == 0 )
         strcpy(waddr->symbol,coin->symbol);
     return(waddr);
@@ -239,8 +247,13 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
     if ( (wacct= iguana_waccountcreate(myinfo,account)) != 0 )
     {
         waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
-        if ( waddr != 0 && redeemScript == 0 )
-            iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,addr.privkey);
+        if ( waddr != 0 )
+        {
+            if ( redeemScript == 0 )
+                iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,addr.privkey);
+            strcpy(waddr->coinaddr,coinaddr);
+            waddr = iguana_waddressadd(myinfo,coin,wacct,waddr,redeemScript);
+        } else waddr = 0;
     }
     myinfo->dirty = (uint32_t)time(NULL);
     return(waddr);
@@ -374,8 +387,7 @@ char *setaccount(struct supernet_info *myinfo,struct iguana_info *coin,struct ig
             if ( waddrp != 0 )
                 *waddrp = waddr;
             return(clonestr("{\"result\":\"success\"}"));
-        }
-        else return(clonestr("{\"error\":\"couldnt set account\"}"));
+        } else return(clonestr("{\"error\":\"couldnt set account\"}"));
     }
     return(clonestr("{\"error\":\"need address and account\"}"));
 }
