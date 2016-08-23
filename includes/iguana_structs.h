@@ -468,7 +468,7 @@ struct iguana_info
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
     
     struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind;
-    int64_t histbalance,RTcredits,RTdebits;
+    uint64_t histbalance,RTcredits,RTdebits;
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
