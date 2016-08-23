@@ -316,10 +316,10 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
 struct bitcoin_unspent *iguana_unspentsget(struct supernet_info *myinfo,struct iguana_info *coin,char **retstrp,double *balancep,int32_t *numunspentsp,double minconfirms,char *address);
 void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson);
-int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,int32_t maxunspents,char *remoteaddr);
+int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,int32_t maxunspents,char *remoteaddr,int32_t includespent);
 long iguana_spentsfile(struct iguana_info *coin,int32_t n);
 uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti);
-int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,char *remoteaddr);
+int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,char *remoteaddr,int32_t includespent);
 uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp);
 char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi);
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind,struct iguana_ramchain *ramchain);

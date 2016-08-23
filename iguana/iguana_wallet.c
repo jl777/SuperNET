@@ -896,7 +896,7 @@ int64_t iguana_waccountbalance(struct supernet_info *myinfo,struct iguana_info *
     if ( minconf == 0 )
         minconf = 1;
     rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,wacct->account),0);
-    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,0);
+    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,0,0);
     if ( rmdarray != 0 )
         free(rmdarray);
     return(balance);
@@ -1463,7 +1463,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
     //if ( strcmp(account,"*") != 0 )
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,iguana_getaddressesbyaccount(myinfo,coin,account),0);
     numunspents = 0;
-    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,remoteaddr);
+    balance = iguana_RTunspents(myinfo,coin,0,minconf,(1 << 30),rmdarray,numrmds,lastheight,0,&numunspents,remoteaddr,0);
     if ( rmdarray != 0 )
         free(rmdarray);
     retjson = cJSON_CreateObject();
