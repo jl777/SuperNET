@@ -286,6 +286,8 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         printf("no method in request.(%s)\n",jprint(json,0));
         return(clonestr("{\"error\":\"no method\"}"));
     }
+    if ( strcmp(method,"login") == 0 || strcmp(method,"logout") == 0 )
+        return(clonestr("{\"error\":\"login and logout are internal only functions\"}"));
     if ( remoteaddr == 0 )
     {
         if ( jobj(json,"timestamp") != 0 )
