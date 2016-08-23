@@ -16,12 +16,6 @@
 #include "iguana777.h"
 
 #ifdef DEPRECATED_HHUTXO
-struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint64_t uval)
-{
-    struct iguana_hhutxo *hhutxo;
-    HASH_FIND(hh,coin->utxotable,&uval,sizeof(uval),hhutxo);
-    return(hhutxo);
-}
 
 struct iguana_hhaccount *iguana_hhaccountfind(struct iguana_info *coin,uint64_t pval)
 {
@@ -106,93 +100,143 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
 }
 #endif
 
-struct iguana_utxo iguana_RTutxofind(struct iguana_info *coin,struct iguana_outpoint spentpt,int32_t *RTspendflagp,int32_t lockflag)
+struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint64_t uval)
 {
-    uint64_t val; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata;
-    *RTspendflagp = 0;
+    struct iguana_hhutxo *hhutxo;
+    HASH_FIND(hh,coin->utxotable,&uval,sizeof(uval),hhutxo);
+    return(hhutxo);
+}
+
+int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t *lockedflagp,struct iguana_outpoint spentpt,int32_t *RTspendflagp,int32_t lockflag,int32_t fromheight)
+{
+    uint64_t val; struct iguana_hhutxo *hhutxo; struct iguana_utxo utxo; struct iguana_ramchain *ramchain; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; struct iguana_RTunspent *unspent; int32_t spentflag = 0;
+    *RTspendflagp = *lockedflagp = *fromheightp = 0;
     memset(&utxo,0,sizeof(utxo));
     if ( coin->disableUTXO != 0 )
     {
         printf("skip utxofind when disabled\n");
-        return(utxo);
+        return(0);
     }
-    if ( (bp= coin->bundles[spentpt.hdrsi]) == 0 )
-        return(utxo);
-    ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-    if ( (rdata= ramchain->H.data) == 0 )
-        return(utxo);
-    val = ((uint64_t)spentpt.hdrsi << 32) | spentpt.unspentind;
-    if ( spentpt.unspentind > 0 && spentpt.unspentind < rdata->numunspents )
+    if ( spentpt.isptr != 0 )
     {
-        if ( ramchain->Uextras != 0 )
+        if ( (unspent= spentpt.ptr) != 0 )
         {
-            utxo = ramchain->Uextras[spentpt.unspentind];
-            if ( lockflag != 0 )
+            if ( lockflag == 0 && fromheight == 0 )
             {
-                /*if ( (hhutxo= iguana_hhutxofind(coin,val)) == 0 )
-                {
-                    hhutxo = calloc(1,sizeof(*hhutxo));
-                    hhutxo->uval = val;
-                    HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
-                }*/
-                printf("iguana_utxofind: need to change to new RT lock method\n");
+                if ( unspent->spend != 0 )
+                    spentflag = 1;
+                if ( unspent->locked != 0 )
+                    *lockedflagp = 1;
+                *fromheightp = unspent->fromheight;
             }
-        }
-        if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
-        {
-            /*if ( (hhutxo= iguana_hhutxofind(coin,val)) != 0 )
+            else if ( fromheight != 0 )
             {
-                if ( lockflag != 0 )
-                {
-                    if ( hhutxo->u.lockedflag == 0 )
-                        hhutxo->u.lockedflag = 1;
-                    else printf("iguana_hhutxofind warning: locking already locked [%d].%u\n",spentpt.hdrsi,spentpt.unspentind);
-                } else hhutxo->u.lockedflag = 0;
-                utxo = hhutxo->u;
-                if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
-                    *RTspendflagp = 1;
-            }*/
-            //printf("iguana_utxofind: need to change to new RT method\n");
+                unspent->fromheight = fromheight;
+                if ( unspent->spend == 0 )
+                    printf("unexpected null spend when fromheight.%d\n",fromheight);
+            }
+            else if ( lockflag != 0 )
+                unspent->locked = 1;
+        }
+        else
+        {
+            printf("missing spentpt ptr when isptr?\n");
+            return(0);
         }
     }
     else
     {
-        printf("illegal unspentind.%u vs %u hdrs.%d\n",spentpt.unspentind,rdata->numunspents,spentpt.hdrsi);
+        if ( (bp= coin->bundles[spentpt.hdrsi]) == 0 )
+            return(0);
+        ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+        if ( (rdata= ramchain->H.data) == 0 )
+            return(0);
+        val = ((uint64_t)spentpt.hdrsi << 32) | spentpt.unspentind;
+        if ( (utxo.fromheight= fromheight) != 0 )
+            utxo.spentflag = 1;
+        if ( spentpt.unspentind > 0 && spentpt.unspentind < rdata->numunspents )
+        {
+            if ( ramchain->Uextras != 0 )
+            {
+                utxo = ramchain->Uextras[spentpt.unspentind];
+                if ( lockflag != 0 )
+                {
+                    if ( (hhutxo= iguana_hhutxofind(coin,val)) == 0 )
+                    {
+                        hhutxo = calloc(1,sizeof(*hhutxo));
+                        hhutxo->uval = val;
+                        hhutxo->u = utxo;
+                        HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
+                    }
+                     printf("iguana_utxofind: need to change to new RT lock method\n");
+                }
+            }
+            if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
+            {
+                if ( (hhutxo= iguana_hhutxofind(coin,val)) != 0 )
+                    utxo = hhutxo->u;
+                //printf("iguana_utxofind: need to change to new RT method\n");
+            }
+        }
+        else
+        {
+            printf("illegal unspentind.%u vs %u hdrs.%d\n",spentpt.unspentind,rdata->numunspents,spentpt.hdrsi);
+        }
     }
-    //if ( flag != 0 )
-    //    portable_mutex_unlock(&coin->RTmutex);
-    return(utxo);
+    if ( lockflag != 0 )
+    {
+        if ( utxo.lockedflag == 0 )
+            utxo.lockedflag = 1;
+        else printf("iguana_hhutxofind warning: locking already locked [%d].%u\n",spentpt.hdrsi,spentpt.unspentind);
+    } else utxo.lockedflag = 0;
+    if ( utxo.spentflag != 0 || utxo.lockedflag != 0 )
+        *RTspendflagp = 1;
+    return(utxo.spentflag);
 }
 
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
-    uint32_t numunspents; int32_t RTspentflag; struct iguana_utxo utxo; uint64_t confs,RTspend = 0;
-    struct iguana_ramchaindata *rdata;
+    uint32_t numunspents; int32_t RTspentflag,spentflag,lockedflag,fromheight; uint64_t confs;//,RTspend = 0;
+    struct iguana_ramchaindata *rdata; struct iguana_RTunspent *unspent;
     *spentheightp = -1;
     if ( coin->disableUTXO != 0 )
     {
         //printf("skip spentflag when disabled\n");
         return(0);
     }
+    if ( spentpt.isptr != 0 )
+    {
+        if ( (unspent= spentpt.ptr) != 0 )
+        {
+            if ( unspent->spend != 0 )
+            {
+                *RTspendp += (amount == 0) ? coin->txfee : amount;
+                return(1);
+            }
+            else if ( unspent->locked != 0 )
+                return(-1);
+        } else printf("missing spentpt ptr when isptr?\n");
+        return(0);
+    }
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
     numunspents = rdata->numunspents;
-    utxo = iguana_RTutxofind(coin,spentpt,&RTspentflag,0);
+    spentflag = iguana_RTutxofunc(coin,&fromheight,&lockedflag,spentpt,&RTspentflag,0,0);
     if ( RTspentflag != 0 )
-        *RTspendp = (amount == 0) ? coin->txfee : amount;
-    if ( utxo.spentflag != 0 && utxo.fromheight == 0 )
+        *RTspendp += (amount == 0) ? coin->txfee : amount;
+    if ( spentflag != 0 && fromheight == 0 )
     {
         printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spentpt.unspentind,numunspents,spentpt.hdrsi);
         return(-1);
     }
-    //printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),utxo.fromheight,height,utxo.spentflag);
-    *spentheightp = utxo.fromheight;
-    if ( (confs= coin->blocks.hwmchain.height - utxo.fromheight) >= minconf && confs < maxconf && (height <= 0 || utxo.fromheight < height) )
+    //printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),fromheight,height,spentflag);
+    *spentheightp = fromheight;
+    if ( (confs= coin->blocks.hwmchain.height - fromheight) >= minconf && confs < maxconf && (height <= 0 || fromheight < height) )
     {
-        (*RTspendp) += RTspend;
-        if ( utxo.spentflag != 0 )
+        //(*RTspendp) += RTspend;
+        if ( spentflag != 0 )
             return(1);
-        else if ( utxo.lockedflag != 0 )
+        else if ( lockedflag != 0 )
             return(-1);
         else return(0);
     }

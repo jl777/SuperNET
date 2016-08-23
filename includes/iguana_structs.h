@@ -249,12 +249,12 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastunspentind; } __attribute__((packed));
-struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; } __attribute__((packed));
 struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spentflag:1,spendind; } __attribute__((packed));
 
 #ifdef DEPRECATED_HHUTXO
-struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
+struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; } __attribute__((packed));
 #endif
+struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
 struct iguana_utxoaddr { UT_hash_handle hh; int64_t histbalance; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
@@ -392,12 +392,12 @@ struct iguana_RTunspent
 {
     uint8_t rmd160[20];
     int64_t value;
-    int32_t vout,height;
+    int32_t vout,height,fromheight;
     struct iguana_RTtxid *parent;
     struct iguana_RTspend *spend;
     struct iguana_RTunspent *prevunspent;
     int16_t scriptlen;
-    uint8_t spentflag,validflag;
+    uint8_t locked,validflag;
     uint8_t script[];
 };
 
@@ -456,8 +456,9 @@ struct iguana_info
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
     bits256 APIblockhash,APItxid; char *APIblockstr;
+    struct iguana_hhutxo *utxotable;
 #ifdef DEPRECATED_HHUTXO
-    struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable;
+    struct iguana_hhaccount *accountstable;
 #endif
     char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;

@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+// verify undo cases for hhutxo, and all 4 permutations of setting
+
 #include "iguana777.h"
 //#define ENABLE_RAMCHAIN
 
@@ -573,8 +575,8 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
                     return;
                 }
             }
-            if ( (unspent->spentflag == 0 && polarity < 0) || (unspent->spentflag != 0 && polarity > 0) )
-                printf("unspent spentflag.%d opposite when polarity.%lld\n",unspent->spentflag,(long long)polarity);
+            if ( (unspent->spend == 0 && polarity < 0) || (unspent->spend != 0 && polarity > 0) )
+                printf("unspent spend.%p opposite when polarity.%lld\n",unspent->spend,(long long)polarity);
             iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,0,value,unspent);
             if ( polarity < 0 )
                 RTptr->unspents[vout] = 0;
@@ -590,7 +592,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 
 void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
-    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t spendlen,height; uint64_t value;
+    struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint32_t unspentind; int32_t spendlen,height; uint64_t value; struct iguana_outpoint spentpt;
     //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
@@ -630,21 +632,27 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
                 }
                 else
                 {
-                    if ( iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,prev_hash,prev_vout,coin->bundlescount,0) == 0 )
+                    if ( (unspentind= iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,prev_hash,prev_vout,coin->bundlescount,0)) == 0 )
                         printf("iguana_RTspend cant find spentRTptr.(%s) search history\n",bits256_str(str,prev_hash));
                     else
                     {
+                        int32_t spentheight,lockedflag,RTspentflag;
                         bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
                         //printf("found unspentind (%s %.8f).%d spendlen.%d\n",coinaddr,dstr(value),addrtype,spendlen);
                         unspent = iguana_RTunspent_create(rmd160,value,spendscript,spendlen>0?spendlen:0,0,prev_vout);
+                        memset(&spentpt,0,sizeof(spentpt));
+                        spentpt.unspentind = unspentind;
+                        spentpt.hdrsi = height / coin->chain->bundlesize;
+                        iguana_RTutxofunc(coin,&spentheight,&lockedflag,spentpt,&RTspentflag,0,RTptr->height);
                     }
                 }
                 if ( unspent != 0 )
                 {
                     bitcoin_address(coinaddr,coin->chain->pubtype,unspent->rmd160,sizeof(unspent->rmd160));
                     iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,1,unspent->value,unspent);
-                    unspent->spend = spend;
-                    unspent->spentflag = (polarity > 0);
+                    if ( polarity < 0 )
+                        unspent->spend = 0;
+                    else unspent->spend = spend;
                 }
             }
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
@@ -665,7 +673,7 @@ void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
 
 void iguana_RTdataset_free(struct iguana_info *coin)
 {
-    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2;
+    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2; struct iguana_hhutxo *hhutxo,*tmphh;
     HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
     {
         HASH_DELETE(hh,coin->RTdataset,RTptr);
@@ -675,6 +683,11 @@ void iguana_RTdataset_free(struct iguana_info *coin)
     {
         HASH_DELETE(hh,coin->RTaddrs,RTaddr);
         free(RTaddr);
+    }
+    HASH_ITER(hh,coin->utxotable,hhutxo,tmphh)
+    {
+        HASH_DELETE(hh,coin->utxotable,hhutxo);
+        free(hhutxo);
     }
 }
 
