@@ -299,7 +299,7 @@ cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin
         }
         else
         {
-            printf("illegal unspentind.u%d [%d]\n",outpt.unspentind,outpt.hdrsi);
+            printf("%s illegal unspentind.u%d [%d]\n",coin->symbol,outpt.unspentind,outpt.hdrsi);
             free_json(vins);
             return(0);
         }

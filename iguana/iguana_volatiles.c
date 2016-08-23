@@ -180,7 +180,7 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
         }
         else
         {
-            printf("illegal unspentind.%u vs %u hdrs.%d\n",spentpt.unspentind,rdata->numunspents,spentpt.hdrsi);
+            printf("%s illegal unspentind.%u vs %u hdrs.%d\n",coin->symbol,spentpt.unspentind,rdata->numunspents,spentpt.hdrsi);
         }
     }
     if ( lockflag != 0 )
@@ -224,10 +224,13 @@ int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin
     spentflag = iguana_RTutxofunc(coin,&fromheight,&lockedflag,spentpt,&RTspentflag,0,0);
     if ( RTspentflag != 0 )
         *RTspendp += (amount == 0) ? coin->txfee : amount;
-    if ( spentflag != 0 && fromheight == 0 )
+    if ( spentflag != 0 )
     {
-        printf("illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",spentpt.unspentind,numunspents,spentpt.hdrsi);
-        return(-1);
+        if ( height == 0 )
+        {
+            printf("%s illegal unspentind.%u vs %u hdrs.%d zero fromheight?\n",coin->symbol,spentpt.unspentind,numunspents,spentpt.hdrsi);
+            return(-1);
+        } else fromheight = height;
     }
     //printf("[%d] u%u %.8f, spentheight.%d vs height.%d spentflag.%d\n",spent_hdrsi,spent_unspentind,dstr(amount),fromheight,height,spentflag);
     *spentheightp = fromheight;

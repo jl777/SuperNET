@@ -173,9 +173,9 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
             } else printf("external spent unexpected nonz unspentind [%d]\n",spent_hdrsi);
         }
         if ( (spentbp= coin->bundles[hdrsi]) == 0 || hdrsi > spent_hdrsi )
-            printf("illegal hdrsi.%d when [%d] spentbp.%p\n",hdrsi,spent_hdrsi,spentbp);
+            printf("%s illegal hdrsi.%d when [%d] spentbp.%p\n",coin->symbol,hdrsi,spent_hdrsi,spentbp);
         else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
-            printf("illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
+            printf("%s illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",coin->symbol,unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
         else return(spentbp);
         iguana_bundleremove(coin,spent_hdrsi,1);
     }

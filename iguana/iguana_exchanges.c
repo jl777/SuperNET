@@ -715,22 +715,23 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void exchanges777_loop(void *ptr)
 {
-    struct peggy_info *PEGS; struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
+    struct peggy_info *PEGS=0; struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
     int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr;
     myinfo = SuperNET_MYINFO(0);
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
-        PEGS = myinfo->PEGS; //calloc(1,sizeof(*PEGS));
-        //PAX_init(PEGS);
-        exchange->privatedata = PEGS;
-        peggyflag = 1;
-        _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
-        PEGS->lastupdate = (uint32_t)time(NULL);
+        if ( (PEGS= myinfo->PEGS) != 0 )
+        {
+            exchange->privatedata = PEGS;
+            peggyflag = 1;
+            _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
+            PEGS->lastupdate = (uint32_t)time(NULL);
+        }
     }
     printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
-        if ( peggyflag != 0 )
+        if ( peggyflag != 0 && PEGS != 0 )
         {
             printf("nonz peggy\n");
             PAX_idle(PEGS,peggyflag,3);

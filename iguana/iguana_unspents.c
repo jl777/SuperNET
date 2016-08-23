@@ -913,7 +913,7 @@ uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *co
         }
         else
         {
-            printf("illegal unspentind.%u vs %u [%d]\n",outpt.unspentind,rdata->numunspents,bp->hdrsi);
+            printf("%s illegal unspentind.%u vs %u [%d]\n",coin->symbol,outpt.unspentind,rdata->numunspents,bp->hdrsi);
             return(-2);
         }
     }
