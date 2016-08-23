@@ -27,7 +27,7 @@ STRING_ARG(iguana,initfastfind,activecoin)
 
 TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
 {
-    int32_t lastheight,minconf,maxconf=SATOSHIDEN; int64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype; struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
+    int32_t lastheight,minconf,maxconf=SATOSHIDEN; uint64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype; struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )

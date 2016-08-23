@@ -548,10 +548,10 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         coin->spendvectorsaved = (uint32_t)time(NULL);
         coin->spendvalidated = 0;
         printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
-        if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) < 0 )
+        if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) == 0 )
         {
             printf("retry utxoaddr_gen\n");
-            if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) < 0 )
+            if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) == 0 )
             {
                 printf("restart iguana: fatal error generating ledger file for %s\n",coin->symbol);
                 exit(1);

@@ -445,7 +445,7 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    double balance; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t avail; struct iguana_outpoint outpt,*unspents=0;
+    double balance; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; uint64_t avail; struct iguana_outpoint outpt,*unspents=0;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
     //portable_mutex_lock(&myinfo->allcoins_mutex);

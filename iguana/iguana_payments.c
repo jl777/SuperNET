@@ -216,7 +216,7 @@ cJSON *iguana_inputjson(bits256 txid,int32_t vout,uint8_t *spendscript,int32_t s
     return(item);
 }
 
-cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *totalp,uint64_t amount,struct iguana_outpoint *unspents,int32_t num)
+cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,uint64_t amount,struct iguana_outpoint *unspents,int32_t num)
 {
     cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind; uint32_t txidind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t above,below,total = 0; struct iguana_outpoint outpt; int64_t remains = amount;
     *totalp = 0;
@@ -364,7 +364,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; int64_t avail,total,change; struct iguana_outpoint *unspents = 0; struct vin_info *V=0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; uint64_t avail,total,change; struct iguana_outpoint *unspents = 0; struct vin_info *V=0;
     *vinsp = 0;
     max = 10000;
     satoshis += burnamount;
