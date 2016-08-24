@@ -265,7 +265,7 @@ int32_t _SuperNET_encryptjson(struct supernet_info *myinfo,char *destfname,char 
     wallethash = SuperNET_linehash(passphrase);
     SuperNET_linehash(fname2fa); // maps special chars
     wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
-    char str2[65]; printf("ENCRYPT.[%s %s] (%s) 2.%s\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
+    //char str2[65]; printf("ENCRYPT.[%s %s] (%s) 2.%s\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
     wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
     wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
     sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
@@ -403,7 +403,7 @@ TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
         wallet2priv = bits256_conv(fname2);
     if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
     {
-        printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
+        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
         //obj = jduplicate(jobj(retjson,"payload"));
         //jdelete(retjson,"payload");
         //jadd(retjson,"result",obj);
@@ -417,7 +417,7 @@ THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
     safecopy(pass,password,sizeof(pass));
     safecopy(fname2,permanentfile,sizeof(fname2));
     argjson = jduplicate(json);
-    printf("argjson.(%s)\n",jprint(argjson,0));
+    //printf("argjson.(%s)\n",jprint(argjson,0));
     jdelete(argjson,"agent");
     jdelete(argjson,"method");
     jdelete(argjson,"password");

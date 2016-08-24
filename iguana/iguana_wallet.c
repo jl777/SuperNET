@@ -1179,8 +1179,6 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     iguana_walletlock(myinfo,coin);
     printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
-    if ( password == 0 || password[0] == 0 )
-        password = "";
     strcpy(myinfo->secret,password);
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
