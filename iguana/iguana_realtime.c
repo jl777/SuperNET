@@ -607,7 +607,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 {
     int32_t i; struct iguana_RTunspent *unspent; char str[65];
     //printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
-    fprintf(stderr,"+");
+    //fprintf(stderr,"+");
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
@@ -641,7 +641,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
             printf("%02x",rmd160[i]);
         printf(" %s vout.%d %.8f %lld\n",coinaddr,vout,dstr(value),(long long)polarity);
     }
-    fprintf(stderr,",");
+    //fprintf(stderr,",");
 }
 
 void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
@@ -650,7 +650,7 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
     //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
-    fprintf(stderr,"-");
+    //fprintf(stderr,"-");
     if ( RTptr != 0 )
     {
         if ( bits256_cmp(RTptr->txid,txid) == 0 )
@@ -723,7 +723,7 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         printf("iguana_RTtxid_create: illegal block height.%d\n",block!=0?block->height:-1);
         return(0);
     }
-    fprintf(stderr,"t");
+    //fprintf(stderr,"t");
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
     if ( RTptr == 0 )
     {
@@ -749,9 +749,9 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         printf("%s inconsistent counts.(%d %d %d) vs (%d %d %d)\n",bits256_str(str,txid),RTptr->txn_count,RTptr->numvouts,RTptr->numvins,txn_count,numvouts,numvins);
         return(0);
     }
-    fprintf(stderr," %d ",txi);
-    if ( txi == txn_count-1 )
-        fprintf(stderr," ht.%d\n",block->height);
+    //fprintf(stderr," %d ",txi);
+    //if ( txi == txn_count-1 )
+    //    fprintf(stderr," ht.%d\n",block->height);
     return(RTptr);
 }
 
@@ -942,10 +942,10 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
     memset(&txdata,0,sizeof(txdata));
     //extern int32_t debugtest;
     //debugtest = 1;
-    fprintf(stderr,"T");
+    //fprintf(stderr,"T");
     if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
     {
-        fprintf(stderr,"R");
+        //fprintf(stderr,"R");
         iguana_RTramchaindata(myinfo,coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,numtx);
         return(0);
     } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,numtx,recvlen);
