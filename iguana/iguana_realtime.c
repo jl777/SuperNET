@@ -468,10 +468,12 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 }
 #endif
 
+#ifdef FAST_UTHASH
 #undef uthash_malloc
 #undef uthash_free
 #define uthash_malloc(size) ((coin->RTHASHMEM.ptr == 0) ? mycalloc('u',1,size) : iguana_memalloc(&coin->RTHASHMEM,size,1))
 #define uthash_free(mem,size) ((coin->RTHASHMEM.ptr == 0) ? myfree(mem,size) : 0)
+#endif
 
 struct iguana_RTaddr *iguana_RTaddrfind(struct iguana_info *coin,uint8_t *rmd160,char *coinaddr)
 {
@@ -678,7 +680,7 @@ void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
 
 void iguana_RTdataset_free(struct iguana_info *coin)
 {
-    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2; struct iguana_hhutxo *hhutxo;
+    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2;
     HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
     {
         HASH_DELETE(hh,coin->RTdataset,RTptr);
