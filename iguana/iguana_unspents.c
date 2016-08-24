@@ -1260,8 +1260,6 @@ uint64_t iguana_RTstart(struct supernet_info *myinfo,struct iguana_info *coin,in
     coin->firstRTheight = coin->RTheight = height;
     iguana_RTreset(coin);
     iguana_RTpurge(coin,coin->firstRTheight);
-    if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
-        iguana_RTnewblock(myinfo,coin,block);
     basilisk_unspents_update(myinfo,coin);
     return(coin->histbalance);
 }
