@@ -999,7 +999,7 @@ int32_t iguana_RTblocksub(struct supernet_info *myinfo,struct iguana_info *coin,
     {
         offset = block->height - coin->firstRTheight;
         block->RO.txn_count = coin->RTnumtx[offset];
-        //printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
+        printf("%s RTblocksub.%d offset.%d\n",coin->symbol,block->height,offset);
         if ( iguana_RTiterate(myinfo,coin,offset,block,-1) < 0 )
             return(-1);
         if ( coin->RTrawdata[offset] != 0 && coin->RTrecvlens[offset] != 0 )
