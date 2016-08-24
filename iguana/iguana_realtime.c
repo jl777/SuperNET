@@ -468,6 +468,7 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 }
 #endif
 
+#define FAST_UTHASH
 #ifdef FAST_UTHASH
 #undef uthash_malloc
 #undef uthash_free
