@@ -122,7 +122,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( bp->lastprefetch == 0 )
         {
-            iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+            iguana_ramchain_prefetch(coin,&bp->ramchain,2);
             bp->lastprefetch = (uint32_t)time(NULL);
         }
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -379,7 +379,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     return(p);
                 } else if ( pkind != 0 )
                     printf("[%d] not found pkind.%d vs num.%d RT.%d rdata.%p\n",i,pkind,rdata->numpkinds,bp->isRT,rdata);
-            } else if ( coin->spendvectorsaved > 1 && bp != coin->current )
+            } else if ( coin->spendvectorsaved > 1 && bp != coin->current && bp->bundleheight < coin->firstRTheight )
                 printf("%s.[%d] skip null rdata isRT.%d [%d]\n",coin->symbol,i,bp->isRT,coin->current!=0?coin->current->hdrsi:-1);
         }
     }
