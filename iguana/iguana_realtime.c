@@ -784,12 +784,12 @@ void iguana_RTreset(struct iguana_info *coin)
     iguana_utxoaddrs_purge(coin);
     //iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
     coin->lastRTheight = 0;
-    coin->RTheight = coin->firstRTheight;
     iguana_RTdataset_free(coin);
     if ( coin->RTHASHMEM.ptr == 0 )
         iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024,0);
     iguana_memreset(&coin->RTHASHMEM);
     printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
+    coin->RTheight = coin->firstRTheight;
 }
 
 void iguana_RTunmap(uint8_t *ptr,uint32_t len)

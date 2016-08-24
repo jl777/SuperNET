@@ -1257,7 +1257,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
 uint64_t iguana_RTstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     //struct iguana_block *block;
-    coin->firstRTheight = coin->RTheight = height;
+    coin->firstRTheight = height;
     iguana_RTreset(coin);
     iguana_RTpurge(coin,coin->firstRTheight);
     basilisk_unspents_update(myinfo,coin);
