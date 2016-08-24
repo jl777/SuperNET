@@ -359,7 +359,7 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 return(0);
             }
             ramchain = &bp->ramchain;//(bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
-            if ( (rdata= ramchain->H.data) != 0 && time(NULL) > bp->emitfinish+30 )
+            if ( (rdata= ramchain->H.data) != 0 && time(NULL) > bp->emitfinish+90 )
             {
                 numpkinds = rdata->numpkinds;
                 PKbits = RAMCHAIN_PTR(rdata,PKoffset);

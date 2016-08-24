@@ -311,7 +311,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
             {
                 if ( pending->numresults >= pending->numrequired )//|| (retstr= pending->retstr) != 0 )
                 {
-                    //printf("numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
+                    printf("numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
                     break;
                 }
                 usleep(10000);
@@ -389,7 +389,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( 0 && strcmp("RID",CMD) != 0 )
+    if ( 1 && strcmp("RID",CMD) != 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
