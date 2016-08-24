@@ -122,7 +122,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( bp->lastprefetch == 0 )
         {
-            iguana_ramchain_prefetch(coin,&bp->ramchain,0);
+            iguana_ramchain_prefetch(coin,&bp->ramchain,2);
             bp->lastprefetch = (uint32_t)time(NULL);
         }
         U = RAMCHAIN_PTR(rdata,Uoffset);
