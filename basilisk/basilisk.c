@@ -879,7 +879,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         if ( jobj(vals,"addresses") == 0 )
         {
             jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
-            printf("added all addresses: %s\n",jprint(vals,0));
+            //printf("added all addresses: %s\n",jprint(vals,0));
         } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
