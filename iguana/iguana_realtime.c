@@ -901,7 +901,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             printf("B errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
             struct iguana_peer *addr;
             iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
-            if ( 0 && coin->peers != 0 && coin->peers->numranked > 0 )
+            if ( coin->peers != 0 && coin->peers->numranked > 0 )
             {
                 for (i=0; i<coin->peers->numranked&&i<8; i++)
                     if ( (addr= coin->peers->ranked[i]) != 0 )
@@ -919,7 +919,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     {
                         num++;
                         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
-                        if ( 0 && coin->peers != 0 && (n= coin->peers->numranked) > 0 )
+                        if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
                         {
                             if ( (addr= coin->peers->ranked[rand() % n]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);

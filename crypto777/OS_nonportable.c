@@ -520,7 +520,8 @@ void *OS_nonportable_mapfile(char *fname,uint64_t *filesizep,int32_t enablewrite
 	_close(fd);
     if ( ptr == 0 || ptr == MAP_FAILED )
 	{
-		printf("map_file.write%d: mapping %s failed? mp %p\n",enablewrite,fname,ptr);
+        if ( rwflag != 0 )
+            printf("map_file.write%d: mapping %s failed? mp %p\n",enablewrite,fname,ptr);
 		return(0);
 	}
 	*filesizep = filesize;
