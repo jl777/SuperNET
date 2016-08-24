@@ -955,7 +955,7 @@ struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symb
 void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *item,int32_t spentheight,int32_t relayid,int32_t RTheight)
 {
     //{"txid":"4814dc8a357f93f16271eb43806a69416ec41ab1956b128d170402b0a1b37c7f","vout":2,"address":"RSyKVKNxrSDc1Vwvh4guYb9ZDEpvMFz2rm","scriptPubKey":"76a914c210f6711e98fe9971757ede2b2dcb0507f3f25e88ac","amount":9.99920000,"timestamp":1466684518,"height":1160306,"confirmations":22528,"checkind":1157,"spent":{"hdrsi":2320,"pkind":168,"unspentind":1157,"prevunspentind":0,"satoshis":"999920000","txidind":619,"vout":2,"type":2,"fileid":0,"scriptpos":0,"scriptlen":25},"spentheight":1161800,"dest":{"error":"couldnt find spent info"}}
-    int32_t i,n,j,m,already_spent=0; struct basilisk_unspent bu,bu2; char *address,*script,*destaddr; struct iguana_waccount *wacct; struct iguana_waddress *waddr; cJSON *dest,*vouts,*vitem; double ratio;
+    int32_t i,n,j,m,already_spent=0; struct basilisk_unspent bu,bu2; char *address,*script=0,*destaddr; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0; cJSON *dest,*vouts,*vitem; double ratio;
     if ( (address= jstr(item,"address")) != 0 && (script= jstr(item,"scriptPubKey")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
     {
         if ( relayid >= 64 )
@@ -976,6 +976,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         bu.unspentind = juint(item,"checkind");
         bu.timestamp = juint(item,"timestamp");
         decode_hex(bu.script,bu.spendlen,script);
+        printf("unspentupdate.(%s)\n",jprint(item,0));
         n = waddr->numunspents;
         for (i=0; i<n; i++)
         {
@@ -1003,6 +1004,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
             already_spent = spentheight;
         if ( (bu.spentheight= already_spent) != 0 )
             bu.status = 1;
+        printf("i.%d n.%d\n",i,n);
         if ( i == n )
         {
             if ( i >= waddr->maxunspents )
@@ -1046,7 +1048,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
                 }
             }
         }
-    }
+    } else printf("waddr.%p script.%p address.%p %s\n",waddr,script,address,address!=0?address:"");
 }
 
 void basilisk_relay_unspentsprocess(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *relayjson)
