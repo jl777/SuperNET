@@ -712,7 +712,7 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
             }
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
     } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
-    fprintf(stderr,",");
+    //fprintf(stderr,",");
 }
 
 struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)

@@ -773,7 +773,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
                     nonz++;
         }
     }
-    printf("PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
+    //printf("PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
     return(nonz);
 }
 
