@@ -473,51 +473,6 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 #define uthash_malloc(size) ((coin->RTHASHMEM.ptr == 0) ? mycalloc('u',1,size) : iguana_memalloc(&coin->RTHASHMEM,size,1))
 #define uthash_free(mem,size) ((coin->RTHASHMEM.ptr == 0) ? myfree(mem,size) : 0)
 
-void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
-{
-    int32_t i;
-    if ( 0 )
-    {
-        for (i=0; i<RTptr->numvouts; i++)
-            if ( RTptr->unspents[i] != 0 )
-                free(RTptr->unspents[i]);
-        for (i=0; i<RTptr->numvins; i++)
-            if ( RTptr->spends[i] != 0 )
-                free(RTptr->spends[i]);
-        free(RTptr);
-    }
-}
-
-void iguana_RTdataset_free(struct iguana_info *coin)
-{
-    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2;
-    HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
-    {
-        HASH_DELETE(hh,coin->RTdataset,RTptr);
-        iguana_RTtxid_free(RTptr);
-    }
-    HASH_ITER(hh,coin->RTaddrs,RTaddr,tmp2)
-    {
-        HASH_DELETE(hh,coin->RTaddrs,RTaddr);
-        //free(RTaddr);
-    }
-    iguana_hhutxo_purge(coin);
-    iguana_memreset(&coin->RTHASHMEM);
-}
-
-void iguana_RTreset(struct iguana_info *coin)
-{
-    iguana_utxoaddrs_purge(coin);
-    //iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
-    coin->lastRTheight = 0;
-    coin->RTheight = coin->firstRTheight;
-    iguana_RTdataset_free(coin);
-    if ( coin->RTHASHMEM.ptr == 0 )
-        iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024 + ((strcmp(coin->symbol,"BTC") == 0) ? ((uint64_t)3)*1024*1024*1024 : 0),0);
-    iguana_memreset(&coin->RTHASHMEM);
-    printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
-}
-
 struct iguana_RTaddr *iguana_RTaddrfind(struct iguana_info *coin,uint8_t *rmd160,char *coinaddr)
 {
     struct iguana_RTaddr *RTaddr; int32_t len; char _coinaddr[64];
@@ -551,7 +506,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
     HASH_FIND(hh,coin->RTaddrs,coinaddr,len,RTaddr);
     if ( RTaddr == 0 )
     {
-        RTaddr = uthash_malloc(sizeof(*RTaddr));//calloc(1,sizeof(*RTaddr));
+        RTaddr = calloc(1,sizeof(*RTaddr));
         strncpy(RTaddr->coinaddr,coinaddr,len);
         RTaddr->histbalance = iguana_utxoaddrtablefind(coin,-1,-1,rmd160);
         HASH_ADD_KEYPTR(hh,coin->RTaddrs,RTaddr->coinaddr,len,RTaddr);
@@ -577,7 +532,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
             if ( RTaddr->lastunspent == unspent )
             {
                 RTaddr->lastunspent = unspent->prevunspent;
-                //free(unspent);
+                free(unspent);
             } else printf("lastunspent.%p != %p\n",RTaddr->lastunspent,unspent);
             //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
         }
@@ -586,10 +541,10 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
 
-struct iguana_RTunspent *iguana_RTunspent_create(struct iguana_info *coin,uint8_t *rmd160,int64_t value,uint8_t *script,int32_t scriptlen,struct iguana_RTtxid *parent,int32_t vout)
+struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,uint8_t *script,int32_t scriptlen,struct iguana_RTtxid *parent,int32_t vout)
 {
     struct iguana_RTunspent *unspent;
-    unspent = uthash_malloc(sizeof(*unspent) + scriptlen);//calloc(1,sizeof(*unspent) + scriptlen);
+    unspent = calloc(1,sizeof(*unspent) + scriptlen);
     unspent->value = value;
     if ( (unspent->parent= parent) != 0 )
         unspent->height = parent->height;
@@ -613,7 +568,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
             {
                 if ( polarity > 0 )
                 {
-                    unspent = iguana_RTunspent_create(coin,rmd160,value,script,scriptlen>0?scriptlen:0,RTptr,vout);
+                    unspent = iguana_RTunspent_create(rmd160,value,script,scriptlen>0?scriptlen:0,RTptr,vout);
                     RTptr->unspents[vout] = unspent;
                 } else printf("iguana_RTunspent missing vout.%d ptr\n",vout);
             }
@@ -654,7 +609,7 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
             {
                 if ( polarity > 0 )
                 {
-                    spend = uthash_malloc(sizeof(*spend) + scriptlen);//calloc(1,sizeof(*spend) + scriptlen);
+                    spend = calloc(1,sizeof(*spend) + scriptlen);
                     spend->prev_hash = prev_hash;
                     spend->prev_vout = prev_vout;
                     spend->scriptlen = scriptlen;
@@ -689,7 +644,7 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
                         int32_t spentheight,lockedflag,RTspentflag;
                         bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
                         //printf("found unspentind (%s %.8f).%d spendlen.%d\n",coinaddr,dstr(value),addrtype,spendlen);
-                        unspent = iguana_RTunspent_create(coin,rmd160,value,spendscript,spendlen>0?spendlen:0,0,prev_vout);
+                        unspent = iguana_RTunspent_create(rmd160,value,spendscript,spendlen>0?spendlen:0,0,prev_vout);
                         memset(&spentpt,0,sizeof(spentpt));
                         spentpt.unspentind = unspentind;
                         spentpt.hdrsi = height / coin->chain->bundlesize;
@@ -709,6 +664,35 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
     } else printf("null rtptr? %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
 }
 
+void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
+{
+    int32_t i;
+    for (i=0; i<RTptr->numvouts; i++)
+        if ( RTptr->unspents[i] != 0 )
+            free(RTptr->unspents[i]);
+    for (i=0; i<RTptr->numvins; i++)
+        if ( RTptr->spends[i] != 0 )
+            free(RTptr->spends[i]);
+    free(RTptr);
+}
+
+void iguana_RTdataset_free(struct iguana_info *coin)
+{
+    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2; struct iguana_hhutxo *hhutxo;
+    HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
+    {
+        HASH_DELETE(hh,coin->RTdataset,RTptr);
+        iguana_RTtxid_free(RTptr);
+    }
+    HASH_ITER(hh,coin->RTaddrs,RTaddr,tmp2)
+    {
+        HASH_DELETE(hh,coin->RTaddrs,RTaddr);
+        free(RTaddr);
+    }
+    iguana_hhutxo_purge(coin);
+    iguana_memreset(&coin->RTHASHMEM);
+}
+
 struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
 {
     struct iguana_RTtxid *RTptr; char str[65];
@@ -720,7 +704,7 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
     if ( RTptr == 0 )
     {
-        RTptr = uthash_malloc(sizeof(*RTptr) + sizeof(void *)*numvins + sizeof(void *)*numvouts);//calloc(1,sizeof(*RTptr) + sizeof(void *)*numvins + sizeof(void *)*numvouts);
+        RTptr = calloc(1,sizeof(*RTptr) + sizeof(void *)*numvins + sizeof(void *)*numvouts);
         RTptr->txi = txi, RTptr->txn_count = txn_count;
         RTptr->coin = coin;
         RTptr->block = block;
@@ -791,6 +775,19 @@ int32_t _iguana_RTunspentfind(struct supernet_info *myinfo,struct iguana_info *c
         *voutp = unspent->vout;
     }
     return(spendlen);
+}
+
+void iguana_RTreset(struct iguana_info *coin)
+{
+    iguana_utxoaddrs_purge(coin);
+    //iguana_utxoupdate(coin,-1,0,0,0,0,-1,0); // free hashtables
+    coin->lastRTheight = 0;
+    coin->RTheight = coin->firstRTheight;
+    iguana_RTdataset_free(coin);
+    if ( coin->RTHASHMEM.ptr == 0 )
+        iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024,0);
+    iguana_memreset(&coin->RTHASHMEM);
+    printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
 }
 
 void iguana_RTunmap(uint8_t *ptr,uint32_t len)
