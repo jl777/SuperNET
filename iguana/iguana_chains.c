@@ -497,6 +497,8 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
         strcpy(chain->gethdrsmsg,"getblocks");
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
+    if ( strcmp(chain->symbol,"BTC") == 0 )
+        chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
     if ( chain->rpcport == 0 )
         chain->rpcport = chain->portp2p + 1;

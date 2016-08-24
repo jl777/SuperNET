@@ -713,7 +713,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
 //return(0);
     if ( (rdata= ramchain->H.data) != 0 )
     {
-        printf("start PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
+        //printf("start PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
         if ( flag == 0 )
         {
             ptr = ramchain->fileptr;
@@ -773,7 +773,7 @@ int32_t iguana_ramchain_prefetch(struct iguana_info *coin,struct iguana_ramchain
                 if ( PKbits[i] != 0 )
                     nonz++;
         }
-        printf("done PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
+        //printf("done PREFETCH.[%d] flag.%d -> nonz.%d\n",rdata->height,flag,nonz);
     }
     return(nonz);
 }
