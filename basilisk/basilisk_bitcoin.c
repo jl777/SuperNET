@@ -944,7 +944,7 @@ struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symb
         s->txid = txid;
         s->vout = vout;
         strcpy(s->symbol,symbol);
-        char str[65]; printf("ADDSPEND.%s %s/v%d\n",symbol,bits256_str(str,txid),vout);
+        //char str[65]; printf("ADDSPEND.%s %s/v%d\n",symbol,bits256_str(str,txid),vout);
         // mutex
         return(s);
     }
@@ -976,7 +976,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         bu.unspentind = juint(item,"checkind");
         bu.timestamp = juint(item,"timestamp");
         decode_hex(bu.script,bu.spendlen,script);
-        printf("unspentupdate.(%s)\n",jprint(item,0));
+        //printf("unspentupdate.(%s)\n",jprint(item,0));
         n = waddr->numunspents;
         for (i=0; i<n; i++)
         {
