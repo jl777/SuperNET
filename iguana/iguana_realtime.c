@@ -468,6 +468,11 @@ int32_t iguana_realtime_update(struct supernet_info *myinfo,struct iguana_info *
 }
 #endif
 
+#undef uthash_malloc
+#undef uthash_free
+#define uthash_malloc(size) ((coin->RTHASHMEM.ptr == 0) ? mycalloc('u',1,size) : iguana_memalloc(&coin->RTHASHMEM,size,1))
+#define uthash_free(mem,size) ((coin->RTHASHMEM.ptr == 0) ? myfree(mem,size) : 0)
+
 struct iguana_RTaddr *iguana_RTaddrfind(struct iguana_info *coin,uint8_t *rmd160,char *coinaddr)
 {
     struct iguana_RTaddr *RTaddr; int32_t len; char _coinaddr[64];
@@ -673,7 +678,7 @@ void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
 
 void iguana_RTdataset_free(struct iguana_info *coin)
 {
-    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2; struct iguana_hhutxo *hhutxo,*tmphh;
+    struct iguana_RTtxid *RTptr,*tmp; struct iguana_RTaddr *RTaddr,*tmp2; struct iguana_hhutxo *hhutxo;
     HASH_ITER(hh,coin->RTdataset,RTptr,tmp)
     {
         HASH_DELETE(hh,coin->RTdataset,RTptr);
@@ -684,11 +689,8 @@ void iguana_RTdataset_free(struct iguana_info *coin)
         HASH_DELETE(hh,coin->RTaddrs,RTaddr);
         free(RTaddr);
     }
-    HASH_ITER(hh,coin->utxotable,hhutxo,tmphh)
-    {
-        HASH_DELETE(hh,coin->utxotable,hhutxo);
-        free(hhutxo);
-    }
+    iguana_hhutxo_purge(coin);
+    iguana_memreset(&coin->RTHASHMEM);
 }
 
 struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
@@ -782,6 +784,9 @@ void iguana_RTreset(struct iguana_info *coin)
     coin->lastRTheight = 0;
     coin->RTheight = coin->firstRTheight;
     iguana_RTdataset_free(coin);
+    if ( coin->RTHASHMEM.ptr == 0 )
+        iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024,0);
+    iguana_memreset(&coin->RTHASHMEM);
     printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
 }
 

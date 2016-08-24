@@ -100,6 +100,16 @@ int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t 
 }
 #endif
 
+void iguana_hhutxo_purge(struct iguana_info *coin)
+{
+    struct iguana_hhutxo *hhutxo,*tmp;
+    HASH_ITER(hh,coin->utxotable,hhutxo,tmp)
+    {
+        HASH_DELETE(hh,coin->utxotable,hhutxo);
+        free(hhutxo);
+    }
+}
+
 struct iguana_hhutxo *iguana_hhutxofind(struct iguana_info *coin,uint64_t uval)
 {
     struct iguana_hhutxo *hhutxo;

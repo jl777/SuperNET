@@ -454,7 +454,7 @@ struct iguana_info
     int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
-    uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
+    uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM,RTHASHMEM;
     bits256 APIblockhash,APItxid; char *APIblockstr;
     struct iguana_hhutxo *utxotable;
 #ifdef DEPRECATED_HHUTXO
