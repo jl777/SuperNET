@@ -513,7 +513,7 @@ void iguana_RTreset(struct iguana_info *coin)
     coin->RTheight = coin->firstRTheight;
     iguana_RTdataset_free(coin);
     if ( coin->RTHASHMEM.ptr == 0 )
-        iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024 + ((strcmp(coin->symbol,"BTC") == 0) ? 2*1024*1024*1024 : 0),0);
+        iguana_meminit(&coin->RTHASHMEM,"RTHASHMEM",0,1024*1024*1024 + ((strcmp(coin->symbol,"BTC") == 0) ? ((uint64_t)3)*1024*1024*1024 : 0),0);
     iguana_memreset(&coin->RTHASHMEM);
     printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
 }

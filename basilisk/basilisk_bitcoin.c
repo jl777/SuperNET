@@ -1004,7 +1004,7 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
             already_spent = spentheight;
         if ( (bu.spentheight= already_spent) != 0 )
             bu.status = 1;
-        printf("i.%d n.%d\n",i,n);
+        //printf("i.%d n.%d\n",i,n);
         if ( i == n )
         {
             if ( i >= waddr->maxunspents )
