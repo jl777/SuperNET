@@ -1855,10 +1855,10 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         coin->balanceflush = 0;
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
-    if ( coin->RTheight > 0 && coin->RTheight < coin->blocks.hwmchain.height )
+    if ( coin->RTheight > 0 && coin->RTheight <= coin->blocks.hwmchain.height )
     {
         struct iguana_block *block;
-        if ( (block= iguana_blockfind("utxogen",coin,iguana_blockhash(coin,coin->RTheight))) != 0 )
+        if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
             iguana_RTnewblock(myinfo,coin,block);
     }
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
