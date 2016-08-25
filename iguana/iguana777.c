@@ -476,7 +476,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
     }
-    printf("helperid.%d start utxogen\n",helperid);
+    printf("helperid.%d start %s utxogen\n",helperid,coin->symbol);
     if ( (incr= IGUANA_NUMHELPERS) > 8 )
         incr = 8;
     max = coin->bundlescount;

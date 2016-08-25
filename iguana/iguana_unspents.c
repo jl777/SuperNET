@@ -120,9 +120,10 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
         unspentind = (tp->firstvout + vout);
     if ( coinaddr != 0 && unspentind > 0 && (hdrsi= *heightp/coin->chain->bundlesize) >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 && (rdata= bp->ramchain.H.data) != 0 && unspentind < rdata->numunspents )
     {
-        if ( time(NULL) > bp->lastprefetch+13 )
+        if ( time(NULL) > bp->lastprefetch+60 )
         {
-            iguana_ramchain_prefetch(coin,&bp->ramchain,6);
+            fprintf(stderr,"[%d] ",bp->hdrsi);
+            iguana_ramchain_prefetch(coin,&bp->ramchain,0);
             bp->lastprefetch = (uint32_t)time(NULL);
         }
         U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -359,7 +360,8 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                 return(0);
             }
             ramchain = &bp->ramchain;//(bp != coin->current) ? &bp->ramchain : &coin->RTramchain;
-            if ( (rdata= ramchain->H.data) != 0 && time(NULL) > bp->emitfinish+90 )
+            // prevent remote query access before RTmode
+            if ( (rdata= ramchain->H.data) != 0 && time(NULL) > bp->emitfinish+10 )
             {
                 numpkinds = rdata->numpkinds;
                 PKbits = RAMCHAIN_PTR(rdata,PKoffset);
