@@ -629,7 +629,7 @@ void iguana_helper(void *arg)
                         polltimeout = coin->polltimeout;
                     if ( coin->current != 0 && coin->current->hdrsi != coin->bundlescount-1 )
                         allcurrent = 0;
-                    //printf("[%d] bundleQ size.%d lag.%ld\n",bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
+                    printf("h.%d [%d] bundleQ size.%d lag.%ld\n",helperid,bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                     coin->numbundlesQ--;
                     if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
                     {
