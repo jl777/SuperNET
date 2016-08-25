@@ -1106,7 +1106,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
         iguana_autoextend(coin,bp);
     //if ( 0 && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
-    bp->nexttime = (uint32_t)time(NULL) + ((bp->hdrsi > starti) ? 3 : 0);
+    bp->nexttime = (uint32_t)time(NULL) + ((bp->hdrsi > starti) ? 1 : -1);
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
         iguana_bundlehdr(coin,bp,starti);
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
