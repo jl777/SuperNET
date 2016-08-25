@@ -323,7 +323,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     if ( err != 0 )
     {
         printf("bundlehash2add err.%d\n",err);
-        return(0);
+        //return(0);
     }
     return(-err);
 }
