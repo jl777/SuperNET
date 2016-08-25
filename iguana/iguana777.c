@@ -705,10 +705,10 @@ void iguana_coinloop(void *arg)
         flag = 0;
         for (i=0; i<n; i++)
         {
-            if ( n > 1 && (rand() % (n*100)) > 100 )
-                continue;
             if ( (coin= coins[i]) != 0 )
             {
+                if ( n > 1 && coin->RTheight > 0 && (rand() % 10) != 0 )
+                    continue;
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
