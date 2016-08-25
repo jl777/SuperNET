@@ -1152,7 +1152,7 @@ int32_t iguana_msgparser(struct iguana_info *coin,struct iguana_peer *addr,struc
         }
         else if ( len != recvlen && recvlen > 1 )
         {
-            printf("%s extra byte.[%02x] command.%s len.%d recvlen.%d\n",addr->ipaddr,data[recvlen-1],H->command,len,recvlen);
+            //printf("%s extra byte.[%02x] command.%s len.%d recvlen.%d\n",addr->ipaddr,data[recvlen-1],H->command,len,recvlen);
             //retval = -1;
         }
     }

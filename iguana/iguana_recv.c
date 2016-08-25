@@ -763,7 +763,7 @@ void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32
             if ( bp->speculative != 0 )
                 bp->speculative[bundlei] = block->RO.hash2;
             //char str[65]; printf("SET %s ht.%d in [%d:%d]\n",bits256_str(str,block->RO.hash2),height,hdrsi,bundlei);
-        } else printf("iguana_bundle_set: no bundle at [%d]\n",hdrsi);
+        } //else printf("iguana_bundle_set: no bundle at [%d]\n",hdrsi);
     } else printf("iguana_bundle_set: mismatch ht.%d vs %d\n",block->height,height);
 }
 
