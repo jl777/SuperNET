@@ -14,4 +14,6 @@ sleep 5
 sleep 5
 ../agents/iguana coins/genuno.json &
 sleep 5
+../agents/iguana coins/genvia.json &
+sleep 5
 ../agents/iguana coins/genzet.json &
