@@ -1,0 +1,17 @@
+../agents/iguana genbtcd.json &
+sleep 5
+../agents/iguana genbtc.json &
+sleep 5
+../agents/iguana gendoge.json &
+sleep 5
+../agents/iguana gendgb.json &
+sleep 5
+../agents/iguana genltc.json &
+sleep 5
+../agents/iguana genmzc.json &
+sleep 5
+../agents/iguana gensys.json &
+sleep 5
+../agents/iguana genuno.json &
+sleep 5
+../agents/iguana genzet.json &
