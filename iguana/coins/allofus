@@ -1,17 +1,17 @@
-../agents/iguana genbtcd.json &
+../agents/iguana coins/genbtcd.json &
 sleep 5
-../agents/iguana genbtc.json &
+../agents/iguana coins/genbtc.json &
 sleep 5
-../agents/iguana gendoge.json &
+../agents/iguana coins/gendoge.json &
 sleep 5
-../agents/iguana gendgb.json &
+../agents/iguana coins/gendgb.json &
 sleep 5
-../agents/iguana genltc.json &
+../agents/iguana coins/genltc.json &
 sleep 5
-../agents/iguana genmzc.json &
+../agents/iguana coins/genmzc.json &
 sleep 5
-../agents/iguana gensys.json &
+../agents/iguana coins/gensys.json &
 sleep 5
-../agents/iguana genuno.json &
+../agents/iguana coins/genuno.json &
 sleep 5
-../agents/iguana genzet.json &
+../agents/iguana coins/genzet.json &
