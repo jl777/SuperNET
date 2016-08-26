@@ -898,7 +898,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
         coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
         if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
         {
-            printf("B errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+            printf("%s errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
             struct iguana_peer *addr;
             iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
             if ( coin->peers != 0 && coin->peers->numranked > 0 )
