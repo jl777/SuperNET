@@ -1063,6 +1063,8 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
         jaddnum(retjson,"kbfee",dstr(coin->txfee_perkb));
         jaddnum(retjson,"txfee",dstr(coin->txfee));
+        jaddnum(retjson,"firstRTheight",coin->firstRTheight);
+        jaddnum(retjson,"RTheight",coin->RTheight);
         jaddnum(retjson,"blocks",coin->blocks.hwmchain.height);
         jaddnum(retjson,"longestchain",coin->longestchain);
         jaddnum(retjson,"port",coin->chain->portp2p);
