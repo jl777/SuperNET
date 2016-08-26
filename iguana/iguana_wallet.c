@@ -1063,6 +1063,8 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
         jaddnum(retjson,"kbfee",dstr(coin->txfee_perkb));
         jaddnum(retjson,"txfee",dstr(coin->txfee));
+        if ( coin->bundlescount > 0 )
+            jaddnum(retjson,"complete",100. * (double)iguana_emitfinished(coin,0)/coin->bundlescount);
         jaddnum(retjson,"firstRTheight",coin->firstRTheight);
         jaddnum(retjson,"RTheight",coin->RTheight);
         jaddnum(retjson,"blocks",coin->blocks.hwmchain.height);
