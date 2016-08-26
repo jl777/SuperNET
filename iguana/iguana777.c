@@ -480,7 +480,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( (incr= IGUANA_NUMHELPERS) > 8 )
         incr = 8;
     max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 )
+    if ( coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1) )
         max--;
     if ( helperid < incr )
     {
