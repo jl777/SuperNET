@@ -1366,7 +1366,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                 ramchain->Xspendinds = 0;
             }
         }
-        else if ( iter == 1 )
+        else if ( 0 && iter == 1 )
             printf("couldnt map.(%s)\n",fname);
     }
     return(ramchain->numXspends);
