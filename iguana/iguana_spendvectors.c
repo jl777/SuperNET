@@ -56,7 +56,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     int32_t i,retval = -1; FILE *fp; char fname[1024],str[65]; long fsize; bits256 zero,sha256;
     if ( ptr == 0 || (bp->hdrsi != 0 && ptr == bp->ramchain.Xspendinds) )
     {
-        //printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
+        printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
         return(0);
     }
     memset(zero.bytes,0,sizeof(zero));
@@ -72,7 +72,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     {
         if ( fwrite(sha256.bytes,1,sizeof(sha256),fp) != sizeof(sha256) )
             printf("error writing hash for %d -> (%s)\n",(int32_t)(sizeof(*ptr) * emit),fname);
-        else if ( fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
+        else if ( emit != 0 && fwrite(ptr,sizeof(*ptr),emit,fp) != emit )
             printf("error writing %d of %d -> (%s)\n",emit,n,fname);
         else
         {
@@ -84,7 +84,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
                 printf("error mapping Xspendmap.(%s)\n",fname);
             else
             {
-                //printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
+                printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
                 retval = 0;
             }
         }
@@ -93,8 +93,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
         //int32_t i; for (i=0; i<ramchain->numXspends; i++)
         //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
         //printf("filesize %ld Xspendptr.%p %p num.%d\n",fsize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
-    }
-    else printf("iguana_spendvectors: Error creating.(%s)\n",fname);
+    } else printf("iguana_spendvectors: Error creating.(%s)\n",fname);
     return(retval);
 }
 

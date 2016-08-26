@@ -105,15 +105,19 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     return(n);
 }
 
-int32_t basilisk_alicescript(uint8_t *script,int32_t n,char *msigaddr,uint8_t altps2h,bits256 pubAm,bits256 pubBn)
+int32_t basilisk_alicescript(uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *script,int32_t n,char *msigaddr,uint8_t altps2h,bits256 pubAm,bits256 pubBn)
 {
-    uint8_t p2sh160[20]; struct vin_info V;
+    uint8_t i,p2sh160[20]; struct vin_info V;
     memset(&V,0,sizeof(V));
     memcpy(&V.signers[0].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[0].pubkey[0] = 0x02;
     memcpy(&V.signers[1].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[1].pubkey[0] = 0x03;
     V.M = V.N = 2;
-    n = bitcoin_MofNspendscript(p2sh160,script,n,&V);
+    *redeemlenp = bitcoin_MofNspendscript(p2sh160,redeemscript,n,&V);
     bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));
+    n = bitcoin_p2shspend(script,0,p2sh160);
+    for (i=0; i<n; i++)
+        printf("%02x",redeemscript[i]);
+    printf(" <- redeemscript alicetx\n");
     return(n);
 }
 
@@ -1065,7 +1069,7 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
 
 void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn)
 {
-    alicepayment->spendlen = basilisk_alicescript(alicepayment->spendscript,0,alicepayment->destaddr,coin->chain->p2shtype,pubAm,pubBn);
+    alicepayment->spendlen = basilisk_alicescript(alicepayment->redeemscript,&alicepayment->redeemlen,alicepayment->spendscript,0,alicepayment->destaddr,coin->chain->p2shtype,pubAm,pubBn);
     basilisk_rawtx_gen("alicepayment",myinfo,0,1,alicepayment,alicepayment->locktime,alicepayment->spendscript,alicepayment->spendlen,coin->chain->txfee,1);
 }
 

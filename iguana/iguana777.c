@@ -423,7 +423,7 @@ void iguana_update_balances(struct iguana_info *coin)
         return;
     }
     max = coin->bundlescount;
-    if ( coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1 && coin->RTheight == 0 )
+    if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1) )
         max--;
     //coin->spendvectorsaved = 0;
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 ) //
