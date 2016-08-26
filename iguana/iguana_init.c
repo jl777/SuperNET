@@ -64,6 +64,8 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
         portable_mutex_init(&coin->RTmutex);
         portable_mutex_init(&coin->peers_mutex);
         portable_mutex_init(&coin->blocks_mutex);
+        portable_mutex_init(&coin->special_mutex);
+        portable_mutex_init(&coin->allcoins_mutex);
         coin->txfee = 10000;
         iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,coin->blockspacesize,0);
         iguana_initQs(coin);
@@ -74,7 +76,6 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
             usleep(1);
         coin->startutc++;
         printf("start.%u\n",coin->startutc);
-        portable_mutex_init(&coin->special_mutex);
         coin->startmillis = OS_milliseconds(), coin->starttime = tai_now();
         coin->avetime = 1 * 100;
         //coin->R.maxrecvbundles = IGUANA_INITIALBUNDLES;

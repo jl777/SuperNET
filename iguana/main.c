@@ -392,83 +392,33 @@ rm BTC.xz; mksquashfs DB/BTC BTC.xz -comp xz -b 1048576 -comp xz -Xdict-size 102
  https://github.com/vasi/squashfuse
 */
 
-
 void mainloop(struct supernet_info *myinfo)
 {
-    int32_t j,n,flag,isRT,numpeers; struct iguana_info *coin,*tmp; struct iguana_bundle *bp;
+    struct iguana_info *coin,*tmp; int32_t i,depth; portable_mutex_t *stack[IGUANA_MAXCOINS];
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
     {
         //printf("main iteration\n");
-        flag = 0;
-        isRT = 1;
-        numpeers = 0;
         if ( 1 )
         {
             coin = 0;
-            //portable_mutex_lock(&myinfo->allcoins_mutex);
+            depth = 0;
             HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
-                if ( coin->RTheight == 0 && coin->firstRTheight == 0 && coin->current != 0 && coin->active != 0 && coin->started != 0 )
-                {
-                    isRT *= coin->isRT;
-                    if ( coin->peers != 0 )
-                        numpeers += coin->peers->numranked;
-                    if ( 0 && (rand() % 10) == 0 )
-                        printf("%s main.%u vs %u, svs %u %d vs %d\n",coin->symbol,(uint32_t)time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
-                    if ( time(NULL) > coin->startutc+60 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
-                    {
-                        n = coin->bundlescount-1;
-                        //printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(coin,1),coin->spendvectorsaved);
-                        if ( iguana_emitfinished(coin,1) >= n )
-                        {
-                            if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
-                            {
-                                for (j=0; j<n; j++)
-                                    if ( coin->bundles[j] != 0 )
-                                        iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
-                                sleep(3);
-                            }
-                            if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
-                            {
-                                coin->spendvectorsaved = 1;
-                                //printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
-                            }
-                            else
-                            {
-                                coin->spendvectorsaved = (uint32_t)time(NULL);
-                                //printf("already done UTXOGEN (%d %d) (%d %d)\n",iguana_utxofinished(coin),n,iguana_balancefinished(coin),n);
-                            }
-                        } //else printf("only emit.%d vs %d\n",iguana_emitfinished(coin),n);
-                    }
-                    if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
-                    {
-                        if ( 0 )
-                        {
-                            printf("%s is stuck too long, restarting due to %d\n",coin->symbol,bp->hdrsi);
-                            if ( coin->started != 0 )
-                            {
-                                iguana_coinpurge(coin);
-                                sleep(3);
-                                while ( coin->started == 0 )
-                                {
-                                    printf("wait for coin to reactivate\n");
-                                    sleep(1);
-                                }
-                                sleep(3);
-                            }
-                        }
-                    }
-                    if ( 0 && flag != 0 )
-                        printf("call RT update busy.%d\n",coin->RTramchain_busy);
-                }
+                portable_mutex_lock(&coin->allcoins_mutex);
+                stack[depth++] = &coin->allcoins_mutex;
             }
-            //portable_mutex_unlock(&myinfo->allcoins_mutex);
+            iguana_jsonQ();
+            if ( depth > 0 )
+            {
+                for (i=depth-1; i>=0; i--)
+                    portable_mutex_unlock(stack[i]);
+            }
         }
         //pangea_queues(SuperNET_MYINFO(0));
-        if ( flag == 0 )
-            usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
+        //if ( flag == 0 )
+        //    usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
         //iguana_jsonQ(); // cant do this here safely, need to send to coin specific queue
     }
 }

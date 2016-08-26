@@ -306,7 +306,7 @@ int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t ma
 int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
 {
     int32_t len=0,i,flag=0,height,n,hdrsi,bundlei,bundlesize,firstvout,retval=-1; struct iguana_block *block; struct iguana_bundle *bp;
-    if ( (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,hash2,0,coin->bundlescount-1,0)) != 0 )
+    if ( coin->RTheight > 0 && (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,hash2,0,coin->bundlescount-1,0)) != 0 )
     {
         bundlesize = coin->chain->bundlesize;
         hdrsi = (height / bundlesize);
@@ -336,6 +336,8 @@ int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *c
 int32_t iguana_peergetrequest(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *data,int32_t recvlen,int32_t getblock)
 {
     int32_t i,reqvers,len,n,flag = 0; bits256 hash2;
+    if ( coin->RTheight <= 0 )
+        return(0);
     if ( getblock != 0 )
         addr->msgcounts.getblocks++;
     else addr->msgcounts.getheaders++;

@@ -832,7 +832,7 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
 }
 
 // main context, ie single threaded
-struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock)
+struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock)
 {
     struct iguana_block *block,*prevblock,*tmp,*mainchain,*hwmblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t i,newheight,prevbundlei,bundlei = -2; // struct iguana_ramchain blockR;
     *bundleip = -2; *blockp = 0;
@@ -860,6 +860,7 @@ struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_bl
                     iguana_bundle_set(coin,tmp,newheight-i);
                     if ( (tmp= iguana_blockfind("hwmprev",coin,tmp->RO.prev_block)) == 0 )
                         break;
+                    iguana_RTnewblock(myinfo,coin,tmp);
                 }
                 if ( mainchain != hwmblock )
                     iguana_hwmchain_set(coin,mainchain,mainchain->height); // trigger reprocess
@@ -973,7 +974,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             if ( bits256_cmp(zblocks[i].RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
             {
                 bp = 0, bundlei = -2;
-                if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
+                if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
                     if ( block->height >= 0 && block->height+1 > coin->longestchain )
                         coin->longestchain = block->height+1;
@@ -984,7 +985,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             if ( i > 0 && bits256_cmp(prevhash2,zblocks[i].RO.prev_block) == 0 )
             {
                 bp = 0, bundlei = -2;
-                if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
+                if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
                     bp->dirty++;
                     if ( 0 && bp->issued[bundlei] == 0 && bp->hdrsi < coin->MAXBUNDLES )
@@ -1243,7 +1244,7 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
             coin->longestchain = prevblock->height+1;
         else iguana_blockQ("prev",coin,0,-1,origblock->RO.prev_block,1);
     }
-    if ( (bp= iguana_bundleset(coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
+    if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
@@ -1855,7 +1856,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         coin->balanceflush = 0;
         //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
-    if ( (rand() % 10) == 0 )
+    /*if ( (rand() % 10) == 0 )
     {
         if ( coin->utxoaddrtable != 0 && coin->RTheight > 0 && coin->RTheight <= coin->blocks.hwmchain.height )
         {
@@ -1863,7 +1864,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
             if ( (block= iguana_blockfind("utxogen",coin,coin->blocks.hwmchain.RO.hash2)) != 0 )
                 iguana_RTnewblock(myinfo,coin,block);
         }
-    }
+    }*/
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
     if ( (rand() % 10) == 0 )
         flag += iguana_reqblocks(myinfo,coin);

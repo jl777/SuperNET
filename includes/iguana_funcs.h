@@ -389,7 +389,7 @@ int32_t iguana_balancefinished(struct iguana_info *coin);
 int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 void iguana_allocvolatile(struct iguana_info *coin,struct iguana_ramchain *ramchain);
 int32_t iguana_rwaddr(int32_t rwflag,uint8_t *serialized,struct iguana_msgaddress *addr,int32_t protover);
-struct iguana_bundle *iguana_bundleset(struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock);
+struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock);
 struct iguana_waddress *iguana_waddresscreate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_waccount *wacct,char *coinaddr,char *redeemScript);
 
 int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2);
