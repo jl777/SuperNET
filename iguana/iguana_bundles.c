@@ -322,7 +322,9 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     } else err |= 128;
     if ( err != 0 )
     {
-        printf("bundlehash2add err.%d\n",err);
+        static uint32_t counter;
+        if ( counter++ < 100 )
+            printf("bundlehash2add err.%d\n",err);
         //return(0);
     }
     return(-err);

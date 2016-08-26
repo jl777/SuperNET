@@ -54,11 +54,13 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     if ( basevolume < 0. )
         basevolume = -basevolume, dir = -1;
     else dir = 1;
+#ifdef INCLUDE_PAX
     if ( rel == 0 || rel[0] == 0 )
     {
         *totalvolp = 1.;
         return(PAX_aveprice(myinfo,base));
     }
+#endif
     memset(sortbuf,0,sizeof(*sortbuf) * max);
     if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
     {
@@ -118,7 +120,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
 
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
 {
-    int32_t basenum,relnum; double baseval,relval,avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
     if ( retvals == 0 )
         return(0);
     strcpy(base,_base);
@@ -132,11 +134,14 @@ double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_
     avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
     free_json(argjson);
     retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+#ifdef INCLUDE_PAX
+    int32_t basenum,relnum; double baseval,relval;
     if ( (basenum= PAX_basenum(base)) >= 0 && (relnum= PAX_basenum(rel)) >= 0 )
     {
         if ( myinfo->PEGS != 0 && (baseval= myinfo->PEGS->data.RTmatrix[basenum][basenum]) != 0. && (relval= myinfo->PEGS->data.RTmatrix[relnum][relnum]) != 0. )
             return(baseval / relval);
     }
+#endif
     if ( avebid > SMALLVAL && aveask > SMALLVAL )
         return((avebid + aveask) * .5);
     else return(0);
@@ -727,9 +732,11 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void exchanges777_loop(void *ptr)
 {
-    struct peggy_info *PEGS=0; struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
-    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr;
+    struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
+    int32_t flag,retval,i; struct exchange_request *req; char *retstr;
     myinfo = SuperNET_MYINFO(0);
+#ifdef INCLUDE_PAX
+    struct peggy_info *PEGS=0; int32_t peggyflag = 0;
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
         if ( (PEGS= myinfo->PEGS) != 0 )
@@ -740,9 +747,11 @@ void exchanges777_loop(void *ptr)
             PEGS->lastupdate = (uint32_t)time(NULL);
         }
     }
+#endif
     printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
+#ifdef INCLUDE_PAX
         if ( peggyflag != 0 && PEGS != 0 )
         {
             //printf("nonz peggy\n");
@@ -753,6 +762,7 @@ void exchanges777_loop(void *ptr)
                 PEGS->lastupdate = (uint32_t)time(NULL);
             }
         }
+#endif
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
@@ -1373,9 +1383,12 @@ THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
 
 INT_AND_ARRAY(iguana,rates,unused,quotes)
 {
-    int32_t i,n,len,j,haveslash,nonz; char *str,*retstr,*quote,base[64][64],rel[64][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+    int32_t i,n,len,j,haveslash; char *retstr,*quote,base[64][64],rel[64][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+#ifdef INCLUDE_PAX
+    char *str; int32_t nonz;
     if ( myinfo->PEGS != 0 && (str= peggy_emitprices(&nonz,myinfo->PEGS,(uint32_t)time(NULL),PEGGY_MAXLOCKDAYS)) != 0 )
         free(str);
+#endif
     if ( is_cJSON_Array(quotes) != 0 && (n= cJSON_GetArraySize(quotes)) > 0 )
     {
         if ( n > 64 )

@@ -507,10 +507,8 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     }
     if ( initialheight < coin->chain->bundlesize*10 )
         initialheight = coin->chain->bundlesize*10;
-    //iguana_recvalloc(coin,initialheight);
     if ( coin->longestchain == 0 )
         coin->longestchain = 1;
-    printf("clear hwmchain\n");
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
     coin->blocks.hwmchain.height = 0;
     coin->blocks.hwmchain.RO.allocsize = coin->chain->zcash != 0 ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block);
@@ -585,31 +583,6 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
         }
         else
         {
-/*#include "confs/BTCD_hdrs.h"
-            if ( strcmp(coin->symbol,"BTCD") == 0 )
-            {
-                bits256 hash2,allhash,hash1; int32_t bundlei,i,nonz,height; struct iguana_bundle *bp;
-                for (i=nonz=0; i<sizeof(BTCD_hdrs)/sizeof(*BTCD_hdrs); i++)
-                {
-                    height = atoi(BTCD_hdrs[i][0]);
-                    if ( height > (coin->blocks.maxbits - 1000) )
-                        iguana_recvalloc(coin,height + 100000);
-                    hash2 = bits256_conv(BTCD_hdrs[i][1]);
-                    if ( BTCD_hdrs[i][2][0] != 0 )
-                        allhash = bits256_conv(BTCD_hdrs[i][2]);
-                    if ( BTCD_hdrs[i][3][0] != 0 )
-                        hash1 = bits256_conv(BTCD_hdrs[i][3]);
-                    if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,allhash,0)) != 0 )
-                    {
-                        if ( iguana_bundleinitmap(coin,bp,height,hash2,hash1) == 0 )
-                            lastbundle = hash2, nonz++;
-                    }
-                }
-                printf("H file.[%d] nonz.%d\n",i,nonz);
-                //if ( bits256_nonz(lastbundle) != 0 )
-                //    iguana_initfinal(coin,lastbundle);
-                //break;
-            }*/
         }
 #endif
         sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);

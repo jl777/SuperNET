@@ -705,7 +705,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         printf("helper launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(0,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
-    iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD);
+    iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     mainloop(myinfo);
 }
@@ -1514,6 +1514,14 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 #include "../includes/iguana_apiundefs.h"
 
+void iguana_relays_init(struct supernet_info *myinfo)
+{
+    char *str;
+    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("78.47.196.146"),GENESIS_PUBKEY)) != 0 )
+        free(str);
+    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("5.9.102.210"),GENESIS_PUBKEY)) != 0 )
+        free(str);
+}
 
 void iguana_main(void *arg)
 {
@@ -1526,45 +1534,6 @@ void iguana_main(void *arg)
     mycalloc(0,0,0);
     decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
     decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
-    if ( 0 )
-        iguana_signalsinit();
-    if ( 0 )
-    {
-        int32_t i,max=10000000; FILE *fp; bits256 check,val,hash = rand256(0);
-        if ( (fp= fopen("/tmp/seeds2","rb")) != 0 )
-        {
-            if ( fread(&check,1,sizeof(check),fp) != sizeof(check) )
-                printf("check read error\n");
-            for (i=1; i<max; i++)
-            {
-                if ( (i % 1000000) == 0 )
-                    fprintf(stderr,".");
-                if ( fread(&val,1,sizeof(val),fp) != sizeof(val) )
-                    printf("val read error\n");
-                hash = bits256_sha256(val);
-                hash = bits256_sha256(hash);
-                if ( bits256_cmp(hash,check) != 0 )
-                    printf("hash error at i.%d\n",i);
-                check = val;
-            }
-            printf("validated %d seeds\n",max);
-            getchar();
-        }
-        else if ( (fp= fopen("/tmp/seeds2","wb")) != 0 )
-        {
-            for (i=0; i<max; i++)
-            {
-                if ( (i % 1000000) == 0 )
-                    fprintf(stderr,".");
-                hash = bits256_sha256(hash);
-                hash = bits256_sha256(hash);
-                fseek(fp,(max-i-1) * sizeof(bits256),SEEK_SET);
-                if ( fwrite(hash.bytes,1,sizeof(hash),fp) != sizeof(hash) )
-                    printf("error writing hash[%d] i.%d\n",(max-i-1),i);
-            }
-            fclose(fp);
-        }
-    }
     iguana_ensuredirs();
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
@@ -1578,15 +1547,12 @@ void iguana_main(void *arg)
     myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
-    //category_init(myinfo);
 #if LIQUIDITY_PROVIDER
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
-    //myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("instaforex"),0);
-    //myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitfinex"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
@@ -1594,20 +1560,13 @@ void iguana_main(void *arg)
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
 #endif
-    //argjson = arg != 0 ? cJSON_Parse(arg) : cJSON_Parse("{}");
-    //iguana_coinadd("BTC",argjson); dont do this here, coin args not set
-    ///iguana_coinadd("LTC",argjson);
-    //free_json(argjson);
-    printf("helpinit\n");
     iguana_helpinit(myinfo);
-    printf("basilisks_init\n");
+    iguana_relays_init(myinfo);
     basilisks_init(myinfo);
-    printf("iguana_commandline\n");
     iguana_commandline(myinfo,arg);
 #ifdef __APPLE__
     iguana_appletests(myinfo);
 #endif
-    printf("iguana_launchdaemons\n");
     iguana_launchdaemons(myinfo);
 }
 
