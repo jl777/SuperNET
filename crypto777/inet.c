@@ -20,6 +20,7 @@
 #define crypto777_inet_h
 #include "OS_portable.h"
 
+
 #ifdef _WIN32
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
@@ -32,7 +33,12 @@ struct sockaddr_in6 {
     struct  in6_addr sin6_addr;
     u_long  sin6_scope_id;
 };
+#else
+#ifndef __MINGW
+#include <arpa/inet.h>
 #endif
+#endif
+
 #ifdef _WIN32
 #ifdef AF_INET6
 #undef AF_INET6
@@ -389,13 +395,26 @@ void expand_ipbits(char *ipaddr,uint64_t ipbits)
 
 uint64_t calc_ipbits(char *ip_port)
 {
-    uint64_t ipbits = 0; char ipaddr[64];
+    uint64_t ipbits = 0; char ipaddr[64],ipaddr2[64]; int32_t i;
     if ( ip_port != 0 )
     {
         ipbits = _calc_ipbits(ip_port);
         expand_ipbits(ipaddr,ipbits);
         if ( ipbits != 0 && strcmp(ipaddr,ip_port) != 0 )
-            printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+        {
+            for (i=0; i<63; i++)
+                if ( (ipaddr[i]= ip_port[i]) == ':' || ipaddr[i] == 0 )
+                break;
+            ipaddr[i] = 0;
+            ipbits = _calc_ipbits(ipaddr);
+            expand_ipbits(ipaddr2,ipbits);
+            if ( ipbits != 0 && strcmp(ipaddr,ipaddr2) != 0 )
+            {
+                if ( ipaddr[0] != 0 )
+                    printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+                ipbits = 0;
+            }
+        }
     }
     return(ipbits);
 }

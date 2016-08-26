@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #ifdef _WIN32
-#include "win/pthread.h"
+#include "OSlibs/win/pthread.h"
 #include <windows.h>
 //static inline void sleep(unsigned ms) { Sleep(ms*1000); }
 
@@ -16,7 +16,7 @@
 #include <pthread.h>
 #endif
 
-static int initflag;
+int MAIN_initflag;
 #ifndef __PNACL
 #define PNACL_message printf
 #else
@@ -37,7 +37,7 @@ void *CHROMEAPP_NAME(void *arg)
 #else
         arg = 0;
 #endif
-    while ( initflag == 0 )
+    while ( MAIN_initflag == 0 )
         usleep(1000000);
     PNACL_message("%s start.(%s)\n",CHROMEAPP_STR,(char *)arg);
     CHROMEAPP_MAIN(arg);
@@ -360,17 +360,17 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     nacl_io_init_ppapi(instance,g_get_browser_interface);
     umount("/");
     mount("", "/", "memfs", 0, "");
-    mkdir("/tmp",0755);
-    mkdir("/DB",0755);
-    mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
-    mount("","/DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
+    //mkdir("/tmp",0755);
+    mkdir("DB",0755);
+    //mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
+    mount("","DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
     /*mount("",       // source. Use relative URL
           "/http",  // target
           "httpfs", // filesystemtype
           0,        // mountflags
           "");      // data*/
     PNACL_message("finished DidCreate %s\n",CHROMEAPP_STR);
-    initflag = 1;
+    MAIN_initflag = 1;
     return PP_TRUE;
 }
 
@@ -652,13 +652,14 @@ PSMainFunc_t PSUserMainGet()
 }
 
 #else
+
 int main(int argc, const char * argv[])
 {
     char *jsonstr;
     if ( argc < 2 )
         jsonstr = 0;
     else jsonstr = (char *)argv[1];
-    initflag = 1;
+    MAIN_initflag = 1;
     OS_init();
     printf("%s main\n",CHROMEAPP_STR);
     CHROMEAPP_NAME(jsonstr);

@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTC\",\"method\":\"signrawtransaction\",\"params\":[\"01000000dc4f24570156bb006164173811be6647f68f9a46eab4322e6fdef816aeb3e71e419ca49bfe1800000000ffffffff01588c0200000000001976a914d8b8c039206af6cec82bca950f592801e62808cb88ac00000000\", [{\"txid\":\"fe9ba49c411ee7b3ae16f8de6f2e32b4ea469a8ff64766be113817646100bb56\",\"vout\":24}], [\"UqvuZXEAVXDXJkL4j4Xq6qoMdeJfPF1aNsCzmzfZaQ1ZgBTwfmWn\"], \"ALL\"] }"
+

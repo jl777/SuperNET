@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"signmessage\",\"params\":[\"RAoMou7euzvDwa9dQwjrNB5A41hrAWgvBt\", \"testmessage\"]}"
+

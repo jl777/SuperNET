@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Iguana / Create account</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/budicon.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <script type="text/javascript" src="js/jquery-3.0.0.min.js"></script>
+    <script type="text/javascript" src="js/api.js"></script>
+    <script type="text/javascript" src="js/localstorage.js"></script>
+    <script type="text/javascript" src="js/page-router.js"></script>
+    <script type="text/javascript" src="js/auth.js"></script>
+    <!-- crypto libs -->
+    <script type="text/javascript" src="js/crypto/wordlist.js"></script>
+    <script type="text/javascript" src="js/crypto/passphrasegenerator.js"></script>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row centered">
+        <!-- // create account form start -->
+        <section class="form-container create-account-form">
+          <header class="form-header orange-gradient box-shadow-bottom">
+            <i class="bi_interface-arrow-left text-shadow cursor-pointer btn-back"></i>
+            <div class="title text-shadow">Add account</div>
+          </header>
+          <div class="form-content">
+            <div class="login-input-directions center offset-bottom-md unselectable">Write down this 24-word passphrase and keep it safe. You can't access or restore your account, if you lose it! <strong>Don't ever disclose your passphrase!</strong></div>
+            <div class="passphrase-container row center offset-bottom-md">
+              <div class="title unselectable">Passphrase (you can copy it):</div>
+              <div class="generated-passhprase"></div>
+            </div>
+            <input type="checkbox" id="passphrase-saved-checkbox" name="passphraseSaved" class="checkbox" />
+            <label for="passphrase-saved-checkbox" class="checkbox-label cursor-pointer">
+              <span class="box"></span><span class="label-text unselectable">I saved the passphrase in a secure place</span>
+            </label>
+            <div class="login-or-delim center"></div>
+            <button class="btn btn-block disabled orange-gradient box-shadow-all text-shadow row btn-verify-passphrase">Next</button>
+          </div>
+        </section>
+        <!-- // create account form end -->
+
+        <!-- // verify passphrase form start -->
+        <section class="form-container verify-passphrase-form hidden">
+          <header class="form-header orange-gradient box-shadow-bottom">
+            <i class="bi_interface-arrow-left text-shadow cursor-pointer btn-back"></i>
+            <div class="title text-shadow">Add account</div>
+          </header>
+          <div class="form-content">
+            <div class="login-input-directions-error center offset-bottom-sm col-red hidden unselectable">Incorrect input. Passphrase must consist of 24 words. Try one more time.</div>
+            <div class="login-input-directions center offset-bottom-sm unselectable">Type or paste the passphrase to confirm you saved it properly</div>
+            <textarea name="verifyPassphrase" id="passphrase" class="login-passphrase-textarea offset-bottom-sm row center"></textarea>
+            <div class="login-or-delim center unselectable"></div>
+            <button class="btn btn-block orange-gradient box-shadow-all text-shadow row btn-add-account disabled">Add account</button>
+          </div>
+        </section>
+        <!-- // verify passphrase form end -->
+      </div>
+    </div>
+  </body>
+</html>

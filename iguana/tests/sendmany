@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"sendmany\", \"params\":[\"\", {\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ\":0.01, \"1353tsE8YMTA4EuV7dgUXGjNFf9KpVvKHz\":0.02}, 2]}"

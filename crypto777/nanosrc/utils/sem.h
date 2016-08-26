@@ -40,7 +40,7 @@ void nn_sem_post (struct nn_sem *self);
 int nn_sem_wait (struct nn_sem *self);
 
 #if defined __APPLE__ || defined __PNACL
-
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 
 struct nn_sem {

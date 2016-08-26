@@ -46,23 +46,98 @@ function errorHandler(e,callback,name) {
 }
 var fileSystem=null;
 var files={};
-function onInitFs(fs) {
-  console.log('Opened file system: ' + fs.name);
-  fileSystem = fs;
+function copyHelpFiles(callback) {
+  var helpFiles = [
+    'agent.md',
+    'bootstrap-theme.min.css',
+    'bootstrap.min.css',
+    'bootstrap.min.js',
+    'field.html',
+    'field.md',
+    'footer.html',
+    'footer.md',
+    'formfooter.html',
+    'formfooter.md',
+    'formheader.html',
+    'formheader.md',
+    'header.html',
+    'header.md',
+    'html5shiv.min.js',
+    'jquery-ui.css',
+    'jquery-ui.min.js',
+    'jquery.min.js',
+    'mime.json',
+    'respond.min.js'
+  ];
+  var rootDir='help';
+  var $dfds = $.map(helpFiles,function(fname){
+    var $dfd=$.Deferred();
+    $.get(chrome.runtime.getURL(rootDir+'/'+fname))
+      .done(function(str){
+        fileSystem.root.getFile('/'+rootDir+'/'+fname, {
+          create: true
+        }, function(fileEntry) {
+          // Create a FileWriter object for our FileEntry (log.txt).
+          fileEntry.createWriter(function(fileWriter) {
+            fileWriter.onwriteend = function() {
+              console.log('Write completed.',fname,str.length);
+              $dfd.resolve(true);
+            };
+
+            fileWriter.onerror = function(e) {
+              console.log('Write failed: ',fname, e.toString());
+              $dfd.resolve(false);
+            };
+
+            // Create a new Blob and write it to log.txt.
+            var blob = new Blob([str], {
+              type: 'text/plain'
+            });
+
+            fileWriter.write(blob);
+            // $dfd.resolve(true);
+
+          }, function(createWriterErr){
+              console.log('createWriterErr for',fname,createWriterErr);
+              $dfd.resolve(false);
+          });
+
+        }, function(createFileErr){
+            console.log('createFileErr for',fname,createFileErr);
+            $dfd.resolve(false);
+        });
+      });
+    return $dfd;
+  });
+  return $.when.apply($,$dfds);
 }
+
+
 
 // Called by the common.js module.
 function domContentLoaded(name, tc, config, width, height) {
-  navigator.webkitPersistentStorage.requestQuota(10000000000, 
-  function(bytes){
-    window.requestFileSystem(PERSISTENT, bytes, onInitFs, errorHandler);
-     common.updateStatus(
+  navigator.webkitPersistentStorage.requestQuota(10000000000,
+    function(bytes) {
+      window.requestFileSystem(PERSISTENT, bytes, function(fs) {
+        console.log('Opened file system: ' + fs.name);
+        fileSystem = fs;
+        copyHelpFiles().done(function() {
+          common.updateStatus(
             'Allocated ' + bytes + ' bytes of persistent storage. Running the first time will take 17 seconds to load');
-        common.attachDefaultListeners();
-        common.createNaClModule(name, tc, config, width, height);
-  }, function(e){
-    console.log('Error', e);
-});
+          common.attachDefaultListeners();
+          common.createNaClModule(name, tc, config, width, height);
+        });
+        /*dirReader = fs.root.createReader();
+        dirReader.readEntries(function(results) {
+            console.log(results);
+          }, function(){
+            console.log('File IO error');
+          });*/
+      }, errorHandler);
+    },
+    function(e) {
+      console.log('Error', e);
+    });
 
 }
 

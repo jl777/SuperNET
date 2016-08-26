@@ -21,6 +21,7 @@
 
 /* certain platforms use macros for these, making the prototypes broken */
 #ifndef LTC_NO_PROTOTYPES
+#include <time.h>
 
 /* you can change how memory allocation works ... */
 LTC_EXPORT void * LTC_CALL XMALLOC(size_t n);

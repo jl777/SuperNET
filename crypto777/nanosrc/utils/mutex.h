@@ -26,6 +26,7 @@
 #ifdef NN_HAVE_WINDOWS
 #include "win.h"
 #else
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 #endif
 

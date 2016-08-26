@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"dotrade\":1,\"agent\":\"InstantDEX\",\"exchange\":\"bitcoin\",\"method\":\"sell\",\"base\":\"VPN\",\"rel\":\"BTC\",\"price\":0.000025,\"volume\":1.0}"

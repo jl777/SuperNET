@@ -1,0 +1,6 @@
+#!/bin/sh
+# WARNING: This file was auto-generated. Do not edit!
+main="$1"; shift
+rm -f "$main"
+ar cr "$main" ${1+"$@"}
+ranlib "$main"

@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"verifymessage\",\"params\":[\"1H5iJUaopB8Zpu1sBTKAPXC2MqVM1DQgRz\", \"IDbLEkZFwjfPfXyEXVKr0x0e3GjiyY3W67/wATCUanqXcD96JlzzDEHfcPjr7YpEEWItqEkR6HC+kvBSFHVp6Jc=\", \"testmessage\"]}"
+

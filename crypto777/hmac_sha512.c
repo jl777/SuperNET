@@ -519,6 +519,12 @@ char *hmac_sha384_str(char *dest,char *key,int32_t key_size,char *message)
  	return(dest);
 }
 
+void calc_hmac_sha256(uint8_t *mac,int32_t maclen,uint8_t *key,int32_t key_size,uint8_t *message,int32_t len)
+{
+    unsigned long size = maclen;
+    hmac_memory(&sha256_desc,(void *)key,key_size,(void *)message,len,mac,&size);
+}
+
 char *hmac_sha256_str(char *dest,char *key,int32_t key_size,char *message)
 {
 	unsigned char mac[1024]; unsigned long size = sizeof(mac);

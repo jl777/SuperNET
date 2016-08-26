@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"signmessage\",\"params\":[\"1KHJ4zELwwwND4dytYp7tFyBvELMH1r7a7\", \"testmessage\"]}"
+

@@ -51,7 +51,7 @@ void nn_glock_unlock (void)
 #else
 
 #include "err.h"
-
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 
 static pthread_mutex_t nn_glock_mutex = PTHREAD_MUTEX_INITIALIZER;

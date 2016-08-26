@@ -13,79 +13,123 @@
  *                                                                            *
  ******************************************************************************/
 
-TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
+#ifdef INCLUDE_PAX
+ZERO_ARGS(pax,start);
+#endif
 
-HASH_AND_STRING(bitcoinrpc,verifytx,txid,txbytes);
-INT_ARG(bitcoinrpc,getblockhash,height);
-HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
-HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
-HASH_ARG(bitcoinrpc,gettransaction,txid);
-STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+
+ZERO_ARGS(InstantDEX,allcoins);
+STRING_ARG(InstantDEX,available,source);
+HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
+
+INT_ARG(InstantDEX,incoming,requestid);
+INT_ARG(InstantDEX,automatched,requestid);
+
+TWO_INTS(InstantDEX,accept,requestid,quoteid);
+TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
+
+HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
+//HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,geckoheaders,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoblock,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,geckoget,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,dispatch,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,publish,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
 
 ZERO_ARGS(bitcoinrpc,getinfo);
-ZERO_ARGS(bitcoinrpc,getbestblockhash);
 ZERO_ARGS(bitcoinrpc,getblockcount);
-ZERO_ARGS(bitcoinrpc,listaddressgroupings);
-ZERO_ARGS(bitcoinrpc,makekeypair);
-ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
-ZERO_ARGS(bitcoinrpc,listlockunspent);
-ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
+ZERO_ARGS(bitcoinrpc,getdifficulty);
+ZERO_ARGS(bitcoinrpc,getbestblockhash);
+INT_ARG(bitcoinrpc,getblockhash,height);
+HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly);
 
-TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
-THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
+HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose);
+HASH_ARG(bitcoinrpc,gettransaction,txid);
+HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
+TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
+
+STRING_ARG(bitcoinrpc,decodescript,scriptstr);
+//STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
+STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
+ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
+
+ZERO_ARGS(iguana,makekeypair);
+STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
+STRING_ARG(bitcoinrpc,validateaddress,address);
 
 ZERO_ARGS(bitcoinrpc,walletlock);
-ZERO_ARGS(bitcoinrpc,checkwallet);
-ZERO_ARGS(bitcoinrpc,repairwallet);
-STRING_ARG(bitcoinrpc,dumpwallet,filename);
-STRING_ARG(bitcoinrpc,backupwallet,filename);
+TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile);
 FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldpermanentfile,permanentfile);
+STRING_ARG(bitcoinrpc,dumpwallet,filename);
+STRING_ARG(bitcoinrpc,backupwallet,filename);
 STRING_ARG(bitcoinrpc,importwallet,filename);
-TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
-
-STRING_ARG(bitcoinrpc,validateaddress,address);
-STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,getnewaddress,account);
-STRING_ARG(bitcoinrpc,vanitygen,vanity);
+TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
+STRING_ARG(bitcoinrpc,dumpprivkey,address);
 
+STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
+THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag);
+THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly);
+TWO_INTS(bitcoinrpc,listaccounts,minconf,includewatchonly);
+ZERO_ARGS(bitcoinrpc,listaddressgroupings);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
+STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
+STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,confirmations,includeempty,lastheight);
 STRING_ARG(bitcoinrpc,getaddressesbyaccount,account);
 STRING_ARG(bitcoinrpc,getaccount,address);
 STRING_ARG(bitcoinrpc,getaccountaddress,account);
-STRING_ARG(bitcoinrpc,dumpprivkey,address);
-STRING_ARG(bitcoinrpc,decodescript,script);
-
 TWO_STRINGS(bitcoinrpc,setaccount,address,account);
 
-TWO_STRINGS(bitcoinrpc,signmessage,address,message);
-
-THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
-THREE_INTS(bitcoinrpc,listreceivedbyaccount,confirmations,includeempty,watchonly);
-THREE_INTS(bitcoinrpc,getbalance,confirmations,includeempty,watchonly);
-
-TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
-STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,includeempty);
-STRING_AND_INT(bitcoinrpc,getreceivedbyaddress,address,minconf);
-STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees);
-
-HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
-
-STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);
-
-HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
-
+INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore);
+INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account);
 DOUBLE_ARG(bitcoinrpc,settxfee,amount);
 
-INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array);
-INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,array,account);
+ZERO_ARGS(bitcoinrpc,checkwallet);
+ZERO_ARGS(bitcoinrpc,repairwallet);
 
-TWO_ARRAYS(bitcoinrpc,createrawtransaction,vins,vouts);
-STRING_AND_TWOARRAYS(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys);
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash);
+TWO_STRINGS(bitcoinrpc,signmessage,address,message);
+THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message);
+STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees);
 
-SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2);
-S_A_I_S(bitcoinrpc,sendmany,fromaccount,array,minconf,comment);
+S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment);
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2);
+INT_AND_ARRAY(bitcoinrpc,lockunspent,flag,array); //
+ZERO_ARGS(bitcoinrpc,listlockunspent); //
+STRING_ARG(bitcoinrpc,submitblock,rawbytes); //
+
+// maybe later
+HASH_AND_TWOINTS(bitcoinrpc,listsinceblock,blockhash,target,flag);
+ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
+ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
+SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
 STRING_ARG(iguana,initfastfind,activecoin);
 STRING_ARG(iguana,peers,activecoin);
@@ -102,31 +146,35 @@ TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr);
-TWOSTRINGS_AND_INT(iguana,balance,activecoin,address,height);
+TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,heightd,minconfd);
 P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC);
 STRING_AND_INT(iguana,bundleaddresses,activecoin,height);
 STRING_AND_INT(iguana,bundlehashes,activecoin,height);
+STRING_AND_INT(iguana,PoSweights,activecoin,height);
+STRING_ARG(iguana,stakers,activecoin);
 
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
-TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
-THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
+//TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,minaccept,base,rel,minprice,basevolume);
+//TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,dotrade);
 THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount);
 THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret);
 THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword);
-THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 TWO_STRINGS(InstantDEX,balance,exchange,base);
 TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid);
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid);
 STRING_ARG(InstantDEX,openorders,exchange);
 STRING_ARG(InstantDEX,tradehistory,exchange);
+
+THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore);
 STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
+//TWO_STRINGS(InstantDEX,events,base,rel);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
+THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 
-THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
-THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
+//THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
+//THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
 
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,proposal,reference,message,basetxid,reltxid,duration,flags);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,accept,reference,message,basetxid,reltxid,duration,flags);
@@ -169,7 +217,6 @@ ZERO_ARGS(SuperNET,stop);
 HASH_AND_STRING(SuperNET,saveconf,wallethash,confjsonstr);
 HASH_ARRAY_STRING(SuperNET,layer,mypriv,otherpubs,str);
 
-
 STRING_ARG(SuperNET,bitcoinrpc,setcoin);
 STRING_ARG(SuperNET,myipaddr,ipaddr);
 STRING_ARG(SuperNET,setmyipaddr,ipaddr);
@@ -177,17 +224,19 @@ STRING_ARG(SuperNET,setmyipaddr,ipaddr);
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase);
 ZERO_ARGS(SuperNET,logout);
 ZERO_ARGS(SuperNET,activehandle);
-THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,anything);
+THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload);
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile);
 
 TWO_STRINGS(SuperNET,html,agentform,htmlfile);
-TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
+//TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(SuperNET,DHT,hexmsg,destip,categoryhash,subhash,maxdelay,broadcast);
 
 THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
+STRING_ARG(SuperNET,priv2wif,priv);
 STRING_ARG(SuperNET,addr2rmd160,address);
+STRING_ARG(SuperNET,rmd160conv,rmd160);
 
 TWOHASHES_AND_STRING(SuperNET,cipher,privkey,destpubkey,message);
 TWOHASHES_AND_STRING(SuperNET,decipher,privkey,srcpubkey,cipherstr);
@@ -198,12 +247,12 @@ STRING_ARG(SuperNET,broadcastdecipher,message);
 HASH_AND_STRING(SuperNET,multicastcipher,pubkey,message);
 HASH_AND_STRING(SuperNET,multicastdecipher,privkey,cipherstr);
 
-TWO_STRINGS(SuperNET,subscribe,category,subcategory);
+/*TWO_STRINGS(SuperNET,subscribe,category,subcategory);
 TWO_STRINGS(SuperNET,gethexmsg,category,subcategory);
 THREE_STRINGS(SuperNET,posthexmsg,category,subcategory,hexmsg);
 THREE_STRINGS(SuperNET,announce,category,subcategory,message);
 THREE_STRINGS(SuperNET,survey,category,subcategory,message);
-TWO_STRINGS(SuperNET,categoryhashes,category,subcategory);
+TWO_STRINGS(SuperNET,categoryhashes,category,subcategory);*/
 
 STRING_AND_TWOINTS(mouse,image,name,x,y);
 STRING_AND_TWOINTS(mouse,change,name,x,y);

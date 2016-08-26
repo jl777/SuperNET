@@ -1,0 +1,3 @@
+#!/bin/sh
+# WARNING: This file was auto-generated. Do not edit!
+exec gcc -O2 -c ${1+"$@"}

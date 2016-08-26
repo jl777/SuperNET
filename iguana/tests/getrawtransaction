@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778"  --data "{\"method\":\"getrawtransaction\",\"params\":[\"fe9ba49c411ee7b3ae16f8de6f2e32b4ea469a8ff64766be113817646100bb56\"]}"
+

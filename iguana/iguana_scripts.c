@@ -16,290 +16,6 @@
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
 
-enum opcodetype
-{
-    // push value
-    OP_0 = 0x00,
-    OP_FALSE = OP_0,
-    OP_PUSHDATA1 = 0x4c,
-    OP_PUSHDATA2 = 0x4d,
-    OP_PUSHDATA4 = 0x4e,
-    OP_1NEGATE = 0x4f,
-    OP_RESERVED = 0x50,
-    OP_1 = 0x51,
-    OP_TRUE=OP_1,
-    OP_2 = 0x52,
-    OP_3 = 0x53,
-    OP_4 = 0x54,
-    OP_5 = 0x55,
-    OP_6 = 0x56,
-    OP_7 = 0x57,
-    OP_8 = 0x58,
-    OP_9 = 0x59,
-    OP_10 = 0x5a,
-    OP_11 = 0x5b,
-    OP_12 = 0x5c,
-    OP_13 = 0x5d,
-    OP_14 = 0x5e,
-    OP_15 = 0x5f,
-    OP_16 = 0x60,
-    
-    // control
-    OP_NOP = 0x61,
-    OP_VER = 0x62,
-    OP_IF = 0x63,
-    OP_NOTIF = 0x64,
-    OP_VERIF = 0x65,
-    OP_VERNOTIF = 0x66,
-    OP_ELSE = 0x67,
-    OP_ENDIF = 0x68,
-    OP_VERIFY = 0x69,
-    OP_RETURN = 0x6a,
-    
-    // stack ops
-    OP_TOALTSTACK = 0x6b,
-    OP_FROMALTSTACK = 0x6c,
-    OP_2DROP = 0x6d,
-    OP_2DUP = 0x6e,
-    OP_3DUP = 0x6f,
-    OP_2OVER = 0x70,
-    OP_2ROT = 0x71,
-    OP_2SWAP = 0x72,
-    OP_IFDUP = 0x73,
-    OP_DEPTH = 0x74,
-    OP_DROP = 0x75,
-    OP_DUP = 0x76,
-    OP_NIP = 0x77,
-    OP_OVER = 0x78,
-    OP_PICK = 0x79,
-    OP_ROLL = 0x7a,
-    OP_ROT = 0x7b,
-    OP_SWAP = 0x7c,
-    OP_TUCK = 0x7d,
-    
-    // splice ops
-    OP_CAT = 0x7e,
-    OP_SUBSTR = 0x7f,
-    OP_LEFT = 0x80,
-    OP_RIGHT = 0x81,
-    OP_SIZE = 0x82,
-    
-    // bit logic
-    OP_INVERT = 0x83,
-    OP_AND = 0x84,
-    OP_OR = 0x85,
-    OP_XOR = 0x86,
-    OP_EQUAL = 0x87,
-    OP_EQUALVERIFY = 0x88,
-    OP_RESERVED1 = 0x89,
-    OP_RESERVED2 = 0x8a,
-    
-    // numeric
-    OP_1ADD = 0x8b,
-    OP_1SUB = 0x8c,
-    OP_2MUL = 0x8d,
-    OP_2DIV = 0x8e,
-    OP_NEGATE = 0x8f,
-    OP_ABS = 0x90,
-    OP_NOT = 0x91,
-    OP_0NOTEQUAL = 0x92,
-    
-    OP_ADD = 0x93,
-    OP_SUB = 0x94,
-    OP_MUL = 0x95,
-    OP_DIV = 0x96,
-    OP_MOD = 0x97,
-    OP_LSHIFT = 0x98,
-    OP_RSHIFT = 0x99,
-    
-    OP_BOOLAND = 0x9a,
-    OP_BOOLOR = 0x9b,
-    OP_NUMEQUAL = 0x9c,
-    OP_NUMEQUALVERIFY = 0x9d,
-    OP_NUMNOTEQUAL = 0x9e,
-    OP_LESSTHAN = 0x9f,
-    OP_GREATERTHAN = 0xa0,
-    OP_LESSTHANOREQUAL = 0xa1,
-    OP_GREATERTHANOREQUAL = 0xa2,
-    OP_MIN = 0xa3,
-    OP_MAX = 0xa4,
-    
-    OP_WITHIN = 0xa5,
-    
-    // crypto
-    OP_RIPEMD160 = 0xa6,
-    OP_SHA1 = 0xa7,
-    OP_SHA256 = 0xa8,
-    OP_HASH160 = 0xa9,
-    OP_HASH256 = 0xaa,
-    OP_CODESEPARATOR = 0xab,
-    OP_CHECKSIG = 0xac,
-    OP_CHECKSIGVERIFY = 0xad,
-    OP_CHECKMULTISIG = 0xae,
-    OP_CHECKMULTISIGVERIFY = 0xaf,
-    
-    // expansion
-    OP_NOP1 = 0xb0,
-    OP_NOP2 = 0xb1,
-    OP_NOP3 = 0xb2,
-    OP_NOP4 = 0xb3,
-    OP_NOP5 = 0xb4,
-    OP_NOP6 = 0xb5,
-    OP_NOP7 = 0xb6,
-    OP_NOP8 = 0xb7,
-    OP_NOP9 = 0xb8,
-    OP_NOP10 = 0xb9,
-    
-    // template matching params
-    OP_SMALLINTEGER = 0xfa,
-    OP_PUBKEYS = 0xfb,
-    OP_PUBKEYHASH = 0xfd,
-    OP_PUBKEY = 0xfe,
-    
-    OP_INVALIDOPCODE = 0xff,
-};
-
-const char *get_opname(int32_t *extralenp,enum opcodetype opcode)
-{
-    *extralenp = 0;
-    switch (opcode)
-    {
-            // push value
-        case OP_0                      : return "0";
-        case OP_PUSHDATA1              : *extralenp = 1; return "OP_PUSHDATA1";
-        case OP_PUSHDATA2              : *extralenp = 2; return "OP_PUSHDATA2";
-        case OP_PUSHDATA4              : *extralenp = 4; return "OP_PUSHDATA4";
-        case OP_1NEGATE                : return "-1";
-        case OP_RESERVED               : return "OP_RESERVED";
-        case OP_1                      : return "1";
-        case OP_2                      : return "2";
-        case OP_3                      : return "3";
-        case OP_4                      : return "4";
-        case OP_5                      : return "5";
-        case OP_6                      : return "6";
-        case OP_7                      : return "7";
-        case OP_8                      : return "8";
-        case OP_9                      : return "9";
-        case OP_10                     : return "10";
-        case OP_11                     : return "11";
-        case OP_12                     : return "12";
-        case OP_13                     : return "13";
-        case OP_14                     : return "14";
-        case OP_15                     : return "15";
-        case OP_16                     : return "16";
-            
-            // control
-        case OP_NOP                    : return "OP_NOP";
-        case OP_VER                    : return "OP_VER";
-        case OP_IF                     : return "OP_IF";
-        case OP_NOTIF                  : return "OP_NOTIF";
-        case OP_VERIF                  : return "OP_VERIF";
-        case OP_VERNOTIF               : return "OP_VERNOTIF";
-        case OP_ELSE                   : return "OP_ELSE";
-        case OP_ENDIF                  : return "OP_ENDIF";
-        case OP_VERIFY                 : return "OP_VERIFY";
-        case OP_RETURN                 : return "OP_RETURN";
-            
-            // stack ops
-        case OP_TOALTSTACK             : return "OP_TOALTSTACK";
-        case OP_FROMALTSTACK           : return "OP_FROMALTSTACK";
-        case OP_2DROP                  : return "OP_2DROP";
-        case OP_2DUP                   : return "OP_2DUP";
-        case OP_3DUP                   : return "OP_3DUP";
-        case OP_2OVER                  : return "OP_2OVER";
-        case OP_2ROT                   : return "OP_2ROT";
-        case OP_2SWAP                  : return "OP_2SWAP";
-        case OP_IFDUP                  : return "OP_IFDUP";
-        case OP_DEPTH                  : return "OP_DEPTH";
-        case OP_DROP                   : return "OP_DROP";
-        case OP_DUP                    : return "OP_DUP";
-        case OP_NIP                    : return "OP_NIP";
-        case OP_OVER                   : return "OP_OVER";
-        case OP_PICK                   : return "OP_PICK";
-        case OP_ROLL                   : return "OP_ROLL";
-        case OP_ROT                    : return "OP_ROT";
-        case OP_SWAP                   : return "OP_SWAP";
-        case OP_TUCK                   : return "OP_TUCK";
-            
-            // splice ops
-        case OP_CAT                    : return "OP_CAT";
-        case OP_SUBSTR                 : return "OP_SUBSTR";
-        case OP_LEFT                   : return "OP_LEFT";
-        case OP_RIGHT                  : return "OP_RIGHT";
-        case OP_SIZE                   : return "OP_SIZE";
-            
-            // bit logic
-        case OP_INVERT                 : return "OP_INVERT";
-        case OP_AND                    : return "OP_AND";
-        case OP_OR                     : return "OP_OR";
-        case OP_XOR                    : return "OP_XOR";
-        case OP_EQUAL                  : return "OP_EQUAL";
-        case OP_EQUALVERIFY            : return "OP_EQUALVERIFY";
-        case OP_RESERVED1              : return "OP_RESERVED1";
-        case OP_RESERVED2              : return "OP_RESERVED2";
-            
-            // numeric
-        case OP_1ADD                   : return "OP_1ADD";
-        case OP_1SUB                   : return "OP_1SUB";
-        case OP_2MUL                   : return "OP_2MUL";
-        case OP_2DIV                   : return "OP_2DIV";
-        case OP_NEGATE                 : return "OP_NEGATE";
-        case OP_ABS                    : return "OP_ABS";
-        case OP_NOT                    : return "OP_NOT";
-        case OP_0NOTEQUAL              : return "OP_0NOTEQUAL";
-        case OP_ADD                    : return "OP_ADD";
-        case OP_SUB                    : return "OP_SUB";
-        case OP_MUL                    : return "OP_MUL";
-        case OP_DIV                    : return "OP_DIV";
-        case OP_MOD                    : return "OP_MOD";
-        case OP_LSHIFT                 : return "OP_LSHIFT";
-        case OP_RSHIFT                 : return "OP_RSHIFT";
-        case OP_BOOLAND                : return "OP_BOOLAND";
-        case OP_BOOLOR                 : return "OP_BOOLOR";
-        case OP_NUMEQUAL               : return "OP_NUMEQUAL";
-        case OP_NUMEQUALVERIFY         : return "OP_NUMEQUALVERIFY";
-        case OP_NUMNOTEQUAL            : return "OP_NUMNOTEQUAL";
-        case OP_LESSTHAN               : return "OP_LESSTHAN";
-        case OP_GREATERTHAN            : return "OP_GREATERTHAN";
-        case OP_LESSTHANOREQUAL        : return "OP_LESSTHANOREQUAL";
-        case OP_GREATERTHANOREQUAL     : return "OP_GREATERTHANOREQUAL";
-        case OP_MIN                    : return "OP_MIN";
-        case OP_MAX                    : return "OP_MAX";
-        case OP_WITHIN                 : return "OP_WITHIN";
-            
-            // crypto
-        case OP_RIPEMD160              : return "OP_RIPEMD160";
-        case OP_SHA1                   : return "OP_SHA1";
-        case OP_SHA256                 : return "OP_SHA256";
-        case OP_HASH160                : return "OP_HASH160";
-        case OP_HASH256                : return "OP_HASH256";
-        case OP_CODESEPARATOR          : return "OP_CODESEPARATOR";
-        case OP_CHECKSIG               : return "OP_CHECKSIG";
-        case OP_CHECKSIGVERIFY         : return "OP_CHECKSIGVERIFY";
-        case OP_CHECKMULTISIG          : return "OP_CHECKMULTISIG";
-        case OP_CHECKMULTISIGVERIFY    : return "OP_CHECKMULTISIGVERIFY";
-            
-            // expanson
-        case OP_NOP1                   : return "OP_NOP1";
-        case OP_NOP2                   : return "OP_NOP2";
-        case OP_NOP3                   : return "OP_NOP3";
-        case OP_NOP4                   : return "OP_NOP4";
-        case OP_NOP5                   : return "OP_NOP5";
-        case OP_NOP6                   : return "OP_NOP6";
-        case OP_NOP7                   : return "OP_NOP7";
-        case OP_NOP8                   : return "OP_NOP8";
-        case OP_NOP9                   : return "OP_NOP9";
-        case OP_NOP10                  : return "OP_NOP10";
-            
-        case OP_INVALIDOPCODE          : return "OP_INVALIDOPCODE";
-            // Note:
-            //  The template matching params OP_SMALLDATA/etc are defined in opcodetype enum
-            //  as kind of implementation hack, they are *NOT* real opcodes.  If found in real
-            //  Script, just let the default: case deal with them.
-        default: return "OP_UNKNOWN";
-    }
-}
-
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66])
 {
     int32_t plen = bitcoin_pubkeylen(pubkey);
@@ -326,6 +42,7 @@ int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
     return(n);
 }
 
+// OP_DUP OP_HASH160 <hash of pubkey> OP_EQUALVERIFY OP_CHECKSIG
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 {
     script[n++] = SCRIPT_OP_DUP;
@@ -338,7 +55,11 @@ int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
 {
-    script[n++] = (locktime >> 24), script[n++] = (locktime >> 16), script[n++] = (locktime >> 8), script[n++] = locktime;
+    script[n++] = 4;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff;
     script[n++] = SCRIPT_OP_CHECKLOCKTIMEVERIFY;
     script[n++] = SCRIPT_OP_DROP;
     return(n);
@@ -407,7 +128,7 @@ int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int3
 
 int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx)
 {
-    int32_t i,siglen;
+    int32_t i,siglen,plen;
     if ( vp->N > 1 )
         script[n++] = SCRIPT_OP_NOP;
     for (i=0; i<vp->N; i++)
@@ -417,6 +138,11 @@ int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,con
             script[n++] = siglen;
             memcpy(&script[n],vp->signers[i].sig,siglen), n += siglen;
         }
+    }
+    if ( (plen= bitcoin_pubkeylen(vp->signers[0].pubkey)) > 0 && vp->type == IGUANA_SCRIPT_76A988AC )
+    {
+        script[n++] = plen;
+        memcpy(&script[n],vp->signers[0].pubkey,plen), n += plen;
     }
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
@@ -448,17 +174,22 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
     return(n);
 }
 
+uint8_t iguana_addrtype(struct iguana_info *coin,uint8_t script_type)
+{
+    if ( script_type == IGUANA_SCRIPT_76A988AC || script_type == IGUANA_SCRIPT_AC || script_type == IGUANA_SCRIPT_76AC )
+        return(coin->chain->pubtype);
+    else return(coin->chain->p2shtype);
+}
+
 int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char *coinaddr,uint8_t *script,char *asmstr,uint8_t rmd160[20],uint8_t type,const struct vin_info *vp,int32_t txi)
 {
     uint8_t addrtype; char rmd160str[41],pubkeystr[256]; int32_t plen,i,m,n,flag = 0,scriptlen = 0;
     m = n = 0;
     if ( asmstr != 0 )
         asmstr[0] = 0;
+    addrtype = iguana_addrtype(coin,type);
     if ( type == IGUANA_SCRIPT_76A988AC || type == IGUANA_SCRIPT_AC || type == IGUANA_SCRIPT_76AC || type == IGUANA_SCRIPT_P2SH )
     {
-        if ( type == IGUANA_SCRIPT_P2SH )
-            addrtype = coin->chain->p2shtype;
-        else addrtype = coin->chain->pubtype;
         init_hexbytes_noT(rmd160str,rmd160,20);
         bitcoin_address(coinaddr,addrtype,rmd160,20);
     }
@@ -499,6 +230,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_OPRETURN:
             if ( asmstr != 0 )
                 strcpy(asmstr,"OP_RETURN ");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         case IGUANA_SCRIPT_3of3: m = 3, n = 3; break;
@@ -511,11 +243,13 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         case IGUANA_SCRIPT_DATA:
             if ( asmstr != 0 )
                 strcpy(asmstr,"DATA ONLY");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         case IGUANA_SCRIPT_STRANGE:
             if ( asmstr != 0 )
                 strcpy(asmstr,"STRANGE SCRIPT ");
+            bitcoin_address(coinaddr,addrtype,(uint8_t *)&vp->spendscript[0],vp->spendlen);
             flag++;
             break;
         default: break;//printf("unexpected script type.%d\n",type); break;
@@ -523,6 +257,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
     if ( n > 0 )
     {
         scriptlen = bitcoin_MofNspendscript(rmd160,script,0,vp);
+        bitcoin_address(coinaddr,coin->chain->p2shtype,script,scriptlen);
         if ( asmstr != 0 )
         {
             sprintf(asmstr,"%d ",m);
@@ -547,12 +282,6 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
         init_hexbytes_noT(asmstr + strlen(asmstr),(uint8_t *)vp->spendscript,vp->spendlen);
     *Mp = m, *nump = n;
     return(scriptlen);
-}
-
-int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen,uint8_t *script,int32_t scriptlen)
-{
-    asmstr[0] = 0;
-    return(0);
 }
 
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
@@ -682,9 +411,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
     return(type);
 }
 
-int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
+int32_t iguana_calcrmd160(struct iguana_info *coin,char *asmstr,struct vin_info *vp,uint8_t *pk_script,int32_t pk_scriptlen,bits256 debugtxid,int32_t vout,uint32_t sequence)
 {
-    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; char asmstr[IGUANA_MAXSCRIPTSIZE*3];
+    int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE];
     memset(vp,0,sizeof(*vp));
     vp->vin.prev_hash = debugtxid, vp->vin.prev_vout = vout;
     vp->spendlen = pk_scriptlen;
@@ -693,6 +422,12 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
     if ( (vp->type= _iguana_calcrmd160(coin,vp)) >= 0 )
     {
         scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vout);
+        if ( vp->M == 0 && vp->N == 0 )
+        {
+            vp->M = vp->N = 1;
+            strcpy(vp->signers[0].coinaddr,vp->coinaddr);
+            memcpy(vp->signers[0].rmd160,vp->rmd160,20);
+        }
         if ( scriptlen != pk_scriptlen || (scriptlen != 0 && memcmp(script,pk_script,scriptlen) != 0) )
         {
             if ( vp->type != IGUANA_SCRIPT_OPRETURN && vp->type != IGUANA_SCRIPT_DATA && vp->type != IGUANA_SCRIPT_STRANGE )
@@ -714,11 +449,12 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp,uint8_t *
 
 //error memalloc mem.0x7f6fc6e4a2a8 94.242.229.158 alloc 1 used 2162688 totalsize.2162688 -> 94.242.229.158 (nil)
 
-int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
 {
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen;
+    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t *p2shscript;
     j = n = 0;
-    *suffixp = *pubkeysizep = 0;
+    *userdatap = 0;
+    *userdatalenp = *pubkeysizep = 0;
     *hashtypep = SIGHASH_ALL;
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {
@@ -742,7 +478,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     vp->type = spendtype;
     if ( j == 0 )
     {
-        *suffixp = len;
+        //*userdatalenp = len;
         vp->spendlen = len;
         return(vp->spendlen);
     }
@@ -758,21 +494,28 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
         j++;
     }
     vp->numpubkeys = j;
-    if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
+    *userdatap = &scriptsig[n];
+    *userdatalenp = (len - n);
+    p2shscript = 0;
+    while ( n < len )
     {
-        if ( scriptsig[n] == 0x4c )
-            vp->p2shlen = scriptsig[n+1], n += 2;
-        else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
-        //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
-        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+        if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
         {
-            memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
-            n += vp->p2shlen;
-            vp->type = IGUANA_SCRIPT_P2SH;
-        } else vp->p2shlen = 0;
+            if ( scriptsig[n] == 0x4c )
+                vp->p2shlen = scriptsig[n+1], n += 2;
+            else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
+            //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
+            if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+            {
+                p2shscript = &scriptsig[n];
+                memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
+                n += vp->p2shlen;
+                vp->type = IGUANA_SCRIPT_P2SH;
+            } else vp->p2shlen = 0;
+        }
     }
-    if ( n < len )
-        *suffixp = (len - n);
+    if ( *userdatap == p2shscript )
+        *userdatap = 0;
     /*if ( len == 0 )
      {
      //  txid.(eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2).v1
@@ -784,16 +527,17 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     return(vp->spendlen);
 }
 
-int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen)
+int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *userdatalenp,uint8_t *vinscript,int32_t scriptlen)
 {
-    int32_t hashtype;
-    *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;
-    memset(vp,0,sizeof(*vp));
-    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,suffixp,vp,vinscript,scriptlen,0) < 0 )
+    int32_t hashtype; uint8_t *userdata = 0;
+    *sigsizep = *pubkeysizep = *p2shsizep = *userdatalenp = 0;
+    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,&userdata,userdatalenp,vp,vinscript,scriptlen,0) < 0 )
     {
         printf("iguana_vinscriptparse: error parsing vinscript?\n");
         return(-1);
     }
+    if ( userdata != 0 && *userdatalenp > 0 )
+        memcpy(vp->userdata,userdata,*userdatalenp);
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
         *p2shsizep = vp->p2shlen + 1 + (vp->p2shlen >= 0xfd)*2;
@@ -903,9 +647,9 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         for (i=0; i<s->numpubkeys; i++)
         {
             len += iguana_rwvarint32(0,&metascript[len],(void *)&poffset);
-            if ( poffset > ramchain->H.data->scriptspace-33 )
+            if ( poffset > rdata->scriptspace-33 )
             {
-                printf("illegal poffset.%d/%d\n",poffset,ramchain->H.data->scriptspace);
+                printf("illegal poffset.%d/%d\n",poffset,rdata->scriptspace);
                 return(-1);
             }
             //printf("poffset[%d] of %d poffset %x\n",i,s->numpubkeys,poffset);
@@ -1022,6 +766,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
         memset(&V,0,sizeof(V));
         if ( rawflag == 0 )
         {
+            memset(&V,0,sizeof(V));
             s->sighash = iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,vinscript,vinscriptlen);
             //for (i=0; i<33; i++)
             //    printf("%02x",V.signers[0].pubkey[i]);
@@ -1060,7 +805,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
             {
                 ramchain->H.stacksize += sigslen;
                 s->scriptoffset = ramchain->H.scriptoffset;
-                len = iguana_vinscriptencode(coin,&metalen,&Kspace[ramchain->H.data->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
+                len = iguana_vinscriptencode(coin,&metalen,&Kspace[rdata->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
             } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,V.numsigs,V.numpubkeys,suffixlen);
         }
         else
@@ -1080,7 +825,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
         }
     }
     //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
-    if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
+    if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[rdata->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
     {
         //static uint64_t counter;
         //if ( counter++ < 100 )
@@ -1114,7 +859,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
         for (j=0; j<tx->tx_out; j++)
         {
             memset(&V,0,sizeof(V));
-            type = iguana_calcrmd160(coin,&V,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,0xffffffff);
+            type = iguana_calcrmd160(coin,asmstr,&V,tx->vouts[j].pk_script,tx->vouts[j].pk_scriptlen,tx->txid,j,0xffffffff);
             if ( type != 0 ) // IGUANA_SCRIPT_NULL
             {
                 memcpy(rmd160,V.rmd160,sizeof(rmd160));
@@ -1129,6 +874,7 @@ int32_t iguana_scriptspaceraw(struct iguana_info *coin,int32_t *scriptspacep,int
         }
         for (j=0; j<tx->tx_in; j++)
         {
+            memset(&V,0,sizeof(V));
             iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,tx->vins[j].vinscript,tx->vins[j].scriptlen);
             pubkeyspace += pubkeysize;
             p2shspace += p2shsize;
@@ -1146,7 +892,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
     int32_t j,scriptlen; struct vin_info V;
     uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
     *sigspacep = *pubkeyspacep = altspace = 0;
     return(1);
     if ( (rdata= ramchain->H.data) == 0 || ramchain->expanded != 0 )
@@ -1171,12 +917,13 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
             {
                 sequence = S[spendind].sequenceid;
                 scriptlen = S[spendind].vinscriptlen;
-                if ( S[spendind].scriptoffset != 0 && S[spendind].scriptoffset+scriptlen < ramchain->H.data->scriptspace )
+                if ( S[spendind].scriptoffset != 0 && S[spendind].scriptoffset+scriptlen < rdata->scriptspace )
                 {
                     scriptdata = &Kspace[S[spendind].scriptoffset];
                     altspace += scriptlen;
                     if ( scriptdata != 0 )
                     {
+                        memset(&V,0,sizeof(V));
                         iguana_vinscriptparse(coin,&V,&sigsize,&pubkeysize,&p2shsize,&suffixlen,scriptdata,scriptlen);
                         p2shspace += p2shsize;
                         sigspace += sigsize;
@@ -1268,14 +1015,14 @@ uint8_t *iguana_ramchain_scriptdecode(int32_t *metalenp,int32_t *scriptlenp,uint
 /*origoffset = ramchain->H.scriptoffset;
  if ( type != IGUANA_SCRIPT_STRANGE && type != IGUANA_SCRIPT_DATA && type != IGUANA_SCRIPT_OPRETURN && scriptlen > 0 && script != 0 )
  {
- if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
+ if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= rdata->scriptspace-ramchain->H.stacksize )
  {
  if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
  {
  fprintf(stderr,"new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
  }
  //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
- } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
+ } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,rdata->scriptspace,ramchain->H.stacksize);
  checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
  if ( checklen != scriptlen || (script != 0 && checkscript != 0 && memcmp(checkscript,script,scriptlen) != 0) )
  {

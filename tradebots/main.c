@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2015 The SuperNET Developers.                             *
+ * Copyright © 2014-2016 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -13,24 +13,14 @@
  *                                                                            *
  ******************************************************************************/
 
-#define CHROMEAPP_NAME tradebots
-#define CHROMEAPP_STR "tradebots"
-#define CHROMEAPP_CONF "tradebots.conf"
-#define CHROMEAPP_MAIN tradebots_main
-#define CHROMEAPP_JSON tradebots_JSON
-#define CHROMEAPP_HANDLER Handler_tradebots
+#include "../iguana/iguana777.h"
 
-#include "../pnacl_main.h"
+void tradebots_LP(char *jsonstr,char *arg);
 
-// ALL globals must be here!
-
-void tradebots_main(void *arg)
+int main(int argc,char **argv)
 {
-    while ( 1 )
-        sleep(777);
-}
-
-char *tradebots_JSON(char *jsonstr)
-{
-    return(clonestr("{\"error\":\"tradebots is just a stub for now\"}"));
+    long filesize;
+    printf("Start Liquidity Provider\n");
+    tradebots_LP(OS_filestr(&filesize,"LP.conf"),(argc > 1) ? argv[1]:"");
+    return(0);
 }

@@ -47,7 +47,7 @@ static char *Yahoo_metals[] = { YAHOO_METALS };
 char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
     "XAU", "XAG", "XPT", "XPD", // metals, gold must be first
-    "BTCD", "BTC", "NXT", "LTC", "ETH", "DOGE", "BTS", "MAID", "XCP",  "XMR" // cryptos
+    "BTCD", "BTC", "NXT", "ETC", "ETH", "STEEM", "BTS", "MAID", "XCP",  "XMR" // cryptos
 };
 
 char CONTRACTS[][16] = {  "NZDUSD", "NZDCHF", "NZDCAD", "NZDJPY", "GBPNZD", "EURNZD", "AUDNZD", "CADJPY", "CADCHF", "USDCAD", "EURCAD", "GBPCAD", "AUDCAD", "USDCHF", "CHFJPY", "EURCHF", "GBPCHF", "AUDCHF", "EURUSD", "EURAUD", "EURJPY", "EURGBP", "GBPUSD", "GBPJPY", "GBPAUD", "USDJPY", "AUDJPY", "AUDUSD", "USDCNY", "USDHKD", "USDMXN", "USDZAR", "USDTRY", "EURTRY", "TRYJPY", "USDSGD", "EURNOK", "USDNOK","USDSEK","USDDKK","EURSEK","EURDKK","NOKJPY","SEKJPY","USDPLN","EURPLN","USDILS", // no more currencies
@@ -91,9 +91,11 @@ int32_t PAX_ispair(char *base,char *rel,char *contract)
     return(-1);
 }
 
-int32_t PAX_basenum(char *base)
+int32_t PAX_basenum(char *_base)
 {
-    int32_t i,j;
+    int32_t i,j; char base[64];
+    strcpy(base,_base);
+    touppercase(base);
     if ( 1 )
     {
         for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
@@ -518,12 +520,12 @@ double blend_price(double *volp,double wtA,cJSON *jsonA,double wtB,cJSON *jsonB)
     return(price);
 }
 
-void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][8][2],struct PAX_data *dp,int32_t selector,int32_t peggyflag)
+void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][9][2],struct PAX_data *dp,int32_t selector,int32_t peggyflag)
 {
     char *cryptonatorA = "https://www.cryptonator.com/api/full/%s-%s"; //unity-btc
     char *cryptocoinchartsB = "http://api.cryptocoincharts.info/tradingPair/%s_%s"; //bts_btc
-    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "ltc", "xmr", "bts", "xcp", "etc" };
-    int32_t iter,i,j; double btcusd,btcdbtc,cnyusd,prices[8][2],volumes[8][2];
+    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "steem", "xmr", "bts", "xcp", "etc" };
+    int32_t iter,i,j; double btcusd,btcdbtc,cnyusd,prices[9][2],volumes[9][2];
     char base[16],rel[16],url[512],*str; cJSON *jsonA,*jsonB;
     if ( peggyflag != 0 )
     {
@@ -541,12 +543,13 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][8][2],struct PA
         for (j=0; j<sizeof(cryptostrs)/sizeof(*cryptostrs); j++)
         {
             str = cryptostrs[j];
-            if ( strcmp(str,"etc") == 0 )
+            /*if ( strcmp(str,"etc") == 0 )
             {
                 if ( prices[3][0] > SMALLVAL )
                     break;
                 i = 3;
-            } else i = j;
+            } else*/
+                i = j;
             for (iter=0; iter<1; iter++)
             {
                 if ( i == 0 && iter == 0 )
@@ -582,9 +585,9 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][8][2],struct PA
     }
 }
 
-void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][8][2],double RTmetals[4],double *RTprices,struct PAX_data *dp)
+void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTmetals[4],double *RTprices,struct PAX_data *dp)
 {
-    char *cryptostrs[8] = { "btc", "nxt", "unity", "eth", "ltc", "xmr", "bts", "xcp" };
+    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "etc", "steem", "xmr", "bts", "xcp" };
     int32_t iter,i,c,baserel,basenum,relnum; double cnyusd,btcusd,btcdbtc,bid,ask,price,vol,prices[8][2],volumes[8][2];
     char base[16],rel[16];
     PAX_update(PEGS,&btcusd,&btcdbtc);
@@ -592,7 +595,10 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][8][2],double RTme
     memset(volumes,0,sizeof(volumes));
     for (i=0; i<sizeof(cryptostrs)/sizeof(*cryptostrs); i++)
         for (iter=0; iter<2; iter++)
-            prices[i][iter] = cryptovols[0][i][iter], volumes[i][iter] = cryptovols[1][i][iter];
+        {
+            prices[i][iter] = cryptovols[0][i][iter];
+            volumes[i][iter] = cryptovols[1][i][iter];
+        }
     if ( prices[0][0] > SMALLVAL )
         dxblend(&btcdbtc,prices[0][0],.9);
     dxblend(&dp->btcdbtc,btcdbtc,.995);
@@ -616,7 +622,9 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][8][2],double RTme
     }
     for (i=1; i<sizeof(cryptostrs)/sizeof(*cryptostrs); i++)
     {
-        if ( (vol= volumes[i][0]+volumes[i][1]) > SMALLVAL )
+        vol = volumes[i][0];
+        vol += volumes[i][1];
+        if ( vol > SMALLVAL )
         {
             price = ((prices[i][0] * volumes[i][0]) + (prices[i][1] * volumes[i][1])) / vol;
             if ( Debuglevel > 2 )

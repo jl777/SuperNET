@@ -1540,6 +1540,25 @@ void calc_rmd160(char hexstr[41],uint8_t buf[20],uint8_t *msg,int32_t len)
         init_hexbytes_noT(hexstr,buf,20);
 }
 
+bits256 bits256_sha256(bits256 data)
+{
+    bits256 hash;
+    vcalc_sha256(0,hash.bytes,data.bytes,sizeof(data));
+    return(hash);
+}
+
+void bits256_rmd160(uint8_t rmd160[20],bits256 data)
+{
+    calc_rmd160(0,rmd160,data.bytes,sizeof(data));
+}
+
+void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data)
+{
+    bits256 hash;
+    hash = bits256_sha256(data);
+    bits256_rmd160(rmd160,hash);
+}
+
 #ifdef ENABLE_RMDTEST
 int rmd160_test(void)
 {
@@ -1847,5 +1866,26 @@ uint64_t acct777_signtx(struct acct777_sig *sig,bits256 privkey,uint32_t timesta
         return(0);
     return(acct777_sign(sig,privkey,acct777_msgpubkey(data,datalen),timestamp,data,datalen));
 }*/
+
+int32_t _SuperNET_cipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 destpub,bits256 srcpriv,uint8_t *buf)
+{
+    memset(cipher,0,len+crypto_box_ZEROBYTES);
+    memset(buf,0,crypto_box_ZEROBYTES);
+    memcpy(buf+crypto_box_ZEROBYTES,message,len);
+    crypto_box(cipher,buf,len+crypto_box_ZEROBYTES,nonce,destpub.bytes,srcpriv.bytes);
+    return(len + crypto_box_ZEROBYTES);
+}
+
+uint8_t *_SuperNET_decipher(uint8_t nonce[crypto_box_NONCEBYTES],uint8_t *cipher,uint8_t *message,int32_t len,bits256 srcpub,bits256 mypriv)
+{
+    int32_t err;
+    if ( (err= crypto_box_open(message,cipher,len,nonce,srcpub.bytes,mypriv.bytes)) == 0 )
+    {
+        message += crypto_box_ZEROBYTES;
+        len -= crypto_box_ZEROBYTES;
+        return(message);
+    }
+    return(0);
+}
 
 #undef force_inline

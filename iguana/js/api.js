@@ -153,7 +153,7 @@ var SPNAPI = (function(SPNAPI, $, undefined) {
     
     SPNAPI.useGETRequest=function(request){
         if(request.method && (request.method==='apikeypair' || request.method==='setuserid' ||  request.method==='encryptjson' || request.method==='decryptjson')){
-            return false;
+              return true; 
         }else{
             return true;
         }

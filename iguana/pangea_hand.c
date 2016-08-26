@@ -336,7 +336,7 @@ void pangea_encoded(PANGEA_HANDARGS)
         return;
     }
     hand->encodestarted = (uint32_t)time(NULL);//pm->sig.timestamp;
-    cards777_encode(tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->priv.myind],tp->G.M,(void *)data,tp->G.numcards,N);
+    cards777_encode(myinfo,tp->priv.outcards,tp->priv.xoverz,tp->priv.allshares,tp->priv.myshares,hand->sharenrs[tp->priv.myind],tp->G.M,(void *)data,tp->G.numcards,N);
     PNACL_message("player.%d ind.%d encodes into %p %llx -> %llx next.%d N %d\n",tp->priv.myind,tp->priv.myind,tp->priv.outcards,(long long)*(uint64_t *)data,(long long)tp->priv.outcards[0].txid,pangea_nextnode(tp),N);
     if ( tp->priv.myind > 0 )
     {
@@ -418,14 +418,15 @@ int32_t pangea_queueprocess(struct supernet_info *myinfo,struct table_info *tp)
 
 void pangea_queues(struct supernet_info *myinfo)
 {
-    struct category_info *cat,*sub,*tmp; struct table_info *tp;
+    struct gecko_chain *cat,*subchain,*tmp; //struct table_info *tp;
     pangea_update(myinfo);
     if ( (cat= category_find(calc_categoryhashes(0,"pangea",0),GENESIS_PUBKEY)) != 0 )
     {
-        HASH_ITER(hh,cat->sub,sub,tmp)
+        HASH_ITER(hh,cat->subchains,subchain,tmp)
         {
-            if ( (tp= sub->info) != 0 )
-                pangea_queueprocess(myinfo,tp);
+            printf("undeprecate\n");
+            //if ( (tp= sub->info) != 0 )
+            //    pangea_queueprocess(myinfo,tp);
         }
     }
 }

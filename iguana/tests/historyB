@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"timeout\":20000,\"agent\":\"basilisk\",\"method\":\"history\",\"vals\":{\"coin\":\"BTC\"}}"
