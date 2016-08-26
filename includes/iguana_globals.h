@@ -52,7 +52,9 @@ int32_t IGUANA_NUMHELPERS = 1;
 #define CONDEXTERN extern
 #endif
 
+
 // ALL globals must be here!
+CONDEXTERN char *COMMANDLINE_ARGFILE;
 CONDEXTERN char *Iguana_validcommands[];
 CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS;
 

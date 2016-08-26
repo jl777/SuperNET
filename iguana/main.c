@@ -168,6 +168,19 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
 int32_t iguana_jsonQ()
 {
     struct iguana_jsonitem *ptr; char *str;
+    if ( COMMANDLINE_ARGFILE != 0 )
+    {
+        ptr = calloc(1,sizeof(*ptr) + strlen(COMMANDLINE_ARGFILE) + 1);
+        ptr->myinfo = SuperNET_MYINFO(0);
+        strcpy(ptr->jsonstr,COMMANDLINE_ARGFILE);
+        free(COMMANDLINE_ARGFILE);
+        COMMANDLINE_ARGFILE = 0;
+        if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
+            ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
+        printf("COMMANDLINE_ARGFILE.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
+        queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
+        return(1);
+    }
     if ( (ptr= queue_dequeue(&finishedQ,0)) != 0 )
     {
         if ( ptr->expired != 0 )
@@ -521,17 +534,31 @@ void iguana_appletests(struct supernet_info *myinfo)
     }
 }
 
-void iguana_commandline(struct supernet_info *myinfo,char *arg)
+int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
 {
-    cJSON *argjson,*array; char *coinargs,*argstr,*str; int32_t i,n; long filesize = 0;
+    cJSON *argjson,*array; char *coinargs,*argstr=0,*str; int32_t i,n; long filesize = 0;
     if ( arg == 0 )
         arg = "iguana.conf";
-    if ( arg != 0 )
+    else if ( (COMMANDLINE_ARGFILE= OS_filestr(&filesize,arg)) != 0 )
+    {
+        if ( (argjson= cJSON_Parse(COMMANDLINE_ARGFILE)) == 0 )
+        {
+            printf("couldnt parse %s: (%s) after initialized\n",arg,COMMANDLINE_ARGFILE);
+            free(COMMANDLINE_ARGFILE);
+            COMMANDLINE_ARGFILE = 0;
+        }
+        else
+        {
+            free_json(argjson);
+            printf("Will run (%s) after initialized\n",COMMANDLINE_ARGFILE);
+        }
+    }
+    else if ( arg != 0 )
     {
         if ( arg[0] == '{' || arg[0] == '[' )
             argstr = arg;
-        else argstr = OS_filestr(&filesize,arg);
-        if ( (argjson= cJSON_Parse(argstr)) != 0 )
+        //else argstr = OS_filestr(&filesize,arg);
+        if ( argstr != 0 && (argjson= cJSON_Parse(argstr)) != 0 )
         {
             IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
             if ( (myinfo->rpcport= juint(argjson,"port")) == 0 )
@@ -572,10 +599,11 @@ void iguana_commandline(struct supernet_info *myinfo,char *arg)
                 }
                 printf(") <- IOTA random passphrase\n");
             }
-        } else printf("error parsing.(%s)\n",(char *)argstr);
-        if ( argstr != arg )
-            free(argstr);
+        } //else printf("error parsing.(%s)\n",(char *)argstr);
+        //if ( argstr != arg )
+        //    free(argstr);
     }
+    return(COMMANDLINE_ARGFILE != 0);
 }
 
 void iguana_ensuredirs()
@@ -646,7 +674,7 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
-    if ( IGUANA_NUMHELPERS == 0 )
+    if ( IGUANA_NUMHELPERS == 0 || COMMANDLINE_ARGFILE != 0 )
         IGUANA_NUMHELPERS = 1;
     for (i=0; i<IGUANA_NUMHELPERS; i++)
     {
@@ -655,7 +683,8 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         printf("helper launch[%d] of %d (%s)\n",i,IGUANA_NUMHELPERS,helperstr);
         iguana_launch(0,"iguana_helper",iguana_helper,helperargs,IGUANA_PERMTHREAD);
     }
-    iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
+    if ( COMMANDLINE_ARGFILE == 0 )
+        iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     mainloop(myinfo);
 }
@@ -1510,13 +1539,15 @@ void iguana_main(void *arg)
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
 #endif
-    iguana_helpinit(myinfo);
-    iguana_relays_init(myinfo);
-    basilisks_init(myinfo);
-    iguana_commandline(myinfo,arg);
+    if ( iguana_commandline(myinfo,arg) == 0 )
+    {
+        iguana_helpinit(myinfo);
+        iguana_relays_init(myinfo);
+        basilisks_init(myinfo);
 #ifdef __APPLE__
-    iguana_appletests(myinfo);
+        iguana_appletests(myinfo);
 #endif
+    }
     iguana_launchdaemons(myinfo);
 }
 
