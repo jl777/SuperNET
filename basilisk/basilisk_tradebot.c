@@ -174,7 +174,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
 double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
     cJSON *array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
-    printf("process_results.(%s)\n",jprint(retjson,0));
+    //printf("process_results.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"result")) != 0 )
     {
         for (i=m=0; i<n; i++)

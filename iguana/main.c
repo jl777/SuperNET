@@ -1507,7 +1507,7 @@ void iguana_relays_init(struct supernet_info *myinfo)
         free(str);
     if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("89.248.160.239"),GENESIS_PUBKEY)) != 0 )
         free(str);
-    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("89.248.160.240"),GENESIS_PUBKEY)) != 0 ) 
+    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("89.248.160.240"),GENESIS_PUBKEY)) != 0 )
         free(str);
 }
 
