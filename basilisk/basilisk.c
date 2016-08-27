@@ -592,6 +592,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
     };
+    if ( myinfo->RELAYID >= 0 && strcmp(type,"OUT") != 0 && strcmp(type,"MSG") != 0 )
+        return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
         expand_ipbits(remoteaddr,myinfo->myaddr.myipbits);

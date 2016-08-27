@@ -375,6 +375,8 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     int32_t i,height,vout,numsent; struct basilisk_item *ptr; char coinaddr[64],str[64]; struct basilisk_value *v; uint64_t value = 0; bits256 txid;
+    if ( myinfo->RELAYID >= 0 )
+        return(0);
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
@@ -484,6 +486,8 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
+    if ( myinfo->RELAYID >= 0 )
+        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
@@ -779,6 +783,8 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( myinfo->RELAYID >= 0 )
+        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     //if ( coin == 0 )
     {
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
