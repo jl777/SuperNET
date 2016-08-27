@@ -362,7 +362,7 @@ void iguana_coinpurge(struct iguana_info *coin);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);
-void iguana_launchpeer(struct iguana_info *coin,char *ipaddr);
+void iguana_launchpeer(struct iguana_info *coin,char *ipaddr,int32_t forceflag);
 //void iguana_spendvectorsQ(struct iguana_info *coin,struct iguana_bundle *bp);
 int8_t iguana_blockstatus(struct iguana_info *coin,struct iguana_block *block);
 int32_t iguana_peerslotinit(struct iguana_info *coin,struct iguana_peer *addr,int32_t slotid,uint64_t ipbits);

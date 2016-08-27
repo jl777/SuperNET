@@ -772,7 +772,7 @@ void iguana_coinloop(void *arg)
                 {
                     printf("FATAL lack of peers struct\n");
                     exit(-1);
-                    iguana_launchpeer(coin,"127.0.0.1");
+                    iguana_launchpeer(coin,"127.0.0.1",1);
                 }
                 if ( coin->virtualchain == 0 )
                 {

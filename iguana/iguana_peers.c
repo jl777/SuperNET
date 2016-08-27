@@ -809,7 +809,7 @@ struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int
     return(0);
 }
 
-void iguana_launchpeer(struct iguana_info *coin,char *ipaddr)
+void iguana_launchpeer(struct iguana_info *coin,char *ipaddr,int32_t forceflag)
 {
     struct iguana_peer *addr; uint32_t ipbits = (uint32_t)calc_ipbits(ipaddr);
     if ( coin == 0 )
@@ -818,7 +818,7 @@ void iguana_launchpeer(struct iguana_info *coin,char *ipaddr)
     }
     if ( coin->virtualchain != 0 )
         return;
-    if ( (addr= iguana_peerslot(coin,ipbits,0)) != 0 )
+    if ( (addr= iguana_peerslot(coin,ipbits,forceflag)) != 0 )
         iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
     else printf("skip %s, ",ipaddr);
 }
