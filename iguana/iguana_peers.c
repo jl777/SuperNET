@@ -687,13 +687,8 @@ void iguana_startconnection(void *arg)
     int32_t i,n; uint16_t port; char ipaddr[64]; struct iguana_peer *addr = arg; struct iguana_info *coin = 0;
     if ( addr == 0 || (coin= iguana_coinfind(addr->symbol)) == 0 )
     {
-        if ( addr != 0 && addr->symbol[0] != 0 )
-            coin = iguana_coinfind(addr->symbol);
-        if ( addr == 0 || coin == 0 )
-        {
-            printf("iguana_startconnection nullptrs addr.%p (%s) coin.%p\n",addr,addr!=0?addr->symbol:"",coin);
-            return;
-        }
+        printf("iguana_startconnection nullptrs addr.%p (%s) coin.%p\n",addr,addr!=0?addr->symbol:"",coin);
+        return;
     }
     if ( coin->virtualchain != 0 || coin->peers == 0 )
         return;
@@ -820,12 +815,13 @@ void iguana_launchpeer(struct iguana_info *coin,char *ipaddr,int32_t forceflag)
     if ( coin == 0 )
     {
         printf("iguana_launchpeer: null coin?\n");
+        return;
     }
     if ( coin->virtualchain != 0 )
         return;
     if ( (addr= iguana_peerslot(coin,ipbits,forceflag)) != 0 )
         iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-    else printf("skip %s, ",ipaddr);
+    else printf("iguana_launchpeer skip %s\n",ipaddr);
 }
 
 void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
