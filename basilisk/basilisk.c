@@ -806,10 +806,10 @@ void basilisks_loop(void *arg)
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
-                printf("my RELAYID.%d\n",myinfo->RELAYID);
                 if ( myinfo->RELAYID >= 0 )
                     basilisk_specialrelay(myinfo);
                 basilisk_ping_send(myinfo,btcd);
+                printf("my RELAYID.%d\n",myinfo->RELAYID);
             }
         }
         HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
