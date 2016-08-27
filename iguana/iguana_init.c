@@ -518,7 +518,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
     if ( coin->virtualchain == 0 && coin->peers != 0 )
     {
-        if ( (coin->myservices & NODE_NETWORK) != 0 && (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
+        if ( (coin->myservices & NODE_NETWORK) != 0 || (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
         {
             if ( coin->peers->acceptloop == 0 && coin->peers->localaddr == 0 )
             {
