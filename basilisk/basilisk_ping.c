@@ -220,11 +220,6 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
             else printf("+(%s) ",addr->ipaddr);
         }
-        else
-        {
-            printf("launch -(%s)\n",addr->ipaddr);
-            iguana_launchpeer(btcd,ipaddr,0);
-        }
     }
     printf("my RELAYID.%d\n",myinfo->RELAYID);
 }
