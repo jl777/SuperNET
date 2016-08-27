@@ -39,14 +39,14 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
     return(addr);
 }
 
-static int _decreasing_ipbits(const void *a,const void *b)
+static int _increasing_ipbits(const void *a,const void *b)
 {
 #define uint32_a (*(struct basilisk_relay *)a).ipbits
 #define uint32_b (*(struct basilisk_relay *)b).ipbits
 	if ( uint32_b > uint32_a )
-		return(1);
-	else if ( uint32_b < uint32_a )
 		return(-1);
+	else if ( uint32_b < uint32_a )
+		return(1);
 	return(0);
 #undef uint32_a
 #undef uint32_b
@@ -101,7 +101,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     basilisk_ensurerelay(myinfo,iguana_coinfind("BTCD"),rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
-    qsort(myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_decreasing_ipbits);
+    qsort(myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_increasing_ipbits);
     for (i=0; i<myinfo->numrelays; i++)
         myinfo->relays[i].relayid = i;
     basilisk_setmyid(myinfo);
