@@ -733,10 +733,6 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     char *retstr; cJSON *outerarray; int32_t i,n; struct basilisk_request issueR; double hwm = 0.;
-    if ( myinfo == 0 )
-    {
-        ;
-    }
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
@@ -792,7 +788,6 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->basilisk_mutex);
-        //if ( myinfo->allcoins_numvirts > 0 )
         if ( (btcd= iguana_coinfind("BTCD")) != 0 )
         {
             maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
@@ -804,24 +799,20 @@ void basilisks_loop(void *arg)
                     gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
                 }
             }
-            //printf("my RELAYID.%d\n",myinfo->RELAYID);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
+            {
+                printf("my RELAYID.%d\n",myinfo->RELAYID);
                 basilisk_ping_send(myinfo,btcd);
+            }
         }
         HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
         {
-            //if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+            if ( time(NULL) > coin->lastunspentsupdate+10 )
             {
-                //for (i=0; i<BASILISK_MAXRELAYS; i++)
-                //    if ( coin->relay_RTheights[i] != 0 )
-                //        break;
-                if ( time(NULL) > coin->lastunspentsupdate+10 ) //i == BASILISK_MAXRELAYS ||
-                {
-                    //printf(">>>>>>>>>>>>> update\n");
-                    basilisk_unspents_update(myinfo,coin);
-                    coin->lastunspentsupdate = (uint32_t)time(NULL);
-                }
+                //printf(">>>>>>>>>>>>> update\n");
+                basilisk_unspents_update(myinfo,coin);
+                coin->lastunspentsupdate = (uint32_t)time(NULL);
             }
         }
         //if ( (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
@@ -856,6 +847,7 @@ void basilisks_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->gecko_mutex);
     portable_mutex_init(&myinfo->messagemutex);
     myinfo->basilisks.launched = iguana_launch(iguana_coinfind("BTCD"),"basilisks_loop",basilisks_loop,myinfo,IGUANA_PERMTHREAD);
+    printf("Basilisk initialized\n");
 }
 
 #include "../includes/iguana_apidefs.h"
