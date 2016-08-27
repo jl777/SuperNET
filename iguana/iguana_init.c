@@ -248,6 +248,8 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
 {
     int32_t j,k,m,c,flag,bundlei,lastheight,height = -1; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
+    if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && iter > 0 )
+        return;
     memset(&zero,0,sizeof(zero));
     lastbundle = zero;
     if ( coin->MAXPEERS > IGUANA_MAXPEERS )
@@ -516,7 +518,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
     if ( coin->virtualchain == 0 && coin->peers != 0 )
     {
-        if ( (coin->myservices & NODE_NETWORK) != 0 )
+        if ( (coin->myservices & NODE_NETWORK) != 0 && (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) )
         {
             if ( coin->peers->acceptloop == 0 && coin->peers->localaddr == 0 )
             {
