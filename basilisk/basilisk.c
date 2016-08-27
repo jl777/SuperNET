@@ -148,7 +148,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 {
     int32_t i,r,l,s,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
     if ( fanout <= 0 )
-        fanout = BASILISK_MINFANOUT;
+        fanout = sqrt(myinfo->numrelays) + 1;
     else if ( fanout > BASILISK_MAXFANOUT )
         fanout = BASILISK_MAXFANOUT;
     if ( type == 0 )
@@ -216,7 +216,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         continue;
                 if ( s == n && (addr->supernet != 0 || addr->basilisk != 0) && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    //printf("i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -339,7 +339,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
 
 struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struct iguana_peer *addr,char *CMD,int32_t blockflag,cJSON *valsobj,bits256 hash,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
-    int32_t numrequired,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
+    int32_t minfanout,numrequired,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
     //printf("request.(%s)\n",jprint(valsobj,0));
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
     if ( bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0 )
@@ -352,9 +352,12 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
         numrequired = 1;
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
+    minfanout = sqrt(myinfo->numrelays)+1;
     if ( jobj(valsobj,"fanout") == 0 )
-        fanout = 1;
+        fanout = minfanout;
     else fanout = jint(valsobj,"fanout");
+    if ( fanout < minfanout )
+        fanout = minfanout;
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )

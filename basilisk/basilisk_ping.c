@@ -199,15 +199,19 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
     return(datalen);
 }
 
+// encapsulate other messages inside msgQ for onetime ping
+// filter out duplicates
+
 void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
 {
-    struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; int32_t i,datalen=0;
+    struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; int32_t i,incr,datalen=0;
     if ( btcd == 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
-    for (i=0; i<myinfo->numrelays; i++)
+    incr = sqrt(myinfo->numrelays);
+    for (i=myinfo->RELAYID; i<myinfo->numrelays; i+=incr)
     {
         rp = &myinfo->relays[i];
         addr = 0;
