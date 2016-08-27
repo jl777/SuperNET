@@ -1866,7 +1866,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
-    if ( (rand() % 10) == 0 )
+    if ( coin->RTheight == 0 || (rand() % 30) == 0 )
         flag += iguana_reqblocks(myinfo,coin);
     if ( time(NULL) > coin->laststats+30 )
     {

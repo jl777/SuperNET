@@ -844,7 +844,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
     n += i;
     j = i = 0;
     filetype[0] = 0;
-    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+    printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
 #ifdef __PNACL__
     snprintf(furl,sizeof(furl),"%s/%s",GLOBAL_DBDIR,url+1);
 #else
@@ -1180,6 +1180,7 @@ void iguana_rpcloop(void *args)
         if ( retstr != 0 )
         {
             char *response,hdrs[1024];
+            printf("RETURN.(%s)\n",retstr);
             if ( jsonflag != 0 || postflag != 0 )
             {
                 response = malloc(strlen(retstr)+1024+1+1);
