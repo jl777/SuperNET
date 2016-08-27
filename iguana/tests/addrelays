@@ -1,0 +1,4 @@
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTCD\",\"ipaddr\":\"89.248.160.237\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTCD\",\"ipaddr\":\"89.248.160.238\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTCD\",\"ipaddr\":\"89.248.160.239\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"BTCD\",\"ipaddr\":\"89.248.160.240\"}"
