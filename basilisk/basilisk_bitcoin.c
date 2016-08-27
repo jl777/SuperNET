@@ -928,17 +928,22 @@ struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symb
 {
     int32_t i; struct basilisk_spend *s;
     // mutex
-    for (i=0; i<myinfo->numspends; i++)
+    if ( myinfo->numspends > 0 )
     {
-        if ( myinfo->spends[i].vout == vout && bits256_cmp(txid,myinfo->spends[i].txid) == 0 )
+        for (i=0; i<myinfo->numspends; i++)
         {
-            char str[65]; printf("found spend.%s v%d skip it\n",bits256_str(str,txid),vout);
-            return(&myinfo->spends[i]);
+            if ( myinfo->spends[i].vout == vout && bits256_cmp(txid,myinfo->spends[i].txid) == 0 )
+            {
+                char str[65]; printf("found spend.%s v%d skip it\n",bits256_str(str,txid),vout);
+                return(&myinfo->spends[i]);
+            }
         }
     }
     if ( addflag != 0 && i == myinfo->numspends )
     {
+        printf("realloc spends.[%d] %p\n",myinfo->numspends,myinfo->spends);
         myinfo->spends = realloc(myinfo->spends,sizeof(*myinfo->spends) * (myinfo->numspends+1));
+        printf("allocated spends.[%d] %p\n",myinfo->numspends+1,myinfo->spends);
         s = &myinfo->spends[myinfo->numspends++];
         memset(s,0,sizeof(*s));
         s->txid = txid;
