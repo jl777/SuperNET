@@ -218,9 +218,9 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
         {
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-            else printf("+(%s) ",addr->ipaddr);
-        } else printf("-(%s) ",ipaddr);
+            //else printf("+(%s) ",addr->ipaddr);
+        } //else printf("-(%s) ",ipaddr);
     }
-    printf("my RELAYID.%d of %d\n",myinfo->RELAYID,myinfo->numrelays);
+    //printf("my RELAYID.%d of %d\n",myinfo->RELAYID,myinfo->numrelays);
 }
 

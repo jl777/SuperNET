@@ -311,7 +311,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
             {
                 if ( pending->numresults >= pending->numrequired )//|| (retstr= pending->retstr) != 0 )
                 {
-                    printf("numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
+                    //printf("numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
                     break;
                 }
                 usleep(10000);
@@ -813,7 +813,7 @@ void basilisks_loop(void *arg)
                 coin->lastunspentsupdate = (uint32_t)time(NULL);
             }
         }
-        //if ( (myinfo->RELAYID >= 0 || time(NULL) < myinfo->DEXactive) )
+        if ( myinfo->RELAYID < 0 )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
