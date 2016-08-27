@@ -1501,9 +1501,9 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 void iguana_relays_init(struct supernet_info *myinfo)
 {
     char *str;
-    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("78.47.196.146"),GENESIS_PUBKEY)) != 0 )
+    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("89.248.160.237"),GENESIS_PUBKEY)) != 0 ) //"78.47.196.146"
         free(str);
-    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("5.9.102.210"),GENESIS_PUBKEY)) != 0 )
+    if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits("89.248.160.238"),GENESIS_PUBKEY)) != 0 ) //"5.9.102.210"
         free(str);
 }
 
