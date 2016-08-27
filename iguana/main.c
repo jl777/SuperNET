@@ -1293,7 +1293,7 @@ STRING_ARG(SuperNET,priv2wif,priv)
 
 STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
-    int32_t i; cJSON *retjson = cJSON_CreateObject();
+    cJSON *retjson = cJSON_CreateObject();
     myinfo->RELAYID = -1;
     if ( myinfo->ipaddr[0] == 0 )
     {
@@ -1301,12 +1301,7 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
         {
             strcpy(myinfo->ipaddr,ipaddr);
             myinfo->myaddr.myipbits = (uint32_t)calc_ipbits(ipaddr);
-            for (i=0; i<myinfo->numrelays; i++)
-                if ( myinfo->relays[i].ipbits == myinfo->myaddr.myipbits )
-                {
-                    myinfo->RELAYID = i;
-                    break;
-                }
+            basilisk_setmyid(myinfo);
         }
     }
     jaddstr(retjson,"result",myinfo->ipaddr);
@@ -1324,6 +1319,7 @@ STRING_ARG(SuperNET,setmyipaddr,ipaddr)
     if ( is_ipaddr(ipaddr) != 0 )
     {
         strcpy(myinfo->ipaddr,ipaddr);
+        basilisk_setmyid(myinfo);
         jaddstr(retjson,"result",myinfo->ipaddr);
     } else jaddstr(retjson,"error","illegal ipaddr");
     return(jprint(retjson,1));

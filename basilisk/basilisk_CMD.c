@@ -18,6 +18,8 @@
 struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits)
 {
     struct iguana_peer *addr; int32_t i;
+    if ( btcd == 0 )
+        return(0);
     if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
     {
         if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
@@ -31,7 +33,6 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
                     myinfo->RELAYID = i;
                     break;
                 }
-
             iguana_launch(btcd,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
@@ -61,12 +62,21 @@ void basilisk_relay_remap(struct supernet_info *myinfo,struct basilisk_relay *rp
         rp->reported[myinfo->relays[i].relayid] = tmp[myinfo->relays[i].oldrelayid];
 }
 
+void basilisk_setmyid(struct supernet_info *myinfo)
+{
+    int32_t i; char ipaddr[64]; struct iguana_info *btcd = iguana_coinfind("BTCD");
+    for (i=0; i<myinfo->numrelays; i++)
+    {
+        expand_ipbits(ipaddr,myinfo->relays[i].ipbits);
+        if ( myinfo->myaddr.myipbits == myinfo->relays[i].ipbits )
+            myinfo->RELAYID = i;
+        basilisk_ensurerelay(myinfo,btcd,myinfo->relays[i].ipbits);
+    }
+}
+
 char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
 {
-    int32_t i; struct basilisk_relay *rp; struct iguana_info *btcd;
-//return(clonestr("{\"error\":\"addrelay info disabled\"}"));
-    if ( (btcd= iguana_coinfind("BTCD")) == 0 || ipbits == 0 )
-        return(clonestr("{\"error\":\"add relay needs BTCD and ipbits\"}"));
+    int32_t i; struct basilisk_relay *rp;
     for (i=0; i<myinfo->numrelays; i++)
     {
         rp = &myinfo->relays[i];
@@ -88,19 +98,13 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     rp = &myinfo->relays[i];
     rp->ipbits = ipbits;
     rp->relayid = myinfo->numrelays;
-    basilisk_ensurerelay(myinfo,btcd,rp->ipbits);
+    basilisk_ensurerelay(myinfo,iguana_coinfind("BTCD"),rp->ipbits);
     if ( myinfo->numrelays < sizeof(myinfo->relays)/sizeof(*myinfo->relays) )
         myinfo->numrelays++;
     qsort(myinfo->relays,myinfo->numrelays,sizeof(myinfo->relays[0]),_decreasing_ipbits);
     for (i=0; i<myinfo->numrelays; i++)
-    {
-        char ipaddr[64];
-        expand_ipbits(ipaddr,myinfo->relays[i].ipbits);
-        if ( myinfo->myaddr.myipbits == myinfo->relays[i].ipbits )
-            myinfo->RELAYID = i;
         myinfo->relays[i].relayid = i;
-        printf("%s ",ipaddr);
-    }
+    basilisk_setmyid(myinfo);
     printf("sorted MYRELAYID.%d\n",myinfo->RELAYID);
     for (i=0; i<myinfo->numrelays; i++)
         basilisk_relay_remap(myinfo,&myinfo->relays[i]);
