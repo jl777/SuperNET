@@ -820,6 +820,7 @@ void iguana_launchpeer(struct iguana_info *coin,char *ipaddr)
         return;
     if ( (addr= iguana_peerslot(coin,ipbits,0)) != 0 )
         iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+    else printf("skip %s, ",ipaddr);
 }
 
 void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
