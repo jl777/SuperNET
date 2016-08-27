@@ -475,7 +475,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         jaddnum(valsobj,"basilisktag",basilisktag);
         jaddnum(valsobj,"locktime",locktime);
         jaddnum(valsobj,"timeout",30000);
-        if ( comment != 0 && is_hexstr(comment,0) > 0 )
+        if ( 0 && comment != 0 && is_hexstr(comment,0) > 0 )
             jaddstr(valsobj,"opreturn",comment);
         if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,jint(valsobj,"timeout"),valsobj)) != 0 )
         {

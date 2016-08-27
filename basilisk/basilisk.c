@@ -132,7 +132,7 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
 
 int32_t basilisk_specialrelay_CMD(char *CMD)
 {
-    if ( strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 || strcmp(CMD,"RID") == 0 )
+    if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )//|| strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"RID") == 0 )
         return(1);
     else return(0);
 }
@@ -559,6 +559,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
+        { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
+        { (void *)"MSG", &basilisk_respond_MSG }, // get MSG (hash, id, num)
+
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
         // gecko chains
@@ -573,9 +576,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"RID", &basilisk_respond_RID },
         { (void *)"ACC", &basilisk_respond_ACC },
         
-        { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
-        { (void *)"MSG", &basilisk_respond_MSG }, // get MSG (hash, id, num)
-
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
         { (void *)"BOX", &basilisk_respond_mailbox },    // create/send/check mailbox pubkey
@@ -589,7 +589,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"END", &basilisk_respond_VPNlogout },  // logout
         
         // coin services
-        //{ (void *)"RAW", &basilisk_respond_rawtx },
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
     };
