@@ -799,7 +799,7 @@ void basilisks_loop(void *arg)
                 }
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
+            if ( myinfo->RELAYID >= 0 )
             {
                 basilisk_ping_send(myinfo,btcd);
             }
@@ -828,7 +828,10 @@ void basilisks_loop(void *arg)
         }
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( myinfo->RELAYID >= 0 )
+        {
             usleep(100000);
+            fprintf(stderr,".");
+        }
         else sleep(1);
     }
 }
