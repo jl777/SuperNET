@@ -17,6 +17,13 @@
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
+int32_t basilisk_specialcmd(char *cmd)
+{
+    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
+    return(0);
+    else return(1);
+}
+
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t i,numiters = 0; bits256 hash,hash2,threshold; uint32_t basilisktag;
@@ -368,8 +375,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_addr,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
     uint32_t nBits = 0; uint8_t space[4096],*allocptr=0,*data = 0; struct basilisk_item *ptr; int32_t datalen = 0; cJSON *retjson; char *retstr=0;
-    if ( (strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0) && myinfo->RELAYID >= 0 )
-        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
+    if ( myinfo->RELAYID >= 0 && basilisk_specialcmd(CMD) == 0 )
+        return(clonestr("{\"error\":\"unsupported special relay command\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
     ptr = basilisk_requestservice(myinfo,_addr,CMD,blockflag,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
@@ -563,6 +570,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     {
         { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
         { (void *)"MSG", &basilisk_respond_MSG }, // get MSG (hash, id, num)
+        { (void *)"DEX", &basilisk_respond_DEX },
+        { (void *)"RID", &basilisk_respond_RID },
+        { (void *)"ACC", &basilisk_respond_ACC },
 
         { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
         
@@ -574,9 +584,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"GTX", &basilisk_respond_geckotx },       // reports virtchain tx
         
         { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
-        { (void *)"DEX", &basilisk_respond_DEX },
-        { (void *)"RID", &basilisk_respond_RID },
-        { (void *)"ACC", &basilisk_respond_ACC },
+        
         
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
@@ -594,7 +602,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
     };
-    if ( myinfo->RELAYID >= 0 && strcmp(type,"OUT") != 0 && strcmp(type,"MSG") != 0 )
+    if ( myinfo->RELAYID >= 0 && basilisk_specialcmd(type) == 0 )
         return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
