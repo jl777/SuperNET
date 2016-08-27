@@ -222,8 +222,8 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
         }
         else
         {
-            printf("-(%s) ",addr->ipaddr);
-            iguana_launchpeer(btcd,ipaddr,1);
+            printf("launch -(%s)\n",addr->ipaddr);
+            iguana_launchpeer(btcd,ipaddr,0);
         }
     }
     printf("my RELAYID.%d\n",myinfo->RELAYID);
