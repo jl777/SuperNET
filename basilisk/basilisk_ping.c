@@ -181,7 +181,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     //else printf("\n");
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    //printf(" <- input ping from.(%s) numrelays.%d datalen.%d\n",ipbuf,numrelays,datalen);
+    printf(" <- input ping from.(%s) numrelays.%d datalen.%d relay.%d\n",ipbuf,numrelays,datalen,myinfo->RELAYID);
 }
 
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
@@ -195,7 +195,7 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    //printf(" <- output ping datalen.%d\n",datalen);
+    printf(" <- output ping datalen.%d relay.%d\n",datalen,myinfo->RELAYID);
     return(datalen);
 }
 
