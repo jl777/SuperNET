@@ -769,11 +769,6 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     }
 }
 
-void basilisk_specialrelay(struct supernet_info *myinfo)
-{
-    
-}
-
 void basilisks_loop(void *arg)
 {
     struct iguana_info *virt,*tmpcoin,*coin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
@@ -806,10 +801,7 @@ void basilisks_loop(void *arg)
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             if ( (rand() % 10) == 0 && myinfo->RELAYID >= 0 )
             {
-                if ( myinfo->RELAYID >= 0 )
-                    basilisk_specialrelay(myinfo);
                 basilisk_ping_send(myinfo,btcd);
-                printf("my RELAYID.%d\n",myinfo->RELAYID);
             }
         }
         HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
