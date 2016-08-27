@@ -427,6 +427,7 @@ void mainloop(struct supernet_info *myinfo)
                     portable_mutex_lock(&coin->allcoins_mutex);
                     stack[depth++] = &coin->allcoins_mutex;
                 }
+                //printf("check jsonQ\n");
                 while ( iguana_jsonQ() != 0 )
                     ;
                 if ( depth > 0 )
