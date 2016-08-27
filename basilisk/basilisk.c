@@ -368,6 +368,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_addr,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
     uint32_t nBits = 0; uint8_t space[4096],*allocptr=0,*data = 0; struct basilisk_item *ptr; int32_t datalen = 0; cJSON *retjson; char *retstr=0;
+    if ( (strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0) && myinfo->RELAYID >= 0 )
+        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
     ptr = basilisk_requestservice(myinfo,_addr,CMD,blockflag,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
@@ -855,6 +857,8 @@ void basilisks_init(struct supernet_info *myinfo)
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    if ( myinfo->RELAYID >= 0 )
+        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
     //if ( coin == 0 )
