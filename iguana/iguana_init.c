@@ -250,8 +250,6 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
     if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 && iter > 0 )
         return;
-    if ( iter > 0 && strcmp(coin->symbol,"BTC") == 0 )
-        return;
     memset(&zero,0,sizeof(zero));
     lastbundle = zero;
     if ( coin->MAXPEERS > IGUANA_MAXPEERS )
