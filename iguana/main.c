@@ -559,8 +559,9 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
         }
         else
         {
+            IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
             free_json(argjson);
-            printf("Will run (%s) after initialized\n",COMMANDLINE_ARGFILE);
+            printf("Will run (%s) after initialized with %d threads\n",COMMANDLINE_ARGFILE,IGUANA_NUMHELPERS);
         }
     }
     else if ( arg != 0 )
