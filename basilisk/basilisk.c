@@ -568,7 +568,7 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
-    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
+    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4],origcmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
         { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
@@ -605,7 +605,26 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
     };
-    if ( myinfo->RELAYID >= 0 && basilisk_specialcmd(type) == 0 )
+    strncpy(CMD,type,3), CMD[3] = cmd[3] = 0;
+    if ( isupper((int32_t)CMD[0]) != 0 && isupper((int32_t)CMD[1]) != 0 && isupper((int32_t)CMD[2]) != 0 )
+        from_basilisk = 1;
+    else from_basilisk = 0;
+    origdata = data;
+    origlen = datalen;
+    for (i=0; i<3; i++)
+    {
+        CMD[i] = toupper((int32_t)CMD[i]);
+        cmd[i] = tolower((int32_t)CMD[i]);
+    }
+    origcmd[0] = 0;
+    if ( myinfo->RELAYID >= 0 )
+    {
+        if ( basilisk_specialcmd(CMD) == 0 )
+            return;
+        else if ( strcmp(CMD,"OUT") != 0 && strcmp(CMD,"MSG") != 0 )
+            strcpy(origcmd,CMD);
+    }
+    else if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )
         return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
@@ -613,6 +632,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     else expand_ipbits(remoteaddr,senderipbits);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
+        if ( origcmd[0] != 0 )
+            jaddstr(valsobj,"origcmd",origcmd);
         //printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
@@ -647,17 +668,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         }
     if ( flag == 0 )
         return;
-    strncpy(CMD,type,3), CMD[3] = cmd[3] = 0;
-    if ( isupper((int32_t)CMD[0]) != 0 && isupper((int32_t)CMD[1]) != 0 && isupper((int32_t)CMD[2]) != 0 )
-        from_basilisk = 1;
-    else from_basilisk = 0;
-    origdata = data;
-    origlen = datalen;
-    for (i=0; i<3; i++)
-    {
-        CMD[i] = toupper((int32_t)CMD[i]);
-        cmd[i] = tolower((int32_t)CMD[i]);
-    }
     if ( myinfo->RELAYID >= 0 )//0 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;

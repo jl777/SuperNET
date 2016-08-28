@@ -132,11 +132,33 @@ int32_t basilisk_messagekey(uint8_t *key,bits256 hash,cJSON *valsobj)
     return(keylen);
 }
 
+uint32_t basilisk_msgid(struct supernet_info *myinfo,uint32_t channel,bits256 hash,uint8_t *data,int32_t datalen)
+{
+    bits256 msghash; int32_t msgid = 0;
+    vcalc_sha256(0,msghash.bytes,data,datalen);
+    if ( bits256_nonz(hash) == 0 ) // broadcast
+    {
+        // find msghash and return its ind, or allocate new one
+    }
+    else
+    {
+        // check against most recent small n for hash, return ind or allocate new one
+    }
+    return(msgid);
+}
+
 char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    int32_t keylen; uint8_t key[64];
+    int32_t keylen; uint8_t key[64]; char *origcmd; uint32_t channel,msgid;
+    if ( (origcmd= jstr(valsobj,"origcmd")) != 0 && strlen(origcmd) == 3 )
+    {
+        channel = origcmd[0] + ((uint32_t)origcmd[1] << 8) + ((uint32_t)origcmd[2] << 16);
+        msgid = basilisk_msgid(myinfo,channel,hash,data,datalen);
+        jaddnum(valsobj,"channel",channel);
+        jaddnum(valsobj,"msgid",msgid);
+    } else origcmd = "";
     keylen = basilisk_messagekey(key,hash,valsobj);
-    printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
+    printf("OUT orig.(%s) keylen.%d datalen.%d\n",origcmd,keylen,datalen);
     //char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1));
 }
