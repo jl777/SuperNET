@@ -15,6 +15,15 @@
 
 // included from basilisk.c
 
+/*int32_t basilisk_relayid(struct supernet_info *myinfo,char *ipaddr)
+{
+    uint32_t i,ipbits = (uint32_t)calc_ipbits(ipaddr);
+    for (i=0; i<myinfo->numrelays; i++)
+        if ( ipbits == myinfo->relays[i].ipbits )
+            return(i);
+    return(-1);
+}*/
+
 struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits)
 {
     struct iguana_peer *addr; int32_t i;

@@ -127,7 +127,7 @@ int32_t OS_portable_removefile(char *fname)
 
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso)
 {
-    char cmdstr[1024],tmp[512]; int32_t i;
+    char cmdstr[1024],tmp[512]; //int32_t i;
     strcpy(tmp,dirname);
     OS_portable_path(tmp);
 #ifdef _WIN32
