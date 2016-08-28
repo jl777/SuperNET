@@ -20,7 +20,7 @@ typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *
 int32_t basilisk_specialcmd(char *cmd)
 {
     if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
-    return(0);
+        return(0);
     else return(1);
 }
 
@@ -619,6 +619,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     origcmd[0] = 0;
     if ( myinfo->RELAYID >= 0 )
     {
+        printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
         else if ( strcmp(CMD,"OUT") != 0 && strcmp(CMD,"MSG") != 0 )
@@ -670,8 +671,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         }
     if ( flag == 0 )
         return;
-    if ( myinfo->RELAYID >= 0 )//0 && strcmp(CMD,"RID") != 0 && strcmp(CMD,"MSG") != 0 )
-        printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     myinfo->basilisk_busy = 1;
     if ( valsobj != 0 )
     {
