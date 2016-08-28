@@ -622,10 +622,12 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
         else if ( strcmp(CMD,"OUT") != 0 && strcmp(CMD,"MSG") != 0 )
+        {
+            printf("origcmd.(%s)\n",CMD);
             strcpy(origcmd,CMD);
+            strcpy(CMD,"OUT");
+        }
     }
-    else if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )
-        return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
         expand_ipbits(remoteaddr,myinfo->myaddr.myipbits);
