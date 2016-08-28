@@ -579,7 +579,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
                 {
                     //printf("%s ",ipaddrs[j]);
                     if ( 0 && j < IGUANA_MINPEERS )
-                        iguana_launchpeer(coin,ipaddrs[j]);
+                        iguana_launchpeer(coin,ipaddrs[j],0);
                     else iguana_possible_peer(coin,ipaddrs[j]);
                 }
             }
