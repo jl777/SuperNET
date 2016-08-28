@@ -158,7 +158,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
         }
         else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
     }
-    else if ( myinfo->RELAYID >= 0 )
+    else if ( myinfo->IAMLP != 0 )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
@@ -492,9 +492,9 @@ INT_ARG(InstantDEX,incoming,requestid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
-    else
+    //if ( myinfo->IAMLP != 0 )
+    //    return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
+    //else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"requestid",(uint32_t)requestid);
@@ -509,9 +509,9 @@ TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_swapstatus(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
-    else
+    //if ( myinfo->IAMLP != 0 )
+    //    return(basilisk_respond_swapstatus(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
+    //else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"requestid",(uint32_t)requestid);
@@ -527,9 +527,9 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_accept(myinfo,requestid,quoteid));
-    else
+    //if ( myinfo->IAMLP != 0 )
+    //    return(basilisk_respond_accept(myinfo,requestid,quoteid));
+    //else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"quoteid",(uint32_t)quoteid);

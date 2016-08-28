@@ -359,6 +359,7 @@ void iguana_RTdataset_free(struct iguana_info *coin);
 void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp);
 //void iguana_RTramchainfree(struct iguana_info *coin,struct iguana_bundle *bp);
 void iguana_coinpurge(struct iguana_info *coin);
+void tradebot_liquidity_command(struct supernet_info *myinfo,char *targetcoin,bits256 hash,cJSON *vals);
 int32_t iguana_setmaxbundles(struct iguana_info *coin);
 void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp);
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain);

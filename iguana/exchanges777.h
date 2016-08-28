@@ -133,7 +133,6 @@ struct instantdex_accept
     struct instantdex_offer offer;
 };
 
-
 struct instantdex_stateinfo
 {
     char name[24]; int16_t ind,initialstate;

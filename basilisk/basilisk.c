@@ -24,6 +24,13 @@ int32_t basilisk_specialcmd(char *cmd)
     else return(1);
 }
 
+int32_t basilisk_specialrelay_CMD(char *CMD)
+{
+    if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 || strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"RID") == 0 )
+        return(1);
+    else return(0);
+}
+
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t i,numiters = 0; bits256 hash,hash2,threshold; uint32_t basilisktag;
@@ -137,13 +144,6 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
     return(ptr);
 }
 
-int32_t basilisk_specialrelay_CMD(char *CMD)
-{
-    if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 )//|| strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"RID") == 0 )
-        return(1);
-    else return(0);
-}
-
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
     int32_t i,r,l,s,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
@@ -199,7 +199,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 printf("%s %s s.%d vs n.%d iguana.%d\n",coin->symbol,addr->ipaddr,s,n,addr->supernet);
             if ( addr->usock >= 0 )
             {
-                if ( basilisk_specialrelay_CMD(type) > 0 )
+                if ( basilisk_specialcmd(type) != 0 )
                 {
                     for (s=0; s<myinfo->numrelays; s++)
                         if ( addr->ipbits != myinfo->myaddr.myipbits && myinfo->relays[s].ipbits == addr->ipbits )

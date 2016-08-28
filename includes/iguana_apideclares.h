@@ -16,6 +16,9 @@
 #ifdef INCLUDE_PAX
 ZERO_ARGS(pax,start);
 #endif
+HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
+ZERO_ARGS(tradebot,amlp);
+ZERO_ARGS(tradebot,notlp);
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
 TWO_STRINGS(iguana,rate,base,rel);

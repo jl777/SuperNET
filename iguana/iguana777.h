@@ -54,6 +54,8 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
+
 struct supernet_info
 {
     struct supernet_address myaddr;
@@ -61,7 +63,7 @@ struct supernet_info
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
-    int32_t maxdelay,IAMRELAY,publicRPC,basilisk_busy,genesisresults;
+    int32_t maxdelay,IAMRELAY,IAMLP,publicRPC,basilisk_busy,genesisresults;
     uint32_t expiration,dirty,DEXactive;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
@@ -79,6 +81,7 @@ struct supernet_info
     struct basilisk_spend *spends; int32_t numspends;
     int32_t numrelays,RELAYID;
     struct peggy_info *PEGS;
+    struct liquidity_info linfos[64];
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];

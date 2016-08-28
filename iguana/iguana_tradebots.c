@@ -221,6 +221,24 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
 
 #include "../includes/iguana_apidefs.h"
 
+HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
+{
+    tradebot_liquidity_command(myinfo,targetcoin,hash,vals);
+    return(clonestr("{\"result\":\"targetcoin updated\"}"));
+}
+
+ZERO_ARGS(tradebot,amlp)
+{
+    myinfo->IAMLP = 1;
+    return(clonestr("{\"result\":\"liquidity provider active\"}"));
+}
+
+ZERO_ARGS(tradebot,notlp)
+{
+    myinfo->IAMLP = 0;
+    return(clonestr("{\"result\":\"not liquidity provider\"}"));
+}
+
 THREE_STRINGS_AND_DOUBLE(tradebot,monitor,exchange,base,rel,commission)
 {
     int32_t allfields = 1,depth = 50; struct exchange_info *ptr;
