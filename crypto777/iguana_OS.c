@@ -538,7 +538,7 @@ void OS_remove_directory(char *dirname)
     if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
         OS_removefile(buf,0);
     else fclose(fp);
-printf("skip rmdir.(%s)\n",dirname);
+//printf("skip rmdir.(%s)\n",dirname);
 return;
     sprintf(buf,"rmdir %s",dirname);
     if ( system(buf) != 0 )
