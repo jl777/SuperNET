@@ -1103,6 +1103,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     lastbp = coin->lastpending;
     starti = currentbp == 0 ? 0 : currentbp->hdrsi;
     lasti = lastbp == 0 ? coin->bundlescount-1 : lastbp->hdrsi;
+    range = lasti - starti + 1;
     iguana_bundlecalcs(coin,bp,lag);
     if ( coin->blockdepth == 0 && coin->blockdepth == 0 && bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(coin,bp);
@@ -1124,7 +1125,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     {
         max = bp->n;
         counter = iguana_bundleissuemissing(coin,bp,1,3.);
-        //if ( 0 && counter > 0 )
+        if ( 0 && counter > 0 )
             printf("starti.%d range.%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",starti,range,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime++;
     if ( bp->emitfinish <= 1 )
