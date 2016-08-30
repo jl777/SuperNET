@@ -475,18 +475,18 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
                 R.relaybits = myinfo->myaddr.myipbits;
             if ( (reqjson= basilisk_requestjson(&R)) != 0 )
                 free_json(reqjson);
-            printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
             datalen = basilisk_rwDEXquote(1,serialized,&R);
+            printf("R.requestid.%u vs calc %u, q.%u datalen.%d\n",R.requestid,basilisk_requestid(&R),R.quoteid,datalen);
             basilisk_rwDEXquote(0,serialized,&R);
         } else printf("error creating request\n");
     }
-    free_json(vals);
     if ( datalen > 0 )
     {
         memset(hash.bytes,0,sizeof(hash));
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
-        if ( basilisk_channelsend(myinfo,hash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) > 0 )
+        if ( basilisk_channelsend(myinfo,hash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
             return(clonestr("{\"result\":\"DEX message sent\"}"));
+        else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
     }
     return(clonestr("{\"error\":\"DEX message not sent\"}"));
     //return(basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1));
