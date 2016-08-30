@@ -887,7 +887,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays)+1);
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",myinfo->numrelays);
     if ( coin != 0 )
