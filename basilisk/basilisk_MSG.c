@@ -33,6 +33,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         memcpy(msg->data,data,datalen);
         portable_mutex_lock(&myinfo->messagemutex);
         HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+        QUEUEITEMS++;
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( sendping != 0 )
         {

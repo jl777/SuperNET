@@ -261,7 +261,7 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    printf(" <- output ping datalen.%d relay.%d\n",datalen,myinfo->RELAYID);
+    printf(" <- output ping datalen.%d relay.%d Q.%d\n",datalen,myinfo->RELAYID,QUEUEITEMS);
     return(datalen);
 }
 

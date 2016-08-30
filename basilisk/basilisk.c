@@ -844,8 +844,9 @@ void basilisks_loop(void *arg)
         {
             if ( now > msg->expiration )
             {
-                printf("delete expired message.%p\n",msg);
+                printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
                 HASH_DELETE(hh,myinfo->messagetable,msg);
+                QUEUEITEMS--;
                 free(msg);
             }
         }

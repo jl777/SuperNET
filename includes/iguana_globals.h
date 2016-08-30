@@ -56,7 +56,7 @@ int32_t IGUANA_NUMHELPERS = 1;
 // ALL globals must be here!
 CONDEXTERN char *COMMANDLINE_ARGFILE;
 CONDEXTERN char *Iguana_validcommands[];
-CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS;
+CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS,QUEUEITEMS;
 
 CONDEXTERN struct gecko_chain *Categories;
 CONDEXTERN struct iguana_info *Allcoins;
