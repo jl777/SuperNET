@@ -809,31 +809,32 @@ void iguana_coinloop(void *arg)
                         //static int32_t saved;
                         //if ( saved++ == 0 )
                         //    iguana_coinflush(coin,1);
-                    }*/
+                     }*/
                     if ( myinfo->RELAYID >= 0 )
-                        continue;
-                    if ( coin->bindsock >= 0 )
                     {
-                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible+2 )
+                        if ( coin->bindsock >= 0 )
                         {
-                            //fprintf(stderr,"check possible\n");
-                            if ( coin->peers->numranked > 0 && (now % 60) == 0 )
-                                iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
-                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                            if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible+2 )
+                            {
+                                //fprintf(stderr,"check possible\n");
+                                if ( coin->peers->numranked > 0 && (now % 60) == 0 )
+                                    iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
+                                coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                            }
                         }
-                    }
-                    else
-                    {
-                        if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible+10 )
+                        else
                         {
-                            if ( coin->peers->numranked > 0 && (now % 60) == 0 )
-                                iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
-                            coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                            if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible+10 )
+                            {
+                                if ( coin->peers->numranked > 0 && (now % 60) == 0 )
+                                    iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
+                                coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
+                            }
                         }
-                    }
-                    if ( coin->MAXPEERS > 1 && now > coin->peers->lastmetrics+10 )
-                    {
-                        coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
+                        if ( coin->MAXPEERS > 1 && now > coin->peers->lastmetrics+10 )
+                        {
+                            coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
+                        }
                     }
                     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
