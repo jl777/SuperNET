@@ -18,7 +18,8 @@
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration)
 {
     struct basilisk_message *msg; int32_t i;
-    if ( keylen == BASILISK_KEYSIZE )
+    HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
+    if ( msg == 0 && keylen == BASILISK_KEYSIZE )
     {
         msg = calloc(1,sizeof(*msg) + datalen);
         if ( duration == 0 )
