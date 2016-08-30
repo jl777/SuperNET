@@ -242,8 +242,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
         //len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
         len += basilisk_ping_processMSG(myinfo,senderipbits,&data[len],datalen-len);
     }
-    if ( len+1 != datalen )
-        printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
+    //printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
     //else printf("\n");
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
@@ -291,7 +290,8 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
         {
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-            //else printf("+(%s) ",addr->ipaddr);
+            else if ( datalen > 200 )
+                printf("+(%s) ",addr->ipaddr);
         } //else printf("-(%s) ",ipaddr);
     }
     //printf("my RELAYID.%d of %d\n",myinfo->RELAYID,myinfo->numrelays);

@@ -174,7 +174,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             free(retstr);
     }
     if ( vals != 0 )
-        jaddnum(vals,"fanout",BASILISK_MAXFANOUT);
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"

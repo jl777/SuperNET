@@ -791,7 +791,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",8);
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
     if ( coin != 0 )
     {
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
@@ -819,7 +819,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",myinfo->numrelays);
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",8);
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
     if ( coin != 0 )
     {
         if ( juint(vals,"burn") == 0 )
