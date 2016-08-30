@@ -623,9 +623,9 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     //origcmd[0] = 0;
     if ( myinfo->RELAYID >= 0 )
     {
-        printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
+        printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     }
     symbol = "BTCD";
     if ( senderipbits == 0 )

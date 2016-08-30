@@ -133,7 +133,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
                 printf("illegal msglen.%d or len.%d > %d\n",msglen,len,datalen);
                 return(0);
             }
-            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
+            //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
             basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0,duration);
         }
     }

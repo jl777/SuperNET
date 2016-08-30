@@ -17,7 +17,7 @@
 
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration)
 {
-    struct basilisk_message *msg;
+    struct basilisk_message *msg; int32_t i;
     if ( keylen == BASILISK_KEYSIZE )
     {
         msg = calloc(1,sizeof(*msg) + datalen);
@@ -33,6 +33,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         memcpy(msg->data,data,datalen);
         portable_mutex_lock(&myinfo->messagemutex);
         HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+        for (i=0; i<BASILISK_KEYSIZE; i++)
+            printf("%02x",key[i]);
+        printf(" <- ADDMSG.[%d]\n",QUEUEITEMS);
         QUEUEITEMS++;
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( sendping != 0 )
@@ -85,8 +88,8 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     keylen = basilisk_messagekey(key,juint(valsobj,"channel"),juint(valsobj,"msgid"),senderhash,hash);
     if( bits256_nonz(senderhash) == 0 && bits256_nonz(hash) == 0 && duration > BASILISK_MSGDURATION )
         duration = BASILISK_MSGDURATION;
-    printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
-    //char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
+    // char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration));
 }
 
