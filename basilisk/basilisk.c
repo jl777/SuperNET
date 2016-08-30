@@ -852,7 +852,7 @@ void basilisks_loop(void *arg)
         }
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( myinfo->RELAYID >= 0 )
-            usleep(5000000);
+            usleep(15000000);
         else sleep(1);
     }
 }
