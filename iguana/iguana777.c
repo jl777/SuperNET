@@ -810,7 +810,7 @@ void iguana_coinloop(void *arg)
                         //if ( saved++ == 0 )
                         //    iguana_coinflush(coin,1);
                      }*/
-                    if ( myinfo->RELAYID >= 0 )
+                    if ( RELAYID >= 0 )
                     {
                         if ( coin->bindsock >= 0 )
                         {

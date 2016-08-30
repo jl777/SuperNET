@@ -80,7 +80,7 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
         printf("SuperNET_MYINFO: generate session keypair\n");
-        MYINFO.RELAYID = -1;
+        RELAYID = -1;
     }
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);
@@ -1296,7 +1296,7 @@ STRING_ARG(SuperNET,priv2wif,priv)
 STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();
-    myinfo->RELAYID = -1;
+    RELAYID = -1;
     if ( myinfo->ipaddr[0] == 0 )
     {
         if ( is_ipaddr(ipaddr) != 0 )
@@ -1307,10 +1307,10 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
         }
     }
     jaddstr(retjson,"result",myinfo->ipaddr);
-    if ( myinfo->RELAYID >= 0 )
+    if ( RELAYID >= 0 )
     {
-        jaddnum(retjson,"relayid",myinfo->RELAYID);
-        jaddnum(retjson,"numrelays",myinfo->numrelays);
+        jaddnum(retjson,"relayid",RELAYID);
+        jaddnum(retjson,"numrelays",NUMRELAYS);
     }
     return(jprint(retjson,1));
 }

@@ -78,9 +78,7 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;
-    struct basilisk_relay relays[BASILISK_MAXRELAYS];
     struct basilisk_spend *spends; int32_t numspends;
-    int32_t numrelays,RELAYID;
     struct peggy_info *PEGS;
     struct liquidity_info linfos[64];
     // compatibility

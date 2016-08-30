@@ -151,7 +151,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     uint32_t msgid,width,channel;
-    if ( myinfo->RELAYID >= 0 )
+    if ( RELAYID >= 0 )
     {
         channel = juint(vals,"channel");
         msgid = juint(vals,"msgid");
@@ -163,7 +163,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
-    if ( myinfo->RELAYID >= 0 )
+    if ( RELAYID >= 0 )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"sender"),hash);
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
@@ -173,8 +173,8 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
         if ( retstr != 0 )
             free(retstr);
     }
-    if ( vals != 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
+    if ( vals != 0 && juint(vals,"fanout") == 0 )
+        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS));
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -188,10 +188,11 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
+        jaddnum(valsobj,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s\n",datalen,channel,msgid,bits256_str(str,hash));
+        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),NUMRELAYS,juint(valsobj,"fanout"));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);

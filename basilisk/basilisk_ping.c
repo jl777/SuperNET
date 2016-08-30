@@ -60,13 +60,13 @@ int32_t basilisk_ping_processvirts(struct supernet_info *myinfo,struct iguana_in
         memcpy(symbol,&data[len],6), len += 6;
         len += iguana_rwvarint32(0,&data[len],&height);
         //printf("(%s %d).%p ",symbol,height,addr);
-        if ( myinfo->numrelays > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
+        if ( NUMRELAYS > 0 && addr != 0 && (virt= iguana_coinfind(symbol)) != 0 )
         {
             if ( height > virt->longestchain )
                 virt->longestchain = height;
-            if ( myinfo->numrelays > 0 && virt->blocks.hwmchain.height > height )
+            if ( NUMRELAYS > 0 && virt->blocks.hwmchain.height > height )
             {
-                diff = ((height % myinfo->numrelays) - myinfo->RELAYID);
+                diff = ((height % NUMRELAYS) - myinfo->RELAYID);
                 diff *= diff;
                 diff++;
                 if ( (rand() % diff) == 0 )
@@ -212,9 +212,9 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     int32_t diff,i,n,len = 0; struct iguana_info *btcd; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint16_t sn; uint32_t now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
-    for (i=0; i<myinfo->numrelays; i++)
+    for (i=0; i<NUMRELAYS; i++)
     {
-        rp = &myinfo->relays[i];
+        rp = &RELAYS[i];
         rp->direct.pingdelay = 0;
         if ( rp->ipbits == senderipbits )
             rp->lastping = now;
@@ -252,10 +252,10 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen = 0;
-    data[datalen++] = myinfo->numrelays;
+    data[datalen++] = NUMRELAYS;
     //datalen += basilisk_ping_genvirts(myinfo,&data[datalen],maxlen - datalen);
-    for (i=0; i<myinfo->numrelays; i++)
-        datalen += basilisk_ping_genrelay(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
+    for (i=0; i<NUMRELAYS; i++)
+        datalen += basilisk_ping_genrelay(myinfo,&data[datalen],maxlen - datalen,&RELAYS[i]);
     //datalen += basilisk_ping_genDEX(myinfo,&data[datalen],maxlen - datalen);
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
@@ -270,25 +270,25 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
 {
     struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0; uint64_t alreadysent;
-    if ( btcd == 0 || myinfo->numrelays <= 0 )
+    if ( btcd == 0 || NUMRELAYS <= 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
-    incr = sqrt(myinfo->numrelays) + 1;
+    incr = sqrt(NUMRELAYS) + 1;
     for (alreadysent=j=0; j<=incr; j++)
     {
         OS_randombytes((void *)&r,sizeof(r));
-        i = (j == 0) ? myinfo->RELAYID : (r % myinfo->numrelays);
-        if ( j != 0 && i == myinfo->RELAYID )
-            i = (myinfo->RELAYID + 1) % myinfo->numrelays;
+        i = (j == 0) ? RELAYID : (r % NUMRELAYS);
+        if ( j != 0 && i == RELAYID )
+            i = (RELAYID + 1) % NUMRELAYS;
         if ( (((uint64_t)1 << i) & alreadysent) != 0 )
         {
             j--;
             continue;
         }
         alreadysent |= ((uint64_t)1 << i);
-        rp = &myinfo->relays[i];
+        rp = &RELAYS[i];
         addr = 0;
         expand_ipbits(ipaddr,rp->ipbits);
         if ( rp->ipbits == myinfo->myaddr.myipbits )
@@ -301,6 +301,6 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
                 fprintf(stderr,"+(%s).%d ",ipaddr,i);
         } //else fprintf(stderr,"-(%s).%d ",ipaddr,i);
     }
-    //printf("my RELAYID.%d of %d\n",myinfo->RELAYID,myinfo->numrelays);
+    //printf("my RELAYID.%d of %d\n",myinfo->RELAYID,NUMRELAYS);
 }
 

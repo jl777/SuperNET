@@ -41,18 +41,6 @@
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 
-struct basilisk_request
-{
-    uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
-    uint64_t srcamount,minamount; // 16 to 31
-    bits256 hash; // 32 to 63
-    bits256 desthash;
-    char src[8],dest[8];
-    //char volatile_start,message[43]; 
-    uint64_t destamount;
-    uint32_t relaybits;
-} __attribute__((packed));
-
 struct basilisk_rawtx
 {
     bits256 txid,signedtxid,actualtxid;
@@ -108,18 +96,6 @@ struct basilisk_info
     void *launched; //portable_mutex_t *mutex;
     struct basilisk_item *issued;
     struct basilisk_value values[8192]; int32_t numvalues;
-};
-
-struct basilisk_relaystatus
-{
-    uint8_t pingdelay;
-};
-
-struct basilisk_relay
-{
-    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping; uint8_t pubkey33[33];
-    struct basilisk_request *requests; int32_t maxrequests,numrequests;
-    struct basilisk_relaystatus direct,reported[BASILISK_MAXRELAYS];
 };
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen);

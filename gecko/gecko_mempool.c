@@ -21,7 +21,7 @@ struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct igua
     int32_t j,firstz,numother; bits256 *othertxids; struct gecko_mempool *otherpool = 0;
     othertxids = 0;
     numother = firstz = 0;
-    for (j=0; j<myinfo->numrelays; j++)
+    for (j=0; j<NUMRELAYS; j++)
     {
         if ( (otherpool= virt->mempools[j]) != 0 )
         {
@@ -44,22 +44,22 @@ struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct igua
 void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bits256 *reftxids,int32_t numtx)
 {
     int32_t i,j,k,n,num,numother; struct iguana_peer *addr; bits256 txid,*txids; struct gecko_mempool *pool,*otherpool; struct iguana_info *coin;
-    if ( (pool= virt->mempool) == 0 || myinfo->numrelays <= 0 )
+    if ( (pool= virt->mempool) == 0 || NUMRELAYS <= 0 )
         return;
-    n = sqrt(myinfo->numrelays) + 2;
-    if ( n > myinfo->numrelays )
-        myinfo->numrelays = n;
+    n = sqrt(NUMRELAYS) + 2;
+    if ( n > NUMRELAYS )
+        NUMRELAYS = n;
     i = (myinfo->myaddr.myipbits % n);
     txids = calloc(pool->numtx,sizeof(bits256));
     if ( virt->peers == 0 )
         coin = iguana_coinfind("BTCD");
     else coin = virt;
-    for (; i<myinfo->numrelays; i+=n)
+    for (; i<NUMRELAYS; i+=n)
     {
         printf("mempool_sync.%d\n",i);
-        if ( (addr= iguana_peerfindipbits(coin,myinfo->relays[i].ipbits,1)) != 0 )
+        if ( (addr= iguana_peerfindipbits(coin,RELAYS[i].ipbits,1)) != 0 )
         {
-            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,myinfo->relays[i].ipbits)) != 0 )
+            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,RELAYS[i].ipbits)) != 0 )
             {
                 for (j=num=0; j<pool->numtx; j++)
                 {

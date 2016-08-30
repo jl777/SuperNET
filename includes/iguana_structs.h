@@ -509,5 +509,29 @@ struct _gfshare_ctx
     uint32_t sharecount,threshold,size,buffersize,allocsize;
     uint8_t sharenrs[255],buffer[];
 };
+
+struct basilisk_request
+{
+    uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
+    uint64_t srcamount,minamount; // 16 to 31
+    bits256 hash; // 32 to 63
+    bits256 desthash;
+    char src[8],dest[8];
+    //char volatile_start,message[43];
+    uint64_t destamount;
+    uint32_t relaybits;
+} __attribute__((packed));
+struct basilisk_relaystatus
+{
+    uint8_t pingdelay;
+};
+
+struct basilisk_relay
+{
+    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping; uint8_t pubkey33[33];
+    struct basilisk_request *requests; int32_t maxrequests,numrequests;
+    struct basilisk_relaystatus direct,reported[BASILISK_MAXRELAYS];
+};
+
 #endif
 
