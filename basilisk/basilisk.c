@@ -276,6 +276,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
             jaddstr(valsobj,"symbol",symbol);
             if ( myinfo->ipaddr[0] != 0 )
                 jaddstr(valsobj,"relay",myinfo->ipaddr);
+            jaddnum(valsobj,"timestamp",(uint32_t)time(NULL));
             if ( (virt= iguana_coinfind(symbol)) != 0 )
             {
                 jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
@@ -355,7 +356,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
         jaddbits256(valsobj,"hash",hash);
     }
     if ( (numrequired= jint(valsobj,"numrequired")) <= 0 )
-        numrequired = 1;
+        numrequired = sqrt(NUMRELAYS);
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
     minfanout = sqrt(NUMRELAYS)+1;
@@ -686,7 +687,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
-            numrequired = 1;
+            numrequired = sqrt(NUMRELAYS);
         if ( senderipbits != 0 )
             expand_ipbits(remoteaddr,senderipbits);
         else remoteaddr[0] = 0;
@@ -889,7 +890,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
     if ( jobj(vals,"numrequired") == 0 )
-        jaddnum(vals,"numrequired",NUMRELAYS);
+        jaddnum(vals,"numrequired",sqrt(NUMRELAYS));
     if ( coin != 0 )
     {
         if ( jobj(vals,"addresses") == 0 )

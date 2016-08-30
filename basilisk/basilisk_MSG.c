@@ -49,7 +49,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 
 cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
-    cJSON *retjson=0,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
+    cJSON *msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
@@ -57,11 +57,10 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
         msgjson = cJSON_CreateObject();
         if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
-            retjson = cJSON_CreateObject();
-            jadd(retjson,"message",msgjson);
-            jaddnum(retjson,"expiration",msg->expiration);
-            jaddnum(retjson,"duration",msg->duration);
-            jaddstr(retjson,"result","success");
+            //retjson = cJSON_CreateObject();
+            jaddnum(msgjson,"expiration",msg->expiration);
+            jaddnum(msgjson,"duration",msg->duration);
+            //jadd(retjson,"message",msgjson);
             printf("havemessage len.%d\n",msg->datalen);
         }
         else
@@ -69,10 +68,11 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
             //jaddstr(retjson,"error","couldnt add message");
             printf("couldnt add message\n");
             free_json(msgjson);
+            msgjson = 0;
         }
     }
     portable_mutex_unlock(&myinfo->messagemutex);
-    return(retjson);
+    return(msgjson);
 }
 
 // respond to incoming OUT, MSG
@@ -163,10 +163,15 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     uint32_t msgid,width,channel;
+    if ( (msgid= juint(vals,"msgid")) == 0 )
+    {
+        msgid = (uint32_t)time(NULL);
+        jdelete(vals,"msgid");
+        jaddnum(vals,"msgid",msgid);
+    }
     if ( RELAYID >= 0 )
     {
         channel = juint(vals,"channel");
-        msgid = juint(vals,"msgid");
         width = juint(vals,"width");
         return(basilisk_iterate_MSG(myinfo,channel,msgid,hash,myinfo->myaddr.persistent,width));
     } else return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
