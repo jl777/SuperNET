@@ -147,7 +147,7 @@ struct basilisk_item *basilisk_itemcreate(struct supernet_info *myinfo,char *CMD
 
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits) // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 {
-    int32_t i,r,l,s,valid,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
+    int32_t i,l,s,valid,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent,r,r2;
     if ( fanout <= 0 )
         fanout = sqrt(NUMRELAYS) + 1;
     else if ( fanout > BASILISK_MAXFANOUT )
@@ -201,8 +201,15 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             else valid = 0;
             if ( addr->usock >= 0 )
             {
-                if ( basilisk_specialcmd(type) != 0 )
+                s = 0;
+                if ( NUMRELAYS > 0 && basilisk_specialcmd(type) != 0 )
                 {
+                    OS_randombytes((void *)&r2,sizeof(r2));
+                    if ( (r2 % NUMRELAYS) >= sqrt(NUMRELAYS) )
+                    {
+                        //printf("fanout.%d s.%d n.%d skip %s\n",fanout,s,n,addr->ipaddr);
+                        continue;
+                    }
                     for (s=0; s<NUMRELAYS; s++)
                         if ( addr->ipbits != myinfo->myaddr.myipbits && RELAYS[s].ipbits == addr->ipbits )
                             break;
@@ -408,7 +415,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( 1 && strcmp("RID",CMD) != 0 && strcmp("BAL",CMD) != 0 )
+    if ( 1 && strcmp("RID",CMD) != 0 && strcmp("BAL",CMD) != 0 && strcmp("MSG",CMD) != 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }

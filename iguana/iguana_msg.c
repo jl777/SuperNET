@@ -350,7 +350,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 {
   	int32_t len; struct iguana_msgversion msg; uint8_t serialized[sizeof(struct iguana_msghdr)+sizeof(msg)];
     memset(&msg,0,sizeof(msg));
-	msg.nVersion = PROTOCOL_VERSION;
+	msg.nVersion = coin->chain->protover;//PROTOCOL_VERSION;
 	msg.nServices = (myservices & NODE_NETWORK);
 	msg.nTime = (int64_t)time(NULL);
 	msg.nonce = coin->instance_nonce;
