@@ -276,7 +276,7 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
     incr = sqrt(myinfo->numrelays) + 1;
-    for (j=0; j<incr; j++)
+    for (j=0; j<=incr; j++)
     {
         OS_randombytes((void *)&r,sizeof(r));
         i = (j == 0) ? myinfo->RELAYID : (r % myinfo->numrelays);
