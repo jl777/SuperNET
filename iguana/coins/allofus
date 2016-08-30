@@ -6,6 +6,8 @@ sleep 5
 sleep 5
 ../agents/iguana coins/gendgb.json &
 sleep 5
+../agents/iguana coins/gengmc.json &
+sleep 5
 ../agents/iguana coins/genltc.json &
 sleep 5
 ../agents/iguana coins/genmzc.json &
