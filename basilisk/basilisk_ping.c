@@ -114,9 +114,9 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
         for (i=0; i<num; i++)
         {
             keylen = data[len++];
-            if ( keylen != sizeof(bits256)+sizeof(uint32_t)*2 )
+            if ( keylen != BASILISK_KEYSIZE )
             {
-                printf("invalid keylen.%d != %d\n",keylen,(int32_t)(sizeof(bits256)+sizeof(uint32_t)*2));
+                printf("invalid keylen.%d != %d\n",keylen,BASILISK_KEYSIZE);
                 return(0);
             }
             key = &data[len], len += keylen;
