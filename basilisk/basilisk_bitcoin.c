@@ -290,7 +290,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
 
 int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 {
-    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
         return(1);
     //else if ( coin->chain->serverport[0] != 0 )
     //    return(1);
@@ -381,7 +381,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     vout = jint(valsobj,"vout");
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
-        if ( (coin->VALIDATENODE != 0 || coin->RELAYNODE != 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
+        if ( (coin->VALIDATENODE != 0 || coin->FULLNODE != 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
         {
             if ( iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) > 0 )
             {
@@ -798,7 +798,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( coin->RELAYNODE != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( coin->FULLNODE != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = (uint32_t)time(NULL);
@@ -1086,7 +1086,7 @@ void basilisk_relay_unspentsprocess(struct supernet_info *myinfo,struct iguana_i
 void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; cJSON *retarray,*vals; int32_t oldest,i,n,RTheight;
-    //if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+    //if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
     {
         vals = cJSON_CreateObject();
         for (i=oldest=0; i<BASILISK_MAXRELAYS; i++)

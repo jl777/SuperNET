@@ -19,17 +19,18 @@ typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *
 
 int32_t basilisk_specialcmd(char *cmd)
 {
-    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
+    //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&
+    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
         return(0);
     else return(1);
 }
 
-int32_t basilisk_specialrelay_CMD(char *CMD)
+/*int32_t basilisk_specialrelay_CMD(char *CMD)
 {
     if ( strcmp(CMD,"OUT") == 0 || strcmp(CMD,"MSG") == 0 || strcmp(CMD,"BLK") == 0 || strcmp(CMD,"MEM") == 0 || strcmp(CMD,"GTX") == 0 || strcmp(CMD,"RID") == 0 )
         return(1);
     else return(0);
-}
+}*/
 
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
@@ -187,7 +188,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     {
         if (  coin->peers == 0 )
             continue;
-        if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+        if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
         else cmd[0] = 'S';
         r = rand() % (coin->peers->numranked+1);
@@ -568,27 +569,13 @@ void basilisk_wait(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t senderipbits,char *type,uint32_t basilisktag,uint8_t *data,int32_t datalen)
 {
-    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4],origcmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
+    cJSON *valsobj; char *symbol,*retstr=0,remoteaddr[64],CMD[4],cmd[4]; int32_t height,origlen,from_basilisk,i,timeoutmillis,flag,numrequired,jsonlen; uint8_t *origdata; struct iguana_info *coin=0; bits256 hash; struct iguana_peer *addr = _addr;
     static basilisk_servicefunc *basilisk_services[][2] =
     {
-        { (void *)"OUT", &basilisk_respond_OUT }, // send MSG to hash/id/num
-        { (void *)"MSG", &basilisk_respond_MSG }, // get MSG (hash, id, num)
-        { (void *)"DEX", &basilisk_respond_DEX },
-        { (void *)"RID", &basilisk_respond_RID },
-        { (void *)"ACC", &basilisk_respond_ACC },
-
-        { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
-        
-        // gecko chains
-        { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
-        { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
-        { (void *)"BLK", &basilisk_respond_geckoblock },    // reports virtchain block
-        { (void *)"MEM", &basilisk_respond_mempool },       // reports virtchain mempool
-        { (void *)"GTX", &basilisk_respond_geckotx },       // reports virtchain tx
-        
-        { (void *)"ADD", &basilisk_respond_addrelay },   // relays register with each other bus
-        
-        
+        { (void *)"OUT", &basilisk_respond_OUT },       // send MSG to hash/id/num
+        { (void *)"MSG", &basilisk_respond_MSG },       // get MSG (hash, id, num)
+        { (void *)"ADD", &basilisk_respond_addrelay },  // relays register with each other bus
+        //{ (void *)"PIN", &basilisk_respond_PIN },
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
         { (void *)"BOX", &basilisk_respond_mailbox },    // create/send/check mailbox pubkey
@@ -600,6 +587,18 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"SAY", &basilisk_respond_VPNbroadcast }, // broadcast
         { (void *)"EAR", &basilisk_respond_VPNreceive }, // network receive (via poll)
         { (void *)"END", &basilisk_respond_VPNlogout },  // logout
+         
+        //{ (void *)"DEX", &basilisk_respond_DEX },
+        //{ (void *)"RID", &basilisk_respond_RID },
+        //{ (void *)"ACC", &basilisk_respond_ACC },
+        { (void *)"BYE", &basilisk_respond_goodbye },    // disconnect
+        
+        // gecko chains
+        { (void *)"GET", &basilisk_respond_geckoget },      // requests headers, block or tx
+        { (void *)"HDR", &basilisk_respond_geckoheaders },  // reports headers
+        { (void *)"BLK", &basilisk_respond_geckoblock },    // reports virtchain block
+        { (void *)"MEM", &basilisk_respond_mempool },       // reports virtchain mempool
+        { (void *)"GTX", &basilisk_respond_geckotx },       // reports virtchain tx
         
         // coin services
         { (void *)"VAL", &basilisk_respond_value },
@@ -616,18 +615,12 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    origcmd[0] = 0;
+    //origcmd[0] = 0;
     if ( myinfo->RELAYID >= 0 )
     {
         printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
-        else if ( strcmp(CMD,"OUT") != 0 && strcmp(CMD,"MSG") != 0 )
-        {
-            printf("origcmd.(%s)\n",CMD);
-            strcpy(origcmd,CMD);
-            strcpy(CMD,"OUT");
-        }
     }
     symbol = "BTCD";
     if ( senderipbits == 0 )
@@ -635,8 +628,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     else expand_ipbits(remoteaddr,senderipbits);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        if ( origcmd[0] != 0 )
-            jaddstr(valsobj,"origcmd",origcmd);
+        //if ( origcmd[0] != 0 )
+        //    jaddstr(valsobj,"origcmd",origcmd);
         //printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
@@ -696,7 +689,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
             {
-                //if ( coin->RELAYNODE != 0 ) // iguana node
+                if ( coin->FULLNODE != 0 ) // iguana node
                 {
                     //printf("services %s\n",type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
@@ -708,8 +701,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             free(retstr);
                         break;
                     } else printf("services null return\n");
-                }
-                //else printf("non-relay got unhandled.(%s)\n",type);
+                } else printf("non-relay got unhandled.(%s)\n",type);
             }
         }
         free_json(valsobj);
@@ -903,7 +895,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( (coin->RELAYNODE != 0 || coin->VALIDATENODE != 0) && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = (uint32_t)time(NULL);

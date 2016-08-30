@@ -26,6 +26,7 @@
 #define BASILISK_DEFAULTDIFF 0x1effffff
 #define BASILISK_MAXRELAYS 64
 #define BASILISK_DEXDURATION 180
+#define BASILISK_MSGDURATION 60
 
 #define BASILISK_MAXFUTUREBLOCK 60
 //#define BASILISK_MAXBLOCKLAG 600
@@ -92,7 +93,14 @@ struct basilisk_item
     char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 
-struct basilisk_message { struct queueitem DL; UT_hash_handle hh; uint32_t datalen,expiration; uint8_t key[63],keylen; uint8_t data[]; };
+#define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
+struct basilisk_message
+{
+    struct queueitem DL; UT_hash_handle hh;
+    uint32_t datalen,expiration,duration;
+    uint8_t key[BASILISK_KEYSIZE],keylen;
+    uint8_t data[];
+};
 
 struct basilisk_info
 {

@@ -55,6 +55,7 @@ struct supernet_address
 };
 
 struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
+struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
 
 struct supernet_info
 {
@@ -85,6 +86,7 @@ struct supernet_info
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
+    struct message_info msgids[8192];
 };
 
 #endif

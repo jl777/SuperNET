@@ -833,7 +833,7 @@ void iguana_coinloop(void *arg)
                     {
                         coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                     }
-                    if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
+                    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
                         portable_mutex_lock(&coin->allcoins_mutex);
                         flag += iguana_processrecv(myinfo,coin);
@@ -970,15 +970,15 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         return(0);
     }
     if ( jobj(json,"RELAY") != 0 )
-        coin->RELAYNODE = juint(json,"RELAY");
-    else coin->RELAYNODE = (strcmp(coin->symbol,"BTCD") == 0);
+        coin->FULLNODE = juint(json,"RELAY");
+    else coin->FULLNODE = (strcmp(coin->symbol,"BTCD") == 0);
     if ( jobj(json,"VALIDATE") != 0 )
         coin->VALIDATENODE = juint(json,"VALIDATE");
     else coin->VALIDATENODE = (strcmp(coin->symbol,"BTCD") == 0);
-    if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
         SuperNET_MYINFO(0)->IAMRELAY++;
 #ifdef __PNACL
-    coin->VALIDATENODE = coin->RELAYNODE = 0;
+    coin->VALIDATENODE = coin->FULLNODE = 0;
 #endif
     if ( jobj(json,"validatedir") != 0 )
         safecopy(coin->VALIDATEDIR,jstr(json,"validatedir"),sizeof(coin->VALIDATEDIR));
@@ -994,7 +994,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     }
     char str[65];
     if ( coin->virtualchain == 0 )
-        printf("pend.(%d -> %d) MAXMEM.%s enablecache.%d VALIDATEDIR.(%s) VALIDATE.%d RELAY.%d\n",coin->startPEND,coin->endPEND,mbstr(str,coin->MAXMEM),coin->enableCACHE,coin->VALIDATEDIR,coin->VALIDATENODE,coin->RELAYNODE);
+        printf("pend.(%d -> %d) MAXMEM.%s enablecache.%d VALIDATEDIR.(%s) VALIDATE.%d RELAY.%d\n",coin->startPEND,coin->endPEND,mbstr(str,coin->MAXMEM),coin->enableCACHE,coin->VALIDATEDIR,coin->VALIDATENODE,coin->FULLNODE);
     return(coin);
 }
 

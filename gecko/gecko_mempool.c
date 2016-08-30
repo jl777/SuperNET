@@ -274,7 +274,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         char str[65]; printf("add tx.%s to mempool i.%d numtx.%d\n",bits256_str(str,memtx->txid),i,pool->numtx);
         for (i=0; i<pool->numtx; i++)
             pool->txids[i] = pool->txs[i]->txid;
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->RELAYNODE != 0 && myinfo->IAMRELAY != 0 )
+        if ( (btcd= iguana_coinfind("BTCD")) != 0 && btcd->FULLNODE != 0 && myinfo->IAMRELAY != 0 )
             gecko_mempool_sync(myinfo,virt,pool->txids,pool->numtx);
     }
     else

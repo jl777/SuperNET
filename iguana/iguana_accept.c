@@ -196,7 +196,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             //char str[65]; printf("send type.%d %s -> (%s)\n",msg->type,bits256_str(str,msg->hash2),msg->addr->ipaddr);
             if ( msg->type == MSG_BLOCK )
             {
-                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+                if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
                 {
                     if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,coin->blockspace,(int32_t)(coin->blockspacesize - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
@@ -207,7 +207,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             }
             else if ( msg->type == MSG_TX )
             {
-                if ( coin->RELAYNODE != 0 || coin->VALIDATENODE )
+                if ( coin->FULLNODE != 0 || coin->VALIDATENODE )
                 {
                     if ( (tx= iguana_txidfind(coin,&height,&T,msg->hash2,coin->bundlescount-1)) != 0 )
                     {

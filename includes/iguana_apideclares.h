@@ -32,7 +32,7 @@ INT_ARG(InstantDEX,incoming,requestid);
 INT_ARG(InstantDEX,automatched,requestid);
 
 TWO_INTS(InstantDEX,accept,requestid,quoteid);
-TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
+//TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);

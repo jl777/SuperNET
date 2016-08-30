@@ -235,7 +235,7 @@ cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin
         else ind = belowi;
         outpt = unspents[ind];
         memset(&unspents[ind],0,sizeof(unspents[ind]));
-        if ( coin->RELAYNODE == 0 && coin->VALIDATENODE == 0 )
+        if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
         {
             if ( (spendlen= basilisk_unspentfind(myinfo,coin,&txid,&vout,spendscript,outpt,outpt.value)) > 0 )
             {
@@ -431,7 +431,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
 void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
     struct iguana_outpoint spentpt; char coinaddr[64]; int32_t i,RTspentflag,num,spentheight,lockedflag;
-    if ( coin->MAXPEERS == 1 || coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->MAXPEERS == 1 || coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
     {
         num = cJSON_GetArraySize(vins);
         for (i=0; i<num; i++)

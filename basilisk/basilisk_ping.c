@@ -15,15 +15,7 @@
 
 // included from basilisk.c
 
-int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relaystatus *reported,uint8_t pingdelay)
-{
-    if ( reported != 0 )
-    {
-        reported->pingdelay = pingdelay;
-    }
-    return(0);
-}
-
+#ifdef ENABLE_VIRTPING
 int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
 {
     int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[4096],*blockstr,*allocptr = 0; struct iguana_block *block;
@@ -111,6 +103,71 @@ int32_t basilisk_ping_genvirts(struct supernet_info *myinfo,uint8_t *data,int32_
     }
     return(datalen);
 }
+#endif
+
+int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
+{
+    int32_t i,msglen,len=0; uint8_t num,keylen,*msg,*key; uint32_t duration;
+    if ( (num= data[len++]) > 0 )
+    {
+        printf("processMSG num.%d datalen.%d\n",num,datalen);
+        for (i=0; i<num; i++)
+        {
+            keylen = data[len++];
+            if ( keylen != sizeof(bits256)+sizeof(uint32_t)*2 )
+            {
+                printf("invalid keylen.%d != %d\n",keylen,(int32_t)(sizeof(bits256)+sizeof(uint32_t)*2));
+                return(0);
+            }
+            key = &data[len], len += keylen;
+            if ( len+sizeof(msglen) > datalen )
+            {
+                printf("processMSG overflow len.%d msglen.%d %d > %d\n",len,msglen,(int32_t)(len+sizeof(msglen)),datalen);
+                return(0);
+            }
+            len += iguana_rwnum(0,&data[len],sizeof(msglen),&msglen);
+            len += iguana_rwnum(0,&data[len],sizeof(duration),&duration);
+            msg = &data[len], len += msglen;
+            if ( msglen <= 0 || len > datalen )
+            {
+                printf("illegal msglen.%d or len.%d > %d\n",msglen,len,datalen);
+                return(0);
+            }
+            printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
+            basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0,duration);
+        }
+    }
+    return(len);
+}
+
+int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
+{
+    struct basilisk_message *msg; int32_t datalen = 0;
+    if ( maxlen > sizeof(msg->key) && (msg= queue_dequeue(&myinfo->msgQ,0)) != 0 ) // oneshot ping
+    {
+        data[datalen++] = 1;
+        data[datalen++] = msg->keylen;
+        memcpy(&data[datalen],msg->key,msg->keylen), datalen += msg->keylen;
+        datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->datalen),&msg->datalen);
+        datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->duration),&msg->duration);
+        if ( maxlen > datalen+msg->datalen )
+        {
+            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
+            memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
+        }
+        else
+        {
+            printf("basilisk_ping_genMSG message doesnt fit %d vs %d\n",maxlen,datalen+msg->datalen);
+            datalen = 0;
+        }
+        //printf("\n-> ");
+        //int32_t i;
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",data[i]);
+        //printf(" <- genMSG\n");
+    } else data[datalen++] = 0;
+    return(datalen);
+}
 
 int32_t basilisk_ping_genrelay(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp)
 {
@@ -118,6 +175,15 @@ int32_t basilisk_ping_genrelay(struct supernet_info *myinfo,uint8_t *data,int32_
     datalen = iguana_rwnum(1,&data[datalen],sizeof(rp->ipbits),&rp->ipbits);
     data[datalen++] = rp->direct.pingdelay;
     return(datalen);
+}
+
+int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relaystatus *reported,uint8_t pingdelay)
+{
+    if ( reported != 0 )
+    {
+        reported->pingdelay = pingdelay;
+    }
+    return(0);
 }
 
 int32_t basilisk_ping_processrelay(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
@@ -162,7 +228,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
         }
     }
     numrelays = data[len++];
-    len += basilisk_ping_processvirts(myinfo,btcd,addr,&data[len],datalen - len);
+    //len += basilisk_ping_processvirts(myinfo,btcd,addr,&data[len],datalen - len);
     for (i=0; i<numrelays; i++)
     {
         if ( len > datalen )
@@ -173,7 +239,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     }
     if ( len <= datalen-sizeof(sn) )
     {
-        len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
+        //len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
         len += basilisk_ping_processMSG(myinfo,senderipbits,&data[len],datalen-len);
     }
     if ( len != datalen )
@@ -188,10 +254,10 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 {
     int32_t i,datalen = 0;
     data[datalen++] = myinfo->numrelays;
-    datalen += basilisk_ping_genvirts(myinfo,&data[datalen],maxlen - datalen);
+    //datalen += basilisk_ping_genvirts(myinfo,&data[datalen],maxlen - datalen);
     for (i=0; i<myinfo->numrelays; i++)
         datalen += basilisk_ping_genrelay(myinfo,&data[datalen],maxlen - datalen,&myinfo->relays[i]);
-    datalen += basilisk_ping_genDEX(myinfo,&data[datalen],maxlen - datalen);
+    //datalen += basilisk_ping_genDEX(myinfo,&data[datalen],maxlen - datalen);
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);

@@ -832,7 +832,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
             //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
-            if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+            if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
             {
                 numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,coin->blocks.hwmchain.height - minconf,0);
             }

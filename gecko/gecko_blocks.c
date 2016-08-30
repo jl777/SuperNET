@@ -29,7 +29,7 @@ void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
             }
         }
     }
-    if ( virt->RELAYNODE != 0 )
+    if ( virt->FULLNODE != 0 )
     {
         for (i=0; i<BASILISK_MAXRELAYS; i++)
         {

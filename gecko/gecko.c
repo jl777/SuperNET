@@ -62,7 +62,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( 0 && btcd->RELAYNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
+    if ( 0 && btcd->FULLNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
         //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);
@@ -192,7 +192,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
                 iguana_meminit(&virt->TXMEM,virt->name,0,IGUANA_MAXPACKETSIZE * 2,0);
             virt->chain->genesis_hex = clonestr(hexstr);
             virt->MAXPEERS = 0;
-            virt->RELAYNODE = 1;
+            virt->FULLNODE = 1;
             virt->virtualchain = 1;
             addr = &virt->internaladdr;
             strcpy(virt->VALIDATEDIR,GLOBAL_VALIDATEDIR);
@@ -278,7 +278,7 @@ char *gecko_sendrawtransaction(struct supernet_info *myinfo,char *symbol,uint8_t
 {
     char *retstr = 0; struct iguana_info *virt,*btcd = iguana_coinfind("BTCD");
     virt = iguana_coinfind(symbol);
-    if ( btcd != 0 && (btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0) )
+    if ( btcd != 0 && (btcd->FULLNODE != 0 || btcd->VALIDATENODE != 0) )
     {
         basilisk_wait(myinfo,virt);
         retstr = basilisk_respond_geckotx(myinfo,"GTX",0,0,0,vals,data,datalen,txid,0);
