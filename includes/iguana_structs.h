@@ -137,6 +137,7 @@ struct iguana_msgtx
     bits256 txid;
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
+    uint8_t *serialized;
 } __attribute__((packed));
 
 struct iguana_msgjoinsplit
@@ -414,8 +415,9 @@ struct iguana_RTtxid
 {
     UT_hash_handle hh; struct iguana_info *coin; struct iguana_block *block;
     bits256 txid;
-    int32_t height,txi,txn_count,numvouts,numvins;
+    int32_t height,txi,txn_count,numvouts,numvins,txlen;
     uint32_t locktime,version,timestamp;
+    uint8_t *rawtxbytes;
     struct iguana_RTunspent **unspents;
     struct iguana_RTspend *spends[];
 };

@@ -485,6 +485,8 @@ void iguana_RTtxid_free(struct iguana_RTtxid *RTptr)
     for (i=0; i<RTptr->numvins; i++)
         if ( RTptr->spends[i] != 0 )
             free(RTptr->spends[i]);
+    if ( RTptr->rawtxbytes != 0 )
+        free(RTptr->rawtxbytes);
     free(RTptr);
 }
 
@@ -715,7 +717,7 @@ void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct
     //fprintf(stderr,",");
 }
 
-struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp)
+struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguana_block *block,int64_t polarity,int32_t txi,int32_t txn_count,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,uint8_t *serialized,int32_t txlen)
 {
     struct iguana_RTtxid *RTptr; char str[65];
     if ( block == 0 || block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
@@ -740,6 +742,12 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         RTptr->version = version;
         RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
+        if ( txlen > 0 )
+        {
+            RTptr->rawtxbytes = malloc(txlen);
+            RTptr->txlen = txlen;
+            memcpy(RTptr->rawtxbytes,serialized,txlen);
+        }
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
         if ( 0 && strcmp("BTC",coin->symbol) != 0 )
             printf("%s txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,bits256_str(str,txid),numvouts,numvins,version,locktime,timestamp,(long long)polarity);

@@ -833,64 +833,73 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
 
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
-    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_block *block; bits256 hash2;
+    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len=0,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_block *block; bits256 hash2; struct iguana_RTtxid *RTptr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
+    HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
+    if ( RTptr != 0 && RTptr->rawtxbytes != 0 && RTptr->txlen > 0 )
     {
-        retjson = cJSON_CreateObject();
-        if ( (len= iguana_ramtxbytes(coin,coin->blockspace,coin->blockspacesize,&checktxid,tx,height,0,0,0)) > 0 )
+        checktxid = RTptr->txid;
+        height = RTptr->height;
+        len = RTptr->txlen;
+        memcpy(coin->blockspace,RTptr->rawtxbytes,len);
+    }
+    else if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount-1)) != 0 )
+    {
+        len = iguana_ramtxbytes(coin,coin->blockspace,coin->blockspacesize,&checktxid,tx,height,0,0,0);
+    }
+    retjson = cJSON_CreateObject();
+    if ( len > 0 )
+    {
+        txbytes = calloc(1,len*2+1);
+        init_hexbytes_noT(txbytes,coin->blockspace,len);
+        if ( verbose != 0 )
         {
-            txbytes = calloc(1,len*2+1);
-            init_hexbytes_noT(txbytes,coin->blockspace,len);
-            if ( verbose != 0 )
-            {
-                extraspace = calloc(1,extralen);
-                txobj = bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&checktxid,0,txbytes,extraspace,extralen,0,0,0);
-                free(extraspace);
-                free(txbytes);
-                if ( txobj != 0 )
-                {
-                    hash2 = iguana_blockhash(coin,height);
-                    jaddbits256(txobj,"blockhash",hash2);
-                    if ( (block= iguana_blockfind("rawtx",coin,hash2)) != 0 )
-                        jaddnum(txobj,"blocktime",block->RO.timestamp);
-                    jaddnum(txobj,"height",height);
-                    jaddnum(txobj,"confirmations",coin->blocks.hwmchain.height - height);
-                    return(jprint(txobj,1));
-                }
-            }
-            jaddstr(retjson,"result",txbytes);
-            char str[65]; printf("txbytes.(%s) len.%d (%s) %s\n",txbytes,len,jprint(retjson,0),bits256_str(str,checktxid));
+            extraspace = calloc(1,extralen);
+            txobj = bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&checktxid,0,txbytes,extraspace,extralen,0,0,0);
+            free(extraspace);
             free(txbytes);
+            if ( txobj != 0 )
+            {
+                hash2 = iguana_blockhash(coin,height);
+                jaddbits256(txobj,"blockhash",hash2);
+                if ( (block= iguana_blockfind("rawtx",coin,hash2)) != 0 )
+                    jaddnum(txobj,"blocktime",block->RO.timestamp);
+                jaddnum(txobj,"height",height);
+                jaddnum(txobj,"confirmations",coin->blocks.hwmchain.height - height);
+                return(jprint(txobj,1));
+            }
+        }
+        jaddstr(retjson,"result",txbytes);
+        char str[65]; printf("txbytes.(%s) len.%d (%s) %s\n",txbytes,len,jprint(retjson,0),bits256_str(str,checktxid));
+        free(txbytes);
+        return(jprint(retjson,1));
+    }
+    else if ( height >= 0 )
+    {
+        if ( coin->APIblockstr != 0 )
+            jaddstr(retjson,"error","already have pending request");
+        else
+        {
+            int32_t datalen; uint8_t *data; char *blockstr; bits256 blockhash;
+            blockhash = iguana_blockhash(coin,height);
+            if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,2)) != 0 )
+            {
+                datalen = (int32_t)(strlen(blockstr) >> 1);
+                data = malloc(datalen);
+                decode_hex(data,datalen,blockstr);
+                if ( (txbytes= iguana_txscan(coin,verbose != 0 ? retjson : 0,data,datalen,txid)) != 0 )
+                {
+                    jaddstr(retjson,"result",txbytes);
+                    jaddbits256(retjson,"blockhash",blockhash);
+                    jaddnum(retjson,"height",height);
+                    free(txbytes);
+                } else jaddstr(retjson,"error","cant find txid in block");
+                free(blockstr);
+                free(data);
+            } else jaddstr(retjson,"error","cant find blockhash");
             return(jprint(retjson,1));
         }
-        else if ( height >= 0 )
-        {
-            if ( coin->APIblockstr != 0 )
-                jaddstr(retjson,"error","already have pending request");
-            else
-            {
-                int32_t datalen; uint8_t *data; char *blockstr; bits256 blockhash;
-                blockhash = iguana_blockhash(coin,height);
-                if ( (blockstr= iguana_APIrequest(coin,blockhash,txid,2)) != 0 )
-                {
-                    datalen = (int32_t)(strlen(blockstr) >> 1);
-                    data = malloc(datalen);
-                    decode_hex(data,datalen,blockstr);
-                    if ( (txbytes= iguana_txscan(coin,verbose != 0 ? retjson : 0,data,datalen,txid)) != 0 )
-                    {
-                        jaddstr(retjson,"result",txbytes);
-                        jaddbits256(retjson,"blockhash",blockhash);
-                        jaddnum(retjson,"height",height);
-                        free(txbytes);
-                    } else jaddstr(retjson,"error","cant find txid in block");
-                    free(blockstr);
-                    free(data);
-                } else jaddstr(retjson,"error","cant find blockhash");
-                return(jprint(retjson,1));
-            }
-        } else printf("height.%d\n",height);
     }
     return(clonestr("{\"error\":\"cant find txid\"}"));
 }

@@ -174,7 +174,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             free(retstr);
     }
     if ( vals != 0 && juint(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS));
+        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS)+2);
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -188,7 +188,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
-        jaddnum(valsobj,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
+        jaddnum(valsobj,"fanout",(int32_t)sqrt(NUMRELAYS)+2);
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);

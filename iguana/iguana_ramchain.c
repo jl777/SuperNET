@@ -2813,7 +2813,7 @@ int32_t iguana_RTramchaindata(struct supernet_info *myinfo,struct iguana_info *c
             for (i=0; i<txn_count; i++,ramchain->H.txidind++)
             {
                 tx = &txarray[i];
-                RTptr = iguana_RTtxid_create(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp);
+                RTptr = iguana_RTtxid_create(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,tx->serialized,tx->allocsize);
                 if ( polarity > 0 )
                 {
                     if ( iter == 0 )
