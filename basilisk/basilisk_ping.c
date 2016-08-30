@@ -152,7 +152,7 @@ int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t 
         datalen += iguana_rwnum(1,&data[datalen],sizeof(msg->duration),&msg->duration);
         if ( maxlen > datalen+msg->datalen )
         {
-            printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
+            //printf("SEND keylen.%d msglen.%d\n",msg->keylen,msg->datalen);
             memcpy(&data[datalen],msg->data,msg->datalen), datalen += msg->datalen;
         }
         else
@@ -242,12 +242,12 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
         //len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
         len += basilisk_ping_processMSG(myinfo,senderipbits,&data[len],datalen-len);
     }
-    if ( len != datalen )
+    if ( len != datalen+1 )
         printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
     //else printf("\n");
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    printf(" <- input ping from.(%s) rel.%d numrelays.%d datalen.%d relay.%d\n",ipbuf,basilisk_relayid(myinfo,(uint32_t)calc_ipbits(ipbuf)),numrelays,datalen,myinfo->RELAYID);
+    printf("<<<<<<<<<<< input ping from.(%s) rel.%d numrelays.%d datalen.%d relay.%d Q.%d\n",ipbuf,basilisk_relayid(myinfo,(uint32_t)calc_ipbits(ipbuf)),numrelays,datalen,myinfo->RELAYID,QUEUEITEMS);
 }
 
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
@@ -261,7 +261,7 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    printf(" <- output ping datalen.%d relay.%d Q.%d\n",datalen,myinfo->RELAYID,QUEUEITEMS);
+    printf("output ping datalen.%d relay.%d >>>>>>>>>> Q.%d\n",datalen,myinfo->RELAYID,QUEUEITEMS);
     return(datalen);
 }
 

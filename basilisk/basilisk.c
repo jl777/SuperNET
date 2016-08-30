@@ -625,7 +625,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     {
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
-        printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
+        //printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     }
     symbol = "BTCD";
     if ( senderipbits == 0 )
@@ -744,7 +744,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
         //int32_t i; for (i=0; i<datalen-len; i++)
         //    printf("%02x",data[len+i]);
-        if ( myinfo->RELAYID >= 0 )
+        if ( 0 && myinfo->RELAYID >= 0 )
             printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     }
@@ -887,7 +887,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",8);
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays));
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",myinfo->numrelays);
     if ( coin != 0 )
