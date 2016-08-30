@@ -269,8 +269,8 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 
 void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
 {
-    struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; int32_t i,j,incr,datalen=0;
-    if ( btcd == 0 )
+    struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0;
+    if ( btcd == 0 || myinfo->numrelays <= 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
@@ -278,7 +278,8 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
     incr = sqrt(myinfo->numrelays) + 1;
     for (j=0; j<incr; j++)
     {
-        i = (j == 0) ? myinfo->RELAYID : (rand() % myinfo->numrelays);
+        OS_randombytes((void *)&r,sizeof(r));
+        i = (j == 0) ? myinfo->RELAYID : (r % myinfo->numrelays);
         if ( j != 0 && i == myinfo->RELAYID )
             i = (myinfo->RELAYID + 1) % myinfo->numrelays;
         rp = &myinfo->relays[i];
@@ -291,8 +292,8 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
             else if ( datalen > 200 )
-                printf("+(%s) ",addr->ipaddr);
-        } //else printf("-(%s) ",ipaddr);
+                fprintf(stderr,"+(%s).%d ",ipaddr,i);
+        } else fprintf(stderr,"-(%s).%d ",ipaddr,i);
     }
     //printf("my RELAYID.%d of %d\n",myinfo->RELAYID,myinfo->numrelays);
 }
