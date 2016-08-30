@@ -810,6 +810,8 @@ void iguana_coinloop(void *arg)
                         //if ( saved++ == 0 )
                         //    iguana_coinflush(coin,1);
                     }*/
+                    if ( myinfo->RELAYID >= 0 )
+                        continue;
                     if ( coin->bindsock >= 0 )
                     {
                         if ( coin->MAXPEERS > 1 && coin->peers->numranked < IGUANA_MAXPEERS/2 && now > coin->lastpossible+2 )

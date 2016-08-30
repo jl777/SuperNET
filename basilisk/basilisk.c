@@ -149,7 +149,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 {
     int32_t i,r,l,s,valid,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent;
     if ( fanout <= 0 )
-        fanout = sqrt(myinfo->numrelays) + 1;
+        fanout = sqrt(myinfo->numrelays) + 2;
     else if ( fanout > BASILISK_MAXFANOUT )
         fanout = BASILISK_MAXFANOUT;
     if ( type == 0 )
@@ -358,7 +358,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
         numrequired = 1;
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
-    minfanout = sqrt(myinfo->numrelays)+1;
+    minfanout = sqrt(myinfo->numrelays)+2;
     if ( jobj(valsobj,"fanout") == 0 )
         fanout = minfanout;
     else fanout = jint(valsobj,"fanout");
@@ -887,7 +887,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays)+1);
+        jaddnum(vals,"fanout",(int32_t)sqrt(myinfo->numrelays)+2);
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",myinfo->numrelays);
     if ( coin != 0 )
