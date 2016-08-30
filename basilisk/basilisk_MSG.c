@@ -49,8 +49,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 
 cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
-    cJSON *retjson,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
-    retjson = cJSON_CreateObject();
+    cJSON *retjson=0,*msgjson; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
@@ -58,13 +57,20 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
         msgjson = cJSON_CreateObject();
         if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
+            retjson = cJSON_CreateObject();
             jadd(retjson,"message",msgjson);
             jaddnum(retjson,"expiration",msg->expiration);
             jaddnum(retjson,"duration",msg->duration);
             jaddstr(retjson,"result","success");
             printf("havemessage len.%d\n",msg->datalen);
-        } else jaddstr(retjson,"error","couldnt add message");
-    } else jaddstr(retjson,"error","no message");
+        }
+        else
+        {
+            //jaddstr(retjson,"error","couldnt add message");
+            printf("couldnt add message\n");
+            free_json(msgjson);
+        }
+    }
     portable_mutex_unlock(&myinfo->messagemutex);
     return(retjson);
 }
@@ -96,7 +102,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t width)
 {
-    uint8_t key[BASILISK_KEYSIZE]; int32_t i,keylen; cJSON *item,*array; bits256 zero;
+    uint8_t key[BASILISK_KEYSIZE]; int32_t i,keylen; cJSON *item,*retjson,*array; bits256 zero;
     memset(zero.bytes,0,sizeof(zero));
     array = cJSON_CreateArray();
     if ( width > 3600 )
@@ -132,7 +138,13 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         msgid--;
         iguana_rwnum(1,&key[0],sizeof(uint32_t),&msgid);
     }
-    return(jprint(array,1));
+    if ( cJSON_GetArraySize(array) > 0 )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jadd(retjson,"messages",array);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"no messages\"}"));
 }
 
 char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
