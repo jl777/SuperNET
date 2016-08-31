@@ -422,18 +422,24 @@ void mainloop(struct supernet_info *myinfo)
                 counter++;
                 coin = 0;
                 depth = 0;
-                HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+                if ( 0 )
                 {
-                    portable_mutex_lock(&coin->allcoins_mutex);
-                    stack[depth++] = &coin->allcoins_mutex;
+                    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+                    {
+                        portable_mutex_lock(&coin->allcoins_mutex);
+                        stack[depth++] = &coin->allcoins_mutex;
+                    }
                 }
                 //printf("check jsonQ\n");
                 while ( iguana_jsonQ() != 0 )
                     ;
-                if ( depth > 0 )
+                if ( 0 )
                 {
-                    for (i=depth-1; i>=0; i--)
-                        portable_mutex_unlock(stack[i]);
+                    if ( depth > 0 )
+                    {
+                        for (i=depth-1; i>=0; i--)
+                            portable_mutex_unlock(stack[i]);
+                    }
                 }
                 lastmilli = OS_milliseconds();
             }
