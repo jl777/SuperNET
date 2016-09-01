@@ -795,10 +795,10 @@ uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,b
     return(origptr);
 }
 
-cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
+cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs)
 {
     uint8_t rmd160[20],pub[33]; uint64_t nxt64bits; bits256 pubkey;
-    char str2[41],wifbuf[64],addr[64],str[128]; cJSON *retjson;
+    char str2[41],wifbuf[64],addr[64],str[128],coinwif[16]; cJSON *retjson; struct iguana_info *coin,*tmp;
     pubkey = acct777_pubkey(privkey);
     nxt64bits = acct777_nxt64bits(pubkey);
     retjson = cJSON_CreateObject();
@@ -811,7 +811,23 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
     jaddstr(retjson,"btcpubkey",str);
     calc_OP_HASH160(str2,rmd160,str);
     jaddstr(retjson,"rmd160",str2);
-    if ( bitcoin_address(addr,0,pub,33) != 0 )
+    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+    {
+        if ( coin != 0 && coin->symbol[0] != 0 )
+        {
+            if ( bitcoin_address(addr,coin->chain->pubtype,pub,33) != 0 )
+            {
+                jaddstr(retjson,coin->symbol,addr);
+                sprintf(coinwif,"%swif",coin->symbol);
+                if ( showprivs != 0 )
+                {
+                    bitcoin_priv2wif(wifbuf,privkey,coin->chain->wiftype);
+                    jaddstr(retjson,coinwif,wifbuf);
+                }
+            }
+        }
+    }
+    /*if ( bitcoin_address(addr,0,pub,33) != 0 )
     {
         jaddstr(retjson,"BTC",addr);
         if ( showprivs != 0 )
@@ -828,7 +844,7 @@ cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs)
             bitcoin_priv2wif(wifbuf,privkey,188);
             jaddstr(retjson,"BTCDwif",wifbuf);
         }
-    }
+    }*/
     if ( showprivs != 0 )
         jaddbits256(retjson,"privkey",privkey);
     return(retjson);
@@ -1079,7 +1095,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey)
         } else printf("error parsing cipher retstr.(%s)\n",cstr);
         free(cstr);
     } else printf("error SuperNET_cipher null return\n");
-    retjson = SuperNET_rosettajson(privkey,flag);
+    retjson = SuperNET_rosettajson(myinfo,privkey,flag);
     jaddstr(retjson,"privcipher",privcipher);
     check = SuperNET_pindecipher(IGUANA_CALLARGS,pin,privcipher);
     if ( memcmp(check.bytes,privkey.bytes,sizeof(check)) != 0 )
@@ -1362,7 +1378,7 @@ ZERO_ARGS(SuperNET,activehandle)
     cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = SuperNET_rosettajson(myinfo->persistent_priv,0);
+    retjson = SuperNET_rosettajson(myinfo,myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
     jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
@@ -1530,6 +1546,8 @@ void iguana_main(void *arg)
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
+    //void test_mimblewimble(void *ctx);
+    //test_mimblewimble(myinfo->ctx);
     if ( 0 )
     {
         int32_t i; for (i=0; i<10; i++)

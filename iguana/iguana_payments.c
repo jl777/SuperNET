@@ -546,7 +546,7 @@ ZERO_ARGS(iguana,makekeypair)
     privkey = rand256(1);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"privkey",bits256_str(str,privkey));
-    jadd(retjson,"rosetta",SuperNET_rosettajson(privkey,1));
+    jadd(retjson,"rosetta",SuperNET_rosettajson(myinfo,privkey,1));
     return(jprint(retjson,1));
 }
 

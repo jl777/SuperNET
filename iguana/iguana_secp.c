@@ -391,6 +391,7 @@ int32_t bitcoin_pederson_tally(void *ctx,uint8_t **commits,int32_t n,int32_t num
     int32_t retval = -1;
     SECP_ENSURE_CTX
     {
+        printf("bitcoin_pederson_tally: n.%d numpos.%d excess %lld\n",n,numpos,(long long)excess);
         if ( secp256k1_pedersen_verify_tally(ctx,(void *)commits,numpos,(void *)&commits[numpos],n - numpos,excess) != 0 )
             retval = 0;
         ENDSECP_ENSURE_CTX
@@ -664,3 +665,100 @@ int32_t iguana_schnorr_test(void *ctx)
     return(errs);
 }
 
+
+/*
+ We start by reminding the reader how confidential transactions work. First, the
+ amounts are coded by the following equation:
+ 
+ C = r*G + v*H
+ 
+ where C is a Pedersen commitment, G and H are fixed nothing-up-my-sleeve elliptic
+ curve group generators, v is the amount, and r is a secret random blinding key.
+ 
+ Attached to this output is a rangeproof which proves that v is in [0, 2^64], so
+ that user cannot exploit the blinding to produce overflow attacks, etc.
+ 
+ To validate a transaction, the verifer will add commitments for all outputs, plus
+ f*H (f here is the transaction fee which is given explicitly) and subtracts all
+ input commitments. The result must be 0, which proves that no amount was created
+ or destroyed overall.
+ 
+ We note that to create such a transaction, the user must know the sum of all the
+ values of r for commitments entries. Therefore, the r-values (and their sums) act
+ as secret keys. If we can make the r output values known only to the recipient,
+ then we have an authentication system! Unfortunately, if we keep the rule that
+ commits all add to 0, this is impossible, because the sender knows the sum of
+ all _his_ r values, and therefore knows the receipient's r values sum to the
+ negative of that. So instead, we allow the transaction to sum to a nonzero value
+ k*G, and require a signature of an empty string with this as key, to prove its
+ amount component is zero.
+ 
+ We let transactions have as many k*G values as they want, each with a signature,
+ and sum them during verification.
+ 
+ To create transactions sender and recipient do following ritual:
+ 
+ 1. Sender and recipient agree on amount to be sent. Call this b.
+ 
+ 2. Sender creates transaction with all inputs and change output(s), and gives
+ recipient the total blinding factor (r-value of change minus r-values of
+ inputs) along with this transaction. So the commitments sum to r*G - b*H.
+ 
+ 3. Recipient chooses random r-values for his outputs, and values that sum
+ to b minus fee, and adds these to transaction (including range proof).
+ Now the commitments sum to k*G - fee*H for some k that only recipient
+ knows.
+ 
+ 4. Recipient attaches signature with k to the transaction, and the explicit
+ fee. It has done.
+ */
+
+void test_mimblewimble(void *ctx)
+{
+    uint8_t commits[100][33],*commitptrs[100]; int64_t inputs[8],inputsum,amount,change,txfee,totalpos,totalneg; bits256 nonces[100],blinds[100],*blindptrs[100],blindsum; int32_t i,r,numinputs;
+    OS_randombytes((void *)&r,sizeof(r));
+    srand(r);
+    inputs[0] = 100000000;
+    numinputs = 1;
+    inputsum = 0;
+    for (i=0; i<numinputs; i++)
+        inputsum += inputs[i];
+    txfee = 10000;
+    amount = 100000000 / 10;
+    change = inputsum - txfee - amount;
+    totalpos = change;
+    totalneg = inputsum;
+    for (i=0; i<numinputs+2; i++)
+    {
+        nonces[i] = rand256(0);
+        blinds[i] = rand256(0);
+        commitptrs[i] = commits[i];
+        blindptrs[i] = &blinds[i];
+    }
+    if ( bitcoin_pederson_commit(ctx,commits[0],blinds[0],change) < 0  )
+    {
+        printf("error getting change commit\n");
+        return;
+    }
+    for (i=1; i<=numinputs; i++)
+    {
+        if ( bitcoin_pederson_commit(ctx,commits[i],blinds[i],-inputs[i]) < 0 )
+        {
+            printf("error getting input.(%d) commit\n",i);
+            return;
+        }
+    }
+    
+    blindsum = bitcoin_pederson_blindsum(ctx,blindptrs,numinputs+1,1);
+    if ( bits256_nonz(blindsum) == 0 )
+    {
+        printf("error doing blindsum\n");
+        return;
+    }
+    if ( bitcoin_pederson_tally(ctx,commitptrs,numinputs+1,1,totalneg - totalpos) == 0 )
+    {
+        printf("error doing pederson tally\n");
+        return;
+    } else printf("pederson tally matches\n");
+    getchar();
+}

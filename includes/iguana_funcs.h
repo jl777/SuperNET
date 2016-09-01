@@ -521,7 +521,7 @@ void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 k
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len);
 char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port);
 struct supernet_info *SuperNET_accountfind(cJSON *json);
-cJSON *SuperNET_rosettajson(bits256 privkey,int32_t showprivs);
+cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson);
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr);
 char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,cJSON *json,char *remoteaddr);
