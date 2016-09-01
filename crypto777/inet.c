@@ -20,6 +20,7 @@
 #define crypto777_inet_h
 #include "OS_portable.h"
 
+
 #ifdef _WIN32
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
@@ -32,7 +33,12 @@ struct sockaddr_in6 {
     struct  in6_addr sin6_addr;
     u_long  sin6_scope_id;
 };
+#else
+#ifndef __MINGW
+#include <arpa/inet.h>
 #endif
+#endif
+
 #ifdef _WIN32
 #ifdef AF_INET6
 #undef AF_INET6
@@ -404,7 +410,8 @@ uint64_t calc_ipbits(char *ip_port)
             expand_ipbits(ipaddr2,ipbits);
             if ( ipbits != 0 && strcmp(ipaddr,ipaddr2) != 0 )
             {
-                printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
+                if ( ipaddr[0] != 0 )
+                    printf("calc_ipbits error: (%s) -> %llx -> (%s)\n",ip_port,(long long)ipbits,ipaddr);//, getchar();
                 ipbits = 0;
             }
         }

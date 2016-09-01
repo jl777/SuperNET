@@ -127,7 +127,7 @@ int32_t OS_portable_removefile(char *fname)
 
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso)
 {
-    char cmdstr[1024],tmp[512]; int32_t i;
+    char cmdstr[1024],tmp[512]; //int32_t i;
     strcpy(tmp,dirname);
     OS_portable_path(tmp);
 #ifdef _WIN32
@@ -141,17 +141,18 @@ int32_t OS_portable_rmdir(char *dirname,int32_t diralso)
         sprintf(cmdstr,"rm -rf %s",tmp);
         if ( system(cmdstr) != 0 )
             printf("error deleting dir.(%s)\n",cmdstr);
-        sprintf(cmdstr,"mkdir %s",tmp);
-        if ( system(cmdstr) != 0 )
-            printf("error deleting dir.(%s)\n",cmdstr);
+        //sprintf(cmdstr,"rmdir %s",tmp);
+        //if ( system(cmdstr) != 0 )
+        //    printf("error deleting dir.(%s)\n",cmdstr);
     }
     else
     {
-        for (i=0; i<=16; i++)
+        //for (i=0; i<=16; i++)
         {
-            if ( i < 16 )
-                sprintf(cmdstr,"rm %s/%c*",tmp,i<10?'0'+i:'a'-10+i);
-            else sprintf(cmdstr,"rm %s/*",tmp);
+            //if ( i < 16 )
+            //    sprintf(cmdstr,"rm %s/%c*",tmp,i<10?'0'+i:'a'-10+i);
+            //else sprintf(cmdstr,"rm %s/*",tmp);
+            sprintf(cmdstr,"rm -rf %s",tmp);
             if ( system(cmdstr) != 0 )
                 printf("error deleting dir.(%s)\n",cmdstr);
         }

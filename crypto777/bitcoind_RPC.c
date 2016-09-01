@@ -15,8 +15,11 @@
 
 #include "OS_portable.h"
 
-//#define USE_CURL
-#ifdef USE_CURL
+#ifdef __APPLE__
+#define LIQUIDITY_PROVIDER 1
+#endif
+
+#if LIQUIDITY_PROVIDER
 #ifdef _WIN32
 #include <curl.h>
 #include <easy.h>
@@ -199,7 +202,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 2 )
+        else if ( numretries >= 5 )
         {
             printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
@@ -306,7 +309,7 @@ void *curl_post(CURL **cHandlep,char *url,char *userpass,char *postfields,char *
 		*cHandlep = cHandle = curl_easy_init();
     else curl_easy_reset(cHandle);
     //#ifdef DEBUG
-	curl_easy_setopt(cHandle,CURLOPT_VERBOSE, 1);
+	//curl_easy_setopt(cHandle,CURLOPT_VERBOSE, 1);
     //#endif
 	curl_easy_setopt(cHandle,CURLOPT_USERAGENT,"mozilla/4.0");//"Mozilla/4.0 (compatible; )");
 	curl_easy_setopt(cHandle,CURLOPT_SSL_VERIFYPEER,0);

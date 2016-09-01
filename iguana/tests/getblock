@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:14632" --data "{\"method\":\"getblock\",\"params\":[\"0000044966f40703b516c5af180582d53f783bfd319bb045e2dc3e05ea695d46\"]}"

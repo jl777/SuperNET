@@ -14,7 +14,7 @@
  ******************************************************************************/
 
 #include "iguana777.h"
-#include "SuperNET.h"
+//#include "SuperNET.h"
 
 cJSON *helpjson(cJSON *json,cJSON *array,cJSON *agents,char *agentstr,char *method,cJSON *methodargs)
 {
@@ -112,6 +112,7 @@ cJSON *SuperNET_helpjson()
     
 #define IGUANA_HELP_I(agent,name,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#val,"int")))
 #define IGUANA_HELP_II(agent,name,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int")))
+#define IGUANA_HELP_ID(agent,name,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"float")))
 #define IGUANA_HELP_IA(agent,name,val,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#obj,"array")))
 #define IGUANA_HELP_IIA(agent,name,val,val2,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#obj,"array")))
 #define IGUANA_HELP_III(agent,name,val,val2,val3) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#val,"int"),helpitem(#val2,"int"),helpitem(#val3,"int")))
@@ -142,6 +143,7 @@ cJSON *SuperNET_helpjson()
     // API functions
 #define ZERO_ARGS IGUANA_HELP0
 #define INT_ARG IGUANA_HELP_I
+#define INT_AND_DOUBLE IGUANA_HELP_ID
 #define TWO_INTS IGUANA_HELP_II
 #define STRING_ARG IGUANA_HELP_S
 #define TWO_STRINGS IGUANA_HELP_SS
@@ -371,6 +373,7 @@ cJSON *update_docjson(cJSON *docjson,char *agent,char *method)
     {
         sprintf(stubstr,"{\"agent\":\"%s\",\"method\":\"%s\",\"field0\":\"put in helpful info field0\",\"field1\":\"put in helpful info for field1\",\"help\":\"put helpful info here\",\"teststatus\":[{\"tester\":\"bob\",\"result\":\"put result here\",\"notes\":\"put useful notes here\",\"automated\":\"notyet\",\"sourcefile\":\"%s_%s_test.py\"}]}",agent,method,agent,method);
         sprintf(fname,"%s/%s_%s.json",GLOBAL_HELPDIR,agent,method);
+        OS_portable_path(fname);
         if ( (docstr= OS_filestr(&allocsize,fname)) != 0 )
         {
             if ( (item= cJSON_Parse(docstr)) == 0 )
@@ -475,35 +478,13 @@ int32_t pretty_forms(char *fname,char *agentstr,char *suffix)
 
 char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
 {
-    int32_t i,n,len,size = 0; long filesize; cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
+    //int32_t i,n,len,size = 0;  cJSON *helpjson,*item,*array; char *str; FILE *fp = 0;
+    long filesize;
     htmlstr[0] = 0;
     pretty_forms(fname,agentstr,"html");
-    printf("autocreate %s\n","_API.md");
-    pretty_forms("_API.md",0,"md");
-return(OS_filestr(&filesize,"index7778.html"));
-    sprintf(htmlstr,"<!DOCTYPE HTML><html> <head><title>SuperUGLY GUI></title></head> <body> ");
-    size = (int32_t)strlen(htmlstr);
-    if ( (helpjson= SuperNET_helpjson()) != 0 )
-    {
-        if ( (array= jarray(&n,helpjson,"API")) != 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(array,i);
-                str = jstr(item,"agent");
-                if ( agentstr == 0 || agentstr[0] == 0 || (str != 0 && strcmp(str,agentstr) == 0) )
-                {
-                    len = agentform(fp,&htmlstr[size],maxsize - size,str!=0?str:"agent",item);
-                    size += len;
-                } //else printf("agentstr.%p (%s) (%s) str.%p \n",agentstr,agentstr,str,str);
-            }
-        }
-        //free_json(helpjson);
-        return(jprint(helpjson,1));
-    }
-    strcat(htmlstr,"<br><br/></body></html><br><br/>");
-    printf("<br><br/></body></html><br><br/>\n");
-    return(htmlstr);
+    //printf("autocreate %s\n","autoAPI.md");
+    pretty_forms("autoAPI.md",0,"md");
+    return(OS_filestr(&filesize,"index7778.html"));
 }
 
 cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
@@ -555,12 +536,12 @@ cJSON *iguana_peerjson(struct iguana_info *coin,struct iguana_peer *addr)
 cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
 {
     cJSON *retjson,*array; int32_t i; struct iguana_peer *addr;
-    if ( coin == 0 )
+    if ( coin == 0 || coin->peers == 0 )
         return(0);
     array = cJSON_CreateArray();
     for (i=0; i<coin->MAXPEERS; i++)
     {
-        addr = &coin->peers.active[i];
+        addr = &coin->peers->active[i];
         if ( addr->usock >= 0 && addr->ipbits != 0 && addr->ipaddr[0] != 0 )
         {
             if ( addronly != 0 )
@@ -591,14 +572,24 @@ STRING_ARG(iguana,peers,activecoin)
 STRING_ARG(iguana,getconnectioncount,activecoin)
 {
     int32_t i,num = 0; char buf[512];
-    if ( coin != 0 )
+    if ( coin != 0 && coin->peers != 0 )
     {
-        for (i=0; i<sizeof(coin->peers.active)/sizeof(*coin->peers.active); i++)
-            if ( coin->peers.active[i].usock >= 0 )
+        for (i=0; i<sizeof(coin->peers->active)/sizeof(*coin->peers->active); i++)
+            if ( coin->peers->active[i].usock >= 0 )
                 num++;
         sprintf(buf,"{\"result\":\"%d\"}",num);
         return(clonestr(buf));
     } else return(clonestr("{\"error\":\"getconnectioncount needs coin\"}"));
+}
+
+ZERO_ARGS(bitcoinrpc,getdifficulty)
+{
+    char buf[512];
+    if ( coin != 0 )
+    {
+        sprintf(buf,"{\"result\":\"success\",\"proof-of-work\":\"%.8f\",\"search-interval\": 0}",PoW_from_compact(coin->blocks.hwmchain.RO.bits,coin->chain->unitval));
+        return(clonestr(buf));
+    } else return(clonestr("{\"error\":\"getdifficulty needs coin\"}"));
 }
 
 STRING_ARG(iguana,addcoin,newcoin)
@@ -613,7 +604,7 @@ STRING_ARG(iguana,addcoin,newcoin)
 //        if ( strcmp(symbol,"BTC") == 0 )
 //            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));
 #endif
-        if ( (retval= iguana_launchcoin(myinfo,symbol,json)) > 0 )
+        if ( (retval= iguana_launchcoin(myinfo,symbol,json,0)) > 0 )
         {
             if ( myinfo->rpcsymbol[0] == 0 )
                 safecopy(myinfo->rpcsymbol,symbol,sizeof(myinfo->rpcsymbol));
@@ -636,10 +627,12 @@ STRING_ARG(iguana,startcoin,activecoin)
 
 STRING_ARG(iguana,stopcoin,activecoin)
 {
+    if ( activecoin[0] != 0 )
+        coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
     {
         coin->active = 0;
-        iguana_coinpurge(coin);
+        //iguana_coinpurge(coin);
         return(clonestr("{\"result\":\"coin stopped\"}"));
     } else return(clonestr("{\"error\":\"stopcoin needs coin\"}"));
 }
@@ -655,15 +648,38 @@ STRING_ARG(iguana,pausecoin,activecoin)
 
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 {
-    struct iguana_peer *addr;
+    struct iguana_peer *addr; int32_t i,n;
     if ( coin == 0 )
         coin = iguana_coinfind(activecoin);
     printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
-    if ( coin != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
     {
         //iguana_possible_peer(coin,ipaddr);
-        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),0)) != 0 )
+        if ( (addr= iguana_peerslot(coin,(uint32_t)calc_ipbits(ipaddr),1)) != 0 )
         {
+            addr->supernet = 1;
+            if ( addr->usock >= 0 )
+            {
+                if ( (n= coin->peers->numranked) != 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        if ( addr == coin->peers->ranked[i] )
+                            break;
+                    }
+                    if ( i == n )
+                    {
+                        if ( i == IGUANA_MAXPEERS )
+                            i--;
+                        else coin->peers->numranked = n+1;
+                        coin->peers->ranked[i] = addr;
+                        addr->recvblocks = coin->peers->ranked[0]->recvblocks + 100;
+                        addr->recvtotal = coin->peers->ranked[0]->recvtotal*1.1 + 100;
+                        printf("set (%s) -> slot.%d numranked.%d\n",ipaddr,i,coin->peers->numranked);
+                    } else printf("(%s) is already peer.%d\n",ipaddr,i);
+                }
+                return(clonestr("{\"result\":\"peer was already connected\"}"));
+            }
             if ( addr->pending == 0 )
             {
                 addr->pending = (uint32_t)time(NULL);
@@ -680,13 +696,13 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
 {
     int32_t i;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
             {
-                coin->peers.active[i].persistent_peer = juint(json,"interval")+3;
+                coin->peers->active[i].persistent_peer = juint(json,"interval")+3;
                 return(clonestr("{\"result\":\"node marked as persistent\"}"));
             }
         }
@@ -697,14 +713,14 @@ TWO_STRINGS(iguana,persistent,activecoin,ipaddr)
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr)
 {
     int32_t i;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( strcmp(coin->peers.active[i].ipaddr,ipaddr) == 0 )
+            if ( strcmp(coin->peers->active[i].ipaddr,ipaddr) == 0 )
             {
-                coin->peers.active[i].rank = 0;
-                coin->peers.active[i].dead = (uint32_t)time(NULL);
+                coin->peers->active[i].rank = 0;
+                coin->peers->active[i].dead = (uint32_t)time(NULL);
                 return(clonestr("{\"result\":\"node marked as dead\"}"));
             }
         }
@@ -724,11 +740,11 @@ TWO_STRINGS(iguana,oneshot,activecoin,ipaddr)
 TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
 {
     int32_t i; struct iguana_peer *addr;
-    if ( coin != 0 && ipaddr != 0 )
+    if ( coin != 0 && coin->peers != 0 && ipaddr != 0 )
     {
         for (i=0; i<coin->MAXPEERS; i++)
         {
-            addr = &coin->peers.active[i];
+            addr = &coin->peers->active[i];
             if ( strcmp(addr->ipaddr,ipaddr) == 0 )
                 return(jprint(iguana_peerjson(coin,addr),1));
         }
@@ -739,7 +755,7 @@ TWO_STRINGS(iguana,nodestatus,activecoin,ipaddr)
 STRING_AND_INT(iguana,maxpeers,activecoin,max)
 {
     cJSON *retjson; int32_t i; struct iguana_peer *addr;
-    if ( coin != 0 )
+    if ( coin != 0 && coin->peers != 0 )
     {
         retjson = cJSON_CreateObject();
         if ( max > IGUANA_MAXPEERS )
@@ -747,7 +763,7 @@ STRING_AND_INT(iguana,maxpeers,activecoin,max)
         if ( max > coin->MAXPEERS )
         {
             for (i=max; i<coin->MAXPEERS; i++)
-                if ( (addr= coin->peers.ranked[i]) != 0 )
+                if ( (addr= coin->peers->ranked[i]) != 0 )
                     addr->dead = 1;
         }
         coin->MAXPEERS = max;
@@ -774,7 +790,7 @@ char *hmac_dispatch(char *(*hmacfunc)(char *dest,char *key,int32_t key_size,char
 
 char *hash_dispatch(void (*hashfunc)(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len),char *name,char *message)
 {
-    char hexstr[16384]; uint8_t databuf[8192]; cJSON *json;
+    char hexstr[65537]; uint8_t databuf[32768]; cJSON *json;
     if ( message != 0 && message[0] != 0 )
     {
         memset(hexstr,0,sizeof(hexstr));
@@ -841,7 +857,7 @@ STRING_ARG(SuperNET,bitcoinrpc,setcoin)
         strcpy(myinfo->rpcsymbol,setcoin);
         touppercase(myinfo->rpcsymbol);
         printf("bitcoinrpc.%s\n",myinfo->rpcsymbol);
-        if ( iguana_launchcoin(myinfo,myinfo->rpcsymbol,json) < 0 )
+        if ( iguana_launchcoin(myinfo,myinfo->rpcsymbol,json,0) < 0 )
             return(clonestr("{\"error\":\"error creating coin\"}"));
         else
         {
@@ -897,6 +913,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH0(agent,name) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
 #define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))
 #define IGUANA_DISPATCH_SS(agent,name,str,str2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2)))
+#define IGUANA_DISPATCH_ID(agent,name,dval,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jdouble(json,#dval),jdouble(json,#val)))
 #define IGUANA_DISPATCH_SD(agent,name,str,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jdouble(json,#val)))
 #define IGUANA_DISPATCH_SSS(agent,name,str,str2,str3) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3)))
 #define IGUANA_DISPATCH_SSSS(agent,name,str,str2,str3,str4) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str),jstr(json,#str2),jstr(json,#str3),jstr(json,#str4)))
@@ -950,6 +967,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
     // API functions
 #define ZERO_ARGS IGUANA_DISPATCH0
 #define INT_ARG IGUANA_DISPATCH_I
+#define INT_AND_DOUBLE IGUANA_DISPATCH_ID
 #define TWO_INTS IGUANA_DISPATCH_II
 #define STRING_ARG IGUANA_DISPATCH_S
 #define TWO_STRINGS IGUANA_DISPATCH_SS

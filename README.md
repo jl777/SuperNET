@@ -1,8 +1,30 @@
 #SuperNET Client "iguana"
 
+OS | Build Status 
+-------------|------
+Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix-jl777)](https://jenkinsmaster.sprnt.pw/job/Unix-jl777)
+Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
+Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Android)](https://jenkinsmaster.sprnt.pw/job/Android/)
+iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iOS)](https://jenkinsmaster.sprnt.pw/job/iOS/)
+Windows 32 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win32/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win32/)
+Windows 64 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/)
+docs.supernet.org | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=docs.supernet.org-updating)](https://jenkinsmaster.sprnt.pw/job/docs.supernet.org-updating/)
+
+---
+
+Codebase is going under radical changes now and versions from mid-May should be used unless you are doing advanced testing. There will be four layers:
+
+gecko: abstracted bitcoin compatible blockchains that run via basilisk lite mode or as iguana core full network peers. I will try to get a geckochain to simultaneously have both virtual basilisk nodes and private iguana nodes, but at first will probably need to choose which mode a new chain will be and transition between the two via special suspend and resume functions that allow migration from virtual to physical. Each specific geckochain will be able to be enhanced into a datachain.
+
+basilisk: abstracted crypto transactions layer, which has a reference implementation for bitcoin protocol via the iguana nodes, but can be expanded to support any coin protocol that can support the required functions. Since it works with bitcoin protocol, any 2.0 coin with at least bitcoin level functionality should be able to create a basilisk interface.
+
+iguana: most efficient bitcoin core implementation that can simultaneously be full peers for multiple bitcoin blockchains. Special support being added to virtualize blockchains so all can share the same peers. The iguana peers identify as a supernet node, regardless of which coin, so by having nodes that support multiple coins, supernet peers are propagated across all coins. non-iguana peers wont get any non-standard packets so it is interoperable with all the existing bitcoin and bitcoin clone networks
+
+komodo: this is the top secret project I cant talk about publicly yet
+
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get git install build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
+> ```sudo apt-get update; sudo apt-get install git build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
@@ -13,12 +35,6 @@
 *** all external dependencies have been removed, except for -lpthread and -lm
 
 
-#DEPENDENCIES#
-##for native (unix, osx)##
-Just make sure you have the dev versions of openssl and curl installed:
-
-```sudo apt-get install libcurl4-gnutls-dev libssl-dev```
-
 ##For native (win32, win64)##
 TOOL_DIR := /usr/local/gcc-4.8.0-qt-4.8.4-for-mingw32/win32-gcc/bin
 MINGW := i586-mingw32
@@ -26,7 +42,7 @@ The above two definitions need to be changed to match the mingw install on your 
 
 ##For chrome app##
 You need to make sure the nacl sdk is properly installed and you are able to build the examples.
-Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libssl.a, libcrypto.a, libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
+Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
 
 
 #ONETIME#
@@ -130,7 +146,7 @@ During the syncing, I have many, many messages like this:
 >> cant create.(tmp/BTC/252000/.tmpmarker) errno.24 Too many open files
 >> cant create.(tmp/BTC/18000/.tmpmarker) errno.24 Too many open files
 >>
-Loretta:/Users/volker/SuperNET # ulimit -n 2048
+Loretta:/Users/volker/SuperNET # ulimit -n 100000
 
 
 ##### tests

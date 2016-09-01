@@ -66,12 +66,12 @@ static int secp256k1_schnorr_sig_sign(const secp256k1_ecmult_gen_context* ctx, u
     secp256k1_scalar h, s;
     int overflow;
     secp256k1_scalar n;
-
+    
     if (secp256k1_scalar_is_zero(key) || secp256k1_scalar_is_zero(nonce)) {
         return 0;
     }
     n = *nonce;
-
+    
     secp256k1_ecmult_gen(ctx, &Rj, &n);
     if (pubnonce != NULL) {
         secp256k1_gej_add_ge(&Rj, &Rj, pubnonce);
@@ -80,10 +80,10 @@ static int secp256k1_schnorr_sig_sign(const secp256k1_ecmult_gen_context* ctx, u
     secp256k1_fe_normalize(&Ra.y);
     if (secp256k1_fe_is_odd(&Ra.y)) {
         /* R's y coordinate is odd, which is not allowed (see rationale above).
-           Force it to be even by negating the nonce. Note that this even works
-           for multiparty signing, as the R point is known to all participants,
-           which can all decide to flip the sign in unison, resulting in the
-           overall R point to be negated too. */
+         Force it to be even by negating the nonce. Note that this even works
+         for multiparty signing, as the R point is known to all participants,
+         which can all decide to flip the sign in unison, resulting in the
+         overall R point to be negated too. */
         secp256k1_scalar_negate(&n, &n);
     }
     secp256k1_fe_normalize(&Ra.x);
@@ -110,7 +110,7 @@ static int secp256k1_schnorr_sig_verify(const secp256k1_ecmult_context* ctx, con
     secp256k1_scalar h, s;
     unsigned char hh[32];
     int overflow;
-
+    
     if (secp256k1_ge_is_infinity(pubkey)) {
         return 0;
     }
@@ -148,7 +148,7 @@ static int secp256k1_schnorr_sig_recover(const secp256k1_ecmult_context* ctx, co
     secp256k1_scalar h, s;
     unsigned char hh[32];
     int overflow;
-
+    
     hash(hh, sig64, msg32);
     overflow = 0;
     secp256k1_scalar_set_b32(&h, hh, &overflow);

@@ -1,2 +1,2 @@
-TOOL_DIR := /usr/bin
-MINGW := i586-mingw32msvc
+TOOL_DIR := C:/MinGW/32
+MINGW := gcc

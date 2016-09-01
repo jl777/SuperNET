@@ -1,2 +1,2 @@
-TOOL_DIR := /usr/bin
-MINGW := i686-w64-mingw32
+TOOL_DIR := C:/MinGW/64
+MINGW := gcc

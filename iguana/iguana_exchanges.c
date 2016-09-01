@@ -22,6 +22,131 @@
 
 //char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
+int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+{
+    int32_t i; struct exchange_quote *quote;
+    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d\n",exchange->name,dir,numquotes);
+    for (i=0; i<numquotes; i++)
+    {
+        quote = &quotes[i << 1];
+        //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
+        if ( quote->price > SMALLVAL )
+        {
+            sortbuf[n] = *quote;
+            sortbuf[n].val = ind;
+            sortbuf[n].exchangebits = exchange->exchangebits;
+            //printf("sortbuf[%d] <-\n",n*2);
+            if ( ++n >= max )
+                break;
+        }
+    }
+    return(n);
+}
+
+double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson)
+{
+    char *str; double totalvol,pricesum; uint32_t timestamp;
+    struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
+    struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
+    timestamp = (uint32_t)time(NULL);
+    if ( basevolume < 0. )
+        basevolume = -basevolume, dir = -1;
+    else dir = 1;
+#ifdef INCLUDE_PAX
+    if ( rel == 0 || rel[0] == 0 )
+    {
+        *totalvolp = 1.;
+        return(PAX_aveprice(myinfo,base));
+    }
+#endif
+    memset(sortbuf,0,sizeof(*sortbuf) * max);
+    if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
+    {
+        for (i=num=0; i<myinfo->numexchanges && num < sizeof(active)/sizeof(*active); i++)
+        {
+            if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
+            {
+                if ( (req= exchanges777_baserelfind(exchange,base,rel,'M')) == 0 )
+                {
+                    if ( (str= exchanges777_Qprices(exchange,base,rel,30,1,depth,argjson,1,exchange->commission)) != 0 )
+                        free(str);
+                    req = exchanges777_baserelfind(exchange,base,rel,'M');
+                }
+                if ( req == 0 )
+                {
+                    if ( (*exchange->issue.supports)(exchange,base,rel,argjson) != 0 )
+                        printf("unexpected null req.(%s %s) %s\n",base,rel,exchange->name);
+                }
+                else
+                {
+                    //printf("active.%s\n",exchange->name);
+                    active[num++] = req;
+                }
+            }
+        }
+        for (i=n=0; i<num; i++)
+        {
+            if ( dir < 0 && active[i]->numbids > 0 )
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+            else if ( dir > 0 && active[i]->numasks > 0 )
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+        }
+        //printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
+        if ( dir < 0 )
+            revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
+        {
+            quote = sortbuf[i];
+            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            if ( quote.satoshis != 0 )
+            {
+                pricesum += (quote.price * quote.volume);
+                totalvol += quote.volume;
+                //printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
+            }
+        }
+        if ( totalvol > 0. )
+        {
+            *totalvolp = totalvol;
+            return(pricesum / totalvol);
+        }
+    }
+    *totalvolp = 0;
+    return(0);
+}
+
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
+{
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    if ( retvals == 0 )
+        return(0);
+    strcpy(base,_base);
+    if ( _rel == 0 )
+        strcpy(rel,"");
+    else strcpy(rel,_rel);
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
+    argjson = cJSON_CreateObject();
+    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&askvol,base,rel,basevolume,argjson);
+    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
+    free_json(argjson);
+    retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+#ifdef INCLUDE_PAX
+    int32_t basenum,relnum; double baseval,relval;
+    if ( (basenum= PAX_basenum(base)) >= 0 && (relnum= PAX_basenum(rel)) >= 0 )
+    {
+        if ( myinfo->PEGS != 0 && (baseval= myinfo->PEGS->data.RTmatrix[basenum][basenum]) != 0. && (relval= myinfo->PEGS->data.RTmatrix[relnum][relnum]) != 0. )
+            return(baseval / relval);
+    }
+#endif
+    if ( avebid > SMALLVAL && aveask > SMALLVAL )
+        return((avebid + aveask) * .5);
+    else return(0);
+}
+
 void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
 {
     
@@ -56,10 +181,10 @@ cJSON *exchanges777_quotejson(struct exchange_quote *quote,int32_t allflag,doubl
         jaddnum(json,"cumulative",totalvol);
         if ( quote->timestamp != 0 )
             jaddstr(json,"time",utc_str(str,quote->timestamp));
-        if ( quote->orderid > 0 )
+        if ( quote->orderid != 0 )
             jadd64bits(json,"orderid",quote->orderid);
         //if ( quote->offerNXT != 0 )
-            jadd64bits(json,"offerer",quote->offerNXT);
+        jadd64bits(json,"account",quote->offerNXT);
         return(json);
     } else return(cJSON_CreateNumber(quote->price));
 }
@@ -227,7 +352,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
             //if ( strcmp(prices->exchange,"bter") == 0 && dir < 0 )
             //    slot = ((bidask==0?n:m) - 1) - i;
             //else
-                slot = i;
+            slot = i;
             timestamp = 0;
             item = jitem(bidask==0?bids:asks,slot);
             if ( pricefield != 0 && volfield != 0 )
@@ -245,7 +370,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
                 volume = jdouble(item,"volume");
                 timestamp = juint(item,"timestamp");
                 orderid = j64bits(item,"orderid");
-                offerNXT = j64bits(item,"offerer");
+                offerNXT = j64bits(item,"account");
             }
             if ( price == 0. || volume == 0. )
                 continue;
@@ -537,10 +662,10 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
                     req->orderid = orderid;
                     retstr = (*exchange->issue.orderstatus)(exchange,req->orderid,req->argjson);
                     /*retjson = cJSON_CreateObject();
-                    if ( orderid != 0 )
-                        jadd64bits(retjson,"result",orderid);
-                    else jaddstr(retjson,"error","no return value from trade call");
-                    retstr = jprint(retjson,1);*/
+                     if ( orderid != 0 )
+                     jadd64bits(retjson,"result",orderid);
+                     else jaddstr(retjson,"error","no return value from trade call");
+                     retstr = jprint(retjson,1);*/
                 }
             }
             break;
@@ -583,25 +708,53 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
     return(retstr);
 }
 
+/*void iguana_statemachineupdate(struct supernet_info *myinfo,struct exchange_info *exchange)
+{
+    int32_t timemod,modwidth = 10; struct iguana_info *coin; struct bitcoin_swapinfo *swap,*tmp; struct iguana_bundlereq *req;
+    timemod = time(NULL) % modwidth;
+    coin = iguana_coinfind("BTCD");
+    portable_mutex_lock(&exchange->mutexS);
+    DL_FOREACH_SAFE(exchange->statemachines,swap,tmp)
+    {
+        if ( swap->dead != 0 || swap->mine.dead != 0 || swap->other.dead != 0 )
+            DL_DELETE(exchange->statemachines,swap);
+        else if ( (swap->mine.orderid % modwidth) == timemod )
+            instantdex_statemachine_iter(myinfo,exchange,swap);
+    }
+    portable_mutex_unlock(&exchange->mutexS);
+    while ( (req= queue_dequeue(&exchange->recvQ,0)) != 0 )
+    {
+        if ( instantdex_recvquotes(coin,req,req->hashes,req->n) != 0 )
+            myfree(req->hashes,(req->n+1) * sizeof(*req->hashes)), req->hashes = 0;
+    }
+    //iguana_inv2poll(myinfo,coin);
+}*/
+
 void exchanges777_loop(void *ptr)
 {
-    struct peggy_info *PEGS; struct exchange_info *exchange = ptr;
-    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr; void *bot;
+    struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
+    int32_t flag,retval,i; struct exchange_request *req; char *retstr;
+    myinfo = SuperNET_MYINFO(0);
+#ifdef INCLUDE_PAX
+    struct peggy_info *PEGS=0; int32_t peggyflag = 0;
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
-        PEGS = calloc(1,sizeof(*PEGS));
-        PAX_init(PEGS);
-        exchange->privatedata = PEGS;
-        peggyflag = 1;
-        _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
-        PEGS->lastupdate = (uint32_t)time(NULL);
+        if ( (PEGS= myinfo->PEGS) != 0 )
+        {
+            exchange->privatedata = PEGS;
+            peggyflag = 1;
+            _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
+            PEGS->lastupdate = (uint32_t)time(NULL);
+        }
     }
-    printf("exchanges loop.(%s) %p\n",exchange->name,&exchange->requestQ);
+#endif
+    printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
-        if ( peggyflag != 0 )
+#ifdef INCLUDE_PAX
+        if ( peggyflag != 0 && PEGS != 0 )
         {
-            printf("nonz peggy\n");
+            //printf("nonz peggy\n");
             PAX_idle(PEGS,peggyflag,3);
             if ( time(NULL) > PEGS->lastupdate+100 )
             {
@@ -609,6 +762,7 @@ void exchanges777_loop(void *ptr)
                 PEGS->lastupdate = (uint32_t)time(NULL);
             }
         }
+#endif
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
@@ -638,7 +792,7 @@ void exchanges777_loop(void *ptr)
                     //if ( retval == EXCHANGE777_ISPENDING )
                     //    queue_enqueue("Xpending",&exchange->pendingQ,&req->DL,0), flag++;
                     //else
-                        if ( retval == EXCHANGE777_REQUEUE )
+                    if ( retval == EXCHANGE777_REQUEUE )
                         queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
                     else
                     {
@@ -654,15 +808,14 @@ void exchanges777_loop(void *ptr)
                 free(req);
             }
         }
-        if ( (bot= queue_dequeue(&exchange->tradebotsQ,0)) != 0 )
-            tradebot_timeslice(exchange,bot);
+        tradebot_timeslices(exchange);
         if ( time(NULL) > exchange->lastpoll+exchange->pollgap )
         {
-            if ( strcmp(exchange->name,"bitcoin") == 0 )
+            /*if ( strcmp(exchange->name,"bitcoin") == 0 )
             {
-                instantdex_update(SuperNET_MYINFO(0));
+                iguana_statemachineupdate(myinfo,exchange);
                 //printf("InstantDEX call update\n");
-            }
+            }*/
             if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
             {
                 //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
@@ -751,7 +904,7 @@ char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request
 
 char *exchanges777_Qtrade(struct exchange_info *exchange,char *base,char *rel,int32_t maxseconds,int32_t dotrade,int32_t dir,double price,double volume,cJSON *argjson)
 {
-    struct exchange_request *req; int32_t polarity; 
+    struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
         return(clonestr("{\"error\":\"no supports function\"}"));
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) <= 0 || price < SMALLVAL || volume < SMALLVAL )
@@ -769,9 +922,15 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
 {
     struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
+    {
+        printf("%s doesnt have supports func\n",exchange->name);
         return(clonestr("{\"error\":\"no supports function\"}"));
+    }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
+    {
+        //printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
+    }
     if ( depth <= 0 )
         depth = 1;
     req = calloc(1,sizeof(*req) + sizeof(*req->bidasks)*depth*2);
@@ -791,11 +950,14 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     if ( (req->commission= commission) == 0. )
         req->commission = exchange->commission;
     if ( monitor == 0 )
+    {
+        printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
         return(exchanges777_submit(exchange,req,'Q',maxseconds));
+    }
     else
     {
         req->func = 'M';
-        printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
+        //printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -818,13 +980,16 @@ char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *ba
 int32_t exchanges777_id(char *exchangestr)
 {
     int32_t i;
-    for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+    if ( exchangestr != 0 )
     {
-        //printf("%s ",Exchange_funcs[i]->name);
-        if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
-            return(i);
+        for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
+        {
+            //printf("%s ",Exchange_funcs[i]->name);
+            if ( strcmp(exchangestr,Exchange_funcs[i]->name) == 0 )
+                return(i);
+        }
+        //printf("cant find (%s)\n",exchangestr);
     }
-    //printf("cant find (%s)\n",exchangestr);
     return(-1);
 }
 
@@ -847,6 +1012,15 @@ struct exchange_info *exchanges777_find(char *exchangestr)
     if ( (exchangeid= exchanges777_id(exchangestr)) >= 0 )
         return(Exchanges[exchangeid]);
     return(0);
+}
+
+void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *quotes,int32_t n)
+{
+    struct iguana_bundlereq *req; struct exchange_info *exchange = exchanges777_find("bitcoin");
+    //printf("got %d quotes from %s\n",n,addr->ipaddr);
+    req = iguana_bundlereq(coin,addr,'Q',0,0);
+    req->hashes = quotes, req->n = n;
+    queue_enqueue("recvQ",&exchange->recvQ,&req->DL,0);
 }
 
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
@@ -885,13 +1059,16 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         return(0);
     }
     exchange = calloc(1,sizeof(*exchange));
+    portable_mutex_init(&exchange->mutex);
+    portable_mutex_init(&exchange->mutexS);
+    portable_mutex_init(&exchange->mutexH);
+    portable_mutex_init(&exchange->mutexP);
+    portable_mutex_init(&exchange->mutexR);
+    portable_mutex_init(&exchange->mutexT);
     exchange->issue = *Exchange_funcs[i];
-    iguana_initQ(&exchange->pricesQ,"prices");
-    iguana_initQ(&exchange->requestQ,"request");
-    iguana_initQ(&exchange->acceptableQ,"acceptable");
-    iguana_initQ(&exchange->tradebotsQ,"tradebots");
-    iguana_initQ(&exchange->historyQ,"history");
-    iguana_initQ(&exchange->statemachineQ,"statemachineQ");
+    iguana_initQ(&exchange->recvQ,"recvQ");
+    iguana_initQ(&exchange->pricesQ,"pricesQ");
+    iguana_initQ(&exchange->requestQ,"requestQ");
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
     exchange->exchangebits = stringbits(exchange->name);
@@ -909,6 +1086,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
         exchange->commission *= .01;
     printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
+    //instantdex_FSMinit();
     iguana_launch(0,"exchangeloop",(void *)exchanges777_loop,exchange,IGUANA_EXCHANGETHREAD);
     return(exchange);
 }
@@ -933,10 +1111,10 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
 
 void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag)
 {
-    int32_t i,n; cJSON *argjson,*item; bits256 instantdexhash; struct exchange_info *exchange;
+    int32_t i,n; cJSON *argjson,*item; struct exchange_info *exchange;
     if ( (exchange= exchanges777_find("bitcoin")) == 0 && (exchange= exchange_create("bitcoin",0)) != 0 )
         myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
-    if ( 0 && exchanges != 0 )
+    if ( exchanges != 0 )
     {
         n = cJSON_GetArraySize(exchanges);
         for (i=0; i<n; i++)
@@ -946,7 +1124,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
                 myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
         }
     }
-    if ( 0 )
+    if ( 1 )
     {
         argjson = cJSON_CreateObject();
         for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
@@ -954,16 +1132,17 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             {
                 if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforx") == 0 )
                     continue;
-                if ( (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
+                if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,item)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
                     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
             }
         free_json(argjson);
     }
-    instantdexhash = calc_categoryhashes(0,"InstantDEX",0);
-    printf("InstantDEX:\n");
-    category_subscribe(myinfo,instantdexhash,GENESIS_PUBKEY);
-    category_processfunc(instantdexhash,GENESIS_PUBKEY,InstantDEX_hexmsg);
-    category_processfunc(instantdexhash,myinfo->myaddr.persistent,InstantDEX_hexmsg);
+}
+
+cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base,char *rel,int32_t period,uint32_t start,uint32_t end)
+{
+    cJSON *array = cJSON_CreateArray();
+    return(array);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -973,9 +1152,12 @@ THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfie
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
-        if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
-        else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        if ( exchange != 0 && exchange[0] != 0 )
+        {
+            if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
+                return(exchanges777_Qprices(ptr,base,rel,juint(json,"maxseconds"),allfields,depth,json,0,ptr->commission));
+            else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+        } else return(clonestr("{\"error\":\"no exchange specified\"}"));
     } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
@@ -984,6 +1166,8 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,buy,exchange,base,rel,price,volume,do
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -995,6 +1179,8 @@ THREE_STRINGS_AND_THREE_DOUBLES(InstantDEX,sell,exchange,base,rel,price,volume,d
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qtrade(ptr,base,rel,juint(json,"maxseconds"),dotrade,-1,price,volume,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1006,6 +1192,8 @@ THREE_STRINGS_AND_DOUBLE(InstantDEX,withdraw,exchange,base,destaddr,amount)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'W',base,0,juint(json,"maxseconds"),0,destaddr,amount,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1017,6 +1205,8 @@ TWO_STRINGS(InstantDEX,balance,exchange,base)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'B',base,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1028,6 +1218,8 @@ TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1039,6 +1231,8 @@ TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1050,6 +1244,8 @@ STRING_ARG(InstantDEX,openorders,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'O',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1061,6 +1257,8 @@ STRING_ARG(InstantDEX,tradehistory,exchange)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
             return(exchanges777_Qrequest(ptr,'H',0,0,juint(json,"maxseconds"),0,0,0,json));
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
@@ -1072,6 +1270,8 @@ THREE_STRINGS(InstantDEX,apikeypair,exchange,apikey,apisecret)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             if ( apikey != 0 && apikey[0] != 0 && apisecret != 0 && apisecret[0] != 0 )
@@ -1089,6 +1289,8 @@ THREE_STRINGS(InstantDEX,setuserid,exchange,userid,tradepassword)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             safecopy(ptr->userid,userid,sizeof(ptr->userid));
@@ -1103,6 +1305,8 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap)
     struct exchange_info *ptr;
     if ( remoteaddr == 0 )
     {
+        if ( myinfo->expiration == 0 )
+            return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
         {
             ptr->pollgap = pollgap;
@@ -1135,5 +1339,136 @@ STRING_ARG(InstantDEX,allpairs,exchange)
     if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 && ptr->issue.allpairs != 0 )
         return((*ptr->issue.allpairs)(ptr,json));
     else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+}
+
+TWO_STRINGS(iguana,rate,base,rel)
+{
+    cJSON *retjson,*tmpjson; char *retstr,baserel[128],_base[64],_rel[64]; double aveprice = 0.;
+    safecopy(_base,base,sizeof(_base));
+    safecopy(_rel,rel,sizeof(_rel));
+    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",_base,_rel,1)) != 0 )
+    {
+        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+        {
+            aveprice = jdouble(tmpjson,"aveprice");
+            retjson = cJSON_CreateObject();
+            sprintf(baserel,"%s/%s",_base,_rel);
+            jaddnum(retjson,baserel,aveprice);
+            jaddstr(retjson,"result","success");
+            free_json(tmpjson);
+            return(jprint(retjson,1));
+        } else return(clonestr("{\"error\":\"error parsing return from aveprice\"}"));
+    } else return(clonestr("{\"error\":\"null return from aveprice\"}"));
+}
+
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( period <= 0 )
+        period = 60;
+    if ( end <= 0 )
+        end = (uint32_t)time(NULL);
+    if ( start <= 0 || start >= end )
+        start = end - 1024*period;
+    jaddstr(retjson,"base",base);
+    jaddstr(retjson,"rel",rel);
+    jaddstr(retjson,"exchange",exchange[0] != 0 ? exchange : "all");
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"start",start);
+    jaddnum(retjson,"end",end);
+    jaddnum(retjson,"period",period);
+    jadd(retjson,"prices",iguana_pricesarray(myinfo,exchange,base,rel,period,start,end));
+    return(jprint(retjson,1));
+}
+
+INT_AND_ARRAY(iguana,rates,unused,quotes)
+{
+    int32_t i,n,len,j,haveslash; char *retstr,*quote,base[64][64],rel[64][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+#ifdef INCLUDE_PAX
+    char *str; int32_t nonz;
+    if ( myinfo->PEGS != 0 && (str= peggy_emitprices(&nonz,myinfo->PEGS,(uint32_t)time(NULL),PEGGY_MAXLOCKDAYS)) != 0 )
+        free(str);
+#endif
+    if ( is_cJSON_Array(quotes) != 0 && (n= cJSON_GetArraySize(quotes)) > 0 )
+    {
+        if ( n > 64 )
+        {
+            jaddstr(retjson,"error","only 16 quotes at a time");
+            return(jprint(retjson,1));
+        }
+        memset(base,0,sizeof(base));
+        memset(rel,0,sizeof(rel));
+        for (i=0; i<n; i++)
+        {
+            if ( (quote= jstri(quotes,i)) != 0 )
+            {
+                len = (int32_t)strlen(quote);
+                if ( len >= 64 )
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","quote too long");
+                    return(jprint(retjson,1));
+                }
+                for (j=haveslash=0; j<len; j++)
+                {
+                    if ( quote[j] == '/' )
+                    {
+                        haveslash = 1;
+                        if ( j > 0 && j < len-1 )
+                        {
+                            memcpy(base[i],quote,j);
+                            base[i][j] = 0;
+                            j++;
+                            strcpy(rel[i],&quote[j]);
+                            break;
+                        }
+                        else
+                        {
+                            if ( array != 0 )
+                                free_json(array);
+                            jaddstr(retjson,"error","no base error in quote item");
+                            return(jprint(retjson,1));
+                        }
+                    }
+                }
+                if ( j < len || haveslash == 0 )
+                {
+                    if ( haveslash == 0 )
+                        strcpy(base[i],quote);
+                    aveprice = 0.;
+                    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",base[i],rel[i],1)) != 0 )
+                    {
+                        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+                        {
+                            aveprice = jdouble(tmpjson,"aveprice");
+                            //printf("(%s) ",jprint(tmpjson,0));
+                            free_json(tmpjson);
+                        } else printf("error parsing.(%s)\n",retstr);
+                        if ( haveslash == 0 )
+                            strcpy(field,base[i]);
+                        else sprintf(field,"%s/%s",base[i],rel[i]);
+                        item = cJSON_CreateObject();
+                        jaddnum(item,field,aveprice);
+                        if ( array == 0 )
+                            array = cJSON_CreateArray();
+                        jaddi(array,item);
+                        free(retstr);
+                        //printf(" <- aveprice %f\n",aveprice);
+                    } else printf("no return from aveprice\n");
+                }
+                else
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","syntax error in quote item");
+                    return(jprint(retjson,1));
+                }
+            } else printf("i.%d of %d null quote\n",i,n);
+        }
+        jaddstr(retjson,"result","success");
+        jadd(retjson,"rates",array);
+    } else jaddstr(retjson,"error","no quotes array");
+    return(jprint(retjson,1));
 }
 #include "../includes/iguana_apiundefs.h"

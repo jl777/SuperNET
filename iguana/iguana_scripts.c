@@ -42,6 +42,7 @@ int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
     return(n);
 }
 
+// OP_DUP OP_HASH160 <hash of pubkey> OP_EQUALVERIFY OP_CHECKSIG
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 {
     script[n++] = SCRIPT_OP_DUP;
@@ -54,7 +55,11 @@ int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
 {
-    script[n++] = (locktime >> 24), script[n++] = (locktime >> 16), script[n++] = (locktime >> 8), script[n++] = locktime;
+    script[n++] = 4;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff, locktime >>= 8;
+    script[n++] = locktime & 0xff;
     script[n++] = SCRIPT_OP_CHECKLOCKTIMEVERIFY;
     script[n++] = SCRIPT_OP_DROP;
     return(n);
@@ -444,11 +449,12 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,char *asmstr,struct vin_info 
 
 //error memalloc mem.0x7f6fc6e4a2a8 94.242.229.158 alloc 1 used 2162688 totalsize.2162688 -> 94.242.229.158 (nil)
 
-int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
 {
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen;
+    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t *p2shscript;
     j = n = 0;
-    *suffixp = *pubkeysizep = 0;
+    *userdatap = 0;
+    *userdatalenp = *pubkeysizep = 0;
     *hashtypep = SIGHASH_ALL;
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {
@@ -472,7 +478,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     vp->type = spendtype;
     if ( j == 0 )
     {
-        *suffixp = len;
+        //*userdatalenp = len;
         vp->spendlen = len;
         return(vp->spendlen);
     }
@@ -488,21 +494,28 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
         j++;
     }
     vp->numpubkeys = j;
-    if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
+    *userdatap = &scriptsig[n];
+    *userdatalenp = (len - n);
+    p2shscript = 0;
+    while ( n < len )
     {
-        if ( scriptsig[n] == 0x4c )
-            vp->p2shlen = scriptsig[n+1], n += 2;
-        else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
-        //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
-        if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+        if ( n+2 < len && (scriptsig[n] == 0x4c || scriptsig[n] == 0x4d) )
         {
-            memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
-            n += vp->p2shlen;
-            vp->type = IGUANA_SCRIPT_P2SH;
-        } else vp->p2shlen = 0;
+            if ( scriptsig[n] == 0x4c )
+                vp->p2shlen = scriptsig[n+1], n += 2;
+            else vp->p2shlen = ((uint32_t)scriptsig[n+1] + ((uint32_t)scriptsig[n+2] << 8)), n += 3;
+            //printf("p2sh opcode.%02x %02x %02x scriptlen.%d\n",scriptsig[n],scriptsig[n+1],scriptsig[n+2],vp->p2shlen);
+            if ( vp->p2shlen < IGUANA_MAXSCRIPTSIZE && n+vp->p2shlen <= len )
+            {
+                p2shscript = &scriptsig[n];
+                memcpy(vp->p2shscript,&scriptsig[n],vp->p2shlen);
+                n += vp->p2shlen;
+                vp->type = IGUANA_SCRIPT_P2SH;
+            } else vp->p2shlen = 0;
+        }
     }
-    if ( n < len )
-        *suffixp = (len - n);
+    if ( *userdatap == p2shscript )
+        *userdatap = 0;
     /*if ( len == 0 )
      {
      //  txid.(eccf7e3034189b851985d871f91384b8ee357cd47c3024736e5676eb2debb3f2).v1
@@ -514,15 +527,17 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     return(vp->spendlen);
 }
 
-int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *suffixp,uint8_t *vinscript,int32_t scriptlen)
+int32_t iguana_vinscriptparse(struct iguana_info *coin,struct vin_info *vp,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *p2shsizep,uint32_t *userdatalenp,uint8_t *vinscript,int32_t scriptlen)
 {
-    int32_t hashtype;
-    *sigsizep = *pubkeysizep = *p2shsizep = *suffixp = 0;
-    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,suffixp,vp,vinscript,scriptlen,0) < 0 )
+    int32_t hashtype; uint8_t *userdata = 0;
+    *sigsizep = *pubkeysizep = *p2shsizep = *userdatalenp = 0;
+    if ( bitcoin_scriptget(coin,&hashtype,sigsizep,pubkeysizep,&userdata,userdatalenp,vp,vinscript,scriptlen,0) < 0 )
     {
         printf("iguana_vinscriptparse: error parsing vinscript?\n");
         return(-1);
     }
+    if ( userdata != 0 && *userdatalenp > 0 )
+        memcpy(vp->userdata,userdata,*userdatalenp);
     if ( vp->type == IGUANA_SCRIPT_P2SH )
     {
         *p2shsizep = vp->p2shlen + 1 + (vp->p2shlen >= 0xfd)*2;
@@ -632,9 +647,9 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         for (i=0; i<s->numpubkeys; i++)
         {
             len += iguana_rwvarint32(0,&metascript[len],(void *)&poffset);
-            if ( poffset > ramchain->H.data->scriptspace-33 )
+            if ( poffset > rdata->scriptspace-33 )
             {
-                printf("illegal poffset.%d/%d\n",poffset,ramchain->H.data->scriptspace);
+                printf("illegal poffset.%d/%d\n",poffset,rdata->scriptspace);
                 return(-1);
             }
             //printf("poffset[%d] of %d poffset %x\n",i,s->numpubkeys,poffset);
@@ -790,7 +805,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
             {
                 ramchain->H.stacksize += sigslen;
                 s->scriptoffset = ramchain->H.scriptoffset;
-                len = iguana_vinscriptencode(coin,&metalen,&Kspace[ramchain->H.data->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
+                len = iguana_vinscriptencode(coin,&metalen,&Kspace[rdata->scriptspace],ramchain->H.stacksize,Kspace,ramchain->H.scriptoffset,s,sigsbuf,sigslen,poffsets,V.p2shscript,V.p2shlen,suffix,suffixlen);
             } else printf("sigslen.%d numsigs.%d numpubs.%d suffixlen.%d\n",sigslen,V.numsigs,V.numpubkeys,suffixlen);
         }
         else
@@ -810,7 +825,7 @@ int32_t iguana_metascript(struct iguana_info *coin,RAMCHAIN_FUNC,struct iguana_s
         }
     }
     //printf("checklen.%d scriptoffset.%d\n",checklen,ramchain->H.scriptoffset);
-    if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[ramchain->H.data->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
+    if ( (decodelen= iguana_vinscriptdecode(coin,ramchain,&checkmetalen,_script,&Kspace[rdata->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) || checkmetalen != metalen )
     {
         //static uint64_t counter;
         //if ( counter++ < 100 )
@@ -877,7 +892,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
     int32_t j,scriptlen; struct vin_info V;
     uint32_t sequence,p2shspace,altspace,sigspace,pubkeyspace,spendind,unspentind,p2shsize,pubkeysize,sigsize,scriptspace,suffixlen;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t *scriptdata;
-    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,ramchain->H.data);
+    _iguana_ramchain_setptrs(RAMCHAIN_PTRS,rdata);
     *sigspacep = *pubkeyspacep = altspace = 0;
     return(1);
     if ( (rdata= ramchain->H.data) == 0 || ramchain->expanded != 0 )
@@ -902,7 +917,7 @@ int32_t iguana_ramchain_scriptspace(struct iguana_info *coin,int32_t *sigspacep,
             {
                 sequence = S[spendind].sequenceid;
                 scriptlen = S[spendind].vinscriptlen;
-                if ( S[spendind].scriptoffset != 0 && S[spendind].scriptoffset+scriptlen < ramchain->H.data->scriptspace )
+                if ( S[spendind].scriptoffset != 0 && S[spendind].scriptoffset+scriptlen < rdata->scriptspace )
                 {
                     scriptdata = &Kspace[S[spendind].scriptoffset];
                     altspace += scriptlen;
@@ -1000,14 +1015,14 @@ uint8_t *iguana_ramchain_scriptdecode(int32_t *metalenp,int32_t *scriptlenp,uint
 /*origoffset = ramchain->H.scriptoffset;
  if ( type != IGUANA_SCRIPT_STRANGE && type != IGUANA_SCRIPT_DATA && type != IGUANA_SCRIPT_OPRETURN && scriptlen > 0 && script != 0 )
  {
- if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= ramchain->H.data->scriptspace-ramchain->H.stacksize )
+ if ( Kspace != 0 && ramchain->H.scriptoffset+scriptlen+3 <= rdata->scriptspace-ramchain->H.stacksize )
  {
  if ( (u->scriptoffset= iguana_ramchain_scriptencode(coin,Kspace,&ramchain->H.scriptoffset,type,script,scriptlen,&pubkeyoffset)) > 0 || type == IGUANA_SCRIPT_76AC )
  {
  fprintf(stderr,"new offset.%d from scriptlen.%d pubkeyoffset.%d\n",ramchain->H.scriptoffset,scriptlen,pubkeyoffset);
  }
  //printf("[%d] u%d offset.%u len.%d\n",hdrsi,unspentind,u->scriptoffset,scriptlen);
- } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,ramchain->H.data->scriptspace,ramchain->H.stacksize);
+ } else printf("[%d] u%d Kspace.%p scriptspace overflow! %d + %d vs space.%d - stack.%d\n",hdrsi,unspentind,Kspace,ramchain->H.scriptoffset,scriptlen,rdata->scriptspace,ramchain->H.stacksize);
  checkscript = iguana_ramchain_scriptdecode(&metalen,&checklen,Kspace,u->type,_script,u->scriptoffset,P[pkind].pubkeyoffset < ramchain->H.scriptoffset ? P[pkind].pubkeyoffset : 0);
  if ( checklen != scriptlen || (script != 0 && checkscript != 0 && memcmp(checkscript,script,scriptlen) != 0) )
  {

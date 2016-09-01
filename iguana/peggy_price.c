@@ -76,7 +76,7 @@ short Currency_contractothers[NUM_CURRENCIES+1][NUM_CURRENCIES] =	// buggy!
 int32_t MINDENOMS[] = { 1000, 1000, 100000, 1000, 1000, 1000, 1000, 1000, // major currencies
     10000, 100000, 10000, 1000, 100000, 10000, 1000, 10000, 1000, 10000, 10000, 10000, 10000, 100000, 1000, 1000000, 1000, 10000, 1000, 1000, 10000, 1000, 10000000, 10000, // end of currencies
     1, 100, 1, 1, // metals, gold must be first
-    1, 10, 100000, 100, 100, 10000000, 10000, 1000, 1000,  1000, 100000, 100000, 1000000 // cryptos
+    100, 1, 10000, 100, 100, 1000, 100000, 1000, 1000,  1000
 };
 
 int32_t PAX_mindenomination(int32_t base)
@@ -195,14 +195,14 @@ uint32_t peggy_mils(int32_t i)
             minmils = 10;
         else if ( strcmp(peggy_bases[i],"BUND") == 0 || strcmp(peggy_bases[i],"UKOIL") == 0 || strcmp(peggy_bases[i],"USOIL") == 0 )
             minmils = 100;
-        else if ( strncmp(peggy_bases[i],"LTC",3) == 0 || strcmp(peggy_bases[i],"SuperNET") == 0 || strncmp(peggy_bases[i],"XAG",3) == 0 || strncmp(peggy_bases[i],"ETH",3) == 0 || strncmp(peggy_bases[i],"XCP",3) == 0 )
+        else if ( strncmp(peggy_bases[i],"ETC",3) == 0 || strcmp(peggy_bases[i],"SuperNET") == 0 || strncmp(peggy_bases[i],"XAG",3) == 0 || strncmp(peggy_bases[i],"ETH",3) == 0 || strncmp(peggy_bases[i],"XCP",3) == 0 )
             minmils = 1000;
         else if ( strncmp(peggy_bases[i],"XMR",3) == 0 )
             minmils = 10000;
         else if ( strncmp(peggy_bases[i],"NXT",3) == 0 || strncmp(peggy_bases[i],"BTS",3) == 0 )
             minmils = 1000000;
-        else if ( strncmp(peggy_bases[i],"DOGE",3) == 0 )
-            minmils = 100000000;
+        else if ( strncmp(peggy_bases[i],"STEEM",5) == 0 )
+            minmils = 1000;
         else minmils = 10000;
     }
     return(minmils);
@@ -682,9 +682,9 @@ int32_t PAX_getmatrix(double *basevals,struct peggy_info *PEGS,double Hmatrix[32
             RTprices[i] = PEGS->data.cryptos[7];
         else if ( i < 32 )
         {
-            basevals[i] = Hmatrix[i][i];
+            PEGS->data.RTmatrix[i][i] = basevals[i] = Hmatrix[i][i];
             //if ( Debuglevel > 2 )
-            printf("(%s %f).%d ",CURRENCIES[i],basevals[i],i);
+            //printf("(%s %f).%d ",CURRENCIES[i],basevals[i],i);
         }
         else if ( (c= PAX_contractnum(contracts[i],0)) >= 0 )
         {
@@ -716,10 +716,12 @@ char *peggy_emitprices(int32_t *nonzp,struct peggy_info *PEGS,uint32_t blocktime
     double matrix[32][32],RTmatrix[32][32],cprices[64],basevals[64]; struct price_resolution prices[256];
     cJSON *json,*array; char *jsonstr,*opreturnstr = 0; int32_t i,nonz = 0;
     memset(cprices,0,sizeof(cprices));
-    //printf("peggy_emitprices\n");
+    printf("peggy_emitprices\n");
     if ( PAX_getmatrix(basevals,PEGS,matrix,cprices+1,peggy_bases+1,sizeof(peggy_bases)/sizeof(*peggy_bases)-1,blocktimestamp) > 0 )
     {
         cprices[0] = PEGS->btcdbtc;
+        for (i=0; i<32; i++)
+            PEGS->data.RTmatrix[i][i] = basevals[i];
         /*for (i=0; i<32; i++)
          printf("%f ",basevals[i]);
          printf("basevals\n");
@@ -825,13 +827,37 @@ double PAX_getprice(char *retbuf,char *base,char *rel,char *contract,struct pegg
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-void PAX_init(struct peggy_info *PEGS)
+double PAX_aveprice(struct supernet_info *myinfo,char *base)
 {
-    double commission = 0.;
+    struct peggy_info *PEGS; int32_t basenum;
+    if ( (PEGS= myinfo->PEGS) != 0 && (basenum= PAX_basenum(base)) >= 0 )
+    {
+        return(PEGS->data.RTmatrix[basenum][basenum]);
+    }
+    return(0.);
+}
+
+struct peggy_info *PAX_init()
+{
+    void peggy_indsinit();
+    struct peggy_info *PEGS; struct price_resolution spread; double commission = 0.;
     init_Currencymasks();
+    //calc_smooth_code(127,7);
+    peggy_indsinit();
     tradebot_monitorall(0,0,0,0,"fxcm",commission);
     tradebot_monitorall(0,0,0,0,"truefx",commission);
     tradebot_monitorall(0,0,0,0,"instaforex",commission);
+    spread.Pval = PERCENTAGE(1);
+    PEGS = peggy_init(PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,100,10,spread,PEGGY_RATE_777,40,10,2,5,2,0,0);
+    exchange_create("PAX",0);
+    //peggy_priceinits(PEGS,(uint32_t)time(NULL),allprices);
+    return(PEGS);
+}
+
+ZERO_ARGS(pax,start)
+{
+    myinfo->PEGS = PAX_init();
+    return(clonestr("{\"result\":\"success\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"

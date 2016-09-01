@@ -49,7 +49,7 @@ SECP256K1_WARN_UNUSED_RESULT int secp256k1_pedersen_blind_sum(
 /** Verify a tally of pedersen commitments
  * Returns 1: commitments successfully sum to zero.
  *         0: Commitments do not sum to zero or other error.
- * In:     ctx:        pointer to a context object, initialized for Pedersen commitment (cannot be NULL)
+ * In:     ctx:       pointer to a context object, initialized for Pedersen commitment (cannot be NULL)
  *         commits:    pointer to pointers to 33-byte character arrays for the commitments. (cannot be NULL if pcnt is non-zero)
  *         pcnt:       number of commitments pointed to by commits.
  *         ncommits:   pointer to pointers to 33-byte character arrays for negative commitments. (cannot be NULL if ncnt is non-zero)
@@ -146,7 +146,7 @@ SECP256K1_WARN_UNUSED_RESULT int secp256k1_rangeproof_rewind(
  *
  */
 SECP256K1_WARN_UNUSED_RESULT int secp256k1_rangeproof_sign(
-  const secp256k1_context* ctx,
+  const secp256k1_context *ctx,
   unsigned char *proof,
   int *plen,
   uint64_t min_value,
@@ -170,7 +170,7 @@ SECP256K1_WARN_UNUSED_RESULT int secp256k1_rangeproof_sign(
  *        max_value: pointer to an unsigned int64 which will be updated with the maximum value that commit could have. (cannot be NULL)
  */
 SECP256K1_WARN_UNUSED_RESULT int secp256k1_rangeproof_info(
-  const secp256k1_context* ctx,
+  const secp256k1_context *ctx,
   int *exp,
   int *mantissa,
   uint64_t *min_value,

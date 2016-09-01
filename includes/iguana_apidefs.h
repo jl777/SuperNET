@@ -16,6 +16,7 @@
 #define IGUANA_CFUNC_IA(agent,name,val,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array)
 #define IGUANA_CFUNC_IAS(agent,name,val,array,str) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,cJSON *array,char *str)
 #define IGUANA_CFUNC_II(agent,name,val,val2) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2)
+#define IGUANA_CFUNC_ID(agent,name,val,val2) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,double val2)
 #define IGUANA_CFUNC_III(agent,name,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2,int32_t val3)
 #define IGUANA_CFUNC_SIII(agent,name,str,val,val2,val3) char *agent ## _ ## name(IGUANA_ARGS,char *str,int32_t val,int32_t val2,int32_t val3)
 #define IGUANA_CFUNC_IIA(agent,name,val,val2,array) char *agent ## _ ## name(IGUANA_ARGS,int32_t val,int32_t val2,cJSON *array)
@@ -53,6 +54,7 @@
 // API functions
 #define ZERO_ARGS IGUANA_CFUNC0
 #define INT_ARG IGUANA_CFUNC_I
+#define INT_AND_DOUBLE IGUANA_CFUNC_ID
 #define TWO_INTS IGUANA_CFUNC_II
 #define STRING_ARG IGUANA_CFUNC_S
 #define TWO_STRINGS IGUANA_CFUNC_SS

@@ -22,26 +22,34 @@
 #include <curl/easy.h>
 #endif
 
-#define INSTANTDEX_DECKSIZE 2000
+#define INSTANTDEX_DECKSIZE 1000
 #define INSTANTDEX_HOPS 2
-#define INSTANTDEX_DURATION 60
+#define INSTANTDEX_DURATION 300
 
-#define INSTANTDEX_INSURANCERATE (1. / 777.)
+#define INSTANTDEX_ORDERSTATE_IDLE 0
+#define INSTANTDEX_ORDERSTATE_HAVEOTHERFEE 1
+#define INSTANTDEX_ORDERSTATE_HAVEDEPOSIT 2
+#define INSTANTDEX_ORDERSTATE_HAVEPAYMENT 4
+#define INSTANTDEX_ORDERSTATE_HAVEALTPAYMENT 8
+#define INSTANTDEX_ORDERSTATE_ORDERIDMASK (~(uint64_t)15)
+
+#define INSTANTDEX_INSURANCEDIV 777
 #define INSTANTDEX_PUBEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
-#define INSTANTDEX_MINPERC 50.
+#define INSTANTDEX_MINPERC 50
 
-#define INSTANTDEX_OFFERDURATION 300
-#define INSTANTDEX_LOCKTIME 3600
+#define INSTANTDEX_OFFERDURATION 600
+//#define INSTANTDEX_LOCKTIME 3600
 
 #define EXCHANGES777_MINPOLLGAP 1
 #define EXCHANGES777_MAXDEPTH 200
 #define EXCHANGES777_DEFAULT_TIMEOUT 30
 typedef void CURL;
 struct exchange_info;
+struct exchange_quote;
 
 struct exchange_funcs
 {
@@ -64,10 +72,13 @@ struct exchange_info
 {
     struct exchange_funcs issue;
     char name[16],apikey[MAX_JSON_FIELD],apisecret[MAX_JSON_FIELD],tradepassword[MAX_JSON_FIELD],userid[MAX_JSON_FIELD];
-    uint32_t exchangeid,pollgap,lastpoll;
+    uint32_t exchangeid,pollgap,lastpoll; portable_mutex_t mutex,mutexH,mutexS,mutexP,mutexR,mutexT;
     uint64_t lastnonce,exchangebits; double commission;
     void *privatedata;
-    CURL *cHandle; queue_t requestQ,pricesQ,statemachineQ,tradebotsQ,acceptableQ,historyQ;
+    struct tradebot_info *tradebots;
+    struct bitcoin_swapinfo *statemachines,*history;
+    struct instantdex_accept *offers;
+    CURL *cHandle; queue_t recvQ,pricesQ,requestQ;
 };
 
 struct instantdex_msghdr
@@ -108,43 +119,19 @@ struct exchange_request
 struct instantdex_offer
 {
     char base[24],rel[24];
-    uint64_t price64,basevolume64,offer64;
+    int64_t price64,basevolume64; uint64_t account;
     uint32_t expiration,nonce;
     char myside,acceptdir,minperc,pad;
 };
 
 struct instantdex_accept
 {
-    struct queueitem DL;
+    struct instantdex_accept *next,*prev;
+    uint8_t state,reported,minconfirms,peerhas[IGUANA_MAXPEERS/8];
     uint64_t pendingvolume64,orderid;
-    uint32_t dead; int32_t didstate;
+    uint32_t dead; 
     struct instantdex_offer offer;
 };
-
-struct bitcoin_statetx
-{
-    bits256 txid;
-    uint64_t amount,change,inputsum;
-    double numconfirms;
-    char destaddr[64];
-    char txbytes[];
-};
-
-struct bitcoin_swapinfo
-{
-    struct queueitem DL;
-    struct instantdex_accept mine,other;
-    bits256 privkeys[INSTANTDEX_DECKSIZE+2],mypubs[2],otherpubs[2],privAm,pubAm,privBn,pubBn;
-    bits256 myorderhash,otherorderhash,mypubkey,othertrader;
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
-    uint64_t altsatoshis,BTCsatoshis,insurance,altpremium,matched64;
-    int32_t isinitiator,choosei,otherchoosei,cutverified,otherverifiedcut;
-    struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
-    char expectedcmdstr[16],status[16],waitfortx[16];
-    struct instantdex_stateinfo *state; uint32_t expiration,dead,reftime;
-};
-
-struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
 
 struct instantdex_stateinfo
 {
@@ -155,9 +142,29 @@ struct instantdex_stateinfo
     struct instantdex_event *events; int32_t numevents;
 };
 
+struct bitcoin_eventitem { struct queueitem DL; cJSON *argjson,*newjson; int32_t serdatalen; char cmd[16]; uint8_t serdata[]; };
+
+struct bitcoin_swapinfo
+{
+    struct bitcoin_swapinfo *next,*prev; portable_mutex_t mutex;
+    queue_t eventsQ; //struct bitcoin_eventitem *pollevent;
+    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
+    bits256 myorderhash,otherorderhash,mypubkey,othertrader,bothorderhash;
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint64_t altsatoshis,BTCsatoshis,insurance,altinsurance;
+    int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
+    struct bitcoin_statetx *deposit,*payment,*altpayment,*myfee,*otherfee;
+    char status[16],waitfortx[16];
+    struct instantdex_stateinfo *state; struct instantdex_accept mine,other;
+    struct iguana_info *coinbtc,*altcoin; uint8_t secretAm[20],secretBn[20];
+    uint32_t expiration,dead,reftime,btcconfirms,altconfirms,locktime;
+};
+
+struct instantdex_event { char cmdstr[24],sendcmd[16]; int16_t nextstateind; };
+
 #define instantdex_isbob(swap) (swap)->mine.offer.myside
 
-struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t requeue);
+struct instantdex_accept *instantdex_offerfind(struct supernet_info *myinfo,struct exchange_info *exchange,cJSON *bids,cJSON *asks,uint64_t orderid,char *base,char *rel,int32_t report);
 cJSON *instantdex_acceptjson(struct instantdex_accept *ap);
 cJSON *instantdex_historyjson(struct bitcoin_swapinfo *swap);
 struct bitcoin_swapinfo *instantdex_historyfind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
@@ -178,11 +185,15 @@ double truefx_price(struct exchange_info *exchange,char *base,char *rel,struct e
 double fxcm_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 double instaforex_price(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth,double commission,cJSON *argjson,int32_t invert);
 
-char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t offerer,int32_t queueflag,uint8_t minperc);
-void instantdex_update(struct supernet_info *myinfo);
-char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen);
+char *instantdex_createaccept(struct supernet_info *myinfo,struct instantdex_accept **aptrp,struct exchange_info *exchange,char *base,char *rel,double price,double basevolume,int32_t acceptdir,char *mysidestr,int32_t duration,uint64_t offerer,uint8_t minperc);
+char *instantdex_sendcmd(struct supernet_info *myinfo,struct instantdex_offer *offer,cJSON *argjson,char *cmdstr,bits256 desthash,int32_t hops,void *extra,int32_t extralen,struct iguana_peer *addr,struct bitcoin_swapinfo *swap);
 char *instantdex_sendoffer(struct supernet_info *myinfo,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *argjson); // Bob sending to network (Alice)
-struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid,int32_t requeueflag);
-char *instantdex_checkoffer(struct supernet_info *myinfo,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *json);
+struct bitcoin_swapinfo *instantdex_statemachinefind(struct supernet_info *myinfo,struct exchange_info *exchange,uint64_t orderid);
+char *instantdex_checkoffer(struct supernet_info *myinfo,int32_t *addedp,uint64_t *txidp,struct exchange_info *exchange,struct instantdex_accept *ap,cJSON *json);
+void tradebot_timeslices(struct exchange_info *exchange);
+struct instantdex_stateinfo *BTC_initFSM(int32_t *n);
+struct bitcoin_statetx *instantdex_feetx(struct supernet_info *myinfo,struct instantdex_accept *A,struct bitcoin_swapinfo *swap,struct iguana_info *coin);
+void instantdex_statemachine_iter(struct supernet_info *myinfo,struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
+void instantdex_historyadd(struct exchange_info *exchange,struct bitcoin_swapinfo *swap);
 
 #endif

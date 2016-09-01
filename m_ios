@@ -1,2 +1,4 @@
-git pull
+if [[ $# -eq 0 ]]; then
+    git pull
+fi
 cd iguana; ./m_ios; cd ..

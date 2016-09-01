@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#define HAVE_STRUCT_TIMESPEC
 #include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -31,16 +32,18 @@
 
 #ifdef __MINGW
 #define sleep(x) Sleep(1000*(x))
-#include "../win/mingw.h"
-#include "../win/mman.h"
+#include "../OSlibs/win/mingw.h"
+#include "../OSlibs/win/mman.h"
+#include "../OSlibs/win/pthread.h"
 
-//#define EADDRINUSE WSAEADDRINUSE
+#define EADDRINUSE WSAEADDRINUSE
 
 #else
 //#include <sys/poll.h>
 #include <time.h>
 #include <poll.h>
 #include <netdb.h>
+#define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
 //#include <netinet/in.h>
 //#include "in.h"
@@ -174,7 +177,7 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 char *OS_portable_path(char *str);
 int32_t OS_nonportable_renamefile(char *fname,char *newfname);
 int32_t  OS_nonportable_launch(char *args[]);
-void OS_nonportable_randombytes(unsigned char *x,long xlen);
+void OS_nonportable_randombytes(uint8_t *x,long xlen);
 int32_t OS_nonportable_init();
 #endif
 
@@ -182,7 +185,7 @@ void OS_portable_init();
 void OS_init();
 
 double OS_portable_milliseconds();
-void OS_portable_randombytes(unsigned char *x,long xlen);
+void OS_portable_randombytes(uint8_t *x,long xlen);
 int32_t OS_portable_truncate(char *fname,long filesize);
 char *OS_portable_path(char *str);
 void OS_remove_directory(char *dirname);
@@ -202,7 +205,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 double OS_milliseconds();
 
-void OS_randombytes(unsigned char *x,long xlen);
+void OS_randombytes(uint8_t *x,long xlen);
 
 int32_t OS_truncate(char *fname,long filesize);
 char *OS_compatible_path(char *str);
@@ -260,12 +263,12 @@ int32_t is_decimalstr(char *str);
 void tolowercase(char *str);
 char *clonestr(char *str);
 int32_t is_hexstr(char *str,int32_t n);
-int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex);
+int32_t decode_hex(uint8_t *bytes,int32_t n,char *hex);
 void reverse_hexstr(char *str);
 int32_t init_hexbytes_noT(char *hexbytes,uint8_t *message,long len);
 uint16_t parse_ipaddr(char *ipaddr,char *ip_port);
 int32_t bitweight(uint64_t x);
-unsigned char _decode_hex(char *hex);
+uint8_t _decode_hex(char *hex);
 char *uppercase_str(char *buf,char *str);
 char *lowercase_str(char *buf,char *str);
 int32_t strsearch(char *strs[],int32_t num,char *name);
@@ -355,20 +358,28 @@ uint8_t *iguana_varint32(int32_t rwflag,uint8_t *serialized,uint16_t *varint16p)
 uint8_t *iguana_varint64(int32_t rwflag,uint8_t *serialized,uint32_t *varint32p);
 int32_t iguana_rwvarint(int32_t rwflag,uint8_t *serialized,uint64_t *varint64p);
 int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
-int32_t iguana_rwstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
+int32_t iguana_rwvarstr(int32_t rwflag,uint8_t *serialized,int32_t maxlen,char *endianedp);
 int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 
+bits256 bits256_ave(bits256 a,bits256 b);
 bits256 bits256_doublesha256(char *hashstr,uint8_t *data,int32_t datalen);
 char *bits256_str(char hexstr[65],bits256 x);
 char *bits256_lstr(char hexstr[65],bits256 x);
 bits256 bits256_add(bits256 a,bits256 b);
 int32_t bits256_cmp(bits256 a,bits256 b);
 bits256 bits256_lshift(bits256 x);
+bits256 bits256_rshift(bits256 x);
 bits256 bits256_from_compact(uint32_t c);
+uint32_t bits256_to_compact(bits256 x);
 bits256 bits256_conv(char *hexstr);
 int32_t btc_priv2pub(uint8_t pubkey[33],uint8_t privkey[32]);
-void calc_shares(unsigned char *shares,unsigned char *secret,int32_t size,int32_t width,int32_t M,int32_t N,unsigned char *sharenrs);
 int32_t OS_portable_rmdir(char *dirname,int32_t diralso);
+void calc_hmac_sha256(uint8_t *mac,int32_t maclen,uint8_t *key,int32_t key_size,uint8_t *message,int32_t len);
+int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);
+
+bits256 bits256_sha256(bits256 data);
+void bits256_rmd160(uint8_t rmd160[20],bits256 data);
+void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

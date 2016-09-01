@@ -48,7 +48,7 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 #include <time.h>
 
 
-#include "../win/mman.h"
+#include "../OSlibs/win/mman.h"
 
 #ifndef FILE_MAP_EXECUTE
 #define FILE_MAP_EXECUTE    0x0020
@@ -520,7 +520,8 @@ void *OS_nonportable_mapfile(char *fname,uint64_t *filesizep,int32_t enablewrite
 	_close(fd);
     if ( ptr == 0 || ptr == MAP_FAILED )
 	{
-		printf("map_file.write%d: mapping %s failed? mp %p\n",enablewrite,fname,ptr);
+        if ( enablewrite != 0 )
+            printf("map_file.write%d: mapping %s failed? mp %p\n",enablewrite,fname,ptr);
 		return(0);
 	}
 	*filesizep = filesize;

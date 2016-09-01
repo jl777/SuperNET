@@ -1,0 +1,2 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"sendtoaddress\",\"params\":[\"RXL3YXG2ceaB6C5hfJcN4fvmLH2C34knhA\", 0.0001, \"4e4557484f54000000484f542049434f000000000000000000407a10f35a00007f53009145d46b57ffffff1e0000000001009577013c0580f1dce4182fce875748c4986b240ff7d7bc3fffb0\", \"sendcomment\"]}"
+

@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #ifdef _WIN32
-#include "win/pthread.h"
+#include "OSlibs/win/pthread.h"
 #include <windows.h>
 //static inline void sleep(unsigned ms) { Sleep(ms*1000); }
 
@@ -360,10 +360,10 @@ static PP_Bool Instance_DidCreate(PP_Instance instance,uint32_t argc,const char*
     nacl_io_init_ppapi(instance,g_get_browser_interface);
     umount("/");
     mount("", "/", "memfs", 0, "");
-    mkdir("/tmp",0755);
-    mkdir("/DB",0755);
-    mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
-    mount("","/DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
+    //mkdir("/tmp",0755);
+    mkdir("DB",0755);
+    //mount("","/tmp","html5fs",0,"type=TEMPORARY,expected_size=2000000000");
+    mount("","DB","html5fs",0,"type=PERSISTENT,expected_size=10000000000");
     /*mount("",       // source. Use relative URL
           "/http",  // target
           "httpfs", // filesystemtype

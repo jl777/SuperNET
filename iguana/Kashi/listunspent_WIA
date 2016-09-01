@@ -1,0 +1,12 @@
+#!/bin/bash
+echo ""
+echo "The listunspent RPC returns an array of unspent transaction outputs belonging to this wallet"
+
+echo ""
+echo "Dependencies:"
+echo "Walletpassphrase"
+
+
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"listunspent\",\"params\":[\"185oP\"]}"
+
+echo ""

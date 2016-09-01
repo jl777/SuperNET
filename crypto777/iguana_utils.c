@@ -90,14 +90,28 @@ bits256 bits256_add(bits256 a,bits256 b)
 int32_t bits256_cmp(bits256 a,bits256 b)
 {
     int32_t i;
-    for (i=0; i<4; i++)
+    for (i=3; i>=0; i--)
     {
+        //printf("%llx %llx, ",(long long)a.ulongs[i],(long long)b.ulongs[i]);
         if ( a.ulongs[i] > b.ulongs[i] )
             return(1);
         else if ( a.ulongs[i] < b.ulongs[i] )
             return(-1);
     }
+    //printf("thesame\n");
     return(0);
+}
+
+bits256 bits256_rshift(bits256 x)
+{
+    int32_t i; uint64_t carry,prevcarry = 0;
+    for (i=3; i>=0; i--)
+    {
+        carry = (1 & x.ulongs[i]) << 63;
+        x.ulongs[i] = prevcarry | (x.ulongs[i] >> 1);
+        prevcarry = carry;
+    }
+    return(x);
 }
 
 bits256 bits256_lshift(bits256 x)
@@ -112,16 +126,40 @@ bits256 bits256_lshift(bits256 x)
     return(x);
 }
 
+bits256 bits256_ave(bits256 a,bits256 b)
+{
+    return(bits256_rshift(bits256_add(a,b)));
+}
+
 bits256 bits256_from_compact(uint32_t c)
 {
+    
 	uint32_t nbytes,nbits,i; bits256 x;
     memset(x.bytes,0,sizeof(x));
     nbytes = (c >> 24) & 0xFF;
-    nbits = (8 * (nbytes - 3));
-    x.ulongs[0] = c & 0xFFFFFF;
-    for (i=0; i<nbits; i++) // horrible inefficient
-        x = bits256_lshift(x);
+    if ( nbytes >= 3 )
+    {
+        nbits = (8 * (nbytes - 3));
+        x.ulongs[0] = c & 0xFFFFFF;
+        for (i=0; i<nbits; i++)
+            x = bits256_lshift(x);
+    }
     return(x);
+}
+
+uint32_t bits256_to_compact(bits256 x)
+{
+    int32_t i; uint32_t nbits;
+    for (i=31; i>2; i--)
+        if ( x.bytes[i] != 0 )
+            break;
+    if ( (x.bytes[i] & 0x80) != 0 )
+        i++;
+    nbits = x.bytes[i] << 16;
+    nbits |= x.bytes[i-1] << 8;
+    nbits |= x.bytes[i-2];
+    nbits |= ((i+1) << 24);
+    return(nbits);
 }
 
 int32_t bitweight(uint64_t x)
@@ -236,9 +274,11 @@ void iguana_launcher(void *ptr)
 void iguana_terminate(struct iguana_thread *t)
 {
     int32_t retval;
+#ifndef _WIN32
     retval = pthread_join(t->handle,NULL);
     if ( retval != 0 )
         printf("error.%d terminating t.%p thread.%s\n",retval,t,t->name);
+#endif
     myfree(t,sizeof(*t));
 }
 
@@ -296,13 +336,11 @@ int32_t is_hexstr(char *str,int32_t n)
         if ( n > 0 && i >= n )
             break;
         if ( _unhex(str[i]) < 0 )
-        {
-            if ( n == 0 )
-                return(i);
-            return(0);
-        }
+            break;
     }
-    return(n);
+    if ( n == 0 )
+        return(i);
+    return(i == n);
 }
 
 int32_t unhex(char c)
@@ -321,7 +359,7 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
 {
     int32_t adjust,i = 0;
     //printf("decode.(%s)\n",hex);
-    if ( is_hexstr(hex,64) == 0 )
+    if ( is_hexstr(hex,n) == 0 )
     {
         memset(bytes,0,n);
         return(n);
@@ -507,6 +545,19 @@ static int _decreasing_uint64(const void *a,const void *b)
 #undef uint64_b
 }
 
+static int _decreasing_uint32(const void *a,const void *b)
+{
+#define uint32_a (*(uint32_t *)a)
+#define uint32_b (*(uint32_t *)b)
+	if ( uint32_b > uint32_a )
+		return(1);
+	else if ( uint32_b < uint32_a )
+		return(-1);
+	return(0);
+#undef uint32_a
+#undef uint32_b
+}
+
 int32_t sortds(double *buf,uint32_t num,int32_t size)
 {
 	qsort(buf,num,size,_increasing_double);
@@ -522,6 +573,12 @@ int32_t sort64s(uint64_t *buf,uint32_t num,int32_t size)
 int32_t revsort64s(uint64_t *buf,uint32_t num,int32_t size)
 {
 	qsort(buf,num,size,_decreasing_uint64);
+	return(0);
+}
+
+int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size)
+{
+	qsort(buf,num,size,_decreasing_uint32);
 	return(0);
 }
 

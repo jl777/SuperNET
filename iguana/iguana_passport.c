@@ -28,8 +28,10 @@ While it is not expected that there will be more than 256 such blockchains, by u
  'b' -> bitcoin/BitcoinDark (BTC)
  'c' -> colored coins
  'e' -> ethereum (ETH)
+ 'h' -> HEAT
  'n' -> NXT
  'o' -> open assets
+ 's' -> BURST
  'w' -> WAVES
  'x' -> counterparty (XCP)
  '?' -> please contact jl777 to have a new code for asset supporting blockchain added.

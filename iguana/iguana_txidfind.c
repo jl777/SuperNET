@@ -17,17 +17,17 @@
 
 int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    static int64_t total;
-    if ( ramchain->txbits == 0 )
+    static int64_t total; struct iguana_ramchaindata *rdata;
+    if ( 0 && ramchain->txbits == 0 && (rdata= ramchain->H.data) != 0 )
     {
         int32_t tlen; uint8_t *TXbits;
-        TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
-        //TXbits = (uint8_t *)((long)ramchain->H.data + ramchain->H.data->TXoffset);
-        tlen = (int32_t)hconv_bitlen(ramchain->H.data->numtxsparse * ramchain->H.data->txsparsebits);
+        TXbits = RAMCHAIN_PTR(rdata,TXoffset);
+        //TXbits = (uint8_t *)((long)rdata + rdata->TXoffset);
+        tlen = (int32_t)hconv_bitlen(rdata->numtxsparse * rdata->txsparsebits);
         ramchain->txbits = calloc(1,tlen);
         memcpy(ramchain->txbits,TXbits,tlen);
         total += tlen;
-        char str[65]; printf("alloc.[%d] txbits.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->txbits,tlen,mbstr(str,total));
+        char str[65]; printf("%s alloc.[%d] txbits.%p[%d] total %s\n",coin->symbol,rdata->height/coin->chain->bundlesize,ramchain->txbits,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
@@ -35,21 +35,21 @@ int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramc
 
 int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
-    static int64_t total;
-    if ( ramchain->cacheT == 0 )
+    static int64_t total; struct iguana_ramchaindata *rdata;
+    if ( ramchain->cacheT == 0 && (rdata= ramchain->H.data) != 0 )
     {
         int32_t i,tlen; struct iguana_txid *T;
-        T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-        //T = (void *)((long)ramchain->H.data + ramchain->H.data->Toffset);
-        tlen = sizeof(*T) * ramchain->H.data->numtxids;
+        T = RAMCHAIN_PTR(rdata,Toffset);
+        //T = (void *)((long)rdata + rdata->Toffset);
+        tlen = sizeof(*T) * rdata->numtxids;
         if ( (ramchain->cacheT= calloc(1,tlen)) != 0 )
         {
             //memcpy(ramchain->cacheT,T,tlen);
-            for (i=0; i<ramchain->H.data->numtxids; i++)
+            for (i=0; i<rdata->numtxids; i++)
                 ramchain->cacheT[i] = T[i];
         } else ramchain->cacheT = T;
         total += tlen;
-        char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",ramchain->H.data->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
+        char str[65]; printf("alloc.[%d] cacheT.%p[%d] total %s\n",rdata->height/coin->chain->bundlesize,ramchain->cacheT,tlen,mbstr(str,total));
         return(tlen);
     }
     return(-1);
@@ -58,6 +58,7 @@ int32_t iguana_alloccacheT(struct iguana_info *coin,struct iguana_ramchain *ramc
 uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tablesize,uint8_t *key,int32_t keylen,uint32_t setind,void *refdata,int32_t refsize,struct iguana_ramchain *ramchain,uint32_t maxitems)
 {
     static uint8_t masks[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
+    struct iguana_ramchaindata *rdata;
     int32_t i,j,x,n,modval; int64_t bitoffset; uint8_t *ptr; uint32_t *table,retval = 0;
     if ( tablesize == 0 )
     {
@@ -87,8 +88,8 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     //if ( setind == 0 )
     //    ramchain->sparsesearches++;
     //else ramchain->sparseadds++;
-    if ( 0 && (ramchain->sparsesearches % 1000000) == 0 )
-        printf("[%3d] %7d.[%-2d %8d] %5.3f adds.(%-10ld %10ld) search.(hits.%-10ld %10ld) %5.2f%% max.%ld\n",ramchain->height/ramchain->H.data->numblocks,ramchain->height,width,tablesize,(double)(ramchain->sparseadditers + ramchain->sparsesearchiters)/(1+ramchain->sparsesearches+ramchain->sparseadds),ramchain->sparseadds,ramchain->sparseadditers,ramchain->sparsehits,ramchain->sparsesearches,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
+    if ( 0 && (rdata= ramchain->H.data) != 0 && (ramchain->sparsesearches % 1000000) == 0 )
+        printf("[%3d] %7d.[%-2d %8d] %5.3f adds.(%-10ld %10ld) search.(hits.%-10ld %10ld) %5.2f%% max.%ld\n",ramchain->height/rdata->numblocks,ramchain->height,width,tablesize,(double)(ramchain->sparseadditers + ramchain->sparsesearchiters)/(1+ramchain->sparsesearches+ramchain->sparseadds),ramchain->sparseadds,ramchain->sparseadditers,ramchain->sparsehits,ramchain->sparsesearches,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     if ( width == 32 )
     {
         table = (uint32_t *)bits;
@@ -209,30 +210,36 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
 
 uint32_t iguana_sparseaddtx(uint8_t *bits,int32_t width,uint32_t tablesize,bits256 txid,struct iguana_txid *T,uint32_t txidind,struct iguana_ramchain *ramchain)
 {
-    uint32_t ind,retval;
-    //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
-    ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
-    if ( (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T),ramchain,ramchain->H.data->numtxids)) != 0 )
+    uint32_t ind,retval=0; struct iguana_ramchaindata *rdata = ramchain->H.data;
+    if ( tablesize > 0 )
     {
-        char str[65];
-        if ( txidind != 0 && retval != txidind )
-            printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
-        return(retval);
+        //char str[65]; printf("sparseaddtx %s txidind.%d bits.%p\n",bits256_str(str,txid),txidind,bits);
+        ind = (txid.ulongs[0] ^ txid.ulongs[1] ^ txid.ulongs[2] ^ txid.ulongs[3]) % tablesize;
+        if ( rdata != 0 && (retval= iguana_sparseadd(bits,ind,width,tablesize,txid.bytes,sizeof(txid),txidind,T,sizeof(*T),ramchain,rdata->numtxids)) != 0 )
+        {
+            char str[65];
+            if ( txidind != 0 && retval != txidind )
+                printf("sparse tx collision %s %u vs %u\n",bits256_str(str,txid),retval,txidind);
+            return(retval);
+        }
     }
     return(retval);
 }
 
 uint32_t iguana_sparseaddpk(uint8_t *bits,int32_t width,uint32_t tablesize,uint8_t rmd160[20],struct iguana_pkhash *P,uint32_t pkind,struct iguana_ramchain *ramchain)
 {
-    uint32_t ind,key2; uint64_t key0,key1;
-    //int32_t i; for (i=0; i<20; i++)
-    //    printf("%02x",rmd160[i]);
-    //char str[65]; printf(" sparseaddpk pkind.%d bits.%p\n",pkind,bits);
-    memcpy(&key0,rmd160,sizeof(key0));
-    memcpy(&key1,&rmd160[sizeof(key0)],sizeof(key1));
-    memcpy(&key2,&rmd160[sizeof(key0) + sizeof(key1)],sizeof(key2));
-    ind = (key0 ^ key1 ^ key2) % tablesize;
-    return(iguana_sparseadd(bits,ind,width,tablesize,rmd160,20,pkind,P,sizeof(*P),ramchain,ramchain->H.data->numpkinds));
+    uint32_t ind,key2; uint64_t key0,key1; struct iguana_ramchaindata *rdata;
+    if ( (rdata= ramchain->H.data) != 0 && tablesize > 0 )
+    {
+        //int32_t i; for (i=0; i<20; i++)
+        //    printf("%02x",rmd160[i]);
+        //printf(" sparseaddpk pkind.%d bits.%p\n",pkind,bits);
+        memcpy(&key0,rmd160,sizeof(key0));
+        memcpy(&key1,&rmd160[sizeof(key0)],sizeof(key1));
+        memcpy(&key2,&rmd160[sizeof(key0) + sizeof(key1)],sizeof(key2));
+        ind = (key0 ^ key1 ^ key2) % tablesize;
+        return(iguana_sparseadd(bits,ind,width,tablesize,rmd160,20,pkind,P,sizeof(*P),ramchain,rdata->numpkinds));
+    } else return(0);
 }
 
 int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp,bits256 *txidp,struct iguana_txid *T,int32_t numtxids,bits256 *X,int32_t numexternaltxids,struct iguana_spend *s)
@@ -264,16 +271,17 @@ int32_t iguana_ramchain_spendtxid(struct iguana_info *coin,uint32_t *unspentindp
 struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,struct iguana_txid *tx,bits256 txid,int32_t lasthdrsi)
 {
     uint8_t *TXbits; struct iguana_txid *T; uint32_t txidind; int32_t i;
-    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; //struct iguana_block *block;
+    struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; //struct iguana_block *block;
     *heightp = -1;
+    memset(tx,0,sizeof(*tx));
     if ( lasthdrsi < 0 )
         return(0);
     for (i=lasthdrsi; i>=0; i--)
     {
         if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->emitfinish > 1) )
         {
-            ramchain = (bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
-            if ( ramchain->H.data != 0 )
+            ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;
+            if ( (rdata= ramchain->H.data) != 0 )
             {
                 if ( (TXbits= ramchain->txbits) == 0 )
                 {
@@ -281,9 +289,9 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                         iguana_alloctxbits(coin,ramchain);
                     if ( (TXbits= ramchain->txbits) == 0 )
                     {
-                        //printf("use memory mapped.[%d]\n",ramchain->H.data->height/coin->chain->bundlesize);
-                        TXbits = RAMCHAIN_PTR(ramchain->H.data,TXoffset);
-                        //TXbits = (void *)(long)((long)ramchain->H.data + ramchain->H.data->TXoffset);
+                        //printf("use memory mapped.[%d]\n",rdata->height/coin->chain->bundlesize);
+                        TXbits = RAMCHAIN_PTR(rdata,TXoffset);
+                        //TXbits = (void *)(long)((long)rdata + rdata->TXoffset);
                     }
                 }
                 if ( (T= ramchain->cacheT) == 0 )
@@ -291,10 +299,10 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     //if ( coin->fastfind == 0 )
                     //    iguana_alloccacheT(coin,ramchain);
                     //if ( (T= ramchain->cacheT) == 0 )
-                    T = RAMCHAIN_PTR(ramchain->H.data,Toffset);
-                    //T = (void *)(long)((long)ramchain->H.data + ramchain->H.data->Toffset);
+                    T = RAMCHAIN_PTR(rdata,Toffset);
+                    //T = (void *)(long)((long)rdata + rdata->Toffset);
                 }
-                if ( (txidind= iguana_sparseaddtx(TXbits,ramchain->H.data->txsparsebits,ramchain->H.data->numtxsparse,txid,T,0,ramchain)) > 0 )
+                if ( (txidind= iguana_sparseaddtx(TXbits,rdata->txsparsebits,rdata->numtxsparse,txid,T,0,ramchain)) > 0 )
                 {
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
@@ -323,6 +331,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             *heightp = bp->bundleheight + T[txidind].bundlei;
                             //printf("found height.%d\n",*heightp);
                             *tx = T[txidind];
+                            //printf("[%d] txidind.%d 1st.(%d %d)\n",bp->hdrsi,txidind,tx->firstvout,tx->firstvin);
                             return(tx);
                         }
                     }
@@ -530,7 +539,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
             }
             for (i=errs=0; i<0x100; i++)
             {
-                fclose(coin->fastfps[i]);
+                fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                 sprintf(fname,"DB/%s/fastfind/%02x",coin->symbol,i), OS_compatible_path(fname);
                 //printf("%s\n",fname);
                 if ( (sortbuf= OS_filestr(&allocsize,fname)) != 0 )
@@ -576,8 +585,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         }
                         if ( fwrite(hashtable,sizeof(*hashtable),tablesize,coin->fastfps[i]) == tablesize )
                         {
-                            fclose(coin->fastfps[i]);
-                            coin->fastfps[i] = 0;
+                            fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                             if ( (coin->fast[i]= OS_mapfile(fname,&coin->fastsizes[i],0)) != 0 )
                             {
                             } else errs++;
@@ -587,8 +595,7 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
                         {
                             printf("error saving (%s)\n",fname);
                             OS_removefile(fname,0);
-                            fclose(coin->fastfps[i]);
-                            coin->fastfps[i] = 0;
+                            fclose(coin->fastfps[i]), coin->fastfps[i] = 0;
                         }
                         free(hashtable);
                     } else printf("couldnt overwrite (%s)\n",fname);
@@ -602,3 +609,67 @@ int64_t iguana_fastfindcreate(struct iguana_info *coin)
     }
     return(total);
 }
+
+struct iguana_monitorinfo *iguana_monitorfind(struct iguana_info *coin,bits256 txid)
+{
+    int32_t i;
+    for (i=0; i<sizeof(coin->monitoring)/sizeof(*coin->monitoring); i++)
+        if ( bits256_cmp(coin->monitoring[i].txid,txid) == 0 )
+            return(&coin->monitoring[i]);
+    return(0);
+}
+
+struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr)
+{
+    struct iguana_monitorinfo *ptr; char str[65];
+    if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+    {
+        if ( GETBIT(ptr->peerbits,addr->addrind) == 0 )
+        {
+            char str[65]; printf("%s reports %s\n",addr->ipaddr,bits256_str(str,txid));
+            SETBIT(ptr->peerbits,addr->addrind);
+            ptr->numreported++;
+        }
+    } else printf("txid.%s not being monitored\n",bits256_str(str,txid));
+    return(0);
+}
+
+struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 txid)
+{
+    int32_t i; struct iguana_monitorinfo *ptr;
+    if ( (ptr= iguana_monitorfind(coin,txid)) == 0 )
+    {
+        for (i=0; i<sizeof(coin->monitoring)/sizeof(*coin->monitoring); i++)
+            if ( bits256_nonz(coin->monitoring[i].txid) == 0 )
+            {
+                memset(&coin->monitoring[i],0,sizeof(coin->monitoring[i]));
+                coin->monitoring[i].txid = txid;
+                return(ptr);
+            }
+    }
+    printf("no monitoring slots left\n");
+    return(0);
+}
+
+double iguana_txidstatus(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
+{
+    int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
+    if ( coin != 0 && coin->peers != 0 && (numranked= coin->peers->numranked) > 0 )
+    {
+        if ( (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,0,coin->bundlescount-1,0)) != 0 )
+        {
+            if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+                memset(ptr,0,sizeof(*ptr));
+            return((double)coin->longestchain - height);
+        }
+        if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
+            return((double)ptr->numreported / numranked);
+        else
+        {
+            printf("iguana_txidstatus: unexpected missing %s %s\n",coin->symbol,bits256_str(str,txid));
+            iguana_txidmonitor(coin,txid);
+        }
+    }
+    return(0.);
+}
+

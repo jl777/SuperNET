@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo ""
+echo "
+
+The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
+
+Parameter #1—an account name
+Parameter #2—the minimum number of confirmations
+Parameter #3—whether to include watch-only addresses
+Result—the balance in bitcoins
+"
+
+echo ""
+echo ""
+
+#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"getbalance\",\"confirmations\":\"\",\"includeempty\":\"0\",\"watchonly\":\"0\"}"
+
+curl --url "http://127.0.0.1:7778"  --data "{\"coin\":\"BTCD\",\"method\":\"getbalance\",\"params\":[*,6,0]}"
