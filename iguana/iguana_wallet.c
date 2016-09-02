@@ -1065,10 +1065,10 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"txfee",dstr(coin->txfee));
         if ( coin->bundlescount > 1 )
         {
-            jaddnum(retjson,"bundles",100. * (double)iguana_emitfinished(coin,0)/(coin->bundlescount-1));
-            jaddnum(retjson,"utxo",100. * (double)iguana_utxofinished(coin)/(coin->bundlescount-1));
-            jaddnum(retjson,"balances",100. * (double)iguana_balancefinished(coin)/(coin->bundlescount-1));
-            jaddnum(retjson,"validated",100. * (double)iguana_validated(coin)/(coin->bundlescount-1));
+            jaddnum(retjson,"bundles",100. * (double)(coin->chain->bundlesize *iguana_emitfinished(coin,0))/(coin->longestchain+1));
+            jaddnum(retjson,"utxo",100. * (double)(coin->chain->bundlesize *iguana_utxofinished(coin))/(coin->longestchain+1));
+            jaddnum(retjson,"balances",100. * (double)(coin->chain->bundlesize *iguana_balancefinished(coin))/(coin->longestchain+1));
+            jaddnum(retjson,"validated",100. * (double)(coin->chain->bundlesize *iguana_validated(coin))/(coin->longestchain+1));
         }
         jaddnum(retjson,"firstRTheight",coin->firstRTheight);
         jaddnum(retjson,"RTheight",coin->RTheight);
