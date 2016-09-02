@@ -13,11 +13,12 @@ $(document).ready(function(e) {
 	   	 + json_Obj[i].shortName + "</strong><span class='full-name'> "
 	   	 +json_Obj[i].fullName+"</span></li>"; 
 	}
-  $('.currency-loop').html(outPut);			
-  $('.country-li').on("click",function(){	
-  	console.clear()
-    $('.country-li').removeClass("selected");
-    $(this).addClass("selected");			
-    var id=$(this).attr("data-id");
-    console.log(currency_arr[id-1]); });
+	$('.currency-loop').html(outPut);			
+  	$('.country-li').on("click",function(){	
+  		console.clear()
+    	$('.country-li').removeClass("selected");
+    	$(this).addClass("selected");			
+    	var id=$(this).attr("data-id");
+    	console.log(currency_arr[id-1]);
+	});
 });
