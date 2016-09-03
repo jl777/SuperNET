@@ -765,7 +765,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        printf("poll.(%s)\n",retstr);
+        //printf("poll.(%s)\n",retstr);
         if ( (outerarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(outerarray) != 0 )
@@ -777,7 +777,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             free_json(outerarray);
         }
         free(retstr);
-    }
+    } else printf("null incoming\n");
     if ( hwm > 0. )
     {
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.hash) == 0 ) // my request
@@ -841,9 +841,10 @@ void basilisks_loop(void *arg)
                 //printf(">>>>>>>>>>>>> update\n");
                 basilisk_unspents_update(myinfo,coin);
                 coin->lastunspentsupdate = (uint32_t)time(NULL);
+                //printf(">>>>>>>>>>>>> update finished\n");
             }
         }
-        if ( RELAYID < 0 && myinfo->expiration != 0 )
+        if ( 0 && RELAYID < 0 && myinfo->expiration != 0 )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
@@ -914,6 +915,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             ptr->finished = (uint32_t)time(NULL);
             return(retstr);
         }
+        return(clonestr("{\"error\":\"no result\"}"));
     } else printf("no coin\n");
     return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
 }
