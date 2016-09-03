@@ -226,7 +226,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
-            if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+            if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
             {
                 decode_hex(key,BASILISK_KEYSIZE,keystr);
                 datalen >>= 1;
@@ -238,7 +238,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
                 } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
             }
         }
-    } // else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
+    } //else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
     return(retval);
 }
 
@@ -251,7 +251,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
         msgid = (uint32_t)time(NULL);
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
-    jaddnum(valsobj,"timeout",1000);
+    jaddnum(valsobj,"timeout",1500);
     jaddnum(valsobj,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
     jaddnum(valsobj,"minresults",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
@@ -290,7 +290,7 @@ int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t
                     if ( (*process_func)(myinfo,ptr,internal_func,channel,msgid,data,datalen,expiration,duration) < 0 )
                         errs++;
                     free(retstr);
-                }
+                } // else printf("duplicate.%d skipped\n",datalen);
             }
         }
         //printf("n.%d maxlen.%d\n",n,maxlen);

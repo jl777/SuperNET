@@ -517,9 +517,9 @@ INT_ARG(InstantDEX,incoming,requestid)
     cJSON *retjson,*retarray; uint32_t DEX_channel,msgid,now; int32_t retval,width,drift=3; uint8_t data[8192];
     now = (uint32_t)time(NULL);
     width = (now - myinfo->DEXpoll);
-    //if ( width < (drift+1) )
-    //    width = 2*drift+1;
-    //else if ( width > 64 )
+    if ( width < (drift+1) )
+        width = 2*drift+1;
+    else if ( width > 64 )
         width = 64;
     myinfo->DEXpoll = now;
     myinfo->DEXactive = now + INSTANTDEX_LOCKTIME;
