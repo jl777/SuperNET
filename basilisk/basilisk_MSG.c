@@ -57,14 +57,21 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
         msgjson = cJSON_CreateObject();
         if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
-            jaddnum(msgjson,"expiration",msg->expiration);
-            jaddnum(msgjson,"duration",msg->duration);
-            {int32_t i; for (i=0; i<keylen; i++) printf("%02x",key[i]);
-                printf(" havemessage len.%d (%s)\n",msg->datalen,strbuf); }
+            if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),key,keylen) != 0 )
+            {
+                jaddnum(msgjson,"expiration",msg->expiration);
+                jaddnum(msgjson,"duration",msg->duration);
+            }
+            else
+            {
+                printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr key\n");
+                free_json(msgjson);
+                msgjson = 0;
+            }
         }
         else
         {
-            printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr\n");
+            printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr data.[%d]\n",msg->datalen);
             free_json(msgjson);
             msgjson = 0;
         }
@@ -150,7 +157,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
     width = juint(valsobj,"width");
     msgid = juint(valsobj,"msgid");
     channel = juint(valsobj,"channel");
-    char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,hash),juint(valsobj,"channel"),msgid,width);
+    //char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,hash),juint(valsobj,"channel"),msgid,width);
     return(basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"sender"),hash,width));
 }
 
@@ -218,22 +225,27 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
     return(retval);
 }
 
-int32_t basilisk_message_returned(uint8_t *data,int32_t maxlen,cJSON *item)
+int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSON *json)
 {
-    char *hexstr=0; cJSON *msgobj; int32_t datalen=0,retval = -1;
-    if ( (msgobj= jobj(item,"message")) != 0 )
+    char *keystr=0,*hexstr=0; int32_t i,n,datalen=0,retval = -1; cJSON *item,*msgobj;
+    if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        if ( (hexstr= jstr(msgobj,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+        for (i=0; i<n; i++)
         {
-            datalen >>= 1;
-            if ( datalen < maxlen )
+            item = jitem(msgobj,i);
+            if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
             {
-                decode_hex(data,datalen,hexstr);
-                //printf("decoded hexstr.[%d]\n",datalen);
-                retval = datalen;
-            } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
-        } else printf("no hexstr.%p or datalen.%d\n",hexstr,datalen);
-    } //else printf("no msgobj\n");
+                decode_hex(key,BASILISK_KEYSIZE,keystr);
+                datalen >>= 1;
+                if ( datalen < maxlen )
+                {
+                    decode_hex(data,datalen,hexstr);
+                    //printf("decoded hexstr.[%d]\n",datalen);
+                    retval = datalen;
+                } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
+            }
+        }
+    }else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
     return(retval);
 }
 
@@ -269,20 +281,26 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
 
 int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t (*process_func)(struct supernet_info *myinfo,void *ptr,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen),uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t expiration,uint32_t duration),uint8_t *data,int32_t maxlen,uint32_t channel,uint32_t msgid,cJSON *retarray,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
-    cJSON *item; uint32_t duration,expiration; int32_t i,n,datalen,errs = 0;
+    cJSON *item; uint32_t duration,expiration; char *retstr; uint8_t key[BASILISK_KEYSIZE]; int32_t i,n,datalen,errs = 0;
     if ( (n= cJSON_GetArraySize(retarray)) > 0 )
     {
         for (i=0; i<n; i++)
         {
             item = jitem(retarray,i);
-            if ( (datalen= basilisk_message_returned(data,maxlen,item)) > 0 )
+            //printf("(%s).%d ",jprint(item,0),i);
+            if ( (datalen= basilisk_message_returned(key,data,maxlen,item)) > 0 )
             {
                 duration = juint(item,"duration");
                 expiration = juint(item,"expiration");
-                if ( (*process_func)(myinfo,ptr,internal_func,channel,msgid,data,datalen,expiration,duration) < 0 )
-                    errs++;
+                if ( (retstr= basilisk_respond_addmessage(myinfo,key,BASILISK_KEYSIZE,data,datalen,0,duration)) != 0 )
+                {
+                    if ( (*process_func)(myinfo,ptr,internal_func,channel,msgid,data,datalen,expiration,duration) < 0 )
+                        errs++;
+                    free(retstr);
+                }
             }
         }
+        //printf("n.%d maxlen.%d\n",n,maxlen);
     }
     if ( errs > 0 )
         return(-errs);
