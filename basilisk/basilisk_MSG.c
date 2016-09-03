@@ -49,7 +49,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 
 cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
-    cJSON *msgjson=0; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
+    cJSON *msgjson=0; struct basilisk_message *msg; char *ptr = 0,strbuf[32768],keystr[BASILISK_KEYSIZE*2+1];
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
@@ -57,17 +57,10 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
         msgjson = cJSON_CreateObject();
         if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
-            if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),key,keylen) != 0 )
-            {
-                jaddnum(msgjson,"expiration",msg->expiration);
-                jaddnum(msgjson,"duration",msg->duration);
-            }
-            else
-            {
-                printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr key\n");
-                free_json(msgjson);
-                msgjson = 0;
-            }
+            init_hexbytes_noT(keystr,key,keylen);
+            jaddstr(msgjson,"key",keystr);
+            jaddnum(msgjson,"expiration",msg->expiration);
+            jaddnum(msgjson,"duration",msg->duration);
         }
         else
         {
@@ -245,7 +238,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
                 } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
             }
         }
-    }else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
+    } // else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
     return(retval);
 }
 
