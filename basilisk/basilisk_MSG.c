@@ -54,14 +54,20 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
     {
+        msgjson = cJSON_CreateObject();
         if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
         {
-            msgjson = cJSON_CreateObject();
             jaddnum(msgjson,"expiration",msg->expiration);
             jaddnum(msgjson,"duration",msg->duration);
             {int32_t i; for (i=0; i<keylen; i++) printf("%02x",key[i]);
-                printf("havemessage len.%d\n",msg->datalen); }
-        } else printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr\n");
+                printf(" havemessage len.%d (%s)\n",msg->datalen,strbuf); }
+        }
+        else
+        {
+            printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr\n");
+            free_json(msgjson);
+            msgjson = 0;
+        }
     }
     portable_mutex_unlock(&myinfo->messagemutex);
     return(msgjson);
