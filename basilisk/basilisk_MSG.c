@@ -50,6 +50,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
     cJSON *msgjson=0; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
+    {int32_t i; for (i=0; i<keylen; i++) printf("%02x",key[i]); printf(" search key\n");}
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
