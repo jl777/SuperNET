@@ -228,28 +228,32 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
 
 double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
-    cJSON *array,*item; int32_t i,n,m; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
-    //printf("process_results.(%s)\n",jprint(retjson,0));
+    cJSON *array,*item; int32_t i,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     if ( (array= jarray(&n,retjson,"result")) != 0 )
     {
-        for (i=m=0; i<n; i++)
+        for (i=nonz=m=0; i<n; i++)
         {
             item = jitem(array,i);
-            if ( i != 0 )
+            if ( jobj(item,"error") != 0 )
             {
-                basilisk_parsejson(&R,item);
-                if ( refR.requestid == R.requestid )
-                    list[m++] = R;
-                else
+                if ( nonz != 0 )
                 {
-                    if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                        *issueR = tmpR, hwm = metric;
-                    m = 0;
+                    basilisk_parsejson(&R,item);
+                    if ( refR.requestid == R.requestid )
+                        list[m++] = R;
+                    else
+                    {
+                        if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
+                            *issueR = tmpR, hwm = metric;
+                        m = 0;
+                    }
                 }
+                nonz++;
+                if ( m < sizeof(list)/sizeof(*list) )
+                    basilisk_parsejson(&list[m++],item);
             }
-            if ( m < sizeof(list)/sizeof(*list) )
-                basilisk_parsejson(&list[m++],item);
         }
+        printf("process_results n.%d m.%d nonz.%d\n",n,m,nonz);
         if ( m > 0 && m < sizeof(list)/sizeof(*list) )
             if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
                 *issueR = tmpR, hwm = metric;

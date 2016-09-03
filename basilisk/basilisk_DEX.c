@@ -489,7 +489,6 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
     }
     return(clonestr("{\"error\":\"DEX message not sent\"}"));
-    //return(basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1));
 }
 
 INT_ARG(InstantDEX,automatched,requestid)
@@ -499,21 +498,36 @@ INT_ARG(InstantDEX,automatched,requestid)
     return(clonestr("{\"result\":\"automatched not yet\"}"));
 }
 
+int32_t InstantDEX_incoming_func(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
+{
+    int32_t i;
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- incoming\n");
+    return(0);
+}
+
+int32_t InstantDEX_process_channelget(struct supernet_info *myinfo,void *ptr,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen),uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t expiration,uint32_t duration)
+{
+    return((*internal_func)(myinfo,ptr,data,datalen));
+}
+
 INT_ARG(InstantDEX,incoming,requestid)
 {
-    cJSON *vals; char *retstr;
+    cJSON *retjson,*retarray; uint32_t DEX_channel,msgid; int32_t retval; uint8_t data[8192];
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    //if ( myinfo->IAMLP != 0 )
-    //    return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
-    //else
+    retjson = cJSON_CreateObject();
+    DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+    msgid = (uint32_t)time(NULL) + 3;
+    if ( (retarray= basilisk_channelget(myinfo,myinfo->myaddr.persistent,DEX_channel,msgid,64)) != 0 )
     {
-        vals = cJSON_CreateObject();
-        jaddnum(vals,"requestid",(uint32_t)requestid);
-        jaddbits256(vals,"hash",myinfo->myaddr.persistent);
-        retstr = basilisk_standardservice("RID",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
-        free_json(vals);
-        return(retstr);
-    }
+        if ( (retval= basilisk_process_retarray(myinfo,0,InstantDEX_process_channelget,data,sizeof(data),DEX_channel,msgid,retarray,InstantDEX_incoming_func)) > 0 )
+        {
+            jaddstr(retjson,"result","success");
+        } else jaddstr(retjson,"error","cant process InstantDEX retarray");
+        jadd(retjson,"responses",retarray);
+    } else jaddstr(retjson,"error","cant do InstantDEX channelget");
+    return(jprint(retjson,1));
 }
 
 /*TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)

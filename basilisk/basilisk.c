@@ -559,8 +559,12 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                     if ( jobj(item,"myip") == 0 )
                         jaddstr(item,"myip",myinfo->ipaddr);
                     jaddi(pending->retarray,item);
+                    if ( jobj(item,"error") == 0 )
+                    {
+                        printf("numresults.%d (%s)\n",pending->numresults,jprint(item,0));
+                        pending->numresults++;
+                    }
                 } else printf("couldnt parse.(%s)\n",retstr);
-                pending->numresults++;
             } //else printf("couldnt find issued.%u\n",basilisktag);
         }
     }
@@ -628,12 +632,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    //origcmd[0] = 0;
     if ( RELAYID >= 0 )
     {
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
-        //printf("MSGPROCESS %s.(%s) tag.%d\n",CMD,(char *)data,basilisktag);
     }
     symbol = "BTCD";
     if ( senderipbits == 0 )
@@ -641,9 +643,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     else expand_ipbits(remoteaddr,senderipbits);
     if ( (valsobj= cJSON_Parse((char *)data)) != 0 )
     {
-        //if ( origcmd[0] != 0 )
-        //    jaddstr(valsobj,"origcmd",origcmd);
-        //printf("MSGVALS.(%s)\n",(char *)data);
         if ( jobj(valsobj,"coin") != 0 )
             coin = iguana_coinfind(jstr(valsobj,"coin"));
         else if ( jobj(valsobj,"symbol") != 0 )
@@ -766,7 +765,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        //printf("poll.(%s)\n",retstr);
+        printf("poll.(%s)\n",retstr);
         if ( (outerarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(outerarray) != 0 )
@@ -844,7 +843,7 @@ void basilisks_loop(void *arg)
                 coin->lastunspentsupdate = (uint32_t)time(NULL);
             }
         }
-        if ( RELAYID < 0 )
+        if ( RELAYID < 0 && myinfo->expiration != 0 )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
