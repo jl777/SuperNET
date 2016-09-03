@@ -72,7 +72,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
         //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
-        if ( iamthreadsafe == 0 && (rand() % 10 ) != 0 )
+        if ( iamthreadsafe == 0 && (rand() % 3) != 0 )
             return(0);
     }
     if ( addr->usock < 0 )
@@ -84,7 +84,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         {
             //char str[65];
             recvlen = numtx = 0;
-            if ( iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,1) != 0 )
+            if ( coin->RTheight > 0 && iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,1) != 0 )
             {
                 //printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
                 return(0);

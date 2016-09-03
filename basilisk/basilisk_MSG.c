@@ -121,14 +121,12 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             }
             if ( bits256_nonz(srchash) != 0 || bits256_nonz(desthash) != 0 )
             {
-                printf("check broadcast %u %u\n",channel,msgid);
                 keylen = basilisk_messagekey(key,channel,msgid,zero,zero);
                 if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
                     jaddi(array,item);
             }
         }
         msgid--;
-        iguana_rwnum(1,&key[0],sizeof(uint32_t),&msgid);
     }
     if ( cJSON_GetArraySize(array) > 0 )
     {
