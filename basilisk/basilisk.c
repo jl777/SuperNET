@@ -844,7 +844,7 @@ void basilisks_loop(void *arg)
                 //printf(">>>>>>>>>>>>> update finished\n");
             }
         }
-        if ( 0 && RELAYID < 0 && myinfo->expiration != 0 )
+        if ( RELAYID < 0 && myinfo->expiration != 0 )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);

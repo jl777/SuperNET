@@ -50,7 +50,6 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
 cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen)
 {
     cJSON *msgjson=0; struct basilisk_message *msg; char *ptr = 0,strbuf[32768];
-    {int32_t i; for (i=0; i<keylen; i++) printf("%02x",key[i]); printf(" search key\n");}
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg != 0 )
@@ -60,7 +59,8 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
             msgjson = cJSON_CreateObject();
             jaddnum(msgjson,"expiration",msg->expiration);
             jaddnum(msgjson,"duration",msg->duration);
-            printf("havemessage len.%d\n",msg->datalen);
+            {int32_t i; for (i=0; i<keylen; i++) printf("%02x",key[i]);
+                printf("havemessage len.%d\n",msg->datalen); }
         } else printf("basilisk_respond_getmessage: couldnt basilisk_addhexstr\n");
     }
     portable_mutex_unlock(&myinfo->messagemutex);
@@ -154,6 +154,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     uint32_t msgid,width,channel;
+    jaddbits256(vals,"sender",myinfo->myaddr.persistent);
     if ( (msgid= juint(vals,"msgid")) == 0 )
     {
         msgid = (uint32_t)time(NULL);
@@ -165,7 +166,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         channel = juint(vals,"channel");
         width = juint(vals,"width");
         return(basilisk_iterate_MSG(myinfo,channel,msgid,hash,myinfo->myaddr.persistent,width));
-    } else return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
+    } else return(basilisk_standardservice("MSG",myinfo,0,hash,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
