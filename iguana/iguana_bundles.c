@@ -787,7 +787,7 @@ int32_t iguana_bundleready(struct iguana_info *coin,struct iguana_bundle *bp,int
                         bp->blocks[i] = iguana_blockhashset("ready",coin,bp->bundleheight+i,prevhash2,1);
                         iguana_hash2set(coin,"ready",bp,i,prevhash2);
                         prevhash2 = zero;
-                        if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i)) != 0 )
+                        if ( (ptr= iguana_bundlefile(coin,fname,&filesize,bp,i,0)) != 0 )
                         {
                             if ( iguana_mapchaininit(fname,coin,&R,bp,i,block,ptr,filesize) >= 0 )
                             {
