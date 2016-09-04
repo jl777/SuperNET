@@ -623,7 +623,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
     lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
     if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 )//|| ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
     {
-        printf("bp->hdrsi %d < %d starti || bp->hdrsi %d  > %d lasti || bp->emitfinish %d != 0\n",bp->hdrsi,starti,bp->hdrsi,lasti,bp->emitfinish);
+        //printf("bp->hdrsi %d < %d starti || bp->hdrsi %d  > %d lasti || bp->emitfinish %d != 0\n",bp->hdrsi,starti,bp->hdrsi,lasti,bp->emitfinish);
         return(0);
     }
     bp->missingstime = (uint32_t)time(NULL);
@@ -678,7 +678,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                 {
                      if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
-                        //if ( 0 && bp == coin->current )
+                        if ( 0 && bp == coin->current )
                             printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                         iguana_sendblockreqPT(coin,0,bp,i,hash2,0);
                     }
@@ -691,12 +691,12 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
                     bp->issued[i] = (uint32_t)time(NULL);
                     n++;
-                } else printf("[z%d] ",i);
-            } else printf("%d ",now - (bp->issued[i]+lag));
+                } //else printf("[z%d] ",i);
+            } //else printf("%d ",now - (bp->issued[i]+lag));
         }
         if ( firsti >= 0 && bp == coin->current )
         {
-            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
+            //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
@@ -1131,7 +1131,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     {
         max = bp->n;
         counter = iguana_bundleissuemissing(myinfo,coin,bp,1,1.);
-        //if ( 0 && counter > 0 )
+        if ( 0 && counter > 0 )
             printf("starti.%d range.%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",starti,range,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime++;
     if ( bp->emitfinish <= 1 )
@@ -1546,7 +1546,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
         }
         //printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,queue_size(&bundlesQ),(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
-        if ( (rand() % 100) == 0 )
+        //if ( (rand() % 100) == 0 )
             myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
     }
