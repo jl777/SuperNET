@@ -661,7 +661,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
         {
-            if ( GETBIT(bp->haveblock,i) != 0 )
+            if ( 0 && GETBIT(bp->haveblock,i) != 0 )
                 continue;
             nonz++;
             if ( firsti < 0 )
