@@ -1,3 +1,9 @@
+/*  create account desktop version
+ *  currently login/create account is mobile only
+ *  responsive breakdowns must go into a standalone file
+ *  (!) don't delete
+ */
+
 body {
 	font-family: proxima-nova, sans-serif;
   font-size: 15px;

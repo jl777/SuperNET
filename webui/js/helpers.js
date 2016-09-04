@@ -73,6 +73,7 @@ helperProto.prototype.openPage = function(url) {
 
 helperProto.prototype.checkSession = function(returnVal) {
   var localStorage = new localStorageProto();
+  if (!localStorage.getVal("iguana-auth")) helperProto.prototype.logout();
   var currentEpochTime = new Date(Date.now()) / 1000; // calc difference in seconds between current time and session timestamp
   var secondsElapsedSinceLastAuth = Number(currentEpochTime) - Number(localStorage.getVal("iguana-auth").timestamp / 1000);
 

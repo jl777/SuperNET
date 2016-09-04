@@ -39,12 +39,12 @@
     content: "";
     width: 100%;
     height: 100%;
-    position: absolute;
-    z-index: 50;
     width: 350px;
     margin-left: -13px;
     opacity: 0.25;
     border-radius: 25%;
+    position: absolute;
+    z-index: 50;
 
     /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#000000+0,222539+0 */
     background: rgb(0, 0, 0); /* Old browsers */
@@ -96,9 +96,9 @@
   }
   .balance-block .label {
     color: #95969F;
-    padding: 0;
     font-size: 0.92em;
     font-weight: normal;
+    padding: 0;
   }
   .balance-block .balance {
     font-size: 1.4em;
@@ -136,8 +136,6 @@
   .account-coins-repeater .item .balance .coin-value {
     font-size: 18px;
   }
-  .account-coins-repeater .item .balance .currency {
-  }
   .account-coins-repeater .item .coin {
     float: left;
   }
@@ -174,22 +172,22 @@
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe640d', endColorstr='#fe450d', GradientType=0); /* IE6-9 */
   }
   .account-coins-repeater .item.active:after {
-    font-family: "budicon";
     content: "\eb14";
-    position: absolute;
-    left: 23%;
-    padding-top: 25px;
     color: #C8CCD0;
+    font-family: "budicon";
     font-size: 2.0em;
     font-weight: normal;
     text-shadow: none;
+    position: absolute;
+    left: 23%;
+    padding-top: 25px;
   }
   .btn-add-coin {
+    font-weight: 600;
     background: #fff;
     color: #FE450D;
     border-radius: 4px;
     box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
-    font-weight: 600;
     width: 100%;
     padding: 7px 0;
   }
@@ -203,9 +201,9 @@
     box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
   }
   .transactions-unit .top-bar {
-    height: 150px;
-    color: #fff;
     font-weight: 600;
+    color: #fff;
+    height: 150px;
     border-radius: 4px 4px 0 0;
     box-shadow: 0 1px 6px 1px rgba(254, 69, 13, 0.5);
 
@@ -222,13 +220,13 @@
     padding-top: 18px;
   }
   .transactions-unit .action-buttons .btn {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #FE450D;
     background: #fff;
     border-radius: 4px;
     box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
-    color: #FE450D;
     padding: 6px 35px 4px 35px;
-    font-weight: 600;
-    font-size: 1.1em;
   }
   .transactions-unit .action-buttons .btn:first-child {
     margin-right: 15px;
@@ -249,34 +247,40 @@
     border-radius: 0 0 4px 4px;
   }
   .transactions-list .title {
-    color: #C7CCD0;
     font-size: 1.2em;
+    color: #C7CCD0;
     padding-bottom: 20px;
   }
   .transactions-list-repeater .item {
+    cursor: hand;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.2em;
     background: #F5F8FB;
     border-radius: 4px;
     padding: 20px 35px 23px 35px;
     margin-bottom: 25px;
-    font-weight: 600;
-    font-size: 1.2em;
     transition: all 0.25s;
-    cursor: hand;
-    cursor: pointer;
   }
   .transactions-list-repeater .item .status {
+    font-weight: normal;
+    font-size: 0.9em;
+    color: #858690;
+    text-transform: capitalize;
     width: 100px;
   }
   .transactions-list-repeater .item .amount {
-    width: 10%;
+    width: 126px;
     text-align: right;
   }
   .transactions-list-repeater .item .hash {
     width: 50%;
   }
-  .transactions-list-repeater .item.timestamp-single .timestamp.two-lines {
-    display: none;
+  .transactions-list-repeater .item .in-out {
+    font-size: 0.8em;
+    margin-right: 2px;
   }
+  .transactions-list-repeater .item.timestamp-single .timestamp.two-lines,
   .transactions-list-repeater .item.timestamp-multi .timestamp {
     display: none;
   }
@@ -314,13 +318,13 @@
     top: 2px;
     padding-left: 27px;
   }
-  .transactions-list-repeater .item.sent .progress-status .icon:before {
+  .transactions-list-repeater .item.receive .progress-status .icon:before {
     content: "\eb47";
     color: #CBCFD3;
     top: 4px;
     font-size: 1.4em;
   }
-  .transactions-list-repeater .item.received .progress-status .icon:before {
+  .transactions-list-repeater .item.send .progress-status .icon:before {
     content: "\eb4b";
     color: #CBCFD3;
     top: 4px;
@@ -342,13 +346,10 @@
     left: 25px;
     z-index: 40;
   }
-  .transactions-list-repeater .item.sent .status {
-    color: #CE40F1;
+  .transactions-list-repeater .item.process .amount {
+    color: #0082FF;
   }
-  .transactions-list-repeater .item.process .status {
-    color: #2092FE;
-  }
-  .transactions-list-repeater .item.received .status {
+  .transactions-list-repeater .item.receive .amount {
     color: #27C26F;
   }
   .transactions-list-repeater .item:hover {
@@ -484,6 +485,8 @@
     overflow-x: hidden;
   }
   .supported-coins-repeater .coin {
+    cursor: hand;
+    cursor: pointer;
     width: 180px;
     height: 130px;
     display: inline-block;
@@ -493,8 +496,6 @@
     text-align: center;
     padding-top: 35px;
     box-shadow: 0 2px 3px 2px rgba(0, 0, 0, 0.07);
-    cursor: hand;
-    cursor: pointer;
     opacity: 1;
     transition: all 0.25s;
   }
@@ -516,6 +517,7 @@
   .supported-coins-repeater .coin.active {
     box-shadow: inset 0 2px 10px 3px rgba(0, 0, 0, 0.1);
   }
+
   /* Icon colors */
   .col-orange {
     background: #FE760D;
