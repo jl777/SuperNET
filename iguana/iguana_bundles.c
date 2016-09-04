@@ -1202,16 +1202,16 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 
 void iguana_bundlemissings(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint32_t now)
 {
-    int32_t mult = 3,n=0,priority = 1;
-    if ( now > bp->missingstime+3 )
+    int32_t mult = 7,n=0,priority = 1;
+    if ( now > bp->missingstime+30 )
     {
         if ( coin->current != 0 )
         {
             mult = bp->hdrsi - coin->current->hdrsi;
-            if ( mult < 2 )
-                mult = 2;
-            else if ( mult > 3 )
-                mult = 3;
+            if ( mult < 4 )
+                mult = 4;
+            else if ( mult > 7 )
+                mult = 7;
         } else mult = 1;
         if ( coin->bandwidth < .7*coin->maxbandwidth )
         {
