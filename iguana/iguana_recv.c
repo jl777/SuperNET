@@ -73,7 +73,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         return(0);
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         if ( iamthreadsafe == 0 && (rand() % 10) != 0 )
             return(0);
     }
@@ -126,7 +126,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        //if ( 0 && coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);

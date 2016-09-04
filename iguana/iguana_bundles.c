@@ -666,25 +666,21 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
                 {
-                     if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                     if ( (priority > 2 || bp->numsaved > bp->n-10) && (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
-                        struct iguana_blockreq *req = 0;
                         if ( 0 && bp == coin->current )
                             printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
-                        if ( priority > 2 || bp->numsaved > bp->n-10 )
-                            iguana_sendblockreqPT(coin,0,bp,i,hash2,0);
-                        else
-                        {
-                            req = mycalloc('y',1,sizeof(*req));
-                            req->hash2 = hash2;
-                            req->bp = bp;
-                            req->height = bp->bundleheight + i;
-                            req->bundlei = i;
-                            queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
-                        }
-                        bp->issued[i] = 1;
-                        n++;
+                        iguana_sendblockreqPT(coin,0,bp,i,hash2,0);
                     }
+                    struct iguana_blockreq *req = 0;
+                    req = mycalloc('y',1,sizeof(*req));
+                    req->hash2 = hash2;
+                    req->bp = bp;
+                    req->height = bp->bundleheight + i;
+                    req->bundlei = i;
+                    queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
+                    bp->issued[i] = 1;
+                    n++;
                 }
             }
         }
