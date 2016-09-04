@@ -613,7 +613,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 
 int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
-    int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr;
+    int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr; struct iguana_block *block;
     if ( coin->peers == 0 )
     {
         printf("%s has no peers\n",coin->symbol);
@@ -661,8 +661,10 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
         {
-            if ( GETBIT(bp->haveblock,i) != 0 )
+            if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 )
                 continue;
+            //if ( GETBIT(bp->haveblock,i) != 0 )
+            //    continue;
             nonz++;
             if ( firsti < 0 )
                 firsti = i;
