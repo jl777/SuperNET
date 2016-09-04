@@ -72,7 +72,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
         //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
-        if ( iamthreadsafe == 0 && (rand() % 3) != 0 )
+        if ( iamthreadsafe == 0 && (rand() % 10) != 0 )
             return(0);
     }
     if ( addr->usock < 0 )

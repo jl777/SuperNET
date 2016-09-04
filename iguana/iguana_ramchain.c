@@ -1255,16 +1255,16 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
                     myfree(item,sizeof(*item));
             }
         }
-        if ( ramchain->txbits != 0 )
-        {
-            free(ramchain->txbits);
-            ramchain->txbits = 0;
-        }
-        if ( ramchain->cacheT != 0 )
-        {
-            free(ramchain->cacheT);
-            ramchain->cacheT = 0;
-        }
+    }
+    if ( ramchain->txbits != 0 )
+    {
+        free(ramchain->txbits);
+        ramchain->txbits = 0;
+    }
+    if ( ramchain->cacheT != 0 )
+    {
+        free(ramchain->cacheT);
+        ramchain->cacheT = 0;
     }
     ramchain->txids = 0;
     ramchain->pkhashes = 0;
@@ -2269,7 +2269,7 @@ int32_t iguana_ramchain_expandedsave(struct supernet_info *myinfo,struct iguana_
                 }
             }
             //printf("%08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %llx ht.%d bundlehashes.%s\n",mapchain->H.data->lhashes[0].uints[0],mapchain->H.data->lhashes[1].uints[0],mapchain->H.data->lhashes[2].uints[0],mapchain->H.data->lhashes[3].uints[0],mapchain->H.data->lhashes[4].uints[0],mapchain->H.data->lhashes[5].uints[0],mapchain->H.data->lhashes[6].uints[0],mapchain->H.data->lhashes[7].uints[0],mapchain->H.data->lhashes[8].uints[0],mapchain->H.data->lhashes[9].uints[0],(long long)mapchain->H.data->sha256.txid,mapchain->height,coin->symbol);
-            iguana_ramchain_free(coin,mapchain,cmpflag);
+            iguana_ramchain_free(coin,mapchain,1);
         }
         iguana_mempurge(hashmem);
     }
