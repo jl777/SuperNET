@@ -620,7 +620,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         return(0);
     }
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
-    lasti = coin->lastpending == 0 ? starti+coin->MAXBUNDLES : coin->lastpending->hdrsi;
+    lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
     if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 )//|| ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
     {
         printf("bp->hdrsi %d < %d starti || bp->hdrsi %d  > %d lasti || bp->emitfinish %d != 0\n",bp->hdrsi,starti,bp->hdrsi,lasti,bp->emitfinish);
@@ -1394,7 +1394,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                 {
                     if ( lastpending == 0 && bp->queued == 0 )
                         iguana_bundleQ(coin,bp,1000);
-                    if ( firstgap != 0 && ++pending == coin->MAXBUNDLES )
+                    if ( firstgap != 0 && bp->numsaved < bp->n && ++pending == coin->MAXBUNDLES )
                     {
                         lastpending = bp;
                         //printf("SET MAXBUNDLES.%d pend.%d\n",bp->hdrsi,pending);
