@@ -630,7 +630,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
     if ( bp->durationscount > 10 )
     {
         aveduration = (double)bp->totaldurations / bp->durationscount;
-        if ( (rand() % 10000) == 0 )
+        if ( (rand() % 100000) == 0 )
             printf("priority.%d [%d] durations %.2f counts[%d %d] \n",priority,bp->hdrsi,aveduration,(int32_t)bp->durationscount,bp->duplicatescount);
     } else aveduration = IGUANA_DEFAULTLAG;
     lag = aveduration * mult;
@@ -1513,7 +1513,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
         coin->maxstuck = (uint32_t)time(NULL) - coin->stucktime;
     sprintf(str,"%s.RT%d u.%d+c.%d b.%d v.%d (%d+%d/%d 1st.%d).s%d to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) (L.%d %d:%d) M.%d %s ledger.%08llx supply %.8f",coin->symbol,coin->RTheight,numutxo,numconverted,numbalances,iguana_validated(coin),firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,firstgap!=0?firstgap->numspec:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->longestchain/coin->chain->bundlesize,coin->longestchain%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2),(long long)coin->utxoaddrhash.txid,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits));
 //if( strcmp("BTC",coin->symbol) == 0 )
-    printf("%s\n",str);
+//    printf("%s\n",str);
     if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize && numemit == coin->current->hdrsi && numutxo == coin->bundlescount-1 )
     {
         //printf("have all utxo, generate balances\n");
