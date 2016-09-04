@@ -655,8 +655,8 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         {
             if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 )
                 continue;
-            if ( GETBIT(bp->haveblock,i) != 0 )
-                continue;
+            //if ( GETBIT(bp->haveblock,i) != 0 )
+            //    continue;
             nonz++;
             if ( firsti < 0 )
                 firsti = i;
