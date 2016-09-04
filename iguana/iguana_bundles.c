@@ -562,7 +562,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
             }
         } else return(0);
     }
-    if ( block != 0 || (block= bp->blocks[i]) != 0 )//|| bits256_nonz(bp->hashes[i]) != 0 )//&& (block= iguana_blockfind("bundleblock2",coin,bp->hashes[i])) != 0) )
+    if ( (block= bp->blocks[i]) != 0 && bits256_nonz(block->RO.hash2) != 0 )
     {
         *hash2p = block->RO.hash2;
         return(block);
@@ -570,7 +570,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
     else if ( bp->speculative != 0 && bits256_nonz(bp->speculative[i]) != 0 )
     {
         *hash2p = bp->speculative[i];
-        block = bp->blocks[i];//iguana_blockfind("speculative",coin,bp->speculative[i]);
+        //block = bp->blocks[i];//iguana_blockfind("speculative",coin,bp->speculative[i]);
         //char str[65]; printf("[%d:%d] %s\n",bp->hdrsi,i,bits256_str(str,*hash2p));
     }
     return(block);
@@ -661,7 +661,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
         {
-            if ( 0 && GETBIT(bp->haveblock,i) != 0 )
+            if ( GETBIT(bp->haveblock,i) != 0 )
                 continue;
             nonz++;
             if ( firsti < 0 )
@@ -685,13 +685,12 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                     req->height = bp->bundleheight + i;
                     req->bundlei = i;
                     queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
-                    //if ( bp->issued[i] == 0 )
-                        bp->issued[i] = (uint32_t)time(NULL);
+                    bp->issued[i] = (uint32_t)time(NULL);
                     n++;
-                }
-            }
+                } else printf("[z%d] ",i);
+            } else printf("%d ",now - (bp->issued[i]+lag));
         }
-        if ( firsti >= 0 && bp->issued[firsti] != 1 && bp == coin->current )
+        if ( firsti >= 0 && bp == coin->current )
         {
             printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
