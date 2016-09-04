@@ -618,7 +618,7 @@ void iguana_gotblockhashesM(struct iguana_info *coin,struct iguana_peer *addr,bi
     }
 }
 
-uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bits256 *blockhashes,int32_t num)
+uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,bits256 *blockhashes,int32_t num)
 {
     bits256 allhash; int32_t err,i,n; struct iguana_block *block,*prev;
     if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize && bp->emitfinish == 0 )
@@ -657,7 +657,7 @@ uint32_t iguana_allhashcmp(struct iguana_info *coin,struct iguana_bundle *bp,bit
             coin->allhashes++;
             n = 0;
             if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
-                n = iguana_bundleissuemissing(coin,bp,1,3.);
+                n = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
             if ( 0 && n > 0 )
                 printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             if ( bp->queued == 0 )
@@ -1063,7 +1063,7 @@ void iguana_autoextend(struct iguana_info *coin,struct iguana_bundle *bp)
     }
 }
 
-struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *blockhashes,int32_t num)
+struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *blockhashes,int32_t num)
 {
     int32_t bundlei,i,starti; struct iguana_block *block; struct iguana_bundle *bp; bits256 allhash,zero; struct iguana_peer *addr; char str[65],str2[65]; // uint8_t serialized[512];
     memset(zero.bytes,0,sizeof(zero));
@@ -1102,7 +1102,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
             //printf("call allhashes\n");
             if ( 0 && bp->hdrsi == coin->bundlescount-1 )
                 iguana_autoextend(coin,bp);
-            if ( iguana_allhashcmp(coin,bp,blockhashes,num) > 0 )
+            if ( iguana_allhashcmp(myinfo,coin,bp,blockhashes,num) > 0 )
                 return(req);
             //printf("done allhashes\n");
         }
@@ -1127,7 +1127,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                 for (i=0; i<bp->n; i++)
                     if ( GETBIT(bp->haveblock,i) == 0 )
                         bp->issued[i] = 0;
-                iguana_bundleissuemissing(coin,bp,3,1.);
+                iguana_bundleissuemissing(myinfo,coin,bp,3,1.);
             }
             for (i=1; i<num&&i<=bp->n; i++)
             {
@@ -1165,7 +1165,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct iguana_info *coin,struct 
                         printf("matched allhashes.[%d]\n",bp->hdrsi);
                     if ( bp->queued != 0 )
                         bp->queued = 0;
-                    if ( iguana_allhashcmp(coin,bp,blockhashes,coin->chain->bundlesize) > 0 )
+                    if ( iguana_allhashcmp(myinfo,coin,bp,blockhashes,coin->chain->bundlesize) > 0 )
                     {
                         bp->hdrtime = (uint32_t)time(NULL);
                         //iguana_blockQ("recvhash2",coin,bp,1,blockhashes[1],1);
@@ -1549,7 +1549,7 @@ int32_t iguana_processrecvQ(struct supernet_info *myinfo,struct iguana_info *coi
         }
         else if ( req->type == 'S' ) // blockhashes
         {
-            if ( (req= iguana_recvblockhashes(coin,req,req->hashes,req->n)) != 0 && req->hashes != 0 )
+            if ( (req= iguana_recvblockhashes(myinfo,coin,req,req->hashes,req->n)) != 0 && req->hashes != 0 )
                 myfree(req->hashes,sizeof(*req->hashes) * req->n), req->hashes = 0;
         }
         else if ( req->type == 'U' ) // unconfirmed tx
