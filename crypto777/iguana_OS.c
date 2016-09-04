@@ -354,8 +354,11 @@ void iguana_memreset(struct OS_memspace *mem)
 
 void iguana_mempurge(struct OS_memspace *mem)
 {
-    if ( mem->allocated > 0 && mem->ptr != 0 && mem->totalsize > 0 )
+    if ( mem->allocated != 0 && mem->ptr != 0 )//&& mem->totalsize > 0 )
+    {
+        printf("mempurge.(%s) %ld\n",mem->name,(long)mem->totalsize);
         myfree(mem->ptr,mem->totalsize), mem->ptr = 0;
+    }
     iguana_memreset(mem);
     mem->totalsize = 0;
 }
@@ -375,7 +378,7 @@ void *iguana_meminit(struct OS_memspace *mem,char *name,void *ptr,int64_t totals
         {
             //static long alloc;
             //alloc += totalsize;
-            //char str[65]; printf("iguana_meminit alloc %s\n",mbstr(str,alloc));
+            char str[65]; printf("iguana_meminit.(%s) alloc %s\n",name,mbstr(str,totalsize));
             if ( (mem->ptr= mycalloc('d',1,totalsize)) == 0 )
             {
                 printf("iguana_meminit: cant get %d bytes\n",(int32_t)totalsize);

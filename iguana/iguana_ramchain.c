@@ -1220,9 +1220,9 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
 int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ramchain,int32_t deleteflag)
 {
     struct iguana_kvitem *item,*tmp; struct iguana_ramchaindata *rdata;
-    if ( (rdata= ramchain->H.data) == 0 )
-        return(-1);
-    if ( ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
+    //if ( (rdata= ramchain->H.data) == 0 )
+    //    return(-1);
+    if ( (rdata= ramchain->H.data) != 0 && ramchain->H.ROflag != 0 && ramchain->hashmem == 0 )
     {
         if ( ramchain->A != ramchain->creditsA )
         {
@@ -1284,8 +1284,8 @@ int32_t iguana_ramchain_free(struct iguana_info *coin,struct iguana_ramchain *ra
         ramchain->Xspendinds = 0;
     }
     //iguana_volatilespurge(coin,ramchain);
-    if ( deleteflag != 0 )
-        memset(ramchain,0,sizeof(*ramchain));
+    //if ( deleteflag != 0 )
+    //    memset(ramchain,0,sizeof(*ramchain));
     return(0);
 }
 
