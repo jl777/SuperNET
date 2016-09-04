@@ -655,8 +655,8 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         {
             if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 )
                 continue;
-            //if ( GETBIT(bp->haveblock,i) != 0 )
-            //    continue;
+            if ( GETBIT(bp->haveblock,i) != 0 )
+                continue;
             nonz++;
             if ( firsti < 0 )
                 firsti = i;
@@ -679,7 +679,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     req->height = bp->bundleheight + i;
                     req->bundlei = i;
                     queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
-                    bp->issued[i] = (uint32_t)time(NULL);
+                    bp->issued[i] = 1;
                     n++;
                 } //else printf("[z%d] ",i);
             } //else printf("%d ",now - (bp->issued[i]+lag));
