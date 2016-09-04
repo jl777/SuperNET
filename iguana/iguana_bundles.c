@@ -618,7 +618,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         return(0);
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
     lasti = coin->lastpending == 0 ? starti+coin->MAXBUNDLES : coin->lastpending->hdrsi;
-    if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
+    if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 )//|| ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
     if ( bp->durationscount > 10 )
@@ -684,9 +684,9 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
                 }
             }
         }
-        if ( priority <= 2 && firsti >= 0 && bp->issued[firsti] != 1 && (strcmp("BTC",coin->symbol) != 0 || bp == coin->current) )
+        if ( firsti >= 0 && bp->issued[firsti] != 1 && bp == coin->current )
         {
-            //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
+            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
