@@ -627,7 +627,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         return(0);
     }
     bp->missingstime = (uint32_t)time(NULL);
-    if ( bp->durationscount > 10 )
+    if ( bp->durationscount != 0 )
     {
         aveduration = (double)bp->totaldurations / bp->durationscount;
         if ( (rand() % 100000) == 0 )
@@ -882,7 +882,7 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
                     bp->issued[i] = 0;
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
-        iguana_bundleissuemissing(myinfo,coin,bp,3,1.);
+        iguana_bundleissuemissing(myinfo,coin,bp,3,3.);
         /*if ( bp == coin->current )
         {
             mult = 1.;
