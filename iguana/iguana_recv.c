@@ -1510,7 +1510,7 @@ int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
                     {
                         if ( time(NULL) > bp->issued[bundlei+1+j]+10 )
                         {
-                            bp->issued[bundlei+1+j] = (uint32_t)time(NULL);
+                            bp->issued[bundlei+1+j] = 1;//(uint32_t)time(NULL);
                             printf("MAINCHAIN skip issue %d\n",bp->bundleheight+bundlei+1+j);
                             if ( bits256_nonz(bp->hashes[bundlei+1+j]) != 0 )
                                 iguana_blockQ("mainskip",coin,bp,bundlei+1+j,bp->hashes[bundlei+1+j],1);
