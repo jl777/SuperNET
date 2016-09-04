@@ -661,7 +661,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
             if ( firsti < 0 )
                 firsti = i;
             lasti = i;
-            if ( now > bp->issued[i]+lag )
+            if ( bp->issued[i] > 1 && now > bp->issued[i]+lag )
             {
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
@@ -1212,7 +1212,7 @@ void iguana_bundlemissings(struct supernet_info *myinfo,struct iguana_info *coin
                 mult = 4;
             else if ( mult > 7 )
                 mult = 7;
-        } else mult = 1;
+        } else mult = 2;
         if ( coin->bandwidth < .7*coin->maxbandwidth )
         {
             mult--;
