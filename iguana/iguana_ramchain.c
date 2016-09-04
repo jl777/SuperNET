@@ -2043,9 +2043,26 @@ void iguana_ramchain_disp(struct iguana_ramchain *ramchain)
     }
 }
 
+void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
+{
+    char fname[512]; int32_t checki,hdrsi; bits256 zero;
+    memset(&zero,0,sizeof(zero));
+    fname[0] = 0;
+    if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,hash2,zero,1,1)) != i )
+    {
+        //printf("checki.%d vs %d mismatch? %s\n",checki,i,fname);
+    }
+    if ( fname[0] != 0 )
+    {
+        OS_removefile(fname,0);
+        strcat(fname,".tmp");
+        OS_removefile(fname,0);
+    }
+}
+
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
-    void *ptr; int32_t recvlen,hdrsi,checki; char fname[1024]; static const bits256 zero;
+    void *ptr; int32_t recvlen;
     if ( 0 && bp != 0 )
         printf("UNMARK.[%d:%d]\n",bp->hdrsi,i);
     if ( block != 0 )
@@ -2067,19 +2084,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
         }
     }
     if ( deletefile != 0 )
-    {
-        fname[0] = 0;
-        if ( block != 0 && (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,block->RO.hash2,zero,1,1)) != i )
-        {
-            //printf("checki.%d vs %d mismatch? %s\n",checki,i,fname);
-        }
-        if ( fname[0] != 0 )
-        {
-            OS_removefile(fname,0);
-            strcat(fname,".tmp");
-            OS_removefile(fname,0);
-        }
-    }
+        iguana_blockdelete(coin,block->RO.hash2,i);
 }
 
 int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs,long *filesizes,struct iguana_bundle *bp)
@@ -2457,12 +2462,12 @@ int32_t iguana_mapchaininit(char *fname,struct iguana_info *coin,struct iguana_r
 // helper threads: NUM_HELPERS
 int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,uint32_t starttime) // helper thread
 {
-    static int depth; static const bits256 zero;
+    static int depth;
     RAMCHAIN_DESTDECLARE; RAMCHAIN_DECLARE; RAMCHAIN_ZEROES;
     void **ptrs; long *filesizes; uint32_t *ipbits; char fname[1024];
     struct iguana_ramchain *R,*mapchain,*dest,newchain; uint32_t fpipbits; bits256 prevhash2;
     int32_t i,starti,endi,bp_n,numtxids,valid,sigspace,pubkeyspace,numunspents,numspends,numpkinds,numexternaltxids,scriptspace; struct iguana_block *block; long fpos;
-    struct OS_memspace HASHMEM; int32_t err,j,num,hdrsi,bundlei,firsti= 1,retval = -1;
+    struct OS_memspace HASHMEM; int32_t err,j,num,bundlei,firsti= 1,retval = -1;
     memset(&HASHMEM,0,sizeof(HASHMEM));
     starti = 0, endi = bp->n - 1;
     //B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
@@ -2626,14 +2631,15 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
         //printf("delete %d files hdrs.[%d] retval.%d bp_n.%d\n",num,bp->hdrsi,retval,bp_n);
         if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
             retval = -1;
-        else if ( bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
+        else //if ( bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
         {
             for (j=starti; j<=endi; j++)
-            {
+                iguana_blockdelete(coin,bp->hashes[j],j);
+            /*{
                 if ( iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[j],zero,1,1) >= 0 && coin->peers != 0 )
                     coin->peers->numfiles -= OS_removefile(fname,0);
                 else printf("error removing.(%s)\n",fname);
-            }
+            }*/
             //sprintf(dirname,"%s/%s/%d",GLOBAL_TMPDIR,coin->symbol,bp->bundleheight), OS_portable_rmdir(dirname,1);
         }
         //sleep(1);
