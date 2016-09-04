@@ -1300,7 +1300,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
             for (i=0; i<bp->n; i++)
                 iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
         }
-        iguana_ramchain_free(coin,&bp->ramchain,0);
+        iguana_ramchain_free(coin,&bp->ramchain,1);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
             OS_removefile(fname,0);
         sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
@@ -2015,7 +2015,7 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         iguana_blockunmark(coin,block,bp,bundlei,1);
     //fprintf(stderr,"finished with hdrsi.%d ht.%d scripts.%u:%u\n",bp->hdrsi,bp->bundleheight,ramchain->H.scriptoffset,rdata->scriptspace);
     ramchain->H.ROflag = 0;
-    iguana_ramchain_free(coin,ramchain,0);
+    iguana_ramchain_free(coin,ramchain,1);
     return(fpos);
 }
 

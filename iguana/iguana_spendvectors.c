@@ -802,6 +802,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         iguana_volatilesinit(myinfo,coin);
     iguana_savehdrs(coin);
     iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
+    printf("walkchain\n");
     iguana_walkchain(coin,0);
     hash2 = iguana_blockhash(coin,coin->balanceswritten * coin->chain->bundlesize);
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockfind("initfinal",coin,hash2)) != 0 )

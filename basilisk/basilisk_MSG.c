@@ -207,7 +207,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),NUMRELAYS,juint(valsobj,"fanout"));
+        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),NUMRELAYS,juint(valsobj,"fanout"));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);
@@ -251,7 +251,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
         msgid = (uint32_t)time(NULL);
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
-    jaddnum(valsobj,"timeout",1500);
+    jaddnum(valsobj,"timeout",2500);
     jaddnum(valsobj,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
     jaddnum(valsobj,"minresults",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
