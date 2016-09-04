@@ -634,8 +634,8 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
             printf("priority.%d [%d] durations %.2f counts[%d %d] \n",priority,bp->hdrsi,aveduration,(int32_t)bp->durationscount,bp->duplicatescount);
     } else aveduration = IGUANA_DEFAULTLAG;
     lag = aveduration * mult;
-    if ( bp != coin->current && lag < 16 )
-        lag = 16;
+    if ( bp != coin->current && lag < 60 )
+        lag = 60;
     else if ( lag < 30 )
         lag = 30;
     if ( (num= coin->peers->numranked) == 0 )
