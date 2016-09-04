@@ -69,14 +69,14 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         addr = coin->peers->ranked[rand() % n];
     if ( addr == 0 || addr->pendblocks > coin->MAXPENDINGREQUESTS )
         return(0);
+    if ( addr->usock < 0 )
+        return(0);
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         if ( iamthreadsafe == 0 && (rand() % 10) != 0 )
             return(0);
     }
-    if ( addr->usock < 0 )
-        return(0);
     checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
     {
@@ -86,7 +86,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             recvlen = numtx = 0;
             if ( coin->RTheight > 0 && iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,1) != 0 )
             {
-                //printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
+                printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
                 return(0);
             } //else printf("no RTrawdata for %s\n",bits256_str(str,hash2));
         }
@@ -126,7 +126,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             bp->issued[bundlei] = addr->pendtime;
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);

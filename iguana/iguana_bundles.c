@@ -618,7 +618,7 @@ int32_t iguana_bundleissuemissing(struct iguana_info *coin,struct iguana_bundle 
         return(0);
     starti = coin->current == 0 ? 0 : coin->current->hdrsi;
     lasti = coin->lastpending == 0 ? starti+coin->MAXBUNDLES : coin->lastpending->hdrsi;
-    if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) || time(NULL) < bp->missingstime+30 )
+    if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 || ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
         return(0);
     bp->missingstime = (uint32_t)time(NULL);
     if ( bp->durationscount != 0 )
@@ -1107,7 +1107,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     iguana_bundlecalcs(coin,bp,lag);
     if ( coin->blockdepth == 0 && coin->blockdepth == 0 && bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(coin,bp);
-    //if ( 0 && bp->hdrsi == 0 )
+    if ( 0 && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     bp->nexttime = (uint32_t)time(NULL) + ((bp->hdrsi > starti) ? 0 : -2);
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
