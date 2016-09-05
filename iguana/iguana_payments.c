@@ -831,9 +831,44 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
     } else return(clonestr("{\"error\":\"sig is too long\"}"));
 }
 
+int64_t iguana_txdetails(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *item,bits256 txid,int32_t vout,int32_t height)
+{
+    struct iguana_block *block; bits256 hash2; uint64_t amount = 0; char coinaddr[64],account[512];
+    /*{
+     "category": "receive",
+     "amount": 0.50000000,
+     "label": "",
+     "confirmations": 24466,
+     "blockhash": "00000000000000000517ce625737579f91162c46ad9eaccad0f52ca13715b156",
+     "blockindex": 78,
+     "blocktime": 1448045745,
+     }*/
+    jaddbits256(item,"txid",txid);
+    if ( vout >= 0 )
+    {
+        jaddnum(item,"vout",vout);
+        if ( (amount= iguana_txidamount(myinfo,coin,txid,vout)) != 0 )
+            jaddnum(item,"amount",dstr(amount));
+    }
+    else if ( vout == -1 )
+        jadd(item,"coinbase",jtrue());
+    jaddstr(item,"category",iguana_txidcategory(myinfo,coin,account,coinaddr,txid,vout));
+    if ( account[0] != 0 && jobj(item,"account") == 0 )
+        jaddstr(item,"account",account);
+    if ( coinaddr[0] != 0 )
+        jaddstr(item,"address",coinaddr);
+    hash2 = iguana_blockhash(coin,height);
+    jaddbits256(item,"blockhash",hash2);
+    if ( (block= iguana_blockfind("rawtx",coin,hash2)) != 0 )
+        jaddnum(item,"blocktime",block->RO.timestamp);
+    jaddnum(item,"height",height);
+    jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height);
+    return(amount);
+}
+
 HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
 {
-    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len=0,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_block *block; bits256 hash2; struct iguana_RTtxid *RTptr;
+    struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len=0,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_RTtxid *RTptr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
@@ -861,12 +896,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             free(txbytes);
             if ( txobj != 0 )
             {
-                hash2 = iguana_blockhash(coin,height);
-                jaddbits256(txobj,"blockhash",hash2);
-                if ( (block= iguana_blockfind("rawtx",coin,hash2)) != 0 )
-                    jaddnum(txobj,"blocktime",block->RO.timestamp);
-                jaddnum(txobj,"height",height);
-                jaddnum(txobj,"confirmations",coin->blocks.hwmchain.height - height);
+                iguana_txdetails(myinfo,coin,txobj,tx->txid,-2,height);
                 return(jprint(txobj,1));
             }
         }
@@ -894,14 +924,19 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
                     jaddbits256(retjson,"blockhash",blockhash);
                     jaddnum(retjson,"height",height);
                     free(txbytes);
-                } else jaddstr(retjson,"error","cant find txid in block");
+                }
+                else if ( coin->RTheight > 0 )
+                    jaddstr(retjson,"error","cant find txid in block");
+                else jaddstr(retjson,"error","not in realtime mode yet");
                 free(blockstr);
                 free(data);
             } else jaddstr(retjson,"error","cant find blockhash");
             return(jprint(retjson,1));
         }
     }
-    return(clonestr("{\"error\":\"cant find txid\"}"));
+    if ( coin->RTheight > 0 )
+        return(clonestr("{\"error\":\"cant find txid\"}"));
+    else return(clonestr("{\"error\":\"not in realtime mode yet\"}"));
 }
 
 int64_t iguana_lockval(int32_t finalized,int64_t locktime)
@@ -1005,25 +1040,25 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
 
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress)
 {
-    uint8_t *extraspace; int32_t extralen=65536;// char *retstr; struct iguana_msgtx msgtx;
+    uint8_t *extraspace; int32_t extralen=65536; char *retstr; struct iguana_msgtx msgtx;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     
     //cJSON *txobj; char *teststr= "{\"version\":1,\"locktime\":0,\"vin\":[{\"userdata\":\"20fe936da3707c8c4cc7eb0352160ec3f50b9454d46425df6347b2fbc5b2ec87ea00\",\"txid\":\"ee12e50b629d5d45438570fff841d1a2ba7d27f356de4aa06900c9a5e38cf141\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a9145cc47cc123e3f9b7dce0230009b9d3013a9e0c9687\"},\"suppress\":1,\"redeemScript\":\"6304165daa57b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a9143805600256ed8498ca1ec426759212e5835e8dc2882103a7b696908f77d69ec89887f8c4a0423b9e80b5974dc43301bd7d8abad07e1211ac68\"}],\"vout\":[{\"satoshis\":\"21821\",\"scriptPubkey\":{\"hex\":\"76a9143ef4734c1141725c095342095f6e0e7748b6c16588ac\"}}]}";
     
-    cJSON *txobj; char *teststr= "{\"version\":1,\"locktime\":0,\"vin\":[{\"userdata\":\"206efad760ee54b9b2e2a038a821ef9f950eb0e248545ac202c3e2074cd14f92cb00\",\"txid\":\"3f4759381a62154f2f0eefed1e4433342548ad7b269f912820383b715a39273c\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a91446dcccef39c1d8c6da2ccc35dce2bfa7ec0d168887\"},\"suppress\":1,\"redeemScript\":\"63041c60aa57b1752103175cf93574c31637b8c2d8acd5319e3cd23761b5e418d32c6bcb194972ba9273ac67a9142d75daf71325feaa593b8f30989e462892189914882102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac68\"}],\"vout\":[{\"satoshis\":\"18625\",\"scriptPubkey\":{\"hex\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}}]}";
+    //cJSON *txobj; char *teststr= "{\"version\":1,\"locktime\":0,\"vin\":[{\"userdata\":\"206efad760ee54b9b2e2a038a821ef9f950eb0e248545ac202c3e2074cd14f92cb00\",\"txid\":\"3f4759381a62154f2f0eefed1e4433342548ad7b269f912820383b715a39273c\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a91446dcccef39c1d8c6da2ccc35dce2bfa7ec0d168887\"},\"suppress\":1,\"redeemScript\":\"63041c60aa57b1752103175cf93574c31637b8c2d8acd5319e3cd23761b5e418d32c6bcb194972ba9273ac67a9142d75daf71325feaa593b8f30989e462892189914882102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac68\"}],\"vout\":[{\"satoshis\":\"18625\",\"scriptPubkey\":{\"hex\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}}]}";
     // 01000000013c27395a713b382028919f267bad48253433441eedef0e2f4f15621a3859473f00000000d147304402207ecd423b55c1aa45a994c4eb4337ff0891692fbb69954a9ba024745a99c5272d02207cea696425feb5388153ab7f2608d66a66e4c95cfda2d44e98bc56e25994d3f701206efad760ee54b9b2e2a038a821ef9f950eb0e248545ac202c3e2074cd14f92cb004c6763041c60aa57b1752103175cf93574c31637b8c2d8acd5319e3cd23761b5e418d32c6bcb194972ba9273ac67a9142d75daf71325feaa593b8f30989e462892189914882102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac68ffffffff01c1480000000000001976a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac00000000
     // 01000000013c27395a713b382028919f267bad48253433441eedef0e2f4f15621a3859473f00000000fd8b00206efad760ee54b9b2e2a038a821ef9f950eb0e248545ac202c3e2074cd14f92cb004c6763041c60aa57b1752103175cf93574c31637b8c2d8acd5319e3cd23761b5e418d32c6bcb194972ba9273ac67a9142d75daf71325feaa593b8f30989e462892189914882102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac68ffffffff01c1480000000000001976a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac00000000
     //cJSON *txobj; char *teststr= "{\"version\":1,\"locktime\":0,\"vin\":[{\"userdata\":\"20ae439d344513eab8e718d8214fe6ae8133b8b5b594afd64da21d0e40b9c37cdd00\",\"txid\":\"2c1320315f4fb519cbf2b4d7b67855013b9a09a85e515df43b41d407a0083b09\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a9142e7674400d04217f770f2222126dc7fee44b06b487\"},\"suppress\":1,\"redeemScript\":\"63041686a657b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a914ed74c61c27656abc6c20687c3a9212ffdc6f34cd88210398a4cb9f6ea7c52a4e27455028a95e2e4e397a110fb75f072c2c58a8bdcbf4baac68\"}],\"vout\":[{\"satoshis\":\"16733\",\"scriptPubkey\":{\"hex\":\"76a91454a752f0d71b89d7c014ed0be29ca231c9546f9f88ac\"}}]}";
     extraspace = calloc(1,extralen);
-    if ( (txobj= cJSON_Parse(teststr)) != 0 )
+    /*if ( (txobj= cJSON_Parse(teststr)) != 0 )
     {
         bits256 txid;
         rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,0);
         txobj = bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&txid,0,rawtx,extraspace,extralen,0,0,suppress);
         printf("RAWTX.(%s) -> (%s)\n",rawtx,jprint(txobj,0));
-    }
-    //retstr = iguana_validaterawtx(myinfo,coin,coin->blocks.hwmchain.height,&msgtx,extraspace,extralen,rawtx,0,suppress);
+    }*/
+    retstr = iguana_validaterawtx(myinfo,coin,coin->blocks.hwmchain.height,&msgtx,extraspace,extralen,rawtx,0,suppress);
     free(extraspace);
     return(rawtx);
 }

@@ -1576,11 +1576,7 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
                                          }*/
                                         item = cJSON_CreateObject();
                                         jaddstr(item,"account",wacct->account);
-                                        jaddstr(item,"address",coinaddr);
-                                        jaddbits256(item,"txid",txid);
-                                        jaddnum(item,"vout",vout);
-                                        //return(bitcoinrpc_getrawtransaction(IGUANA_CALLARGS,txid,1));
-
+                                        iguana_txdetails(myinfo,coin,item,txid,vout,iguana_txidheight(myinfo,coin,txid));
                                         jaddi(retarray,item);
                                     }
                                 }
