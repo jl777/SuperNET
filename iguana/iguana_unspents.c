@@ -62,48 +62,6 @@ int32_t iguana_RTunspentind2txid(struct supernet_info *myinfo,struct iguana_info
         else break;
     }
     return(-1);
-    //{"txid":"e34686afc17ec37a8438f0c9a7e48f98d0c625c7917a59c2d7fa22b53d570115","vout":1,"address":"16jsjc1YvzDXqKf7PorMhTyK8ym3ra3uxm","scriptPubKey":"76a9143ef4734c1141725c095342095f6e0e7748b6c16588ac","amount":0.01000000,"timestamp":0,"height":419261,"confirmations":1729,"checkind":4497018,"account":"default","spendable":true,"spent":{"hdrsi":209,"pkind":2459804,"unspentind":4497018,"prevunspentind":0,"satoshis":"1000000","txidind":1726947,"vout":1,"type":2,"fileid":0,"scriptpos":0,"scriptlen":25},"spentheight":419713,"dest":{"spentfrom":"22651e62f248fe2e72053d650f177e4b246ee016605102a40419e603b2bbeac8","vin":0,"timestamp":0,"vouts":[{"1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu":0.00010000}, {"1GQHQ7vwVpGeir2kKrYATsLtrkUQSc7FGY":0.00980000}],"total":0.00990000,"ratio":1}}
-   /* cJSON *retarray,*item,*uitem,*sitem; char *retstr; int32_t i,n,retval = -1;
-    *voutp = *spentheightp = -1;
-    memset(txidp,0,sizeof(*txidp));
-    if ( (retstr= bitcoinrpc_listunspent(myinfo,coin,0,0,0,0,0)) != 0 )
-    {
-        if ( (retarray= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (n= cJSON_GetArraySize(retarray)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                {
-                    item = jitem(retarray,i);
-                    if ( (uitem= jobj(item,"unspent")) != 0 )
-                    {
-                        if ( juint(uitem,"hdrsi") == hdrsi && juint(uitem,"unspentind") == unspentind )
-                        {
-                            *txidp = jbits256(item,"txid");
-                            *voutp = jint(item,"vout");
-                            *spentheightp = 0;
-                            retval = 0;
-                            break;
-                        }
-                    }
-                    else if ( (sitem= jobj(item,"spent")) != 0 )
-                    {
-                        if ( juint(sitem,"hdrsi") == hdrsi && juint(sitem,"unspentind") == unspentind )
-                        {
-                            *txidp = jbits256(item,"txid");
-                            *voutp = jint(item,"vout");
-                            *spentheightp = jint(item,"spentheight");
-                            retval = 1;
-                            break;
-                        }
-                    }
-                }
-            }
-            free_json(retarray);
-        }
-        free(retstr);
-    }
-    return(retval);*/
 }
 
 int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
@@ -213,6 +171,7 @@ cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
 cJSON *ramchain_spentjson(struct iguana_info *coin,int32_t spentheight,bits256 txid,int32_t vout,int64_t uvalue)
 {
     char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i,ind; struct iguana_block *block; int64_t total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
+//RTpath!
     item = cJSON_CreateObject();
     hash2 = iguana_blockhash(coin,spentheight);
     if ( (block= iguana_blockfind("spent",coin,hash2)) != 0 && (bp= coin->bundles[spentheight/coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
