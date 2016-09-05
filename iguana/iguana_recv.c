@@ -1868,6 +1868,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     flag += iguana_processrecvQ(myinfo,coin,&newhwm);
     if ( coin->RTheight == 0 || (rand() % 30) == 0 )
         flag += iguana_reqblocks(myinfo,coin);
+    iguana_jsonQ(myinfo,coin);
     if ( time(NULL) > coin->laststats+30 )
     {
         flag += iguana_reqhdrs(coin);

@@ -138,7 +138,7 @@ double dxblend(double *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
-char *iguana_JSON(char *,uint16_t port);
+char *iguana_JSON(struct supernet_info *myinfo,struct iguana_info *coin,char *,uint16_t port);
 char *SuperNET_p2p(struct iguana_info *coin,struct iguana_peer *addr,int32_t *delaymillisp,char *ipaddr,uint8_t *data,int32_t datalen,int32_t compressed);
 
 char *mbstr(char *str,double);
@@ -262,7 +262,7 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly);
 //int32_t btc_pub2rmd(uint8_t rmd160[20],uint8_t pubkey[33]);
 int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,int32_t virtcoin);
 int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1);
-int32_t iguana_jsonQ();
+int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin);
 int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr);
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port);
 cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
@@ -271,7 +271,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
 void ramcoder_test(void *data,int64_t len);
 void iguana_exit();
 int32_t iguana_pendingaccept(struct iguana_info *coin);
-char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port);
+char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port);
 void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);
 cJSON *SuperNET_bits2json(uint8_t *serialized,int32_t datalen);
 int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,bits256 destpub,bits256 mypriv,bits256 mypub,uint8_t *msg,int32_t len,uint8_t *data,int32_t delaymillis);
@@ -519,7 +519,7 @@ bits256 calc_categoryhashes(bits256 *subhashp,char *category,char *subcategory);
 struct gecko_chain *category_find(bits256 categoryhash,bits256 subhash);
 void *category_subscribe(struct supernet_info *myinfo,bits256 category,bits256 keyhash);
 char *bitcoin_address(char *coinaddr,uint8_t addrtype,uint8_t *pubkey_or_rmd160,int32_t len);
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port);
+char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port);
 struct supernet_info *SuperNET_accountfind(cJSON *json);
 cJSON *SuperNET_rosettajson(struct supernet_info *myinfo,bits256 privkey,int32_t showprivs);
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson);

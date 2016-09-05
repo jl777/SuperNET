@@ -134,12 +134,12 @@ void SuperNET_MYINFOadd(struct supernet_info *myinfo)
     }
 }
 
-char *iguana_JSON(char *jsonstr,uint16_t port)
+char *iguana_JSON(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint16_t port)
 {
     char *retstr=0; cJSON *json;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
-        retstr = SuperNET_JSON(0,json,"127.0.0.1",port);
+        retstr = SuperNET_JSON(myinfo,coin,json,"127.0.0.1",port);
         free_json(json);
     }
     if ( retstr == 0 )
@@ -165,23 +165,33 @@ char *SuperNET_jsonstr(struct supernet_info *myinfo,char *jsonstr,char *remotead
     return(retstr);
 }
 
-int32_t iguana_jsonQ()
+int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_jsonitem *ptr; char *str;
+    struct iguana_jsonitem *ptr; char *str; queue_t *finishedQ,*jsonQ;
+    if ( coin == 0 )
+    {
+        finishedQ = &FINISHED_Q;
+        jsonQ = &JSON_Q;
+    }
+    else
+    {
+        finishedQ = &coin->finishedQ;
+        jsonQ = &coin->jsonQ;
+    }
     if ( COMMANDLINE_ARGFILE != 0 )
     {
         ptr = calloc(1,sizeof(*ptr) + strlen(COMMANDLINE_ARGFILE) + 1);
-        ptr->myinfo = SuperNET_MYINFO(0);
+        ptr->myinfo = myinfo;//SuperNET_MYINFO(0);
         strcpy(ptr->jsonstr,COMMANDLINE_ARGFILE);
         free(COMMANDLINE_ARGFILE);
         COMMANDLINE_ARGFILE = 0;
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         printf("COMMANDLINE_ARGFILE.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
-        queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
+        queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
         return(1);
     }
-    if ( (ptr= queue_dequeue(&finishedQ,0)) != 0 )
+    if ( (ptr= queue_dequeue(finishedQ,0)) != 0 )
     {
         if ( ptr->expired != 0 )
         {
@@ -192,20 +202,20 @@ int32_t iguana_jsonQ()
             }
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
-        } else queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
+        } else queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
     }
-    if ( (ptr= queue_dequeue(&jsonQ,0)) != 0 )
+    if ( (ptr= queue_dequeue(jsonQ,0)) != 0 )
     {
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
-        queue_enqueue("finishedQ",&finishedQ,&ptr->DL,0);
+        queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
         return(1);
     }
     return(0);
 }
 
-char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port)
+char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port)
 {
     struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
@@ -219,14 +229,14 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
     ptr->retjsonstr = 0;
     safecopy(ptr->remoteaddr,remoteaddr,sizeof(ptr->remoteaddr));
     memcpy(ptr->jsonstr,jsonstr,len+1);
-    queue_enqueue("jsonQ",&jsonQ,&ptr->DL,0);
+    queue_enqueue("jsonQ",coin != 0 ? &coin->jsonQ : &JSON_Q,&ptr->DL,0);
     while ( OS_milliseconds() < expiration )
     {
         usleep(100);
         if ( ptr->retjsonstr != 0 )
         {
             //printf("got blocking retjsonstr.(%s) delete allocsize.%d:%d\n",retjsonstr,allocsize,ptr->allocsize);
-            queue_delete(&finishedQ,&ptr->DL,ptr->allocsize,1);
+            queue_delete(coin != 0 ? &coin->finishedQ : &FINISHED_Q,&ptr->DL,ptr->allocsize,1);
             return(ptr->retjsonstr);
         }
         usleep(1000);
@@ -236,7 +246,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,char *jsonstr,uint64_t
     return(clonestr("{\"error\":\"iguana jsonstr expired\"}"));
 }
 
-char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
+char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
     cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
@@ -259,7 +269,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
         //printf("RPC? (%s)\n",jsonstr);
         if ( jstr(json,"immediate") != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
             retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
-        else retjsonstr = iguana_blockingjsonstr(myinfo,jsonstr,tag,timeout,remoteaddr,port);
+        else retjsonstr = iguana_blockingjsonstr(myinfo,coin,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
         {
             if ( (retjsonstr[0] == '{' || retjsonstr[0] == '[') && (retjson= cJSON_Parse(retjsonstr)) != 0 )
@@ -286,7 +296,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,cJSON *json,char *remote
     return(retstr);
 }
 
-char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,uint16_t port)
+char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
     int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*jsonstr=0; uint64_t tag;
     //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
@@ -313,7 +323,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,cJSON *json,char *remoteaddr,ui
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
     }
-    if ( (retstr= SuperNET_processJSON(myinfo,json,remoteaddr,port)) == 0 )
+    if ( (retstr= SuperNET_processJSON(myinfo,coin,json,remoteaddr,port)) == 0 )
         printf("null retstr from SuperNET_JSON\n");
     if ( jsonstr != 0 )
         free(jsonstr);
@@ -422,7 +432,7 @@ void mainloop(struct supernet_info *myinfo)
                 counter++;
                 coin = 0;
                 depth = 0;
-                if ( 0 )
+                if ( 1 )
                 {
                     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
                     {
@@ -431,9 +441,9 @@ void mainloop(struct supernet_info *myinfo)
                     }
                 }
                 //printf("check jsonQ\n");
-                while ( iguana_jsonQ() != 0 )
+                while ( iguana_jsonQ(myinfo,0) != 0 )
                     ;
-                if ( 0 )
+                if ( 1 )
                 {
                     if ( depth > 0 )
                     {
@@ -532,16 +542,16 @@ void iguana_appletests(struct supernet_info *myinfo)
             bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
         printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
        getchar();**/
-        if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( 1 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
-            if ( 1 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+            if ( 1 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTC"),cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
-                if ( 0 && (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
+                if ( 0 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
                 {
                     free(str);
-                    if ( (str= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"bob\",\"password\":\"bob\",\"passphrase\":\"bob\"}"),0,myinfo->rpcport)) != 0 )
+                    if ( (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"bob\",\"password\":\"bob\",\"passphrase\":\"bob\"}"),0,myinfo->rpcport)) != 0 )
                         free(str);
                 }
             }
@@ -591,13 +601,13 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
                 printf("GLOBAL tmpdir.(%s)\n",GLOBAL_TMPDIR);
             }
             printf("call argv JSON.(%s)\n",(char *)arg);
-            SuperNET_JSON(myinfo,argjson,0,myinfo->rpcport);
+            SuperNET_JSON(myinfo,0,argjson,0,myinfo->rpcport);
             if ( (coinargs= SuperNET_keysinit(myinfo,arg)) != 0 )
                 iguana_launch(0,"iguana_coins",iguana_coins,coinargs,IGUANA_PERMTHREAD);
             if ( (array= jarray(&n,argjson,"commands")) != 0 )
             {
                 for (i=0; i<n; i++)
-                    if ( (str= SuperNET_JSON(myinfo,jitem(array,i),0,myinfo->rpcport)) != 0 )
+                    if ( (str= SuperNET_JSON(myinfo,0,jitem(array,i),0,myinfo->rpcport)) != 0 )
                         free(str);
             }
             free_json(argjson);
@@ -641,8 +651,8 @@ void iguana_ensuredirs()
 void iguana_Qinit()
 {
     iguana_initQ(&helperQ,"helperQ");
-    iguana_initQ(&jsonQ,"jsonQ");
-    iguana_initQ(&finishedQ,"finishedQ");
+    iguana_initQ(&JSON_Q,"jsonQ");
+    iguana_initQ(&FINISHED_Q,"finishedQ");
     iguana_initQ(&bundlesQ,"bundlesQ");
     iguana_initQ(&emitQ,"emitQ");
     //iguana_initQ(&TerminateQ,"TerminateQ");
@@ -651,7 +661,7 @@ void iguana_Qinit()
 void iguana_helpinit(struct supernet_info *myinfo)
 {
     char *tmpstr = 0;
-    if ( (tmpstr= SuperNET_JSON(myinfo,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0,myinfo->rpcport)) != 0 )
+    if ( (tmpstr= SuperNET_JSON(myinfo,0,cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"help\"}"),0,myinfo->rpcport)) != 0 )
     {
         if ( (API_json= cJSON_Parse(tmpstr)) != 0 && (API_json= jobj(API_json,"result")) != 0 )
             API_json = jobj(API_json,"API");

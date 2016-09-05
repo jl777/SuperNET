@@ -32,7 +32,7 @@ char *sglue(GLUEARGS,char *agent,char *method)
     jaddstr(json,"coin",coin->symbol);
     if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
         iguana_walletlock(myinfo,0);
-    if ( (retstr= SuperNET_JSON(myinfo,json,remoteaddr,port)) != 0 )
+    if ( (retstr= SuperNET_JSON(myinfo,coin,json,remoteaddr,port)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
@@ -195,7 +195,7 @@ static char *sendalert(RPCARGS)
 
 static char *SuperNET(RPCARGS)
 {
-    return(SuperNET_JSON(myinfo,json,remoteaddr,port));
+    return(SuperNET_JSON(myinfo,coin,json,remoteaddr,port));
 }
 
 static char *getrawmempool(RPCARGS)
@@ -669,48 +669,54 @@ char *iguana_bitcoinrpc(struct supernet_info *myinfo,uint16_t port,struct iguana
     }
     return(clonestr("{\"error\":\"invalid coin address\"}"));
 }
+struct iguana_info *iguana_coinchoose(struct supernet_info *myinfo,char *symbol,cJSON *json,uint16_t port)
+{
+    int32_t i,c; struct iguana_info *tmp,*coin = 0;
+    if ( port == myinfo->rpcport )
+    {
+        if ( jstr(json,"coin") == 0 )
+        {
+            strcpy(symbol,myinfo->rpcsymbol);
+            if ( symbol[0] == 0 )
+            {
+                c = 'B';
+                sprintf(symbol,"%c%c%c%c",c,'T',c+1,c+2);
+            }
+        }
+        else
+        {
+            safecopy(symbol,jstr(json,"coin"),sizeof(symbol));
+            for (i=0; symbol[i]!=0; i++)
+                symbol[i] = toupper((int32_t)symbol[i]);
+        }
+    }
+    else
+    {
+        //portable_mutex_lock(&myinfo->allcoins_mutex);
+        HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+        {
+            if ( coin->chain->rpcport == port )
+                break;
+            else coin = 0;
+        }
+        //portable_mutex_unlock(&myinfo->allcoins_mutex);
+    }
+    if ( coin == 0 && symbol[0] != 0 )
+        coin = iguana_coinfind(symbol);
+    return(coin);
+}
 
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *params[16],*array; struct iguana_info *tmp,*coin = 0; char symbol[16]; int32_t i,c,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16]; int32_t i,n; char *retstr = 0;
     symbol[0] = 0;
     memset(params,0,sizeof(params));
     //printf("bitcoinRPC\n");
     if ( json != 0 )
     {
-        if ( port == myinfo->rpcport )
-        {
-            if ( jstr(json,"coin") == 0 )
-            {
-                strcpy(symbol,myinfo->rpcsymbol);
-                if ( symbol[0] == 0 )
-                {
-                    c = 'B';
-                    sprintf(symbol,"%c%c%c%c",c,'T',c+1,c+2);
-                }
-            }
-            else
-            {
-                safecopy(symbol,jstr(json,"coin"),sizeof(symbol));
-                for (i=0; symbol[i]!=0; i++)
-                    symbol[i] = toupper((int32_t)symbol[i]);
-            }
-            if ( myinfo->rpcsymbol[0] == 0 )
-                strcpy(myinfo->rpcsymbol,symbol);
-        }
-        else
-        {
-            //portable_mutex_lock(&myinfo->allcoins_mutex);
-            HASH_ITER(hh,myinfo->allcoins,coin,tmp)
-            {
-                if ( coin->chain->rpcport == port )
-                    break;
-                else coin = 0;
-            }
-            //portable_mutex_unlock(&myinfo->allcoins_mutex);
-        }
-        if ( coin == 0 && symbol[0] != 0 )
-            coin = iguana_coinfind(symbol);
+        coin = iguana_coinchoose(myinfo,symbol,json,port);
+        if ( myinfo->rpcsymbol[0] == 0 )
+            strcpy(myinfo->rpcsymbol,symbol);
         if ( coin != 0 )
             safecopy(symbol,coin->symbol,sizeof(symbol));
         //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
@@ -829,8 +835,8 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
-    cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize;
-    char symbol[16],buf[4096],urlmethod[16],*data,url[1024],furl[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
+    cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize; struct iguana_info *coin = 0;
+    char symbol[64],buf[4096],urlmethod[16],*data,url[1024],furl[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -1009,7 +1015,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                         jaddstr(argjson,"data",jstri(tokens,i));
                     else
                     {
-                        if ( strcmp(jstri(tokens,i),"coin") == 0 && strlen(jstri(tokens,i+1)) < 8 )
+                        if ( strcmp(jstri(tokens,i),"coin") == 0 && strlen(jstri(tokens,i+1)) < sizeof(symbol)-1 )
                         {
                             strcpy(symbol,jstri(tokens,i+1));
                             touppercase(symbol);
@@ -1024,11 +1030,13 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         {
             cJSON *retitem,*retarray = cJSON_CreateArray();
             origargjson = argjson;
+            symbol[0] = 0;
             for (i=0; i<n; i++)
             {
                 argjson = jitem(origargjson,i);
                 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
-                if ( (retstr= SuperNET_JSON(myinfo,argjson,remoteaddr,port)) != 0 )
+                coin = iguana_coinchoose(myinfo,symbol,argjson,port);
+                if ( (retstr= SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port)) != 0 )
                 {
                     if ( (retitem= cJSON_Parse(retstr)) != 0 )
                         jaddi(retarray,retitem);
@@ -1039,7 +1047,11 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             free_json(origargjson);
             retstr = jprint(retarray,1);
         }
-        else retstr = SuperNET_JSON(myinfo,argjson,remoteaddr,port);
+        else
+        {
+            coin = iguana_coinchoose(myinfo,symbol,argjson,port);
+            retstr = SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port);
+        }
         return(retstr);
     }
     *jsonflagp = 1;
