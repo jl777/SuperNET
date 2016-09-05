@@ -66,7 +66,7 @@ CONDEXTERN struct iguana_info *Allcoins;
 CONDEXTERN char Userhome[512];
 CONDEXTERN int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
 CONDEXTERN uint32_t prices777_NXTBLOCK;
-CONDEXTERN queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ;
+CONDEXTERN queue_t helperQ,JSON_Q,FINISHED_Q,bundlesQ,emitQ;
 CONDEXTERN struct supernet_info MYINFO,**MYINFOS;
 CONDEXTERN int32_t MAIN_initflag,MAX_DEPTH;
 CONDEXTERN int32_t HDRnet,netBLOCKS;

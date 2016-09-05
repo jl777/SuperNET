@@ -36,6 +36,8 @@ void iguana_initQs(struct iguana_info *coin)
     iguana_initQ(&coin->msgrequestQ,"msgrequestQ");
     iguana_initQ(&coin->cacheQ,"cacheQ");
     iguana_initQ(&coin->recvQ,"recvQ");
+    iguana_initQ(&coin->jsonQ,"jsonQ");
+    iguana_initQ(&coin->finishedQ,"finishedQ");
     if ( coin->MAXPEERS > 0 && coin->peers != 0 )
     {
         for (i=0; i<IGUANA_MAXPEERS; i++)
@@ -65,6 +67,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
         portable_mutex_init(&coin->peers_mutex);
         portable_mutex_init(&coin->blocks_mutex);
         portable_mutex_init(&coin->special_mutex);
+        portable_mutex_init(&coin->allcoins_mutex);
         portable_mutex_init(&coin->allcoins_mutex);
         coin->txfee = 10000;
         iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,coin->blockspacesize,0);

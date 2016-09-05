@@ -443,7 +443,7 @@ struct iguana_info
     void *ctx;
     struct iguana_bitmap *screen;
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
-    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
+    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ,jsonQ,finishedQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
     portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex,allcoins_mutex;
     char changeaddr[64];
