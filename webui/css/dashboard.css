@@ -274,7 +274,8 @@
     text-align: right;
   }
   .transactions-list-repeater .item .hash {
-    width: 50%;
+    width: 40%;
+    margin-left: 10%;
   }
   .transactions-list-repeater .item .in-out {
     font-size: 0.8em;

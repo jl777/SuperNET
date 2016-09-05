@@ -76,6 +76,13 @@ apiProto.prototype.getConf = function(discardCoinSpecificPort) {
   return conf;
 }
 
+apiProto.prototype.errorHandler = function(response) {
+  if (response.error === "need to unlock wallet") {
+    console.log("unexpected crash or else");
+    helperProto.prototype.logout();
+  }
+}
+
 // test must be hooked to initial gui start or addcoin method
 // test 1 port for a single coin
 apiProto.prototype.testCoinPorts = function() {
@@ -93,7 +100,6 @@ apiProto.prototype.testCoinPorts = function() {
       async: false,
       dataType: "json",
       type: "POST",
-      //contentType: 'application/json',
       data: postData,
       headers: postAuthHeaders,
       success: function (response) {
@@ -104,13 +110,15 @@ apiProto.prototype.testCoinPorts = function() {
           activeCoin = index;
         }
         if (response.status)
-          if (response.status.indexOf("BTCD.RT0 ") > -1) console.log("RT is not ready yet!");
+          if (response.status.indexOf(".RT0 ") > -1) console.log("RT is not ready yet!");
       },
       error: function (response) {
         console.log(response.responseText);
       }
     });
   });
+
+  if (!activeCoin) console.log("no coin detected, at least one daemon must be running!");
 
   return result;
 }
@@ -156,7 +164,6 @@ apiProto.prototype.walletLogin = function(passphrase, timeout) {
   var postAuthHeaders = isIguana ? "" : { "Authorization": "Basic " + btoa(apiProto.prototype.getConf().coins[activeCoin].user + ":" + apiProto.prototype.getConf().coins[activeCoin].pass) };
 
   $.ajax({
-    //url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.walletPassphrase + "?password=" + passphrase + "&timeout=" + timeout,
     url: fullUrl,
     cache: false,
     async: false,
@@ -166,9 +173,6 @@ apiProto.prototype.walletLogin = function(passphrase, timeout) {
     data: postData,
     headers: postAuthHeaders,
     success: function(response) {
-      /*if (response.responseText)
-        console.log(response.responseText);
-      else*/
       console.log(response);
       result = true;
     },
@@ -199,7 +203,6 @@ apiProto.prototype.walletCreate = function(passphrase) {
     async: false,
     dataType: "json",
     type: "POST",
-    //contentType: 'application/json',
     data: postData,
     headers: postAuthHeaders
   })
@@ -241,17 +244,17 @@ apiProto.prototype.listTransactions = function(account) {
   var postAuthHeaders = isIguana ? "" : { "Authorization": "Basic " + btoa(apiProto.prototype.getConf().coins[activeCoin].user + ":" + apiProto.prototype.getConf().coins[activeCoin].pass) };
 
   $.ajax({
-    //url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.listTransactions + "?account=" + account + "&count=20",
     url: fullUrl,
     cache: false,
     async: false,
     dataType: "json",
     type: "POST",
-    //contentType: 'application/json',
     data: postData,
     headers: postAuthHeaders
   })
   .done(function(_response) {
+    apiProto.prototype.errorHandler(_response);
+
     console.log(_response);
     if (_response.result) {
       // non-iguana
@@ -289,17 +292,17 @@ apiProto.prototype.getTransaction = function(txid) {
   var postAuthHeaders = isIguana ? "" : { "Authorization": "Basic " + btoa(apiProto.prototype.getConf().coins[activeCoin].user + ":" + apiProto.prototype.getConf().coins[activeCoin].pass) };
 
   $.ajax({
-    //url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.listTransactions + "?account=" + account + "&count=20",
     url: fullUrl,
     cache: false,
     async: false,
     dataType: "json",
     type: "POST",
-    //contentType: 'application/json',
     data: postData,
     headers: postAuthHeaders
   })
   .done(function(_response) {
+    apiProto.prototype.errorHandler(_response);
+
     if (_response.result) {
       // non-iguana
       if (_response.result) {
@@ -335,21 +338,23 @@ apiProto.prototype.getBalance = function(account) {
   var postAuthHeaders = isIguana ? "" : { "Authorization": "Basic " + btoa(apiProto.prototype.getConf().coins[activeCoin].user + ":" + apiProto.prototype.getConf().coins[activeCoin].pass) };
 
   $.ajax({
-    //url: apiProto.prototype.getServerUrl() + apiProto.prototype.getConf().apiRoutes.bitcoinRPC.listTransactions + "?account=" + account + "&count=20",
     url: fullUrl,
     cache: false,
     async: false,
     dataType: "json",
     type: "POST",
-    //contentType: 'application/json',
     data: postData,
     headers: postAuthHeaders
   })
   .done(function(_response) {
+    apiProto.prototype.errorHandler(_response);
+
     if (_response.result) {
       // non-iguana
       result = _response.result;
     } else {
+      console.log(_response);
+
       // iguana
       var response = $.parseJSON(_response);
 
@@ -429,26 +434,25 @@ apiProto.prototype.getIguanaRate = function(quote) {
 }
 
 // get a quote form an external source
-// TODO: 1) add secondary quote service
-//       2) add fallback in case both services fail/take too long to respond
-// alt: https://poloniex.com/public?command=returnTicker
-// upd 02.09.2016, cryptonator is unstable, look for substitution
+// cryptonator is officially closed it's gates, no more cors
+// keep an eye on, may be they'll change their mind
 apiProto.prototype.getExternalRate = function(quote) {
   var result = false,
       firstSourceFailed = false,
       quoteComponents = quote.split("/");
-  quote = quote.toLowerCase().replace("/", "-");
 
+  quote = quote.toLowerCase().replace("/", "-");
   $.ajax({
-    url: "https://www.cryptonator.com/api/full/" + quote,
+    url: "https://min-api.cryptocompare.com/data/price?fsym=" + quoteComponents[0] + "&tsyms=" + quoteComponents[1],
     cache: false,
     dataType: "text",
     async: false,
     success: function(_response) {
       var response = $.parseJSON(_response);
 
-      if (response && response.ticker.price) {
-        result = response.ticker.price;
+      if (response && response[quoteComponents[1]]) {
+        result = response[quoteComponents[1]];
+        console.log("rates source https://min-api.cryptocompare.com");
       } else {
         result = false;
       }
@@ -458,23 +462,46 @@ apiProto.prototype.getExternalRate = function(quote) {
       firstSourceFailed = true;
     }
   });
+
   if (firstSourceFailed)
     $.ajax({
-      url: "https://min-api.cryptocompare.com/data/price?fsym=" + quoteComponents[0] + "&tsyms=" + quoteComponents[1],
+      // cryptocoincharts doesn't have direct conversion altcoin -> currency
+      // needs 2 requests at a time, one to get btc -> currency rate, another to get btc -> altcoin rate
+      url: "http://api.cryptocoincharts.info/tradingPair/btc_" + quoteComponents[1].toLowerCase(),
       cache: false,
       dataType: "text",
       async: false,
       success: function(_response) {
         var response = $.parseJSON(_response);
 
-        if (response && response[quoteComponents[1]]) {
-          result = response[quoteComponents[1]];
+        if (response.price) {
+          btcToCurrency = response.price;
+
+          // get btc -> altcoin rate
+          $.ajax({
+            url: "https://poloniex.com/public?command=returnTicker",
+            cache: false,
+            dataType: "text",
+            async: false,
+            success: function(_response) {
+              var response = $.parseJSON(_response);
+
+              if (response["BTC_" + quoteComponents[0].toUpperCase()]) {
+                result = btcToCurrency * response["BTC_" + quoteComponents[0].toUpperCase()].last;
+                console.log("rates source http://api.cryptocoincharts.info and https://poloniex.com");
+              } else {
+                result = false;
+              }
+            },
+            error: function(response) {
+              console.log('both services are failed to respond');
+            }
+          });
         } else {
           result = false;
         }
       },
       error: function(response) {
-        // non-iguana env
         console.log('both services failed to respond');
       }
     });

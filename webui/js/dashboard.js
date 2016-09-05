@@ -233,20 +233,24 @@ function constructTransactionUnitRepeater() {
             }
         } else {
           // iguana
-          txAddress = transactionsList[i].address;
+          txAddress = transactionsList[i].address || transactionDetails.address;
           txAmount = transactionDetails.vout[1].value;
+          txStatus = transactionDetails.category;
+          txCategory = transactionDetails.category;
         }
 
-      if (transactionDetails)
+      if (transactionDetails && txStatus !== "N/A") {
+        //console.log(transactionDetails);
         result += transactionUnitRepeater.replace("{{ status }}", txStatus).
                                           replace("{{ status_class }}", txCategory).
                                           replace("{{ in_out }}", txIncomeOrExpenseFlag).
                                           replace("{{ amount }}", txAmount).
                                           replace("{{ timestamp_format }}", "timestamp-multi").
                                           replace("{{ coin }}", coinName).
-                                          replace("{{ hash }}", txAddress).
+                                          replace("{{ hash }}", txAddress !== undefined ? txAddress : "N/A").
                                           replace("{{ timestamp_date }}", helper.convertUnixTime(transactionDetails.timestamp || transactionDetails.time, "DDMMMYYYY")).
                                           replace("{{ timestamp_time }}", helper.convertUnixTime(transactionDetails.timestamp || transactionDetails.time, "HHMM"));
+      }
     }
   }
   return result;
