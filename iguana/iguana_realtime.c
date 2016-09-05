@@ -928,6 +928,11 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
                 } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
             }
+            else
+            {
+                OS_removefile(fname,0);
+                printf("(%s) removed to suppress errors\n",fname);
+            }
         }
     }
     return(0);
