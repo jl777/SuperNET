@@ -1001,7 +1001,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(-1);
         }
     }
-    printf("%s RTiterate.%lld offset.%d numtx.%d len.%d\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
+    char str[65]; printf("%s RTiterate.%lld offset.%d numtx.%d len.%d %s\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     if ( coin->RTmem.ptr == 0 )
@@ -1139,16 +1139,16 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             }
             else
             {
-                while ( coin->lastRTheight >= block->height )
+                char str[65]; printf("reorg RTheight.%d vs block.%d %s\n",coin->RTheight,block->height,bits256_str(str,block->RO.hash2));
+                while ( coin->RTheight >= block->height )
                 {
-                    if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->lastRTheight--)) < 0 )
+                    if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->RTheight--)) < 0 )
                     {
-                        coin->RTheight = coin->lastRTheight+1;
+                        coin->lastRTheight = coin->RTheight-1;
                         portable_mutex_unlock(&coin->RTmutex);
                         return;
                     }
                 }
-                coin->RTheight = coin->lastRTheight+1;
                 if ( iguana_RTblockadd(myinfo,coin,block) < 0 )
                 {
                     portable_mutex_unlock(&coin->RTmutex);
