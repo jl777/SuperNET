@@ -1,5 +1,5 @@
 body {
-	background-color: #f4f8fb;
+  background-color: #f4f8fb;
 }
 
 body,
@@ -9,9 +9,9 @@ h3,
 h4,
 h5,
 h6 {
-	margin: 0px;
-	padding: 0px;
-	line-height: 20px;
+  margin: 0px;
+  padding: 0px;
+  line-height: 20px;
 }
 ul {
   list-style-type: none;
@@ -22,44 +22,44 @@ ul {
   -webkit-padding-start: 0px;
 }
 .country-li .flag-head {
-	padding: 7px;
+  padding: 7px;
 }
 .container {
-	font-family: "Proxima Nova";
-	margin: 0px auto;
+  font-family: "Proxima Nova";
+  margin: 0px auto;
 }
 .currenc y-content {
-	width: 80%;
-	margin: 0px auto;
+  width: 80%;
+  margin: 0px auto;
 }
 .container-left {
-	margin-top: calc(18% - 12.4%);
-	padding-left: 13.1%;
-	padding-top: 7px;
+  margin-top: calc(18% - 12.4%);
+  padding-left: 13.1%;
+  padding-top: 7px;
 }
 .container-left .choose-currency {
-	font-weight: 700;
-	font-size: 20px;
+  font-weight: 700;
+  font-size: 20px;
 }
 .container-left .transaction-amount {
-	color: #898a94;
-	font-weight: 500;
-	font-size: 16px;
+  color: #898a94;
+  font-weight: 500;
+  font-size: 16px;
 }
 .currency-parent {
-	margin-top: 30px;
-	padding-left: 0px
+  margin-top: 30px;
+  padding-left: 0px
 }
 .selected {
-	border: 2px solid #F00;
-	color: #F00;
+  border: 2px solid #F00;
+  color: #F00;
 }
 .currency-loop .selected .full-name {
-	color: #F00;
-	font-weight: bold;
+  color: #F00;
+  font-weight: bold;
 }
 .currency-loop {
-	padding-left: 0px;
+  padding-left: 0px;
 }
 .currency-loop .country-li {
   background-color: #fff;
@@ -76,13 +76,13 @@ ul {
   box-shadow: 0px 2px 4px 1px #ccc;
 }
 .currency-loop .country-li span {
-	color: #d3d4d6;
-	font-weight: bold;
+  color: #d3d4d6;
+  font-weight: bold;
 }
 .label  {
-	background-color: transparent;
+  background-color: transparent;
 }
 .country-li .short-name {
-	width: 100%;
-	display: block;
+  width: 100%;
+  display: block;
 }
