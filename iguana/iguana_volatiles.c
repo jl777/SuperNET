@@ -162,14 +162,16 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
         if ( (rdata= ramchain->H.data) == 0 )
             return(1);
         val = ((uint64_t)spentpt.hdrsi << 32) | spentpt.unspentind;
-        if ( (utxo.fromheight= fromheight) != 0 )
-            utxo.spentflag = 1;
+        if ( fromheight != 0 )
+            utxo.fromheight = fromheight, utxo.spentflag = 1;
         if ( spentpt.unspentind > 0 && spentpt.unspentind < rdata->numunspents )
         {
             if ( ramchain->Uextras != 0 )
             {
                 utxo = ramchain->Uextras[spentpt.unspentind];
-                if ( lockflag != 0 )
+                if ( fromheight != 0 )
+                    utxo.fromheight = fromheight, utxo.spentflag = 1;
+                if ( lockflag != 0 || fromheight != 0 )
                 {
                     if ( (hhutxo= iguana_hhutxofind(coin,val)) == 0 )
                     {
@@ -178,13 +180,20 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
                         hhutxo->u = utxo;
                         HASH_ADD_KEYPTR(hh,coin->utxotable,&hhutxo->uval,sizeof(hhutxo->uval),hhutxo);
                     }
-                     printf("iguana_utxofind: need to change to new RT lock method\n");
+                    //printf("iguana_utxofind: need to change to new RT lock method\n");
                 }
             }
             if ( ramchain->Uextras == 0 || utxo.spentflag == 0 )
             {
                 if ( (hhutxo= iguana_hhutxofind(coin,val)) != 0 )
+                {
                     utxo = hhutxo->u;
+                    if ( fromheight != 0 )
+                    {
+                        utxo.fromheight = fromheight, utxo.spentflag = 1;
+                        hhutxo->u = utxo;
+                    }
+                }
                 //printf("iguana_utxofind: need to change to new RT method\n");
             }
         }
@@ -207,7 +216,7 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
 
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
-    uint32_t numunspents; int32_t RTspentflag,spentflag,lockedflag,fromheight; uint64_t confs;//,RTspend = 0;
+    uint32_t numunspents; int32_t RTspentflag,spentflag,lockedflag,fromheight=0; uint64_t confs;//,RTspend = 0;
     struct iguana_ramchaindata *rdata; struct iguana_RTunspent *unspent;
     *spentheightp = -1;
     if ( coin->disableUTXO != 0 )
@@ -219,6 +228,7 @@ int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (unspent= spentpt.ptr) != 0 )
         {
+            *spentheightp = unspent->fromheight;
             if ( unspent->spend != 0 )
             {
                 *RTspendp += (amount == 0) ? coin->txfee : amount;

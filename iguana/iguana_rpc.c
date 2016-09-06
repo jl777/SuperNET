@@ -1107,7 +1107,7 @@ void iguana_rpcloop(void *args)
         sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
         if ( sock < 0 )
         {
-            //printf("iguana_rpcloop ERROR on accept usock.%d\n",sock);
+            //printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
             continue;
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));

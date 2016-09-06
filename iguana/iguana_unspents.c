@@ -402,7 +402,7 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
         {
             if ( unspent->spend == 0 )
             {
-                spentheight = unspent->height;
+                spentheight = 0;
                 memset(&outpt,0,sizeof(outpt));
                 memset(&txid,0,sizeof(txid));
                 if ( (parent= unspent->parent) != 0 )

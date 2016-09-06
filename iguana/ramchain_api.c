@@ -51,7 +51,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
         P = calloc(coin->bundlescount,sizeof(*P));
         array = cJSON_CreateArray();
         //printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,lastheight);
-        if ( lastheight == 0 )
+        if ( lastheight <= 0 )
             lastheight = IGUANA_MAXHEIGHT;
         iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr,1);
         free(P);
