@@ -171,7 +171,7 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
 
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte; uint32_t tmp=0; int32_t i,n,starti,suppress_pubkeys,siglen,plen,m,rwflag=1,need_op0=0,len = 0; char *userdata,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
+    struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte; uint32_t tmp=0; int32_t i,n,starti,suppress_pubkeys,siglen,plen,m,rwflag=1,need_op0=0,len = 0; char *userdata,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
     //printf("PARSEVIN.(%s) vin.%p\n",jprint(vinobj,0),vin);
     if ( V == 0 )
         memset(vin,0,sizeof(*vin));
@@ -218,8 +218,9 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( vin->vinscript == 0 )
         {
-            if ( (V->unspentind= iguana_RTunspentindfind(myinfo,coin,V->coinaddr,V->spendscript,&V->spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1,0)) > 0 )
+            if ( iguana_RTunspentindfind(myinfo,coin,&outpt,V->coinaddr,V->spendscript,&V->spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1,0) == 0 )
             {
+                V->unspentind = outpt.unspentind;
                 if ( V->coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,V->coinaddr)) != 0 )
                 {
                     memcpy(V->signers[0].pubkey,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
@@ -884,7 +885,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
 
 int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msgtx,cJSON *vins,int32_t numinputs,struct vin_info *V)
 {
-    int32_t i,plen,finalized = 1,len = 0; struct vin_info *vp; struct iguana_waccount *wacct; struct iguana_waddress *waddr; uint32_t sigsize,pubkeysize,p2shsize,userdatalen;
+    struct iguana_outpoint outpt; int32_t i,plen,finalized = 1,len = 0; struct vin_info *vp; struct iguana_waccount *wacct; struct iguana_waddress *waddr; uint32_t sigsize,pubkeysize,p2shsize,userdatalen;
     msgtx->tx_in = numinputs;
     maxsize -= (sizeof(struct iguana_msgvin) * msgtx->tx_in);
     msgtx->vins = (struct iguana_msgvin *)&serialized[maxsize];
@@ -899,8 +900,9 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
                 finalized = 0;
             if ( msgtx->vins[i].spendscript == 0 )
             {
-                if ( (vp->unspentind= iguana_RTunspentindfind(myinfo,coin,vp->coinaddr,vp->spendscript,&vp->spendlen,&vp->amount,&vp->height,msgtx->vins[i].prev_hash,msgtx->vins[i].prev_vout,coin->bundlescount-1,0)) > 0 )
+                if ( iguana_RTunspentindfind(myinfo,coin,&outpt,vp->coinaddr,vp->spendscript,&vp->spendlen,&vp->amount,&vp->height,msgtx->vins[i].prev_hash,msgtx->vins[i].prev_vout,coin->bundlescount-1,0) == 0 )
                 {
+                    vp->unspentind = outpt.unspentind;
                     msgtx->vins[i].spendscript = vp->spendscript;
                     msgtx->vins[i].spendlen = vp->spendlen;
                     vp->hashtype = iguana_vinscriptparse(coin,vp,&sigsize,&pubkeysize,&p2shsize,&userdatalen,vp->spendscript,vp->spendlen);

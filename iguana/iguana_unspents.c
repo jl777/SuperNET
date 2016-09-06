@@ -137,10 +137,8 @@ char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coi
         vout = jint(vinobj,"vout");
         height = jint(vinobj,"height");
         checkind = jint(vinobj,"checkind");
-        if ( (height != 0 && checkind != 0) || (checkind= iguana_RTunspentindfind(myinfo,coin,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) > 0 )
+        if ( (height != 0 && checkind != 0) || iguana_RTunspentindfind(myinfo,coin,spentp,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0) == 0 )
         {
-            spentp->hdrsi = (height / coin->chain->bundlesize);
-            spentp->unspentind = checkind;
             return(coinaddr);
         }
         else
@@ -289,8 +287,9 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
     }
     jaddnum(item,"amount",dstr(value));
     //jaddnum(item,"timestamp",T[up->txidind].timestamp);
-    if ( (checkind= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) != 0 )
+    if ( iguana_RTunspentindfind(myinfo,coin,&outpt,0,0,0,0,&height,txid,vout,coin->bundlescount-1,0) == 0 )
     {
+        checkind = outpt.unspentind;
         if ( (block= iguana_blockfind("unspentjson",coin,iguana_blockhash(coin,height))) != 0 && block->RO.timestamp != 0 )
             jaddnum(item,"timestamp",block->RO.timestamp);
         jaddnum(item,"height",height);

@@ -305,8 +305,8 @@ int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t ma
 
 int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_peer *addr,bits256 hash2)
 {
-    int32_t len=0,i,flag=0,height,n,hdrsi,bundlei,bundlesize,firstvout,retval=-1; struct iguana_block *block; struct iguana_bundle *bp;
-    if ( coin->RTheight > 0 && (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,hash2,0,coin->bundlescount-1,0)) != 0 )
+    int32_t len=0,i,flag=0,height,n,hdrsi,bundlei,bundlesize,retval=-1; struct iguana_block *block; struct iguana_bundle *bp; struct iguana_outpoint outpt;
+    if ( coin->RTheight > 0 && iguana_RTunspentindfind(myinfo,coin,&outpt,0,0,0,0,&height,hash2,0,coin->bundlescount-1,0) == 0 )
     {
         bundlesize = coin->chain->bundlesize;
         hdrsi = (height / bundlesize);

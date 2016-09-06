@@ -765,10 +765,11 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
     return(RTptr);
 }
 
-int64_t _RTgettxout(struct iguana_info *coin,int32_t *heightp,int32_t *scriptlenp,uint8_t *script,uint8_t *rmd160,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
+int64_t _RTgettxout(struct iguana_info *coin,struct iguana_RTtxid **ptrp,int32_t *heightp,int32_t *scriptlenp,uint8_t *script,uint8_t *rmd160,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool)
 {
     int32_t scriptlen; int64_t value = 0; struct iguana_RTtxid *RTptr; struct iguana_RTunspent *unspent = 0;
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
+    *ptrp = RTptr;
     *heightp = -1;
     if ( scriptlenp == 0 )
         scriptlenp = &scriptlen;
@@ -805,15 +806,18 @@ int32_t _iguana_RTunspentfind(struct supernet_info *myinfo,struct iguana_info *c
     return(spendlen);
 }
 
-int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
+int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
-    char _coinaddr[64]; uint8_t rmd160[20]; uint64_t value,RTspend; uint32_t unspentind;
+    char _coinaddr[64]; struct iguana_RTtxid *ptr; uint8_t rmd160[20]; uint64_t value,RTspend; uint32_t unspentind;
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
-    if ( (value= _RTgettxout(coin,heightp,spendlenp,spendscript,rmd160,coinaddr,txid,vout,mempool)) > 0 )
+    memset(outpt,0,sizeof(*outpt));
+    if ( (value= _RTgettxout(coin,&ptr,heightp,spendlenp,spendscript,rmd160,coinaddr,txid,vout,mempool)) > 0 )
     {
+        outpt->ptr = ptr;
         if ( valuep != 0 )
             *valuep = value;
+        outpt->value = *valuep;
         return(0);
     }
     else
@@ -822,6 +826,10 @@ int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info 
         {
             if ( valuep != 0 && *valuep == 0 )
                 *valuep = RTspend;
+            outpt->hdrsi = *heightp / coin->chain->bundlesize;
+            outpt->unspentind = unspentind;
+            if ( valuep != 0 )
+                outpt->value = *valuep;
             return(0);
         }
         return(-1);
@@ -852,22 +860,22 @@ int32_t iguana_outptset(struct supernet_info *myinfo,struct iguana_info *coin,st
 
 int32_t iguana_txidheight(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    int32_t spendlen,height = 0; uint64_t value; char coinaddr[64]; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
-    iguana_RTunspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,txid,0,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
+    struct iguana_outpoint outpt; int32_t spendlen,height = 0; uint64_t value; char coinaddr[64]; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    iguana_RTunspentindfind(myinfo,coin,&outpt,coinaddr,spendscript,&spendlen,&value,&height,txid,0,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
     return(height);
 }
 
 int64_t iguana_txidamount(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,bits256 txid,int32_t vout)
 {
-    int32_t spendlen,height = 0; uint64_t value; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
-    iguana_RTunspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,txid,vout,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
+    struct iguana_outpoint outpt; int32_t spendlen,height = 0; uint64_t value; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    iguana_RTunspentindfind(myinfo,coin,&outpt,coinaddr,spendscript,&spendlen,&value,&height,txid,vout,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
     return(value);
 }
 
 char *iguana_txidcategory(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,bits256 txid,int32_t vout)
 {
-    struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t ismine=0,spendlen,height = 0; uint64_t value; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
-    iguana_RTunspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&value,&height,txid,vout,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
+    struct iguana_outpoint outpt; struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t ismine=0,spendlen,height = 0; uint64_t value; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    iguana_RTunspentindfind(myinfo,coin,&outpt,coinaddr,spendscript,&spendlen,&value,&height,txid,vout,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
     account[0] = 0;
     if ( coinaddr[0] != 0 )
     {
