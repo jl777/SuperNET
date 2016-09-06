@@ -853,7 +853,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
             {
                 if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
                 {
-                    if ( (array= waddr->unspents) != 0 )
+                    if ( waddr->Cunspents != 0 && (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
                     {
                         if ( (n= cJSON_GetArraySize(array)) > 0 )
                         {

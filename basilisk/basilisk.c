@@ -904,7 +904,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         if ( jobj(vals,"addresses") == 0 )
         {
             jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
-            //printf("added all addresses: %s\n",jprint(vals,0));
+            //printf("added all %s addresses: %s\n",coin->symbol,jprint(vals,0));
         } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
@@ -939,18 +939,17 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            if ( (array= waddr->unspents) != 0 )
+            if ( waddr->Cunspents != 0 && (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
             {
                 if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     for (i=0; i<n; i++)
                         total += jdouble(jitem(array,i),"amount") * SATOSHIDEN;
                 }
-                jaddi(unspents,jduplicate(waddr->unspents));
-                //jaddi(array,basilisk_history_item(coin,&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
+                jaddi(unspents,jduplicate(array));
             }
-            if ( waddr->spends != 0 )
-                jaddi(spends,jduplicate(waddr->spends));
+            if ( waddr->Cspends != 0 && (array= jobj(waddr->Cspends,coin->symbol)) != 0  )
+                jaddi(spends,jduplicate(array));
         }
     }
     retjson = cJSON_CreateObject();

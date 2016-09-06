@@ -299,7 +299,7 @@ int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 
 void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *vals)
 {
-    int64_t balance,total = 0; int32_t i,n,hist; cJSON *spends,*unspents,*retjson,*item,*addresses,*array = cJSON_CreateArray();
+    int64_t balance,total = 0; int32_t i,n,hist; char *str; cJSON *spends,*unspents,*retjson,*item,*addresses,*array = cJSON_CreateArray();
     spends = unspents = 0;
     if ( (hist= juint(vals,"history")) != 0 )
     {
@@ -313,12 +313,15 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     {
         for (i=0; i<n; i++)
         {
-            balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,jstri(addresses,i),juint(vals,"minconf"),juint(vals,"firstheight"));
-            item = cJSON_CreateObject();
-            jaddnum(item,jstri(addresses,i),dstr(balance));
-            jaddstr(item,"address",jstri(addresses,i));
-            jaddi(array,item);
-            total += balance;
+            if ( (str= jstri(addresses,i)) != 0 )
+            {
+                balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,str,juint(vals,"minconf"),juint(vals,"firstheight"));
+                item = cJSON_CreateObject();
+                jaddnum(item,jstri(addresses,i),dstr(balance));
+                jaddstr(item,"address",jstri(addresses,i));
+                jaddi(array,item);
+                total += balance;
+            }
             //printf("%.8f ",dstr(balance));
         }
     }
@@ -887,9 +890,11 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         item = jitem(spends,0);
         if ( (address= jstr(item,"address")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
         {
-            if ( waddr->spends != 0 ) // maybe better to merge and error check if basilisk
-                free_json(waddr->spends);
-            waddr->spends = jduplicate(spends);
+            if ( waddr->Cspends == 0 )
+                waddr->Cspends = cJSON_CreateObject();
+            if ( jobj(waddr->Cspends,coin->symbol) != 0 )
+                jdelete(waddr->Cspends,coin->symbol);  // better merge and error check if basilisk
+            jadd(waddr->Cspends,coin->symbol,jduplicate(spends));
         }
     }
     if ( (unspents= jarray(&n,json,"unspents")) != 0 )
@@ -897,9 +902,11 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         item = jitem(unspents,0);
         if ( (address= jstr(item,"address")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
         {
-            if ( waddr->unspents != 0 ) // maybe better to merge and error check if basilisk
-                free_json(waddr->unspents);
-            waddr->unspents = jduplicate(unspents);
+            if ( waddr->Cunspents == 0 )
+                waddr->Cunspents = cJSON_CreateObject();
+            if ( jobj(waddr->Cunspents,coin->symbol) != 0 )
+                jdelete(waddr->Cunspents,coin->symbol);  // better merge and error check if basilisk
+            jadd(waddr->Cunspents,coin->symbol,jduplicate(unspents));
         }
     }
 }
