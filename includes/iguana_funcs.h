@@ -56,7 +56,7 @@ int32_t iguana_gethdrs(struct iguana_info *coin,uint8_t *serialized,char *cmd,ch
 int32_t iguana_getdata(struct iguana_info *coin,uint8_t *serialized,int32_t type,bits256 *hashes,int32_t n);
 void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count);
 int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs);
-int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin);
+int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin,int32_t vini);
 
 // ramchain
 int64_t iguana_verifyaccount(struct iguana_info *coin,struct iguana_account *acct,uint32_t pkind);
@@ -79,7 +79,7 @@ int32_t iguana_chainextend(struct supernet_info *myinfo,struct iguana_info *coin
 uint64_t iguana_miningreward(struct iguana_info *coin,uint32_t blocknum);
 
 // tx
-int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin);
+int32_t iguana_rwtx(uint8_t zcash,int32_t rwflag,struct iguana_info *coin,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgtx *msg,int32_t maxsize,bits256 *txidp,int32_t hastimestamp,int32_t isvpncoin);
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n);
 void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *quotes,int32_t n);
 void iguana_gotunconfirmedM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgtx *tx,uint8_t *data,int32_t datalen);
@@ -286,7 +286,7 @@ char *iguana_rawtxbytes(struct iguana_info *coin,int32_t height,cJSON *json,stru
 int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr,uint64_t myservices);
 void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sleepflag);
 int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvout *msg);
-int32_t iguana_rwvin(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvin *msg);
+int32_t iguana_rwvin(int32_t rwflag,struct iguana_info *coin,struct OS_memspace *mem,uint8_t *serialized,struct iguana_msgvin *msg,int32_t vini);
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys);
 int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts,int32_t validatesigs);
 cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid);

@@ -649,7 +649,7 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
 void iguana_RTspend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
     struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint32_t unspentind; int32_t spendlen,height; uint64_t value; struct iguana_outpoint spentpt;
-    //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
     //fprintf(stderr,"-");
@@ -778,7 +778,7 @@ int64_t _RTgettxout(struct iguana_info *coin,int32_t *heightp,int32_t *scriptlen
         if ( vout >= 0 && vout < RTptr->txn_count && (unspent= RTptr->unspents[vout]) != 0 )
         {
             *heightp = RTptr->height;
-            if ( unspent->spend == 0 && (*scriptlenp= unspent->scriptlen) > 0 )
+            if ( script != 0 && unspent->spend == 0 && (*scriptlenp= unspent->scriptlen) > 0 )
                 memcpy(script,unspent->script,*scriptlenp);
             memcpy(rmd160,unspent->rmd160,sizeof(unspent->rmd160));
             bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,sizeof(unspent->rmd160));
@@ -1001,7 +1001,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(-1);
         }
     }
-    char str[65]; printf("%s RTiterate.%lld offset.%d numtx.%d len.%d %s\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
+    char str[65]; printf("%s RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     if ( coin->RTmem.ptr == 0 )

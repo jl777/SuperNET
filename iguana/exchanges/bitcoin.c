@@ -144,14 +144,6 @@ int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
     return((int32_t)strlen(wifstr));
 }
 
-int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin)
-{
-    // multiple coins
-    // ro -> vouts collision, purgeable
-    // 
-    return(0);
-}
-
 #ifdef bitcoincancalulatebalances
 uint64_t bitcoin_parseunspent(struct iguana_info *coin,struct bitcoin_unspent *unspent,double minconfirms,char *account,cJSON *item)
 {

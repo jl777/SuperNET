@@ -1305,6 +1305,17 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     *signedtxp = signedtx;
     return(complete);
 }
+int32_t iguana_validatesigs(struct iguana_info *coin,struct iguana_msgvin *vin,int32_t vini)
+{
+    //int32_t i;
+    if ( vin->vinscript != 0 && vin->scriptlen >= 70 )
+    {
+        //for (i=0; i<vin->scriptlen; i++)
+        //    printf("%02x",vin->vinscript[i]);
+    }
+    //printf(" vin.[%d] validate len.%d\n",vini,vin->scriptlen);
+    return(0);
+}
 
 STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
 {

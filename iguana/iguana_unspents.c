@@ -243,7 +243,7 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
      "spendable" : true
      },*/
     //struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind; uint16_t hdrsi:12,type:4,vout; } __attribute__((packed));
-    struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t height; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item; uint32_t checkind; struct iguana_RTunspent *unspent;
+    struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t height; char scriptstr[8192],asmstr[sizeof(scriptstr)+1024]; cJSON *item; uint32_t checkind; struct iguana_RTunspent *unspent; struct iguana_block *block;
     item = cJSON_CreateObject();
     jaddbits256(item,"txid",txid);
     jaddnum(item,"vout",vout);
@@ -265,6 +265,8 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
     //jaddnum(item,"timestamp",T[up->txidind].timestamp);
     if ( (checkind= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,vout,coin->bundlescount-1,0)) != 0 )
     {
+        if ( (block= iguana_blockfind("unspentjson",coin,iguana_blockhash(coin,height))) != 0 && block->RO.timestamp != 0 )
+            jaddnum(item,"timestamp",block->RO.timestamp);
         jaddnum(item,"height",height);
         jaddnum(item,"confirmations",coin->blocks.hwmchain.height - height + 1);
         jaddnum(item,"checkind",checkind);
@@ -459,6 +461,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         uheight = iguana_uheight(coin,ramchain->height,T,rdata->numtxids,&U[unspentind]);
         if ( lastheight <= 0 || uheight < lastheight )
         {
+            //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
             memset(&outpt,0,sizeof(outpt));
             outpt.hdrsi = lastpt.hdrsi;
@@ -507,7 +510,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
             printf("spend %s: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",lastheight==IGUANA_MAXHEIGHT?"checkerr":"",lastpt.hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;
-    //printf("(%s) spent %.8f, RTspent %.8f deposits %.8f\n",coinaddr,dstr(spent),dstr(RTspend),dstr(deposits));
+    //printf("[%d] (%s) spent %.8f, RTspent %.8f deposits %.8f\n",ramchain->height/coin->chain->bundlesize,coinaddr,dstr(spent),dstr(RTspend),dstr(deposits));
     return(deposits - spent);
 }
 
@@ -532,7 +535,7 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
         if ( i != max && (bp= coin->bundles[i]) == 0 )
             continue;
         else bp = 0;
-        if ( 0 && bp != 0 )
+        if ( bp != 0 )
         {
             if ( lastheight > 0 && bp->bundleheight > lastheight )
             {
@@ -583,7 +586,7 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
 
 int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,char *remoteaddr,int32_t includespent)
 {
-    uint64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,numunspents,maxunspents,flag = 0; char coinaddr[64];
+    uint64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,j,numunspents,maxunspents,flag = 0; char coinaddr[64];
     //portable_mutex_lock(&coin->RTmutex);
     while ( 0 && coin->RTramchain_busy != 0 )
     {
@@ -600,6 +603,11 @@ int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,
         P = calloc(coin->bundlescount,sizeof(*P));
         for (i=0; i<numrmds; i++)
         {
+            for (j=0; j<20; j++)
+                if ( rmdarray[i*20 + j] != 0 )
+                    break;
+            if ( j == 20 )
+                continue;
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
             iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents],numunspentsp,maxunspents,remoteaddr,includespent);
@@ -648,7 +656,7 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
 
 int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_pkhash **Ptrp,int64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight)
 {
-    int64_t balance,total,supply,*weights=0; uint32_t pkind; int32_t numrmds,minconf,neg,numunspents,nonz,num=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; struct iguana_pkhash *refP; uint8_t rmd160[20],*rmdarray; cJSON *array; char coinaddr[64]; //struct iguana_account *A2; struct iguana_utxo *U2;
+    int64_t balance,total,supply,*weights=0; uint32_t pkind; int32_t j,numrmds,minconf,neg,numunspents,nonz,num=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; struct iguana_pkhash *refP; uint8_t rmd160[20],*rmdarray; cJSON *array; char coinaddr[64]; //struct iguana_account *A2; struct iguana_utxo *U2;
     *supplyp = 0;
     *numacctsp = *nonzp = 0;
     *errsp = 1;
@@ -666,6 +674,11 @@ int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coi
         {
             total = 0;
             memcpy(rmd160,refP[pkind].rmd160,sizeof(rmd160));
+            for (j=0; j<20; j++)
+                if ( rmd160[j] != 0 )
+                    break;
+            if ( j == 20 )
+                continue;
             array = cJSON_CreateArray();
             bitcoin_address(coinaddr,coin->chain->pubtype,rmd160,sizeof(rmd160));
             jaddistr(array,coinaddr);
@@ -779,7 +792,7 @@ int32_t iguana_RTaddr_unspents(struct supernet_info *myinfo,struct iguana_info *
 
 int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    uint64_t sum = 0; int32_t k,i,j,r,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu; struct iguana_outpoint outpt;
+    uint64_t sum = 0; int32_t k,i,j,r,numunspents,numaddrs; uint8_t addrtype,rmd160[20],pubkey[65]; char *coinaddr,str[65]; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct basilisk_unspent *bu; struct iguana_outpoint outpt;
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -792,7 +805,17 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
     {
         if ( (coinaddr= jstri(addresses,i)) != 0 )
         {
-            //printf("i.%d coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+            if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
+            {
+                printf("i.%d illegal coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+                continue;
+            }
+            bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+            for (j=0; j<20; j++)
+                if ( rmd160[j] != 0 )
+                    break;
+            if ( j == 20 )
+                continue;
             if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
             {
                 numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,coin->blocks.hwmchain.height - minconf,0);

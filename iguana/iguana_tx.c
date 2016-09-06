@@ -195,12 +195,12 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         if ( vins == 0 )
             iguana_vinset(coin,space,height,&vin,tx,i);
         else vin = vins[i];
-        if ( validatesigs != 0 && iguana_validatesigs(coin,&vin) < 0 )
+        len += iguana_rwvin(rwflag,coin,0,&serialized[len],&vin,i);
+        if ( validatesigs != 0 && iguana_validatesigs(coin,&vin,i) < 0 )
         {
-            printf("error validating vin.%d ht.%d\n",i,height);
-            return(0);
+            char str[65]; printf("error %s validating vin.%d ht.%d\n",bits256_str(str,tx->txid),i,height);
+            //return(0);
         }
-        len += iguana_rwvin(rwflag,0,&serialized[len],&vin);
     }
     if ( len > maxlen )
     {

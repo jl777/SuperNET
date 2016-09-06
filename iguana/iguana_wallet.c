@@ -899,7 +899,7 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
     myinfo->expiration = 0;
     portable_mutex_lock(&myinfo->bu_mutex);
     if ( myinfo->spends != 0 )
-        free(myinfo->spends), myinfo->numspends = 0;
+        /*free(myinfo->spends),*/ myinfo->numspends = 0;
     portable_mutex_unlock(&myinfo->bu_mutex);
     iguana_walletiterate(myinfo,coin,-2,0,0,0,0);
 }
@@ -1051,6 +1051,15 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
     return(jprint(retjson,1));
 }
 
+double _max100(double val)
+{
+    if ( val < 0. )
+        return(0.);
+    else if ( val > 100. )
+        return(100.);
+    else return(val);
+}
+
 ZERO_ARGS(bitcoinrpc,getinfo)
 {
     cJSON *retjson;
@@ -1065,10 +1074,10 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"txfee",dstr(coin->txfee));
         if ( coin->bundlescount > 1 )
         {
-            jaddnum(retjson,"bundles",100. * (double)(coin->chain->bundlesize *iguana_emitfinished(coin,0))/(coin->longestchain+1));
-            jaddnum(retjson,"utxo",100. * (double)(coin->chain->bundlesize *iguana_utxofinished(coin))/(coin->longestchain+1));
-            jaddnum(retjson,"balances",100. * (double)(coin->chain->bundlesize *iguana_balancefinished(coin))/(coin->longestchain+1));
-            jaddnum(retjson,"validated",100. * (double)(coin->chain->bundlesize *iguana_validated(coin))/(coin->longestchain+1));
+            jaddnum(retjson,"bundles",_max100(100. * (double)(iguana_emitfinished(coin,0))/(coin->longestchain/coin->chain->bundlesize)));
+            jaddnum(retjson,"utxo",_max100(100. * (double)(iguana_utxofinished(coin))/(coin->longestchain/coin->chain->bundlesize)));
+            jaddnum(retjson,"balances",_max100(100. * (double)(iguana_balancefinished(coin))/(coin->longestchain/coin->chain->bundlesize)));
+            jaddnum(retjson,"validated",_max100(100. * (double)(iguana_validated(coin))/(coin->longestchain/coin->chain->bundlesize)));
         }
         jaddnum(retjson,"firstRTheight",coin->firstRTheight);
         jaddnum(retjson,"RTheight",coin->RTheight);

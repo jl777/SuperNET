@@ -442,25 +442,25 @@ void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin
     }
 }
 
-char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,char *coinaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
+char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,char *destaddr,uint64_t satoshis,uint64_t txfee,char *comment,char *comment2,int32_t minconf,char *account)
 {
     uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *retstr,spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*valsobj; uint32_t spendlen,locktime = 0; uint32_t basilisktag;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
+    if ( coin->RTheight == 0 )
+        return(clonestr("{\"error\":\"need to get to realtime blocks to send transaction\"}"));
     if ( account == 0 || account[0] == 0 )
         account = "*";
     addresses = iguana_getaddressesbyaccount(myinfo,coin,account);
     if ( coin->changeaddr[0] == 0 )
     {
-        //if ( (waddr= iguana_getaccountaddress(myinfo,coin,0,0,coin->changeaddr,"change")) == 0 )
-        //    return(clonestr("{\"error\":\"no change address specified\"}"));
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
         printf("%s change %s\n",coin->symbol,coin->changeaddr);
     }
-    if ( coinaddr != 0 && coinaddr[0] != 0 && satoshis != 0 )
+    if ( destaddr != 0 && destaddr[0] != 0 && satoshis != 0 )
     {
-        if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
+        if ( iguana_addressvalidate(coin,&addrtype,destaddr) < 0 )
             return(clonestr("{\"error\":\"invalid coin address\"}"));
-        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+        bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
         spendlen = bitcoin_standardspend(spendscript,0,rmd160);
         init_hexbytes_noT(spendscriptstr,spendscript,spendlen);
         basilisktag = (uint32_t)rand();
@@ -849,10 +849,14 @@ int64_t iguana_txdetails(struct supernet_info *myinfo,struct iguana_info *coin,c
         jaddnum(item,"vout",vout);
         if ( (amount= iguana_txidamount(myinfo,coin,txid,vout)) != 0 )
             jaddnum(item,"amount",dstr(amount));
+        jaddstr(item,"category",iguana_txidcategory(myinfo,coin,account,coinaddr,txid,vout));
     }
-    else if ( vout == -1 )
-        jadd(item,"coinbase",jtrue());
-    jaddstr(item,"category",iguana_txidcategory(myinfo,coin,account,coinaddr,txid,vout));
+    else
+    {
+        if ( vout == -1 )
+            jadd(item,"coinbase",jtrue());
+        vout = 0;
+    }
     if ( account[0] != 0 && jobj(item,"account") == 0 )
         jaddstr(item,"account",account);
     if ( coinaddr[0] != 0 )
@@ -896,7 +900,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             free(txbytes);
             if ( txobj != 0 )
             {
-                iguana_txdetails(myinfo,coin,txobj,tx->txid,-2,height);
+                iguana_txdetails(myinfo,coin,txobj,txid,-2,height);
                 return(jprint(txobj,1));
             }
         }
