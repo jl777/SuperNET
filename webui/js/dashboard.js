@@ -3,7 +3,7 @@
  *
  */
 
-var defaultCurrency = "USD",
+var defaultCurrency = "",
     defaultCoin = "BTCD"; // temp deprecated
     defaultCoinValue = 0,
     defaultCurrencyValue = 0,
@@ -25,6 +25,9 @@ var availableCoinsToAdd = [ // temp, only for demo purposes
 
 $(document).ready(function() {
   var session = new helperProto();
+  var helper = new helperProto();
+
+  defaultCurrency = helper.getCurrency().name || "USD";
 
   // current implementation works only with one coin at a time
   // coin is auto detected based on available portp2p
@@ -48,8 +51,7 @@ $(document).ready(function() {
     });
 
     $(this).addClass("active");
-    // $(this).attr("data-url")
-    // TODO: add routing
+    helperProto.prototype.openPage($(this).attr("data-url"));
   });
 
   $(".lnk-logout").click(function() {
@@ -57,16 +59,12 @@ $(document).ready(function() {
   });
 
   $(".btn-add-coin,.btn-close").click(function() {
-    var helper = new helperProto();
-
     helper.toggleModalWindow("add-new-coin-form", 300);
     coinsSelectedByUser = [];
     $(".supported-coins-repeater").html(constructCoinRepeater());
     bindClickInCoinRepeater();
   });
   $(".btn-next").click(function() {
-    var helper = new helperProto();
-
     helper.toggleModalWindow("add-new-coin-form", 300);
     coinsSelectedByUser = helper.reindexAssocArray(coinsSelectedByUser);
     $(".account-coins-repeater").append(constructAccountCoinRepeater());

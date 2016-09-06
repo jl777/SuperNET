@@ -66,6 +66,9 @@ helperProto.prototype.openPage = function(url) {
     case "dashboard":
       localPageUrl = "dashboard.html";
       break;
+    case "settings":
+      localPageUrl = "reference-currency.html";
+      break;
   }
 
   document.location = localPageUrl;
@@ -88,8 +91,19 @@ helperProto.prototype.checkSession = function(returnVal) {
   }
 }
 
+// TODO: add walletlock
 helperProto.prototype.logout = function() {
   var localStorage = new localStorageProto();
   localStorage.setVal("iguana-auth", { "timestamp" : 1471620867 }); // Jan 01 1970
   helperProto.prototype.openPage("login");
+}
+
+helperProto.prototype.setCurrency = function(currencyShortName) {
+  var localStorage = new localStorageProto();
+  localStorage.setVal("iguana-currency", { "name" : currencyShortName });
+}
+
+helperProto.prototype.getCurrency = function() {
+  var localStorage = new localStorageProto();
+  return localStorage.getVal("iguana-currency");
 }

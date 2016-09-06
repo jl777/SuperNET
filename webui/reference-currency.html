@@ -9,33 +9,39 @@
     <link href="css/common.css" rel="stylesheet" type="text/css" />
     <link href="css/reference-currency.css" type="text/css" rel="stylesheet"/>
     <link href="css/flag-icon.min.css" rel="stylesheet"/>
-	<link href="css/dashboard.css" rel="stylesheet"/>
+  	<link href="css/dashboard.css" rel="stylesheet"/>
     <script src="js/jquery-3.0.0.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="js/localstorage.js"></script>
+    <script type="text/javascript" src="js/helpers.js"></script>
     <script src="js/reference-currency.js" type="text/javascript"></script>
   </head>
   <body>
     <section class="dashboard unselectable">
-	  <nav class="top">
-	    <div class="left">Iguana</div>
-	    <div class="center">
-	      <ul class="top-menu">
-		    <li class="item cursor-pointer active" data-url="dashboard">
-			  <div class="text">Dashboard</div>
-			  <div class="border"></div>
-			</li>
-			<li class="item cursor-pointer" data-url="payments">
-			  <div class="text">Payments</div>
-			  <div class="border"></div>
-			</li>
-			<li class="item cursor-pointer" data-url="contacts">
-			  <div class="text">Contacts</div>
-			  <div class="border"></div>
-			</li>
-		  </ul>
-		</div>
-		<div class="right cursor-pointer lnk-logout">Log out</div>
-	  </nav>
-	</section>		
+  	  <nav class="top">
+  	    <div class="left">Iguana</div>
+  	    <div class="center">
+  	      <ul class="top-menu">
+      		  <li class="item cursor-pointer" data-url="dashboard">
+      			  <div class="text">Dashboard</div>
+      			  <div class="border"></div>
+      			</li>
+      			<li class="item cursor-pointer" data-url="payments">
+      			  <div class="text">Payments</div>
+      			  <div class="border"></div>
+      			</li>
+      			<li class="item cursor-pointer" data-url="contacts">
+      			  <div class="text">Contacts</div>
+      			  <div class="border"></div>
+      			</li>
+            <li class="item cursor-pointer active" data-url="settings">
+              <div class="text">Settings</div>
+              <div class="border"></div>
+            </li>
+  		    </ul>
+    		</div>
+    		<div class="right cursor-pointer lnk-logout">Log out</div>
+  	  </nav>
+  	</section>
     <div class="container-fluid">
       <div class="row">
         <div class="container">
