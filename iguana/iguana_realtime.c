@@ -816,8 +816,10 @@ int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info 
     {
         outpt->ptr = ptr;
         if ( valuep != 0 )
+        {
             *valuep = value;
-        outpt->value = *valuep;
+            outpt->value = *valuep;
+        }
         return(0);
     }
     else
