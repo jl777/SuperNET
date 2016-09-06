@@ -184,7 +184,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
 
 struct iguana_bundle *iguana_fastexternalspent(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s)
 {
-    int32_t prev_vout,height,hdrsi,unspentind; uint32_t ind;
+    int32_t prev_vout,height,hdrsi,unspentind; uint32_t ind; uint64_t RTspent;
     struct iguana_txid *T; bits256 *X; bits256 prev_hash; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) == 0 )
         return(0);
@@ -202,7 +202,7 @@ struct iguana_bundle *iguana_fastexternalspent(struct supernet_info *myinfo,stru
                 X = RAMCHAIN_PTR(rdata,Xoffset);
                 //X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
-                if ( (unspentind= iguana_unspentindfind(myinfo,coin,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1,0)) != 0 )
+                if ( (unspentind= iguana_unspentindfind(myinfo,coin,&RTspent,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1,0)) != 0 )
                     //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
                 {
                     /*duration = (OS_milliseconds() - startmillis);

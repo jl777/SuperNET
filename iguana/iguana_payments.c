@@ -218,7 +218,7 @@ cJSON *iguana_inputjson(bits256 txid,int32_t vout,uint8_t *spendscript,int32_t s
 
 cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,uint64_t amount,struct iguana_outpoint *unspents,int32_t num)
 {
-    cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind; uint32_t txidind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t above,below,total = 0; struct iguana_outpoint outpt; int64_t remains = amount;
+    cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind; uint32_t txidind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t above,below,total = 0,remains = amount; struct iguana_outpoint outpt; uint64_t RTspent;
     *totalp = 0;
     vins = cJSON_CreateArray();
     for (i=0; i<num; i++)
@@ -274,7 +274,7 @@ cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin
             u = &U[outpt.unspentind];
             if ( (txidind= u->txidind) > 0 && txidind < rdata->numtxids )
             {
-                if ( iguana_unspentindfind(myinfo,coin,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1,0) == outpt.unspentind && spendlen > 0 )
+                if ( iguana_unspentindfind(myinfo,coin,&RTspent,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1,0) == outpt.unspentind && spendlen > 0 )
                 {
                     jaddi(vins,iguana_inputjson(T[txidind].txid,u->vout,spendscript,spendlen));
                     total += outpt.value;
@@ -847,7 +847,7 @@ int64_t iguana_txdetails(struct supernet_info *myinfo,struct iguana_info *coin,c
     if ( vout >= 0 )
     {
         jaddnum(item,"vout",vout);
-        if ( (amount= iguana_txidamount(myinfo,coin,txid,vout)) != 0 )
+        if ( (amount= iguana_txidamount(myinfo,coin,coinaddr,txid,vout)) != 0 )
             jaddnum(item,"amount",dstr(amount));
         jaddstr(item,"category",iguana_txidcategory(myinfo,coin,account,coinaddr,txid,vout));
     }
@@ -1252,7 +1252,7 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
         maxconf = (1 << 30);
     if ( (argarray= array) == 0 || cJSON_GetArraySize(array) == 0 )
         argarray = iguana_getaddressesbyaccount(myinfo,coin,"*");
-    retjson = iguana_RTlistunspent(myinfo,coin,argarray,minconf,maxconf,remoteaddr);
+    retjson = iguana_RTlistunspent(myinfo,coin,argarray,minconf,maxconf,remoteaddr,0);
     if ( argarray != array )
         free_json(argarray);
     return(jprint(retjson,1));

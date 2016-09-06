@@ -882,6 +882,7 @@ void basilisks_init(struct supernet_info *myinfo)
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
@@ -922,7 +923,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
 {
-    struct basilisk_unspent *bu; int32_t i; int64_t totalspent=0,total = 0; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*array; struct basilisk_spend *s;
+    int64_t total = 0; int32_t i,n; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*unspents,*spends,*array; //struct basilisk_spend *s; struct basilisk_unspent *bu; int32_t i;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
     //if ( coin == 0 )
@@ -932,41 +933,30 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     }
     if ( coin == 0 )
         return(clonestr("{\"error\":\"couldnt find coin\"}"));
-    //printf("history for (%s)\n",coin->symbol);
-    basilisk_unspents_update(myinfo,coin);
-    array = cJSON_CreateArray();
-    portable_mutex_lock(&myinfo->bu_mutex);
+    unspents = cJSON_CreateArray();
+    spends = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            for (i=0; i<waddr->numunspents; i++)
+            if ( (array= waddr->unspents) != 0 )
             {
-                bu = &waddr->unspents[i];
-                if ( strcmp(bu->symbol,coin->symbol) == 0 )
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
-                    bitcoin_address(waddr->coinaddr,coin->chain->pubtype,waddr->rmd160,sizeof(waddr->rmd160));
-                    jaddi(array,basilisk_history_item(coin,&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
-                    //printf("%s %s i.%d numunspents.%d\n",coin->symbol,waddr->coinaddr,i,waddr->numunspents);
+                    for (i=0; i<n; i++)
+                        total += jdouble(jitem(array,i),"amount") * SATOSHIDEN;
                 }
+                jaddi(unspents,jduplicate(waddr->unspents));
+                //jaddi(array,basilisk_history_item(coin,&total,waddr->coinaddr,bu->value,bu->timestamp,bu->txid,"vout",bu->vout,bu->height,"spentheight",bu->spentheight,bu->relaymask,-1));
             }
+            if ( waddr->spends != 0 )
+                jaddi(spends,jduplicate(waddr->spends));
         }
     }
-    if ( myinfo->numspends > 0 )
-    {
-        //spends = cJSON_CreateArray();
-        for (i=0; i<myinfo->numspends; i++)
-        {
-            s = &myinfo->spends[i];
-            //struct basilisk_spend { bits256 txid; uint64_t relaymask,value; uint32_t timestamp; int32_t vini,height,unspentheight,ismine; char destaddr[64]; };
-            if ( strcmp(s->symbol,coin->symbol) == 0 )
-                jaddi(array,basilisk_history_item(coin,&totalspent,s->destaddr,s->value,s->timestamp,s->txid,"vin",s->vini,s->height,"unspentheight",s->unspentheight,s->relaymask,s->ismine));
-        }
-    }
-    portable_mutex_unlock(&myinfo->bu_mutex);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
-    jadd(retjson,"history",array);
+    jadd(retjson,"unspents",unspents);
+    jadd(retjson,"spends",spends);
     jaddstr(retjson,"coin",coin->symbol);
     jaddnum(retjson,"balance",dstr(total));
     return(jprint(retjson,1));
