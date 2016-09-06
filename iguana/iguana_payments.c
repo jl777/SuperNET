@@ -1338,13 +1338,16 @@ DOUBLE_ARG(bitcoinrpc,settxfee,amount)
 
 S_D_SS(bitcoinrpc,sendtoaddress,address,amount,comment,comment2)
 {
+    char *retstr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     //iguana_unspentset(myinfo,coin);
-    return(sendtoaddress(myinfo,coin,remoteaddr,address,amount * SATOSHIDEN,coin->txfee,comment,comment2,coin->minconfirms,0));
+    if ( (retstr= sendtoaddress(myinfo,coin,remoteaddr,address,amount * SATOSHIDEN,coin->txfee,comment,comment2,coin->minconfirms,0)) != 0 )
+        printf("SEND.(%s)\n",retstr);
+    return(retstr);
 }
 
 SS_D_I_SS(bitcoinrpc,sendfrom,fromaccount,toaddress,amount,minconf,comment,comment2)
