@@ -935,23 +935,33 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
         return(clonestr("{\"error\":\"couldnt find coin\"}"));
     unspents = cJSON_CreateArray();
     spends = cJSON_CreateArray();
+    portable_mutex_lock(&myinfo->bu_mutex);
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            if ( waddr->Cunspents != 0 && (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
+            if ( waddr->Cunspents != 0 )
             {
-                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                //printf("Cunspents.(%s)\n",jprint(waddr->Cunspents,0));
+                if ( (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
                 {
-                    for (i=0; i<n; i++)
-                        total += jdouble(jitem(array,i),"amount") * SATOSHIDEN;
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                            total += jdouble(jitem(array,i),"amount") * SATOSHIDEN;
+                    }
+                    jaddi(unspents,jduplicate(array));
                 }
-                jaddi(unspents,jduplicate(array));
             }
-            if ( waddr->Cspends != 0 && (array= jobj(waddr->Cspends,coin->symbol)) != 0  )
-                jaddi(spends,jduplicate(array));
+            if ( waddr->Cspends != 0 )
+            {
+                //printf("Cspends.(%s)\n",jprint(waddr->Cspends,0));
+                if ( (array= jobj(waddr->Cspends,coin->symbol)) != 0  )
+                    jaddi(spends,jduplicate(array));
+            }
         }
     }
+    portable_mutex_unlock(&myinfo->bu_mutex);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jadd(retjson,"unspents",unspents);

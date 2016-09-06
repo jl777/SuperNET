@@ -435,6 +435,7 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
                 else printf("unspent has no parent?\n");
                 outpt.isptr = 1;
                 outpt.ptr = unspent;
+                outpt.value = unspent->value;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
                 if ( array != 0 )
                     jaddi(array,iguana_RTunspentjson(myinfo,coin,outpt,txid,unspent->vout,unspent->value,0,rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
@@ -555,7 +556,7 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
     if ( max > coin->bundlescount )
         max = coin->bundlescount;
     //printf("minconf.%d maxconf.%d max.%d addr.%s last.%d maxunspents.%d\n",minconf,maxconf,max,coinaddr,lastheight,maxunspents);
-    for (total=n=i=0; i<max+(lastheight>=coin->RTheight); i++)
+    for (total=n=i=0; i<max+(lastheight>=coin->firstRTheight); i++)
     {
         if ( i != max && (bp= coin->bundles[i]) == 0 )
             continue;
@@ -635,7 +636,7 @@ int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,
                 continue;
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
-            iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,&unspents[numunspents],numunspentsp,maxunspents,remoteaddr,includespent);
+            iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,unspents != 0 ? &unspents[numunspents] : 0,numunspentsp,maxunspents,remoteaddr,includespent);
             //printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
             maxunspents -= *numunspentsp;
             numunspents += *numunspentsp;
@@ -789,7 +790,7 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
 {
     bits256 txid; int32_t vout,spentheight;
     memset(&txid,0,sizeof(txid));
-    printf("RTunspent_check needs to be ported\n");
+    printf("RTunspent_check needs to be ported to prevent reusing utxo, but should work if one spend per block\n");
     return(0);
     if ( iguana_RTunspentind2txid(myinfo,coin,&spentheight,&txid,&vout,outpt) == 0 )
     {
@@ -846,10 +847,11 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                 continue;
             if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
             {
-                numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,coin->blocks.hwmchain.height - minconf,0);
+                numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,1<<30,0);
             }
             else
             {
+                portable_mutex_lock(&myinfo->bu_mutex);
                 if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
                 {
                     if ( waddr->Cunspents != 0 && (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
@@ -868,6 +870,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                         }
                     }
                 }
+                portable_mutex_unlock(&myinfo->bu_mutex);
             }
             if ( numunspents > max || sum > required )
                 break;
@@ -875,6 +878,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
         }
     }
     *totalp = sum;
+    printf("numunspents.%d sum %.8f\n",numunspents,dstr(sum));
     return(numunspents);
 }
 

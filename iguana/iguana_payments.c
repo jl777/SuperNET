@@ -218,7 +218,7 @@ cJSON *iguana_inputjson(bits256 txid,int32_t vout,uint8_t *spendscript,int32_t s
 
 cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,uint64_t amount,struct iguana_outpoint *unspents,int32_t num)
 {
-    cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind; uint32_t txidind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t above,below,total = 0,remains = amount; struct iguana_outpoint outpt; uint64_t RTspent;
+    cJSON *vins; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE]; struct iguana_txid *T; struct iguana_unspent *U,*u; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; char coinaddr[64]; int32_t vout,height,abovei,belowi,i,spendlen,ind; uint32_t txidind; struct iguana_ramchaindata *rdata; bits256 txid; int64_t above,below,total = 0,remains = amount; struct iguana_outpoint outpt,outpt2; //uint64_t RTspent;
     *totalp = 0;
     vins = cJSON_CreateArray();
     for (i=0; i<num; i++)
@@ -274,7 +274,7 @@ cJSON *iguana_RTinputsjson(struct supernet_info *myinfo,struct iguana_info *coin
             u = &U[outpt.unspentind];
             if ( (txidind= u->txidind) > 0 && txidind < rdata->numtxids )
             {
-                if ( iguana_unspentindfind(myinfo,coin,&RTspent,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1,0) == outpt.unspentind && spendlen > 0 )
+                if ( iguana_RTunspentindfind(myinfo,coin,&outpt2,coinaddr,spendscript,&spendlen,&amount,&height,T[txidind].txid,u->vout,coin->bundlescount-1,0) == 0 && spendlen > 0 )
                 {
                     jaddi(vins,iguana_inputjson(T[txidind].txid,u->vout,spendscript,spendlen));
                     total += outpt.value;
@@ -374,6 +374,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         free(unspents);
         return(0);
     }
+    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount));
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num)) != 0 )

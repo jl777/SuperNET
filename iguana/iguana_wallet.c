@@ -330,6 +330,21 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
     return(array);
 }
 
+void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol)
+{
+    struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2;
+    HASH_ITER(hh,myinfo->wallet,subset,tmp)
+    {
+        HASH_ITER(hh,subset->waddr,waddr,tmp2)
+        {
+            if ( waddr->Cspends != 0 )
+                free_json(waddr->Cspends), waddr->Cspends = 0;
+            if ( waddr->Cunspents != 0 )
+                free_json(waddr->Cunspents), waddr->Cunspents = 0;
+        }
+    }
+}
+
 struct iguana_waddress *iguana_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t addrtype,uint8_t pubkey[65],uint8_t rmd160[20])
 {
     struct iguana_waccount *wacct; struct iguana_waddress *waddr = 0;
@@ -986,9 +1001,9 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
                             jaddibits256(txids,jbits256(item,"txid"));
                         if ( vouts != 0 )
                             jaddinum(vouts,jint(item,"vout"));
-                        if ( unspents != 0 && jobj(item,"unspent") != 0 )
+                        if ( unspents != 0 && (jobj(item,"spent") == 0 || jobj(item,"dest") == 0) )
                             jaddi(unspents,jduplicate(item));
-                        if ( spends != 0 && jobj(item,"spent") != 0 )
+                        if ( spends != 0 && jobj(item,"spent") != 0 && jobj(item,"dest") != 0 )
                             jaddi(spends,jduplicate(item));
                     }
                 }
@@ -997,6 +1012,10 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
         }
         free(balancestr);
     }
+    //if ( spends != 0 )
+    //    printf("SPENDS.(%s)\n",jprint(spends,0));
+    //if ( unspents != 0 )
+    //    printf("UNSPENTS.(%s)\n",jprint(unspents,0));
     return(balance);
 }
 

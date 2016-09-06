@@ -154,7 +154,10 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
     n = (int32_t)strlen(hexstr) >> 1;
     //printf("addhex.(%s) %d\n",hexstr,n);
     if ( serialized == 0 )
-        serialized = *destp;
+    {
+        if ( (serialized= *destp) == 0 )
+            printf("iguana_parsehexstr null serialized and destp\n");
+    }
     if ( serialized != 0 )
     {
         decode_hex(serialized,n,hexstr);
@@ -323,7 +326,9 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
     if ( spendstr != 0 )
     {
-        n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,0,spendstr);
+        //printf("serialized.%p len.%d\n",serialized,len);
+        n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,&serialized[len],spendstr);
+        len += n;
     }
     return(len);
 }
@@ -603,6 +608,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
             return(txid);
         maxsize -= (sizeof(struct iguana_msgvin) * msg->tx_in);
         msg->vins = (struct iguana_msgvin *)&serialized[maxsize];
+        memset(msg->vins,0,sizeof(struct iguana_msgvin) * msg->tx_in);
         if ( msg->tx_in > 0 && msg->tx_in*sizeof(struct iguana_msgvin) < maxsize )
         {
             for (i=0; i<msg->tx_in; i++)
@@ -620,6 +626,7 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
             return(txid);
         maxsize -= (sizeof(struct iguana_msgvout) * msg->tx_out);
         msg->vouts = (struct iguana_msgvout *)&serialized[maxsize];
+        memset(msg->vouts,0,sizeof(struct iguana_msgvout) * msg->tx_out);
         if ( msg->tx_out > 0 && msg->tx_out*sizeof(struct iguana_msgvout) < maxsize )
         {
             for (i=0; i<msg->tx_out; i++)
