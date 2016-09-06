@@ -336,7 +336,7 @@ int32_t gecko_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,
     //printf("submit.(%s)\n",blockstr);
     if ( (peers= virt->peers) == 0 || (numranked= peers->numranked) <= 0 )
     {
-        if ( basilisk_blocksubmit(myinfo,btcd,virt,0,blockstr,hash2,height) < 0 )//(myinfo->numrelays >> 1) )
+        if ( basilisk_blocksubmit(myinfo,btcd,virt,0,blockstr,hash2,height) < 0 )//(NUMRELAYS >> 1) )
             return(-1);
     }
     else // physical node for geckochain
@@ -360,26 +360,26 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     struct iguana_zblock newblock; uint32_t prevtimestamp,nBits; int64_t reward = 0; int32_t txn_count; char *blockstr,*space[256]; struct gecko_memtx **txptrs; void *ptr; //struct iguana_bundle *bp;
 #ifndef __APPLE__
     int32_t i,gap;
-    if ( virt->virtualchain == 0 || myinfo->RELAYID < 0 || myinfo->numrelays < 1 )
+    if ( virt->virtualchain == 0 || RELAYID < 0 || NUMRELAYS < 1 )
     {
         //printf("skip non-virtual chain.%s\n",virt->symbol);
         return;
     }
     if ( virt->blocks.hwmchain.height < virt->longestchain-1 )
         return;
-    if ( (virt->blocks.hwmchain.height % myinfo->numrelays) != myinfo->RELAYID )
+    if ( (virt->blocks.hwmchain.height % NUMRELAYS) != RELAYID )
     {
-        //if ( myinfo->numrelays < 3 )
+        //if ( NUMRELAYS < 3 )
         //    return;
         gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timestamp) / 60;//virt->chain->estblocktime;
         for (i=0; i<gap; i++)
         {
-            if ( ((virt->blocks.hwmchain.height+i) % myinfo->numrelays) == myinfo->RELAYID )
+            if ( ((virt->blocks.hwmchain.height+i) % NUMRELAYS) == RELAYID )
                 break;
         }
         if ( i == gap )
             return;
-        printf("backup block generator RELAYID.%d gap.%d ht.%d i.%d num.%d\n",myinfo->RELAYID,gap,virt->blocks.hwmchain.height,i,myinfo->numrelays);
+        printf("backup block generator RELAYID.%d gap.%d ht.%d i.%d num.%d\n",RELAYID,gap,virt->blocks.hwmchain.height,i,NUMRELAYS);
     }
 #endif
     /*if ( virt->newblockstr != 0 )

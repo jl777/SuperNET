@@ -23,6 +23,46 @@
 #include "../includes/cJSON.h"
 
 
+/*
+if ( 0 )
+{
+    int32_t i,max=10000000; FILE *fp; bits256 check,val,hash = rand256(0);
+    if ( (fp= fopen("/tmp/seeds2","rb")) != 0 )
+    {
+        if ( fread(&check,1,sizeof(check),fp) != sizeof(check) )
+            printf("check read error\n");
+        for (i=1; i<max; i++)
+        {
+            if ( (i % 1000000) == 0 )
+                fprintf(stderr,".");
+            if ( fread(&val,1,sizeof(val),fp) != sizeof(val) )
+                printf("val read error\n");
+            hash = bits256_sha256(val);
+            hash = bits256_sha256(hash);
+            if ( bits256_cmp(hash,check) != 0 )
+                printf("hash error at i.%d\n",i);
+            check = val;
+        }
+        printf("validated %d seeds\n",max);
+        getchar();
+    }
+    else if ( (fp= fopen("/tmp/seeds2","wb")) != 0 )
+    {
+        for (i=0; i<max; i++)
+        {
+            if ( (i % 1000000) == 0 )
+                fprintf(stderr,".");
+            hash = bits256_sha256(hash);
+            hash = bits256_sha256(hash);
+            fseek(fp,(max-i-1) * sizeof(bits256),SEEK_SET);
+            if ( fwrite(hash.bytes,1,sizeof(hash),fp) != sizeof(hash) )
+                printf("error writing hash[%d] i.%d\n",(max-i-1),i);
+        }
+        fclose(fp);
+    }
+}
+*/
+
 bits256 SuperNET_wallet2shared(bits256 wallethash,bits256 wallet2priv)
 {
     bits256 wallet2shared,seed,wallet2pub;
@@ -209,7 +249,7 @@ cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,
         SuperNET_linehash(fname2fa); // maps special chars
         wallet2priv = SuperNET_wallet2priv(fname2fa,wallethash);
         //char str[65],str2[65]; printf("(%s + %s) -> wallethash.%s 2.(%s)\n",passphrase,fname2fa,bits256_str(str,wallethash),bits256_str(str2,wallet2priv));
-   }
+    }
     first = (bits256_nonz(wallethash) != 0 && bits256_cmp(wallethash,GENESIS_PRIVKEY) != 0);
     second = (bits256_nonz(wallet2priv) != 0 && bits256_cmp(wallet2priv,GENESIS_PRIVKEY) != 0);
     if ( first != 0 || second != 0 )
@@ -269,7 +309,7 @@ int32_t _SuperNET_encryptjson(struct supernet_info *myinfo,char *destfname,char 
     wallet2shared = SuperNET_wallet2shared(wallethash,wallet2priv);
     wallet2pub = curve25519(wallet2shared,curve25519_basepoint9());
     sprintf(destfname,"%s/%s",GLOBAL_CONFSDIR,bits256_str(str,wallet2pub));
-    //printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
+    printf("SAVE ARGJSON.(%s) [%s, %s] -> destfname.(%s)\n",jprint(argjson,0),passphrase,fname2fa,destfname);
     //printf("shared.%llx -> pub.%s\n",(long long)wallet2shared.txid,bits256_str(str,wallet2pub));
     SuperNET_savejsonfile(myinfo,destfname,wallethash,wallet2pub,argjson);
     return(0);

@@ -13,6 +13,17 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifdef INCLUDE_PAX
+ZERO_ARGS(pax,start);
+#endif
+HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
+ZERO_ARGS(tradebot,amlp);
+ZERO_ARGS(tradebot,notlp);
+
+INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
@@ -21,7 +32,7 @@ INT_ARG(InstantDEX,incoming,requestid);
 INT_ARG(InstantDEX,automatched,requestid);
 
 TWO_INTS(InstantDEX,accept,requestid,quoteid);
-TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
+//TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
@@ -65,8 +76,9 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool);
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array);
 
 STRING_ARG(bitcoinrpc,decodescript,scriptstr);
-STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
-STRING_ARG(bitcoinrpc,validaterawtransaction,rawtx);
+//STRING_ARG(bitcoinrpc,decoderawtransaction,rawtx);
+STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
+STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
 ZERO_ARGS(iguana,makekeypair);

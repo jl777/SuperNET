@@ -44,7 +44,7 @@ char GLOBAL_CONFSDIR[512] = "confs";
 #ifdef __linux
 int32_t IGUANA_NUMHELPERS = 8;
 #else
-int32_t IGUANA_NUMHELPERS = 4;
+int32_t IGUANA_NUMHELPERS = 1;
 #endif
 #endif
 
@@ -52,16 +52,21 @@ int32_t IGUANA_NUMHELPERS = 4;
 #define CONDEXTERN extern
 #endif
 
+
 // ALL globals must be here!
+CONDEXTERN struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
+CONDEXTERN int32_t NUMRELAYS,RELAYID;
+
+CONDEXTERN char *COMMANDLINE_ARGFILE;
 CONDEXTERN char *Iguana_validcommands[];
-CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS;
+CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS,QUEUEITEMS;
 
 CONDEXTERN struct gecko_chain *Categories;
 CONDEXTERN struct iguana_info *Allcoins;
 CONDEXTERN char Userhome[512];
 CONDEXTERN int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
 CONDEXTERN uint32_t prices777_NXTBLOCK;
-CONDEXTERN queue_t helperQ,jsonQ,finishedQ,bundlesQ,emitQ;
+CONDEXTERN queue_t helperQ,JSON_Q,FINISHED_Q,bundlesQ,emitQ;
 CONDEXTERN struct supernet_info MYINFO,**MYINFOS;
 CONDEXTERN int32_t MAIN_initflag,MAX_DEPTH;
 CONDEXTERN int32_t HDRnet,netBLOCKS;

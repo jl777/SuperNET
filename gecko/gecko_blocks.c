@@ -29,7 +29,7 @@ void gecko_txidpurge(struct iguana_info *virt,bits256 txid)
             }
         }
     }
-    if ( virt->RELAYNODE != 0 )
+    if ( virt->FULLNODE != 0 )
     {
         for (i=0; i<BASILISK_MAXRELAYS; i++)
         {
@@ -158,10 +158,11 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
                     if ( bp->blocks[i] != 0 && bp->blocks[i]->txvalid != 0 )
                         bp->numsaved++;
                 virt->current = bp;
-                iguana_RTspendvectors(myinfo,virt,bp);
-                iguana_RTramchainalloc("RTbundle",virt,bp);
-                iguana_update_balances(virt);
-                iguana_realtime_update(myinfo,virt);
+                //iguana_RTspendvectors(myinfo,virt,bp);
+                //iguana_RTramchainalloc("RTbundle",virt,bp);
+                printf("update virtchain balances\n");
+                //iguana_update_balances(virt);
+                //iguana_realtime_update(myinfo,virt);
                 if ( (block->height % virt->chain->bundlesize) == 13 && hdrsi > 0 && (prevbp= virt->bundles[hdrsi - 1]) != 0 && prevbp->emitfinish == 0 && prevbp->numsaved >= prevbp->n )
                 {
                     iguana_bundlefinalize(myinfo,virt,prevbp,&virt->MEM,virt->MEMB);
@@ -185,7 +186,7 @@ char *gecko_blockarrived(struct supernet_info *myinfo,struct iguana_info *virt,c
     struct iguana_txblock txdata; int32_t height,valid,adjacent,gap,n,i,j,len = -1; struct iguana_block *block,*prev; struct iguana_txid tx; char str[65],str2[65]; bits256 txid,threshold; struct iguana_msgtx *txs;
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&virt->TXMEM);
-    if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen )
+    if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,data,datalen)) == datalen || n == datalen-1 )
     {
         if ( bits256_cmp(hash2,txdata.zblock.RO.hash2) != 0 )
         {
@@ -340,7 +341,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                 if ( jobj(retjson,"error") == 0 )
                 {
                     valsobj = cJSON_CreateObject();
-                    jaddnum(valsobj,"minresults",myinfo->numrelays - 1);
+                    jaddnum(valsobj,"minresults",NUMRELAYS - 1);
                     jaddnum(valsobj,"timeout",3000);
                     jaddnum(valsobj,"fanout",-1);
                     jaddnum(valsobj,"height",height);

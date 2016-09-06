@@ -498,7 +498,7 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     struct iguana_stackdata Snum; cJSON *item = 0; char tmpstr[2048]; int32_t num = (int32_t)num64;
     if ( stacks->lastpath[stacks->ifdepth] < 0 )
         return(0);
-    //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
+    printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
         /*if ( numbuf != 0 )
@@ -1017,8 +1017,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 if ( V->suppress_pubkeys == 0 && (V->spendscript[0] != plen || V->spendscript[V->spendlen - 1] != IGUANA_OP_CHECKSIG || bitcoin_pubkeylen(&V->spendscript[1]) <= 0) )
                 {
                     iguana_pushdata(stacks,0,V->signers[i].pubkey,plen);
-                    //printf("pushdata plen.%d depth.%d\n",plen,stacks->stackdepth);
-                } //else printf("skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
+                    printf(">>>>>>>>> suppress.%d pushdata plen.%d depth.%d\n",V->suppress_pubkeys,plen,stacks->stackdepth);
+                } else printf("<<<<<<<<<< skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
             }
         }
         if ( V->userdatalen != 0 )
@@ -1128,6 +1128,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             }
             else if ( n < 0 )
             {
+                printf("dataparse negative n.%d\n",n);
                 errs++;
                 break;
             }
@@ -1142,7 +1143,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        //printf("{%s}\n",str);
+        printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1172,7 +1173,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         else
                         {
                             if ( stacks->stackdepth <= 0 )
+                            {
+                                printf("if invalid stackdepth %d\n",stacks->stackdepth);
                                 errs++;
+                            }
                             else
                             {
                                 args[0] = iguana_pop(stacks);
@@ -1191,9 +1195,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         }
                         break;
                     case IGUANA_OP_ELSE:
-                        if ( stacks->stackdepth <= 0 )
+                        /*if ( stacks->stackdepth <= 0 )
+                        {
+                            printf("else invalid stackdepth %d\n",stacks->stackdepth);
                             errs++;
-                        else
+                        }
+                        else*/
                         {
                             if ( stacks->ifdepth <= stacks->elsedepth )
                             {
@@ -1542,7 +1549,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             if ( errs == 0 )
                 jadd(interpreter,"result",jtrue());
             else jadd(interpreter,"result",jfalse());
-        } else printf("Evaluate FALSE, depth.%d errs.%d\n",stacks->stackdepth,errs);
+        }
+        else
+        {
+            jadd(interpreter,"result",jfalse());
+            printf("Evaluate FALSE, depth.%d errs.%d [0] size.%d num.%d\n",stacks->stackdepth,errs,stacks->stack[0].size,stacks->stack[0].U.val);
+        }
         //if ( stacks->logarray != 0 )
         //    printf("LOG.(%s)\n",jprint(stacks->logarray,0));
         if ( numargs > 0 )

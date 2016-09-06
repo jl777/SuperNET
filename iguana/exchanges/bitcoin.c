@@ -42,9 +42,13 @@ int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr
         else
         {
             int32_t i;
+            if ( len > 20 )
+            {
+                hash = bits256_doublesha256(0,buf,len);
+            }
             for (i=0; i<len; i++)
                 printf("%02x ",buf[i]);
-            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[21]&0xff,buf[22]&0xff,buf[23]&0xff,buf[24]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
+            char str[65]; printf("\nhex checkhash.(%s) len.%d mismatch %02x %02x %02x %02x vs %02x %02x %02x %02x (%s)\n",coinaddr,len,buf[len-1]&0xff,buf[len-2]&0xff,buf[len-3]&0xff,buf[len-4]&0xff,hash.bytes[31],hash.bytes[30],hash.bytes[29],hash.bytes[28],bits256_str(str,hash));
         }
     }
 	return(0);
@@ -441,7 +445,7 @@ char *PARSEBALANCE(struct exchange_info *exchange,double *balancep,char *coinstr
 
 cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
 {
-    double balance; int16_t hdrsi; uint32_t unspentind; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; int64_t *unspents=0,value,avail;
+    double balance; int32_t i,minconfirms,numunspents,max; struct iguana_info *coin,*tmp; struct supernet_info *myinfo; cJSON *retjson,*array,*item,*addresses=0; uint64_t avail; struct iguana_outpoint outpt,*unspents=0;
     retjson = cJSON_CreateArray();
     myinfo = SuperNET_accountfind(argjson);
     //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -453,18 +457,16 @@ cJSON *BALANCES(struct exchange_info *exchange,cJSON *argjson)
             minconfirms = coin->minconfirms;
         max = 100000;
         unspents = calloc(max,sizeof(*unspents));
-        if ( (numunspents= iguana_unspentslists(myinfo,coin,&avail,unspents,max,((uint64_t)1 << 62),minconfirms,addresses,0)) > 0 )
+        if ( (numunspents= iguana_RTunspentslists(myinfo,coin,&avail,unspents,max,((uint64_t)1 << 62),minconfirms,addresses,0)) > 0 )
         {
             array = cJSON_CreateArray();
             for (i=0; i<numunspents; i++)
             {
                 item = cJSON_CreateArray();
-                hdrsi = (int16_t)(unspents[(i << 1)] >> 32);
-                unspentind = (uint32_t)unspents[(i << 1)];
-                value = unspents[(i << 1) + 1];
-                jaddinum(item,hdrsi);
-                jaddinum(item,unspentind);
-                jaddinum(item,dstr(value));
+                outpt = unspents[i];
+                jaddinum(item,outpt.hdrsi);
+                jaddinum(item,outpt.unspentind);
+                jaddinum(item,dstr(outpt.value));
                 jaddi(array,item);
             }
             item = cJSON_CreateObject();

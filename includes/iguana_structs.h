@@ -125,7 +125,7 @@ struct iguana_msgblock
     uint32_t txn_count;
 } __attribute__((packed));
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,suffixlen,spendlen; } __attribute__((packed));
+struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; } __attribute__((packed));
 
 struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; } __attribute__((packed));
 
@@ -137,6 +137,7 @@ struct iguana_msgtx
     bits256 txid;
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
+    uint8_t *serialized;
 } __attribute__((packed));
 
 struct iguana_msgjoinsplit
@@ -239,7 +240,7 @@ struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; 
 struct iguana_spend256 { bits256 prevhash2; uint64_t scriptpos:48,vinscriptlen:16; uint32_t sequenceid; int16_t prevout; uint16_t spendind,fileid; } __attribute__((packed));
 
 // permanent readonly structs
-struct iguana_txid { bits256 txid; uint32_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime,version,timestamp,extraoffset; uint16_t numvouts,numvins; } __attribute__((packed));
+struct iguana_txid { bits256 txid; uint64_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime:32,version:32,timestamp:32,extraoffset:32; uint16_t numvouts,numvins; } __attribute__((packed));
 
 struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:11,type:5; int16_t vout; } __attribute__((packed));
 
@@ -249,9 +250,13 @@ struct iguana_pkhash { uint8_t rmd160[20]; uint32_t pkind; } __attribute__((pack
 
 // dynamic
 struct iguana_account { int64_t total; uint32_t lastunspentind; } __attribute__((packed));
-struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spentflag:1; } __attribute__((packed));
+struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spentflag:1,spendind; } __attribute__((packed));
+
+#ifdef DEPRECATED_HHUTXO
 struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; } __attribute__((packed));
+#endif
 struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; } __attribute__((packed));
+struct iguana_utxoaddr { UT_hash_handle hh; int64_t histbalance; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; } __attribute__((packed));
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; } __attribute__((packed)); // unspentind
@@ -370,13 +375,52 @@ struct basilisk_spend { bits256 txid,spentfrom; uint64_t relaymask,value; uint32
 struct basilisk_unspent { bits256 txid; uint64_t value,relaymask; uint32_t unspentind,timestamp; int32_t RTheight,height,spentheight; int16_t status,hdrsi,vout,spendlen; char symbol[16]; uint8_t script[256]; };
 
 struct iguana_waddress { UT_hash_handle hh; struct basilisk_unspent *unspents; uint64_t balance; uint32_t maxunspents,numunspents; uint16_t scriptlen; uint8_t rmd160[20],pubkey[33],wiftype,addrtype; bits256 privkey; char symbol[8],coinaddr[36],wifstr[54]; uint8_t redeemScript[]; };
-struct iguana_waccount { UT_hash_handle hh; char account[128]; struct iguana_waddress *waddr,*current; };
+struct iguana_waccount { UT_hash_handle hh; struct iguana_waddress *waddr,*current; char account[]; };
 struct iguana_wallet { UT_hash_handle hh; struct iguana_waccount *wacct; };
 
 struct scriptinfo { UT_hash_handle hh; uint32_t fpos; uint16_t scriptlen; uint8_t script[]; };
 struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t firstvout; };
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
+
+struct iguana_RTspend
+{
+    bits256 prev_hash; int16_t prev_vout,scriptlen;
+    uint8_t vinscript[];
+};
+
+struct iguana_RTunspent
+{
+    uint8_t rmd160[20];
+    int64_t value;
+    int32_t vout,height,fromheight;
+    struct iguana_RTtxid *parent;
+    struct iguana_RTspend *spend;
+    struct iguana_RTunspent *prevunspent;
+    int16_t scriptlen;
+    uint8_t locked,validflag;
+    uint8_t script[];
+};
+
+struct iguana_RTaddr
+{
+    UT_hash_handle hh;
+    char coinaddr[64];
+    int64_t histbalance,debits,credits;
+    int32_t numunspents;
+    struct iguana_RTunspent *lastunspent;
+};
+
+struct iguana_RTtxid
+{
+    UT_hash_handle hh; struct iguana_info *coin; struct iguana_block *block;
+    bits256 txid;
+    int32_t height,txi,txn_count,numvouts,numvins,txlen;
+    uint32_t locktime,version,timestamp;
+    uint8_t *rawtxbytes;
+    struct iguana_RTunspent **unspents;
+    struct iguana_RTspend *spends[];
+};
 
 struct iguana_info
 {
@@ -389,37 +433,49 @@ struct iguana_info
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
-    int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,RELAYNODE,VALIDATENODE,origbalanceswritten,balanceswritten,RTheight,RTdatabad;
+    int32_t MAXPEERS,MAXPENDINGREQUESTS,MAXBUNDLES,MAXSTUCKTIME,active,closestbundle,numemitted,lastsweep,numemit,startutc,newramchain,numcached,cachefreed,helperdepth,startPEND,endPEND,enableCACHE,FULLNODE,VALIDATENODE,origbalanceswritten,balanceswritten,lastRTheight,RTdatabad;
     bits256 balancehash,allbundles;
-    uint32_t lastsync,parsetime,numiAddrs,lastpossible,bundlescount,savedblocks,backlog,spendvectorsaved,laststats,lastinv2,symbolcrc; char VALIDATEDIR[512];
-    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters,virtualchain;
+    uint32_t lastsync,parsetime,numiAddrs,lastpossible,bundlescount,savedblocks,backlog,spendvectorsaved,laststats,lastinv2,symbolcrc,spendvalidated; char VALIDATEDIR[512];
+    int32_t longestchain,badlongestchain,longestchain_strange,RTramchain_busy,emitbusy,stuckiters,virtualchain,RTheight;
     struct tai starttime; double startmillis;
     struct iguana_chain *chain;
     struct iguana_iAddr *iAddrs;
     void *ctx;
     struct iguana_bitmap *screen;
     struct OS_memspace TXMEM,MEM,MEMB[IGUANA_MAXBUNDLESIZE];
-    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ;
+    queue_t acceptQ,hdrsQ,blocksQ,priorityQ,possibleQ,cacheQ,recvQ,msgrequestQ,jsonQ,finishedQ;
     double parsemillis,avetime; uint32_t Launched[8],Terminated[8];
-    portable_mutex_t peers_mutex,blocks_mutex,special_mutex;
+    portable_mutex_t peers_mutex,blocks_mutex,special_mutex,RTmutex,allcoins_mutex;
     char changeaddr[64];
     struct iguana_bundle *bundles[IGUANA_MAXBUNDLES],*current,*lastpending;
-    struct iguana_ramchain RTramchain; struct OS_memspace RTmem,RThashmem; bits256 RThash1;
+    struct OS_memspace RTrawmem,RTmem,RThashmem; // struct iguana_ramchain RTramchain; 
+    bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
-    int32_t initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
+    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
-    uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM;
+    uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM,RTHASHMEM;
     bits256 APIblockhash,APItxid; char *APIblockstr;
-    struct iguana_hhutxo *utxotable; struct iguana_hhaccount *accountstable; char lastdispstr[2048];
+    struct iguana_hhutxo *utxotable;
+#ifdef DEPRECATED_HHUTXO
+    struct iguana_hhaccount *accountstable;
+#endif
+    char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
     struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];
     struct iguana_blocks blocks; void *mempool; void *mempools[BASILISK_MAXRELAYS];
+    
+    struct iguana_utxoaddr *utxoaddrs,*RTprev; uint32_t utxodatasize,utxoaddrind;
+    uint64_t histbalance,RTcredits,RTdebits;
+    void *utxoaddrfileptr; long utxoaddrfilesize;
+    uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
+    struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };
@@ -427,7 +483,7 @@ struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],r
 struct vin_info
 {
     struct iguana_msgvin vin; uint64_t amount; cJSON *extras; bits256 sigtxid;
-    int32_t M,N,validmask,spendlen,type,p2shlen,suffixlen,numpubkeys,numsigs,height,hashtype,userdatalen,suppress_pubkeys;
+    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs,height,hashtype,userdatalen,suppress_pubkeys;
     uint32_t sequence,unspentind; struct vin_signer signers[16]; char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE],userdata[IGUANA_MAXSCRIPTSIZE];
 };
@@ -446,6 +502,8 @@ struct bitcoin_spend
     struct bitcoin_unspent inputs[];
 };
 
+struct iguana_outpoint { void *ptr; int64_t value; uint32_t unspentind:31,isptr:1; int16_t hdrsi; };
+
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 
 struct _gfshare_ctx
@@ -453,5 +511,29 @@ struct _gfshare_ctx
     uint32_t sharecount,threshold,size,buffersize,allocsize;
     uint8_t sharenrs[255],buffer[];
 };
+
+struct basilisk_request
+{
+    uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
+    uint64_t srcamount,minamount; // 16 to 31
+    bits256 hash; // 32 to 63
+    bits256 desthash;
+    char src[8],dest[8];
+    //char volatile_start,message[43];
+    uint64_t destamount;
+    uint32_t relaybits;
+} __attribute__((packed));
+struct basilisk_relaystatus
+{
+    uint8_t pingdelay;
+};
+
+struct basilisk_relay
+{
+    bits256 pubkey; int32_t relayid,oldrelayid; uint32_t ipbits,lastping; uint8_t pubkey33[33];
+    struct basilisk_request *requests; int32_t maxrequests,numrequests;
+    struct basilisk_relaystatus direct,reported[BASILISK_MAXRELAYS];
+};
+
 #endif
 

@@ -16,6 +16,22 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+#if (defined(_WIN32) || defined(__WIN32__)) && \
+!defined(WIN32) && !defined(__SYMBIAN32__)
+#define WIN32
+#else
+#ifndef __MINGW
+#include <arpa/inet.h>
+#endif
+#endif
+
+//#define BTC2_VERSION
+#define BTC2_HARDFORK_HEIGHT 444444
+#define BTC2_SIGHASH_FORKID 0xcf
+#define BTC2_NETMAGIC 0xaabbccdd
+#define BTC2_DEFAULT_PORT 8222
+#define BTC2_DIFF_WINDOW 60
+
 struct supernet_info;
 struct exchange_info;
 
@@ -38,15 +54,18 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
+struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
+
 struct supernet_info
 {
     struct supernet_address myaddr;
     bits256 persistent_priv,privkey;
     uint8_t persistent_pubkey33[33];
-    char ipaddr[64],NXTAPIURL[512],secret[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
+    char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
-    int32_t maxdelay,IAMRELAY,publicRPC,basilisk_busy,genesisresults;
-    uint32_t expiration,dirty,DEXactive;
+    int32_t maxdelay,IAMRELAY,IAMLP,publicRPC,basilisk_busy,genesisresults;
+    uint32_t expiration,dirty,DEXactive,DEXpoll;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
@@ -59,12 +78,13 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;
-    struct basilisk_relay relays[BASILISK_MAXRELAYS];
     struct basilisk_spend *spends; int32_t numspends;
-    int32_t numrelays,RELAYID;
+    struct peggy_info *PEGS;
+    struct liquidity_info linfos[64];
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
+    struct message_info msgids[8192];
 };
 
 #endif

@@ -17181,7 +17181,7 @@ len = 0;
              for (i=0; i<n; i++)
              {
              coinaddr = jstri(addresses,i);
-             if ( coin->VALIDATENODE != 0 || coin->RELAYNODE != 0 )
+             if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
              balancestr = iguana_balance(myinfo,coin,0,remoteaddr,coin->symbol,coinaddr,lastheight,minconf);
              //else balancestr = bitcoin_balance(coin,coinaddr,lastheight,minconf);
              if ( balancestr != 0 )
@@ -17269,7 +17269,7 @@ len = 0;
                         coin = iguana_coinfind(jstr(valsobj,"coin"));
                     if ( (method= jstr(valsobj,"method")) != 0 && coin != 0 )
                     {
-                        if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
+                        if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 ) // iguana node
                         {
                             if ( strcmp(method,"rawtx") == 0 )
                                 retstr = basilisk_rawtx(myinfo,coin,0,remoteaddr,basilisktag,valsobj,coin->symbol);
@@ -18009,7 +18009,7 @@ len = 0;
              if ( (argjson= gecko_genesisjson(myinfo,btcd,isPoS,symbol,chainname,vals,magicstr,juint(vals,"blocktime"))) != 0 )
              {
              argvals = gecko_genesisissue(symbol,chainname,chainstr,argjson);
-             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+             if ( btcd->FULLNODE != 0 || btcd->VALIDATENODE != 0 )
              {
              basilisk_wait(myinfo,0);
              retstr = basilisk_respond_newgeckochain(myinfo,"NEW",0,0,0,argvals,0,0,GENESIS_PUBKEY,0);
@@ -18046,7 +18046,7 @@ len = 0;
              arrayB = cJSON_Parse(retstr);
              free(retstr);
              }
-             if ( btcd->RELAYNODE != 0 || btcd->VALIDATENODE != 0 )
+             if ( btcd->FULLNODE != 0 || btcd->VALIDATENODE != 0 )
              {
              if ( (retstr= OS_filestr(&filesize,"genesis/list")) != 0 )
              {
@@ -18598,6 +18598,61 @@ len = 0;
              }
              free(retstr);
              }*/
-
+            
+            uint32_t basilisk_msgid(struct supernet_info *myinfo,uint32_t channel,bits256 hash,uint8_t *data,int32_t datalen)
+            {
+                struct message_info *mp; bits256 msghash; uint32_t now; int32_t i,j,firstj,firsti = -1;
+                vcalc_sha256(0,msghash.bytes,data,datalen);
+                //msghash.bytes[0] = channel & 0xff;
+                //msghash.bytes[1] = (channel >> 8) & 0xff;
+                //msghash.bytes[2] = (channel >> 16) & 0xff;
+                now = (uint32_t)time(NULL);
+                for (i=0; i<sizeof(myinfo->msgids)/sizeof(*myinfo->msgids); i++)
+                {
+                    mp = &myinfo->msgids[i];
+                    if ( mp->msgcount != 0 )
+                    {
+                        if ( bits256_cmp(hash,mp->refhash) == 0 )
+                        {
+                            firstj = -1;
+                            for (j=0; j<mp->msgcount; j++)
+                            {
+                                if ( mp->timestamps[j] != 0 )
+                                {
+                                    if ( now > mp->timestamps[j]+30 )
+                                        memset(mp,0,sizeof(*mp));
+                                    else if ( bits256_cmp(msghash,mp->msghashes[j]) == 0 )
+                                        return(j + 1);
+                                }
+                                if ( firstj < 0 && mp->timestamps[j] == 0 )
+                                    firstj = j;
+                            }
+                            if ( firstj >= 0 )
+                            {
+                                mp->msghashes[firstj] = msghash;
+                                mp->timestamps[firstj] = (uint32_t)time(NULL);
+                                return(firstj + 1);
+                            }
+                            if ( mp->msgcount < sizeof(mp->msghashes)/sizeof(*mp->msghashes) )
+                            {
+                                j = mp->msgcount++;
+                                mp->msghashes[j] = msghash;
+                                mp->timestamps[j] = (uint32_t)time(NULL);
+                                return(j + 1);
+                            } else return(0);
+                        }
+                    } else if ( firsti < 0 )
+                        firsti = i;
+                }
+                if ( firsti >= 0 )
+                {
+                    mp = &myinfo->msgids[firsti];
+                    mp->msghashes[0] = msghash;
+                    mp->timestamps[0] = (uint32_t)time(NULL);
+                    mp->msgcount = 1;
+                    mp->refhash = hash;
+                    return(1);
+                } else return(0);
+            }
 #endif
 #endif

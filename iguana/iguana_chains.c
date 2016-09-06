@@ -367,14 +367,24 @@ void iguana_chainparms(struct iguana_chain *chain,cJSON *argjson)
         else chain->initialreward = 50 * SATOSHIDEN;
         if ( chain->serverport[0] == 0 )
             sprintf(chain->serverport,"127.0.0.1:%u",chain->rpcport);
-        if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
-        if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
-        else if ( (hexstr= jstr(argjson,"p2shval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
-        if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
-            decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
+        if ( strcmp(chain->symbol,"BTC") != 0 && strcmp(chain->symbol,"BTCD") != 0 )
+        {
+            chain->pubtype = juint(argjson,"pubval");
+            chain->p2shtype = juint(argjson,"p2shval");
+            chain->wiftype = juint(argjson,"wifval");
+            if ( chain->pubtype == 0 && chain->p2shtype == 0 && chain->wiftype == 0 )
+            {
+                if ( (hexstr= jstr(argjson,"pubval")) != 0 && strlen(hexstr) == 2 )
+                    decode_hex((uint8_t *)&chain->pubtype,1,hexstr);
+                if ( (hexstr= jstr(argjson,"scriptval")) != 0 && strlen(hexstr) == 2 )
+                    decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
+                else if ( (hexstr= jstr(argjson,"p2shval")) != 0 && strlen(hexstr) == 2 )
+                    decode_hex((uint8_t *)&chain->p2shtype,1,hexstr);
+                if ( (hexstr= jstr(argjson,"wifval")) != 0 && strlen(hexstr) == 2 )
+                    decode_hex((uint8_t *)&chain->wiftype,1,hexstr);
+            }
+        }
+        printf("addrtypes.(%02x %02x %02x) (%d %d %d)\n",chain->pubtype,chain->p2shtype,chain->wiftype,chain->pubtype,chain->p2shtype,chain->wiftype);
         if ( (hexstr= jstr(argjson,"netmagic")) != 0 && strlen(hexstr) == 8 )
             decode_hex((uint8_t *)chain->netmagic,4,hexstr);
         if ( (hexstr= jstr(argjson,"unitval")) != 0 && strlen(hexstr) == 2 )
@@ -487,6 +497,8 @@ void iguana_chaininit(struct iguana_chain *chain,int32_t hasheaders,cJSON *argjs
         strcpy(chain->gethdrsmsg,"getblocks");
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
+    if ( strcmp(chain->symbol,"BTC") == 0 )
+        chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
     if ( chain->rpcport == 0 )
         chain->rpcport = chain->portp2p + 1;

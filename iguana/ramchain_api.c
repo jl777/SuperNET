@@ -27,8 +27,7 @@ STRING_ARG(iguana,initfastfind,activecoin)
 
 TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
 {
-    int32_t lastheight,minconf,maxconf=SATOSHIDEN; int64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype;
-    struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
+    int32_t lastheight,minconf,maxconf=SATOSHIDEN; uint64_t total=0; uint8_t rmd160[20],pubkey33[33],addrtype; struct iguana_pkhash *P; cJSON *array,*retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
@@ -42,6 +41,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
             jaddstr(retjson,"error","illegal address");
             return(jprint(retjson,1));
         }
+        jadd64bits(retjson,"RTbalance",iguana_RTbalance(coin,address));
         if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
         {
             jaddstr(retjson,"error","cant convert address");
@@ -53,12 +53,12 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
         //printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,lastheight);
         if ( lastheight == 0 )
             lastheight = IGUANA_MAXHEIGHT;
-        iguana_pkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr);
+        iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr,1);
         free(P);
         jadd(retjson,"unspents",array);
         jaddnum(retjson,"balance",dstr(total));
         if ( lastheight > 0 )
-            jaddnum(retjson,"lastheight",lastheight);
+            jaddnum(retjson,"RTheight",coin->RTheight);
     }
     return(jprint(retjson,1));
 }
@@ -92,28 +92,32 @@ STRING_ARG(iguana,removecoin,activecoin)
     {
         coin->active = 0;
         coin->started = 0;
-        for (i=0; i<IGUANA_MAXPEERS; i++)
+        if ( 0 )
         {
-            sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-            sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,i), OS_removefile(fname,0);
-        }
-        sprintf(fname,"%s/%s/vouts/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
-        sprintf(fname,"%s/%s/*",coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
-        for (i=0; i<coin->bundlescount; i++)
-        {
-            sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
-            if ( (bp= coin->bundles[i]) != 0 )
+            for (i=0; i<IGUANA_MAXPEERS; i++)
             {
-                iguana_bundlepurgefiles(coin,bp);
-                iguana_bundleremove(coin,bp->hdrsi,1);
+                sprintf(fname,"%s/%s/vouts/%04d.vouts",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
+                sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,i), OS_removefile(fname,0);
             }
+            sprintf(fname,"%s/%s/vouts/*",GLOBAL_DBDIR,coin->symbol), OS_removefile(fname,0);
+            sprintf(fname,"%s/%s/*",coin->VALIDATEDIR,coin->symbol), OS_removefile(fname,0);
+            for (i=0; i<coin->bundlescount; i++)
+            {
+                sprintf(fname,"%s/%s/balancecrc.%d",GLOBAL_DBDIR,coin->symbol,i), OS_removefile(fname,0);
+                if ( (bp= coin->bundles[i]) != 0 )
+                {
+                    iguana_bundlepurgefiles(coin,bp);
+                    iguana_bundleremove(coin,bp->hdrsi,1);
+                }
+            }
+            for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
+            {
+                sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
+                OS_remove_directory(fname);
+            }
+            sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
         }
-        for (height=0; height<coin->longestchain; height+=IGUANA_SUBDIRDIVISOR)
-        {
-            sprintf(fname,"%s/%s/%d",GLOBAL_DBDIR,coin->symbol,height/IGUANA_SUBDIRDIVISOR);
-            OS_remove_directory(fname);
-        }
-        sprintf(fname,"%s/%s/*",GLOBAL_DBDIR,coin->symbol), OS_remove_directory(fname);
+        return(clonestr("{\"result\":\"success\"}"));
     }
     return(clonestr("{\"error\":\"no active coin\"}"));
 }

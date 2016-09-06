@@ -53,7 +53,7 @@ int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 
 int32_t bitcoin_pubkeylen(const uint8_t *pubkey);
-int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint32_t *suffixp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype);
+int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype);
 int32_t iguana_expandscript(struct iguana_info *coin,char *asmstr,int32_t maxlen,uint8_t *script,int32_t scriptlen);
 int32_t bitcoin_scriptsig(struct iguana_info *coin,uint8_t *script,int32_t n,const struct vin_info *vp,struct iguana_msgtx *msgtx);
 char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int32_t max,int32_t hdrsi,uint32_t unspentind,bits256 txid,int32_t vout,uint8_t *rmd160,int32_t type,uint8_t *pubkey33);

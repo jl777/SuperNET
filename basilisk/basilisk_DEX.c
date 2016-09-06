@@ -17,6 +17,82 @@
 // requestid is invariant for a specific request
 // quoteid is invariant for a specific request after dest fields are set
 
+#ifdef ENABLE_DEXPING
+int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
+{
+    int32_t i,n,len=0; struct basilisk_relay *relay; struct basilisk_request R; uint8_t clen,serialized[256]; uint16_t sn; uint32_t crc;
+    portable_mutex_lock(&myinfo->DEX_reqmutex);
+    len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
+    if ( (relay= basilisk_request_ensure(myinfo,senderipbits,sn)) != 0 )
+    {
+        relay->numrequests = 0;
+        for (i=0; i<sn; i++)
+        {
+            clen = data[len++];
+            if ( len+clen <= datalen )
+            {
+                if ( relay->numrequests < relay->maxrequests )
+                {
+                    memcpy(serialized,&data[len],clen);
+                    //printf("ping processDEX\n");
+                    n = basilisk_rwDEXquote(0,serialized,&R);
+                    if ( n != clen )
+                        printf("n.%d clen.%d\n",n,clen);
+                    len += clen;
+                    crc = basilisk_requestid(&R);
+                    if ( crc == R.requestid )
+                    {
+                        relay->requests[relay->numrequests++] = R;
+                        //printf("[(%s %.8f) -> (%s %.8f) r.%u q.%u] ",R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
+                    } else printf("crc.%u error vs %u\n",crc,R.requestid);
+                } else printf("relay num.%d >= max.%d\n",relay->numrequests,relay->maxrequests);
+            } else len += clen;
+        }
+    }
+    else
+    {
+        for (i=0; i<sn; i++)
+        {
+            if ( len+clen <= datalen )
+            {
+                clen = data[len++];
+                len += clen;
+            }
+        }
+    }
+    portable_mutex_unlock(&myinfo->DEX_reqmutex);
+    return(len);
+}
+
+int32_t basilisk_ping_genDEX(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
+{
+    struct queueitem *item,*tmp; uint8_t clen; int32_t i,datalen = 0; uint16_t sn; uint32_t timestamp,now;
+    datalen += sizeof(uint16_t);
+    i = 0;
+    now = (uint32_t)time(NULL);
+    portable_mutex_lock(&myinfo->DEX_mutex);
+    DL_FOREACH_SAFE(myinfo->DEX_quotes,item,tmp)
+    {
+        memcpy(&clen,&item[1],sizeof(clen));
+        if ( datalen+clen < maxlen )
+        {
+            memcpy(&data[datalen],&item[1],clen+1), datalen += (clen + 1);
+            i++;
+        }
+        iguana_rwnum(0,(void *)((long)&item[1] + 1 + sizeof(uint32_t)),sizeof(timestamp),&timestamp);
+        if ( now > timestamp + BASILISK_DEXDURATION )
+        {
+            DL_DELETE(myinfo->DEX_quotes,item);
+            free(item);
+        } //else printf("now.%u vs timestamp.%u, lag.%d\n",now,timestamp,now-timestamp);
+    }
+    portable_mutex_unlock(&myinfo->DEX_mutex);
+    sn = i;
+    iguana_rwnum(1,data,sizeof(sn),&sn); // fill in at beginning
+    return(datalen);
+}
+#endif
+
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp)
 {
     int32_t len = 0;
@@ -158,7 +234,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
         }
         else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
     }
-    else if ( myinfo->RELAYID >= 0 )
+    else if ( myinfo->IAMLP != 0 )
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","basilisk node needs to start atomic thread locally");
@@ -171,7 +247,7 @@ struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint
     int32_t j; struct basilisk_relay *relay = 0;
     if ( (j= basilisk_relayid(myinfo,senderipbits)) >= 0 )
     {
-        relay = &myinfo->relays[j];
+        relay = &RELAYS[j];
         if ( numrequests > relay->maxrequests )
         {
             relay->maxrequests = numrequests;
@@ -179,80 +255,6 @@ struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint
         }
     }
     return(relay);
-}
-
-int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
-{
-    int32_t i,n,len=0; struct basilisk_relay *relay; struct basilisk_request R; uint8_t clen,serialized[256]; uint16_t sn; uint32_t crc;
-    portable_mutex_lock(&myinfo->DEX_reqmutex);
-    len += iguana_rwnum(0,&data[len],sizeof(sn),&sn);
-    if ( (relay= basilisk_request_ensure(myinfo,senderipbits,sn)) != 0 )
-    {
-        relay->numrequests = 0;
-        for (i=0; i<sn; i++)
-        {
-            clen = data[len++];
-            if ( len+clen <= datalen )
-            {
-                if ( relay->numrequests < relay->maxrequests )
-                {
-                    memcpy(serialized,&data[len],clen);
-                    //printf("ping processDEX\n");
-                    n = basilisk_rwDEXquote(0,serialized,&R);
-                    if ( n != clen )
-                        printf("n.%d clen.%d\n",n,clen);
-                    len += clen;
-                    crc = basilisk_requestid(&R);
-                    if ( crc == R.requestid )
-                    {
-                        relay->requests[relay->numrequests++] = R;
-                        //printf("[(%s %.8f) -> (%s %.8f) r.%u q.%u] ",R.src,dstr(R.srcamount),R.dest,dstr(R.destamount),R.requestid,R.quoteid);
-                    } else printf("crc.%u error vs %u\n",crc,R.requestid);
-                } else printf("relay num.%d >= max.%d\n",relay->numrequests,relay->maxrequests);
-            } else len += clen;
-        }
-    }
-    else
-    {
-        for (i=0; i<sn; i++)
-        {
-            if ( len+clen <= datalen )
-            {
-                clen = data[len++];
-                len += clen;
-            }
-        }
-    }
-    portable_mutex_unlock(&myinfo->DEX_reqmutex);
-    return(len);
-}
-
-int32_t basilisk_ping_genDEX(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
-{
-    struct queueitem *item,*tmp; uint8_t clen; int32_t i,datalen = 0; uint16_t sn; uint32_t timestamp,now;
-    datalen += sizeof(uint16_t);
-    i = 0;
-    now = (uint32_t)time(NULL);
-    portable_mutex_lock(&myinfo->DEX_mutex);
-    DL_FOREACH_SAFE(myinfo->DEX_quotes,item,tmp)
-    {
-        memcpy(&clen,&item[1],sizeof(clen));
-        if ( datalen+clen < maxlen )
-        {
-            memcpy(&data[datalen],&item[1],clen+1), datalen += (clen + 1);
-            i++;
-        }
-        iguana_rwnum(0,(void *)((long)&item[1] + 1 + sizeof(uint32_t)),sizeof(timestamp),&timestamp);
-        if ( now > timestamp + BASILISK_DEXDURATION )
-        {
-            DL_DELETE(myinfo->DEX_quotes,item);
-            free(item);
-        } //else printf("now.%u vs timestamp.%u, lag.%d\n",now,timestamp,now-timestamp);
-    }
-    portable_mutex_unlock(&myinfo->DEX_mutex);
-    sn = i;
-    iguana_rwnum(1,data,sizeof(sn),&sn); // fill in at beginning
-    return(datalen);
 }
 
 static int _cmp_requests(const void *a,const void *b)
@@ -282,14 +284,14 @@ static int _cmp_requests(const void *a,const void *b)
 struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,int32_t *nump,uint8_t *space,int32_t spacesize)
 {
     int32_t i,j,n,k,m; struct basilisk_relay *relay; struct basilisk_request *requests,*rp;
-    for (j=m=0; j<myinfo->numrelays; j++)
-        m += myinfo->relays[j].numrequests;
+    for (j=m=0; j<NUMRELAYS; j++)
+        m += RELAYS[j].numrequests;
     if ( m*sizeof(*requests) <= spacesize )
         requests = (void *)space;
     else requests = calloc(m,sizeof(*requests));
-    for (j=m=0; j<myinfo->numrelays; j++)
+    for (j=m=0; j<NUMRELAYS; j++)
     {
-        relay = &myinfo->relays[j];
+        relay = &RELAYS[j];
         if ( (n= relay->numrequests) > 0 )
         {
             for (i=0; i<n; i++)
@@ -311,14 +313,14 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
     return(requests);
 }
 
-char *basilisk_respond_swapstatus(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
+/*char *basilisk_respond_swapstatus(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
 {
     cJSON *array,*retjson;
     array = cJSON_CreateArray();
     retjson = cJSON_CreateObject();
     jadd(retjson,"result",array);
     return(jprint(retjson,1));
-}
+}*/
 
 char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32_t requestid,uint32_t quoteid)
 {
@@ -373,14 +375,14 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,uint32_t requestid,ui
 
 // respond to incoming RID, ACC, DEX, QST
 
-char *basilisk_respond_RID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+/*char *basilisk_respond_RID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     return(basilisk_respond_requests(myinfo,hash,juint(valsobj,"requestid"),0));
 }
 
 char *basilisk_respond_SWP(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    return(basilisk_respond_swapstatus(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
+return(basilisk_respond_swapstatus(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
 }
 
 char *basilisk_respond_ACC(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
@@ -404,7 +406,7 @@ char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,cha
         } else retstr = clonestr("{\"error\":\"DEX quote couldnt be created\"}");
     } else retstr = clonestr("{\"error\":\"missing or invalid fields\"}");
     return(retstr);
-}
+}*/
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
@@ -432,7 +434,7 @@ ZERO_ARGS(InstantDEX,allcoins)
     {
         if ( coin->virtualchain != 0 )
             jaddistr(virtual,coin->symbol);
-        if ( coin->RELAYNODE != 0 || coin->VALIDATENODE != 0 )
+        if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
             jaddistr(full,coin->symbol);
         else jaddistr(basilisk,coin->symbol);
     }
@@ -454,6 +456,7 @@ STRING_ARG(InstantDEX,available,source)
 
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
+    uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"desthash") == 0 )
@@ -464,21 +467,28 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     hash = myinfo->myaddr.persistent;
     printf("service.(%s)\n",jprint(vals,0));
     {
-        uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson;
         memset(&R,0,sizeof(R));
         if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
         {
             printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
-            if ( myinfo->RELAYID >= 0 )
+            if ( RELAYID >= 0 )
                 R.relaybits = myinfo->myaddr.myipbits;
             if ( (reqjson= basilisk_requestjson(&R)) != 0 )
                 free_json(reqjson);
-            printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
-            basilisk_rwDEXquote(1,serialized,&R);
+            datalen = basilisk_rwDEXquote(1,serialized,&R);
+            printf("R.requestid.%u vs calc %u, q.%u datalen.%d\n",R.requestid,basilisk_requestid(&R),R.quoteid,datalen);
             basilisk_rwDEXquote(0,serialized,&R);
         } else printf("error creating request\n");
     }
-    return(basilisk_standardservice("DEX",myinfo,0,myinfo->myaddr.persistent,vals,"",1));
+    if ( datalen > 0 )
+    {
+        memset(hash.bytes,0,sizeof(hash));
+        DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+        if ( basilisk_channelsend(myinfo,hash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
+            return(clonestr("{\"result\":\"DEX message sent\"}"));
+        else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
+    }
+    return(clonestr("{\"error\":\"DEX message not sent\"}"));
 }
 
 INT_ARG(InstantDEX,automatched,requestid)
@@ -488,30 +498,58 @@ INT_ARG(InstantDEX,automatched,requestid)
     return(clonestr("{\"result\":\"automatched not yet\"}"));
 }
 
-INT_ARG(InstantDEX,incoming,requestid)
+int32_t InstantDEX_incoming_func(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    cJSON *vals; char *retstr;
-    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_requests(myinfo,myinfo->myaddr.persistent,requestid,0));
-    else
-    {
-        vals = cJSON_CreateObject();
-        jaddnum(vals,"requestid",(uint32_t)requestid);
-        jaddbits256(vals,"hash",myinfo->myaddr.persistent);
-        retstr = basilisk_standardservice("RID",myinfo,0,myinfo->myaddr.persistent,vals,"",1);
-        free_json(vals);
-        return(retstr);
-    }
+    int32_t i;
+    for (i=0; i<datalen; i++)
+        printf("%02x",data[i]);
+    printf(" <- incoming\n");
+    return(0);
 }
 
-TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
+int32_t InstantDEX_process_channelget(struct supernet_info *myinfo,void *ptr,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen),uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t expiration,uint32_t duration)
+{
+    return((*internal_func)(myinfo,ptr,data,datalen));
+}
+
+INT_ARG(InstantDEX,incoming,requestid)
+{
+    cJSON *retjson,*retarray; uint32_t DEX_channel,msgid,now; int32_t retval,width,drift=3; uint8_t data[8192];
+    now = (uint32_t)time(NULL);
+    width = (now - myinfo->DEXpoll);
+    if ( width < (drift+1) )
+        width = 2*drift+1;
+    else if ( width > 64 )
+        width = 64;
+    myinfo->DEXpoll = now;
+    myinfo->DEXactive = now + INSTANTDEX_LOCKTIME;
+    retjson = cJSON_CreateObject();
+    DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+    msgid = (uint32_t)time(NULL) + drift;
+    if ( (retarray= basilisk_channelget(myinfo,myinfo->myaddr.persistent,DEX_channel,msgid,width)) != 0 )
+    {
+        //printf("GOT.(%s)\n",jprint(retarray,0));
+        if ( (retval= basilisk_process_retarray(myinfo,0,InstantDEX_process_channelget,data,sizeof(data),DEX_channel,msgid,retarray,InstantDEX_incoming_func)) > 0 )
+        {
+            jaddstr(retjson,"result","success");
+        } else jaddstr(retjson,"error","cant process InstantDEX retarray");
+        jadd(retjson,"responses",retarray);
+    }
+    else
+    {
+        jaddstr(retjson,"error","cant do InstantDEX channelget");
+        printf("error channelget\n");
+    }
+    return(jprint(retjson,1));
+}
+
+/*TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_swapstatus(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
-    else
+    //if ( myinfo->IAMLP != 0 )
+    //    return(basilisk_respond_swapstatus(myinfo,myinfo->myaddr.persistent,requestid,quoteid));
+    //else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"requestid",(uint32_t)requestid);
@@ -521,15 +559,15 @@ TWO_INTS(InstantDEX,swapstatus,requestid,quoteid)
         free_json(vals);
         return(retstr);
     }
-}
+}*/
 
 TWO_INTS(InstantDEX,accept,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    if ( myinfo->RELAYID >= 0 )
-        return(basilisk_respond_accept(myinfo,requestid,quoteid));
-    else
+    //if ( myinfo->IAMLP != 0 )
+    //    return(basilisk_respond_accept(myinfo,requestid,quoteid));
+    //else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"quoteid",(uint32_t)quoteid);

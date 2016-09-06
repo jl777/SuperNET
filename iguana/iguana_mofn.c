@@ -785,5 +785,3 @@ void iguana_schnorr(struct supernet_info *myinfo)
         } else printf("passed n.%d\n",n);
     }
 }
-
-

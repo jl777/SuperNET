@@ -48,10 +48,19 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     char *str; double totalvol,pricesum; uint32_t timestamp;
     struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     timestamp = (uint32_t)time(NULL);
     if ( basevolume < 0. )
         basevolume = -basevolume, dir = -1;
     else dir = 1;
+#ifdef INCLUDE_PAX
+    if ( rel == 0 || rel[0] == 0 )
+    {
+        *totalvolp = 1.;
+        return(PAX_aveprice(myinfo,base));
+    }
+#endif
     memset(sortbuf,0,sizeof(*sortbuf) * max);
     if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
     {
@@ -84,7 +93,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
             else if ( dir > 0 && active[i]->numasks > 0 )
                 n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
         }
-        //printf("dir.%d %s/%s numX.%d n.%d\n",dir,base,rel,num,n);
+        //printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
         if ( dir < 0 )
             revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
         else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
@@ -109,14 +118,30 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     return(0);
 }
 
-double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume)
+double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_base,char *_rel,double basevolume)
 {
-    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[256]; cJSON *argjson;
+    double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[2560]; cJSON *argjson; char base[64],rel[64];
+    if ( retvals == 0 )
+        return(0);
+    strcpy(base,_base);
+    if ( _rel == 0 )
+        strcpy(rel,"");
+    else strcpy(rel,_rel);
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     argjson = cJSON_CreateObject();
-    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&askvol,base,rel,basevolume,argjson);
-    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/sizeof(*sortbuf),&bidvol,base,rel,-basevolume,argjson);
+    aveask = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&askvol,base,rel,basevolume,argjson);
+    avebid = instantdex_aveprice(myinfo,sortbuf,sizeof(sortbuf)/(4*sizeof(*sortbuf)),&bidvol,base,rel,-basevolume,argjson);
     free_json(argjson);
     retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+#ifdef INCLUDE_PAX
+    int32_t basenum,relnum; double baseval,relval;
+    if ( (basenum= PAX_basenum(base)) >= 0 && (relnum= PAX_basenum(rel)) >= 0 )
+    {
+        if ( myinfo->PEGS != 0 && (baseval= myinfo->PEGS->data.RTmatrix[basenum][basenum]) != 0. && (relval= myinfo->PEGS->data.RTmatrix[relnum][relnum]) != 0. )
+            return(baseval / relval);
+    }
+#endif
     if ( avebid > SMALLVAL && aveask > SMALLVAL )
         return((avebid + aveask) * .5);
     else return(0);
@@ -707,24 +732,29 @@ char *exchanges777_process(struct exchange_info *exchange,int32_t *retvalp,struc
 
 void exchanges777_loop(void *ptr)
 {
-    struct peggy_info *PEGS; struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
-    int32_t flag,retval,i,peggyflag = 0; struct exchange_request *req; char *retstr;
+    struct supernet_info *myinfo; struct exchange_info *exchange = ptr;
+    int32_t flag,retval,i; struct exchange_request *req; char *retstr;
     myinfo = SuperNET_MYINFO(0);
+#ifdef INCLUDE_PAX
+    struct peggy_info *PEGS=0; int32_t peggyflag = 0;
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
-        PEGS = calloc(1,sizeof(*PEGS));
-        PAX_init(PEGS);
-        exchange->privatedata = PEGS;
-        peggyflag = 1;
-        _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
-        PEGS->lastupdate = (uint32_t)time(NULL);
+        if ( (PEGS= myinfo->PEGS) != 0 )
+        {
+            exchange->privatedata = PEGS;
+            peggyflag = 1;
+            _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
+            PEGS->lastupdate = (uint32_t)time(NULL);
+        }
     }
+#endif
     printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
-        if ( peggyflag != 0 )
+#ifdef INCLUDE_PAX
+        if ( peggyflag != 0 && PEGS != 0 )
         {
-            printf("nonz peggy\n");
+            //printf("nonz peggy\n");
             PAX_idle(PEGS,peggyflag,3);
             if ( time(NULL) > PEGS->lastupdate+100 )
             {
@@ -732,6 +762,7 @@ void exchanges777_loop(void *ptr)
                 PEGS->lastupdate = (uint32_t)time(NULL);
             }
         }
+#endif
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
@@ -891,9 +922,15 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
 {
     struct exchange_request *req; int32_t polarity;
     if ( exchange->issue.supports == 0 )
+    {
+        printf("%s doesnt have supports func\n",exchange->name);
         return(clonestr("{\"error\":\"no supports function\"}"));
+    }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
+    {
+        //printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
+    }
     if ( depth <= 0 )
         depth = 1;
     req = calloc(1,sizeof(*req) + sizeof(*req->bidasks)*depth*2);
@@ -913,11 +950,14 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     if ( (req->commission= commission) == 0. )
         req->commission = exchange->commission;
     if ( monitor == 0 )
+    {
+        printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
         return(exchanges777_submit(exchange,req,'Q',maxseconds));
+    }
     else
     {
         req->func = 'M';
-        printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
+        //printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
         queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
@@ -1097,6 +1137,12 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             }
         free_json(argjson);
     }
+}
+
+cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base,char *rel,int32_t period,uint32_t start,uint32_t end)
+{
+    cJSON *array = cJSON_CreateArray();
+    return(array);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -1293,5 +1339,136 @@ STRING_ARG(InstantDEX,allpairs,exchange)
     if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 && ptr->issue.allpairs != 0 )
         return((*ptr->issue.allpairs)(ptr,json));
     else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
+}
+
+TWO_STRINGS(iguana,rate,base,rel)
+{
+    cJSON *retjson,*tmpjson; char *retstr,baserel[128],_base[64],_rel[64]; double aveprice = 0.;
+    safecopy(_base,base,sizeof(_base));
+    safecopy(_rel,rel,sizeof(_rel));
+    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",_base,_rel,1)) != 0 )
+    {
+        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+        {
+            aveprice = jdouble(tmpjson,"aveprice");
+            retjson = cJSON_CreateObject();
+            sprintf(baserel,"%s/%s",_base,_rel);
+            jaddnum(retjson,baserel,aveprice);
+            jaddstr(retjson,"result","success");
+            free_json(tmpjson);
+            return(jprint(retjson,1));
+        } else return(clonestr("{\"error\":\"error parsing return from aveprice\"}"));
+    } else return(clonestr("{\"error\":\"null return from aveprice\"}"));
+}
+
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    if ( period <= 0 )
+        period = 60;
+    if ( end <= 0 )
+        end = (uint32_t)time(NULL);
+    if ( start <= 0 || start >= end )
+        start = end - 1024*period;
+    jaddstr(retjson,"base",base);
+    jaddstr(retjson,"rel",rel);
+    jaddstr(retjson,"exchange",exchange[0] != 0 ? exchange : "all");
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"start",start);
+    jaddnum(retjson,"end",end);
+    jaddnum(retjson,"period",period);
+    jadd(retjson,"prices",iguana_pricesarray(myinfo,exchange,base,rel,period,start,end));
+    return(jprint(retjson,1));
+}
+
+INT_AND_ARRAY(iguana,rates,unused,quotes)
+{
+    int32_t i,n,len,j,haveslash; char *retstr,*quote,base[64][64],rel[64][64],field[64]; double aveprice; cJSON *tmpjson,*item,*array=0,*retjson = cJSON_CreateObject();
+#ifdef INCLUDE_PAX
+    char *str; int32_t nonz;
+    if ( myinfo->PEGS != 0 && (str= peggy_emitprices(&nonz,myinfo->PEGS,(uint32_t)time(NULL),PEGGY_MAXLOCKDAYS)) != 0 )
+        free(str);
+#endif
+    if ( is_cJSON_Array(quotes) != 0 && (n= cJSON_GetArraySize(quotes)) > 0 )
+    {
+        if ( n > 64 )
+        {
+            jaddstr(retjson,"error","only 16 quotes at a time");
+            return(jprint(retjson,1));
+        }
+        memset(base,0,sizeof(base));
+        memset(rel,0,sizeof(rel));
+        for (i=0; i<n; i++)
+        {
+            if ( (quote= jstri(quotes,i)) != 0 )
+            {
+                len = (int32_t)strlen(quote);
+                if ( len >= 64 )
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","quote too long");
+                    return(jprint(retjson,1));
+                }
+                for (j=haveslash=0; j<len; j++)
+                {
+                    if ( quote[j] == '/' )
+                    {
+                        haveslash = 1;
+                        if ( j > 0 && j < len-1 )
+                        {
+                            memcpy(base[i],quote,j);
+                            base[i][j] = 0;
+                            j++;
+                            strcpy(rel[i],&quote[j]);
+                            break;
+                        }
+                        else
+                        {
+                            if ( array != 0 )
+                                free_json(array);
+                            jaddstr(retjson,"error","no base error in quote item");
+                            return(jprint(retjson,1));
+                        }
+                    }
+                }
+                if ( j < len || haveslash == 0 )
+                {
+                    if ( haveslash == 0 )
+                        strcpy(base[i],quote);
+                    aveprice = 0.;
+                    if ( (retstr= tradebot_aveprice(myinfo,coin,json,remoteaddr,"",base[i],rel[i],1)) != 0 )
+                    {
+                        if ( (tmpjson= cJSON_Parse(retstr)) != 0 )
+                        {
+                            aveprice = jdouble(tmpjson,"aveprice");
+                            //printf("(%s) ",jprint(tmpjson,0));
+                            free_json(tmpjson);
+                        } else printf("error parsing.(%s)\n",retstr);
+                        if ( haveslash == 0 )
+                            strcpy(field,base[i]);
+                        else sprintf(field,"%s/%s",base[i],rel[i]);
+                        item = cJSON_CreateObject();
+                        jaddnum(item,field,aveprice);
+                        if ( array == 0 )
+                            array = cJSON_CreateArray();
+                        jaddi(array,item);
+                        free(retstr);
+                        //printf(" <- aveprice %f\n",aveprice);
+                    } else printf("no return from aveprice\n");
+                }
+                else
+                {
+                    if ( array != 0 )
+                        free_json(array);
+                    jaddstr(retjson,"error","syntax error in quote item");
+                    return(jprint(retjson,1));
+                }
+            } else printf("i.%d of %d null quote\n",i,n);
+        }
+        jaddstr(retjson,"result","success");
+        jadd(retjson,"rates",array);
+    } else jaddstr(retjson,"error","no quotes array");
+    return(jprint(retjson,1));
 }
 #include "../includes/iguana_apiundefs.h"

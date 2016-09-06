@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"6590e46b4f16cdca3a0516d84fd5ca29b24fa6a04006a9243d080daa1fc5b285\",\"addrtype\":\"\"}"
