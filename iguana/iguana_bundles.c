@@ -638,6 +638,8 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         lag = 60;
     else if ( lag < 30 )
         lag = 30;
+    if ( strcmp(coin->symbol,"BTC") != 0 )
+        lag /= 10;
     if ( (num= coin->peers->numranked) == 0 )
         iguana_updatemetrics(myinfo,coin);
     if ( (num= coin->peers->numranked) != 0 )
@@ -653,7 +655,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
         {
-            if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 )
+            if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 && block->mainchain != 0 )
                 continue;
             //if ( GETBIT(bp->haveblock,i) != 0 )
             //    continue;
@@ -666,7 +668,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
                 {
-                     if ( 0 && (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
+                     if ( 1 && (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 )
                     {
                         if ( 0 && bp == coin->current )
                             printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
@@ -684,7 +686,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                 } //else printf("[z%d] ",i);
             } //else printf("%d ",now - (bp->issued[i]+lag));
         }
-        if ( firsti >= 0 && bp == coin->current )
+        if ( firsti >= 0 )//&& bp == coin->current )
         {
             //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
@@ -861,7 +863,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
 
 int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
-    int32_t i,dist,counter=0; char str[64];
+    int32_t i,dist,counter=0; char str[65];
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);

@@ -48,7 +48,7 @@ uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t d
             break;
     }
     iguana_rwnum(0,(void *)hash.uints,sizeof(basilisktag),&basilisktag);
-    iguana_rwnum(1,&data[-sizeof(basilisktag)],sizeof(basilisktag),&basilisktag);
+    iguana_rwnum(1,&data[-(int32_t)sizeof(basilisktag)],sizeof(basilisktag),&basilisktag);
     char str[65],str2[65]; printf("found hash after numiters.%d %s vs %s basilisktag.%u\n",numiters,bits256_str(str,threshold),bits256_str(str2,hash2),basilisktag);
     return(basilisktag);
 }
@@ -95,7 +95,7 @@ uint8_t *get_dataptr(int32_t hdroffset,uint8_t **ptrp,int32_t *datalenp,uint8_t 
 
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag)
 {
-    char *sendstr,*hexstr=0; uint8_t *data,hexspace[4096],*allocptr=0,*hexdata; int32_t datalen,hexlen=0;
+    char *sendstr,*hexstr=0; uint8_t *data,hexspace[4096],*allocptr=0,*hexdata=0; int32_t datalen,hexlen=0;
     if ( jobj(sendjson,"symbol") == 0 )
         jaddstr(sendjson,"symbol",symbol);
     if ( (hexstr= jstr(sendjson,"data")) != 0 )
@@ -118,7 +118,7 @@ uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int
     memcpy(data,sendstr,datalen);
     //printf("jsondata.(%s) + hexlen.%d\n",sendstr,hexlen);
     free(sendstr);
-    if ( hexlen > 0 )
+    if ( hexlen > 0 && hexdata != 0 )
     {
         //int32_t i; for (i=0; i<hexlen; i++)
         //    printf("%02x",hexdata[i]);
@@ -172,13 +172,13 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         }
     }
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
-    iguana_rwnum(1,&data[-sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
+    iguana_rwnum(1,&data[-(int32_t)sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
     if ( *basilisktagp == 0 )
     {
         if ( nBits != 0 )
             *basilisktagp = basilisk_calcnonce(myinfo,data,datalen,nBits);
         else *basilisktagp = rand();
-        iguana_rwnum(1,&data[-sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
+        iguana_rwnum(1,&data[-(int32_t)sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
     }
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
@@ -237,7 +237,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         memset(privkey.bytes,0,sizeof(privkey));
                         if ( (cipher= SuperNET_ciphercalc(&ptr,&cipherlen,&privkey,&addr->pubkey,data,datalen,space,sizeof(space))) != 0 )
                         {
-                            if ( (val= iguana_queue_send(addr,delaymillis,&cipher[-sizeof(struct iguana_msghdr)],cmd,cipherlen)) >= cipherlen )
+                            if ( (val= iguana_queue_send(addr,delaymillis,&cipher[-(int32_t)sizeof(struct iguana_msghdr)],cmd,cipherlen)) >= cipherlen )
                                 alreadysent[n++] = (uint32_t)addr->ipbits;
                             if ( ptr != 0 )
                                 free(ptr);
@@ -246,7 +246,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     else
                     {
                         cmd[6] = 'E', cmd[7] = 'T';
-                        if ( (val= iguana_queue_send(addr,delaymillis,&data[-sizeof(struct iguana_msghdr)],cmd,datalen)) >= datalen )
+                        if ( (val= iguana_queue_send(addr,delaymillis,&data[-(int32_t)sizeof(struct iguana_msghdr)],cmd,datalen)) >= datalen )
                         {
                             alreadysent[n++] = (uint32_t)addr->ipbits;
                             if ( n >= IGUANA_MAXPEERS*IGUANA_MAXCOINS )

@@ -16,11 +16,19 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+#if defined(_WIN32) || defined(_WIN64)
+#define WIN32
+#endif
+
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
 #define WIN32
+#endif
+
+#ifdef WIN32
 #define __MINGW
-#define _CRT_SECURE_NO_WARNINGS
+
+
 #else
 #ifndef __MINGW
 #include <arpa/inet.h>
@@ -43,11 +51,7 @@ struct exchange_info;
 #include "../includes/iguana_defines.h"
 #include "../includes/iguana_types.h"
 #include "../includes/iguana_structs.h"
-#include "../includes/iguana_funcs.h"
-#include "../includes/iguana_globals.h"
 #include "../basilisk/basilisk.h"
-#include "../gecko/gecko.h"
-
 
 struct supernet_address
 {
@@ -88,5 +92,9 @@ struct supernet_info
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
 };
+
+#include "../includes/iguana_funcs.h"
+#include "../includes/iguana_globals.h"
+#include "../gecko/gecko.h"
 
 #endif

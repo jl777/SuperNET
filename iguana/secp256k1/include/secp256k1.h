@@ -5,6 +5,9 @@
 extern "C" {
 # endif
 
+#undef HAVE_BUILTIN_EXPECT
+#undef HAVE_BUILTIN_CLZLL
+
 #include <stddef.h>
 
 /* These rules specify the order of arguments in API calls:

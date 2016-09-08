@@ -36,7 +36,9 @@
 #include "../OSlibs/win/mman.h"
 #include "../OSlibs/win/pthread.h"
 
+#ifndef NATIVE_WINDOWS
 #define EADDRINUSE WSAEADDRINUSE
+#endif
 
 #else
 //#include <sys/poll.h>

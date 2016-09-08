@@ -902,7 +902,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
             free(txbytes);
             if ( txobj != 0 )
             {
-                iguana_txdetails(myinfo,coin,txobj,txid,-2,height);
+                iguana_txdetails(myinfo,coin,txobj,checktxid,-2,height);
                 return(jprint(txobj,1));
             }
         }

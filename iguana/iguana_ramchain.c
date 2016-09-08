@@ -163,6 +163,7 @@ int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr
 #define RAMCHAIN_DESTARG dest,destB,destT,destU,destS,destP,destA,destX,destUx,destSx,destTXbits,destPKbits,destKspace
 #define RAMCHAIN_DESTPTRS dest,&destB,&destT,&destU,&destS,&destP,&destA,&destX,&destUx,&destSx,&destTXbits,&destPKbits,&destKspace
 #define RAMCHAIN_DESTDECLARE struct iguana_blockRO *destB; struct iguana_txid *destT; struct iguana_unspent20 *destU; struct iguana_spend256 *destS; struct iguana_pkhash *destP; struct iguana_account *destA; bits256 *destX; struct iguana_unspent *destUx; struct iguana_spend *destSx; uint8_t *destTXbits,*destPKbits,*destKspace;
+#define RAMCHAIN_DESTZEROES destB = 0, destUx = 0, destSx = 0, destP = 0, destA = 0, destX = 0, destKspace = destTXbits = destPKbits = 0, destU = 0, destS = 0, destT = 0
 
 uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 txid,int32_t numvouts,int32_t numvins,uint32_t locktime,uint32_t version,uint32_t timestamp,int16_t bundlei)
 {
@@ -1374,7 +1375,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
 
 struct iguana_ramchain *_iguana_ramchain_map(struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded,uint8_t zcash)
 {
-    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr; char str[65],str2[65],dirstr[64]; struct iguana_block *block; struct iguana_zblockRO zRO; struct iguana_ramchaindata *rdata;
+    RAMCHAIN_DECLARE; int32_t valid,iter,i,checki,hdrsi; long filesize; void *ptr; char str[65],str2[65],dirstr[65]; struct iguana_block *block; struct iguana_zblockRO zRO; struct iguana_ramchaindata *rdata;
     /*if ( ramchain->expanded != 0 && (ramchain->sigsfileptr == 0 || ramchain->sigsfilesize == 0) )
     {
         sprintf(sigsfname,"sigs/%s/%s",coin->symbol,bits256_str(str,hash2));
@@ -1630,7 +1631,7 @@ int32_t iguana_ramchain_cmp(struct iguana_ramchain *A,struct iguana_ramchain *B,
 
 int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *dest,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int16_t bundlei)
 {
-    RAMCHAIN_DECLARE; RAMCHAIN_DESTDECLARE;
+    RAMCHAIN_DECLARE; RAMCHAIN_DESTDECLARE; RAMCHAIN_DESTZEROES;
     int32_t j,hdrsi,prevout,scriptlen; uint32_t timestamp=0,unspentind,sequenceid,destspendind=0,desttxidind=0; uint16_t fileid; uint64_t scriptpos; int64_t crypto777_payment = 0;
     bits256 prevhash; uint64_t value; uint8_t type; struct iguana_unspent *u;
     struct iguana_txid *tx; struct iguana_ramchaindata *rdata; uint8_t rmd160[20];
@@ -2369,7 +2370,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
 
 int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_ramchain *ramchain,struct OS_memspace *mem,struct OS_memspace *hashmem,int32_t bundleheight,bits256 hash2)
 {
-    RAMCHAIN_DECLARE; RAMCHAIN_ZEROES; int32_t i,numblocks = coin->chain->bundlesize; uint32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t hashsize,allocsize;
+    RAMCHAIN_DECLARE; RAMCHAIN_ZEROES; int32_t i,numblocks = coin->chain->bundlesize; uint32_t numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata=0; int64_t hashsize,allocsize;
     //B = 0, Ux = 0, Sx = 0, P = 0, A = 0, X = 0, Kspace = TXbits = PKbits = 0, U = 0, S = 0, T = 0;
     mem->alignflag = sizeof(uint32_t);
     hashmem->alignflag = sizeof(uint32_t);

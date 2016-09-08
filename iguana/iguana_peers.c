@@ -361,10 +361,14 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     }
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
+#ifdef WIN32
+    saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
+#else
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
     expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
     if ( strcmp(ipaddr,checkipaddr) != 0 )
         printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
+#endif
     if ( (sock= socket(AF_INET,SOCK_STREAM,0)) < 0 )
     {
         if ( errno != ETIMEDOUT )
@@ -716,7 +720,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    //printf("startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    printf(">>>>>>>> startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
         port = coin->chain->portp2p;
@@ -725,7 +729,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || (coin->peers != 0 && coin->peers->shuttingdown != 0) )
     {
         strcpy(ipaddr,addr->ipaddr);
-        //printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else

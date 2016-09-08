@@ -81,7 +81,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 x |= (*ptr & masks[modval]) >> modval;
             }
             if ( x != 0 )
-                printf("%s ",bits256_str(str,*(bits256 *)(refdata + x*refsize))), n++;
+                printf("%s ",bits256_str(str,*(bits256 *)((long)refdata + x*refsize))), n++;
         }
         printf("tableentries.%d\n",n);
     }

@@ -652,6 +652,8 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         }
         if ( rwflag != 0 )
         {
+            memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now
+            memset(joinsplitsig,0,sizeof(joinsplitsig)); // set to actuals
             memcpy(&serialized[len],joinsplitpubkey,33), len += 33;
             memcpy(&serialized[len],joinsplitsig,64), len += 64;
         }

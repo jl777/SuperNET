@@ -164,7 +164,7 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 coin->peers->topmetrics[i] = sortbuf[i*2];
                 ind = (int32_t)sortbuf[i*2 +1];
-                coin->peers->ranked[i] = &coin->peers->active[ind];
+                coin->peers->ranked[i] = addr = &coin->peers->active[ind];
                 if ( sortbuf[i*2] > SMALLVAL && (double)i/n > .8 && (time(NULL) - addr->ready) > 77 )
                     slowest = coin->peers->ranked[i];
                 //printf("(%.5f %s) ",sortbuf[i*2],coin->peers->ranked[i]->ipaddr);
@@ -691,7 +691,7 @@ void iguana_helper(void *arg)
                         allcurrent = 0;
                     //printf("h.%d [%d] bundleQ size.%d lag.%ld\n",helperid,bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                     coin->numbundlesQ--;
-                    if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) > bp->nexttime) && coin->active != 0 )
+                    if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) >= bp->nexttime) && coin->active != 0 )
                     {
                         flag += iguana_bundleiters(myinfo,ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     }
@@ -957,7 +957,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )

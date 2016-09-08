@@ -112,11 +112,11 @@ extern int32_t IGUANA_NUMHELPERS;
 #define PNACL_message printf
 #endif
 
+#ifndef WIN32
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
 #endif
-
-#if defined(_WIN32) || defined(_WIN64)
+#else
 #define MSG_NOSIGNAL	0
 #endif
 

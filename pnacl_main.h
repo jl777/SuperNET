@@ -6,13 +6,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
 #ifdef _WIN32
 #include "OSlibs/win/pthread.h"
 #include <windows.h>
 //static inline void sleep(unsigned ms) { Sleep(ms*1000); }
 
 #else
+#include <unistd.h>
 #include <pthread.h>
 #endif
 

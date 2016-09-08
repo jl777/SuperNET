@@ -38,7 +38,7 @@ static inline void fdifference_backwards(uint64_t *out,const uint64_t *in)
         out[i] = in[i] + two54m8 - out[i];
 }
 
-inline void store_limb(uint8_t *out,uint64_t in)
+void store_limb(uint8_t *out,uint64_t in)
 {
     int32_t i;
     for (i=0; i<8; i++,in>>=8)
@@ -119,7 +119,7 @@ bits320 fmul(const bits320 in2,const bits320 in)
     return(out);
 }
 
-inline bits320 fsquare_times(const bits320 in,uint64_t count)
+bits320 fsquare_times(const bits320 in,uint64_t count)
 {
     uint128_t t[5]; uint64_t r0,r1,r2,r3,r4,c,d0,d1,d2,d4,d419; bits320 out;
     r0 = in.ulongs[0], r1 = in.ulongs[1], r2 = in.ulongs[2], r3 = in.ulongs[3], r4 = in.ulongs[4];

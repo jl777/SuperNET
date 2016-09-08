@@ -423,7 +423,7 @@ int32_t iguana_blockunmain(struct iguana_info *coin,struct iguana_block *block)
 
 int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
 {
-    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block;
+    char str[65]; int32_t height,hdrsi,bundlei,n = 0; struct iguana_bundle *bp; struct iguana_block *block=0;
     height = coin->blocks.hwmchain.height;
     while ( 1 ) //(block= iguana_blockfind("main",coin,iguana_blockhash(coin,height))) != 0 )
     {

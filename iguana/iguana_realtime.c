@@ -1127,7 +1127,7 @@ int32_t iguana_RTblocksub(struct supernet_info *myinfo,struct iguana_info *coin,
 
 void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block)
 {
-    int32_t i,n,height,hdrsi,bundlei; struct iguana_block *addblock,*subblock; struct iguana_bundle *bp;
+    int32_t i,n,height,hdrsi,bundlei; struct iguana_block *addblock=0,*subblock=0; struct iguana_bundle *bp;
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
     {
         if ( coin->firstRTheight > 0 )

@@ -382,7 +382,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    int32_t i,height,vout,numsent; struct basilisk_item *ptr; char coinaddr[64],str[64]; struct basilisk_value *v; uint64_t value = 0; bits256 txid; struct iguana_outpoint outpt;
+    int32_t i,height,vout,numsent; struct basilisk_item *ptr; char coinaddr[64],str[65]; struct basilisk_value *v; uint64_t value = 0; bits256 txid; struct iguana_outpoint outpt;
     if ( RELAYID >= 0 )
         return(0);
     txid = jbits256(valsobj,"txid");

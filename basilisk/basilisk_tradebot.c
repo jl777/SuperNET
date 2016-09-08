@@ -229,6 +229,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
 double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
     cJSON *array,*item; int32_t i,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
+    memset(&refR,0,sizeof(refR));
     if ( (array= jarray(&n,retjson,"result")) != 0 )
     {
         for (i=nonz=m=0; i<n; i++)
@@ -244,7 +245,11 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                     else
                     {
                         if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
-                            *issueR = tmpR, hwm = metric;
+                        {
+                            *issueR = tmpR;
+                            hwm = metric;
+                            refR = tmpR;
+                        }
                         m = 0;
                     }
                 }

@@ -287,7 +287,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
 {
     static uint8_t zero_rmd160[20];
-    char hexstr[8192]; uint8_t sha256[32],*script,type; int32_t i,n,m,plen;
+    char hexstr[8192]; uint8_t *script,type; int32_t i,n,m,plen;
     vp->N = 1;
     vp->M = 1;
     type = IGUANA_SCRIPT_STRANGE;
@@ -301,7 +301,6 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             //vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
             //calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
             init_hexbytes_noT(hexstr,zero_rmd160,20);
-            char str[65]; printf("iguana_calcrmd160 zero len %s -> %s\n",bits256_str(str,*(bits256 *)sha256),hexstr);
         }
         memcpy(vp->rmd160,zero_rmd160,sizeof(zero_rmd160));
         return(IGUANA_SCRIPT_NULL);

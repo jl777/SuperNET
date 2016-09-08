@@ -56,7 +56,7 @@ struct tm *gmtime_r(const time_t *timep,struct tm *result)
 /*typedef struct timeval {
     long tv_sec;
     long tv_usec;
-} timeval;
+} timeval;*/
 
 int gettimeofday(struct timeval * tp, struct timezone * tzp)
 {
@@ -75,7 +75,7 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
     tp->tv_sec  = (long) ((time - EPOCH) / 10000000L);
     tp->tv_usec = (long) (system_time.wMilliseconds * 1000);
     return 0;
-}*/
+}
 #endif
 
 double OS_portable_milliseconds()
@@ -536,7 +536,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
         }
         return(0);
     }
-    else
+    /*else
     {
 #ifdef __PNACL
         return(0);
@@ -547,7 +547,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
         t.tm_hour = hour, t.tm_min = minute, t.tm_sec = second;
         return((uint32_t)timegm(&t));
 #endif
-    }
+    }*/
 }
 
 int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // gmtime -> datenum + number of seconds

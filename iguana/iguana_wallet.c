@@ -264,7 +264,7 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
 
 uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp)
 {
-    int32_t iter,n,m; struct iguana_waccount *acct,*tmp; uint8_t *pubkeys,*addrtypes,*rmdarray = 0; struct iguana_waddress *waddr,*tmp2;
+    int32_t iter,n,m; struct iguana_waccount *acct,*tmp; uint8_t *pubkeys=0,*addrtypes=0,*rmdarray = 0; struct iguana_waddress *waddr,*tmp2;
     for (iter=n=m=0; iter<2; iter++)
     {
         HASH_ITER(hh,myinfo->wallet,acct,tmp)
@@ -273,7 +273,7 @@ uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( iter == 0 )
                     n++;
-                else if ( m < n )
+                else if ( addrtypes != 0 && pubkeys != 0 && m < n )
                 {
                     addrtypes[m] = waddr->addrtype;
                     memcpy(&rmdarray[m * 20],waddr->rmd160,20);
@@ -533,7 +533,7 @@ cJSON *iguana_payloadmerge(cJSON *loginjson,cJSON *importjson)
 
 cJSON *iguana_walletadd(struct supernet_info *myinfo,struct iguana_waddress **waddrp,struct iguana_info *coin,char *retstr,char *account,struct iguana_waddress *refwaddr,int32_t setcurrent,char *redeemScript)
 {
-    cJSON *retjson=0; struct iguana_waccount *wacct; struct iguana_waddress *waddr;
+    cJSON *retjson=0; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0;
     if ( (wacct= iguana_waccountfind(myinfo,account)) == 0 )
         wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
@@ -614,7 +614,7 @@ char *iguana_walletfields(struct iguana_info *coin,int32_t *p2shflagp,char *wifs
 
 int32_t iguana_walletemit(struct supernet_info *myinfo,char *fname,struct iguana_info *coin,cJSON *array)
 {
-    cJSON *item,*child; char str[64],wifstr[128],*account,coinaddr[64],*privstr; int32_t i,n,p2shflag; FILE *fp;
+    cJSON *item,*child; char str[65],wifstr[128],*account,coinaddr[64],*privstr; int32_t i,n,p2shflag; FILE *fp;
     if ( (fp= fopen(fname,"wb")) == 0 )
         return(-1);
     n = cJSON_GetArraySize(array);

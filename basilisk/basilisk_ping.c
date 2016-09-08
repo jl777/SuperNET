@@ -231,6 +231,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     //len += basilisk_ping_processvirts(myinfo,btcd,addr,&data[len],datalen - len);
     for (i=0; i<numrelays; i++)
     {
+        rp = &RELAYS[i];
         if ( len > datalen )
             break;
         if ( (n= basilisk_ping_processrelay(myinfo,&data[len],datalen-len,rp,i)) < 0 )
