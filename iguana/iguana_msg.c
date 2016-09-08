@@ -665,7 +665,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
     }
     *txidp = bits256_doublesha256(txidstr,txstart,len);
     msg->allocsize = len;
-    if ( coin->VALIDATENODE != 0 && rwflag == 0 && (coin->VALIDATENODE > 1 || coin->RTheight > 0)  )
+    if ( coin->VALIDATENODE > 1 && rwflag == 0 && coin->RTheight > 0  )
     {
         int32_t sigsvalid; struct iguana_block *block;
         if ( (block= iguana_blockfind("sig",coin,msg->txid)) != 0 && block->sigsvalid != 0 )
