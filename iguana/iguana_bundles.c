@@ -1028,7 +1028,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
     int32_t i; struct iguana_bundle *tmpbp;
     if ( coin->firstRTheight == 0 && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
     {
-        printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,netBLOCKS,(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
+        printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %ld:%02ld\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,queue_size(&coin->priorityQ),(time(NULL)-coin->startutc)/60,(time(NULL)-coin->startutc)%60);
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
@@ -1290,7 +1290,7 @@ int32_t iguana_bundlehash2_check(struct iguana_info *coin,bits256 hash2)
 
 void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,char *str,int32_t lag)
 {
-    int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2;
+    int32_t i,n,m,j,numv,numconverted,count,starti,lasti,pending,capacity,displag,numutxo,numbalances,numrecv,done,numhashes,numcached,numsaved,numemit; struct iguana_block *block; bits256 hash2; struct iguana_blockreq *breq; 
     int64_t spaceused=0,estsize = 0; struct iguana_bundle *currentbp,*lastbp,*bp,*lastpending = 0,*firstgap = 0; uint32_t now;
     if ( coin->bundlescount <= 0 )
         return;
@@ -1470,7 +1470,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
         }
         else if ( coin->stucktime != 0 )
         {
-            struct iguana_blockreq *breq; int32_t n,lag; //priority=3,
+            int32_t n,lag; //priority=3,
             lag = (int32_t)time(NULL) - coin->stucktime;
             //printf("NONZ stucktime.%u lag.%d iters.%d vs %d metric.%d\n",coin->stucktime,lag,coin->stuckiters,lag/coin->MAXSTUCKTIME,smetric);
             if ( (lag/coin->MAXSTUCKTIME) > coin->stuckiters )
@@ -1506,6 +1506,11 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     sprintf(str,"%s.RT%d u.%d+c.%d b.%d v.%d (%d+%d/%d 1st.%d).s%d to %d N[%d] h.%d r.%d c.%d s.%d d.%d E.%d maxB.%d peers.%d/%d Q.(%d %d) (L.%d %d:%d) M.%d %s ledger.%08llx supply %.8f sigs %u:%u",coin->symbol,coin->RTheight,numutxo,numconverted,numbalances,iguana_validated(coin),firstgap!=0?firstgap->numcached:-1,firstgap!=0?firstgap->numsaved:-1,firstgap!=0?firstgap->numhashes:-1,firstgap!=0?firstgap->hdrsi:-1,firstgap!=0?firstgap->numspec:-1,coin->lastpending!=0?coin->lastpending->hdrsi:0,count,numhashes,coin->blocksrecv,numcached,numsaved,done,numemit,coin->MAXBUNDLES,p,coin->MAXPEERS,queue_size(&coin->priorityQ),queue_size(&coin->blocksQ),coin->longestchain,coin->longestchain/coin->chain->bundlesize,coin->longestchain%coin->chain->bundlesize,coin->blocks.hwmchain.height,bits256_str(str5,coin->blocks.hwmchain.RO.hash2),(long long)coin->utxoaddrhash.txid,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits),coin->sigserrs,coin->sigsvalidated);
 //if( strcmp("BTC",coin->symbol) == 0 )
 //    printf("%s\n",str);
+    if ( queue_size(&coin->priorityQ) > 100000 )
+    {
+        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+            myfree(breq,sizeof(*breq));
+    }
     if ( coin->current != 0 && coin->current->hdrsi == coin->longestchain/coin->chain->bundlesize && numemit == coin->current->hdrsi && numutxo == coin->bundlescount-1 )
     {
         //printf("have all utxo, generate balances\n");
