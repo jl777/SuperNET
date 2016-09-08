@@ -668,7 +668,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
                 {
-                     if ( strcmp("BTC",coin->symbol) != 0 || (bp->issued[i] > 1 && now > bp->issued[i]+lag && (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0) )
+                     if ( (addr= coin->peers->ranked[rand() % max]) != 0 && addr->usock >= 0 && addr->dead == 0 ) //strcmp("BTC",coin->symbol) != 0 || (bp->issued[i] > 1 && now > bp->issued[i]+lag && 
                     {
                         if ( 0 && bp == coin->current )
                             printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
