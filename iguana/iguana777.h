@@ -19,6 +19,8 @@
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
 #define WIN32
+#define __MINGW
+#define _CRT_SECURE_NO_WARNINGS
 #else
 #ifndef __MINGW
 #include <arpa/inet.h>

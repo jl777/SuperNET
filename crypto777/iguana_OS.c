@@ -114,7 +114,7 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     item->allocsize = (uint32_t)allocsize;
     item->type = type;
     //portable_mutex_unlock(&MEMmutex);
-    return((void *)(long)item + sizeof(*item));
+    return((void *)((long)item + sizeof(*item)));
 }
 
 void *queueitem(char *str)
@@ -429,7 +429,7 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 #endif
     if ( (mem->used + size) <= mem->totalsize )
     {
-        ptr = (void *)(long)((long)(mem->ptr + mem->used));
+        ptr = (void *)(long)(((long)mem->ptr + mem->used));
         mem->used += size;
         if ( size*clearflag != 0 )
             memset(ptr,0,size);

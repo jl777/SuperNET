@@ -36,8 +36,8 @@ struct rmd160_vstate { uint64_t length; uint8_t buf[64]; uint32_t curlen, state[
 
 struct acct777_sig { bits256 sigbits,pubkey; uint64_t signer64bits; uint32_t timestamp,allocsize; };
 
-#undef force_inline
-#define force_inline __attribute__((always_inline))
+//#undef force_inline
+//#define force_inline __attribute__((always_inline))
 
 
 bits320 fmul(const bits320 in2,const bits320 in);

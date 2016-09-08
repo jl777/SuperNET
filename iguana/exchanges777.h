@@ -83,10 +83,10 @@ struct exchange_info
 
 struct instantdex_msghdr
 {
-    struct acct777_sig sig __attribute__((packed));
+    struct acct777_sig sig; // __attribute__((packed))
     char cmd[8];
     uint8_t serialized[];
-} __attribute__((packed));
+}; // __attribute__((packed))
 
 #define NXT_ASSETID ('N' + ((uint64_t)'X'<<8) + ((uint64_t)'T'<<16))    // 5527630
 #define INSTANTDEX_ACCT "4383817337783094122"
