@@ -1033,7 +1033,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
         {
             while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
                 myfree(breq,sizeof(*breq));
-            printf("cleared priorityQ\n");
+            //printf("cleared priorityQ\n");
         }
         if ( bp->emitfinish != 0 )
         {
@@ -1563,7 +1563,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     {
         while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
             myfree(breq,sizeof(*breq));
-        printf("cleared priorityQ\n");
+        //printf("cleared priorityQ\n");
     }
 }
 
