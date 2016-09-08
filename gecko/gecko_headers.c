@@ -28,7 +28,7 @@ int32_t basilisk_respond_geckogetheaders(struct supernet_info *myinfo,struct igu
             {
                 if ( block != 0 )
                 {
-                    if ( (n= iguana_headerget(virt,&serialized[len],maxsize-len,block)) > 0 )
+                    if ( (n= iguana_headerget(myinfo,virt,&serialized[len],maxsize-len,block)) > 0 )
                         len += n;
                 }
                 hash2 = iguana_blockhash(virt,height+i+1);
@@ -62,7 +62,7 @@ char *gecko_headersarrived(struct supernet_info *myinfo,struct iguana_info *virt
         prevhash2 = firsthash2;
         for (i=0; i<num; i++)
         {
-            if ( (n= iguana_rwblock(virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&msgB,datalen-len)) > 0 )
+            if ( (n= iguana_rwblock(myinfo,virt->symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&hash2,&data[len],&msgB,datalen-len)) > 0 )
             {
                 if ( bits256_cmp(msgB.H.prev_block,prevhash2) == 0 )
                 {

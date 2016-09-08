@@ -179,7 +179,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         virt->chain = calloc(1,sizeof(*virt->chain));
         virt->enableCACHE = 1;
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
-        iguana_chaininit(virt->chain,1,valsobj);
+        iguana_chaininit(myinfo,virt->chain,1,valsobj);
         virt->chain->isPoS = 1;
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )
@@ -212,7 +212,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
             if ( virt->blocks.hwmchain.height == 0 )
             {
                 memset(&txdata,0,sizeof(txdata));
-                if ( (n= iguana_gentxarray(virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen) || n == datalen-1 )
+                if ( (n= iguana_gentxarray(myinfo,virt,&virt->TXMEM,&txdata,&len,serialized,datalen) == datalen) || n == datalen-1 )
                 {
                     txdata.zblock.height = 0;
                     txdata.zblock.RO.allocsize = iguana_ROallocsize(virt);

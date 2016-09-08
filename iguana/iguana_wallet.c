@@ -78,7 +78,7 @@ struct iguana_waccount *iguana_waccountcreate(struct supernet_info *myinfo,char 
             wacct = mycalloc('w',1,sizeof(*wacct) + len);
             strcpy(wacct->account,account);
             HASH_ADD_KEYPTR(hh,myinfo->wallet,wacct->account,len,wacct);
-            printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
+            //printf("waccountcreate.(%s) -> wacct.%p\n",account,wacct);
             if ( (ptr= iguana_waccountfind(myinfo,account)) != wacct )
             {
                 printf("ERROR: iguana_waccountcreate verify error %p vs %p\n",ptr,wacct);
@@ -815,7 +815,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             }
             printf("persistent address not found in wallet, autoadd.(%s)\n",coinaddr);
         }
-        else if ( persistent_flag != 0 )
+        else if ( persistent_flag != 0 && 0 )
             printf("found persistent address in wallet\n");
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
@@ -825,9 +825,8 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
         *badp = bad;
     if ( iguana_waddresssearch(myinfo,&wacct,myinfo->myaddr.BTCD) != 0 )
     {
-        printf("found persistent address.(%s)\n",myinfo->myaddr.BTCD);
+        //printf("found persistent address.(%s)\n",myinfo->myaddr.BTCD);
     }
-
     return(array);
 }
 
@@ -1095,7 +1094,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddnum(retjson,"txfee",dstr(coin->txfee));
         if ( coin->bundlescount > 1 )
         {
-            jaddnum(retjson,"bundles",_max100(100. * (double)(iguana_emitfinished(coin,0))/(coin->longestchain/coin->chain->bundlesize)));
+            jaddnum(retjson,"bundles",_max100(100. * (double)(iguana_emitfinished(myinfo,coin,0))/(coin->longestchain/coin->chain->bundlesize)));
             jaddnum(retjson,"utxo",_max100(100. * (double)(iguana_utxofinished(coin))/(coin->longestchain/coin->chain->bundlesize)));
             jaddnum(retjson,"balances",_max100(100. * (double)(iguana_balancefinished(coin))/(coin->longestchain/coin->chain->bundlesize)));
             jaddnum(retjson,"validated",_max100(100. * (double)(iguana_validated(coin))/(coin->longestchain/coin->chain->bundlesize)));

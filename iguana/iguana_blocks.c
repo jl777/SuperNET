@@ -325,11 +325,11 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
     }
 }
 
-int32_t iguana_blockvalidate(struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
+int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
     *validp = 0;
-    iguana_serialize_block(coin->chain,&hash2,serialized,block);
+    iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     iguana_blocksizecheck("blockvalidate",coin->chain->zcash,block);
@@ -555,7 +555,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
         {
             //if ( memcmp(prev->RO.hash2.bytes,coin->blocks.hwmchain.RO.hash2.bytes,sizeof(bits256)) == 0 )
             //    prev->mainchain = 1;
-            if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(coin,&valid,prev,0) < 0)  )
+            if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(myinfo,coin,&valid,prev,0) < 0)  )
             {
                 char str[65];
                 if ( 0 && bits256_nonz(prev->RO.hash2) != 0 )
@@ -588,7 +588,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
             return(0);
         }
         //char str[65]; printf("extend? %s.h%d: %.15f vs %.15f ht.%d vs %d\n",bits256_str(str,block->RO.hash2),height,block->PoW,coin->blocks.hwmchain.PoW,height,coin->blocks.hwmchain.height);
-        if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
+        if ( iguana_blockvalidate(myinfo,coin,&valid,newblock,0) < 0 || valid == 0 )
             return(0);
         block->height = height;
         block->valid = 1;
@@ -706,7 +706,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
 int32_t iguana_chainextend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *newblock)
 {
     struct iguana_block *block,*prev; int32_t valid,oldhwm; char str[65];
-    if ( iguana_blockvalidate(coin,&valid,newblock,0) < 0 || valid == 0 )
+    if ( iguana_blockvalidate(myinfo,coin,&valid,newblock,0) < 0 || valid == 0 )
     {
         printf("chainextend: newblock.%s didnt validate\n",bits256_str(str,newblock->RO.hash2));
         return(-1);

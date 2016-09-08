@@ -229,7 +229,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
     struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd; struct iguana_outpoint outpt;
     memset(&msg,0,sizeof(msg));
     iguana_memreset(&virt->TXMEM);
-    txlen = iguana_rwtx(virt->chain->zcash,0,virt,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
+    txlen = iguana_rwtx(myinfo,virt->chain->zcash,0,virt,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
     vinstotal = voutstotal = 0;
     maxconf = virt->longestchain;
     minconf = virt->chain->minconfirms;

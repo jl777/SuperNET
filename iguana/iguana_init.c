@@ -108,7 +108,7 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
     hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
     auxback = coin->chain->auxpow, coin->chain->auxpow = 0;
-    iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,&msg,sizeof(buf));
+    iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,&msg,sizeof(buf));
     coin->chain->auxpow = auxback;
     if  ( coin->virtualchain == 0 && coin->MAXPEERS > 1 )
     {
@@ -210,7 +210,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
     return(retval);
 }
 
-int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1)
+int32_t iguana_bundleinitmap(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t height,bits256 hash2,bits256 hash1)
 {
     char str[65];  struct iguana_block *block;
     bp->bundleheight = height;
@@ -226,7 +226,7 @@ int32_t iguana_bundleinitmap(struct iguana_info *coin,struct iguana_bundle *bp,i
         coin->current = coin->bundles[0] = bp;
     if ( (block= iguana_blockfind("parse",coin,hash2)) != 0 )
         block->mainchain = 1, block->height = height;
-    if ( iguana_bundleload(coin,&bp->ramchain,bp,2) != 0 )
+    if ( iguana_bundleload(myinfo,coin,&bp->ramchain,bp,2) != 0 )
     {
         if ( coin->current != 0 && coin->current->hdrsi+1 == bp->hdrsi )
             coin->current = bp;
@@ -333,7 +333,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     {
                         //printf("created bundle.%d\n",bp->hdrsi);
                         memset(hash1.bytes,0,sizeof(hash1));
-                        iguana_bundleinitmap(coin,bp,height,hash2,hash1);
+                        iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1);
                         lastbundle = hash2;
                     }
                 }
@@ -362,7 +362,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             }
                             if ( height >= lastheight )
                             {
-                                if ( iguana_bundleinitmap(coin,bp,height,hash2,hash1) == 0 )
+                                if ( iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;
                             }
                         }

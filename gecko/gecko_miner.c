@@ -247,7 +247,7 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
             }
         }
         newblock->RO.nonce = *noncep;
-        n = iguana_serialize_block(virt->chain,&newblock->RO.hash2,serialized,newblock);
+        n = iguana_serialize_block(myinfo,virt->chain,&newblock->RO.hash2,serialized,newblock);
         while ( 1 && time(NULL) <= newblock->RO.timestamp + GECKO_MAXFUTUREBLOCK )
         {
             //printf("wait for block to be close enough to now: lag %ld\n",time(NULL) - newblock->RO.timestamp);

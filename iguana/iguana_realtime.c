@@ -1056,7 +1056,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
     //extern int32_t debugtest;
     //debugtest = 1;
     //fprintf(stderr,"T");
-    if ( (n= iguana_gentxarray(coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
+    if ( (n= iguana_gentxarray(myinfo,coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
     {
         //fprintf(stderr,"R");
         iguana_RTramchaindata(myinfo,coin,&coin->RTmem,&coin->RThashmem,polarity,block,coin->RTrawmem.ptr,numtx);

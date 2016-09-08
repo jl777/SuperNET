@@ -566,7 +566,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
     return(len);
 }
 
-void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len,int32_t fromcache)
+void iguana_parsebuf(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len,int32_t fromcache)
 {
     struct iguana_msghdr checkH;
     memset(&checkH,0,sizeof(checkH));
@@ -582,7 +582,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
                 iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
             //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
         }
-        if ( iguana_msgparser(coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len,fromcache) < 0 || addr->dead != 0 )
+        if ( iguana_msgparser(myinfo,coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len,fromcache) < 0 || addr->dead != 0 )
         {
             printf("%p addr->dead.%d or parser break at %u\n",&addr->dead,addr->dead,(uint32_t)time(NULL));
             addr->dead = (uint32_t)time(NULL);
@@ -604,7 +604,7 @@ void iguana_parsebuf(struct iguana_info *coin,struct iguana_peer *addr,struct ig
     }
 }
 
-void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_peer *addr,uint8_t *_buf,int32_t maxlen)
+void _iguana_processmsg(struct supernet_info *myinfo,struct iguana_info *coin,int32_t usock,struct iguana_peer *addr,uint8_t *_buf,int32_t maxlen)
 {
     int32_t len,recvlen; void *buf = _buf; struct iguana_msghdr H;
     if ( (coin->peers != 0 && coin->peers->shuttingdown != 0) || addr->dead != 0 )
@@ -638,7 +638,7 @@ void _iguana_processmsg(struct iguana_info *coin,int32_t usock,struct iguana_pee
                     return;
                 }
             }
-            iguana_parsebuf(coin,addr,&H,buf,len,0);
+            iguana_parsebuf(myinfo,coin,addr,&H,buf,len,0);
             if ( buf != _buf )
                 myfree(buf,len);
             return;
@@ -950,7 +950,7 @@ void iguana_processmsg(void *ptr)
         printf("iguana_processmsg cant find addr.%p symbol.%s\n",addr,addr!=0?addr->symbol:0);
         return;
     }
-    _iguana_processmsg(coin,addr->usock,addr,buf,sizeof(buf));
+    _iguana_processmsg(SuperNET_MYINFO(0),coin,addr->usock,addr,buf,sizeof(buf));
     addr->startrecv = 0;
 }
 
@@ -981,7 +981,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     return(0);
 }
 
-int32_t iguana_pollrecv(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *buf,int32_t bufsize)
+int32_t iguana_pollrecv(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint8_t *buf,int32_t bufsize)
 {
 #ifndef IGUANA_DEDICATED_THREADS
     strcpy(addr->symbol,coin->symbol);
@@ -992,7 +992,7 @@ int32_t iguana_pollrecv(struct iguana_info *coin,struct iguana_peer *addr,uint8_
     }
     else
 #endif
-        _iguana_processmsg(coin,addr->usock,addr,buf,bufsize);
+        _iguana_processmsg(myinfo,coin,addr->usock,addr,buf,bufsize);
     return(1);
 }
 
@@ -1202,7 +1202,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
             if ( req->datalen != 0 )
             {
                 //char str[65]; printf("CACHE.%p parse[%d] %s %s\n",req,req->recvlen,req->H.command,bits256_str(str,req->zblock.RO.hash2));
-                iguana_parsebuf(coin,addr,&req->H,req->serializeddata,req->recvlen,1);
+                iguana_parsebuf(myinfo,coin,addr,&req->H,req->serializeddata,req->recvlen,1);
             } else printf("CACHE error no datalen\n");
             coin->cachefreed++;
             myfree(req,req->allocsize);
@@ -1225,7 +1225,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             if ( (fds.revents & POLLIN) != 0 )
             {
-                flag += iguana_pollrecv(coin,addr,buf,bufsize);
+                flag += iguana_pollrecv(myinfo,coin,addr,buf,bufsize);
                 if ( addr->dead != 0 )
                 {
                     printf("%s is dead\n",addr->ipaddr);

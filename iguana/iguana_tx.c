@@ -196,11 +196,6 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
             iguana_vinset(coin,space,height,&vin,tx,i);
         else vin = vins[i];
         len += iguana_rwvin(rwflag,coin,0,&serialized[len],&vin,i);
-        if ( validatesigs != 0 && iguana_validatesigs(coin,&vin,i) < 0 )
-        {
-            char str[65]; printf("error %s validating vin.%d ht.%d\n",bits256_str(str,tx->txid),i,height);
-            //return(0);
-        }
     }
     if ( len > maxlen )
     {
@@ -234,7 +229,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     return(len);
 }
 
-int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
+int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
     struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
@@ -249,7 +244,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
         {
             iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);
             msgB.txn_count = block->RO.txn_count;
-            total = iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB,max);
+            total = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB,max);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 //static int counter;
@@ -320,7 +315,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
                                 for (i=0; i<16; i++)
                                     printf("%02x",blockspace[i + sizeof(struct iguana_msghdr)+81]);
                                 printf(" txhdr\n");
-                                if ( (checklen= iguana_gentxarray(coin,&RAWMEM,&txdata,&checklen,&blockspace[sizeof(struct iguana_msghdr)],total)) != total && checklen != total-1 )
+                                if ( (checklen= iguana_gentxarray(myinfo,coin,&RAWMEM,&txdata,&checklen,&blockspace[sizeof(struct iguana_msghdr)],total)) != total && checklen != total-1 )
                                     printf("Error reconstructing txarray checklen.%d total.%d\n",checklen,total);
                             }
                             return(iguana_queue_send(addr,0,blockspace,"block",total));
@@ -346,7 +341,7 @@ int32_t iguana_peerblockrequest(struct iguana_info *coin,uint8_t *blockspace,int
     return(-1);
 }
 
-cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
+cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
 {
     char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg;
     bits256 hash2,nexthash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
@@ -396,7 +391,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
             msg.zH.solution[i] = block->zRO[0].solution[i];
     } else msg.H.nonce = block->RO.nonce;
     msg.txn_count = 0;//block->RO.txn_count;
-    len = iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+    len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
     init_hexbytes_noT(hexstr,serialized,len);
     jaddstr(json,"blockheader",hexstr);
     if ( txidsflag != 0 )
@@ -410,7 +405,7 @@ cJSON *iguana_blockjson(struct iguana_info *coin,struct iguana_block *block,int3
         jadd(json,"tx",array);
         //printf("add txids[%d]\n",block->txn_count);
     }
-    if ( (size= iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,block->RO.hash2,0)) < 0 )
+    if ( (size= iguana_peerblockrequest(myinfo,coin,coin->blockspace,coin->blockspacesize,0,block->RO.hash2,0)) < 0 )
         jaddstr(json,"error","couldnt generate raw bytes for block");
     else jaddnum(json,"size",size);
     return(json);

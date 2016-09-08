@@ -2296,7 +2296,7 @@ int32_t iguana_ramchain_expandedsave(struct supernet_info *myinfo,struct iguana_
     return(retval);
 }
 
-struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int32_t extraflag)
+struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp,int32_t extraflag)
 {
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
@@ -2352,7 +2352,7 @@ struct iguana_ramchain *iguana_bundleload(struct iguana_info *coin,struct iguana
         }
         //printf("mapped bundle.%d\n",bp->bundleheight);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
-        iguana_bundlecalcs(coin,bp,60);
+        iguana_bundlecalcs(myinfo,coin,bp,60);
     }
     else
     {
@@ -2567,7 +2567,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
         {
             if ( bits256_nonz(block->RO.prev_block) == 0 && i > 0 )
                 block->RO.prev_block = bp->hashes[i-1];
-            if ( (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(coin,&valid,block,1) < 0 )
+            if ( (bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0) || iguana_blockvalidate(myinfo,coin,&valid,block,1) < 0 )
             {
                 char str[65]; printf("null prevblock error at ht.%d patch.(%s)\n",bp->bundleheight+i,bits256_str(str,bp->hashes[i-1]));
                 iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
@@ -2629,7 +2629,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
     {
         //char dirname[1024];
         //printf("delete %d files hdrs.[%d] retval.%d bp_n.%d\n",num,bp->hdrsi,retval,bp_n);
-        if ( iguana_bundleload(coin,&newchain,bp,0) == 0 )
+        if ( iguana_bundleload(myinfo,coin,&newchain,bp,0) == 0 )
             retval = -1;
         else //if ( bp_n == bp->n && bp->n == coin->chain->bundlesize && bp->hdrsi < coin->bundlescount-3 )
         {

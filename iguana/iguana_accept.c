@@ -198,7 +198,7 @@ int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_in
             {
                 if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
                 {
-                    if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(coin,coin->blockspace,(int32_t)(coin->blockspacesize - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
+                    if ( (addr= msg->addr) != 0 && (len= iguana_peerblockrequest(myinfo,coin,coin->blockspace,(int32_t)(coin->blockspacesize - sizeof(struct iguana_msghdr)),0,msg->hash2,0)) > 0 )
                     {
                         //char str[65]; printf("msg Sendlen.%d block %s to %s\n",len,bits256_str(str,msg->hash2),addr->ipaddr);
                         iguana_queue_send(addr,0,coin->blockspace,"block",len);
@@ -288,11 +288,11 @@ int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits2
     return(len - sizeof(struct iguana_msghdr));
 }
 
-int32_t iguana_headerget(struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_block *block)
+int32_t iguana_headerget(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_block *block)
 {
     bits256 checkhash2; struct iguana_msgblock msgB; int32_t len = 0;
     iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,1);
-    if ( (len= iguana_rwblock(coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr)],&msgB,(int32_t)(maxsize-sizeof(struct iguana_msghdr)))) < 0 )
+    if ( (len= iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr)],&msgB,(int32_t)(maxsize-sizeof(struct iguana_msghdr)))) < 0 )
         return(-1);
     if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
     {
@@ -317,7 +317,7 @@ int32_t iguana_peerhdrrequest(struct supernet_info *myinfo,struct iguana_info *c
             {
                 if ( (block= bp->blocks[i]) != 0 )
                 {
-                    if ( (n= iguana_headerget(coin,&serialized[len],maxsize-len,block)) < 0 )
+                    if ( (n= iguana_headerget(myinfo,coin,&serialized[len],maxsize-len,block)) < 0 )
                     {
                         printf("%s error getting header ht.%d\n",coin->symbol,block->height);
                         continue;
@@ -350,7 +350,7 @@ int32_t iguana_peergetrequest(struct supernet_info *myinfo,struct iguana_info *c
             break;
         if ( flag == 0 )
         {
-            if ( getblock != 0 && iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,hash2,0) > 0 )
+            if ( getblock != 0 && iguana_peerblockrequest(myinfo,coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,hash2,0) > 0 )
                 flag = 1;
             else if ( getblock == 0 && iguana_peerhdrrequest(myinfo,coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,hash2) > 0 )
                 flag = 1;

@@ -793,7 +793,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
             if ( (bp= coin->bundles[i]) != 0 && bp->queued == 0 )
             {
                 //printf("%d ",i);
-                iguana_bundleQ(coin,bp,1000);
+                iguana_bundleQ(myinfo,coin,bp,1000);
             }
         }
         printf("iguana_bundlesQ %d to %d\n",coin->balanceswritten,coin->bundlescount);
@@ -1092,7 +1092,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
     return(converted);
 }
 
-int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
+int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
 {
     static int32_t totalerrs,totalvalidated;
     FILE *fp; char fname[1024]; uint8_t *blockspace; //uint32_t now = (uint32_t)time(NULL);
@@ -1127,7 +1127,7 @@ int32_t iguana_bundlevalidate(struct iguana_info *coin,struct iguana_bundle *bp,
             iguana_volatilesmap(coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
-                if ( (len= iguana_peerblockrequest(coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
+                if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;
                     iguana_blockunmark(coin,bp->blocks[i],bp,i,1);

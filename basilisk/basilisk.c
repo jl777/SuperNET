@@ -838,10 +838,10 @@ void basilisks_loop(void *arg)
         {
             if ( time(NULL) > coin->lastunspentsupdate+10 )
             {
-                //printf(">>>>>>>>>>>>> update\n");
+                //printf(">>>>>>>>>>>>> update %s\n",coin->symbol);
                 basilisk_unspents_update(myinfo,coin);
                 coin->lastunspentsupdate = (uint32_t)time(NULL);
-                //printf(">>>>>>>>>>>>> update finished\n");
+                //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
             }
         }
         if ( RELAYID < 0 && myinfo->expiration != 0 )
@@ -968,6 +968,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     jadd(retjson,"spends",spends);
     jaddstr(retjson,"coin",coin->symbol);
     jaddnum(retjson,"balance",dstr(total));
+    //printf("return history balance %s %.8f\n",coin->symbol,dstr(total));
     return(jprint(retjson,1));
 }
 

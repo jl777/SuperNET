@@ -72,7 +72,7 @@ STRING_ARG(iguana,validate,activecoin)
         for (i=total=validated=0; i<coin->bundlescount; i++)
             if ( (bp= coin->bundles[i]) != 0 )
             {
-                validated += iguana_bundlevalidate(coin,bp,1);
+                validated += iguana_bundlevalidate(myinfo,coin,bp,1);
                 total += bp->n;
             }
         retjson = cJSON_CreateObject();
@@ -138,10 +138,10 @@ HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
     if ( remoteonly == 0 && (block= iguana_blockfind("getblockRPC",coin,blockhash)) != 0 )
     {
         if ( verbose != 0 )
-            return(jprint(iguana_blockjson(coin,block,1),1));
+            return(jprint(iguana_blockjson(myinfo,coin,block,1),1));
         else
         {
-            if ( (len= iguana_peerblockrequest(coin,coin->blockspace,coin->blockspacesize,0,blockhash,0)) > 0 )
+            if ( (len= iguana_peerblockrequest(myinfo,coin,coin->blockspace,coin->blockspacesize,0,blockhash,0)) > 0 )
             {
                 datastr = malloc(len*2 + 1);
                 init_hexbytes_noT(datastr,coin->blockspace,len);
