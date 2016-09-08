@@ -663,7 +663,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
             if ( firsti < 0 )
                 firsti = i;
             lasti = i;
-            if ( bp->issued[i] > 1 && now > bp->issued[i]+lag )
+            if ( strcmp("BTC",coin->symbol) != 0 || (bp->issued[i] > 1 && now > bp->issued[i]+lag) )
             {
                 iguana_bundleblock(coin,&hash2,bp,i);
                 if ( bits256_nonz(hash2) != 0 )
