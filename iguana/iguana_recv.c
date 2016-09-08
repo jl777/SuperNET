@@ -650,7 +650,7 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
                         block->hh.prev = prev;
                     }
                     //if ( bp->hdrsi < coin->MAXBUNDLES )
-                    //    iguana_blockQ(coin,bp,i,blockhashes[i],0);
+                        iguana_blockQ(coin,bp,i,blockhashes[i],1);
                 } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
