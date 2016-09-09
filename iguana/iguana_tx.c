@@ -82,7 +82,7 @@ int32_t iguana_vinset(struct iguana_info *coin,uint8_t *scriptspace,int32_t heig
             {
                 iguana_vinsfname(coin,bp->ramchain.from_ro,fname,s->fileid);
                 if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->vinptrs[s->fileid],fname,s->scriptpos,s->scriptlen)) != s->scriptlen )
-                    printf("err.%d getting %d bytes from fileid.%llu[%d] %s for s%d\n",err,s->scriptlen,(long long)s->scriptpos,s->fileid,fname,spendind);
+                    printf("err.%d getting %d bytes from fileid.%u[%u] %s for s%d\n",err,(int32_t)s->scriptlen,(uint32_t)s->scriptpos,(uint32_t)s->fileid,fname,spendind);
             }
             vin->scriptlen = s->scriptlen;
             vin->vinscript = scriptspace;

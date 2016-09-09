@@ -16,7 +16,7 @@
 #ifndef H_IGUANASTRUCTS_H
 #define H_IGUANASTRUCTS_H
 
-#ifdef __WIN32
+#ifdef WIN32
 #define PACKEDSTRUCT
 #else
 #define PACKEDSTRUCT __attribute__((packed))

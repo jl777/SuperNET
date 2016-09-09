@@ -316,7 +316,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             if ( j < bp->n )
                             {
                                 if ( j != T[txidind].bundlei )
-                                    printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
+                                    printf("bundlei mismatch j.%d != %u\n",j,(uint32_t)T[txidind].bundlei);
                                 else
                                 {
                                     *heightp = bp->bundleheight + T[txidind].bundlei;
@@ -335,7 +335,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             return(tx);
                         }
                     }
-                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%d] %d %s vs %s\n",bp->hdrsi,T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
+                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%u] %d %s vs %s\n",bp->hdrsi,(uint32_t)T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
                     return(0);
                 }
             }

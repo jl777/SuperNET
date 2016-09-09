@@ -1,12 +1,14 @@
 #ifndef MINGW_H
 #define MINGW_H
 
+#define ssize_t __int32
 #include <io.h>
 
 #define _USE_W32_SOCKETS 1
 #include <windows.h>
 #include "pthread.h"
 
+#ifndef NATIVE_WINDOWS
 #define ENOTCONN        WSAENOTCONN
 #define EWOULDBLOCK     WSAEWOULDBLOCK
 #define ENOBUFS         WSAENOBUFS
@@ -18,7 +20,7 @@
 #define EISCONN         WSAEISCONN
 #define ECONNREFUSED    WSAECONNREFUSED
 #define EHOSTUNREACH    WSAEHOSTUNREACH
-
+#endif
 
 /* winsock doesn't feature poll(), so there is a version implemented
  * in terms of select() in mingw.c. The following definitions

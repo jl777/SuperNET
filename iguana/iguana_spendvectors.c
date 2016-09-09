@@ -294,7 +294,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
                 now = (uint32_t)time(NULL);
                 if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin )
                 {
-                    printf("spendvectors: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin);
+                    printf("spendvectors: txidind %u != %u nextT[txidind].firsttxidind || spendind %u != %u nextT[txidind].firstvin\n",txidind,(uint32_t)T[txidind].txidind,spendind,(uint32_t)T[txidind].firstvin);
                     myfree(ptr,sizeof(*ptr) * n);
                     return(-1);
                 }
@@ -496,7 +496,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
             now = (uint32_t)time(NULL);
             if ( txidind != T[txidind].txidind || spendind != T[txidind].firstvin || unspentind != T[txidind].firstvout )
             {
-                printf("balancegen: txidind %u != %u T[txidind].firsttxidind || spendind %u != %u T[txidind].firstvin errs.%d (%d %d)\n",txidind,T[txidind].txidind,spendind,T[txidind].firstvin,errs,unspentind,B[i].firstvout);
+                printf("balancegen: txidind %u != %u T[txidind].firsttxidind || spendind %u != %u T[txidind].firstvin errs.%d (%d %d)\n",txidind,(uint32_t)T[txidind].txidind,spendind,(uint32_t)T[txidind].firstvin,errs,unspentind,B[i].firstvout);
                 return(-1);
             }
             if ( 0 && bp == coin->current )

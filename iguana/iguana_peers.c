@@ -361,14 +361,14 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     }
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
-#ifdef WIN32
-    saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
-#else
+//#ifdef WIN32
+//   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
+//#else
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
     expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
     if ( strcmp(ipaddr,checkipaddr) != 0 )
         printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
-#endif
+//#endif
     if ( (sock= socket(AF_INET,SOCK_STREAM,0)) < 0 )
     {
         if ( errno != ETIMEDOUT )
@@ -378,6 +378,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     opt = 1;
     slen = sizeof(opt);
     //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+#ifndef WIN32
     if ( 1 )//&& bindflag != 0 )
     {
         if ( 1 )
@@ -393,6 +394,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     } else setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
 #ifdef __APPLE__
     setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
+#endif
 #endif
     if ( bindflag == 0 )
     {

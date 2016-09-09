@@ -1543,7 +1543,7 @@ void iguana_relays_init(struct supernet_info *myinfo)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; //cJSON *argjson = 0;
+    int32_t usessl = 0, ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo;
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -1556,13 +1556,17 @@ void iguana_main(void *arg)
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
-    //void test_mimblewimble(void *ctx);
-    //test_mimblewimble(myinfo->ctx);
-    if ( 0 )
+    if ( arg != 0 && strcmp((char *)arg,"OStests") == 0 )
+        do_OStests = 1;
+#ifdef IGUANA_OSTESTS
+    do_OStests = 1;
+#endif
+    if ( do_OStests != 0 )
     {
-        int32_t i; for (i=0; i<10; i++)
-            iguana_schnorr(myinfo);
-        getchar();
+        int32_t iguana_OStests();
+        int32_t retval = iguana_OStests();
+        printf("OStests retval %d\n",retval);
+        return;
     }
     myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");

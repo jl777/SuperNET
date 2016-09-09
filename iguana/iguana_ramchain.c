@@ -178,7 +178,7 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
     {
         if ( t->txidind != txidind || memcmp(t->txid.bytes,txid.bytes,sizeof(bits256)) != 0 || t->numvouts != numvouts || t->numvins != numvins || t->firstvout != ramchain->H.unspentind || t->firstvin != ramchain->H.spendind || t->locktime != locktime || t->version != version || t->timestamp != timestamp )
         {
-            printf("iguana_ramchain_addtxid.RO: addtxid mismatch (%d %d %d %d %d) vs. (%d %d %d %d %d)\n",t->txidind,t->numvouts,t->numvins,t->firstvout,t->firstvin,txidind,numvouts,numvins,ramchain->H.unspentind,ramchain->H.spendind);
+            printf("iguana_ramchain_addtxid.RO: addtxid mismatch (%u %d %d %u %u) vs. (%d %d %d %d %d)\n",(uint32_t)t->txidind,t->numvouts,t->numvins,(uint32_t)t->firstvout,(uint32_t)t->firstvin,txidind,numvouts,numvins,ramchain->H.unspentind,ramchain->H.spendind);
             //getchar();
             return(0);
         }
@@ -193,7 +193,7 @@ uint32_t iguana_ramchain_addtxid(struct iguana_info *coin,RAMCHAIN_FUNC,bits256 
         t->locktime = locktime, t->version = version, t->timestamp = timestamp;
         if ( t->txidind != txidind || t->firstvout != ramchain->H.unspentind || t->firstvin != ramchain->H.spendind || t->bundlei != bundlei )
         {
-            printf("addtxid error: t->txidind %u != %u txidind || t->firstvout %u != %u ramchain->H.unspentind || t->firstvin %u != %u ramchain->H.spendind || t->bundlei %u != %u bundlei\n",t->txidind,txidind,t->firstvout,ramchain->H.unspentind,t->firstvin,ramchain->H.spendind,t->bundlei,bundlei);
+            printf("addtxid error: t->txidind %u != %u txidind || t->firstvout %u != %u ramchain->H.unspentind || t->firstvin %u != %u ramchain->H.spendind || t->bundlei %u != %u bundlei\n",(uint32_t)t->txidind,txidind,(uint32_t)t->firstvout,ramchain->H.unspentind,(uint32_t)t->firstvin,ramchain->H.spendind,(uint32_t)t->bundlei,bundlei);
             return(0);
         }
         if ( ramchain->expanded != 0 && (rdata= ramchain->H.data) != 0 )
@@ -568,7 +568,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
     {
         if ( vinscriptlen != s->vinscriptlen || s->sequenceid != sequence || memcmp(s->prevhash2.bytes,prev_hash.bytes,sizeof(bits256)) != 0 || s->prevout != prev_vout ) //|| s->hdrsi != hdrsi
         {
-            char str[65],str2[65]; printf("check offset %llu (%d %d) addspend.%d v %d RO value mismatch sequenceid.%x seq.%x prev_vout(%d vs %d) %s vs %s\n",(long long)s->scriptpos,vinscriptlen,s->vinscriptlen,spendind,s->spendind,s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,s->prevhash2),bits256_str(str2,prev_hash));
+            char str[65],str2[65]; printf("check offset %llu (%d %d) addspend.%d v %d RO value mismatch sequenceid.%x seq.%x prev_vout(%d vs %d) %s vs %s\n",(long long)s->scriptpos,vinscriptlen,(int32_t)s->vinscriptlen,spendind,s->spendind,s->sequenceid,sequence,s->prevout,prev_vout,bits256_str(str,s->prevhash2),bits256_str(str2,prev_hash));
             //printf("check addspend.%d vs %d RO value mismatch (%d %d:%d) vs (%d %d:%d)\n",spendind,s->spendind,s->prevout,s->hdrsi,s->bundlei,prev_vout,hdrsi,bundlei);
             //exit(-1);
             return(0);
@@ -599,7 +599,7 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
         //else printf("spend256 scriptfpos.%d\n",s->scriptfpos);
         char str[65];
         if ( 0 && coin->virtualchain != 0 )
-            printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),(uint32_t)s->scriptpos,s->vinscriptlen);
+            printf("W.%p s.%d vout.%d/%d [%d] %s fpos.%u slen.%d\n",s,spendind,s->prevout,prev_vout,bp->hdrsi,bits256_str(str,prev_hash),(uint32_t)s->scriptpos,(int32_t)s->vinscriptlen);
     }
     return(spendind);
 }
@@ -1093,18 +1093,18 @@ int32_t iguana_ramchain_verify(struct iguana_info *coin,struct iguana_ramchain *
         t = &T[ramchain->H.txidind];
         if ( t->txidind != ramchain->H.txidind )
         {
-            printf("firsti.%d  t->txidind.%d != txidind.%d\n",rdata->firsti,t->txidind,ramchain->H.txidind);
+            printf("firsti.%d  t->txidind.%u != txidind.%u\n",rdata->firsti,(uint32_t)t->txidind,(uint32_t)ramchain->H.txidind);
             return(-1);
         }
         if ( t->firstvout != ramchain->H.unspentind )
         {
-            printf("%p txidind.%d firstvout.%d != unspentind.%d\n",t,ramchain->H.txidind,t->firstvout,ramchain->H.unspentind);
+            printf("%p txidind.%u firstvout.%u != unspentind.%u\n",t,(uint32_t)ramchain->H.txidind,(uint32_t)t->firstvout,(uint32_t)ramchain->H.unspentind);
             //exit(-1);
             return(-4);
         }
         if ( t->firstvin != ramchain->H.spendind )
         {
-            printf("t[%d] firstvin.%d vs spendind.%d\n",t->txidind,t->firstvin,ramchain->H.spendind);
+            printf("t[%u] firstvin.%u vs spendind.%d\n",(uint32_t)t->txidind,(uint32_t)t->firstvin,ramchain->H.spendind);
             return(-5);
         }
         if ( ramchain->expanded != 0 )
@@ -2039,7 +2039,7 @@ void iguana_ramchain_disp(struct iguana_ramchain *ramchain)
                 init_hexbytes_noT(str,U[unspentind].rmd160,20);
                 printf("(%.8f %s) ",dstr(U[unspentind].value),str);
             }
-            printf("txid.[%d] %s (%d:%d %d:%d)\n",txidind,bits256_str(str,tx->txid),tx->firstvout,tx->numvouts,tx->firstvin,tx->numvins);
+            printf("txid.[%d] %s (%u:%d %u:%d)\n",txidind,bits256_str(str,tx->txid),(uint32_t)tx->firstvout,tx->numvouts,(uint32_t)tx->firstvin,tx->numvins);
         }
     }
 }
@@ -2056,8 +2056,10 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
     if ( fname[0] != 0 )
     {
         OS_removefile(fname,0);
+#ifndef WIN32
         strcat(fname,".tmp");
         OS_removefile(fname,0);
+#endif
     }
 }
 
@@ -2143,12 +2145,14 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
     else
     {
         fclose(fp);
+#ifndef WIN32
         if ( renameflag != 0 )
         {
             sprintf(renamed,"%s.tmp",fname);
             OS_renamefile(fname,renamed);
             strcpy(fname,renamed);
         }
+#endif
         if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
         {
             printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
@@ -2700,7 +2704,7 @@ int32_t iguana_bundlemergeHT(struct supernet_info *myinfo,char *fname,struct igu
     {
         if ( iguana_ramchain_alloc(fname,coin,dest,mem,&HASHMEM,(A->H.data->numtxids+B->H.data->numtxids),(A->H.data->numunspents+B->H.data->numunspents),(A->H.data->numspends+B->H.data->numspends),(A->H.data->numpkinds+B->H.data->numpkinds),(A->H.data->numexternaltxids+B->H.data->numexternaltxids),A->H.data->scriptspace,A->height,A->numblocks + B->numblocks,coin->chain->zcash) < 0 )
         {
-            printf("depth.%d ht.%d fsize.%s ERROR alloc lag.%d elapsed.%ld\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
+            printf("depth.%d ht.%d fsize.%s ERROR alloc lag.%d elapsed.%d\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,(int32_t)(time(NULL)-now));
             iguana_mergefree(coin,mem,A,B,&HASHMEM,&HASHMEMA,&HASHMEMB);
             return(-1);
         }
@@ -2717,7 +2721,7 @@ int32_t iguana_bundlemergeHT(struct supernet_info *myinfo,char *fname,struct igu
         else if ( iguana_ramchain_expandedsave(myinfo,coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,0) == 0 )
         {
             printf("merging isnt setup to save the blockROs\n");
-            printf("depth.%d ht.%d fsize.%s MERGED %d[%d] and %d[%d] lag.%d elapsed.%ld bp.%d -> %d\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),A->height,A->numblocks,B->height,B->numblocks,now-starttime,time(NULL)-now,bp->bundleheight,nextbp->bundleheight);
+            printf("depth.%d ht.%d fsize.%s MERGED %d[%d] and %d[%d] lag.%d elapsed.%d bp.%d -> %d\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),A->height,A->numblocks,B->height,B->numblocks,now-starttime,(int32_t)(time(NULL)-now),bp->bundleheight,nextbp->bundleheight);
             iguana_mergefree(coin,mem,A,B,&HASHMEM,&HASHMEMA,&HASHMEMB);
             bp->mergefinish = 0;
             nextbp->mergefinish = (uint32_t)time(NULL);

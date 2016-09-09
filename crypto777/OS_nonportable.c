@@ -67,7 +67,7 @@ char *template;
 {
     static const char letters[]
     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    static gcc_uint64_t value;
+    static uint64_t value;
 #ifdef HAVE_GETTIMEOFDAY
     struct timeval tv;
 #endif
@@ -88,14 +88,14 @@ char *template;
 #ifdef HAVE_GETTIMEOFDAY
     /* Get some more or less random data.  */
     gettimeofday (&tv, NULL);
-    value += ((gcc_uint64_t) tv.tv_usec << 16) ^ tv.tv_sec ^ getpid ();
+    value += ((uint64_t) tv.tv_usec << 16) ^ tv.tv_sec ^ getpid ();
 #else
     value += getpid ();
 #endif
     
     for (count = 0; count < TMP_MAX; ++count)
     {
-        gcc_uint64_t v = value;
+        uint64_t v = value;
         int fd;
         
         /* Fill in the random bits.  */
@@ -575,10 +575,10 @@ char *OS_nonportable_path(char *str)
     return(str);
 }
 
-void *OS_nonportable_mapfile(char *fname,uint64_t *filesizep,int32_t enablewrite)
+void *OS_nonportable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 {
 	int32_t fd,rwflags,flags = MAP_FILE|MAP_SHARED;
-	uint64_t filesize;
+	long filesize;
     void *ptr = 0;
 	*filesizep = 0;
 	if ( enablewrite != 0 )
@@ -590,7 +590,7 @@ void *OS_nonportable_mapfile(char *fname,uint64_t *filesizep,int32_t enablewrite
         return(0);
 	}
     if ( *filesizep == 0 )
-        filesize = (uint64_t)lseek(fd,0,SEEK_END);
+        filesize = (long)lseek(fd,0,SEEK_END);
     else filesize = *filesizep;
  	rwflags = PROT_READ;
 	if ( enablewrite != 0 )
@@ -609,13 +609,18 @@ void *OS_nonportable_mapfile(char *fname,uint64_t *filesizep,int32_t enablewrite
 
 int32_t OS_nonportable_renamefile(char *fname,char *newfname)
 {
-    char cmdstr[1024],tmp[512];
+    char tmp[1024],tmp2[1024];
+    strcpy(tmp,fname), strcpy(tmp2,newfname);
+    OS_nonportable_path(tmp), OS_nonportable_path(tmp2);
+    return((MoveFile(tmp,tmp2) == 0) ? -1 : 0);
+}
+
+int32_t OS_nonportable_removefile(char *fname)
+{
+    char tmp[512];
     strcpy(tmp,fname);
-    OS_nonportable_path(tmp);
-    sprintf(cmdstr,"del %s",tmp);
-    if ( system(cmdstr) != 0 )
-        printf("error deleting file.(%s)\n",cmdstr);
-    else return(1);
+    OS_portable_path(tmp);
+    return((DeleteFile(tmp) == 0) ? -1 : 0);
 }
 
 int32_t  OS_nonportable_launch(char *args[])

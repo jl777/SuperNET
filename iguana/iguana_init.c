@@ -459,7 +459,7 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->started = 0;
     while ( coin->idletime == 0 && coin->emitbusy > 0 )
     {
-        printf("coinpurge.%s waiting for idle %lu emitbusy.%d\n",coin->symbol,time(NULL),coin->emitbusy);
+        printf("coinpurge.%s waiting for idle %u emitbusy.%d\n",coin->symbol,(uint32_t)time(NULL),coin->emitbusy);
         sleep(1);
     }
     coin->RTgenesis = 0;
