@@ -1060,7 +1060,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
                 //if ( strcmp("BTC",coin->symbol) != 0 )
                 coin->RTheight = coin->firstRTheight = 0;
                 //coin->spendvectorsaved = 0;
-                for (i=bp->hdrsi; i<coin->bundlescount; i++)
+                for (i=0; i<coin->bundlescount; i++)
                     if ( (tmpbp= coin->bundles[i]) != 0 )
                         tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;
 #ifdef __PNACL__
