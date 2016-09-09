@@ -1383,7 +1383,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             }
             else
             {
-                if ( firstgap == 0 && bp->queued == 0 )
+                if ( firstgap == 0 && bp->queued == 0 && bp->numsaved < bp->n )
                     iguana_bundleQ(myinfo,coin,bp,1000);
                 if ( firstgap == 0 && bp->numsaved < bp->n && bp->numcached < bp->n && (bp->ramchain.H.data == 0 || bp->hdrsi == coin->longestchain/coin->chain->bundlesize || iguana_bundleready(myinfo,coin,bp,bp->numsaved == bp->n) != bp->n) )
                 {
