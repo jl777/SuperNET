@@ -616,7 +616,13 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                     coin->spendvectorsaved = (uint32_t)time(NULL);
                     printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
                 }
-            } //else printf("only emit.%d vs %d\n",iguana_emitfinished(coin),n);
+            }
+            else
+            {
+                for (j=0; j<coin->bundlescount; j++)
+                    if ( (bp= coin->bundles[j]) != 0 && bp->queued == 0 && bp->startutxo == 0 )
+                        iguana_bundleQ(myinfo,coin,bp,0);
+            }
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
         {
