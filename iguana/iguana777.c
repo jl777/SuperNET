@@ -623,7 +623,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             else
             {
                 for (j=0; j<coin->bundlescount; j++)
-                    if ( (bp= coin->bundles[j]) != 0 && bp->ramchain.H.data == 0 )
+                    if ( (bp= coin->bundles[j]) != 0 && bp->ramchain.H.data == 0 && bp->queued == 0 )
                     {
                         if ( iguana_bundleready(myinfo,coin,bp,0) == bp->n )
                         {
@@ -631,7 +631,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                             if ( iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
                                 continue;
                         }
-                        printf("bundleQ.[%d]\n",j);
+                        //printf("bundleQ.[%d]\n",j);
                         iguana_bundleQ(myinfo,coin,bp,1000);
                     }
                 //coin->spendvectorsaved = 1;

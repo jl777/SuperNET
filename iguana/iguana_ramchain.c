@@ -2086,7 +2086,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
             bp->speculativecache[i] = 0;
         }
     }
-    if ( deletefile != 0 )
+    if ( deletefile != 0 && block != 0 )
         iguana_blockdelete(coin,block->RO.hash2,i);
 }
 
