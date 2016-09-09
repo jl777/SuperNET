@@ -242,6 +242,7 @@ void iguana_peerkill(struct iguana_info *coin);
 int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 void iguana_nameset(char name[64],char *symbol,cJSON *json);
 cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
+void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

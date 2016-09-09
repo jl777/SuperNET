@@ -49,7 +49,7 @@ uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t d
     }
     iguana_rwnum(0,(void *)hash.uints,sizeof(basilisktag),&basilisktag);
     iguana_rwnum(1,&data[-(int32_t)sizeof(basilisktag)],sizeof(basilisktag),&basilisktag);
-    char str[65],str2[65]; printf("found hash after numiters.%d %s vs %s basilisktag.%u\n",numiters,bits256_str(str,threshold),bits256_str(str2,hash2),basilisktag);
+    //char str[65],str2[65]; printf("found hash after numiters.%d %s vs %s basilisktag.%u\n",numiters,bits256_str(str,threshold),bits256_str(str2,hash2),basilisktag);
     return(basilisktag);
 }
 
@@ -704,7 +704,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( coin->FULLNODE != 0 || RELAYID >= 0 ) // iguana node
                 {
-                    //printf("services %s\n",type);
+                    printf("services %s\n",type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
