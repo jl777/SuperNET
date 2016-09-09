@@ -762,7 +762,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         for (i=0; i<coin->bundlescount-1; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
-                bp->startutxo = bp->utxofinish = 0;
+                bp->startutxo = bp->utxofinish = bp->converted = bp->balancefinish = bp->validated = 0;
         }
     }
     else
