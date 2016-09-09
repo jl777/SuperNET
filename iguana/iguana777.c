@@ -593,28 +593,31 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             *numpeersp += coin->peers->numranked;
         if ( 0 && (rand() % 10) == 0 )
             printf("%s main.%u vs %u, svs %u %d vs %d\n",coin->symbol,(uint32_t)time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
-        if ( time(NULL) > coin->startutc+60 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
+        if ( time(NULL) > coin->startutc+60 )
         {
             n = coin->bundlescount-1;
-            printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(myinfo,coin,1),coin->spendvectorsaved);
-            if ( iguana_emitfinished(myinfo,coin,1) >= n )
+            if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
             {
-                if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
+                printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(myinfo,coin,1),coin->spendvectorsaved);
+                if ( iguana_emitfinished(myinfo,coin,1) >= n )
                 {
-                    for (j=0; j<n; j++)
-                        if ( coin->bundles[j] != 0 )
-                            iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
-                    sleep(3);
-                }
-                if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
-                {
-                    coin->spendvectorsaved = 1;
-                    printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
-                }
-                else
-                {
-                    coin->spendvectorsaved = (uint32_t)time(NULL);
-                    printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
+                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
+                    {
+                        for (j=0; j<n; j++)
+                            if ( coin->bundles[j] != 0 )
+                                iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
+                        sleep(3);
+                    }
+                    if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
+                    {
+                        coin->spendvectorsaved = 1;
+                        printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
+                    }
+                    else
+                    {
+                        coin->spendvectorsaved = (uint32_t)time(NULL);
+                        printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
+                    }
                 }
             }
             else
@@ -631,7 +634,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                         printf("bundleQ.[%d]\n",j);
                         iguana_bundleQ(myinfo,coin,bp,1000);
                     }
-                coin->spendvectorsaved = 1;
+                //coin->spendvectorsaved = 1;
             }
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
@@ -988,7 +991,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = (strcmp("BTCD",coin->symbol) == 0);
+    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
