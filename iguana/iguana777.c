@@ -631,6 +631,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                         printf("bundleQ.[%d]\n",j);
                         iguana_bundleQ(myinfo,coin,bp,1000);
                     }
+                coin->spendvectorsaved = 1;
             }
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
