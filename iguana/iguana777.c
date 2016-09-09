@@ -267,21 +267,36 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
-    struct iguana_helper *ptr;
+    struct iguana_helper *ptr; struct iguana_bundle *tmp; int32_t i,n = 0;
     if ( 0 && bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
         printf("bundle.[%d] is ready\n",bp->hdrsi);
-    bp->queued = (uint32_t)time(NULL);
-    ptr = mycalloc('q',1,sizeof(*ptr));
-    ptr->allocsize = sizeof(*ptr);
-    ptr->coin = coin;
-    ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
-    ptr->type = 'B';
-    ptr->starttime = (uint32_t)time(NULL);
-    ptr->timelimit = timelimit;
-    coin->numbundlesQ++;
-    if ( 0 && bp->hdrsi > 170 )
-        printf("%s %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
-    queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
+    if ( bp->queued != 0 )
+        return;
+    for (i=n=0; i<coin->bundlescount; i++)
+    {
+        if ( (tmp= coin->bundles[i]) != 0 && tmp->queued != 0 )
+            n++;
+    }
+    if ( n < coin->MAXBUNDLES )
+    {
+        bp->queued = (uint32_t)time(NULL);
+        ptr = mycalloc('q',1,sizeof(*ptr));
+        ptr->allocsize = sizeof(*ptr);
+        ptr->coin = coin;
+        ptr->bp = bp, ptr->hdrsi = bp->hdrsi;
+        ptr->type = 'B';
+        ptr->starttime = (uint32_t)time(NULL);
+        ptr->timelimit = timelimit;
+        coin->numbundlesQ++;
+        //if ( 0 && bp->hdrsi > 170 )
+            printf("%s.%d %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,n,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
+        queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
+    }
+    else
+    {
+        bp->queued = 0;
+        //printf("MAXBUNDLES.%d reached.%d\n",coin->MAXBUNDLES,n);
+    }
 }
 
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp)
@@ -691,7 +706,7 @@ void iguana_helper(void *arg)
                         allcurrent = 0;
                     //printf("h.%d [%d] bundleQ size.%d lag.%ld\n",helperid,bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                     coin->numbundlesQ--;
-                    if ( coin->started != 0 && (bp->nexttime == 0 || time(NULL) >= bp->nexttime) && coin->active != 0 )
+                    if ( coin->started != 0 && time(NULL) >= bp->nexttime && coin->active != 0 )
                     {
                         flag += iguana_bundleiters(myinfo,ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     }

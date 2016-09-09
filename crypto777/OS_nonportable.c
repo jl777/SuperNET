@@ -607,20 +607,23 @@ void *OS_nonportable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 	return(ptr);
 }
 
-int32_t OS_nonportable_renamefile(char *fname,char *newfname)
-{
-    char tmp[1024],tmp2[1024];
-    strcpy(tmp,fname), strcpy(tmp2,newfname);
-    OS_nonportable_path(tmp), OS_nonportable_path(tmp2);
-    return((MoveFile(tmp,tmp2) == 0) ? -1 : 0);
-}
-
 int32_t OS_nonportable_removefile(char *fname)
 {
     char tmp[512];
     strcpy(tmp,fname);
     OS_portable_path(tmp);
-    return((DeleteFile(tmp) == 0) ? -1 : 0);
+    return((DeleteFileA(tmp) == 0) ? -1 : 0);
+}
+
+int32_t OS_nonportable_renamefile(char *fname,char *newfname)
+{
+    char tmp[1024],tmp2[1024]; int32_t retval,retvaldel;
+    strcpy(tmp,fname), strcpy(tmp2,newfname);
+    OS_nonportable_path(tmp), OS_nonportable_path(tmp2);
+    retvaldel = OS_nonportable_removefile(tmp2);
+    retval = MoveFileA(tmp,tmp2);
+    //printf("call Movefile(%s -> %s) retval.%d retvaldel.%d %d\n",tmp,tmp2,retval,retvaldel,GetLastError());
+    return((retval == 0) ? -1 : 0);
 }
 
 int32_t  OS_nonportable_launch(char *args[])

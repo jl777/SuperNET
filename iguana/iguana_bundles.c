@@ -1441,7 +1441,11 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     if ( (bp= firstgap) != 0 )//&& coin->PREFETCHLAG < 0 )
     {
         if ( bp != coin->current )
+        {
             printf("new 1st.%d\n",bp->hdrsi);
+            if ( bp->queued == 0 )
+                iguana_bundleQ(myinfo,coin,bp,0);
+        }
         //else printf("issue 1st.%d\n",bp->hdrsi);
         for (i=0; i<bp->n; i++)
             if ( GETBIT(bp->haveblock,i) == 0 )
