@@ -554,6 +554,8 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
 int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n)
 {
     struct iguana_bundlereq *req; int32_t i,num;
+    if ( n <= 1 )
+        return(0);
     if ( addr != 0 )
     {
         static uint32_t hdrsreceived[IGUANA_MAXPEERS];
