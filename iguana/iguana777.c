@@ -583,7 +583,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     return(num);
 }
 
-int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numpeersp)
+int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numpeersp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
     int32_t n,j,isRT = 0; struct iguana_bundle *bp;
     if ( coin->RTheight == 0 && coin->firstRTheight == 0 && coin->current != 0 && coin->active != 0 && coin->started != 0 )
@@ -620,12 +620,17 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             else
             {
                 for (j=0; j<coin->bundlescount; j++)
-                    if ( (bp= coin->bundles[j]) != 0 && bp->queued == 0 && bp->startutxo == 0 && bp->emitfinish == 0 )
+                    if ( (bp= coin->bundles[j]) != 0 && bp->ramchain.H.data == 0 )
                     {
+                        if ( iguana_bundleready(myinfo,coin,bp,0) == bp->n )
+                        {
+                            printf("finalize.[%d]\n",bp->hdrsi);
+                            if ( iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
+                                continue;
+                        }
                         printf("bundleQ.[%d]\n",j);
-                        iguana_bundleQ(myinfo,coin,bp,0);
+                        iguana_bundleQ(myinfo,coin,bp,1000);
                     }
-                printf("queued\n");
             }
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
@@ -698,7 +703,7 @@ void iguana_helper(void *arg)
                 }
             }
             if ( helperid == 0 )
-                iguana_coin_mainiter(myinfo,coin,&numpeers);
+                iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
         }
         //portable_mutex_unlock(&myinfo->allcoins_mutex);
         n = queue_size(&bundlesQ);
