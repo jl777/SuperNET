@@ -1058,7 +1058,8 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
                     printf("GENESIS block validated\n");
                 else printf("GENESIS didnt validate bp.%p\n",bp);*/
                 //if ( strcmp("BTC",coin->symbol) != 0 )
-                coin->spendvectorsaved = 0;
+                coin->RTheight = coin->firstRTheight = 0;
+                //coin->spendvectorsaved = 0;
                 for (i=bp->hdrsi; i<coin->bundlescount; i++)
                     if ( (tmpbp= coin->bundles[i]) != 0 )
                         tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;

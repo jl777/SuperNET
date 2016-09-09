@@ -722,7 +722,6 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
         }
     }
-    //printf("end volatilesinit\n");
     if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )
         iguana_fastfindcreate(coin);
     /*for (j=0; j<coin->bundlescount; j++)
@@ -734,6 +733,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     iguana_update_balances(coin);*/
     iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
     //iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);*/
+    printf("end volatilesinit\n");
     return(coin->bundlescount);
 }
 
