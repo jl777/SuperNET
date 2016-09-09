@@ -1561,9 +1561,6 @@ void iguana_main(void *arg)
 #ifdef IGUANA_OSTESTS
     do_OStests = 1;
 #endif
-#ifdef WIN32
-    do_OStests = 1;
-#endif
     if ( do_OStests != 0 )
     {
         int32_t iguana_OStests();
