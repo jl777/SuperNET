@@ -620,7 +620,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             else
             {
                 for (j=0; j<coin->bundlescount; j++)
-                    if ( (bp= coin->bundles[j]) != 0 && bp->queued == 0 && bp->startutxo == 0 )
+                    if ( (bp= coin->bundles[j]) != 0 && bp->queued == 0 && bp->startutxo == 0 && bp->emitfinish == 0 )
                     {
                         printf("bundleQ.[%d]\n",j);
                         iguana_bundleQ(myinfo,coin,bp,0);
