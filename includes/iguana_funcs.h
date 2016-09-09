@@ -241,6 +241,7 @@ void SuperNET_yourip(struct supernet_info *myinfo,char *yourip);
 void iguana_peerkill(struct iguana_info *coin);
 int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 void iguana_nameset(char name[64],char *symbol,cJSON *json);
+cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
 
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();

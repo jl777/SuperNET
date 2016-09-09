@@ -421,6 +421,21 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     return(ptr);
 }
 
+void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
+{
+    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent;
+    if ( RELAYID >= 0 )
+        return(0);
+    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
+    {
+        infojson = iguana_getinfo(myinfo,coin);
+        Lptr->retstr = jprint(infojson,1);
+        return(Lptr);
+    }
+    ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    return(ptr);
+}
+
 int32_t basilisk_voutvin_validate(struct iguana_info *coin,char *rawtx,uint64_t inputsum,uint64_t amount,uint64_t txfee)
 {
     //static int counter;

@@ -1080,12 +1080,9 @@ double _max100(double val)
     else return(val);
 }
 
-ZERO_ARGS(bitcoinrpc,getinfo)
+cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    cJSON *retjson;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = cJSON_CreateObject();
+    cJSON *retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
         jaddstr(retjson,"result","success");
@@ -1110,7 +1107,14 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         jaddstr(retjson,"status",coin->statusstr);
         jaddstr(retjson,"coin",coin->symbol);
     }
-    return(jprint(retjson,1));
+    return(retjson);
+}
+
+ZERO_ARGS(bitcoinrpc,getinfo)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    return(jprint(iguana_getinfo(myinfo,coin),1));
 }
 
 TWO_STRINGS(bitcoinrpc,setaccount,address,account)

@@ -620,6 +620,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         // coin services
         { (void *)"VAL", &basilisk_respond_value },
         { (void *)"BAL", &basilisk_respond_balances },
+        { (void *)"INF", &basilisk_respond_getinfo },
     };
     strncpy(CMD,type,3), CMD[3] = cmd[3] = 0;
     if ( isupper((int32_t)CMD[0]) != 0 && isupper((int32_t)CMD[1]) != 0 && isupper((int32_t)CMD[2]) != 0 )
