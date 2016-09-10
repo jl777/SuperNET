@@ -2240,6 +2240,8 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
     struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata;
+    if ( bp->emitfinish > 1 )
+        return(ramchain);
     memset(ramchain,0,sizeof(*ramchain));
     if ( (mapchain= iguana_ramchain_map(coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
     {
