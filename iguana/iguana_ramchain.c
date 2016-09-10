@@ -2291,7 +2291,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                 }
             }
         }
-        printf("mapped bundle.[%d]\n",bp->hdrsi);
+        //printf("mapped bundle.[%d]\n",bp->hdrsi);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         iguana_bundlecalcs(myinfo,coin,bp,60);
     }
