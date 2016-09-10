@@ -858,9 +858,9 @@ void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 
 
 int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_zblock *zblocks,int32_t n)
 {
-    struct iguana_bundlereq *req; int32_t i,num;
+    struct iguana_bundlereq *req; int32_t i,num; struct iguana_bundle *bp;
     if ( n <= 1 )
-        return(0);
+        return(-1);
     if ( addr != 0 )
     {
         static uint32_t hdrsreceived[IGUANA_MAXPEERS];
@@ -884,6 +884,11 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
                 addr->RThashes[i] = zblocks[i].RO.hash2;
             addr->numRThashes = num;
         }
+    }
+    for (i=0; i<coin->bundlescount; i++)
+    {
+        if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(zblocks[1].RO.hash2,bp->hashes[1]) == 0 && bp->numhashes >= coin->chain->bundlesize )
+            return(-1);
     }
     req = iguana_bundlereq(coin,addr,'H',0,0);
     req->blocks = zblocks, req->n = n;
