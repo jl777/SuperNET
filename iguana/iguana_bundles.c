@@ -379,7 +379,7 @@ struct iguana_bundle *iguana_bundlecreate(struct iguana_info *coin,int32_t *bund
             if ( issueflag != 0 )
             {
                 iguana_blockQ("bundlecreate",coin,bp,0,bundlehash2,1);
-                queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
+                //queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(str),1);
             }
             if ( bp->hdrsi >= coin->bundlescount )
                 coin->bundlescount = (bp->hdrsi + 1);

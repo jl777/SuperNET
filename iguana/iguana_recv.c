@@ -961,7 +961,7 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
-                    if ( bp->startutxo == 0 )
+                    if ( bp->startutxo == 0 && bp->issued[i] == 0 )
                     {
                         iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],1);
                         iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],0);
