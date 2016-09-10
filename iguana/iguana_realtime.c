@@ -1010,14 +1010,24 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
         {
             printf("%s errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
             struct iguana_peer *addr;
-            iguana_blockQ("RTiterate",coin,coin->bundles[block->hdrsi],block->bundlei,block->RO.hash2,1);
+            iguana_blockhashset("RTblock",coin,coin->firstRTheight+offset,block->RO.hash2,1);
+            if ( (bp= coin->bundles[block->hdrsi]) != 0 )
+            {
+                bp->issued[block->bundlei] = 0;
+                bp->blocks[block->bundlei] = block;
+                bp->hashes[block->bundlei] = block->RO.hash2;
+                block->height = coin->firstRTheight+offset;
+            }
+            iguana_blockQ("RTiterate",coin,bp,block->bundlei,block->RO.hash2,1);
             if ( coin->peers != 0 )
             {
                 if ( coin->peers->numranked > 0 )
                 {
                     for (i=0; i<coin->peers->numranked&&i<8; i++)
                         if ( (addr= coin->peers->ranked[i]) != 0 )
+                        {
                             iguana_sendblockreqPT(coin,addr,coin->bundles[block->hdrsi],block->bundlei,block->RO.hash2,1);
+                        }
                 } else iguana_updatemetrics(myinfo,coin);
             }
             num = 0;
@@ -1130,7 +1140,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
     int32_t i,n,height,hdrsi,bundlei; struct iguana_block *addblock=0,*subblock=0; struct iguana_bundle *bp;
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
     {
-        if ( coin->firstRTheight > 0 )
+        if ( 0 && coin->firstRTheight > 0 )
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }
