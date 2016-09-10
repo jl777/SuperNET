@@ -879,9 +879,9 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
         if ( bp->numhashes < bp->n && bp->numcached < bp->n )
         {
             //printf("issue current hdr.[%d]\n",bp->hdrsi);
-            //for (i=0; i<bp->n; i++)
-            //    if ( GETBIT(bp->haveblock,i) == 0 )
-            //        bp->issued[i] = 0;
+            for (i=0; i<bp->n; i++)
+                if ( GETBIT(bp->haveblock,i) == 0 )
+                    bp->issued[i] = 0;
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
         iguana_bundleissuemissing(myinfo,coin,bp,3,3.);
@@ -1207,7 +1207,7 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 void iguana_bundlemissings(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint32_t now)
 {
     int32_t mult = 7,n=0,priority = 1;
-    if ( now > bp->missingstime+30 )
+    if ( now > bp->missingstime+13 )
     {
         if ( coin->current != 0 )
         {
