@@ -954,7 +954,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                         printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
                     fclose(fp);
-                    //printf("numtx.%d len.%d %s hwm.%d L.%d\n",*numtxp,*recvlenp,fname,coin->blocks.hwmchain.height,coin->longestchain);
+                    printf("numtx.%d len.%d %s hwm.%d L.%d\n",*numtxp,*recvlenp,fname,coin->blocks.hwmchain.height,coin->longestchain);
                 } else printf("couldnt create %s\n",fname);
             }
             else if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
