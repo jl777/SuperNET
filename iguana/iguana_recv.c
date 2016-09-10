@@ -588,7 +588,7 @@ int32_t iguana_bundlestats_update(struct iguana_info *coin,struct iguana_block *
             sizeAfteremit += recvlen;
             if ( block != 0 )
                 iguana_bundletime(coin,bp,bundlei,block,1);
-            printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
+            //printf("got [%d:%d] with emitfinish.%u\n",bp->hdrsi,bundlei,bp->emitfinish);
             return(-1);
         }
         bp->dirty++;
@@ -815,7 +815,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
         //printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         //if ( (bp == coin->current || (coin->peers != 0 && ) && (rand() % coin->chain->bundlesize) < numsaved )
-        if ( coin->current == 0 || coin->current->startutxo != 0 || numsaved > (rand() % coin->chain->bundlesize) || (bp= coin->current) != 0 )
+        if ( numsaved < coin->chain->bundlesize )
         {
             for (i=numsaved=0; i<coin->chain->bundlesize; i++)
             {
