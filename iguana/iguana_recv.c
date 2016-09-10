@@ -781,7 +781,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         return;
     if ( block == 0 )
     {
-        printf("no block to update\n");
+        printf("getblockM no block to update\n");
         return;
     }
     block->txvalid = 1;
@@ -974,7 +974,7 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
             //n = 0;
             //if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
             //    n = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
-            if ( 1 && n > 0 )
+            if ( 1 && n > 2 )
                 printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             //if ( bp->queued == 0 )
             //    iguana_bundleQ(myinfo,coin,bp,bp->n*5 + (rand() % 500));
