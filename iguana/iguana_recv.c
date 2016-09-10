@@ -767,10 +767,15 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
         else // new bundle case, but bad context to extend
         {
-            origtxdata->zblock.issued = 0;
-            origtxdata->zblock.RO.recvlen = 0;
-            printf("gotblockM2: error finding block %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
-            return;
+            bits256 zero;
+            memset(zero.bytes,0,sizeof(zero));
+            if ( (bp= iguana_bundlecreate(coin,&bundlei,bp->bundleheight + coin->chain->bundlesize,origtxdata->zblock.RO.hash2,zero,0)) == 0 )
+            {
+                origtxdata->zblock.issued = 0;
+                origtxdata->zblock.RO.recvlen = 0;
+                printf("gotblockM2: error finding block %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+                return;
+            } else printf("getblockM autoextended.[%d]\n",bp->hdrsi);
         }
     }
     if ( bp == 0 )
