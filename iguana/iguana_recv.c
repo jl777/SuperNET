@@ -757,7 +757,11 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         {
             origtxdata->zblock.RO.recvlen = 0;
             origtxdata->zblock.issued = 0;
-            //printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+            printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+            numtx = origtxdata->zblock.RO.txn_count;
+            iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
+            req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+            queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
             return;
         }
         else if ( bundlei < coin->chain->bundlesize-1 )
