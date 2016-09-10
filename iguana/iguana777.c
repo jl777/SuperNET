@@ -594,8 +594,8 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             printf("%s main.%u vs %u, svs %u %d vs %d\n",coin->symbol,(uint32_t)time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
         if ( time(NULL) > coin->startutc+60 )
         {
-            if ( (bp= coin->current) != 0 && bp->numsaved >= coin->chain->bundlesize && bp->startutxo == 0 )
-                iguana_bundlefinalize(myinfo,coin,bp,mem,memB);
+            //if ( (bp= coin->current) != 0 && bp->numsaved >= coin->chain->bundlesize && bp->startutxo == 0 )
+            //    iguana_bundlefinalize(myinfo,coin,bp,mem,memB);
             n = coin->bundlescount-1;
             if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
             {
@@ -623,18 +623,6 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             }
             else
             {
-                for (j=0; j<coin->bundlescount; j++)
-                    if ( (bp= coin->bundles[j]) != 0 && bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize )//&& bp->queued == 0 )
-                    {
-                        if ( iguana_bundleready(myinfo,coin,bp,0) == bp->n )
-                        {
-                            //printf("finalize.[%d]\n",bp->hdrsi);
-                            if ( iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
-                                continue;
-                        }
-                        //printf("bundleQ.[%d]\n",j);
-                        //iguana_bundleQ(myinfo,coin,bp,1000);
-                    }
                 //coin->spendvectorsaved = 1;
             }
         }
@@ -706,6 +694,16 @@ void iguana_helper(void *arg)
                     coin->spendvalidated |= (1 << helperid);
                     //printf("DONE %s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);
                 }
+                else
+                {
+                    for (j=helperid; j<coin->bundlescount; j+=IGUANA_NUMHELPERS)
+                        if ( (bp= coin->bundles[j]) != 0 && bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
+                        {
+                            //printf("finalize.[%d]\n",bp->hdrsi);
+                            if ( iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB) > 0 )
+                                continue;
+                        }
+                 }
             }
             if ( helperid == 0 )
                 iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
