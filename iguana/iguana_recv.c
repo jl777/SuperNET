@@ -1908,8 +1908,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
-                        lag = 3;
-                    else lag = 7;
+                        lag = 7;
+                    else if ( coin->current == 0 || bp->hdrsi > coin->current->hdrsi+coin->MAXBUNDLES )
+                        continue;
+                    else lag = 17;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
                         if ( 0 && bp == coin->current )
