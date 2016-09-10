@@ -44,7 +44,7 @@ char GLOBAL_CONFSDIR[512] = "confs";
 #ifdef __linux
 int32_t IGUANA_NUMHELPERS = 8;
 #else
-int32_t IGUANA_NUMHELPERS = 1;
+int32_t IGUANA_NUMHELPERS = 2;
 #endif
 #endif
 
