@@ -1843,12 +1843,12 @@ int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
 
 int32_t iguana_processrecvQ(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *newhwmp) // single threaded
 {
-    int32_t type,flag = 0; struct iguana_bundlereq *req;
+    int32_t flag = 0; struct iguana_bundlereq *req;
     *newhwmp = 0;
-    while ( coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+    while ( flag < IGUANA_MAXITERATIONS && coin->active != 0 && (req= queue_dequeue(&coin->recvQ,0)) != 0 )
     {
-        type = req->type;
-        flag++;
+        if ( req->type != 'H' )
+            flag++;
         //fprintf(stderr,"%s flag.%d %s recvQ.%p type.%c n.%d\n",coin->symbol,flag,req->addr != 0 ? req->addr->ipaddr : "0",req,req->type,req->n);
         if ( req->type == 'B' ) // one block with all txdata
         {
@@ -1885,9 +1885,7 @@ int32_t iguana_processrecvQ(struct supernet_info *myinfo,struct iguana_info *coi
         //fprintf(stderr,"finished coin->recvQ\n");
         if ( req != 0 )
             myfree(req,req->allocsize), req = 0;
-        if ( type != 'H' && flag < IGUANA_MAXITERATIONS )
-            break;
-     }
+    }
     return(flag);
 }
 
