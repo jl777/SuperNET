@@ -2196,9 +2196,9 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     if ( time(NULL) > coin->laststats+3 )
     {
         flag += iguana_reqhdrs(coin);
+        iguana_bundlestats(myinfo,coin,str,IGUANA_DEFAULTLAG);
         coin->laststats = (uint32_t)time(NULL);
     }
-    iguana_bundlestats(myinfo,coin,str,IGUANA_DEFAULTLAG);
     //iguana_realtime_update(myinfo,coin);
     coin->RTramchain_busy = 0;
     flag += iguana_process_msgrequestQ(myinfo,coin);

@@ -1129,7 +1129,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     else if ( bp->hdrsi == starti || (bp->hdrsi >= starti && bp->hdrsi <= starti+range) )
     {
         max = bp->n;
-        counter = iguana_bundleissuemissing(myinfo,coin,bp,1,1.);
+        counter = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
         if ( 0 && counter > 0 )
             printf("starti.%d range.%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",starti,range,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime++;
@@ -1207,7 +1207,7 @@ void iguana_unstickhdr(struct iguana_info *coin,struct iguana_bundle *bp,int32_t
 void iguana_bundlemissings(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,uint32_t now)
 {
     int32_t mult = 7,n=0,priority = 1;
-    if ( now > bp->missingstime+13 )
+    if ( now > bp->missingstime+30 )
     {
         if ( coin->current != 0 )
         {
