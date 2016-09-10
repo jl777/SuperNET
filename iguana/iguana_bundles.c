@@ -1348,7 +1348,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                             bp->issued[j] = block->issued;
                     }
                 }
-                if ( 0 && bp->hdrsi >= starti && bp->hdrsi < lasti )
+                if ( bp->hdrsi >= starti && bp->hdrsi < lasti )
                     iguana_bundlemissings(myinfo,coin,bp,now);
             }
             bp->metric = coin->bundlescount - bp->hdrsi;
@@ -1441,6 +1441,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( bp != coin->current )
         {
             printf("new 1st.%d\n",bp->hdrsi);
+            iguana_bundleissuemissing(myinfo,coin,bp,1 + (rand() % 3),1.);
             if ( bp->queued == 0 )
                 iguana_bundleQ(myinfo,coin,bp,0);
         }
