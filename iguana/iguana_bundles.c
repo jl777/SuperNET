@@ -863,7 +863,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
 
 int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
-    int32_t dist,counter=0; char str[65];
+    int32_t i,dist,counter=0; char str[65];
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
