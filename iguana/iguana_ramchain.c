@@ -2289,13 +2289,13 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                 }
             }
         }
-        printf("mapped bundle.%d\n",bp->bundleheight);
+        printf("mapped bundle.[%d]\n",bp->hdrsi);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         iguana_bundlecalcs(myinfo,coin,bp,60);
     }
     else
     {
-        printf("couldnt load bundle.%d\n",bp->bundleheight);
+        //printf("couldnt load bundle.%d\n",bp->bundleheight);
         memset(&bp->ramchain,0,sizeof(bp->ramchain));
         bp->ramchain.height = bp->bundleheight;
         bp->emitfinish = 0;
