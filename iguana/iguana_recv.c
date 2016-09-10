@@ -1899,7 +1899,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 {
                     if ( bp == coin->current )
                         lag = 3;
-                    else lag = 17;
+                    else lag = 7;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
                         if ( 0 && bp == coin->current )
