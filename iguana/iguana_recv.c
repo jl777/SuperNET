@@ -957,15 +957,17 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
                         block->hh.prev = prev;
                     }
                     //if ( bp->hdrsi < coin->MAXBUNDLES )
-                        iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],0);
+                    iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],1);
+                    iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],0);
+                    n++;
                 } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
             coin->allhashes++;
-            n = 0;
-            if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
-                n = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
-            if ( 0 && n > 0 )
+            //n = 0;
+            //if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
+            //    n = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
+            if ( 1 && n > 0 )
                 printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             //if ( bp->queued == 0 )
             //    iguana_bundleQ(myinfo,coin,bp,bp->n*5 + (rand() % 500));
