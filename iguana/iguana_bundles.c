@@ -841,7 +841,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
                 }
                 else
                 {
-                    iguana_blockunmark(coin,block,bp,i,0);
+                    //iguana_blockunmark(coin,block,bp,i,0);
                     //printf("cant find (%s)\n",fname);
                 }
             }
@@ -863,7 +863,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
 
 int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
-    int32_t i,dist,counter=0; char str[65];
+    int32_t dist,counter=0; char str[65];
     if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
@@ -879,9 +879,9 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
         if ( bp->numhashes < bp->n && bp->numcached < bp->n )
         {
             //printf("issue current hdr.[%d]\n",bp->hdrsi);
-            for (i=0; i<bp->n; i++)
-                if ( GETBIT(bp->haveblock,i) == 0 )
-                    bp->issued[i] = 0;
+            //for (i=0; i<bp->n; i++)
+            //    if ( GETBIT(bp->haveblock,i) == 0 )
+            //        bp->issued[i] = 0;
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
         iguana_bundleissuemissing(myinfo,coin,bp,3,3.);
@@ -1130,10 +1130,10 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     {
         max = bp->n;
         counter = iguana_bundleissuemissing(myinfo,coin,bp,1,1.);
-        if ( 0 && counter > 0 )
+        if ( 1 && counter > 0 )
             printf("starti.%d range.%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",starti,range,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime++;
-    if ( bp->emitfinish <= 1 )
+    if ( 0 && bp->emitfinish <= 1 )
         iguana_bundleQ(myinfo,coin,bp,1000);
     else
     {
@@ -1175,12 +1175,7 @@ int32_t iguana_cacheprocess(struct supernet_info *myinfo,struct iguana_info *coi
         memset(&H,0,sizeof(H));
         if ( iguana_sethdr(&H,coin->chain->netmagic,"block",&data[sizeof(recvlen)],recvlen) > 0 )
         {
-            if ( coin->internaladdr.RAWMEM.ptr == 0 )
-                iguana_meminit(&coin->internaladdr.RAWMEM,"cache",0,IGUANA_MAXPACKETSIZE + 65536*3,0);
-            if ( coin->TXMEM.ptr == 0 )
-                iguana_meminit(&coin->internaladdr.TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE*1.5,0);
-            if ( coin->internaladdr.HASHMEM.ptr == 0 )
-                iguana_meminit(&coin->internaladdr.HASHMEM,"HASHPTRS",0,256,0);
+            iguana_peer_meminit(coin,&coin->internaladdr);
             if ( iguana_msgparser(myinfo,coin,&coin->internaladdr,&coin->internaladdr.RAWMEM,&coin->internaladdr.TXDATA,&coin->internaladdr.HASHMEM,&H,&data[sizeof(recvlen)],recvlen,1) < 0 )
                 printf("error parsing speculativecache.[%d:%d]\n",bp->hdrsi,bundlei);
         }
@@ -1353,7 +1348,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                             bp->issued[j] = block->issued;
                     }
                 }
-                if ( bp->hdrsi >= starti && bp->hdrsi < lasti )
+                if ( 0 && bp->hdrsi >= starti && bp->hdrsi < lasti )
                     iguana_bundlemissings(myinfo,coin,bp,now);
             }
             bp->metric = coin->bundlescount - bp->hdrsi;
@@ -1450,10 +1445,10 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                 iguana_bundleQ(myinfo,coin,bp,0);
         }
         //else printf("issue 1st.%d\n",bp->hdrsi);
-        for (i=0; i<bp->n; i++)
-            if ( GETBIT(bp->haveblock,i) == 0 )
-                bp->issued[i] = 0;
-        iguana_bundleissuemissing(myinfo,coin,bp,1 + (rand() % 3),1.);
+        //for (i=0; i<bp->n; i++)
+        //    if ( GETBIT(bp->haveblock,i) == 0 )
+        //        bp->issued[i] = 0;
+        //iguana_bundleissuemissing(myinfo,coin,bp,1 + (rand() % 3),1.);
     }
     if ( (coin->current= firstgap) == 0 )
     {
@@ -1503,9 +1498,9 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                             iguana_blockQ("stuck",coin,bp,i,block->RO.hash2,1);
                     }
                 }
-                for (i=0; i<bp->n; i++)
-                    if ( GETBIT(bp->haveblock,i) == 0 )
-                        bp->issued[i] = 0;
+                //for (i=0; i<bp->n; i++)
+                //    if ( GETBIT(bp->haveblock,i) == 0 )
+                //        bp->issued[i] = 0;
                 if (  (n= iguana_bundleissuemissing(myinfo,coin,bp,3,1.)) > 0 )
                     printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");

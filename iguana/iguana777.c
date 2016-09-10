@@ -288,8 +288,7 @@ void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct
         ptr->starttime = (uint32_t)time(NULL);
         ptr->timelimit = timelimit;
         coin->numbundlesQ++;
-        //if ( 0 && bp->hdrsi > 170 )
-            printf("%s.%d %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,n,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
+        // printf("%s.%d %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,n,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
         queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
     }
     else
@@ -595,6 +594,8 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             printf("%s main.%u vs %u, svs %u %d vs %d\n",coin->symbol,(uint32_t)time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
         if ( time(NULL) > coin->startutc+60 )
         {
+            if ( (bp= coin->current) != 0 && bp->numsaved >= coin->chain->bundlesize && bp->startutxo == 0 )
+                iguana_bundlefinalize(myinfo,coin,bp,mem,memB);
             n = coin->bundlescount-1;
             if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
             {
@@ -623,16 +624,16 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             else
             {
                 for (j=0; j<coin->bundlescount; j++)
-                    if ( (bp= coin->bundles[j]) != 0 && bp->ramchain.H.data == 0 && bp->queued == 0 )
+                    if ( (bp= coin->bundles[j]) != 0 && bp->ramchain.H.data == 0 && bp->startutxo == 0 )//&& bp->queued == 0 )
                     {
                         if ( iguana_bundleready(myinfo,coin,bp,0) == bp->n )
                         {
-                            printf("finalize.[%d]\n",bp->hdrsi);
+                            //printf("finalize.[%d]\n",bp->hdrsi);
                             if ( iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
                                 continue;
                         }
                         //printf("bundleQ.[%d]\n",j);
-                        iguana_bundleQ(myinfo,coin,bp,1000);
+                        //iguana_bundleQ(myinfo,coin,bp,1000);
                     }
                 //coin->spendvectorsaved = 1;
             }
@@ -725,7 +726,7 @@ void iguana_helper(void *arg)
                         allcurrent = 0;
                     //printf("h.%d [%d] bundleQ size.%d lag.%ld\n",helperid,bp->hdrsi,queue_size(&bundlesQ),time(NULL) - bp->nexttime);
                     coin->numbundlesQ--;
-                    if ( coin->started != 0 && time(NULL) > bp->nexttime && coin->active != 0 )
+                    if ( bp->startutxo == 0 && coin->started != 0 && time(NULL) > bp->nexttime && coin->active != 0 )
                     {
                         flag += iguana_bundleiters(myinfo,ptr->coin,&MEM,MEMB,bp,ptr->timelimit,IGUANA_DEFAULTLAG);
                     }
@@ -946,7 +947,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         if ( (coin->MAXRECVCACHE= maxrecvcache) == 0 )
             coin->MAXRECVCACHE = IGUANA_MAXRECVCACHE;
         if ( (coin->MAXPENDINGREQUESTS= maxrequests) <= 0 )
-            coin->MAXPENDINGREQUESTS = (strcmp(symbol,"BTC") == 0) ? IGUANA_MAXPENDINGREQUESTS : IGUANA_PENDINGREQUESTS;
+            coin->MAXPENDINGREQUESTS = (strcmp(symbol,"BTC") == 0) ? IGUANA_BTCPENDINGREQUESTS : IGUANA_PENDINGREQUESTS;
         if ( jobj(json,"prefetchlag") != 0 )
             coin->PREFETCHLAG = jint(json,"prefetchlag");
         else if ( strcmp("BTC",coin->symbol) == 0 )
@@ -1134,3 +1135,8 @@ char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *dest
     printf("busdata_sync.(%s)\n",jsonstr);
     return(0);
 }
+
+// getnewaddress, setaccount, validate address, restart, validate address
+
+// importprivkey, setaccount, validate, restart, validate
+

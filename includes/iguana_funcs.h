@@ -193,7 +193,7 @@ struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundl
 int32_t iguana_peerfile_exists(struct iguana_info *coin,struct iguana_peer *addr,char *dirname,char *fname,bits256 hash2,bits256 prevhash2,int32_t numblocks);
 struct iguana_ramchain *iguana_ramchainset(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_txblock *txdata);
 void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA);
-long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen);
+long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen,struct iguana_bundle *bp,struct iguana_block *block);
 int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blockp,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2);
 struct iguana_block *iguana_bundleblockadd(struct iguana_info *coin,struct iguana_bundle **bpp,int32_t *bundleip,struct iguana_block *origblock);
 int32_t iguana_chainextend(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *newblock);
@@ -237,6 +237,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
 struct iguana_peer *iguana_peerslot(struct iguana_info *coin,uint64_t ipbits,int32_t forceflag);
 void iguana_dedicatedglue(void *arg);
 void SuperNET_remotepeer(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *ipaddr,int32_t supernetflag);
+void iguana_peer_meminit(struct iguana_info *coin,struct iguana_peer *addr);
 void SuperNET_yourip(struct supernet_info *myinfo,char *yourip);
 void iguana_peerkill(struct iguana_info *coin);
 int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len);

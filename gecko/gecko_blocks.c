@@ -121,7 +121,7 @@ struct iguana_bundle *gecko_ensurebundle(struct iguana_info *virt,struct iguana_
 
 int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_txblock *txdata,struct iguana_msgtx *txarray,uint8_t *data,int32_t datalen,int32_t depth,int32_t verifyonly)
 {
-    struct iguana_peer *addr; int32_t i,hdrsi; struct iguana_bundle *bp,*prevbp; struct iguana_block *block;
+    struct iguana_peer *addr; int32_t i,hdrsi; struct iguana_bundle *bp=0,*prevbp; struct iguana_block *block;
     if ( (block= iguana_blockhashset("gecko_hwmset",virt,txdata->zblock.height,txdata->zblock.RO.hash2,1)) != 0 )
     {
         iguana_blockcopy(virt->chain->zcash,virt->chain->auxpow,virt,block,(struct iguana_block *)&txdata->zblock);
@@ -132,7 +132,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
         printf("no bundle for %s.%d\n",virt->symbol,block->height);
         return(-1);
     }
-    if ( iguana_ramchain_data(virt,addr,txdata,txarray,block->RO.txn_count,data,datalen) >= 0 )
+    if ( iguana_ramchain_data(virt,addr,txdata,txarray,block->RO.txn_count,data,datalen,bp,block) >= 0 )
     {
         block->fpipbits = (uint32_t)addr->ipbits;
         block->RO.recvlen = datalen;

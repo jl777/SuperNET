@@ -572,6 +572,20 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
     return(len);
 }
 
+void iguana_peer_meminit(struct iguana_info *coin,struct iguana_peer *addr)
+{
+    if ( addr->RAWMEM.ptr == 0 )
+        iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);
+    if ( addr->TXDATA.ptr == 0 )
+        iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE * 2,0);
+    if ( addr->HASHMEM.ptr == 0 )
+        iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
+    //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
+    iguana_memreset(&addr->RAWMEM);
+    iguana_memreset(&addr->TXDATA);
+    iguana_memreset(&addr->HASHMEM);
+}
+
 void iguana_parsebuf(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msghdr *H,uint8_t *buf,int32_t len,int32_t fromcache)
 {
     struct iguana_msghdr checkH;
@@ -579,15 +593,7 @@ void iguana_parsebuf(struct supernet_info *myinfo,struct iguana_info *coin,struc
     if ( iguana_sethdr(&checkH,coin->chain->netmagic,H->command,buf,len) > 0 && memcmp(&checkH,H,sizeof(checkH)) == 0 )
     {
         if ( strcmp(H->command,"block") == 0 || strcmp(H->command,"getblocks") == 0 || strcmp(H->command,"tx") == 0 )
-        {
-            if ( addr->RAWMEM.ptr == 0 )
-                iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);
-            if ( addr->TXDATA.ptr == 0 )
-                iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE * 2,0);
-            if ( addr->HASHMEM.ptr == 0 )
-                iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
-            //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
-        }
+            iguana_peer_meminit(coin,addr);
         if ( iguana_msgparser(myinfo,coin,addr,&addr->RAWMEM,&addr->TXDATA,&addr->HASHMEM,H,buf,len,fromcache) < 0 || addr->dead != 0 )
         {
             printf("%p addr->dead.%d or parser break at %u\n",&addr->dead,addr->dead,(uint32_t)time(NULL));
