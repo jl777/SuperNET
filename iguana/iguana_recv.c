@@ -956,10 +956,12 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
                         prev->hh.next = block;
                         block->hh.prev = prev;
                     }
-                    //if ( bp->hdrsi < coin->MAXBUNDLES )
-                    iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],1);
-                    iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],0);
-                    n++;
+                    if ( bp->startutxo == 0 )
+                    {
+                        iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],1);
+                        iguana_blockQ("allhashes",coin,bp,i,blockhashes[i],0);
+                        n++;
+                    }
                 } else printf("no allhashes block.%p or mismatch.%p\n",block,bp->blocks[i]);
                 prev = block;
             }
