@@ -838,10 +838,10 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
                     } //else printf("numsaved.%d SKIP auto issue.[%d:%d] %s\n",numsaved,bp->hdrsi,i,addr->ipaddr);
                 }
             }
-            else if ( bp->queued == 0 )
+            else if ( bp->queued == 0 && bp->startutxo == 0 )
             {
                 iguana_bundleQ(myinfo,coin,bp,0);
-                printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
+                //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
         }
     } else printf("nonz fpos.%d %s\n",txdata->zblock.fpos,bits256_str(str,origtxdata->zblock.RO.hash2));
