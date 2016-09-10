@@ -761,7 +761,10 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             return;
         }
         else if ( bundlei < coin->chain->bundlesize-1 )
+        {
             bundlei++;
+            iguana_hash2set(coin,"gotblockM",bp,bundlei,origtxdata->zblock.RO.hash2);
+        }
         else // new bundle case, but bad context to extend
         {
             origtxdata->zblock.issued = 0;
@@ -780,10 +783,22 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     if ( (speculative= iguana_bundlestats_update(coin,&block,bp,bundlei,origtxdata,data,recvlen)) < 0 )
         return;
     if ( block == 0 )
+        block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
+    if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
     {
-        printf("getblockM no block to update\n");
-        return;
+        block->hdrsi = bp->hdrsi;
+        block->bundlei = bundlei;
     }
+    if ( bp->blocks[bundlei] == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
+    {
+        //printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
+        //iguana_hash2set(coin,"noblock",bp,bundlei,origtxdata->zblock.RO.hash2);
+        bp->hashes[bundlei] = origtxdata->zblock.RO.hash2;
+        if ( bp->speculative != 0 )
+            bp->speculative[bundlei] = bp->hashes[bundlei];
+        bp->blocks[bundlei] = block;
+    }
+    //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
     block->txvalid = 1;
     if ( block->fpipbits != 0 && block->fpos >= 0 )
     {
@@ -1413,7 +1428,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
             if ( bits256_nonz(bp->nextbundlehash2) == 0 && num > coin->chain->bundlesize )
             {
                 bp->nextbundlehash2 = blockhashes[coin->chain->bundlesize];
-                //iguana_blockQ("recvhash1",coin,0,-1,bp->nextbundlehash2,1);
+                iguana_blockQ("recvhash1",coin,0,-1,bp->nextbundlehash2,1);
             }
             //printf("call allhashes\n");
             if ( 0 && bp->hdrsi == coin->bundlescount-1 )
@@ -1448,8 +1463,8 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
             for (i=1; i<num&&i<=bp->n; i++)
             {
                 bp->speculative[i] = blockhashes[i];
-                //if ( bp->blocks[i] == 0 || bp->blocks[i]->issued == 0 )
-                //    iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
+                if ( bp->blocks[i] == 0 || bp->blocks[i]->issued == 0 )
+                    iguana_blockQ("speculate",coin,bp,-i,blockhashes[i],0);
                 if ( bp->blocks[i] == 0 )
                     bp->blocks[i] = iguana_blockhashset("recvhashes3",coin,bp->bundleheight+i,blockhashes[i],1);
                 //printf("speculate new issue [%d:%d]\n",bp->hdrsi,i);
@@ -1526,14 +1541,14 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
     {
         //iguana_blockQ("recvhash7",coin,0,-7,blockhashes[1],1);
         iguana_blockQ("recvhash7",coin,0,-7,blockhashes[num-1],1);
-        //if ( 1 && coin->RTheight > 0 )
+        if ( 1 && coin->RTheight > 0 )
         {
             for (i=1; i<num; i++)
             {
                 if ( iguana_bundlehash2_check(coin,blockhashes[i]) == 0 )
                 {
                     //fprintf(stderr,"%d ",i);
-                    //iguana_blockQ("recvhashRT",coin,0,-8,blockhashes[i],1);
+                    iguana_blockQ("recvhashRT",coin,0,-8,blockhashes[i],1);
                     //iguana_sendblockreqPT(coin,0,0,-1,blockhashes[i],0);
                 }
             }
@@ -1545,8 +1560,6 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
 struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundlereq *req,struct iguana_zblock *origblock,int32_t numtx,int32_t datalen,int32_t recvlen,int32_t *newhwmp)
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
-    if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
-        printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
     if ( (block= iguana_blockfind("recv",coin,origblock->RO.hash2)) != 0 )
         iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
     else if ( (block= iguana_blockhashset("recvblock",coin,-1,origblock->RO.hash2,1)) == 0 )
@@ -1556,12 +1569,17 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
     }
     if ( bits256_nonz(origblock->RO.prev_block) != 0 )
     {
-        if ( (prevblock= iguana_blockfind("prev",coin,origblock->RO.prev_block)) != 0 && prevblock->height+1 > coin->longestchain )
-            coin->longestchain = prevblock->height+1;
-        else iguana_blockQ("prev",coin,0,-1,origblock->RO.prev_block,1);
+        if ( (prevblock= iguana_blockfind("prev",coin,origblock->RO.prev_block)) != 0 )
+        {
+            if ( prevblock->height+1 > coin->longestchain )
+                coin->longestchain = prevblock->height+1;
+        } else iguana_blockQ("prev",coin,0,-1,origblock->RO.prev_block,1);
     }
+    //printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
     if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
+        if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
+            printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
         if ( bp->speculative != 0 && bp->numspec <= bundlei )
         {
             bp->speculative[bundlei] = block->RO.hash2;
@@ -1574,7 +1592,7 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
             block = iguana_bundleblock(coin,&hash2,bp,bundlei);
         }
         //printf("autoadd [%d:%d]\n",bp->hdrsi,bundlei);
-    } // else printf("couldnt find.(%s)\n",bits256_str(str,block->RO.hash2));
+    } //else printf("couldnt find.(%s)\n",bits256_str(str,block->RO.hash2));
     if ( bp != 0 )
     {
         bp->dirty++;
