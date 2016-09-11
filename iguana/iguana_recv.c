@@ -63,7 +63,7 @@ int32_t iguana_speculativesearch(struct iguana_info *coin,struct iguana_block **
 int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,struct iguana_bundle *bp,int32_t bundlei,bits256 hash2,int32_t iamthreadsafe)
 {
     static bits256 lastreq,lastreq2;
-    int32_t len,j,n,recvlen,numtx; struct iguana_bundle *checkbp; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)]; struct iguana_block *block=0;
+    int32_t len,j,n; struct iguana_bundle *checkbp; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(uint32_t)*32 + sizeof(bits256)]; struct iguana_block *block=0;
     char hexstr[65]; init_hexbytes_noT(hexstr,hash2.bytes,sizeof(hash2));
     if ( addr == 0 && coin->peers != 0 && (n= coin->peers->numranked) > 0 )
         addr = coin->peers->ranked[rand() % n];
@@ -80,16 +80,8 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
     {
-        if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0) )
-        {
-            //char str[65];
-            recvlen = numtx = 0;
-            if ( coin->RTheight > 0 && iguana_RTrawdata(coin,hash2,0,&recvlen,&numtx,1) != 0 )
-            {
-                printf("found valid [%d:%d] in blockreqPT\n",checkbp->hdrsi,j);
-                return(0);
-            } //else printf("no RTrawdata for %s\n",bits256_str(str,hash2));
-        }
+        if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0 && coin->RTheight == 0) )
+            return(0);
     }
     if ( checkbp != bp || j != bundlei )
         bp = 0, bundlei = -1;
@@ -132,7 +124,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         }
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        if ( coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
