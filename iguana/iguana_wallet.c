@@ -31,10 +31,18 @@ void scrubfree(char *sensitivestr)
 
 struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct iguana_waccount *wacct,char *coinaddr)
 {
-    struct iguana_waddress *waddr; uint8_t addrtype,rmd160[20];
+    struct iguana_waddress *waddr,*tmp; uint8_t addrtype,rmd160[20];
     bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
     //calc_rmd160_sha256(rmd160,pubkey33,33);
     HASH_FIND(hh,wacct->waddr,rmd160,sizeof(rmd160),waddr);
+    if ( waddr == 0 )
+    {
+        HASH_ITER(hh,wacct->waddr,waddr,tmp)
+        {
+            printf("%s ",waddr->coinaddr);
+        }
+        printf("not in %s\n",wacct->account);
+    }
     //if ( waddr != 0 && coin != 0 && strcmp(coin->symbol,waddr->symbol) != 0 )
     //    return(0);
     //printf("%s (%s).%d in (%s)\n",waddr==0?"couldnt find":"found",coinaddr,len,wacct->account);
@@ -1058,7 +1066,7 @@ STRING_ARG(bitcoinrpc,validateaddress,address)
     strcat(str,"88ac");
     jaddstr(retjson,"scriptPubKey",str);
     jadd(retjson,"isscript",(addrtype == coin->chain->p2shtype) ? jtrue() : jfalse());
-    if ( iguana_ismine(myinfo,coin,coinaddr,addrtype,pubkey,rmd160) > 0 )
+    if ( iguana_ismine(myinfo,coin,coinaddr,addrtype,pubkey,rmd160) != 0 )
     {
         init_hexbytes_noT(str,pubkey,bitcoin_pubkeylen(pubkey));
         jaddstr(retjson,"pubkey",str);
