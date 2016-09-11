@@ -747,7 +747,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         bp = 0, bundlei = -2;
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.prev_block) == 0 )
         {
-            //printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+            printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
             numtx = origtxdata->zblock.RO.txn_count;
             iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
             req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
@@ -797,7 +797,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             bp->speculative[bundlei] = bp->hashes[bundlei];
         bp->blocks[bundlei] = block;
     }
-    //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
+    printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
     block->txvalid = 1;
     if ( block->fpipbits != 0 && block->fpos >= 0 )
     {
@@ -811,7 +811,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
         if ( bundlei > 1 )
         {
-            //printf("DUP s.%d [%d:%d].(%s) %s n%d\n",numsaved,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr,addr->pendblocks);
+            printf("DUP s.%d [%d:%d].(%s) %s n%d\n",numsaved,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr,addr->pendblocks);
         }
         return;
     }
@@ -826,7 +826,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-        if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
+        //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
             printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         //if ( (bp == coin->current || (coin->peers != 0 && ) && (rand() % coin->chain->bundlesize) < numsaved )
         if ( numsaved < coin->chain->bundlesize )
