@@ -1421,7 +1421,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
                 if ( bp != 0 && bp->speculative != 0 && i < bp->n )
                     bp->speculative[i] = blockhashes[i];
             }
-            //iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
+            iguana_blockQ("recvhash",coin,0,-1,blockhashes[i],1);
         }
     }
     if ( bp != 0 )
@@ -1542,7 +1542,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
         }
         if ( block != 0 )
             block->newtx = 1;
-        //iguana_blockQ("RTblock",coin,0,-7,blockhashes[1],1); // should be RT block
+        iguana_blockQ("RTblock",coin,0,-7,blockhashes[1],1); // should be RT block
     }
     if ( strcmp("BTC",coin->symbol) != 0 )
     {
@@ -1949,7 +1949,7 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                         {
                             init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                            //printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
+                            printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
                             bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
                             init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
                             //printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
