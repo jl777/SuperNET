@@ -1313,9 +1313,15 @@ uint64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
         {
-            balance += iguana_bundle_unspents(coin,bp,&last);
-            fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
-            height = bp->bundleheight + bp->n;
+            iguana_volatilespurge(coin,&bp->ramchain);
+            if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+                printf("error mapping bundle.[%d]\n",hdrsi);
+            else
+            {
+                balance += iguana_bundle_unspents(coin,bp,&last);
+                fprintf(stderr,"(%d %.8f) ",hdrsi,dstr(balance));
+                height = bp->bundleheight + bp->n;
+            }
         }
     }
     sprintf(fname,"%s/%s/utxoaddrs",GLOBAL_DBDIR,coin->symbol), OS_portable_path(fname);
