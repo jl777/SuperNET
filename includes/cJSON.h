@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <math.h>
 #include <ctype.h>
 #include <float.h>

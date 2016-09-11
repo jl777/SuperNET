@@ -107,7 +107,7 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     while ( (item= calloc(1,sizeof(struct allocitem) + allocsize + 16)) == 0 )
     {
         char str[65];
-        printf("mycalloc: need to wait for memory.(%d,%ld) %s to be available\n",n,itemsize,mbstr(str,allocsize));
+        printf("mycalloc.%c: need to wait for memory.(%d,%ld) %s to be available\n",type,n,itemsize,mbstr(str,allocsize));
         sleep(1);
     }
     //printf("calloc origptr.%p retptr.%p size.%ld\n",item,(void *)(long)item + sizeof(*item),allocsize);
