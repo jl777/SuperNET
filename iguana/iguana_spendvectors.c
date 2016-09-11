@@ -776,13 +776,15 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
     printf("i.%d bundlescount.%d\n",i,coin->bundlescount);
     if ( coin->balanceswritten > 1 )
         coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
-    if ( coin->balanceswritten > 1 )
+    //if ( coin->balanceswritten > 1 )
     {
         //for (i=0; i<coin->balanceswritten; i++)
         for (i=0; i<coin->bundlescount; i++)
         {
+            if ( (bp= coin->bundles[i]) != 0 )
+                iguana_bundlevalidate(myinfo,coin,bp,0);
             //printf("%d ",i);
-            iguana_validateQ(coin,coin->bundles[i]);
+            //iguana_validateQ(coin,coin->bundles[i]);
         }
     }
     printf("i.%d balanceswritten.%d\n",i,coin->balanceswritten);

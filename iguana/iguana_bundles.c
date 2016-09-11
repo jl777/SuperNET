@@ -141,9 +141,13 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
     }
     if ( bits256_nonz(*orighash2p) > 0 && memcmp(newhash2.bytes,orighash2p,sizeof(bits256)) != 0 )
     {
-        char str2[65],str3[65];
-        bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
-        printf("WARNING iguana_hash2set overwrite avoided [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+        static uint32_t counter;
+        if ( counter++ < 3 )
+        {
+            char str2[65],str3[65];
+            bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
+            printf("WARNING iguana_hash2set overwrite avoided [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+        }
         return(-1);
         //*orighash2p = newhash2;
        // getchar();
