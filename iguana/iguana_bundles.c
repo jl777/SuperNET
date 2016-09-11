@@ -1123,7 +1123,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
         iguana_bundlehdr(myinfo,coin,bp,starti);
     else if ( bp->emitfinish == 0 && bp->numsaved >= bp->n )
     {
-        if ( coin->virtualchain != 0 || iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
+        if ( coin->virtualchain != 0 )//|| iguana_bundlefinalize(myinfo,coin,bp,mem,memB) > 0 )
         {
             //printf("bundlefinalized done.[%d]\n",bp->hdrsi);
             return(0);
