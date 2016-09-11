@@ -2198,7 +2198,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
         coin->disableUTXO = 0;
         fprintf(stderr,"%s back balanceflush\n",coin->symbol);
         coin->balanceflush = 0;
-        iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
+        //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
     }
     if ( (rand() % 10) == 0 )
     {
