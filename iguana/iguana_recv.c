@@ -132,7 +132,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         }
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        //if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -755,7 +755,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         bp = 0, bundlei = -2;
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.prev_block) == 0 )
         {
-            //printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+            printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
             numtx = origtxdata->zblock.RO.txn_count;
             iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
             req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
@@ -835,7 +835,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
-        //printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
+        printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         //if ( (bp == coin->current || (coin->peers != 0 && ) && (rand() % coin->chain->bundlesize) < numsaved )
         if ( numsaved < coin->chain->bundlesize )
         {
@@ -1582,7 +1582,7 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
                 coin->longestchain = prevblock->height+1;
         } else iguana_blockQ("prev",coin,0,-1,origblock->RO.prev_block,1);
     }
-    //printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
+    printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
     if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
