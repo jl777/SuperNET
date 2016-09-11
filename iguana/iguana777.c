@@ -473,13 +473,13 @@ void iguana_update_balances(struct iguana_info *coin)
                 }
             } else printf("null bp.[%d]\n",hdrsi);
         }
-        //if ( max != coin->origbalanceswritten )
-        {
-            coin->balanceflush = max+1;
-            while ( coin->balanceflush != 0 )
-                sleep(3);
-        }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
     }
+    //if ( max != coin->origbalanceswritten )
+    {
+        coin->balanceflush = max+1;
+        while ( coin->balanceflush != 0 )
+            sleep(3);
+    }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
 }
 
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
@@ -490,8 +490,6 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("skip utxogen as spendvectorsaved.%u\n",coin->spendvectorsaved);
         return(0);
     }
-    //if ( (incr= IGUANA_NUMHELPERS) > 8 )
-    //    incr = 8;
     incr = IGUANA_NUMHELPERS;
     max = coin->bundlescount;
     if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->emitfinish <= 1) )
@@ -597,7 +595,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             //if ( (bp= coin->current) != 0 && bp->numsaved >= coin->chain->bundlesize && bp->startutxo == 0 )
             //    iguana_bundlefinalize(myinfo,coin,bp,mem,memB);
             n = coin->bundlescount-1;
-            if ( coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
+            if ( coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
             {
                 //printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(myinfo,coin,1),coin->spendvectorsaved);
                 if ( iguana_emitfinished(myinfo,coin,1) >= n )
@@ -616,14 +614,11 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                     }
                     else
                     {
+                        iguana_update_balances(coin);
                         coin->spendvectorsaved = (uint32_t)time(NULL);
-                        //printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
+                        printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
                     }
                 }
-            }
-            else
-            {
-                //coin->spendvectorsaved = 1;
             }
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )

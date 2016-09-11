@@ -502,7 +502,9 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             }
             else
             {
-                printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",rdata->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
+                static uint32_t counter;
+                if ( counter++ < 3 )
+                    printf("ramchain.[%d] map error balanceswritten %d vs %d hashes %x %x\n",rdata->height,coin->balanceswritten,numhdrsi,coin->balancehash.uints[0],balancehash.uints[0]);
                 err++;
                 OS_removefile(fname,0);
             }
