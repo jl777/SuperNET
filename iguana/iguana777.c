@@ -385,7 +385,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
         return(-1);
     }
     //printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
-    if ( strcmp("BTC",coin->symbol) == 0 || iguana_bundlevalidate(myinfo,coin,bp,0) == bp->n ) //
+    if ( iguana_bundlevalidate(myinfo,coin,bp,0) == bp->n ) //
     {
         retval = 0;
         if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
@@ -507,7 +507,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
         sleep(IGUANA_NUMHELPERS+3);
     }
-    if ( helperid < incr )
+    /*if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
         {
@@ -527,7 +527,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     {
         printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(2*IGUANA_NUMHELPERS+3);
-    }
+    }*/
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
