@@ -384,7 +384,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("iguana_helperA unexpected null bp\n");
         return(-1);
     }
-    printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
+    //printf("helperid.%d validate gen utxo.[%d] utxofinish.%u\n",helperid,bp->hdrsi,bp->utxofinish);
     if ( iguana_bundlevalidate(myinfo,coin,bp,0) == bp->n ) //
     {
         retval = 0;
