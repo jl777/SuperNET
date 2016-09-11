@@ -253,6 +253,10 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
     if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && iter > 0 )
         return;
+    OS_randombytes((uint8_t *)&j,sizeof(j));
+    if ( j < 0 )
+        j = -j;
+    srand(j);
     memset(&zero,0,sizeof(zero));
     lastbundle = zero;
     if ( coin->MAXPEERS > IGUANA_MAXPEERS )
@@ -292,7 +296,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( m < 32 || m < coin->MAXPEERS/2 )//&& m < 77.7 )
+            if ( (rand() % 2) == 0 && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )
             {
                 if ( 0 && m == 0 )
                 {
