@@ -1587,7 +1587,7 @@ void iguana_main(void *arg)
     if ( iguana_commandline(myinfo,arg) == 0 )
     {
         iguana_helpinit(myinfo);
-        iguana_relays_init(myinfo);
+        //iguana_relays_init(myinfo);
         basilisks_init(myinfo);
 #ifdef __APPLE__
         iguana_appletests(myinfo);
