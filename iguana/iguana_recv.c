@@ -124,7 +124,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         }
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -1318,8 +1318,11 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
                     bp->dirty++;
-                    if ( bp->issued[bundlei] == 0 )//&& bp->hdrsi < coin->MAXBUNDLES )
+                    if ( bp->issued[bundlei] == 0 && coin->RTheight > 0 )
+                    {
+                        bp->issued[bundlei] = 0;
                         iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
+                    }
                     //printf("{%d:%d} ",bp->hdrsi,bundlei);
                     if ( i == 0 )
                     {
