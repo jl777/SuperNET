@@ -484,6 +484,7 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
         if ( account == 0 || account[0] == 0 )
             account = "default";
         payload = cJSON_DetachItemFromObject(retjson,"wallet");
+        //printf("PAYLOAD.(%s)\n",jprint(payload,0));
         if ( payload == 0 )
             payload = cJSON_CreateObject();
         if ( waddr != 0 && (valuestr= iguana_walletvalue(valuebuf,waddr)) != 0 )
@@ -499,14 +500,13 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
             {
                 accountobj = cJSON_CreateObject();
                 jadd(payload,account,accountobj);
-                printf("ADDACCOUNT.(%s)\n",jprint(accountobj,0));
+                //printf("ADDACCOUNT.(%s)\n",jprint(accountobj,0));
             }
             jaddstr(accountobj,rmdstr,valuestr);
         }
         jadd(retjson,"wallet",payload);
         newstr = jprint(retjson,1);
         retval = iguana_loginsave(myinfo,coin,newstr);
-        printf("newstr.(%s) retval.%d\n",newstr,retval);
         free(newstr);
     } else printf("iguana_payloadupdate: error parsing.(%s)\n",retstr);
     return(retval);
@@ -540,6 +540,7 @@ cJSON *iguana_payloadmerge(cJSON *loginjson,cJSON *importjson)
 cJSON *iguana_walletadd(struct supernet_info *myinfo,struct iguana_waddress **waddrp,struct iguana_info *coin,char *retstr,char *account,struct iguana_waddress *refwaddr,int32_t setcurrent,char *redeemScript)
 {
     cJSON *retjson=0; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0;
+    printf("walletaddr.(%s)\n",retstr);
     if ( (wacct= iguana_waccountfind(myinfo,account)) == 0 )
         wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
@@ -1241,7 +1242,6 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
             return(clonestr("{\"error\":\"must have password field\"}"));
     }
     iguana_walletlock(myinfo,coin);
-    printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     strcpy(myinfo->secret,password);
     strcpy(myinfo->password,password);
@@ -1349,27 +1349,26 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
     memset(&addr,0,sizeof(addr));
     if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&addr,privkey) != 0 )
     {
-        if ( (waddr= iguana_waddresssearch(myinfo,&wacct,addr.coinaddr)) != 0 )
-        {
-            waddr = iguana_waccountswitch(myinfo,coin,account,addr.coinaddr,0);
-            waddr->privkey = privkey;
-            return(clonestr("{\"result\":\"privkey already in wallet\"}"));
-        }
         if ( myinfo->expiration == 0 )
             return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+        if ( (waddr= iguana_waddresssearch(myinfo,&wacct,addr.coinaddr)) != 0 )
+        {
+            //waddr = iguana_waccountswitch(myinfo,coin,account,addr.coinaddr,0);
+            waddr->privkey = privkey;
+            myinfo->dirty = 0;
+            return(clonestr("{\"result\":\"privkey already in wallet\"}"));
+        } else waddr = &addr;
         myinfo->expiration++;
         if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             free(retstr);
             retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
-            printf("DECRYPT.(%s)\n",retstr);
-            if ( waddr == 0 )
-                waddr = &addr;
+            //printf("DECRYPT.(%s)\n",retstr);
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,privkey);
             iguana_waccountswitch(myinfo,coin,account,waddr->coinaddr,0);
             waddr->privkey = privkey;
             retjson = iguana_walletadd(myinfo,0,coin,retstr,account,waddr,0,0);
-            printf("AFTERADD.(%s)\n",jprint(retjson,0));
+            //printf("AFTERADD.(%s)\n",jprint(retjson,0));
             if ( retstr != 0 )
                 scrubfree(retstr);
             return(jprint(retjson,1));
