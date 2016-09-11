@@ -151,9 +151,9 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
         {
             waddr->addrtype = addrtype;//coin->chain->pubtype;
             waddr->wiftype = addwaddr->wiftype;
-            if ( bits256_nonz(waddr->privkey) == 0 )
+            //if ( bits256_nonz(waddr->privkey) == 0 )
                 waddr->privkey = addwaddr->privkey;
-            if ( addwaddr->wifstr[0] != 0 )
+            //if ( addwaddr->wifstr[0] != 0 )
                 strcpy(waddr->wifstr,addwaddr->wifstr);
             memcpy(waddr->rmd160,rmd160,sizeof(waddr->rmd160));
             calc_rmd160_sha256(rmd160,addwaddr->pubkey,bitcoin_pubkeylen(addwaddr->pubkey));
@@ -245,17 +245,21 @@ struct iguana_waddress *iguana_waccountswitch(struct supernet_info *myinfo,struc
             addr = *waddr;
             flag = 1;
             iguana_waddressdelete(myinfo,coin,wacct,coinaddr);
+            waddr = 0;
         }
     }
     if ( (wacct= iguana_waccountcreate(myinfo,account)) != 0 )
     {
-        waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
+        if ( waddr == 0 )
+            waddr = iguana_waddresscreate(myinfo,coin,wacct,coinaddr,redeemScript);
         if ( waddr != 0 )
         {
             if ( redeemScript == 0 )
                 iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,addr.privkey);
             strcpy(waddr->coinaddr,coinaddr);
             waddr = iguana_waddressadd(myinfo,coin,wacct,waddr,redeemScript);
+            if ( flag != 0 )
+                waddr->privkey = addr.privkey;
         } else waddr = 0;
     }
     myinfo->dirty = (uint32_t)time(NULL);
@@ -468,6 +472,7 @@ char *iguana_walletvalue(char *buf,struct iguana_waddress *waddr)
     if ( waddr->scriptlen > 0 )
         init_hexbytes_noT(buf,waddr->redeemScript,waddr->scriptlen);
     else init_hexbytes_noT(buf,waddr->privkey.bytes,sizeof(waddr->privkey));
+    //char str[65]; printf("%s -> walletvalue.(%s)\n",bits256_str(str,waddr->privkey),buf);
     return(buf);
 }
                          
@@ -494,13 +499,14 @@ int32_t iguana_payloadupdate(struct supernet_info *myinfo,struct iguana_info *co
             {
                 accountobj = cJSON_CreateObject();
                 jadd(payload,account,accountobj);
+                printf("ADDACCOUNT.(%s)\n",jprint(accountobj,0));
             }
             jaddstr(accountobj,rmdstr,valuestr);
         }
         jadd(retjson,"wallet",payload);
         newstr = jprint(retjson,1);
         retval = iguana_loginsave(myinfo,coin,newstr);
-        //printf("newstr.(%s) retval.%d\n",newstr,retval);
+        printf("newstr.(%s) retval.%d\n",newstr,retval);
         free(newstr);
     } else printf("iguana_payloadupdate: error parsing.(%s)\n",retstr);
     return(retval);
@@ -1229,6 +1235,11 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( timeout <= 0 )
         return(clonestr("{\"error\":\"timeout must be positive\"}"));
+    if ( password == 0 || password[0] == 0 )
+    {
+        if ( (password= jstr(json,"passphrase")) == 0 || password[0] == 0 )
+            return(clonestr("{\"error\":\"must have password field\"}"));
+    }
     iguana_walletlock(myinfo,coin);
     printf("timeout.%d\n",timeout);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
@@ -1332,6 +1343,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         }
     }
     privkey = iguana_str2priv(myinfo,coin,wif);
+    //char str2[65]; printf("wif.%s -> %s\n",wif,bits256_str(str2,privkey));
     if ( bits256_nonz(privkey) == 0 )
         return(clonestr("{\"error\":\"illegal privkey\"}"));
     memset(&addr,0,sizeof(addr));
@@ -1340,6 +1352,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         if ( (waddr= iguana_waddresssearch(myinfo,&wacct,addr.coinaddr)) != 0 )
         {
             waddr = iguana_waccountswitch(myinfo,coin,account,addr.coinaddr,0);
+            waddr->privkey = privkey;
             return(clonestr("{\"result\":\"privkey already in wallet\"}"));
         }
         if ( myinfo->expiration == 0 )
@@ -1349,11 +1362,14 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         {
             free(retstr);
             retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
+            printf("DECRYPT.(%s)\n",retstr);
             if ( waddr == 0 )
                 waddr = &addr;
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,privkey);
             iguana_waccountswitch(myinfo,coin,account,waddr->coinaddr,0);
+            waddr->privkey = privkey;
             retjson = iguana_walletadd(myinfo,0,coin,retstr,account,waddr,0,0);
+            printf("AFTERADD.(%s)\n",jprint(retjson,0));
             if ( retstr != 0 )
                 scrubfree(retstr);
             return(jprint(retjson,1));
