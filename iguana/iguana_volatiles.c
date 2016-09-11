@@ -461,7 +461,7 @@ int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ram
             numhdrsi = *(int32_t *)ramchain->debitsfileptr;
             memcpy(balancehash.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi)),sizeof(balancehash));
             memcpy(allbundles.bytes,(void *)((long)ramchain->debitsfileptr + sizeof(numhdrsi) + sizeof(balancehash)),sizeof(allbundles));
-            if ( coin->balanceswritten == 0 )
+            if ( 1 || coin->balanceswritten == 0 ) // jl777 fixme
             {
                 coin->balanceswritten = numhdrsi;
                 coin->balancehash = balancehash;
