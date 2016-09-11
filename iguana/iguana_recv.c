@@ -799,7 +799,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     numtx = origtxdata->zblock.RO.txn_count;
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
-    printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
+    //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
     block->txvalid = 1;
     if ( block->fpipbits != 0 && block->fpos >= 0 )
     {
@@ -826,7 +826,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-        //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
+        if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
             printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         //if ( (bp == coin->current || (coin->peers != 0 && ) && (rand() % coin->chain->bundlesize) < numsaved )
         if ( numsaved < coin->chain->bundlesize )
