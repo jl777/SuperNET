@@ -864,11 +864,10 @@ char *iguana_walletscan(struct supernet_info *myinfo,struct iguana_info *coin,in
 
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    // "wallet":{"test":{"R9S7zZzzvgb4CkiBH1i7gnFcwJuL1MYbxN":"18ab9c89ce83929db720cf26b663bf762532276146cd9d3e1f89086fcdf00053"}}
     cJSON *payload,*item,*array,*child; char *account,coinaddr[128],*privstr,wifstr[128]; int32_t i,p2shflag,n; struct iguana_waccount *wacct; struct iguana_waddress waddr; bits256 privkey;
     if ( myinfo->wallet == 0 && myinfo->decryptstr != 0 && (payload= cJSON_Parse(myinfo->decryptstr)) != 0 )
     {
-        //printf("WALLET.(%s)\n",myinfo->decryptstr);
+        printf("WALLET.(%s)\n",myinfo->decryptstr);
         if ( (array= jobj(payload,"wallet")) != 0 )
         {
             n = cJSON_GetArraySize(array);
@@ -893,14 +892,16 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                                 {
                                     privkey = bits256_conv(child->valuestring);
                                     if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&waddr,privkey) != 0 )
+                                    {
                                         iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
-                                    else printf("walletinitcheck: error waddresscalc\n");
+                                        printf("(%s) ",waddr.coinaddr);
+                                    } else printf("walletinitcheck: error waddresscalc\n");
                                 }
                             }
                         }
                         child = child->next;
                     }
-                    //printf("account.(%s)\n",account);
+                    printf("account.(%s)\n",account);
                 }
                 item = item->next;
             }
