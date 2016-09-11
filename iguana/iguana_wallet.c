@@ -867,7 +867,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
     cJSON *payload,*item,*array,*child; char *account,coinaddr[128],*privstr,wifstr[128]; int32_t i,p2shflag,n; struct iguana_waccount *wacct; struct iguana_waddress waddr; bits256 privkey;
     if ( myinfo->wallet == 0 && myinfo->decryptstr != 0 && (payload= cJSON_Parse(myinfo->decryptstr)) != 0 )
     {
-        printf("WALLET.(%s)\n",myinfo->decryptstr);
+        //printf("WALLET.(%s)\n",myinfo->decryptstr);
         if ( (array= jobj(payload,"wallet")) != 0 )
         {
             n = cJSON_GetArraySize(array);
@@ -1278,7 +1278,7 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     if ( permanentfile != 0 )
         strcpy(myinfo->permanentfile,permanentfile);
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
-    myinfo->expiration = (uint32_t)time(NULL) + 3600*24;
+    //myinfo->expiration = (uint32_t)time(NULL) + 3600*24;
     struct iguana_waddress waddr; struct iguana_waccount *wacct;
     if ( (wacct= iguana_waccountcreate(myinfo,"default")) != 0 )
     {
@@ -1286,8 +1286,9 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
         else printf("couldnt waddresscalc persistent\n");
     } else printf("coildnt create default account\n");
-    iguana_walletinitcheck(myinfo,coin);
+    //iguana_walletinitcheck(myinfo,coin);
     myinfo->dirty = (uint32_t)time(NULL);
+    myinfo->expiration = 0;
     return(retstr);
 }
 
