@@ -510,6 +510,27 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        {
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+            {
+                printf("unexpected null bp for [%d]\n",hdrsi);
+                continue;
+            }
+            if ( iguana_bundlevalidate(myinfo,coin,bp,0) != bp->n )
+            {
+                printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
+                exit(-1);
+            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
+        }
+    }
+    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max )
+    {
+        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
+        sleep(2*IGUANA_NUMHELPERS+3);
+    }
+    if ( helperid < incr )
+    {
+        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
             num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
     }
     while ( (n= iguana_convertfinished(coin)) < max )
@@ -534,27 +555,6 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     while ( iguana_balancefinished(coin) < max || coin->balanceflush != 0 )
         sleep(3);
-    if ( helperid < incr )
-    {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-        {
-            if ( (bp= coin->bundles[hdrsi]) == 0 )
-            {
-                printf("unexpected null bp for [%d]\n",hdrsi);
-                continue;
-            }
-            if ( iguana_bundlevalidate(myinfo,coin,bp,0) != bp->n )
-            {
-                printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
-                exit(-1);
-            } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
-        }
-    }
-    while ( iguana_validated(coin) < max || iguana_utxofinished(coin) < max )
-    {
-        printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
-        sleep(2*IGUANA_NUMHELPERS+3);
-    }
     //printf("helper.%d check validates\n",helperid);
     //incr = IGUANA_NUMHELPERS;
     //incr = 1;
