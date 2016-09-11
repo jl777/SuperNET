@@ -124,7 +124,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         }
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( coin->RTheight > 0 && coin->current == bp )
+        if ( coin->RTheight > 0 )//&& coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -797,6 +797,8 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             bp->speculative[bundlei] = bp->hashes[bundlei];
         bp->blocks[bundlei] = block;
     }
+    numtx = origtxdata->zblock.RO.txn_count;
+    iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
     printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
     block->txvalid = 1;
     if ( block->fpipbits != 0 && block->fpos >= 0 )
@@ -821,8 +823,6 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
         txdata->zblock.RO.recvlen = recvlen;
         txdata->zblock.fpos = 0;
-        numtx = origtxdata->zblock.RO.txn_count;
-        iguana_RTgotblock(coin,txdata->zblock.RO.hash2,data,&recvlen,&numtx);
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);

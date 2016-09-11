@@ -1017,19 +1017,19 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                 bp->blocks[block->bundlei] = block;
                 bp->hashes[block->bundlei] = block->RO.hash2;
                 block->height = coin->firstRTheight+offset;
+                if ( coin->peers != 0 )
+                {
+                    if ( coin->peers->numranked > 0 )
+                    {
+                        for (i=0; i<coin->peers->numranked&&i<8; i++)
+                            if ( (addr= coin->peers->ranked[i]) != 0 )
+                            {
+                                iguana_sendblockreqPT(coin,addr,coin->bundles[block->hdrsi],block->bundlei,block->RO.hash2,1);
+                            }
+                    } else iguana_updatemetrics(myinfo,coin);
+                }
             }
             iguana_blockQ("RTiterate",coin,bp,block->bundlei,block->RO.hash2,1);
-            if ( 0 && coin->peers != 0 )
-            {
-                if ( coin->peers->numranked > 0 )
-                {
-                    for (i=0; i<coin->peers->numranked&&i<8; i++)
-                        if ( (addr= coin->peers->ranked[i]) != 0 )
-                        {
-                            iguana_sendblockreqPT(coin,addr,coin->bundles[block->hdrsi],block->bundlei,block->RO.hash2,1);
-                        }
-                } else iguana_updatemetrics(myinfo,coin);
-            }
             num = 0;
             for (height=block->height+1; height<=coin->blocks.hwmchain.height; height++)
             {break;
