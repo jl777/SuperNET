@@ -936,7 +936,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     return((void *)"already have rawdata");
                 return(0);
             }
-            //printf("len.%d filesize.%ld\n",len,filesize);
+            printf("malformed delete.(%s) len.%d filesize.%ld\n",fname,len,filesize);
             fclose(fp);
             OS_removefile(fname,0);
         }
@@ -954,7 +954,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     if ( fwrite(recvlenp,1,sizeof(*recvlenp),fp) != sizeof(*recvlenp) || fwrite(numtxp,1,sizeof(*numtxp),fp) != sizeof(*numtxp) || fwrite(data,1,*recvlenp,fp) != *recvlenp )
                         printf("error writing %s len.%d numtx.%d\n",bits256_str(str,hash2),*recvlenp,*numtxp);
                     fclose(fp);
-                    //printf("numtx.%d len.%d %s hwm.%d L.%d\n",*numtxp,*recvlenp,fname,coin->blocks.hwmchain.height,coin->longestchain);
+                    printf("numtx.%d len.%d %s hwm.%d L.%d\n",*numtxp,*recvlenp,fname,coin->blocks.hwmchain.height,coin->longestchain);
                 } else printf("couldnt create %s\n",fname);
             }
             else if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
@@ -1008,7 +1008,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
         coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
         if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
         {
-            //printf("%s errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+            char str[65]; printf("%s cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
             struct iguana_peer *addr; // int32_t errs = 0;
             iguana_blockhashset("RTblock",coin,coin->firstRTheight+offset,block->RO.hash2,1);
             if ( (bp= coin->bundles[block->hdrsi]) != 0 )
