@@ -118,13 +118,13 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         addr->pendtime = (uint32_t)time(NULL);
         if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
         {
-            if ( bp != coin->current && bp->issued[bundlei] > 1 )
+            if ( coin->RTheight == 0 && bp != coin->current && bp->issued[bundlei] > 1 )
                 return(0);
             bp->issued[bundlei] = addr->pendtime;
         }
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        if ( coin->RTheight > 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
