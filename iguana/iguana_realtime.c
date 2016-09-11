@@ -1019,7 +1019,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                 block->height = coin->firstRTheight+offset;
             }
             iguana_blockQ("RTiterate",coin,bp,block->bundlei,block->RO.hash2,1);
-            if ( coin->peers != 0 )
+            if ( 0 && coin->peers != 0 )
             {
                 if ( coin->peers->numranked > 0 )
                 {
