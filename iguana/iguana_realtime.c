@@ -999,17 +999,17 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
 
 int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t offset,struct iguana_block *block,int64_t polarity)
 {
-    struct iguana_txblock txdata; uint8_t *serialized; struct iguana_bundle *bp; int32_t hdrsi,bundlei,height,i,n,errs=0,numtx,num,len; int32_t recvlen = 0;
+    struct iguana_txblock txdata; uint8_t *serialized; struct iguana_bundle *bp; int32_t hdrsi,bundlei,height,i,n,numtx,num,len; int32_t recvlen = 0;
     if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
     {
-        char str[65];
+        //char str[65];
         //printf("errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
         coin->RTrecvlens[offset] = 0;
         coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
         if ( (numtx= coin->RTnumtx[offset]) == 0 || (serialized= coin->RTrawdata[offset]) == 0 || (recvlen= coin->RTrecvlens[offset]) == 0 )
         {
-            printf("%s errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
-            struct iguana_peer *addr;
+            //printf("%s errs.%d cant load %s ht.%d polarity.%lld numtx.%d %p recvlen.%d\n",coin->symbol,errs,bits256_str(str,block->RO.hash2),block->height,(long long)polarity,coin->RTnumtx[offset],coin->RTrawdata[offset],coin->RTrecvlens[offset]);
+            struct iguana_peer *addr; // int32_t errs = 0;
             iguana_blockhashset("RTblock",coin,coin->firstRTheight+offset,block->RO.hash2,1);
             if ( (bp= coin->bundles[block->hdrsi]) != 0 )
             {
@@ -1032,7 +1032,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             }
             num = 0;
             for (height=block->height+1; height<=coin->blocks.hwmchain.height; height++)
-            {
+            {break;
                 hdrsi = (height / coin->chain->bundlesize);
                 bundlei = (height % coin->chain->bundlesize);
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (block= bp->blocks[bundlei]) != 0 )
@@ -1050,7 +1050,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     }
                 }
             }
-            printf("issue missing %d to ht.%d\n",num,height);
+            //printf("issue missing %d to ht.%d\n",num,height);
             return(-1);
         }
     }
