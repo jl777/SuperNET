@@ -890,7 +890,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
     }
     if ( addr != 0 )
     {
-        //if ( 0 && addr->msgcounts.verack == 0 )
+        if ( 0 && addr->msgcounts.verack == 0 )
             printf("iguana_msgparser verack.%d from (%s) parse.(%s) len.%d\n",addr->msgcounts.verack,addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);
