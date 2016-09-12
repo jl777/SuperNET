@@ -1023,9 +1023,9 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
                             jaddibits256(txids,jbits256(item,"txid"));
                         if ( vouts != 0 )
                             jaddinum(vouts,jint(item,"vout"));
-                        if ( unspents != 0 && (jobj(item,"spent") == 0 || jobj(item,"dest") == 0) )
+                        if ( unspents != 0 && jobj(item,"unspent") != 0 && jobj(item,"spent") == 0 && jobj(item,"dest") == 0 )
                             jaddi(unspents,jduplicate(item));
-                        if ( spends != 0 && jobj(item,"spent") != 0 && jobj(item,"dest") != 0 )
+                        if ( spends != 0 && (jobj(item,"spent") != 0 || jobj(item,"dest") != 0) )
                             jaddi(spends,jduplicate(item));
                     }
                 }
@@ -1034,10 +1034,10 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
         }
         free(balancestr);
     }
-    //if ( spends != 0 )
-    //    printf("SPENDS.(%s)\n",jprint(spends,0));
-    //if ( unspents != 0 )
-    //    printf("UNSPENTS.(%s)\n",jprint(unspents,0));
+    if ( spends != 0 )
+        printf("SPENDS.(%s)\n",jprint(spends,0));
+    if ( unspents != 0 )
+        printf("UNSPENTS.(%s)\n",jprint(unspents,0));
     return(balance);
 }
 
