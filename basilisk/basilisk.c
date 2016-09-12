@@ -202,8 +202,10 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             if ( addr->usock >= 0 )
             {
                 s = 0;
+                valid = (addr->supernet != 0);
                 if ( NUMRELAYS > 0 && basilisk_specialcmd(type) != 0 )
                 {
+                    valid = 0;
                     OS_randombytes((void *)&r2,sizeof(r2));
                     if ( (r2 % NUMRELAYS) >= sqrt(NUMRELAYS) )
                     {
@@ -218,8 +220,8 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                         //printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
                     }
-                    //printf("send to other relay.(%s)\n",addr->ipaddr);
                     valid = 1;
+                    //printf("send to other relay.(%s)\n",addr->ipaddr);
                 }
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
@@ -229,7 +231,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    printf("n.%d/fanout.%d i.%d l.%d [%s].tag%d send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -899,7 +901,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",sqrt(NUMRELAYS));
     if ( coin != 0 )

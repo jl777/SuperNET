@@ -423,7 +423,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
 
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent;
+    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout;
     if ( RELAYID >= 0 )
         return(0);
     if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
@@ -432,7 +432,9 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         Lptr->retstr = jprint(infojson,1);
         return(Lptr);
     }
-    ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    if ( (fanout= juint(valsobj,"fanout")) < 5 )
+        fanout = 5;
+    ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,fanout,juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
     return(ptr);
 }
 
@@ -816,7 +818,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS)+1);
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( coin != 0 )
     {
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
@@ -844,7 +846,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",NUMRELAYS);
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",(int32_t)sqrt(NUMRELAYS));
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( coin != 0 )
     {
         //if ( juint(vals,"burn") == 0 )
