@@ -332,7 +332,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
     return(retstr);
 }
 
-void iguana_exit(struct supernet_info *myinfo)
+void iguana_exit(struct supernet_info *myinfo,struct iguana_bundle *bp)
 {
     int32_t i,j,iter; struct iguana_info *coin,*tmp;
     if ( myinfo == 0 )
@@ -365,6 +365,8 @@ void iguana_exit(struct supernet_info *myinfo)
         sleep(3);
     }
     printf("sockets closed\n");
+    if ( bp != 0 )
+        iguana_bundleremove(bp->coin,bp->hdrsi,1);
     for (i=0; i<10; i++)
     {
         printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",10-i);
@@ -375,12 +377,12 @@ void iguana_exit(struct supernet_info *myinfo)
 
 #ifndef _WIN32
 #include <signal.h>
-void sigint_func() { printf("\nSIGINT\n"); iguana_exit(0); }
-void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(0); }
-void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(0); }
-void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(0); }
-void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(0); }
-void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(0); }
+void sigint_func() { printf("\nSIGINT\n"); iguana_exit(0,0); }
+void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(0,0); }
+void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(0,0); }
+void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(0,0); }
+void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(0,0); }
+void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(0,0); }
 void sigchild_func() { printf("\nSIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
 void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
@@ -1165,7 +1167,7 @@ ZERO_ARGS(SuperNET,stop)
 {
     if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
     {
-        iguana_exit(myinfo);
+        iguana_exit(myinfo,0);
         return(clonestr("{\"result\":\"exit started\"}"));
     } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
 }

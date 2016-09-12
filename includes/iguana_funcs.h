@@ -187,7 +187,7 @@ int32_t iguana_rpctest(struct iguana_info *coin);
 extern queue_t helperQ;
 extern const char *Hardcoded_coins[][3];
 void iguana_main(void *arg);
-void iguana_exit(struct supernet_info *myinfo);
+void iguana_exit(struct supernet_info *myinfo,struct iguana_bundle *bp);
 
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag);
 struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundleip,char *fname,struct OS_memspace *mem,uint32_t ipbits,bits256 hash2);
@@ -273,7 +273,7 @@ cJSON *iguana_pubkeyjson(struct iguana_info *coin,char *pubkeystr);
 void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit);
 int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *memB,struct iguana_bundle *bp,int32_t timelimit,int32_t lag);
 void ramcoder_test(void *data,int64_t len);
-void iguana_exit();
+void iguana_exit(struct supernet_info *myinfo,struct iguana_bundle *bp);
 int32_t iguana_pendingaccept(struct iguana_info *coin);
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port);
 void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t markflag);

@@ -126,7 +126,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
     if ( (outfile= fopen(fname,"wb")) == NULL)
     {
         fprintf(stderr, "can't open %s\n", fname);
-        iguana_exit(0);
+        iguana_exit(0,0);
     }
     jpeg_stdio_dest(&cinfo, outfile);
     cinfo.image_width = width; 	/* image width and height, in pixels */

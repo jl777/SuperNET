@@ -155,7 +155,7 @@ struct iguana_bundle *iguana_externalspent(struct supernet_info *myinfo,struct i
                     else
                     {
                         printf("illegal hdrsi.%d prev_hash.(%s) for bp.[%d]\n",hdrsi,bits256_str(str,prev_hash),spent_hdrsi);
-                        iguana_exit(myinfo);
+                        iguana_exit(myinfo,0);
                         return(0);
                     }
                 }
@@ -164,8 +164,8 @@ struct iguana_bundle *iguana_externalspent(struct supernet_info *myinfo,struct i
                     printf("cant find prev_hash.(%s) for bp.[%d]\n",bits256_str(str,prev_hash),spent_hdrsi);
                     if ( spent_hdrsi < coin->current->hdrsi )
                     {
-                        iguana_bundleremove(coin,spent_hdrsi,1);
-                        iguana_exit(myinfo);
+                        //iguana_bundleremove(coin,spent_hdrsi,1);
+                        iguana_exit(myinfo,coin->bundles[spent_hdrsi]);
                     }
                     coin->RTdatabad = 1;
                     return(0);
@@ -177,8 +177,8 @@ struct iguana_bundle *iguana_externalspent(struct supernet_info *myinfo,struct i
         else if ( unspentind == 0 || unspentind >= spentbp->ramchain.H.data->numunspents )
             printf("%s illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",coin->symbol,unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
         else return(spentbp);
-        iguana_bundleremove(coin,spent_hdrsi,1);
-        iguana_exit(myinfo);
+        //iguana_bundleremove(coin,spent_hdrsi,1);
+        iguana_exit(myinfo,coin->bundles[spent_hdrsi]);
     }
     //exit(-1);
     return(0);
@@ -957,7 +957,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             }
         }
 #endif
-        iguana_exit(myinfo);
+        iguana_exit(myinfo,0);
     }
     coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     //printf("flush free\n");
@@ -1159,7 +1159,8 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     if ( errs != 0 )
     {
         printf("%s remove.[%d]\n",coin->symbol,bp->hdrsi);
-        iguana_bundleremove(coin,bp->hdrsi,0);
+        //iguana_bundleremove(coin,bp->hdrsi,0);
+        return(-errs);
     }
     return(bp->n - errs);
 }
