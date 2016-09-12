@@ -350,7 +350,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
         sprintf(msg.strSubVer,"/iguana 0.00/");
     else sprintf(msg.strSubVer,"/basilisk 0.00/");
-    printf("SEND.(%s) -> (%s)\n",msg.strSubVer,addr->ipaddr);
+    //printf("SEND.(%s) -> (%s)\n",msg.strSubVer,addr->ipaddr);
     //sprintf(msg.strSubVer,"/Satoshi:0.10.0/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
     iguana_gotdata(coin,addr,msg.nStartingHeight);

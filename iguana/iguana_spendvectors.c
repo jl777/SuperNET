@@ -1158,7 +1158,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     } // else printf("skip validate.[%d] validated.%u force.%d\n",bp->hdrsi,bp->validated,forceflag);
     if ( errs != 0 )
     {
-        printf("remove.[%d]\n",bp->hdrsi);
+        printf("%s remove.[%d]\n",coin->symbol,bp->hdrsi);
         iguana_bundleremove(coin,bp->hdrsi,0);
     }
     return(bp->n - errs);
