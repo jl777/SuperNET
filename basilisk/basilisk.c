@@ -205,6 +205,8 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         }
         return(-1);
     }
+    if ( basilisk_specialcmd(type) != 0 && NUMRELAYS == 0 )
+        return(-1);
     //portable_mutex_lock(&myinfo->allcoins_mutex);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
@@ -226,7 +228,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             {
                 s = 0;
                 valid = (addr->supernet != 0);
-                if ( NUMRELAYS > 0 && basilisk_specialcmd(type) != 0 )
+                if ( basilisk_specialcmd(type) != 0 )
                 {
                     valid = 0;
                     OS_randombytes((void *)&r2,sizeof(r2));
@@ -367,7 +369,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
             if ( (retarray= pending->retarray) != 0 )
             {
                 pending->retstr = jprint(retarray,0);
-                printf("num.%d:%d required.%d RETSTR.(%s)\n",pending->numresults,cJSON_GetArraySize(pending->retarray),pending->numrequired,pending->retstr);
+                //printf("num.%d:%d required.%d RETSTR.(%s)\n",pending->numresults,cJSON_GetArraySize(pending->retarray),pending->numrequired,pending->retstr);
                 pending->retarray = 0;
                 free_json(retarray);
             }
@@ -571,7 +573,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     {
         retstr = jprint(vals,0);
         safecopy(CMD,jstr(vals,"origcmd"),sizeof(CMD));
-        //if ( 0 && strcmp("RID",CMD) != 0 )
+        if ( 0 && strcmp("RID",CMD) != 0 )
             printf("(%s) -> Q.%u results vals.(%d)\n",CMD,basilisktag,(int32_t)strlen(retstr));
         if ( strcmp(CMD,"GET") == 0 )
             basilisk_geckoresult(myinfo,remoteaddr,retstr,data,datalen);
@@ -737,10 +739,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( coin->FULLNODE != 0 || RELAYID >= 0 ) // iguana node
                 {
-                    printf("FULL.%d RELAYID.%d NUMRELAYS.%d services %s\n",coin->FULLNODE,RELAYID,NUMRELAYS,type);
+                    //printf("FULL.%d RELAYID.%d NUMRELAYS.%d services %s\n",coin->FULLNODE,RELAYID,NUMRELAYS,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
-                        //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
+                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         //if ( from_basilisk != 0 || strcmp(CMD,"GET") == 0 )
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
@@ -924,11 +926,8 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
-    //if ( coin == 0 )
-    {
-        if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
-            coin = iguana_coinfind(symbol);
-    }
+    if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
+        coin = iguana_coinfind(symbol);
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
@@ -944,13 +943,16 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
         {
-            retstr = ptr->retstr, ptr->retstr = 0;
-            ptr->finished = (uint32_t)time(NULL);
-            return(retstr);
+            if ( (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+            {
+                retstr = ptr->retstr, ptr->retstr = 0;
+                ptr->finished = (uint32_t)time(NULL);
+                return(retstr);
+            }
+            return(clonestr("{\"error\":\"no result\"}"));
         }
-        return(clonestr("{\"error\":\"no result\"}"));
     } else printf("no coin\n");
     return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
 }
