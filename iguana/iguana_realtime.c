@@ -1032,7 +1032,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             iguana_blockQ("RTiterate",coin,bp,block->bundlei,block->RO.hash2,1);
             num = 0;
             for (height=block->height+1; height<=coin->blocks.hwmchain.height; height++)
-            {break;
+            {
                 hdrsi = (height / coin->chain->bundlesize);
                 bundlei = (height % coin->chain->bundlesize);
                 if ( (bp= coin->bundles[hdrsi]) != 0 && (block= bp->blocks[bundlei]) != 0 )
@@ -1042,7 +1042,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     {
                         num++;
                         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
-                        if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
+                        if ( 0 && coin->peers != 0 && (n= coin->peers->numranked) > 0 )
                         {
                             if ( (addr= coin->peers->ranked[rand() % n]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
