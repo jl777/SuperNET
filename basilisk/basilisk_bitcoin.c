@@ -342,7 +342,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     jaddnum(retjson,"RTheight",coin->RTheight);
     jaddnum(retjson,"longest",coin->longestchain);
     jaddnum(retjson,"lag",coin->longestchain- coin->RTheight);
-printf("BAL.(%s)\n",jprint(retjson,0));
+//printf("BAL.(%s)\n",jprint(retjson,0));
     Lptr->retstr = jprint(retjson,1);
     return(Lptr);
 }
