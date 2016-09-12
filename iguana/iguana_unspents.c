@@ -975,7 +975,7 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
                     }
                 }
             }
-            //printf("RET.(%s)\n",jprint(retjson,0));
+            printf("RET.(%s)\n",jprint(retjson,0));
             free_json(unspents);
         }
     }

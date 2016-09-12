@@ -716,7 +716,7 @@ void iguana_startconnection(void *arg)
     addr->addrind = (int32_t)(((long)addr - (long)&coin->peers->active[0]) / sizeof(*addr));
     if ( addr->usock >= 0 )
     {
-        printf("%s usock.%d skip connection\n",addr->ipaddr,addr->usock);
+        //printf("%s usock.%d skip connection\n",addr->ipaddr,addr->usock);
         return;
     }
     if ( strcmp(coin->name,addr->coinname) != 0 )
