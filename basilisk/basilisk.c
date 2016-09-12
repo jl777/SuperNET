@@ -956,7 +956,11 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
             return(clonestr("{\"error\":\"no result\"}"));
         }
     } else printf("no coin\n");
-    return(basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1));
+    if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,hexstr,1)) != 0 )
+    {
+        basilisk_unspents_process(myinfo,coin,retstr);
+    }
+    return(retstr);
 }
 
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
