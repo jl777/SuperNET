@@ -1098,7 +1098,7 @@ double _max100(double val)
 
 cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    int32_t i; struct iguana_peer *addr; cJSON *array,*retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
         jaddstr(retjson,"result","success");
@@ -1118,7 +1118,17 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
         jaddnum(retjson,"longestchain",coin->longestchain);
         jaddnum(retjson,"port",coin->chain->portp2p);
         if ( coin->peers != 0 )
+        {
+            array = cJSON_CreateArray();
+            for (i=0; i<IGUANA_MAXPEERS; i++)
+            {
+                addr = &coin->peers->active[i];
+                if ( addr->usock >= 0 && addr->supernet != 0 && addr->ipaddr[0] != 0 )
+                    jaddistr(array,addr->ipaddr);
+            }
+            jadd(retjson,"supernet",array);
             jaddnum(retjson,"connections",coin->peers->numranked);
+        }
         jaddnum(retjson,"difficulty",coin->blocks.hwmchain.PoW);
         jaddstr(retjson,"status",coin->statusstr);
         jaddstr(retjson,"coin",coin->symbol);

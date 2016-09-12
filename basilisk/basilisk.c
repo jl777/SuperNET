@@ -191,8 +191,8 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 continue;
             if ( (addr= iguana_peerslot(coin,calc_ipbits(destipaddr),0)) != 0 )
             {
-            printf("RET [%d] to %s\n",datalen,addr->ipaddr);
-            return(iguana_queue_send(addr,delaymillis,&data[-(int32_t)sizeof(struct iguana_msghdr)],cmd,datalen));
+                printf("RET [%d] to %s\n",datalen,addr->ipaddr);
+                return(iguana_queue_send(addr,delaymillis,&data[-(int32_t)sizeof(struct iguana_msghdr)],cmd,datalen));
             }
         }
         printf("cant find (%s) to RET to\n",addr->ipaddr);
