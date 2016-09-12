@@ -669,6 +669,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         if ( basilisk_specialcmd(CMD) == 0 )
             return;
     }
+    else if ( basilisk_specialcmd(CMD) != 0 )
+        return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
         expand_ipbits(remoteaddr,myinfo->myaddr.myipbits);
