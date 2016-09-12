@@ -546,7 +546,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    if ( addr->basilisk != 0 )
+    if ( 0 && addr->basilisk != 0 )
         printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
