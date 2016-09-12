@@ -188,15 +188,15 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     printf("basilisk send -> (%s)\n",destipaddr);
     if ( destipaddr != 0 )
     {
-        if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
-            cmd[0] = 's';
-        else cmd[0] = 'S';
         cmd[6] = 'E', cmd[7] = 'T';
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
             printf("basilisk iter.(%s) -> (%s) %p\n",coin->symbol,destipaddr,coin->peers);
             if (  coin->peers == 0 )
                 continue;
+            if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
+                cmd[0] = 's';
+            else cmd[0] = 'S';
             for (i=0; i<IGUANA_MAXPEERS; i++)
             {
                 addr = &coin->peers->active[i];
