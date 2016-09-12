@@ -1211,7 +1211,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     else
     {
         sleep(1 + (rand() % 3));
-        printf("greeting send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
+        //printf("greeting send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
         iguana_send_version(coin,addr,coin->myservices);
     }
     //sleep(1+(rand()%5));

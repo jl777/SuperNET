@@ -315,7 +315,9 @@ void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,str
     if ( strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
         addr->supernet = 1, addr->basilisk = 0;
     else if ( strncmp(vers->strSubVer,"/basilisk",strlen("/basilisk")) == 0 )
+    {
         addr->basilisk = 1, addr->supernet = 0;
+    }
     //if ( (vers->nServices & NODE_NETWORK) != 0 )
     {
         addr->protover = (vers->nVersion < PROTOCOL_VERSION) ? vers->nVersion : PROTOCOL_VERSION;
@@ -393,7 +395,8 @@ void iguana_gotverack(struct supernet_info *myinfo,struct iguana_info *coin,stru
     uint8_t serialized[sizeof(struct iguana_msghdr)];
     if ( addr != 0 )
     {
-        printf("gotverack from %s\n",addr->ipaddr);
+        if ( addr->supernet != 0 || addr->basilisk != 0 )
+            printf(">>>>>>>>>> supernet.%d basilisk.%d gotverack from %s\n",addr->supernet,addr->basilisk,addr->ipaddr);
         addr->A.nTime = (uint32_t)time(NULL);
         iguana_queue_send(addr,0,serialized,"getaddr",0);
         iguana_supernet_ping(myinfo,coin,addr);
@@ -887,7 +890,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
     }
     if ( addr != 0 )
     {
-        if ( addr->msgcounts.verack == 0 )
+        if ( 0 && addr->msgcounts.verack == 0 )
             printf("iguana_msgparser verack.%d from (%s) parse.(%s) len.%d\n",addr->msgcounts.verack,addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);

@@ -292,7 +292,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
                 jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
             }
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
-            //printf("sendback.%d -> %s\n",datalen,remoteaddr);
+            printf("sendback.%d -> %s\n",datalen,remoteaddr);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
                 free(allocptr);
@@ -544,7 +544,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     {
         retstr = jprint(vals,0);
         safecopy(CMD,jstr(vals,"origcmd"),sizeof(CMD));
-        if ( 0 && strcmp("RID",CMD) != 0 )
+        //if ( 0 && strcmp("RID",CMD) != 0 )
             printf("(%s) -> Q.%u results vals.(%s)\n",CMD,basilisktag,retstr);
         if ( strcmp(CMD,"GET") == 0 )
             basilisk_geckoresult(myinfo,remoteaddr,retstr,data,datalen);
@@ -711,7 +711,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                     printf("services %s\n",type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
-                        //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
+                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         //if ( from_basilisk != 0 || strcmp(CMD,"GET") == 0 )
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
@@ -756,7 +756,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
         //int32_t i; for (i=0; i<datalen-len; i++)
         //    printf("%02x",data[len+i]);
-        if ( 0 && RELAYID >= 0 )
+        //if ( 0 && RELAYID >= 0 )
             printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%d\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     }
