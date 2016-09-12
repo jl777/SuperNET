@@ -315,7 +315,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         {
             //double startmillis = OS_milliseconds(); static double totalmillis; static int32_t utxon;
             printf("hhutxo deprecated\n");
-            iguana_exit(0);
+            iguana_exit(0,0);
         }
         //portable_mutex_unlock(&coin->RTmutex);
         printf("end iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
@@ -336,7 +336,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 bp->ramchain.H.data = 0;
             }
             portable_mutex_unlock(&coin->special_mutex);
-            iguana_exit(0);
+            iguana_exit(0,0);
         }
     }
     else if ( coin->spendvectorsaved > 1 )

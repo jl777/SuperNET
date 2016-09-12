@@ -90,7 +90,7 @@ struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,in
             if ( ptr == 0 )
             {
                 printf("fatal alloc errorA in hashset\n");
-                iguana_exit(0);
+                iguana_exit(0,0);
             }
             //printf("ptr.%p allocsize.%d key.%p keylen.%d itemind.%d\n",ptr,allocsize,key,keylen,itemind);
             ptr->hh.itemind = itemind;
@@ -117,7 +117,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
     if ( iA == 0 || iA->ipbits == 0 )
     {
         printf("null iA.%p or ipbits.%llx ind.%d status.%d\n",iA,iA!=0?(long long)iA->ipbits:0,iA!=0?iA->hh.itemind:0,iA!=0?iA->status:0);
-        iguana_exit(0);
+        iguana_exit(0,0);
         return(0);
     }
     portable_mutex_lock(&coin->peers_mutex);
@@ -194,7 +194,7 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                         if ( ptr == 0 )
                         {
                             printf("fatal alloc errorB in hashset\n");
-                            iguana_exit(0);
+                            iguana_exit(0,0);
                         }
                         ptr->hh.itemind = m;
                         ptr->ipbits = tmp.ipbits;
@@ -528,7 +528,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
     if ( addr == 0 )
     {
         printf("iguana_queue_send null addr\n");
-        iguana_exit(0);
+        iguana_exit(0,0);
         return(-1);
     }
     if ( (datalen= iguana_sethdr((void *)serialized,addr->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )

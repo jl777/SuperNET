@@ -403,7 +403,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
     else
     {
         printf("error validating.[%d], restart iguana\n",bp->hdrsi);
-        iguana_exit(myinfo);
+        iguana_exit(myinfo,bp);
     }
     return(num);
 }
@@ -569,7 +569,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) == 0 )
             {
                 printf("restart iguana: fatal error generating ledger file for %s\n",coin->symbol);
-                iguana_exit(myinfo);
+                iguana_exit(myinfo,0);
             }
         }
     }
@@ -802,7 +802,7 @@ void iguana_coinloop(void *arg)
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
-                    iguana_exit(myinfo);
+                    iguana_exit(myinfo,0);
                 }
                 if ( coin->virtualchain == 0 )
                 {
