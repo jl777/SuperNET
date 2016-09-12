@@ -1414,7 +1414,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
+    if ( 0 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);
