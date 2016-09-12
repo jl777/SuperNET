@@ -1035,7 +1035,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
                 if ( stringbits((char *)Exchange_funcs[i]->name) == stringbits((char *)Exchange_funcs[j]->name) )
                 {
                     printf("FIRST 8 chars of Exchange_func[].name must be unique: %d.(%s) vs %d.(%s)\n",i,Exchange_funcs[i]->name,j,Exchange_funcs[j]->name);
-                    exit(-1);
+                    iguana_exit(0);
                 }
         }
         didinit = 1;

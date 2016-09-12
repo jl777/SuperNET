@@ -591,7 +591,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
             if ( len > (sizeof(int32_t) + sizeof(*hashes))*n + 1024 )
             {
                 printf("FATAL ERROR iguana_sendhashes: len.%d size.%ld\n",len,(sizeof(int32_t) + sizeof(*hashes))*n + 1024);
-                exit(-1);
+ iguana_exit(myinfo);
             }
             iguana_send(coin,addr,serialized,len);
             coin->numreqsent += n;
@@ -1548,7 +1548,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             fprintf(logfp,"%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,numbQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
             fflush(logfp);
         }
-        printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,numbQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
+        //printf("%s bQ.%d %d:%02d:%02d stuck.%d max.%d\n",str,numbQ,(int32_t)difft.x/3600,(int32_t)(difft.x/60)%60,(int32_t)difft.x%60,coin->stucktime!=0?(uint32_t)time(NULL) - coin->stucktime:0,coin->maxstuck);
         strcpy(coin->lastdispstr,str);
         if ( (rand() % 100) == 0 )
             myallocated(0,0);

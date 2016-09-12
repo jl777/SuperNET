@@ -315,30 +315,10 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
         {
             //double startmillis = OS_milliseconds(); static double totalmillis; static int32_t utxon;
             printf("hhutxo deprecated\n");
-            exit(-1);
-            /*spentP = RAMCHAIN_PTR(rdata,Poffset);
-            spentU = RAMCHAIN_PTR(rdata,Uoffset);
-            if ( iguana_utxoupdate(coin,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,fromheight,spentP[spent_pkind].rmd160) == 0 )
-            {
-                //totalmillis += (OS_milliseconds() - startmillis);
-                // if ( (++utxon % 100000) == 0 )
-                // printf("ave utxo[%d] %.2f micros total %.2f seconds\n",utxon,(1000. * totalmillis)/utxon,totalmillis/1000.);
-                //portable_mutex_unlock(&coin->RTmutex);
-                return(0);
-            }*/
+            iguana_exit(0);
         }
         //portable_mutex_unlock(&coin->RTmutex);
         printf("end iguana_volatileupdate.%d: [%d] spent.(u%u %.8f pkind.%d) double spend? at ht.%d [%d] spendind.%d (%p %p)\n",incremental,spent_hdrsi,spent_unspentind,dstr(spent_value),spent_pkind,fromheight,fromheight/coin->chain->bundlesize,spendind,spentchain->Uextras,spentchain->A2);
-        /*if ( coin->current != 0 && fromheight >= coin->current->bundleheight )
-            coin->RTdatabad = 1;
-        else
-        {
-            printf("from.%d vs current.%d\n",fromheight,coin->current->bundleheight);
-            iguana_bundleremove(coin,fromheight/coin->chain->bundlesize,0);
-        }
-        coin->spendvectorsaved = 0;
-        coin->started = 0;
-        coin->active = 0;*/
         coin->RTdatabad = 1;
         if ( coin->current != 0 && spent_hdrsi != coin->current->hdrsi && spent_hdrsi != fromheight/coin->chain->bundlesize )
         {
@@ -356,7 +336,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
                 bp->ramchain.H.data = 0;
             }
             portable_mutex_unlock(&coin->special_mutex);
-            exit(-1);
+            iguana_exit(0);
         }
     }
     else if ( coin->spendvectorsaved > 1 )

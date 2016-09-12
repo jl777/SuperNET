@@ -88,7 +88,10 @@ struct iguana_iAddr *_iguana_hashset(struct iguana_info *coin,uint32_t ipbits,in
                 ptr = iguana_memalloc(mem,allocsize,1);
             else ptr = mycalloc('t',1,allocsize);
             if ( ptr == 0 )
-                printf("fatal alloc errorA in hashset\n"), exit(-1);
+            {
+                printf("fatal alloc errorA in hashset\n");
+                iguana_exit(0);
+            }
             //printf("ptr.%p allocsize.%d key.%p keylen.%d itemind.%d\n",ptr,allocsize,key,keylen,itemind);
             ptr->hh.itemind = itemind;
             ptr->ipbits = ipbits;
@@ -114,7 +117,7 @@ struct iguana_iAddr *iguana_iAddrhashset(struct iguana_info *coin,struct iguana_
     if ( iA == 0 || iA->ipbits == 0 )
     {
         printf("null iA.%p or ipbits.%llx ind.%d status.%d\n",iA,iA!=0?(long long)iA->ipbits:0,iA!=0?iA->hh.itemind:0,iA!=0?iA->status:0);
-        exit(-1);
+        iguana_exit(0);
         return(0);
     }
     portable_mutex_lock(&coin->peers_mutex);
@@ -189,7 +192,10 @@ uint32_t iguana_rwiAddrind(struct iguana_info *coin,int32_t rwflag,struct iguana
                     {
                         ptr = mycalloc('t',1,sizeof(*ptr));
                         if ( ptr == 0 )
-                            printf("fatal alloc errorB in hashset\n"), exit(-1);
+                        {
+                            printf("fatal alloc errorB in hashset\n");
+                            iguana_exit(0);
+                        }
                         ptr->hh.itemind = m;
                         ptr->ipbits = tmp.ipbits;
                         HASH_ADD(hh,coin->iAddrs,ipbits,sizeof(ipbits),ptr);
@@ -475,9 +481,10 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
     }
     else if ( addr->msgcounts.verack == 0 && (strcmp(cmdstr,"version") != 0 && strcmp(cmdstr,"ConnectTo") != 0 && strcmp(cmdstr,"verack") != 0) != 0 )
     {
-        //printf("skip.(%s) since no verack yet\n",cmdstr);
+        printf("skip.(%s) since no verack yet\n",cmdstr);
         return(-1);
     }
+    printf("%s -> %s\n",cmdstr,addr->ipaddr);
     if ( strcmp(cmdstr,"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
     if ( len > IGUANA_MAXPACKETSIZE )
@@ -510,7 +517,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    //printf(" (%s) sent.%d bytes to %s\n",cmdstr,len,addr->ipaddr);// getchar();
+    printf(" (%s) sent.%d bytes to %s\n",cmdstr,len,addr->ipaddr);
     return(len);
 }
 
@@ -520,7 +527,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
     if ( addr == 0 )
     {
         printf("iguana_queue_send null addr\n");
-        exit(-1);
+        iguana_exit(0);
         return(-1);
     }
     if ( (datalen= iguana_sethdr((void *)serialized,addr->netmagic,cmd,&serialized[sizeof(struct iguana_msghdr)],len)) < 0 )
@@ -538,7 +545,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    //printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
+    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }
@@ -1088,7 +1095,7 @@ int64_t iguana_peerfree(struct iguana_info *coin,struct iguana_peer *addr,void *
             if ( iguana_memfree(mem,ptr,datalen) < 0 || (avail= iguana_peerallocated(coin,addr)) < 0 )
             {
                 printf("iguana_peerfree: corrupted mem avail.%lld ptr.%p %d\n",(long long)avail,ptr,datalen);
-                exit(-1);
+                iguana_exit(myinfo);
             }
             return(avail);
         }
@@ -1202,8 +1209,9 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     }
     else
     {
+        sleep(1 + (rand() % 3));
+        printf("greeting send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
         iguana_send_version(coin,addr,coin->myservices);
-        //printf("send version myservices.%llu to (%s)\n",(long long)coin->myservices,addr->ipaddr);
     }
     //sleep(1+(rand()%5));
     run = 0;

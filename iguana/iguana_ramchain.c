@@ -52,7 +52,10 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
             printf("alloc.%d\n",allocsize);
         }
         if ( ptr == 0 )
-            printf("fatal alloc errorC in hashset\n"), exit(-1);
+        {
+            printf("fatal alloc errorC in hashset\n");
+            iguana_exit(0);
+        }
         if ( 0 && ramchain->expanded && selector == 'T' )
             printf("hashmem.%p selector.%c added.(%s) itemind.%x ptr.%p\n",ramchain->hashmem,selector,str,itemind,ptr);
         if ( selector == 'T' )
@@ -64,7 +67,10 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
         if ( 0 && ramchain->expanded && selector == 'T' )
             printf("selector.%c added.(%s) itemind.%x ptr.%p tmp.%p\n",selector,str,itemind,ptr,tmp);
         if ( itemind == 0 )
-            printf("negative itemind\n"), exit(-1);
+        {
+            printf("negative itemind\n");
+            iguana_exit(0);
+        }
         if ( 0 )
         {
             if ( selector == 'T' )
@@ -72,7 +78,8 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
             else HASH_FIND(hh,ramchain->pkhashes,key,keylen,tmp);
             if ( tmp != ptr )
             {
-                printf("(%s) hashmem.%p selector.%c %s search error %p != %p itemind.%x\n",str,ramchain->hashmem,selector,str,ptr,tmp,itemind), exit(-1);
+                printf("(%s) hashmem.%p selector.%c %s search error %p != %p itemind.%x\n",str,ramchain->hashmem,selector,str,ptr,tmp,itemind);
+                iguana_exit(0);
             }
         }
     }
@@ -226,7 +233,7 @@ uint32_t iguana_ramchain_addpkhash(struct iguana_info *coin,RAMCHAIN_FUNC,uint8_
             if ( P[pkind].pkind != pkind ) //unspentind != 0 && (P[pkind].firstunspentind != unspentind ||
             {
                 printf("iguana_ramchain_addpkhash error mismatched pkind.(%x %x) unspentind.%d\n",pkind,P[pkind].pkind,unspentind);
-                exit(-1);
+                iguana_exit(0);
                 return(0);
             }
             if ( memcmp(P[pkind].rmd160,rmd160,sizeof(P[pkind].rmd160)) != 0 )
@@ -389,7 +396,7 @@ uint32_t iguana_ramchain_addunspent(struct iguana_info *coin,RAMCHAIN_FUNC,uint6
         if ( u->fileid != fileid || u->scriptpos != fpos || u->scriptlen != scriptlen || u->value != value || u->pkind != pkind || u->value != value || u->txidind != ramchain->H.txidind || (pkind != 0 && u->prevunspentind != A[pkind].lastunspentind) || u->vout != vout || u->hdrsi != hdrsi )
         {
             printf("iguana_ramchain_addunspent: (%d %d %d) vs (%d %d %d) mismatched values.(%d %.8f %d %d %d %d) vs (%d %.8f %d %d %d %d)\n",u->fileid,u->scriptpos,u->scriptlen,fileid,fpos,scriptlen,u->pkind,dstr(u->value),u->txidind,u->prevunspentind,u->vout,u->hdrsi,pkind,dstr(value),ramchain->H.txidind,A[pkind].lastunspentind,vout,hdrsi);
-            exit(-1);
+            iguana_exit(0);
             return(0);
         }
     }
@@ -484,7 +491,12 @@ uint32_t iguana_ramchain_addspend(struct iguana_info *coin,RAMCHAIN_FUNC,bits256
                     return(0);
                 }
             } else printf("addspend illegal unspentind.%d vs %d\n",unspentind,rdata->numunspents);
-        } else printf("addspend illegal txidind.%d vs %d\n",txidind,rdata->numtxids), exit(-1);
+        }
+        else
+        {
+            printf("addspend illegal txidind.%d vs %d\n",txidind,rdata->numtxids);
+            iguana_exit(0);
+        }
     }
     if ( ramchain->H.ROflag != 0 )
     {
@@ -986,7 +998,7 @@ int64_t iguana_ramchain_init(char *fname,struct iguana_ramchain *ramchain,struct
     if ( rdata->allocsize != iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,scriptspace,zcash) )
     {
         printf("offset.%ld scriptspace.%d allocsize.%ld vs memsize.%ld\n",(long)offset,scriptspace,(long)rdata->allocsize,(long)iguana_ramchain_size(fname,RAMCHAIN_ARG,numblocks,scriptspace,zcash));
-        exit(-1);
+        iguana_exit(0);
     }
     if ( offset <= mem->totalsize )
         iguana_memreset(mem);
@@ -1002,7 +1014,7 @@ int64_t iguana_ramchain_init(char *fname,struct iguana_ramchain *ramchain,struct
     if ( rdata->allocsize > mem->totalsize )
     {
         printf("init.(%d %d %d %d %d) rdata->allocsize.%ld mem->totalsize.%ld hashmemsize.%ld\n",numtxids,numunspents,numspends,numpkinds,numexternaltxids,(long)rdata->allocsize,mem->totalsize,hashmem!=0?hashmem->totalsize:0);
-        exit(-1);
+        iguana_exit(0);
     }
     return(offset);
 }

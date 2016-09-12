@@ -225,7 +225,7 @@ struct instantdex_event *instantdex_addevent(struct instantdex_stateinfo *states
         for (i=0; i<numstates; i++)
             printf("%s[%d] ",states[i].name,i);
         printf("cant add event (%s -> %s) without existing state and nextstate\n",statename,nextstatename);
-        exit(-1);
+        iguana_exit(0);
         return(0);
     }
 }

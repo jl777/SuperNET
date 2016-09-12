@@ -150,7 +150,7 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
     if ( memcmp(block->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
     {
         printf("illegal blocklink mismatched hashes\n");
-        exit(-1);
+        iguana_exit(0);
         return;
     }
     block->hh.prev = prev;

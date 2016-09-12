@@ -97,7 +97,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     return(retval);
 }
 
-struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
+struct iguana_bundle *iguana_externalspent(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *prevhashp,uint32_t *unspentindp,struct iguana_ramchain *ramchain,int32_t spent_hdrsi,struct iguana_spend *s,int32_t prefetchflag)
 {
     int32_t prev_vout,height,hdrsi; uint32_t sequenceid,unspentind; char str[65]; struct iguana_bundle *spentbp=0; struct iguana_txid *T,TX,*tp; bits256 *X; bits256 prev_hash; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) != 0 )
@@ -155,7 +155,8 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     else
                     {
                         printf("illegal hdrsi.%d prev_hash.(%s) for bp.[%d]\n",hdrsi,bits256_str(str,prev_hash),spent_hdrsi);
-                        exit(-1);
+                        iguana_exit(myinfo);
+                        return(0);
                     }
                 }
                 else
@@ -164,7 +165,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
                     if ( spent_hdrsi < coin->current->hdrsi )
                     {
                         iguana_bundleremove(coin,spent_hdrsi,1);
-                        exit(-1);
+                        iguana_exit(myinfo);
                     }
                     coin->RTdatabad = 1;
                     return(0);
@@ -177,6 +178,7 @@ struct iguana_bundle *iguana_externalspent(struct iguana_info *coin,bits256 *pre
             printf("%s illegal unspentind.%d vs max.%d spentbp.%p[%d]\n",coin->symbol,unspentind,spentbp->ramchain.H.data->numunspents,spentbp,hdrsi);
         else return(spentbp);
         iguana_bundleremove(coin,spent_hdrsi,1);
+        iguana_exit(myinfo);
     }
     //exit(-1);
     return(0);
@@ -315,7 +317,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
                         }
                         else if ( spentbp == 0 )
                         {
-                            if ( (spentbp= iguana_externalspent(coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
+                            if ( (spentbp= iguana_externalspent(myinfo,coin,&prevhash,&spent_unspentind,ramchain,bp->hdrsi,s,2)) != 0 )
                             {
                                 if ( coin->fastfind != 0 )
                                     printf("found prevhash using slow, not fast\n");
@@ -955,12 +957,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             }
         }
 #endif
-        for (i=0; i<30; i++)
-        {
-            printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",30-i);
-            sleep(1);
-        }
-        exit(-1);
+        iguana_exit(myinfo);
     }
     coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     //printf("flush free\n");

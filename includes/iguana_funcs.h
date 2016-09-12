@@ -187,6 +187,7 @@ int32_t iguana_rpctest(struct iguana_info *coin);
 extern queue_t helperQ;
 extern const char *Hardcoded_coins[][3];
 void iguana_main(void *arg);
+void iguana_exit(struct supernet_info *myinfo);
 
 int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,char *fname,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t numblocks,int32_t dispflag);
 struct iguana_txblock *iguana_peertxdata(struct iguana_info *coin,int32_t *bundleip,char *fname,struct OS_memspace *mem,uint32_t ipbits,bits256 hash2);
