@@ -27,8 +27,10 @@ struct iguana_info *iguana_coinfind(char *symbol)
     struct iguana_info *coin=0; uint32_t symbolcrc; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     while ( myinfo->allcoins_being_added != 0 )
     {
-        printf("wait for coinadd to complete, OK if rare\n");
-        sleep(1);
+        sleep(3);
+        if ( myinfo->allcoins_being_added != 0 )
+            printf("wait for coinadd to complete, OK if rare\n");
+        sleep(3);
     }
     symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
     //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -401,7 +403,7 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
     else
     {
         printf("error validating.[%d], restart iguana\n",bp->hdrsi);
-        exit(-1);
+        iguana_exit(myinfo);
     }
     return(num);
 }
@@ -517,7 +519,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             if ( iguana_bundlevalidate(myinfo,coin,bp,0) != bp->n )
             {
                 printf("validate.[%d] error. refresh page or restart iguana and it should regenerate\n",bp->hdrsi);
-                exit(-1);
+     iguana_exit(myinfo);
             } // else printf("%s helperid.%d validated.[%d]\n",coin->symbol,helperid,hdrsi);
         }
     }
@@ -567,7 +569,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
             if ( iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize) == 0 )
             {
                 printf("restart iguana: fatal error generating ledger file for %s\n",coin->symbol);
-                exit(1);
+                iguana_exit(myinfo);
             }
         }
     }
@@ -781,7 +783,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void iguana_coinloop(void *arg)
 {
-    struct supernet_info *myinfo; int32_t flag,i,n; bits256 zero; uint32_t now; struct iguana_info *coin,**coins = arg;
+    struct supernet_info *myinfo; int32_t flag,i,j,n; struct iguana_peer *addr; bits256 zero; uint32_t now; struct iguana_info *coin,**coins = arg;
     myinfo = SuperNET_MYINFO(0);
     n = (int32_t)(long)coins[0];
     coins++;
@@ -800,8 +802,7 @@ void iguana_coinloop(void *arg)
                 if ( coin->peers == 0 )
                 {
                     printf("FATAL lack of peers struct\n");
-                    exit(-1);
-                    iguana_launchpeer(coin,"127.0.0.1",1);
+                    iguana_exit(myinfo);
                 }
                 if ( coin->virtualchain == 0 )
                 {
@@ -832,13 +833,7 @@ void iguana_coinloop(void *arg)
                         if ( coin->MAXPEERS > IGUANA_MINPEERS )
                             coin->MAXPEERS = IGUANA_MINPEERS;
                     }
-                    /*if ( coin->isRT != 0 && coin->current != 0 && coin->numverified >= coin->current->hdrsi )
-                    {
-                        //static int32_t saved;
-                        //if ( saved++ == 0 )
-                        //    iguana_coinflush(coin,1);
-                     }*/
-                    if ( RELAYID >= 0 )
+                    if ( RELAYID < 0 )
                     {
                         if ( coin->bindsock >= 0 )
                         {
@@ -854,8 +849,25 @@ void iguana_coinloop(void *arg)
                         {
                             if ( coin->MAXPEERS > 1 && coin->peers->numranked < ((7*coin->MAXPEERS)>>3) && now > coin->lastpossible+10 )
                             {
-                                if ( coin->peers->numranked > 0 && (now % 60) == 0 )
-                                    iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
+                                if ( coin->peers != 0 )
+                                {
+                                    for (j=0; j<IGUANA_MAXPEERS; j++)
+                                    {
+                                        i = rand() % IGUANA_MAXPEERS;
+                                        addr = &coin->peers->active[(i+j) % IGUANA_MAXPEERS];
+                                        if ( addr->usock >= 0 && addr->msgcounts.verack == 0 )
+                                        {
+                                            printf("i.%d j.%d mainloop %s\n",i,j,addr->ipaddr);
+                                            iguana_send_version(coin,addr,coin->myservices);
+                                            break;
+                                        }
+                                    }
+                                }
+                                if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+                                {
+                                    if ( coin->peers->numranked > 0 )
+                                        iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
+                                }
                                 coin->lastpossible = iguana_possible_peer(coin,0); // tries to connect to new peers
                             }
                         }

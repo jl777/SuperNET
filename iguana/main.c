@@ -332,18 +332,19 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
     return(retstr);
 }
 
-void iguana_exit()
+void iguana_exit(struct supernet_info *myinfo)
 {
-    int32_t j,iter; struct iguana_info *coin,*tmp;
+    int32_t i,j,iter; struct iguana_info *coin,*tmp;
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     printf("start EXIT\n");
     for (iter=0; iter<3; iter++)
     {
         if ( iter == 0 )
-            basilisk_request_goodbye(SuperNET_MYINFO(0));
+            basilisk_request_goodbye(myinfo);
         else
         {
-            //portable_mutex_lock(&Allcoins_mutex);
-            HASH_ITER(hh,Allcoins,coin,tmp)
+            HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
                 if ( coin->peers != 0 )
                 {
@@ -360,22 +361,26 @@ void iguana_exit()
                     }
                 }
             }
-            //portable_mutex_unlock(&Allcoins_mutex);
         }
         sleep(3);
     }
-    printf("sockets closed, now EXIT\n");
+    printf("sockets closed\n");
+    for (i=0; i<10; i++)
+    {
+        printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",10-i);
+        sleep(1);
+    }
     exit(0);
 }
 
 #ifndef _WIN32
 #include <signal.h>
-void sigint_func() { printf("\nSIGINT\n"); iguana_exit(); }
-void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(); }
-void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(); }
-void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(); }
-void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(); }
-void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(); }
+void sigint_func() { printf("\nSIGINT\n"); iguana_exit(0); }
+void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(0); }
+void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(0); }
+void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(0); }
+void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(0); }
+void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(0); }
 void sigchild_func() { printf("\nSIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
 void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
@@ -1160,7 +1165,7 @@ ZERO_ARGS(SuperNET,stop)
 {
     if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
     {
-        iguana_exit();
+        iguana_exit(myinfo);
         return(clonestr("{\"result\":\"exit started\"}"));
     } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
 }

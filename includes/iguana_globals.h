@@ -62,7 +62,7 @@ CONDEXTERN char *Iguana_validcommands[];
 CONDEXTERN int32_t Showmode,Autofold,PANGEA_MAXTHREADS,QUEUEITEMS;
 
 CONDEXTERN struct gecko_chain *Categories;
-CONDEXTERN struct iguana_info *Allcoins;
+//CONDEXTERN struct iguana_info *Allcoins;
 CONDEXTERN char Userhome[512];
 CONDEXTERN int32_t USE_JAY,FIRST_EXTERNAL,IGUANA_disableNXT,Debuglevel,IGUANA_BIGENDIAN;
 CONDEXTERN uint32_t prices777_NXTBLOCK;
