@@ -171,7 +171,6 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             return(0);
         }
     }
-    alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     iguana_rwnum(1,&data[-(int32_t)sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
     if ( *basilisktagp == 0 )
     {
@@ -183,7 +182,24 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     data -= sizeof(*basilisktagp), datalen += sizeof(*basilisktagp);
     memset(cmd,0,sizeof(cmd));
     sprintf(cmd,"SuperNET%s",type);
+    if ( destipaddr != 0 )
+    {
+        cmd[6] = 'E', cmd[7] = 'T';
+        HASH_ITER(hh,myinfo->allcoins,coin,tmp)
+        {
+            if (  coin->peers == 0 )
+                continue;
+            if ( (addr= iguana_peerslot(coin,calc_ipbits(destipaddr),0)) != 0 )
+            {
+            printf("RET [%d] to %s\n",datalen,addr->ipaddr);
+            return(iguana_queue_send(addr,delaymillis,&data[-(int32_t)sizeof(struct iguana_msghdr)],cmd,datalen));
+            }
+        }
+        printf("cant find (%s) to RET to\n",addr->ipaddr);
+        return(-1);
+    }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
+    alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         if (  coin->peers == 0 )
