@@ -186,7 +186,7 @@ void opreturns_emitloop(char *protocols[],int32_t numprotocols,uint8_t opreturnd
         if ( (opreturnlen= opreturns_emit(protocols[i],opreturndata,payments,max,currentblocknum,blocknum,blocktimestamp)) < 0 )
         {
             printf("opreturns_emitloop: error on protocol.(%s)\n",protocols[i]);
-            iguana_exit(0);
+            iguana_exit(0,0);
         }
         if ( opreturnlen > 0 )
         {

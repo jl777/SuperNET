@@ -99,7 +99,7 @@ struct accts777_info *accts777_init(char *dirname,struct txinds777_info *txinds)
     if ( accts->numkvs > ACCTS777_MAXRAMKVS )
     {
         printf("too many ramkvs for accts %d vs %d\n",accts->numkvs,ACCTS777_MAXRAMKVS);
-        iguana_exit(0);
+        iguana_exit(0,0);
     }
     accts->addrkvs[PEGGY_ADDRFUNDING] = accts->addrkvs[PEGGY_ADDRBTCD] = accts->coinaddrs;
     accts->addrkvs[PEGGY_ADDR777] = accts->SaMaddrs;

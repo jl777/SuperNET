@@ -701,7 +701,7 @@ void peggy_indsinit()
     {
         peggy_geninds();
         printf("need to update Peggy_inds with above\n");
-        iguana_exit(0);
+        iguana_exit(0,0);
     }
     peggy_dailyrates();
 }
