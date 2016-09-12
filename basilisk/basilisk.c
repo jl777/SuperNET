@@ -162,7 +162,10 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     if ( destipaddr != 0 )
     {
         if ( destipaddr[0] == 0 )
+        {
+            printf("map to broadcast\n");
             destipaddr = 0; // broadcast
+        }
         else if ( strcmp(destipaddr,"127.0.0.1") == 0 || strcmp(destipaddr,myinfo->ipaddr) == 0 )
         {
             printf("return after locally basilisk_msgprocess\n");
@@ -171,6 +174,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             return(0);
         }
     }
+    printf("basilisk send -> (%s)\n",destipaddr);
     iguana_rwnum(1,&data[-(int32_t)sizeof(*basilisktagp)],sizeof(*basilisktagp),basilisktagp);
     if ( *basilisktagp == 0 )
     {
