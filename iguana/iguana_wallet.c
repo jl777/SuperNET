@@ -985,7 +985,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,1<<30,minconf)) != 0 )
     {
-        printf("balancestr.(%s) (%s) firstheight.%d\n",balancestr,coinaddr,firstheight);
+        //printf("balancestr.(%s) (%s) firstheight.%d\n",balancestr,coinaddr,firstheight);
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
             balance = jdouble(balancejson,"balance") * SATOSHIDEN;
@@ -1011,10 +1011,10 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
         }
         free(balancestr);
     }
-    if ( spends != 0 )
-        printf("SPENDS.(%s)\n",jprint(spends,0));
-    if ( unspents != 0 )
-        printf("UNSPENTS.(%s)\n",jprint(unspents,0));
+    //if ( spends != 0 )
+    //    printf("SPENDS.(%s)\n",jprint(spends,0));
+    //if ( unspents != 0 )
+    //    printf("UNSPENTS.(%s)\n",jprint(unspents,0));
     return(balance);
 }
 
@@ -1152,7 +1152,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                             {
                                 for (j=0; j<m; j++)
                                 {
-                                    fprintf(stderr,"[%s] ",jstri(fullnodes,j));
+                                    //fprintf(stderr,"[%s] ",jstri(fullnodes,j));
                                     iguana_launchpeer(coin,jstri(fullnodes,j),1);
                                 }
                             }
