@@ -97,4 +97,11 @@ struct supernet_info
 #include "../includes/iguana_globals.h"
 #include "../gecko/gecko.h"
 
+#ifndef MAX
+#define MAX(a,b) ((a) >= (b) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
 #endif

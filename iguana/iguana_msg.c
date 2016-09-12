@@ -336,6 +336,7 @@ void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,str
             addr->dead = 1;
         } //else coin->longestchain = vers->nStartingHeight;
     }
+    iguana_send_version(coin,addr,coin->myservices);
     iguana_queue_send(addr,0,serialized,"getaddr",0);
 }
 
