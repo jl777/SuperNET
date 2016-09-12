@@ -101,15 +101,18 @@ void iguana_acceptloop(void *args)
         printf("incoming %s (%s:%u)\n",coin->symbol,ipaddr,cli_addr.sin_port);
         for (i=flag=0; i<IGUANA_MAXPEERS; i++)
         {
-            if ( coin->peers->active[i].ipbits == (uint32_t)ipbits && coin->peers->active[i].usock >= 0 )
+            addr = &coin->peers->active[i];
+            if ( addr->ipbits == (uint32_t)ipbits && addr->usock >= 0 )
             {
                 //printf("found existing %s peer.(%s) in slot[%d]\n",coin->symbol,ipaddr,i);
-                close(coin->peers->active[i].usock);
-                coin->peers->active[i].dead = 0;
-                coin->peers->active[i].usock = sock;
-                coin->peers->active[i].A.port = cli_addr.sin_port;
-                coin->peers->active[i].ready = (uint32_t)time(NULL);
+                close(addr->usock);
+                addr->dead = 0;
+                addr->usock = sock;
+                addr->A.port = cli_addr.sin_port;
+                addr->ready = (uint32_t)time(NULL);
                 flag = 1;
+                iguana_send_version(coin,addr,coin->myservices);
+
                 //instantdex_peerhas_clear(coin,&coin->peers->active[i]);
                 //iguana_iAkill(coin,&coin->peers->active[i],0);
                 //sleep(1);
