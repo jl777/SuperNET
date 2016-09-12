@@ -2198,7 +2198,7 @@ int32_t iguana_processrecv(struct supernet_info *myinfo,struct iguana_info *coin
     int32_t newhwm = 0,hwmheight,flag = 0; char str[2000];
     hwmheight = coin->blocks.hwmchain.height;
     coin->RTramchain_busy = 1;
-    if ( coin->balanceflush != 0 )
+    if ( coin->balanceflush != 0 && coin->longestchain > coin->chain->bundlesize )
     {
         fprintf(stderr,"%s call balanceflush\n",coin->symbol);
         //portable_mutex_lock(&coin->RTmutex);
