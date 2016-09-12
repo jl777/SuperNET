@@ -253,7 +253,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
     jaddnum(valsobj,"width",width);
     jaddnum(valsobj,"timeout",2500);
     jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
-    jaddnum(valsobj,"minresults",1);
+    jaddnum(valsobj,"numrequired",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {
         //printf("channel.%u msgid.%u gotmessage.(%s)\n",channel,msgid,retstr);

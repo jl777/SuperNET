@@ -1138,7 +1138,7 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 
 ZERO_ARGS(bitcoinrpc,getinfo)
 {
-    struct basilisk_item Lptr,*ptr; cJSON *valsobj;
+    struct basilisk_item Lptr,*ptr; cJSON *valsobj,*getinfoobj=0,*array;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
@@ -1148,8 +1148,23 @@ ZERO_ARGS(bitcoinrpc,getinfo)
         valsobj = cJSON_CreateObject();
         ptr = basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,0,1000,valsobj);
         free_json(valsobj);
-        if ( ptr != 0 )
-            return(ptr->retstr);
+        if ( ptr != 0 && ptr->retstr != 0 )
+        {
+            if ( (array= cJSON_Parse(ptr->retstr)) != 0 )
+            {
+                if ( is_cJSON_Array(array) != 0 )
+                {
+                    getinfoobj = jduplicate(jitem(array,0));
+                }
+                else
+                {
+                    free(ptr->retstr);
+                    return(jprint(array,1));
+                }
+            }
+            free(ptr->retstr);
+            return(jprint(array,1));
+        }
         else return(clonestr("{\"error\":\"null basilisk_getinfo\"}"));
     }
 }

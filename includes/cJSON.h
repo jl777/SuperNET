@@ -30,7 +30,6 @@
 #include <ctype.h>
 #include <float.h>
 #include <memory.h>
-#include <sys/time.h>
 
 #include "../crypto777/OS_portable.h"
 

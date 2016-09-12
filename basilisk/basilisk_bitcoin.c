@@ -409,21 +409,21 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
             if ( v->vout == vout && bits256_cmp(txid,v->txid) == 0 && strcmp(v->coinaddr,coinaddr) == 0 )
             {
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
-                ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF); // this completes immediate
+                ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"numrequired"),basilisktag,timeoutmillis,0,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF); // this completes immediate
                 //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
                 return(ptr);
             }
         }
     }
     printf("bitcoinvalue issue remote tag.%u\n",basilisktag);
-    ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"numrequired"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
     //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
     return(ptr);
 }
 
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout;
+    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout,numrequired;
     if ( RELAYID >= 0 )
         return(0);
     if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
@@ -434,7 +434,12 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
     }
     if ( (fanout= juint(valsobj,"fanout")) < 5 )
         fanout = 5;
-    ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,fanout,juint(valsobj,"minresults"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    if ( (numrequired= juint(valsobj,"numrequired")) < fanout )
+    {
+        jaddnum(valsobj,"numrequired",fanout);
+        numrequired = fanout;
+    }
+    ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,fanout,numrequired,basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
     return(ptr);
 }
 

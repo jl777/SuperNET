@@ -48,6 +48,7 @@
 #endif
 
 #else
+#include <sys/time.h>
 #include <time.h>
 #include <poll.h>
 #include <netdb.h>

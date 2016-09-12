@@ -341,7 +341,7 @@ int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *bt
                 if ( jobj(retjson,"error") == 0 )
                 {
                     valsobj = cJSON_CreateObject();
-                    jaddnum(valsobj,"minresults",NUMRELAYS - 1);
+                    jaddnum(valsobj,"numrequired",NUMRELAYS - 1);
                     jaddnum(valsobj,"timeout",3000);
                     jaddnum(valsobj,"fanout",-1);
                     jaddnum(valsobj,"height",height);
