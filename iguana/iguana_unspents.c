@@ -636,12 +636,12 @@ int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,
             bitcoin_address(coinaddr,addrtypes[i],&rmdarray[i * 20],20);
             *numunspentsp = 0;
             iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,&rmdarray[i * 20],coinaddr,&pubkeys[33*i],lastheight,unspents != 0 ? &unspents[numunspents] : 0,numunspentsp,maxunspents,remoteaddr,includespent);
-            //printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
+            printf("iguana_unspents: i.%d of %d: %s %.8f numunspents.%d\n",i,numrmds,coinaddr,dstr(total),*numunspentsp);
             maxunspents -= *numunspentsp;
             numunspents += *numunspentsp;
             sum += total;
         }
-        //printf("sum %.8f\n",dstr(sum));
+        printf("sum %.8f\n",dstr(sum));
         free(P);
     }
     *numunspentsp = numunspents;
@@ -820,7 +820,7 @@ int32_t iguana_RTaddr_unspents(struct supernet_info *myinfo,struct iguana_info *
 
 int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    uint64_t sum = 0; int32_t i,j,n,numunspents,numaddrs; uint8_t addrtype,rmd160[20],pubkey[65]; char *coinaddr; struct iguana_waddress *waddr; struct iguana_waccount *wacct; struct iguana_outpoint outpt; cJSON *array,*item;
+    uint64_t sum = 0; int32_t i,j,n,numunspents,numaddrs; uint8_t addrtype,rmd160[20],pubkey[65]; char *coinaddr; struct iguana_outpoint outpt; cJSON *array,*item; //struct iguana_waddress *waddr; struct iguana_waccount *wacct; 
     *totalp = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
     {
@@ -851,9 +851,9 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
             else
             {
                 portable_mutex_lock(&myinfo->bu_mutex);
-                if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+                //if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
                 {
-                    if ( waddr->Cunspents != 0 && (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
+                    if ( myinfo->Cunspents != 0 && (array= jobj(myinfo->Cunspents,coin->symbol)) != 0 )
                     {
                         if ( (n= cJSON_GetArraySize(array)) > 0 )
                         {

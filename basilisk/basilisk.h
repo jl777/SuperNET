@@ -20,7 +20,7 @@
 
 #include "../iguana/iguana777.h"
 
-#define BASILISK_TIMEOUT 30000
+#define BASILISK_TIMEOUT 5000
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
