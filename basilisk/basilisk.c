@@ -191,14 +191,18 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         cmd[6] = 'E', cmd[7] = 'T';
         HASH_ITER(hh,myinfo->allcoins,coin,tmp)
         {
-            printf("basilisk iter.(%s) -> (%s)\n",coin->symbol,destipaddr);
+            printf("basilisk iter.(%s) -> (%s) %p\n",coin->symbol,destipaddr,coin->peers);
             if (  coin->peers == 0 )
                 continue;
+            printf("basilisk iter.(%s) -> (%s) %llx\n",coin->symbol,destipaddr,(long long)calc_ipbits(destipaddr));
             if ( (addr= iguana_peerslot(coin,calc_ipbits(destipaddr),0)) != 0 )
             {
                 printf("RET [%d] to %s\n",datalen,addr->ipaddr);
+                fprintf(stderr,"RET [%d] to %s\n",datalen,addr->ipaddr);
                 return(iguana_queue_send(addr,delaymillis,&data[-(int32_t)sizeof(struct iguana_msghdr)],cmd,datalen));
-            } else printf("cant find (%s) in (%s)\n",addr->ipaddr,coin->symbol);
+            }
+            printf("cant find (%s) in (%s)\n",addr->ipaddr,coin->symbol);
+            fprintf(stderr,"cant find (%s) in (%s)\n",addr->ipaddr,coin->symbol);
         }
         printf("cant find (%s) to RET to\n",addr->ipaddr);
         return(-1);
