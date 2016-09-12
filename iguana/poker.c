@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <unistd.h>
 
 #define CLUB_SUIT              (1)
 #define DIAMOND_SUIT           (2)
