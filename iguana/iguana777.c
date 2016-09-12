@@ -857,7 +857,7 @@ void iguana_coinloop(void *arg)
                                         addr = &coin->peers->active[(i+j) % IGUANA_MAXPEERS];
                                         if ( addr->usock >= 0 && addr->msgcounts.verack == 0 )
                                         {
-                                            printf("i.%d j.%d mainloop %s\n",i,j,addr->ipaddr);
+                                            //printf("i.%d j.%d mainloop %s\n",i,j,addr->ipaddr);
                                             iguana_send_version(coin,addr,coin->myservices);
                                             break;
                                         }

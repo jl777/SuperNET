@@ -484,7 +484,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         printf("skip.(%s) since no verack yet\n",cmdstr);
         return(-1);
     }
-    printf("%s -> %s\n",cmdstr,addr->ipaddr);
+    //printf("%s -> %s\n",cmdstr,addr->ipaddr);
     if ( strcmp(cmdstr,"ping") == 0 )
         addr->sendmillis = OS_milliseconds();
     if ( len > IGUANA_MAXPACKETSIZE )
@@ -517,7 +517,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    printf(" (%s) sent.%d bytes to %s\n",cmdstr,len,addr->ipaddr);
+    printf("verack.%d (%s) sent.%d bytes to %s\n",addr->msgcounts.verack,cmdstr,len,addr->ipaddr);
     return(len);
 }
 
@@ -545,7 +545,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
+    //printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
 }

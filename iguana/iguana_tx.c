@@ -157,7 +157,7 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
                     return(0);
                 } else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
-        } else printf("blocktx illegal height.%d\n",block->height);
+        } else printf("%s blocktx illegal height.%d\n",coin->symbol,block->height);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
     return(0);
 }
@@ -266,7 +266,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                 }
                 else
                 {
-                    printf("null tx error getting txi.%d [%d:%d]\n",i,bp->hdrsi,bundlei);
+                    printf("%s null tx error getting txi.%d [%d:%d]\n",coin->symbol,i,bp->hdrsi,bundlei);
                     break;
                 }
             }
@@ -320,7 +320,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         }
                     } else printf("iguana_peerblockrequest: error merkle cmp tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
                 } else printf("iguana_peerblockrequest: error merkle verify tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
-            } else printf("iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
+            } else printf("%s iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",coin->symbol,i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
         }
         else
         {

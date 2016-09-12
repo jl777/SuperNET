@@ -367,6 +367,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
     minfanout = sqrt(NUMRELAYS)+1;
+    if ( minfanout < 5 )
+        minfanout = 5;
     if ( jobj(valsobj,"fanout") == 0 )
         fanout = minfanout;
     else fanout = jint(valsobj,"fanout");
