@@ -517,7 +517,8 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         }
     }
     addr->totalsent += len;
-    printf("verack.%d (%s) sent.%d bytes to %s\n",addr->msgcounts.verack,cmdstr,len,addr->ipaddr);
+    if ( addr->msgcounts.verack == 0 )
+        printf("verack.%d (%s) sent.%d bytes to %s\n",addr->msgcounts.verack,cmdstr,len,addr->ipaddr);
     return(len);
 }
 
