@@ -928,6 +928,8 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         return(clonestr("{\"error\":\"need vals object\"}"));
     if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
         coin = iguana_coinfind(symbol);
+    if ( jobj(vals,"history") == 0 )
+        jaddnum(vals,"history",3);
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
