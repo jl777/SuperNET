@@ -311,7 +311,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
 void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_msgversion *vers)
 {
     uint8_t serialized[sizeof(struct iguana_msghdr)];
-    printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
+    //printf("gotversion from %s: starting height.%d services.%llx proto.%d (%s)\n",addr->ipaddr,vers->nStartingHeight,(long long)vers->nServices,vers->nVersion,vers->strSubVer);
     if ( strncmp(vers->strSubVer,"/iguana",strlen("/iguana")) == 0 )
         addr->supernet = 1, addr->basilisk = 0;
     else if ( strncmp(vers->strSubVer,"/basilisk",strlen("/basilisk")) == 0 )
@@ -328,7 +328,7 @@ void iguana_gotversion(struct supernet_info *myinfo,struct iguana_info *coin,str
         iguana_gotdata(coin,addr,addr->height);
     }
     iguana_queue_send(addr,0,serialized,"verack",0);
-    //if ( addr->supernet != 0 || addr->basilisk != 0 )
+    if ( addr->supernet != 0 || addr->basilisk != 0 )
        printf("height.%d nServices.%lld nonce.%llu %srelay node.(%s) supernet.%d basilisk.%d longest.%u\n",vers->nStartingHeight,(long long)vers->nServices,(long long)vers->nonce,addr->relayflag==0?"non-":"",addr->ipaddr,addr->supernet,addr->basilisk,vers->nStartingHeight);
     if ( (int32_t)vers->nStartingHeight > coin->longestchain )
     {
