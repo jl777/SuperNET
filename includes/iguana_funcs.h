@@ -245,7 +245,7 @@ int32_t blockhash_sha256(uint8_t *blockhashp,uint8_t *serialized,int32_t len);
 void iguana_nameset(char name[64],char *symbol,cJSON *json);
 cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj);
-
+void basilisk_unspents_process(struct supernet_info *myinfo,struct iguana_info *coin,char *retstr);
 char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *destNXTaddr);
 void peggy();
 int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);
@@ -430,7 +430,7 @@ struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struc
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends);
 void calc_shares(struct supernet_info *myinfo,uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int32_t M,int32_t N,uint8_t *sharenrs,uint8_t *space,int32_t spacesize);
 //struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symbol,bits256 txid,uint16_t vout,int32_t addflag);
-void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol);
+//void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol);
 int64_t _RTgettxout(struct iguana_info *coin,struct iguana_RTtxid **ptrp,int32_t *heightp,int32_t *scriptlenp,uint8_t *script,uint8_t *rmd160,char *coinaddr,bits256 txid,int32_t vout,int32_t mempool);
 int32_t _iguana_RTunspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,struct iguana_outpoint outpt,int64_t value);
 int32_t basilisk_unspentfind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,uint8_t *spendscript,struct iguana_outpoint outpt,int64_t value);

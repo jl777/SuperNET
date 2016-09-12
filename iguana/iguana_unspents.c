@@ -941,11 +941,44 @@ uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *co
 
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
-    int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
-    rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
-    iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
-    if ( rmdarray != 0 )
-        free(rmdarray);
+    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr; uint8_t *rmdarray; cJSON *unspents,*item,*array,*retjson;
+    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    {
+        retjson = cJSON_CreateArray();
+        rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
+        iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
+        if ( rmdarray != 0 )
+            free(rmdarray);
+    }
+    else
+    {
+        portable_mutex_lock(&myinfo->bu_mutex);
+        if ( (unspents= myinfo->Cunspents) != 0 && (array= jobj(unspents,coin->symbol)) != 0 )
+            unspents = jduplicate(array);
+        portable_mutex_unlock(&myinfo->bu_mutex);
+        retjson = cJSON_CreateArray();
+        if ( unspents != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(unspents)) > 0 && (m= cJSON_GetArraySize(argarray)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(unspents,i);
+                    if ( (coinaddr= jstr(item,"address")) != 0 )
+                    {
+                        for (j=0; j<m; j++)
+                            if ( strcmp(coinaddr,jstri(argarray,j)) == 0 )
+                            {
+                                jaddi(retjson,jduplicate(item));
+                                break;
+                            }
+                    }
+                }
+            }
+            //printf("RET.(%s)\n",jprint(retjson,0));
+            free_json(unspents);
+        }
+    }
     /*{
      "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
      "vout" : 1,
@@ -956,7 +989,6 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
      "confirmations" : 6210,
      "spendable" : true
      },*/
-
     return(retjson);
 }
 

@@ -307,6 +307,8 @@ uint8_t *iguana_walletrmds(struct supernet_info *myinfo,struct iguana_info *coin
 cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_info *coin,char *account)
 {
     struct iguana_waccount *subset,*tmp; char refaddr[64],coinaddr[64]; struct iguana_waddress *waddr,*tmp2; cJSON *retjson,*array;
+    if ( coin == 0 )
+        return(0);
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     if ( account == 0 || account[0] == 0 )
@@ -340,27 +342,6 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
             jaddistr(array,refaddr);
     }
     return(array);
-}
-
-void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol)
-{
-    /*struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2;
-    HASH_ITER(hh,myinfo->wallet,subset,tmp)
-    {
-        HASH_ITER(hh,subset->waddr,waddr,tmp2)
-        {
-            if ( waddr->Cspends != 0 )
-                free_json(waddr->Cspends), waddr->Cspends = 0;
-            if ( waddr->Cunspents != 0 )
-                free_json(waddr->Cunspents), waddr->Cunspents = 0;
-        }
-    }*/
-    portable_mutex_lock(&myinfo->bu_mutex);
-    if ( myinfo->Cspends != 0 )
-        free_json(myinfo->Cspends);
-    if ( myinfo->Cunspents != 0 )
-        free_json(myinfo->Cunspents);
-    portable_mutex_unlock(&myinfo->bu_mutex);
 }
 
 struct iguana_waddress *iguana_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t addrtype,uint8_t pubkey[65],uint8_t rmd160[20])
@@ -936,10 +917,6 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(myinfo->myaddr.NXTADDR,0,sizeof(myinfo->myaddr.NXTADDR));
     myinfo->myaddr.nxt64bits = 0;
     myinfo->expiration = 0;
-    portable_mutex_lock(&myinfo->bu_mutex);
-    if ( myinfo->spends != 0 )
-        /*free(myinfo->spends),*/ myinfo->numspends = 0;
-    portable_mutex_unlock(&myinfo->bu_mutex);
     iguana_walletiterate(myinfo,coin,-2,0,0,0,0);
 }
 
