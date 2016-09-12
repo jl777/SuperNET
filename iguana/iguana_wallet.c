@@ -1138,7 +1138,7 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 
 ZERO_ARGS(bitcoinrpc,getinfo)
 {
-    struct basilisk_item Lptr,*ptr; cJSON *valsobj,*getinfoobj=0,*array;
+    struct basilisk_item Lptr,*ptr; int32_t i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
@@ -1155,18 +1155,40 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                 if ( is_cJSON_Array(array) != 0 )
                 {
                     getinfoobj = jduplicate(jitem(array,0));
+                    longest = juint(getinfoobj,"longestchain");
+                    if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && (n= cJSON_GetArraySize(array)) > 1 )
+                    {
+                        jdelete(getinfoobj,"longestchain");
+                        for (i=1; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( juint(getinfoobj,"longestchain") > longest )
+                                longest = juint(getinfoobj,"longestchain");
+                            if ( (fullnodes= jarray(&m,item,"supernet")) != 0 )
+                            {
+                                for (j=0; j<m; j++)
+                                {
+                                    fprintf(stderr,"[%s] ",jstri(fullnodes,j));
+                                    iguana_launchpeer(coin,jstri(fullnodes,j),1);
+                                }
+                            }
+                        }
+                        jaddnum(getinfoobj,"longestchain",longest);
+                    }
                 }
                 else
                 {
                     free(ptr->retstr);
                     return(jprint(array,1));
                 }
+                free_json(array);
             }
             free(ptr->retstr);
-            return(jprint(array,1));
+            if ( getinfoobj != 0 )
+                return(jprint(getinfoobj,1));
         }
-        else return(clonestr("{\"error\":\"null basilisk_getinfo\"}"));
     }
+    return(clonestr("{\"error\":\"null basilisk_getinfo\"}"));
 }
 
 TWO_STRINGS(bitcoinrpc,setaccount,address,account)
