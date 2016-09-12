@@ -773,14 +773,22 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
     }
     if ( bp == 0 )
+    {
+        req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
+    }
     for (i=numsaved=0; i<coin->chain->bundlesize; i++)
     {
         if ( (block= bp->blocks[i]) != 0 && block->fpipbits != 0 && block->fpos >= 0 && block->txvalid != 0 )
             numsaved++;
     }
     if ( (speculative= iguana_bundlestats_update(coin,&block,bp,bundlei,origtxdata,data,recvlen)) < 0 )
+    {
+        req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
+    }
     if ( block == 0 )
         block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
     if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
@@ -815,6 +823,8 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         {
             // printf("DUP s.%d [%d:%d].(%s) %s n%d\n",numsaved,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr,addr->pendblocks);
         }
+        req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
     }
     txdata = origtxdata;
@@ -899,6 +909,8 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
             addr->numRThashes = num;
         }
     }
+    if ( strcmp("BTC",coin->symbol) != 0 && n == 2 )
+        iguana_sendblockreqPT(coin,addr,0,-1,zblocks[1].RO.hash2,0);
     for (i=0; i<coin->bundlescount; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(zblocks[1].RO.hash2,bp->hashes[1]) == 0 && bp->numhashes >= coin->chain->bundlesize )
@@ -1402,7 +1414,7 @@ struct iguana_bundlereq *iguana_recvblockhashes(struct supernet_info *myinfo,str
     memset(zero.bytes,0,sizeof(zero));
     bp = 0, bundlei = -2;
     iguana_bundlefind(coin,&bp,&bundlei,blockhashes[1]);
-    if ( 0 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
+    //if ( 0 && strcmp("BTCD",coin->symbol) == 0 )//0 && num >= coin->chain->bundlesize )
         printf("blockhashes[%d] %d of %d %s bp.%d[%d]\n",num,bp==0?-1:bp->hdrsi,coin->bundlescount,bits256_str(str,blockhashes[1]),bp==0?-1:bp->bundleheight,bundlei);
     if ( num < 2 )
         return(req);

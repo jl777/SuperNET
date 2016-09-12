@@ -621,7 +621,7 @@ struct iguana_monitorinfo *iguana_monitorfind(struct iguana_info *coin,bits256 t
 
 struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr)
 {
-    struct iguana_monitorinfo *ptr; char str[65];
+    struct iguana_monitorinfo *ptr; //char str[65];
     if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
     {
         if ( GETBIT(ptr->peerbits,addr->addrind) == 0 )
@@ -630,7 +630,7 @@ struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 tx
             SETBIT(ptr->peerbits,addr->addrind);
             ptr->numreported++;
         }
-    } else printf("txid.%s not being monitored\n",bits256_str(str,txid));
+    } // else printf("%s txid.%s not being monitored\n",coin->symbol,bits256_str(str,txid));
     return(0);
 }
 

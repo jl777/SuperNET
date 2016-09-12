@@ -98,12 +98,12 @@ void iguana_acceptloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(ipaddr,ipbits);
-        printf("incoming (%s:%u)\n",ipaddr,cli_addr.sin_port);
+        printf("incoming %s (%s:%u)\n",coin->symbol,ipaddr,cli_addr.sin_port);
         for (i=flag=0; i<IGUANA_MAXPEERS; i++)
         {
             if ( coin->peers->active[i].ipbits == (uint32_t)ipbits && coin->peers->active[i].usock >= 0 )
             {
-                printf("found existing peer.(%s) in slot[%d]\n",ipaddr,i);
+                //printf("found existing %s peer.(%s) in slot[%d]\n",coin->symbol,ipaddr,i);
                 close(coin->peers->active[i].usock);
                 coin->peers->active[i].dead = 0;
                 coin->peers->active[i].usock = sock;
