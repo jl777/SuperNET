@@ -427,7 +427,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
     if ( RELAYID >= 0 && basilisk_specialcmd(CMD) == 0 )
         return(clonestr("{\"error\":\"unsupported special relay command\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
-    //printf("request.(%s)\n",jprint(valsobj,0));
+//printf("request.(%s)\n",jprint(valsobj,0));
     ptr = basilisk_requestservice(myinfo,_addr,CMD,blockflag,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
         free(allocptr);
@@ -573,8 +573,8 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
     {
         retstr = jprint(vals,0);
         safecopy(CMD,jstr(vals,"origcmd"),sizeof(CMD));
-        if ( 0 && strcmp("RID",CMD) != 0 )
-            printf("(%s) -> Q.%u results vals.(%d)\n",CMD,basilisktag,(int32_t)strlen(retstr));
+        //if ( 0 && strcmp("RID",CMD) != 0 )
+        //printf("(%s) -> Q.%u results vals.(%s)\n",CMD,basilisktag,retstr);//(int32_t)strlen(retstr));
         if ( strcmp(CMD,"GET") == 0 )
             basilisk_geckoresult(myinfo,remoteaddr,retstr,data,datalen);
         else
@@ -593,7 +593,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                     jaddi(pending->retarray,item);
                     if ( jobj(item,"error") == 0 )
                     {
-                        printf("numresults.%d:%d\n",pending->numresults,cJSON_GetArraySize(pending->retarray));
+                        //printf("numresults.%d:%d\n",pending->numresults,cJSON_GetArraySize(pending->retarray));
                         pending->numresults++;
                     }
                 } else printf("couldnt parse.(%s)\n",retstr);
@@ -932,17 +932,17 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",juint(vals,"fanout"));
+    if ( jobj(vals,"addresses") == 0 )
+    {
+        jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
+        //printf("added all %s addresses: %s\n",coin->symbol,jprint(vals,0));
+    } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
+    if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+        basilisktag = rand();
+    if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+        timeoutmillis = 3000;
     if ( coin != 0 )
     {
-        if ( jobj(vals,"addresses") == 0 )
-        {
-            jadd(vals,"addresses",iguana_getaddressesbyaccount(myinfo,coin,"*"));
-            //printf("added all %s addresses: %s\n",coin->symbol,jprint(vals,0));
-        } //else printf("have addresses.(%s)\n",jprint(jobj(vals,"addresses"),0));
-        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
-            basilisktag = rand();
-        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
-            timeoutmillis = BASILISK_TIMEOUT;
         if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
         {
             if ( (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
@@ -959,7 +959,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
 {
-    int64_t total = 0; int32_t i,n; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; char *symbol; cJSON *retjson,*unspents,*spends,*array; //struct basilisk_spend *s; struct basilisk_unspent *bu; int32_t i;
+    int64_t total = 0; int32_t i,n; char *symbol; cJSON *retjson,*unspents,*spends,*array; //struct basilisk_spend *s; struct basilisk_unspent *bu; int32_t i; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; 
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
     //if ( coin == 0 )
@@ -972,14 +972,14 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     unspents = cJSON_CreateArray();
     spends = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->bu_mutex);
-    HASH_ITER(hh,myinfo->wallet,wacct,tmp)
+    //HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {
-        HASH_ITER(hh,wacct->waddr,waddr,tmp2)
+        //HASH_ITER(hh,wacct->waddr,waddr,tmp2)
         {
-            if ( waddr->Cunspents != 0 )
+            if ( myinfo->Cunspents != 0 )
             {
                 //printf("Cunspents.(%s)\n",jprint(waddr->Cunspents,0));
-                if ( (array= jobj(waddr->Cunspents,coin->symbol)) != 0 )
+                if ( (array= jobj(myinfo->Cunspents,coin->symbol)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(array)) > 0 )
                     {
@@ -989,10 +989,10 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
                     jaddi(unspents,jduplicate(array));
                 }
             }
-            if ( waddr->Cspends != 0 )
+            if ( myinfo->Cspends != 0 )
             {
                 //printf("Cspends.(%s)\n",jprint(waddr->Cspends,0));
-                if ( (array= jobj(waddr->Cspends,coin->symbol)) != 0  )
+                if ( (array= jobj(myinfo->Cspends,coin->symbol)) != 0  )
                     jaddi(spends,jduplicate(array));
             }
         }

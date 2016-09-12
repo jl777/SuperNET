@@ -344,7 +344,7 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
 
 void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol)
 {
-    struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2;
+    /*struct iguana_waccount *subset,*tmp; struct iguana_waddress *waddr,*tmp2;
     HASH_ITER(hh,myinfo->wallet,subset,tmp)
     {
         HASH_ITER(hh,subset->waddr,waddr,tmp2)
@@ -354,7 +354,13 @@ void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol)
             if ( waddr->Cunspents != 0 )
                 free_json(waddr->Cunspents), waddr->Cunspents = 0;
         }
-    }
+    }*/
+    portable_mutex_lock(&myinfo->bu_mutex);
+    if ( myinfo->Cspends != 0 )
+        free_json(myinfo->Cspends);
+    if ( myinfo->Cunspents != 0 )
+        free_json(myinfo->Cunspents);
+    portable_mutex_unlock(&myinfo->bu_mutex);
 }
 
 struct iguana_waddress *iguana_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,uint8_t addrtype,uint8_t pubkey[65],uint8_t rmd160[20])
@@ -775,10 +781,11 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
                 if ( flag < -1 )
                 {
                     HASH_DELETE(hh,wacct->waddr,waddr);
-                    if ( waddr->Cunspents != 0 )
+                    /*if ( waddr->Cunspents != 0 )
                         free_json(waddr->Cunspents), waddr->Cunspents = 0;
                     if ( waddr->Cspends != 0 )
                         free_json(waddr->Cspends), waddr->Cspends = 0;
+                    */
                     //printf("walletiterate: %p free %s\n",waddr,waddr->coinaddr);
                     myfree(waddr,sizeof(*waddr) + waddr->scriptlen);
                 }
@@ -1001,7 +1008,7 @@ int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *
     int64_t balance = 0; cJSON *unspentsjson,*balancejson,*item; int32_t i,n; char *balancestr;
     if ( (balancestr= iguana_balance(IGUANA_CALLARGS,coin->symbol,coinaddr,1<<30,minconf)) != 0 )
     {
-        //printf("balancestr.(%s) (%s)\n",balancestr,coinaddr);
+        printf("balancestr.(%s) (%s)\n",balancestr,coinaddr);
         if ( (balancejson= cJSON_Parse(balancestr)) != 0 )
         {
             balance = jdouble(balancejson,"balance") * SATOSHIDEN;
@@ -1155,11 +1162,11 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                 if ( is_cJSON_Array(array) != 0 )
                 {
                     getinfoobj = jduplicate(jitem(array,0));
-                    longest = juint(getinfoobj,"longestchain");
+                    longest = 0;
                     if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && (n= cJSON_GetArraySize(array)) > 1 )
                     {
                         jdelete(getinfoobj,"longestchain");
-                        for (i=1; i<n; i++)
+                        for (i=0; i<n; i++)
                         {
                             item = jitem(array,i);
                             if ( juint(getinfoobj,"longestchain") > longest )
@@ -1230,13 +1237,32 @@ STRING_ARG(bitcoinrpc,getnewaddress,account)
 
 struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,char *coinaddr,char *account)
 {
-    char *newstr,*retstr; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0;
+    char *newstr,*retstr; int32_t i,n,flag=0; struct iguana_waccount *wacct; struct iguana_waddress *waddr=0; cJSON *unspents,*item;
     coinaddr[0] = 0;
     if ( (wacct= iguana_waccountfind(myinfo,account)) == 0 )
         wacct = iguana_waccountcreate(myinfo,account);
     if ( wacct != 0 )
     {
-        if ( (waddr= wacct->current) == 0 || (waddr->Cunspents != 0 && jobj(waddr->Cunspents,coin->symbol) != 0) )
+        portable_mutex_lock(&myinfo->bu_mutex);
+        if ( myinfo->Cunspents != 0 && (unspents= jobj(myinfo->Cunspents,coin->symbol)) != 0 )
+        {
+            flag = 0;
+            if ( (n= cJSON_GetArraySize(unspents)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(unspents,i);
+                    if ( jstr(item,"address") != 0 && strcmp(jstr(item,"address"),coinaddr) == 0 )
+                    {
+                        flag = 1;
+                        printf("found unspent for.(%s)\n",coinaddr);
+                        break;
+                    }
+                }
+            }
+        }
+        portable_mutex_unlock(&myinfo->bu_mutex);
+        if ( flag != 0 || (waddr= wacct->current) == 0 )
         {
             if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
             {

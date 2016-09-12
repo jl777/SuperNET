@@ -945,11 +945,12 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         item = jitem(spends,0);
         if ( (address= jstr(item,"address")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
         {
-            if ( waddr->Cspends == 0 )
+            if ( myinfo->Cspends == 0 )
             {
-                waddr->Cspends = cJSON_CreateObject();
-                jadd(waddr->Cspends,coin->symbol,jduplicate(spends));
-            } else basilisk_jsonmerge(waddr->Cspends,coin->symbol,spends);
+                myinfo->Cspends = cJSON_CreateObject();
+                jadd(myinfo->Cspends,coin->symbol,jduplicate(spends));
+            } else basilisk_jsonmerge(myinfo->Cspends,coin->symbol,spends);
+            //printf("S.(%s)\n",jprint(waddr->Cspends,0));
         }
         //printf("merge spends.(%s)\n",jprint(spends,0));
     }
@@ -958,11 +959,12 @@ void basilisk_unspent_update(struct supernet_info *myinfo,struct iguana_info *co
         item = jitem(unspents,0);
         if ( (address= jstr(item,"address")) != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,address)) != 0 )
         {
-            if ( waddr->Cunspents == 0 )
+            if ( myinfo->Cunspents == 0 )
             {
-                waddr->Cunspents = cJSON_CreateObject();
-                jadd(waddr->Cunspents,coin->symbol,jduplicate(unspents));
-            } else basilisk_jsonmerge(waddr->Cunspents,coin->symbol,unspents);
+                myinfo->Cunspents = cJSON_CreateObject();
+                jadd(myinfo->Cunspents,coin->symbol,jduplicate(unspents));
+            } else basilisk_jsonmerge(myinfo->Cunspents,coin->symbol,unspents);
+            printf("U.(%s)\n",jprint(myinfo->Cunspents,0));
         }
         //printf("merge unspents.(%s)\n",jprint(unspents,0));
     }
