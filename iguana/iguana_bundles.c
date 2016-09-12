@@ -1507,7 +1507,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                     if ( GETBIT(bp->haveblock,i) == 0 )
                         bp->issued[i] = 0;
                 if (  (n= iguana_bundleissuemissing(myinfo,coin,bp,3,1.)) > 0 )
-                    printf("issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",n,bp->hdrsi,coin->stuckiters,lag);
+                    printf("%s issued %d priority requests [%d] to unstick stuckiters.%d lag.%d\n",coin->symbol,n,bp->hdrsi,coin->stuckiters,lag);
                 //else printf("no bundlerequests issued\n");
             }
         } //else printf("stuck metric.%d\n",smetric);
