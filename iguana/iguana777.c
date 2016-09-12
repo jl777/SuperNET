@@ -504,7 +504,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
-        printf("helperid.%d utxofinished.%d vs %d\n",helperid,n,max);
+        printf("helperid.%d %s utxofinished.%d vs %d\n",helperid,coin->symbol,n,max);
         sleep(IGUANA_NUMHELPERS+3);
     }
     /*if ( helperid < incr )
