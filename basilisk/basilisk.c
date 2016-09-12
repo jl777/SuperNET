@@ -359,7 +359,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
                 if ( pending->numresults >= pending->numrequired )//|| (retstr= pending->retstr) != 0 )
                 {
                     portable_mutex_unlock(&myinfo->basilisk_mutex);
-                    printf("<<<<<<<<<<<<< numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
+                    //printf("<<<<<<<<<<<<< numresults.%d vs numrequired.%d\n",pending->numresults,pending->numrequired);
                     break;
                 }
                 portable_mutex_unlock(&myinfo->basilisk_mutex);
