@@ -425,7 +425,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
     if ( RELAYID >= 0 && basilisk_specialcmd(CMD) == 0 )
         return(clonestr("{\"error\":\"unsupported special relay command\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
-    printf("request.(%s)\n",jprint(valsobj,0));
+    //printf("request.(%s)\n",jprint(valsobj,0));
     ptr = basilisk_requestservice(myinfo,_addr,CMD,blockflag,valsobj,hash,data,datalen,nBits);
     if ( allocptr != 0 )
         free(allocptr);
@@ -725,7 +725,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
-            numrequired = sqrt(NUMRELAYS);
+            numrequired = sqrt(NUMRELAYS)+1;
         if ( senderipbits != 0 )
             expand_ipbits(remoteaddr,senderipbits);
         else remoteaddr[0] = 0;
@@ -735,7 +735,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( coin->FULLNODE != 0 || RELAYID >= 0 ) // iguana node
                 {
-                    //printf("services %s\n",type);
+                    printf("FULL.%d RELAYID.%d NUMRELAYS.%d services %s\n",coin->FULLNODE,RELAYID,NUMRELAYS,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
@@ -783,8 +783,8 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
         //int32_t i; for (i=0; i<datalen-len; i++)
         //    printf("%02x",data[len+i]);
-        if ( 0 && RELAYID >= 0 )
-            printf(" ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",datalen,type,senderip!=0?senderip:"?",basilisktag);
+        //if ( RELAYID >= 0 )
+            printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",RELAYID,datalen,type,senderip!=0?senderip:"?",basilisktag);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     }
     if ( ptr != 0 )
@@ -930,7 +930,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
-        jaddnum(vals,"numrequired",sqrt(NUMRELAYS));
+        jaddnum(vals,"numrequired",juint(vals,"fanout"));
     if ( coin != 0 )
     {
         if ( jobj(vals,"addresses") == 0 )
