@@ -888,17 +888,21 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                 else if ( iter == 2 )
                 {
                     sprintf(destfname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                    if ( OS_copyfile(fname,destfname,1) < 0 )
+                    OS_removefile(destfname,0);
+                    OS_renamefile(fname,destfname);
+                    /*if ( OS_copyfile(fname,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname,destfname);
                         return(-1);
-                    }
+                    }*/
                     sprintf(destfname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-                    if ( OS_copyfile(fname2,destfname,1) < 0 )
+                    OS_removefile(destfname,0);
+                    OS_renamefile(fname2,destfname);
+                    /*if ( OS_copyfile(fname2,destfname,1) < 0 )
                     {
                         printf("balances error copying (%s) -> (%s)\n",fname2,destfname);
                         return(-1);
-                    }
+                    }*/
                     if ( (hdrsi % 100) == 0 )
                         printf("%s -> %s\n",fname,destfname);
                     OS_removefile(fname,0);

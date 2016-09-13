@@ -194,7 +194,8 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
             printf("new hdrs.txt %ld vs (%s) %ld\n",ftell(fp),fname,(long)OS_filesize(fname));
             fclose(fp);
             OS_renamefile(fname,oldfname);
-            OS_copyfile(tmpfname,fname,1);
+            OS_renamefile(tmpfname,fname);
+            //OS_copyfile(tmpfname,fname,1);
         } else fclose(fp);
         if ( fp2 != 0 )
         {
