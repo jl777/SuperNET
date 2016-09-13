@@ -1177,7 +1177,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         }
         else
         {
-            if ( block->height < coin->firstRTheight )
+            if ( block->height <= coin->lastRTheight )
             {
                 if ( coin->lastRTheight > 0 )
                     printf("%s ht.%d reorg past firstRTheight.%d\n",coin->symbol,block->height,coin->firstRTheight);
