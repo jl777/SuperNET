@@ -344,7 +344,12 @@ static inline void scrypt_core(uint32_t *X, uint32_t *V, int N)
 
 void scrypt_1024_1_1_256(const uint32_t *input,uint32_t *output,uint32_t *midstate,uint8_t *scratchpad, int N)
 {
-	uint32_t *V,tstate[8],ostate[8],X[32] __attribute__((aligned(128)));
+	uint32_t *V,tstate[8],ostate[8],X[32]
+#ifndef WIN32
+    __attribute__((aligned(128)))
+#endif
+    ;
+    
 	V = (uint32_t *)(((uintptr_t)(scratchpad) + 63) & ~ (uintptr_t)(63));
 	memcpy(tstate, midstate, 32);
 	HMAC_SHA256_80_init(input, tstate, ostate);
