@@ -383,6 +383,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
 int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult);
 FILE *myfopen(char *fname,char *mode);
 int32_t myfclose(FILE *fp);
+char *iguana_scriptaddress(struct iguana_info *coin,char *coinaddr,uint8_t *script,int32_t scriptlen);
 int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag);
 struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight);
 int32_t iguana_balancenormal(struct iguana_info *coin,struct iguana_bundle *bp,int32_t startheight,int32_t endheight);
