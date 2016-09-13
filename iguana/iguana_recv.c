@@ -1116,7 +1116,7 @@ void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int
         if ( block->height == height )
         {
             iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
-            char str[65]; printf("SET HWM.%s ht.%d\n",bits256_str(str,block->RO.hash2),height);
+            char str[65]; printf("SET %s HWM.%s ht.%d\n",coin->symbol,bits256_str(str,block->RO.hash2),height);
         } else printf("iguana_hwmchain_set: mismatched ht.%d vs %d\n",block->height,height);
     }
 }
@@ -1137,8 +1137,10 @@ void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainch
             else
             {
                 tmp->mainchain = 0;
-                printf("CLEAR mainchain.%d %s\n",height,str);
+                printf("CLEAR %s mainchain.%d %s\n",coin->symbol,height,str);
             }
+            if ( coin->RTheight > height )
+                coin->RTheight = height;
             if ( (tmp= iguana_blockfind("clear",coin,tmp->RO.prev_block)) == 0 )
             {
                 printf("iguana_mainchain_clear: got null tmp i.%d of %d %s\n",i,n,str);
@@ -1722,7 +1724,7 @@ int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
     int32_t hdrsi,lflag,bundlei,iters=0,flag = 0; bits256 hash2; struct iguana_block *next,*block; struct iguana_bundle *bp;
     if ( (block= iguana_blockfind("hwmcheck",coin,coin->blocks.hwmchain.RO.hash2)) == 0 || block->mainchain == 0 || block->height != coin->blocks.hwmchain.height )
     {
-        printf("HWM mismatch ht.%d vs %d or not mainchain.%d\n",block->height,coin->blocks.hwmchain.height,block->mainchain);
+        printf("HWM %s mismatch ht.%d vs %d or not mainchain.%d\n",coin->symbol,block->height,coin->blocks.hwmchain.height,block->mainchain);
         if ( coin->blocks.hwmchain.height > 0 )
         {
             if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
