@@ -1138,6 +1138,13 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }
+    if ( coin->RTreset_needed != 0 )
+    {
+        printf("RTreset_needed -> RTreset\n");
+        iguana_RTreset(coin);
+        coin->RTreset_needed = 0;
+    }
+
     if ( block != 0 && coin->RTheight > 0 && coin->RTheight <= coin->blocks.hwmchain.height )
     {
         portable_mutex_lock(&coin->RTmutex);

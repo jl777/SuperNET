@@ -464,7 +464,12 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         if ( lastpt.isptr != 0 )
         {
             *nump = iguana_RTscanunspents(myinfo,coin,remoteaddr,array,spentp,&deposits,unspents,max,rmd160,coinaddr,pubkey33,lastpt,lastheight);
-        } else printf("iguana_pkhashbalance: unexpected non-ptr lastpt\n");
+        }
+        else
+        {
+            printf("iguana_pkhashbalance: unexpected RT non-ptr lastpt\n");
+            coin->RTreset_needed = 1;
+        }
         return(deposits - *spentp);
     }
     if ( ramchain->Uextras == 0 || (rdata= ramchain->H.data) == 0 )
