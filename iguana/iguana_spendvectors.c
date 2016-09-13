@@ -843,7 +843,14 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             Aptr = 0;
             Uptr = 0;
             numunspents = numpkinds = 0;
-            if ( (bp= coin->bundles[hdrsi]) != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
+            if ( (bp= coin->bundles[hdrsi]) == 0 )
+                continue;
+            if ( iter == 0 )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                iguana_volatilesalloc(coin,&bp->ramchain,1);
+            }
+            if ( bp != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
                 sprintf(fname,"%s/%s/debits.%d_N%d",GLOBAL_TMPDIR,coin->symbol,bp->hdrsi,numhdrsi);
                 sprintf(fname2,"%s/%s/lastspends.%d_N%d",GLOBAL_TMPDIR,coin->symbol,bp->hdrsi,numhdrsi);
