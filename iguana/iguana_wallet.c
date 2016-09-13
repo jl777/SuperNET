@@ -950,13 +950,31 @@ int64_t oldiguana_waccountbalance(struct supernet_info *myinfo,struct iguana_inf
 
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,j,n,numinputs; struct iguana_waddress *waddr; struct iguana_outpoint spentpt; struct iguana_waccount *wacct; char *addresses,*address,coinaddr[64]; cJSON *privkeys = cJSON_CreateArray();
+    int32_t i,j,n,numinputs,scriptlen; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,*scripthexstr,coinaddr[64]; cJSON *scriptobj,*privkeys,*item; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    privkeys = cJSON_CreateArray();
     if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
     {
         addresses = calloc(numinputs,64);
         for (i=n=0; i<numinputs; i++)
         {
-            if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spentpt,jitem(vins,i))) != 0 )
+            address = 0;
+            item = jitem(vins,i);
+            if ( (address= jstr(item,"address")) == 0 )
+            {
+                if ( (scripthexstr= jstr(item,"spendscript")) == 0 )
+                {
+                    if ( (scriptobj= jobj(item,"scriptPubkey")) != 0 )
+                        scripthexstr = jstr(scriptobj,"hex");
+                }
+                if ( scripthexstr != 0 )
+                {
+                    scriptlen = (int32_t)strlen(scripthexstr) >> 1;
+                    decode_hex(spendscript,scriptlen,scripthexstr);
+                    address = iguana_scriptaddress(coin,coinaddr,spendscript,scriptlen);
+                }
+            }
+            //if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spentpt,jitem(vins,i))) != 0 )
+            if ( address != 0 )
             {
                 for (j=0; j<n; j++)
                 {
@@ -965,7 +983,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
                 }
                 if ( j == n )
                     strcpy(&addresses[64 * n++],address);
-            }
+            } else printf("cant get address from.(%s)\n",jprint(item,0));
         }
         for (i=0; i<n; i++)
         {
@@ -1140,14 +1158,20 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                 {
                     getinfoobj = jduplicate(jitem(array,0));
                     longest = 0;
-                    if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && (n= cJSON_GetArraySize(array)) > 1 )
+                    if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && (n= cJSON_GetArraySize(array)) > 0 )
                     {
                         jdelete(getinfoobj,"longestchain");
                         for (i=0; i<n; i++)
                         {
                             item = jitem(array,i);
-                            if ( juint(getinfoobj,"longestchain") > longest )
-                                longest = juint(getinfoobj,"longestchain");
+                            if ( juint(item,"longestchain") > longest )
+                                longest = juint(item,"longestchain");
+                            if ( juint(item,"RTheight") > coin->RTheight )
+                            {
+                                coin->RTheight = juint(item,"RTheight");
+                                coin->firstRTheight = juint(item,"firstRTheight");
+                                printf("set RTheight.%d 1st %d\n",coin->RTheight,coin->firstRTheight);
+                            }
                             if ( (fullnodes= jarray(&m,item,"supernet")) != 0 )
                             {
                                 for (j=0; j<m; j++)
@@ -1157,6 +1181,8 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                                 }
                             }
                         }
+                        if ( jobj(getinfoobj,"longestchain") != 0 )
+                            jdelete(getinfoobj,"longestchain");
                         jaddnum(getinfoobj,"longestchain",longest);
                     }
                 }

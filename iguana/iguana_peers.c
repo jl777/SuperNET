@@ -724,12 +724,12 @@ void iguana_startconnection(void *arg)
         printf("iguana_startconnection.%s:%04x mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin->chain->portp2p,coin,coin->symbol,addr->coinname);
         return;
     }
-    if ( strcmp("85.25.217.233",addr->ipaddr) == 0 )
+    /*if ( strcmp("85.25.217.233",addr->ipaddr) == 0 )
     {
         printf("temp blacklist %s\n",addr->ipaddr);
         iguana_iAkill(coin,addr,1);
         return;
-    }
+    }*/
     //printf("%s iguana_startconnection.%s:%04x\n",coin->symbol,addr->ipaddr,coin->chain->portp2p);
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )//&& (coin->myservices & NODE_NETWORK) != 0 )
     {
