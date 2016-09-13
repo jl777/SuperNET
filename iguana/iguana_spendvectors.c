@@ -848,7 +848,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             if ( iter == 0 )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesalloc(coin,&bp->ramchain,1);
+                iguana_volatilesmap(coin,&bp->ramchain);
             }
             if ( bp != 0 && bp->ramchain.H.data != 0 && (numpkinds= bp->ramchain.H.data->numpkinds) > 0 && (numunspents= bp->ramchain.H.data->numunspents) > 0 && (Aptr= bp->ramchain.A2) != 0 && (Uptr= bp->ramchain.Uextras) != 0 )
             {
