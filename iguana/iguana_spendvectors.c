@@ -913,8 +913,8 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                     }*/
                     if ( (hdrsi % 100) == 0 )
                         printf("%s -> %s\n",fname,destfname);
-                    OS_removefile(fname,0);
-                    OS_removefile(fname2,0);
+                    //OS_removefile(fname,0);
+                    //OS_removefile(fname2,0);
                 }
                 if ( bp->ramchain.allocatedA2 == 0 || bp->ramchain.allocatedU2 == 0 )
                 {
