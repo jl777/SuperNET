@@ -413,7 +413,7 @@ void iguana_volatilesalloc(struct iguana_info *coin,struct iguana_ramchain *ramc
 int32_t iguana_send_ping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr);
 int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_info *coin);
 uint32_t iguana_fastfindinit(struct iguana_info *coin);
-int32_t iguana_outptset(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,bits256 txid,int32_t vout);
+int32_t iguana_outptset(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,bits256 txid,int32_t vout,int64_t value,char *spendscriptstr);
 int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *spentamountp,char *coinaddr,uint8_t *spendscript,int32_t *scriptlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool);
 int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,char *coinaddr,uint8_t *spendscript,int32_t *scriptlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool);
 int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,char *address);

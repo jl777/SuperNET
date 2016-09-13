@@ -508,7 +508,7 @@ struct bitcoin_spend
     struct bitcoin_unspent inputs[];
 };
 
-struct iguana_outpoint { void *ptr; int64_t value; uint32_t unspentind:31,isptr:1; int16_t hdrsi; };
+struct iguana_outpoint { void *ptr; bits256 txid; int64_t value; uint32_t unspentind; int16_t hdrsi,vout,spendlen:15,isptr:1; uint8_t spendscript[512]; };
 
 struct exchange_quote { uint64_t satoshis,orderid,offerNXT,exchangebits; double price,volume; uint32_t timestamp,val; };
 

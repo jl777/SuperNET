@@ -951,7 +951,7 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
 
 int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    uint64_t sum = 0; int32_t i,n,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr; struct iguana_outpoint outpt; cJSON *array,*item; //struct iguana_waddress *waddr; struct iguana_waccount *wacct;
+    uint64_t sum = 0; int32_t i,n,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr,*spendscriptstr; struct iguana_outpoint outpt; cJSON *array,*item;
     *totalp = 0;
     numunspents = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
@@ -980,8 +980,12 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"));
-                    outpt.value = jdouble(item,"amount") * SATOSHIDEN;
+                    if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
+                    {
+                        printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                        continue;
+                    }
+                    iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"),jdouble(item,"amount") * SATOSHIDEN,spendscriptstr);
                     *unspents = outpt;
                     sum += outpt.value;
                     printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
