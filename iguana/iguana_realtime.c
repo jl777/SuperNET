@@ -520,6 +520,7 @@ void iguana_RTreset(struct iguana_info *coin)
 #endif
     printf("%s RTreset %d\n",coin->symbol,coin->RTheight);
     coin->RTheight = coin->firstRTheight;
+    coin->RTcredits = coin->RTdebits = 0;
 }
 
 struct iguana_RTaddr *iguana_RTaddrfind(struct iguana_info *coin,uint8_t *rmd160,char *coinaddr)
