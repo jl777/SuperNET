@@ -431,25 +431,25 @@ int32_t iguana_walkchain(struct iguana_info *coin,int32_t skipflag)
         bundlei = (height % coin->chain->bundlesize);
         if ( (bp= coin->bundles[hdrsi]) == 0 || (block= bp->blocks[bundlei]) == 0 )
         {
-            printf("walk error [%d:%d] %p vs %p\n",hdrsi,bundlei,block,bp->blocks[bundlei]);
+            printf("%s walk error [%d:%d] %p vs %p\n",coin->symbol,hdrsi,bundlei,block,bp->blocks[bundlei]);
             break;
         }
         else if ( block->height >= 0 && block->height != height )
-            printf("walkchain height mismatch %d vs %d\n",block->height,height);
+            printf("%s walkchain height mismatch %d vs %d\n",coin->symbol,block->height,height);
         iguana_blocksizecheck("walkchain",coin->chain->zcash,block);
         if ( bits256_nonz(iguana_blockhash(coin,height)) != 0 && bits256_cmp(iguana_blockhash(coin,height),block->RO.hash2) != 0 )
         {
-            printf("walk error blockhash error at %d %s\n",height,bits256_str(str,iguana_blockhash(coin,height)));
+            printf("%s walk error blockhash error at %d %s\n",coin->symbol,height,bits256_str(str,iguana_blockhash(coin,height)));
             break;
         }
         else if ( bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
-            printf("walk error [%d:%d] %s vs %s\n",hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str,block->RO.hash2));
+            printf("%s walk error [%d:%d] %s vs %s\n",coin->symbol,hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str,block->RO.hash2));
             break;
         }
         else if ( block->hdrsi != hdrsi || block->bundlei != bundlei )
         {
-            printf("walk error [%d:%d] vs [%d:%d]\n",hdrsi,bundlei,block->hdrsi,block->bundlei);
+            printf("%s walk error [%d:%d] vs [%d:%d]\n",coin->symbol,hdrsi,bundlei,block->hdrsi,block->bundlei);
             break;
         }
         if ( height == 0 )
@@ -494,7 +494,7 @@ struct iguana_block *iguana_fastlink(struct iguana_info *coin,int32_t hwmheight)
         if ( prev != 0 && bits256_nonz(block->RO.prev_block) == 0 )
         {
             block->RO.prev_block = prev->RO.hash2;
-            printf("PATCH.[%d:%d] prev is null\n",bp->hdrsi,bundlei);
+            printf("%s PATCH.[%d:%d] prev is null\n",coin->symbol,bp->hdrsi,bundlei);
             break;
         }
         bp->blocks[bundlei] = block;

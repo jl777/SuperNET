@@ -817,7 +817,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         if ( time(NULL) > lastdisp+30 )
         {
             lastdisp = (uint32_t)time(NULL);
-            printf("ramchaindata have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+            printf("%s have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",coin->symbol,bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
         }
         if ( bundlei > 1 )
         {
@@ -895,7 +895,7 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
             uint32_t i,sum = 0;
             for (i=0; i<sizeof(hdrsreceived)/sizeof(*hdrsreceived); i++)
                 sum += hdrsreceived[i];
-            printf("TOTAL HDRS RECEIVED %u -> %s\n",sum,mbstr(str,sum*80));
+            printf("%s TOTAL HDRS RECEIVED %u -> %s\n",coin->symbol,sum,mbstr(str,sum*80));
         }
         addr->recvhdrs++;
         if ( addr->pendhdrs > 0 )
@@ -1729,7 +1729,6 @@ int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
         {
             if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
             {
-                printf("decrement HWM\n");
                 iguana_blockzcopy(coin->chain->zcash,(struct iguana_block *)&coin->blocks.hwmchain,block);
                 return(0);
             }

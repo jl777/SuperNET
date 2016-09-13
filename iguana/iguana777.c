@@ -550,9 +550,9 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     }
     if ( helperid == 0 )
     {
-        printf("start iguana_update_balances\n");
+        printf("%s start iguana_update_balances\n",coin->symbol);
         iguana_update_balances(coin);
-        printf("iguana_update_balances completed\n");
+        printf("%s iguana_update_balances completed\n",coin->symbol);
         if ( 1 )
         {
             for (i=0; i<max; i++)

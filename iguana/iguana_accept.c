@@ -138,7 +138,7 @@ void iguana_acceptloop(void *args)
         }
         else
         {
-            printf("LAUNCH DEDICATED THREAD for %s:%u\n",ipaddr,cli_addr.sin_port);
+            printf("LAUNCH %s DEDICATED THREAD for %s:%u\n",coin->symbol,ipaddr,cli_addr.sin_port);
             addr->usock = sock;
             addr->dead = 0;
             addr->A.port = cli_addr.sin_port;
@@ -157,7 +157,7 @@ int32_t iguana_pendingaccept(struct iguana_info *coin)
         if ( (addr= iguana_peerslot(coin,ptr->ipbits,0)) != 0 )
         {
             expand_ipbits(ipaddr,ptr->ipbits);
-            printf("iguana_pendingaccept LAUNCH DEDICATED THREAD for %s\n",ipaddr);
+            printf("iguana_pendingaccept %s LAUNCH DEDICATED THREAD for %s\n",coin->symbol,ipaddr);
             addr->usock = ptr->sock;
             strcpy(addr->symbol,coin->symbol);
             iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);

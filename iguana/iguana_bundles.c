@@ -146,7 +146,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         {
             char str2[65],str3[65];
             bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
-            printf("WARNING iguana_hash2set overwrite avoided [%s] %s with %s [%d:%d]\n",debugstr,str2,str3,bp->hdrsi,bundlei);
+            printf("WARNING iguana_hash2set overwrite %s [%s] %s with %s [%d:%d]\n",coin->symbol,debugstr,str2,str3,bp->hdrsi,bundlei);
         }
         return(-1);
         //*orighash2p = newhash2;
@@ -1444,7 +1444,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     {
         if ( bp != coin->current )
         {
-            printf("new 1st.%d\n",bp->hdrsi);
+            printf("%s new 1st.%d\n",coin->symbol,bp->hdrsi);
             iguana_bundleissuemissing(myinfo,coin,bp,1 + (rand() % 3),1.);
             if ( bp->queued == 0 )
                 iguana_bundleQ(myinfo,coin,bp,0);
