@@ -121,7 +121,7 @@ void iguana_acceptloop(void *args)
         }
         if ( flag != 0 )
             continue;
-        printf("NEWSOCK.%d for %x (%s)\n",sock,ipbits,ipaddr);
+        printf("%s NEWSOCK.%d for %x (%s)\n",coin->symbol,sock,ipbits,ipaddr);
         /*if ( (uint32_t)ipbits == myinfo->myaddr.myipbits )
         {
             
