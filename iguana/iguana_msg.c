@@ -1148,9 +1148,9 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     addr->headerserror++;
                 else
                 {
-                    for (i=0; i<recvlen; i++)
+                    for (i=0; i<recvlen&&i<100; i++)
                         printf("%02x ",data[i]);
-                    printf("reject.(%s) recvlen.%d %s proto.%d\n",data+1,recvlen,addr->ipaddr,addr->protover);
+                    printf("%s reject.(%s) recvlen.%d %s proto.%d\n",coin->symbol,data+1,recvlen,addr->ipaddr,addr->protover);
                     addr->msgcounts.reject++;
                 }
             }
