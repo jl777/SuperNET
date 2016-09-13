@@ -134,11 +134,13 @@ void SuperNET_MYINFOadd(struct supernet_info *myinfo)
     }
 }
 
-char *iguana_JSON(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint16_t port)
+char *iguana_JSON(void *_myinfo,void *_coin,char *jsonstr,uint16_t port)
 {
-    char *retstr=0; cJSON *json;
+    char *retstr=0; cJSON *json; struct supernet_info *myinfo = _myinfo; struct iguana_info *coin = _coin;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
+        if ( myinfo == 0 )
+            myinfo = SuperNET_MYINFO(0);
         retstr = SuperNET_JSON(myinfo,coin,json,"127.0.0.1",port);
         free_json(json);
     }
