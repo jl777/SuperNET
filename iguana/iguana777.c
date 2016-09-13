@@ -453,9 +453,9 @@ void iguana_update_balances(struct iguana_info *coin)
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
                 sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-            OS_removefile(fname,0);
+                OS_removefile(fname,0);
                 sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-            OS_removefile(fname,0);
+                OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
             }
         printf("accounts files purged\n");
@@ -476,13 +476,22 @@ void iguana_update_balances(struct iguana_info *coin)
                 }
             } else printf("null bp.[%d]\n",hdrsi);
         }
+        //if ( max != coin->origbalanceswritten )
+        {
+            coin->balanceflush = max+1;
+            while ( coin->balanceflush != 0 )
+                sleep(3);
+        }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
     }
-    //if ( max != coin->origbalanceswritten )
+    else
     {
-        coin->balanceflush = max+1;
-        while ( coin->balanceflush != 0 )
-            sleep(3);
-    }// else printf("skip flush when max.%d and orig.%d\n",max,coin->origbalanceswritten);
+        for (i=0; i<max; i++)
+            if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
+            {
+                iguana_volatilespurge(coin,&bp->ramchain);
+                iguana_volatilesmap(coin,&bp->ramchain);
+            }
+    }
 }
 
 int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag)
