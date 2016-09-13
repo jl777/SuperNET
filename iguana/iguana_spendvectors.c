@@ -679,7 +679,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                         fprintf(stderr,".");
                     if ( filecrc == 0 )
                     {
-                        fprintf(stderr,"balancehash add [%d]\n",bp->hdrsi);
+                        //fprintf(stderr,"balancehash add [%d]\n",bp->hdrsi);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr) * numunspents);
                         vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->hashes[0]) * bp->n);

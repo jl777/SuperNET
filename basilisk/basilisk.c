@@ -870,14 +870,17 @@ void basilisks_loop(void *arg)
                 basilisk_ping_send(myinfo,btcd);
             }
         }
-        HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
+        if ( myinfo->expiration != 0 )
         {
-            if ( time(NULL) > coin->lastunspentsupdate+10 )
+            HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
             {
-                //printf(">>>>>>>>>>>>> update %s\n",coin->symbol);
-                basilisk_unspents_update(myinfo,coin);
-                coin->lastunspentsupdate = (uint32_t)time(NULL);
-                //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
+                if ( myinfo->Cunspents == 0 || time(NULL) > coin->lastunspentsupdate+60 )
+                {
+                    //printf(">>>>>>>>>>>>> update %s\n",coin->symbol);
+                    basilisk_unspents_update(myinfo,coin);
+                    coin->lastunspentsupdate = (uint32_t)time(NULL);
+                    //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
+                }
             }
         }
         if ( RELAYID < 0 && myinfo->expiration != 0 )

@@ -653,7 +653,7 @@ int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,
 
 uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *numrmdsp,cJSON *array,int32_t firsti)
 {
-    int32_t i,n,flag=0,j=0; char *coinaddr,rmdstr[41]; uint8_t *addrtypes,*rmdarray = 0;
+    int32_t i,n,flag=0,k,j=0; char *coinaddr,rmdstr[41]; uint8_t addrtype,*addrtypes,*rmdarray = 0;
     *numrmdsp = 0;
     if ( array == 0 || cJSON_GetArraySize(array) == 0 )
         array = iguana_getaddressesbyaccount(myinfo,coin,"*");
@@ -666,9 +666,19 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
         {
             if ( (coinaddr= jstr(jitem(array,i),0)) != 0 )
             {
-                bitcoin_addr2rmd160(&addrtypes[j],&rmdarray[20 * j],coinaddr);
-                init_hexbytes_noT(rmdstr,&rmdarray[20 * j],20);
                 //printf("(%s %s) ",coinaddr,rmdstr);
+                if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
+                {
+                    printf("i.%d illegal coinaddr.(%s) longest.%d\n",i,coinaddr,coin->longestchain);
+                    continue;
+                }
+                bitcoin_addr2rmd160(&addrtypes[j],&rmdarray[20 * j],coinaddr);
+                for (k=0; k<20; k++)
+                    if ( rmdarray[20 * j + k] != 0 )
+                        break;
+                if ( k == 20 )
+                    continue;
+                init_hexbytes_noT(rmdstr,&rmdarray[20 * j],20);
                 j++;
             }
         }
@@ -807,77 +817,24 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
 
 int32_t iguana_RTaddr_unspents(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *sump,struct iguana_outpoint *unspents,int32_t max,char *coinaddr,char *remoteaddr,int32_t lastheight,int32_t includespent)
 {
-    int32_t n,k,numunspents,minconf = 0; uint64_t total; uint8_t rmd160[20],pubkey[65],addrtype;
+    int32_t n,j,k,numunspents,minconf = 0; uint64_t total; uint8_t rmd160[20],pubkey[65],addrtype;
     total = 0;
     n = numunspents = 0;
+    if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
+    {
+        printf("illegal coinaddr.(%s) minconf.%d longest.%d diff.%d\n",coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
+        return(0);
+    }
     bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+    for (j=0; j<20; j++)
+        if ( rmd160[j] != 0 )
+            break;
+    if ( j == 20 )
+        return(0);
     iguana_RTpkhasharray(myinfo,coin,0,minconf,coin->longestchain,&total,0,coin->bundlescount,rmd160,coinaddr,pubkey,lastheight,unspents,&n,max-1000,remoteaddr,includespent);
     numunspents = n;
     for (k=0; k<n; k++)
         (*sump) += unspents[k].value;
-    return(numunspents);
-}
-
-int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
-{
-    uint64_t sum = 0; int32_t i,j,n,numunspents,numaddrs; uint8_t addrtype,rmd160[20],pubkey[65]; char *coinaddr; struct iguana_outpoint outpt; cJSON *array,*item; //struct iguana_waddress *waddr; struct iguana_waccount *wacct; 
-    *totalp = 0;
-    if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
-    {
-        printf("null addresses.(%s)\n",jprint(addresses,0));
-        return(0);
-    }
-    memset(pubkey,0,sizeof(pubkey));
-    //remains = required * 1.1 + coin->txfee;
-    for (i=numunspents=0; i<numaddrs; i++)
-    {
-        if ( (coinaddr= jstri(addresses,i)) != 0 )
-        {
-            if ( iguana_addressvalidate(coin,&addrtype,coinaddr) < 0 )
-            {
-                printf("i.%d illegal coinaddr.(%s) minconf.%d longest.%d diff.%d\n",i,coinaddr,minconf,coin->longestchain,coin->blocks.hwmchain.height - minconf);
-                continue;
-            }
-            bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
-            for (j=0; j<20; j++)
-                if ( rmd160[j] != 0 )
-                    break;
-            if ( j == 20 )
-                continue;
-            if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
-            {
-                numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,1<<30,0);
-            }
-            else
-            {
-                portable_mutex_lock(&myinfo->bu_mutex);
-                //if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
-                {
-                    if ( myinfo->Cunspents != 0 && (array= jobj(myinfo->Cunspents,coin->symbol)) != 0 )
-                    {
-                        if ( (n= cJSON_GetArraySize(array)) > 0 )
-                        {
-                            for (i=0; i<n; i++)
-                            {
-                                item = jitem(array,i);
-                                iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"));
-                                *unspents = outpt;
-                                sum += outpt.value;
-                                unspents++;
-                                numunspents++;
-                            }
-                        }
-                    }
-                }
-                portable_mutex_unlock(&myinfo->bu_mutex);
-            }
-            if ( numunspents > max || sum > required )
-                break;
-            //printf("n.%d max.%d total %.8f\n",n,max,dstr(total));
-        }
-    }
-    *totalp = sum;
-    printf("numunspents.%d sum %.8f\n",numunspents,dstr(sum));
     return(numunspents);
 }
 
@@ -990,6 +947,56 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
      "spendable" : true
      },*/
     return(retjson);
+}
+
+int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
+{
+    uint64_t sum = 0; int32_t i,n,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr; struct iguana_outpoint outpt; cJSON *array,*item; //struct iguana_waddress *waddr; struct iguana_waccount *wacct;
+    *totalp = 0;
+    numunspents = 0;
+    if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
+    {
+        printf("null addresses.(%s)\n",jprint(addresses,0));
+        return(0);
+    }
+    memset(pubkey,0,sizeof(pubkey));
+    //remains = required * 1.1 + coin->txfee;
+    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    {
+        for (i=numunspents=0; i<numaddrs; i++)
+        {
+            if ( (coinaddr= jstri(addresses,i)) != 0 )
+            {
+                numunspents += iguana_RTaddr_unspents(myinfo,coin,&sum,&unspents[numunspents],max-numunspents,coinaddr,remoteaddr,1<<30,0);
+            }
+        }
+    }
+    else
+    {
+        if ( (array= iguana_RTlistunspent(myinfo,coin,addresses,minconf,1<<30,remoteaddr,0)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"));
+                    outpt.value = jdouble(item,"amount") * SATOSHIDEN;
+                    *unspents = outpt;
+                    sum += outpt.value;
+                    printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
+                    unspents++;
+                    numunspents++;
+                    if ( numunspents > max || sum > required )
+                        break;
+                }
+            }
+            free_json(array);
+        }
+    }
+    *totalp = sum;
+    printf("numunspents.%d max.%d sum %.8f required %.8f\n",numunspents,max,dstr(sum),dstr(required));
+    return(numunspents);
 }
 
 #define UTXOADDR_ITEMSIZE 32
