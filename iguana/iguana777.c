@@ -243,7 +243,8 @@ uint32_t iguana_updatemetrics(struct supernet_info *myinfo,struct iguana_info *c
             printf("new peers.txt %ld vs (%s) %ld (%s)\n",ftell(fp),fname,(long)OS_filesize(fname),GLOBAL_CONFSDIR);
             fclose(fp);
             OS_renamefile(fname,oldfname);
-            OS_copyfile(tmpfname,fname,1);
+            OS_renamefile(tmpfname,fname);
+            //OS_copyfile(tmpfname,fname,1);
         } else fclose(fp);
     }
     else
