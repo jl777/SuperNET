@@ -860,9 +860,9 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                         err = -1;
                         if ( fwrite(&numhdrsi,1,sizeof(numhdrsi),fp) == sizeof(numhdrsi) && fwrite(&numhdrsi,1,sizeof(numhdrsi),fp2) == sizeof(numhdrsi) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp) == sizeof(balancehash) && fwrite(balancehash.bytes,1,sizeof(balancehash),fp2) == sizeof(balancehash) && fwrite(allbundles.bytes,1,sizeof(allbundles),fp) == sizeof(allbundles) && fwrite(allbundles.bytes,1,sizeof(allbundles),fp2) == sizeof(allbundles) )
                         {
-                            if ( fwrite(Aptr,sizeof(*Aptr),numpkinds,fp) == numpkinds )
+                            if ( numpkinds == 0 || fwrite(Aptr,sizeof(*Aptr),numpkinds,fp) == numpkinds )
                             {
-                                if ( fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
+                                if ( numunspents == 0 || fwrite(Uptr,sizeof(*Uptr),numunspents,fp2) == numunspents )
                                 {
                                     err = 0;
                                     if ( (hdrsi % 100) == 0 )
@@ -911,8 +911,8 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                 }
                 if ( bp->ramchain.allocatedA2 == 0 || bp->ramchain.allocatedU2 == 0 )
                 {
-                    printf("skip saving.[%d] files as not allocated\n",bp->hdrsi);
-                    break;
+                    printf("account.[%d] files not allocated %u %u\n",bp->hdrsi,(uint32_t)bp->ramchain.allocatedA2,(uint32_t)bp->ramchain.allocatedU2);
+                    //break;
                 }
             }
             else if ( hdrsi > 0 && hdrsi != coin->bundlescount && (coin->current == 0 || hdrsi != coin->current->hdrsi ) )
