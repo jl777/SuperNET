@@ -672,29 +672,33 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         for (; serialized[len]!=0&&len<maxsize; len++) // eat null terminated string
             ;
     }
-    if ( zcash != 0 && msg->version == 2 )
+    if ( zcash != 0 && msg->version > 1 )
     {
         uint32_t numjoinsplits; struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33],joinsplitsig[64];
         len += iguana_rwvarint32(rwflag,&serialized[len],&numjoinsplits);
-        char str[65];
-        printf("[%ld] numjoinsplits.%d version.%d numvins.%d numvouts.%d locktime.%u %s\n",sizeof(joinsplit),numjoinsplits,msg->version,msg->tx_in,msg->tx_out,msg->lock_time,bits256_str(str,*txidp));
         if ( numjoinsplits > 0 )
         {
             for (i=0; i<numjoinsplits; i++)
                 len += iguana_rwjoinsplit(rwflag,&serialized[len],&joinsplit);
+            if ( rwflag != 0 )
+            {
+                memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now
+                memset(joinsplitsig,0,sizeof(joinsplitsig)); // set to actuals
+                memcpy(&serialized[len],joinsplitpubkey+1,32), len += 32;
+                memcpy(&serialized[len],joinsplitsig,64), len += 64;
+            }
+            else
+            {
+                joinsplitpubkey[0] = 0x02; // need to verify its not 0x03
+                memcpy(joinsplitpubkey+1,&serialized[len],32), len += 32;
+                memcpy(joinsplitsig,&serialized[len],64), len += 64;
+            }
         }
-        if ( rwflag != 0 )
+        if ( 0 )
         {
-            memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now
-            memset(joinsplitsig,0,sizeof(joinsplitsig)); // set to actuals
-            memcpy(&serialized[len],joinsplitpubkey+1,32), len += 32;
-            memcpy(&serialized[len],joinsplitsig,64), len += 64;
-        }
-        else
-        {
-            joinsplitpubkey[0] = 0x02; // need to verify its not 0x03
-            memcpy(joinsplitpubkey+1,&serialized[len],32), len += 32;
-            memcpy(joinsplitsig,&serialized[len],64), len += 64;
+            *txidp = bits256_doublesha256(txidstr,txstart,len);
+            char str[65];
+            printf("[%ld] numjoinsplits.%d version.%d numvins.%d numvouts.%d locktime.%u %s\n",sizeof(joinsplit),numjoinsplits,msg->version,msg->tx_in,msg->tx_out,msg->lock_time,bits256_str(str,*txidp));
         }
     }
     *txidp = bits256_doublesha256(txidstr,txstart,len);

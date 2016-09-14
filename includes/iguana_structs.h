@@ -106,7 +106,7 @@ struct iguana_msgblockhdr
     uint32_t timestamp,bits,nonce;
 } PACKEDSTRUCT;
 
-#define ZKSNARK_PROOF_SIZE 584
+#define ZKSNARK_PROOF_SIZE 296
 #define ZCASH_SOLUTION_ELEMENTS 1344
 
 struct iguana_msgzblockhdr
@@ -175,8 +175,8 @@ struct iguana_msgjoinsplit
     uint64_t vpub_old,vpub_new;
     bits256 anchor,nullifiers[2],commitments[2],ephemeralkey;
     bits256 randomseed,vmacs[2];
-    uint8_t zkproof[ZKSNARK_PROOF_SIZE-1];
-    uint8_t ciphertexts[2][217];
+    uint8_t zkproof[ZKSNARK_PROOF_SIZE];
+    uint8_t ciphertexts[2][601];
 }PACKEDSTRUCT;
 
 struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; struct tai embargo; int32_t datalen,getdatablock; uint8_t serialized[]; };
