@@ -113,7 +113,6 @@ int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struc
     }
     else
     {
-        zmsg = (void *)msg;
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.version),&zmsg->zH.version);
         len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.prev_block),zmsg->zH.prev_block.bytes);
         len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.merkle_root),zmsg->zH.merkle_root.bytes);
@@ -131,8 +130,8 @@ int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struc
             printf("rw.%d unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2]);
         if ( tmp != ZCASH_SOLUTION_ELEMENTS )
         {
-            //int32_t i; for (i=0; i<157; i++)
-            //    printf("%02x",serialized[i]);
+            int32_t i; for (i=0; i<157; i++)
+                printf("%02x",serialized[i]);
             printf(" rw.%d unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
             return(-1);
         }
@@ -252,11 +251,16 @@ int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain 
         zmsg.zH.bits = zblock->RO.bits;
         zmsg.zH.bignonce = zblock->zRO.bignonce;
         if ( iguana_rwvarint32(1,zmsg.zH.var_numelements,(uint32_t *)&zblock->zRO.numelements) != sizeof(zmsg.zH.var_numelements) )
-            printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg.zH.var_numelements[0],zmsg.zH.var_numelements[1],zmsg.zH.var_numelements[2]);
-        for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            zmsg.zH.solution[i] = zblock->zRO.solution[i];
-        zmsg.txn_count = block->RO.txn_count;
-        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,(void *)&zmsg,IGUANA_MAXPACKETSIZE);
+        {
+            // printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg.zH.var_numelements[0],zmsg.zH.var_numelements[1],zmsg.zH.var_numelements[2]);
+        }
+        if ( zblock->zRO.numelements == ZCASH_SOLUTION_ELEMENTS )
+        {
+            for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
+                zmsg.zH.solution[i] = zblock->zRO.solution[i];
+            zmsg.txn_count = block->RO.txn_count;
+            len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,(void *)&zmsg,IGUANA_MAXPACKETSIZE);
+        } else return(-1);
     }
     return(len);
 }
@@ -451,8 +455,8 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     }
     if ( strcmp(coin->symbol,"BTC") != 0 || (rand() % 10) == 0 )
         iguana_possible_peer(coin,ipport);
-    if ( 0 && strncmp("BTC",coin->symbol,3) != 0 )
-        printf("%s\n",ipaddr);
+    if ( 0 && strcmp("TAZ",coin->symbol) == 0 )
+        printf("iguana_gotaddr: %s from %s\n",ipaddr,addr->ipaddr);
 }
 
 void iguana_gotping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,uint64_t nonce,uint8_t *data)

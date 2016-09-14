@@ -362,7 +362,8 @@ int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *co
         return(0);
     }
     *validp = 0;
-    iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block);
+    if ( iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block) < 0 )
+        return(-1);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
     iguana_blocksizecheck("blockvalidate",coin->chain->zcash,block);

@@ -724,12 +724,6 @@ void iguana_startconnection(void *arg)
         printf("iguana_startconnection.%s:%04x mismatched coin.%p (%s) vs (%s)\n",addr->ipaddr,coin->chain->portp2p,coin,coin->symbol,addr->coinname);
         return;
     }
-    /*if ( strcmp("85.25.217.233",addr->ipaddr) == 0 )
-    {
-        printf("temp blacklist %s\n",addr->ipaddr);
-        iguana_iAkill(coin,addr,1);
-        return;
-    }*/
     //printf("%s iguana_startconnection.%s:%04x\n",coin->symbol,addr->ipaddr,coin->chain->portp2p);
     if ( strcmp("127.0.0.1",addr->ipaddr) == 0 )//&& (coin->myservices & NODE_NETWORK) != 0 )
     {
@@ -737,7 +731,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    //printf(">>>>>>>> startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    printf(">>>>>>>> startconnection.(%s) pending.%u usock.%d addrind.%d\n",addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
         port = coin->chain->portp2p;
@@ -746,7 +740,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || (coin->peers != 0 && coin->peers->shuttingdown != 0) )
     {
         strcpy(ipaddr,addr->ipaddr);
-        //printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else
@@ -845,16 +839,15 @@ void iguana_launchpeer(struct iguana_info *coin,char *ipaddr,int32_t forceflag)
     else printf("iguana_launchpeer skip %s\n",ipaddr);
 }
 
-void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
+void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA,struct iguana_peer *addr)
 {
-    struct iguana_peer *addr = 0;
     if ( coin->virtualchain != 0 )
         return(0);
     if ( iA != 0 && iA->ipbits != 0 && iguana_numthreads(coin,1 << IGUANA_CONNTHREAD) < IGUANA_MAXCONNTHREADS && iA->status == IGUANA_PEER_ELIGIBLE )
     {
         //printf("%x\n",iA->ipbits);
         //portable_mutex_unlock(&coin->peers_mutex);
-        if ( (addr= iguana_peerslot(coin,iA->ipbits,0)) != 0 )
+        if ( addr != 0 || (addr= iguana_peerslot(coin,iA->ipbits,0)) != 0 )
         {
             addr->ipbits = iA->ipbits;
             //printf("pend.%d status.%d possible peer.(%s).%x threads %d %d %d %d\n",addr->pending,iA->status,addr->ipaddr,(uint32_t)addr->ipbits,iguana_numthreads(coin,0),iguana_numthreads(coin,1),iguana_numthreads(coin,2),iguana_numthreads(coin,3));
@@ -884,7 +877,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA)
  
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
 {
-    char checkaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA;
+    char checkaddr[64],_ipaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA; struct iguana_peer *addr;
     if ( coin->virtualchain != 0 || coin->peers == 0 )
         return(0);
     if ( ipaddr != 0 && ipaddr[0] != 0 && coin->peers != 0 )
@@ -905,28 +898,24 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
         return((uint32_t)time(NULL));
     else if ( (ipaddr= queue_dequeue(&coin->possibleQ,1)) == 0 )
         return((uint32_t)time(NULL));
+    safecopy(_ipaddr,ipaddr,sizeof(_ipaddr));
+    free_queueitem(ipaddr);
+    ipaddr = _ipaddr;
 #ifdef IGUANA_DISABLEPEERS
     if ( strcmp(ipaddr,"127.0.0.1") != 0 )
-    {
-        free_queueitem(ipaddr);
         return((uint32_t)time(NULL));
-    }
 #endif
     ipbits = (uint32_t)calc_ipbits(ipaddr);
-    //printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
-    if ( iguana_peerslot(coin,(uint32_t)ipbits,0) != 0 )
+    if ( (addr= iguana_peerslot(coin,(uint32_t)ipbits,0)) == 0 )
         return((uint32_t)time(NULL));
-    for (i=n=0; i<IGUANA_MAXPEERS; i++)
+    /*for (i=n=0; i<IGUANA_MAXPEERS; i++)
     {
         if ( strcmp(ipaddr,coin->peers->active[i].ipaddr) == 0 )
-        {
-            //printf("(%s) already active\n",ipaddr);
-            free_queueitem(ipaddr);
             return((uint32_t)time(NULL));
-        }
         else if ( coin->peers->active[i].ipaddr[0] != 0 )
             n++;
-    }
+    }*/
+    n = coin->peers->numranked;
     if ( n >= coin->MAXPEERS-(coin->MAXPEERS>>3)-1 || coin->peers->numranked >= coin->MAXPEERS )
         return((uint32_t)time(NULL));
     if ( strncmp("0.0.0",ipaddr,5) != 0 && strcmp("0.0.255.255",ipaddr) != 0 && strcmp("1.0.0.0",ipaddr) != 0 )
@@ -937,6 +926,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 ipaddr[i] = 0;
                 break;
             }
+        //printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
         if ( (ipbits= calc_ipbits(ipaddr)) != 0 )
         {
             expand_ipbits(checkaddr,ipbits);
@@ -952,14 +942,13 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                             iA->status = IGUANA_PEER_ELIGIBLE;
                             if ( iguana_rwiAddrind(coin,1,iA,iA->hh.itemind) == 0 )
                                 printf("error updating status for (%s) ind.%d\n",ipaddr,iA->hh.itemind);
-                            iguana_iAddriterator(coin,iA);
+                            iguana_iAddriterator(coin,iA,addr);
                         } else printf("ignore.(%s) lastconnect.%u lastkilled.%u numconnects.%d\n",ipaddr,iA->lastconnect,iA->lastkilled,iA->numconnects);
-                    } // else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
+                    } else printf("skip.(%s) ind.%d status.%d\n",ipaddr,iA->hh.itemind,iA->status);
                 } else printf("cant find (%s) which should have been created\n",ipaddr);
             } else printf("%s reject ipaddr.(%s) vs checkaddr.(%s)\n",coin->symbol,ipaddr,checkaddr);
         }
     }
-    free_queueitem(ipaddr);
     return((uint32_t)time(NULL));
 }
 

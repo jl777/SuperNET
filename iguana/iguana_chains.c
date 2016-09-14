@@ -498,6 +498,8 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
         strcpy(chain->gethdrsmsg,"getblocks");
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
+    if ( chain->zcash != 0 )
+        chain->bundlesize = 500;
     if ( strcmp(chain->symbol,"BTC") == 0 )
         chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
