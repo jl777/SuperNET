@@ -174,9 +174,9 @@ struct iguana_msgjoinsplit
 {
     uint64_t vpub_old,vpub_new;
     bits256 anchor,nullifiers[2],commitments[2],ephemeralkey;
-    uint8_t ciphertexts[2][217];
     bits256 randomseed,vmacs[2];
     uint8_t zkproof[ZKSNARK_PROOF_SIZE-1];
+    uint8_t ciphertexts[2][217];
 }PACKEDSTRUCT;
 
 struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; struct tai embargo; int32_t datalen,getdatablock; uint8_t serialized[]; };

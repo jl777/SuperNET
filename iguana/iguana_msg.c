@@ -218,10 +218,9 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
         if ( x < 65536 )
         {
             if ( zcash != 0 )
-                msg->txn_count = (uint16_t)x;
-            else zmsg->txn_count = (uint16_t)x;
-        }
-        else printf("txn_count overflow.%lld for %s\n",(long long)x,str);
+                zmsg->txn_count = (uint16_t)x;
+            else msg->txn_count = (uint16_t)x;
+        } else printf("txn_count overflow.%lld for %s\n",(long long)x,str);
     }
     //  ? 	txns 	tx[] 	Block transactions, in format of "tx" command
     return(len);
@@ -678,7 +677,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         uint32_t numjoinsplits; struct iguana_msgjoinsplit joinsplit; uint8_t joinsplitpubkey[33],joinsplitsig[64];
         len += iguana_rwvarint32(rwflag,&serialized[len],&numjoinsplits);
         char str[65];
-        printf("numjoinsplits.%d version.%d numvins.%d numvouts.%d locktime.%u %s\n",numjoinsplits,msg->version,msg->tx_in,msg->tx_out,msg->lock_time,bits256_str(str,*txidp));
+        printf("[%ld] numjoinsplits.%d version.%d numvins.%d numvouts.%d locktime.%u %s\n",sizeof(joinsplit),numjoinsplits,msg->version,msg->tx_in,msg->tx_out,msg->lock_time,bits256_str(str,*txidp));
         if ( numjoinsplits > 0 )
         {
             for (i=0; i<numjoinsplits; i++)
@@ -688,12 +687,13 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         {
             memset(joinsplitpubkey,0,sizeof(joinsplitpubkey)); // for now
             memset(joinsplitsig,0,sizeof(joinsplitsig)); // set to actuals
-            memcpy(&serialized[len],joinsplitpubkey,33), len += 33;
+            memcpy(&serialized[len],joinsplitpubkey+1,32), len += 32;
             memcpy(&serialized[len],joinsplitsig,64), len += 64;
         }
         else
         {
-            memcpy(joinsplitpubkey,&serialized[len],33), len += 33;
+            joinsplitpubkey[0] = 0x02; // need to verify its not 0x03
+            memcpy(joinsplitpubkey+1,&serialized[len],32), len += 32;
             memcpy(joinsplitsig,&serialized[len],64), len += 64;
         }
     }
@@ -1004,9 +1004,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     len = iguana_rwvarint32(0,data,&n);
                     if ( n <= IGUANA_MAXINV )
                     {
-                        bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle *coinbase_branch,*blockchain_branch; struct iguana_msgblock parentblock;
-                        coinbase_branch = calloc(1,sizeof(*coinbase_branch));
-                        blockchain_branch = calloc(1,sizeof(*blockchain_branch));
+                        bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle *coinbase_branch=0,*blockchain_branch=0; struct iguana_msgblock parentblock;
                         if ( rawmem->totalsize == 0 )
                             iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
                         memset(prevhash2.bytes,0,sizeof(prevhash2));
@@ -1016,6 +1014,10 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                         {
                             if ( coin->chain->auxpow != 0 )
                             {
+                                if ( coinbase_branch == 0 )
+                                    coinbase_branch = calloc(1,sizeof(*coinbase_branch));
+                                if ( blockchain_branch == 0 )
+                                    blockchain_branch = calloc(1,sizeof(*blockchain_branch));
                                 tmp = iguana_rwblockhdr(0,coin->chain->zcash,&data[len],(void *)&zmsg);
                                 hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
                                 len += tmp;
@@ -1038,8 +1040,10 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                             iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(void *)&zblocks[i],&zmsg,hash2,-1);
                             prevhash2 = hash2;
                         }
-                        free(coinbase_branch);
-                        free(blockchain_branch);
+                        if ( coinbase_branch != 0 )
+                            free(coinbase_branch);
+                        if ( blockchain_branch != 0 )
+                            free(blockchain_branch);
                         if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
                             myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
  //myfree(blocks,sizeof(*blocks) * n);

@@ -1924,9 +1924,9 @@ int32_t iguana_processrecvQ(struct supernet_info *myinfo,struct iguana_info *coi
 
 int32_t iguana_needhdrs(struct iguana_info *coin)
 {
-    if ( coin->longestchain == 0 || coin->blocks.hashblocks < coin->longestchain-coin->chain->bundlesize )
+    //if ( coin->longestchain == 0 || coin->blocks.hashblocks < coin->longestchain-coin->chain->bundlesize )
         return(1);
-    else return(0);
+    //else return(0);
 }
 
 int32_t iguana_reqhdrs(struct iguana_info *coin)
@@ -1953,15 +1953,18 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                             coin->numpendings++;
                         init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
-                        if ( bp == coin->current && coin->blocks.hwmchain.height > 100 )
+                        if ( bp == coin->current )
                         {
                             init_hexbytes_noT(hashstr,bp->hashes[0].bytes,sizeof(bits256));
                             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
                             //printf("%s issue HWM HDRS [%d] %s\n",coin->symbol,bp->hdrsi,hashstr);
-                            bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
-                            init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
-                            //printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
-                            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                            if ( coin->blocks.hwmchain.height > 10 )
+                            {
+                                bits256 hash2 = iguana_blockhash(coin,coin->blocks.hwmchain.height-10);
+                                init_hexbytes_noT(hashstr,hash2.bytes,sizeof(bits256));
+                                //printf("%s issue HWM HDRS %d-10 %s\n",coin->symbol,coin->blocks.hwmchain.height,hashstr);
+                                queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+                            }
                         }
                         //printf("hdrsi.%d reqHDR.(%s) numhashes.%d\n",bp->hdrsi,hashstr,bp->numhashes);
                         if ( 1 )

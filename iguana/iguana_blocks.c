@@ -410,7 +410,7 @@ void iguana_blockmerge(struct iguana_block *dest,struct iguana_prevdep *destlp,s
 
 double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, but most of the time will be correct
 {
-	uint32_t nbytes,nbits,i,n; double PoW; uint64_t mult;
+	uint32_t nbytes,nbits; int32_t i,n; double PoW; uint64_t mult;
     nbytes = (nBits >> 24) & 0xFF;
     nbits = (8 * (nbytes - 3));
     PoW = (nBits & 0xFFFFFF);
@@ -419,7 +419,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
         printf("illegal nBits.%x unitval.%02x\n",nBits,unitval);
         return(0.);
     }
-    if ( (n= ((8 * (unitval-3)) - nbits)) != 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
+    if ( (n= ((8 * (unitval-3)) - nbits)) > 0 ) // 0x1d00ffff is genesis nBits so we map that to 1.
     {
         //printf("nbits.%d -> n.%d\n",nbits,n);
         if ( n < 64 )
@@ -429,7 +429,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
             for (i=0; i<n; i++)
                 PoW /= 2.;
         }
-    }
+    } else PoW = 1.;
     mult = 1;
     while ( nbytes++ < unitval )
         mult <<= 8;
