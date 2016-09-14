@@ -1,11 +1,7 @@
 
 *.o
-
-
-
-
-
 agents/iguana.exe
+Debug/*
 
 iguana/pnacl/Release/iguana_unstripped.pexe
 
