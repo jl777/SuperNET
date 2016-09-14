@@ -1139,8 +1139,8 @@ void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainch
                 tmp->mainchain = 0;
                 printf("CLEAR %s mainchain.%d %s\n",coin->symbol,height,str);
             }
-            if ( coin->RTheight > height )
-                iguana_RTreset(coin);
+            //if ( coin->RTheight > height )
+            //    iguana_RTreset(coin);
             if ( (tmp= iguana_blockfind("clear",coin,tmp->RO.prev_block)) == 0 )
             {
                 printf("iguana_mainchain_clear: got null tmp i.%d of %d %s\n",i,n,str);
