@@ -106,41 +106,42 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
         return(hash2);
     }
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
-    hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
-    auxback = coin->chain->auxpow, coin->chain->auxpow = 0;
-    iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,(void *)&zmsg,sizeof(buf));
-    coin->chain->auxpow = auxback;
+    hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,buf,chain->zcash == 0 ? sizeof(struct iguana_msgblockhdr) : sizeof(struct iguana_msgzblockhdr));
+    auxback = chain->auxpow, chain->auxpow = 0;
+    iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,chain->auxpow,chain->hashalgo,0,&hash2,buf,(void *)&zmsg,sizeof(buf));
+    chain->auxpow = auxback;
     if  ( coin->virtualchain == 0 && coin->MAXPEERS > 1 )
     {
-        if ( coin->chain->debug == 0 && memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
+        if ( chain->debug == 0 && memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
         {
             bits256_str(str,hash2);
-            printf("genesis mismatch? zcash.%d calculated %s vs %s\n",coin->chain->zcash,str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
+            printf("genesis mismatch? zcash.%d calculated %s vs %s\n",chain->zcash,str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
             memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
         }
         if ( coin->chain->debug != 0 )
             memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     } else memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     bits256_str(str,hash2);
-    printf("genesis.(%s) zcash.%d len.%d hash.%s\n",chain->genesis_hex,coin->chain->zcash,(int32_t)sizeof(zmsg.zH),str);
-    iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(void *)block,&zmsg,hash2,0);
+    if ( chain->debug != 0 )
+        printf("genesis.(%s) zcash.%d len.%d hash.%s\n",chain->genesis_hex,chain->zcash,(int32_t)sizeof(zmsg.zH),str);
+    iguana_blockconv(chain->zcash,chain->auxpow,(void *)block,&zmsg,hash2,0);
     block->RO.txn_count = 1;
     block->RO.numvouts = 1;
-    if ( coin->chain->zcash != 0 )
+    if ( chain->zcash != 0 )
         block->RO.allocsize = sizeof(struct iguana_zblock);
     else block->RO.allocsize = (int32_t)sizeof(*block);
     iguana_gotdata(coin,0,0);
     if ( (ptr= iguana_blockhashset("genesis0",coin,0,hash2,1)) != 0 )
     {
-        iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,ptr,block);
-        iguana_blocksizecheck("genesis ptr",coin->chain->zcash,ptr);
+        iguana_blockcopy(chain->zcash,chain->auxpow,coin,ptr,block);
+        iguana_blocksizecheck("genesis ptr",chain->zcash,ptr);
         ptr->mainchain = 1;
         ptr->height = 0;
         //coin->blocks.RO[0] = block.RO;
         if ( coin->virtualchain != 0 || (height= iguana_chainextend(myinfo,coin,ptr)) == 0 )
         {
-            iguana_blockzcopy(coin->chain->zcash,block,ptr);
-            iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,ptr);
+            iguana_blockzcopy(chain->zcash,block,ptr);
+            iguana_blockzcopy(chain->zcash,(void *)&coin->blocks.hwmchain,ptr);
             printf("size.%d genesis block PoW %f ptr %f\n",block->RO.allocsize,block->PoW,ptr->PoW);
             coin->blocks.recvblocks = coin->blocks.issuedblocks = 1;
         } else printf("genesis block doesnt validate for %s ht.%d\n",coin->symbol,height);
@@ -313,7 +314,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
 #ifndef IGUANA_DISABLEPEERS
                 addr = &coin->peers->active[m++];
                 iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                printf("call initpeer.(%s)\n",addr->ipaddr);
+                //printf("call initpeer.(%s)\n",addr->ipaddr);
                 iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 #endif
             }

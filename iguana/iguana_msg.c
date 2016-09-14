@@ -91,7 +91,7 @@ int32_t iguana_rwmerklebranch(int32_t rwflag,uint8_t *serialized,struct iguana_m
     return(len);
 }
 
-int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint16_t *solution,int32_t n)
+int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint8_t *solution,int32_t n)
 {
     int32_t i,len = 0;
     for (i=0; i<n; i++)
@@ -943,10 +943,11 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                 {
                     if ( coin->chain->debug != 0 )
                     {
-                        int32_t i;
-                        for (i=0; i<recvlen && i<80; i++)
+                        int32_t i,max;
+                        max = coin->chain->zcash == 0 ? 80 : sizeof(struct iguana_msgzblockhdr);
+                        for (i=0; i<max; i++)
                             printf("%02x",data[i]);
-                        printf(" block.[%d]\n",recvlen);
+                        printf(" block.[%d]\n",max);
                     }
                     addr->msgcounts.block++;
                     if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )
