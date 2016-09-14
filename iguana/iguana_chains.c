@@ -341,6 +341,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
                 chain->rpcport = 14632;
         }
         chain->zcash = juint(argjson,"zcash");
+        chain->debug = juint(argjson,"debug");
         if ( (chain->normal_txversion= juint(argjson,"normal_txversion")) == 0 )
             chain->normal_txversion = IGUANA_NORMAL_TXVERSION;
         if ( (chain->locktime_txversion= juint(argjson,"locktime_txversion")) == 0 )
@@ -433,7 +434,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             if ( (hexstr= jstr(argjson,"genesisblock")) != 0 )
             {
                 uint8_t hexbuf[1024],*ptr,*data; int32_t datalen,hdrsize;
-                hdrsize = chain->zcash != 0 ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+                hdrsize = chain->zcash != 0 ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
                 chain->genesis_hex = clonestr(hexstr);
                 data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
                 chain->genesishash2 = iguana_calcblockhash(chain->symbol,chain->hashalgo,data,hdrsize);

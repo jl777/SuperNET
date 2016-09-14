@@ -312,7 +312,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
             printf("REJECT: duplicate block %s\n",bits256_str(str,hash2));
             return(clonestr("{\"error\":\"duplicate block rejected\"}"));
         }
-        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
         //nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
         //if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) > 0 )
         {

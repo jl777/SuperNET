@@ -19,47 +19,71 @@
 
 void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_block *dest,struct iguana_msgblock *msg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
 {
-    int32_t i;
-    memset(dest,0,sizeof(*dest));
-    dest->RO.version = msg->H.version;
-    dest->RO.prev_block = msg->H.prev_block;
-    dest->RO.merkle_root = msg->H.merkle_root;
-    dest->RO.timestamp = msg->H.timestamp;
-    dest->RO.bits = msg->H.bits;
-    dest->RO.txn_count = msg->txn_count;
-    dest->height = height;
-    dest->RO.hash2 = hash2;
+    int32_t i; struct iguana_zblock *zdest; struct iguana_msgzblock *zmsg;
     if ( zcash == 0 )
+    {
+        memset(dest,0,sizeof(*dest));
+        dest->RO.version = msg->H.version;
+        dest->RO.prev_block = msg->H.prev_block;
+        dest->RO.merkle_root = msg->H.merkle_root;
+        dest->RO.timestamp = msg->H.timestamp;
+        dest->RO.bits = msg->H.bits;
+        dest->RO.txn_count = msg->txn_count;
+        dest->height = height;
+        dest->RO.hash2 = hash2;
         dest->RO.nonce = msg->H.nonce;
+    }
     else
     {
-        dest->RO.allocsize = (int32_t)(sizeof(*dest) + sizeof(*dest->zRO));
-        dest->zRO[0].bignonce = msg->zH.bignonce;
+        zdest = (void *)dest;
+        zmsg = (void *)msg;
+        zdest->RO.allocsize = (int32_t)sizeof(struct iguana_zblock);
+        zdest->RO.version = zmsg->zH.version;
+        zdest->RO.prev_block = zmsg->zH.prev_block;
+        zdest->RO.merkle_root = zmsg->zH.merkle_root;
+        zdest->RO.timestamp = zmsg->zH.timestamp;
+        zdest->RO.bits = zmsg->zH.bits;
+        zdest->zRO.bignonce = zmsg->zH.bignonce;
+        if ( iguana_rwvarint32(0,zmsg->zH.var_numelements,&zdest->zRO.numelements) != sizeof(zmsg->zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zdest->zRO.numelements);
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            dest->zRO[0].solution[i] = msg->zH.solution[i];
+            zdest->zRO.solution[i] = zmsg->zH.solution[i];
     }
 }
 
 void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count)
 {
-    int32_t i;
-    memset(msg,0,sizeof(*msg));
-    msg->H.version = src->RO.version;
-    msg->H.prev_block = src->RO.prev_block;
-    msg->H.merkle_root = src->RO.merkle_root;
-    msg->H.timestamp = src->RO.timestamp;
-    msg->H.bits = src->RO.bits;
-    if ( zcash == 0 )
-        msg->H.nonce = src->RO.nonce;
+    int32_t i; struct iguana_msgzblock *zmsg; struct iguana_zblock *zsrc;
+    if ( zcash != 0 )
+    {
+        zmsg = (void *)msg;
+        zsrc = (void *)src;
+        memset(zmsg,0,sizeof(*zmsg));
+        zmsg->zH.version = zsrc->RO.version;
+        zmsg->zH.prev_block = zsrc->RO.prev_block;
+        zmsg->zH.merkle_root = zsrc->RO.merkle_root;
+        zmsg->zH.timestamp = zsrc->RO.timestamp;
+        zmsg->zH.bits = zsrc->RO.bits;
+        zmsg->zH.bignonce = zsrc->zRO.bignonce;
+        if ( iguana_rwvarint32(1,zmsg->zH.var_numelements,&zsrc->zRO.numelements) != sizeof(zmsg->zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zsrc->zRO.numelements);
+        for (i=0; i<zsrc->zRO.numelements; i++)
+            zmsg->zH.solution[i] = zsrc->zRO.solution[i];
+        if ( cleartxn_count == 0 )
+            zmsg->txn_count = src->RO.txn_count;
+    }
     else
     {
-        msg->zH.bignonce = src->zRO[0].bignonce;
-        msg->zH.numelements = ZCASH_SOLUTION_ELEMENTS;
-        for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            msg->zH.solution[i] = src->zRO[0].solution[i];
+        memset(msg,0,sizeof(*msg));
+        msg->H.version = src->RO.version;
+        msg->H.prev_block = src->RO.prev_block;
+        msg->H.merkle_root = src->RO.merkle_root;
+        msg->H.timestamp = src->RO.timestamp;
+        msg->H.bits = src->RO.bits;
+        msg->H.nonce = src->RO.nonce;
+        if ( cleartxn_count == 0 )
+            msg->txn_count = src->RO.txn_count;
     }
-    if ( cleartxn_count == 0 )
-        msg->txn_count = src->RO.txn_count;
 }
 
 void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,struct iguana_block *block,struct iguana_block *origblock)
@@ -102,9 +126,12 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
             printf("missing space for zcash block.%d origblock.%d\n",block->RO.allocsize,origblock->RO.allocsize);
         else
         {
-            block->zRO[0].bignonce = origblock->zRO[0].bignonce;
+            struct iguana_zblock *zblock = (void *)block;
+            struct iguana_zblock *origzblock = (void *)origblock;
+            zblock->zRO.bignonce = origzblock->zRO.bignonce;
+            zblock->zRO.numelements = origzblock->zRO.numelements;
             for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-                block->zRO[0].solution[i] = origblock->zRO[0].solution[i];
+                zblock->zRO.solution[i] = origzblock->zRO.solution[i];
         }
     }
 }
@@ -298,7 +325,7 @@ int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *
 
 int32_t iguana_blockROsize(uint8_t zcash)
 {
-    return((int32_t)(sizeof(struct iguana_blockRO) + zcash*sizeof(struct iguana_msgblockhdr_zcash)));
+    return((int32_t)(sizeof(struct iguana_blockRO) + zcash*sizeof(struct iguana_msgzblockhdr)));
 }
 
 void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci)
@@ -328,6 +355,11 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
+    if ( coin->chain->debug != 0 )
+    {
+        *validp = 1;
+        return(0);
+    }
     *validp = 0;
     iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);

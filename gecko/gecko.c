@@ -181,7 +181,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
         iguana_chaininit(myinfo,virt->chain,1,valsobj);
         virt->chain->isPoS = 1;
-        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgblockhdr_zcash) : sizeof(struct iguana_msgblockhdr);
+        hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )
         {
             virt->chain->genesishash2 = iguana_calcblockhash(symbol,virt->chain->hashalgo,serialized,hdrsize);

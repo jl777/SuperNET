@@ -92,7 +92,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 
 bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_chain *chain)
 {
-    struct iguana_block *block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(*block->zRO)]; int32_t height,auxback;
+    struct iguana_block *block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(struct iguana_zblock)]; int32_t height,auxback;
     if ( coin == 0 || chain == 0 )
         return(GENESIS_PUBKEY);
     block = (void *)blockspace;
@@ -112,19 +112,21 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
     coin->chain->auxpow = auxback;
     if  ( coin->virtualchain == 0 && coin->MAXPEERS > 1 )
     {
-        if ( memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
+        if ( coin->chain->debug == 0 && memcmp(hash2.bytes,chain->genesis_hashdata,sizeof(hash2)) != 0 )
         {
             bits256_str(str,hash2);
             printf("genesis mismatch? zcash.%d calculated %s vs %s\n",coin->chain->zcash,str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
-            memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
         }
+        memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     } else memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     bits256_str(str,hash2);
     printf("genesis.(%s) zcash.%d len.%d hash.%s\n",chain->genesis_hex,coin->chain->zcash,(int32_t)sizeof(msg.H),str);
     iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,block,&msg,hash2,0);
     block->RO.txn_count = 1;
     block->RO.numvouts = 1;
-    block->RO.allocsize = (int32_t)(sizeof(*block) + coin->chain->zcash*sizeof(*block->zRO));
+    if ( coin->chain->zcash != 0 )
+        block->RO.allocsize = sizeof(struct iguana_zblock);
+    else block->RO.allocsize = (int32_t)sizeof(*block);
     iguana_gotdata(coin,0,0);
     if ( (ptr= iguana_blockhashset("genesis0",coin,0,hash2,1)) != 0 )
     {
@@ -294,10 +296,10 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
     {
         j = (int32_t)strlen(line) - 1;
         line[j] = 0;
-        //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
+        printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( (rand() % 2) == 0 && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )
+            if ( (m < 8 || (rand() % 2) == 0) && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )
             {
                 if ( 0 && m == 0 )
                 {
@@ -309,7 +311,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
 #ifndef IGUANA_DISABLEPEERS
                 addr = &coin->peers->active[m++];
                 iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                //printf("call initpeer.(%s)\n",addr->ipaddr);
+                printf("call initpeer.(%s)\n",addr->ipaddr);
                 iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 #endif
             }

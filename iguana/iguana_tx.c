@@ -336,7 +336,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
 
 cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
 {
-    char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg;
+    char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg; struct iguana_msgzblock zmsg; struct iguana_zblock *zblock;
     bits256 hash2,nexthash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
     jaddstr(json,"result","success");
     jaddstr(json,"hash",bits256_str(str,block->RO.hash2));
@@ -371,20 +371,34 @@ cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,st
     serialized[3] = ((uint8_t *)&block->RO.bits)[0];
     init_hexbytes_noT(hexstr,serialized,sizeof(uint32_t));
     jaddstr(json,"nBitshex",hexstr);
-    memset(&msg,0,sizeof(msg));
-    msg.H.version = block->RO.version;
-    msg.H.merkle_root = block->RO.merkle_root;
-    msg.H.timestamp = block->RO.timestamp;
-    msg.H.bits = block->RO.bits;
     if ( block->RO.allocsize == sizeof(struct iguana_zblock) )
     {
-        msg.zH.bignonce = block->zRO[0].bignonce;
-        msg.zH.numelements = ZCASH_SOLUTION_ELEMENTS;
+        zblock = (void *)block;
+        memset(&zmsg,0,sizeof(zmsg));
+        zmsg.zH.version = zblock->RO.version;
+        zmsg.zH.merkle_root = zblock->RO.merkle_root;
+        zmsg.zH.timestamp = zblock->RO.timestamp;
+        zmsg.zH.bits = zblock->RO.bits;
+        zmsg.zH.bignonce = zblock->zRO.bignonce;
+        if ( iguana_rwvarint32(1,zmsg.zH.var_numelements,&zblock->zRO.numelements) != sizeof(zmsg.zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zblock->zRO.numelements);
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-            msg.zH.solution[i] = block->zRO[0].solution[i];
-    } else msg.H.nonce = block->RO.nonce;
-    msg.txn_count = 0;//block->RO.txn_count;
-    len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+            zmsg.zH.solution[i] = zblock->zRO.solution[i];
+        zmsg.txn_count = 0;//block->RO.txn_count;
+        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+    }
+    else
+    {
+        memset(&msg,0,sizeof(msg));
+        msg.H.version = block->RO.version;
+        msg.H.prev_block = block->RO.prev_block;
+        msg.H.merkle_root = block->RO.merkle_root;
+        msg.H.timestamp = block->RO.timestamp;
+        msg.H.bits = block->RO.bits;
+        msg.H.nonce = block->RO.nonce;
+        msg.txn_count = 0;//block->RO.txn_count;
+        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+    }
     init_hexbytes_noT(hexstr,serialized,len);
     jaddstr(json,"blockheader",hexstr);
     if ( txidsflag != 0 )

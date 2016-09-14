@@ -55,7 +55,7 @@ struct iguana_chain
     char use_addmultisig,do_opreturn;
     int32_t estblocktime,protover;
     bits256 genesishash2,PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
-    uint8_t zcash,auxpow,havecltv,alertpubkey[65];
+    uint8_t zcash,auxpow,debug,havecltv,alertpubkey[65];
     uint16_t targetspacing,targettimespan; uint32_t nBits,normal_txversion,locktime_txversion;
 };
 
@@ -104,18 +104,37 @@ struct iguana_msgblockhdr
     uint32_t version;
     bits256 prev_block,merkle_root;
     uint32_t timestamp,bits,nonce;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 #define ZKSNARK_PROOF_SIZE 584
-#define ZCASH_SOLUTION_ELEMENTS 32
+#define ZCASH_SOLUTION_ELEMENTS 1344
 
-struct iguana_msgblockhdr_zcash
+struct iguana_msgzblockhdr
+{
+    uint32_t version;
+    bits256 prev_block,merkle_root,reserved;
+    uint32_t timestamp,bits;
+    bits256 bignonce;
+    uint8_t var_numelements[3];
+    uint32_t solution[ZCASH_SOLUTION_ELEMENTS];
+} PACKEDSTRUCT;
+
+/*int32_t nVersion;
+uint256 hashPrevBlock;
+uint256 hashMerkleRoot;
+uint256 hashReserved;
+uint32_t nTime;
+uint32_t nBits;
+uint256 nNonce;
+std::vector<unsigned char> nSolution;*/
+
+/*struct iguana_msgblockhdr_zcash
 {
     bits256 bignonce;
     uint8_t numelements;
     uint32_t solution[ZCASH_SOLUTION_ELEMENTS];
     //bits256 reserved; // only here if auxpow is set
-}PACKEDSTRUCT;
+}PACKEDSTRUCT;*/
 
 struct iguana_msgmerkle
 {
@@ -127,9 +146,14 @@ struct iguana_msgmerkle
 struct iguana_msgblock
 {
     struct iguana_msgblockhdr H; // double hashed for blockhash
-    struct iguana_msgblockhdr_zcash zH;
     uint32_t txn_count;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
+
+struct iguana_msgzblock
+{
+    struct iguana_msgzblockhdr zH; // double hashed for blockhash
+    uint32_t txn_count;
+} PACKEDSTRUCT;
 
 struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; }PACKEDSTRUCT;
 
@@ -181,13 +205,13 @@ struct iguana_blockRO
     uint16_t txn_count,numvouts,numvins,allocsize;
 }PACKEDSTRUCT;
 
-struct iguana_zcashRO { bits256 bignonce; uint32_t solution[ZCASH_SOLUTION_ELEMENTS]; }PACKEDSTRUCT;
+struct iguana_zcashRO { bits256 bignonce; uint32_t numelements,solution[ZCASH_SOLUTION_ELEMENTS]; }PACKEDSTRUCT;
 
 struct iguana_zblockRO
 {
     struct iguana_blockRO RO;
     struct iguana_zcashRO zRO;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 #define iguana_blockfields      double PoW; \
 int32_t height,fpos; uint32_t fpipbits,issued,lag:18,sigsvalid:1,protected:1,peerid:12; \
@@ -198,14 +222,14 @@ struct iguana_blockRO RO
 struct iguana_block
 {
     iguana_blockfields;
-    struct iguana_zcashRO zRO[];
-}PACKEDSTRUCT;
+    //struct iguana_zcashRO zRO[];
+} PACKEDSTRUCT;
 
 struct iguana_zblock // mu
 {
     iguana_blockfields;
     struct iguana_zcashRO zRO;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 #define IGUANA_LHASH_BLOCKS 0
 #define IGUANA_LHASH_TXIDS 1 //

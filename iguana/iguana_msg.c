@@ -101,31 +101,42 @@ int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint32_t *solution
 
 int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struct iguana_msgblock *msg)
 {
-    uint32_t tmp; int32_t len = 0;
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.version),&msg->H.version);
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.prev_block),msg->H.prev_block.bytes);
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.merkle_root),msg->H.merkle_root.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.timestamp),&msg->H.timestamp);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
+    uint32_t tmp; struct iguana_msgzblock *zmsg; int32_t len = 0;
     if ( zcash == 0 )
+    {
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.version),&msg->H.version);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.prev_block),msg->H.prev_block.bytes);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->H.merkle_root),msg->H.merkle_root.bytes);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.timestamp),&msg->H.timestamp);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.bits),&msg->H.bits);
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.nonce),&msg->H.nonce);
+    }
     else
     {
-        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->zH.bignonce),msg->zH.bignonce.bytes);
+        zmsg = (void *)msg;
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.version),&zmsg->zH.version);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.prev_block),zmsg->zH.prev_block.bytes);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.merkle_root),zmsg->zH.merkle_root.bytes);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.reserved),zmsg->zH.reserved.bytes);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.timestamp),&zmsg->zH.timestamp);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.bits),&zmsg->zH.bits);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.bignonce),zmsg->zH.bignonce.bytes);
         //char str[65]; printf("prev.(%s) len.%d [%d %d %d]\n",bits256_str(str,msg->H.prev_block),len,serialized[len],serialized[len+1],serialized[len+2]);
+        printf("numelements: (%02x %02x %02x)\n",serialized[len],serialized[len+1],serialized[len+2]);
         if ( rwflag != 0 )
-            tmp = msg->zH.numelements;
-        len += iguana_rwvarint32(rwflag,&serialized[len],(uint32_t *)&tmp);
-        if ( rwflag == 0 )
-            msg->zH.numelements = tmp;
-        if ( msg->zH.numelements != ZCASH_SOLUTION_ELEMENTS )
+            memcpy(&serialized[len],zmsg->zH.var_numelements,sizeof(zmsg->zH.var_numelements));
+        else memcpy(zmsg->zH.var_numelements,&serialized[len],sizeof(zmsg->zH.var_numelements));
+        len += sizeof(zmsg->zH.var_numelements);
+        if ( iguana_rwvarint32(rwflag,zmsg->zH.var_numelements,(uint32_t *)&tmp) != sizeof(zmsg->zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2]);
+        if ( tmp != ZCASH_SOLUTION_ELEMENTS )
         {
-            int32_t i; for (i=0; i<157; i++)
-                printf("%02x",serialized[i]);
-            printf(" unexpected ZCASH_SOLUTION_ELEMENTS, got %d vs %d len.%d\n",msg->zH.numelements,ZCASH_SOLUTION_ELEMENTS,len);
+            //int32_t i; for (i=0; i<157; i++)
+            //    printf("%02x",serialized[i]);
+            printf(" unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
             return(-1);
         }
-        len += iguana_rwzsolution(rwflag,&serialized[len],msg->zH.solution,ZCASH_SOLUTION_ELEMENTS);
+        len += iguana_rwzsolution(rwflag,&serialized[len],zmsg->zH.solution,tmp);
     }
     return(len);
 }
@@ -164,7 +175,7 @@ int32_t iguana_eatauxpow(struct supernet_info *myinfo,int32_t rwflag,char *symbo
     return(len);
 }
 
-int32_t iguana_blockhdrsize(char *symbol,uint8_t zcash,uint8_t auxpow)//,uint8_t *serialized,int32_t maxlen)
+int32_t iguana_blockhdrsize(char *symbol,uint8_t zcash,uint8_t auxpow)
 {
     int32_t len = 0;
     if ( zcash == 0 )
@@ -175,7 +186,7 @@ int32_t iguana_blockhdrsize(char *symbol,uint8_t zcash,uint8_t auxpow)//,uint8_t
         return(sizeof(struct iguana_msgblockhdr) + len);
         //else
         return(-1);
-    } else return((int32_t)(sizeof(struct iguana_msgblockhdr) - sizeof(uint32_t) + sizeof(struct iguana_msgblockhdr_zcash) + auxpow*sizeof(bits256)));
+    } else return((int32_t)(sizeof(struct iguana_msgzblockhdr) + auxpow*sizeof(bits256)));
 }
 
 int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg,int32_t maxlen)
@@ -183,7 +194,10 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
     int32_t len = 0; uint64_t x;
     if ( (len= iguana_rwblockhdr(rwflag,zcash,serialized,msg)) < 0 )
     {
-        printf("error rw.%d blockhdr zcash.%d\n",rwflag,zcash);
+        int32_t i;
+        for (i=0; i<maxlen; i++)
+            printf("%02x",serialized[i]);
+        printf(" error rw.%d blockhdr zcash.%d\n",rwflag,zcash);
         return(-1);
     }
     *hash2p = iguana_calcblockhash(symbol,hashalgo,serialized,len);
@@ -205,29 +219,38 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
     return(len);
 }
 
-int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain *chain,bits256 *hash2p,uint8_t serialized[sizeof(struct iguana_msgblock)],struct iguana_block *block)
+int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain *chain,bits256 *hash2p,uint8_t serialized[sizeof(struct iguana_msgzblock)],struct iguana_block *block)
 {
-    struct iguana_msgblock msg; int32_t i,len;
-    memset(&msg,0,sizeof(msg));
-    msg.H.version = block->RO.version;
-    msg.H.prev_block = block->RO.prev_block;
-    msg.H.merkle_root = block->RO.merkle_root;
-    msg.H.timestamp = block->RO.timestamp;
-    msg.H.bits = block->RO.bits;
+    struct iguana_msgblock msg; struct iguana_zblock *zblock;struct iguana_msgzblock zmsg; int32_t i,len;
     if ( chain->zcash == 0 )
+    {
+        memset(&msg,0,sizeof(msg));
+        msg.H.version = block->RO.version;
+        msg.H.prev_block = block->RO.prev_block;
+        msg.H.merkle_root = block->RO.merkle_root;
+        msg.H.timestamp = block->RO.timestamp;
+        msg.H.bits = block->RO.bits;
         msg.H.nonce = block->RO.nonce;
+        msg.txn_count = block->RO.txn_count;
+        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,&msg,IGUANA_MAXPACKETSIZE);
+    }
     else
     {
-        if ( block->RO.allocsize == sizeof(struct iguana_zblock) ) 
-        {
-            msg.zH.bignonce = block->zRO[0].bignonce;
-            msg.zH.numelements = ZCASH_SOLUTION_ELEMENTS;
-            for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
-                msg.zH.solution[i] = block->zRO[0].solution[i];
-        } else printf("iguana_serialize_block has missing zRO\n");
+        memset(&zmsg,0,sizeof(zmsg));
+        zblock = (void *)block;
+        zmsg.zH.version = zblock->RO.version;
+        zmsg.zH.prev_block = zblock->RO.prev_block;
+        zmsg.zH.merkle_root = zblock->RO.merkle_root;
+        zmsg.zH.timestamp = zblock->RO.timestamp;
+        zmsg.zH.bits = zblock->RO.bits;
+        zmsg.zH.bignonce = zblock->zRO.bignonce;
+        if ( iguana_rwvarint32(1,zmsg.zH.var_numelements,(uint32_t *)&zblock->zRO.numelements) != sizeof(zmsg.zH.var_numelements) )
+            printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg.zH.var_numelements[0],zmsg.zH.var_numelements[1],zmsg.zH.var_numelements[2]);
+        for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
+            zmsg.zH.solution[i] = zblock->zRO.solution[i];
+        msg.txn_count = block->RO.txn_count;
+        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,(void *)&zmsg,IGUANA_MAXPACKETSIZE);
     }
-    msg.txn_count = block->RO.txn_count;
-    len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,&msg,IGUANA_MAXPACKETSIZE);
     return(len);
 }
 
@@ -704,7 +727,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
 char *iguana_txscan(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,uint8_t *data,int32_t recvlen,bits256 txid)
 {
     struct iguana_msgtx tx; bits256 hash2; struct iguana_block *block; struct iguana_msgblock msg;
-    int32_t i,n,len,extralen = 65356; char *txbytes,vpnstr[64]; uint8_t *extraspace,blockspace[sizeof(*block)+sizeof(*block->zRO)];
+    int32_t i,n,len,extralen = 65356; char *txbytes,vpnstr[64]; uint8_t *extraspace,blockspace[sizeof(*block)+sizeof(struct iguana_zblock)];
     block = (void *)blockspace;
     memset(&msg,0,sizeof(msg));
     vpnstr[0] = 0;
@@ -905,11 +928,11 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                 memset(&txdata,0,sizeof(txdata));
                 if ( ishost == 0 )
                 {
-                    if ( 0 && coin->chain->auxpow != 0 )
+                    if ( coin->chain->zcash != 0 )
                     {
                         int32_t i; for (i=0; i<recvlen; i++)
                             printf("%02x",data[i]);
-                        printf(" auxblock\n");
+                        printf(" zblock.[%d]\n",recvlen);
                     }
                     addr->msgcounts.block++;
                     if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )

@@ -1303,7 +1303,7 @@ void iguana_checklongestchain(struct iguana_info *coin,struct iguana_bundle *bp,
 
 struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundlereq *req,struct iguana_zblock *zblocks,int32_t n,int32_t *newhwmp)
 {
-    int32_t i,bundlei,match; struct iguana_block *block; bits256 prevhash2; uint8_t serialized[sizeof(struct iguana_msgblock) + sizeof(struct iguana_msgblockhdr_zcash)]; struct iguana_peer *addr; struct iguana_bundle *bp,*firstbp = 0;
+    int32_t i,bundlei,match; struct iguana_block *block; bits256 prevhash2; uint8_t serialized[sizeof(struct iguana_msgblock) + sizeof(struct iguana_msgzblockhdr)]; struct iguana_peer *addr; struct iguana_bundle *bp,*firstbp = 0;
     if ( zblocks == 0 )
     {
         printf("iguana_recvblockhdrs null blocks?\n");
