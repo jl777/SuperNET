@@ -903,7 +903,7 @@ uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *co
 
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
-    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr; uint8_t *rmdarray; cJSON *unspents,*item,*array,*retjson;
+    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson; bits256 hash;
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
     {
         retjson = cJSON_CreateArray();
@@ -939,6 +939,23 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
             }
             //printf("RET.(%s)\n",jprint(retjson,0));
             free_json(unspents);
+        }
+        if ( cJSON_GetArraySize(retjson) == 0 && cJSON_GetArraySize(argarray) > 0 )
+        {
+            memset(hash.bytes,0,sizeof(hash));
+            vals = cJSON_CreateObject();
+            jaddstr(vals,"coin",coin->symbol);
+            jaddnum(vals,"history",1);
+            jaddnum(vals,"firstheight",0);
+            jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+            jaddnum(vals,"numrequired",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+            jadd(vals,"addresses",jduplicate(argarray));
+            if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,"",1)) != 0 )
+            {
+                printf("LIST.(%s)\n",retstr);
+                free(retstr);
+            }
+            free_json(vals);
         }
     }
     /*{

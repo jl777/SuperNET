@@ -91,10 +91,10 @@ int32_t iguana_rwmerklebranch(int32_t rwflag,uint8_t *serialized,struct iguana_m
     return(len);
 }
 
-int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint32_t *solution,int32_t n)
+int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint16_t *solution,int32_t n)
 {
     int32_t i,len = 0;
-    for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
+    for (i=0; i<n; i++)
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(solution[i]),&solution[i]);
     return(len);
 }
@@ -122,18 +122,18 @@ int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struc
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.bits),&zmsg->zH.bits);
         len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.bignonce),zmsg->zH.bignonce.bytes);
         //char str[65]; printf("prev.(%s) len.%d [%d %d %d]\n",bits256_str(str,msg->H.prev_block),len,serialized[len],serialized[len+1],serialized[len+2]);
-        printf("numelements: (%02x %02x %02x)\n",serialized[len],serialized[len+1],serialized[len+2]);
         if ( rwflag != 0 )
             memcpy(&serialized[len],zmsg->zH.var_numelements,sizeof(zmsg->zH.var_numelements));
         else memcpy(zmsg->zH.var_numelements,&serialized[len],sizeof(zmsg->zH.var_numelements));
+        printf("numelements: (%02x %02x %02x)\n",serialized[len],serialized[len+1],serialized[len+2]);
         len += sizeof(zmsg->zH.var_numelements);
-        if ( iguana_rwvarint32(rwflag,zmsg->zH.var_numelements,(uint32_t *)&tmp) != sizeof(zmsg->zH.var_numelements) )
-            printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2]);
+        if ( iguana_rwvarint32(0,zmsg->zH.var_numelements,(uint32_t *)&tmp) != sizeof(zmsg->zH.var_numelements) )
+            printf("rw.%d unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2]);
         if ( tmp != ZCASH_SOLUTION_ELEMENTS )
         {
             //int32_t i; for (i=0; i<157; i++)
             //    printf("%02x",serialized[i]);
-            printf(" unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
+            printf(" rw.%d unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
             return(-1);
         }
         len += iguana_rwzsolution(rwflag,&serialized[len],zmsg->zH.solution,tmp);
@@ -195,7 +195,7 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
     if ( (len= iguana_rwblockhdr(rwflag,zcash,serialized,msg)) < 0 )
     {
         int32_t i;
-        for (i=0; i<maxlen; i++)
+        for (i=0; i<maxlen&&i<sizeof(struct iguana_zblock); i++)
             printf("%02x",serialized[i]);
         printf(" error rw.%d blockhdr zcash.%d\n",rwflag,zcash);
         return(-1);
@@ -246,6 +246,7 @@ int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain 
         zmsg.zH.bignonce = zblock->zRO.bignonce;
         if ( iguana_rwvarint32(1,zmsg.zH.var_numelements,(uint32_t *)&zblock->zRO.numelements) != sizeof(zmsg.zH.var_numelements) )
             printf("unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg.zH.var_numelements[0],zmsg.zH.var_numelements[1],zmsg.zH.var_numelements[2]);
+        printf("varint size for zmsg.zH.numelements <- %d %d %d\n",zmsg.zH.var_numelements[0],zmsg.zH.var_numelements[1],zmsg.zH.var_numelements[2]);
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
             zmsg.zH.solution[i] = zblock->zRO.solution[i];
         msg.txn_count = block->RO.txn_count;

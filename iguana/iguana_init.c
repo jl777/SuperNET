@@ -92,7 +92,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
 
 bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_chain *chain)
 {
-    struct iguana_block *block,*ptr; struct iguana_msgblock msg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(struct iguana_zblock)]; int32_t height,auxback;
+    struct iguana_block *block,*ptr; struct iguana_msgzblock zmsg; bits256 hash2; char str[65],str2[65]; uint8_t buf[8192],blockspace[sizeof(*block)+sizeof(struct iguana_zblock)]; int32_t height,auxback;
     if ( coin == 0 || chain == 0 )
         return(GENESIS_PUBKEY);
     block = (void *)blockspace;
@@ -108,7 +108,7 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
     decode_hex(buf,(int32_t)strlen(chain->genesis_hex)/2,(char *)chain->genesis_hex);
     hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,buf,sizeof(struct iguana_msgblockhdr));
     auxback = coin->chain->auxpow, coin->chain->auxpow = 0;
-    iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,&msg,sizeof(buf));
+    iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,buf,&zmsg,sizeof(buf));
     coin->chain->auxpow = auxback;
     if  ( coin->virtualchain == 0 && coin->MAXPEERS > 1 )
     {
@@ -116,12 +116,14 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
         {
             bits256_str(str,hash2);
             printf("genesis mismatch? zcash.%d calculated %s vs %s\n",coin->chain->zcash,str,bits256_str(str2,*(bits256 *)chain->genesis_hashdata));
+            memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
         }
-        memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
+        if ( coin->chain->debug != 0 )
+            memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     } else memcpy(hash2.bytes,chain->genesis_hashdata,sizeof(hash2));
     bits256_str(str,hash2);
-    printf("genesis.(%s) zcash.%d len.%d hash.%s\n",chain->genesis_hex,coin->chain->zcash,(int32_t)sizeof(msg.H),str);
-    iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,block,&msg,hash2,0);
+    printf("genesis.(%s) zcash.%d len.%d hash.%s\n",chain->genesis_hex,coin->chain->zcash,(int32_t)sizeof(zmsg.zH),str);
+    iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,block,&zmsg,hash2,0);
     block->RO.txn_count = 1;
     block->RO.numvouts = 1;
     if ( coin->chain->zcash != 0 )
@@ -296,7 +298,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
     {
         j = (int32_t)strlen(line) - 1;
         line[j] = 0;
-        printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
+        //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
             if ( (m < 8 || (rand() % 2) == 0) && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )

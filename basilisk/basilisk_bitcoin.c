@@ -320,7 +320,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
                         break;
                 if ( j == n )
                     continue;
-                balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,str,juint(vals,"minconf"),juint(vals,"firstheight"));
+                balance = iguana_addressreceived(myinfo,coin,vals,remoteaddr,0,0,unspents,spends,str,juint(vals,"minconf"),0);//juint(vals,"firstheight"));
                 item = cJSON_CreateObject();
                 jaddnum(item,str,dstr(balance));
                 jaddstr(item,"address",str);

@@ -27,7 +27,7 @@ STRING_ARG(iguana,initfastfind,activecoin)
 
 TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,minconfd)
 {
-    int32_t lastheight,minconf,maxconf=SATOSHIDEN; cJSON *array,*retjson = cJSON_CreateObject();
+    int32_t lastheight,minconf,maxconf=1<<30; cJSON *array,*retjson = cJSON_CreateObject();
     if ( activecoin != 0 && activecoin[0] != 0 )
         coin = iguana_coinfind(activecoin);
     if ( coin != 0 )
@@ -44,20 +44,8 @@ TWO_STRINGS_AND_TWO_DOUBLES(iguana,balance,activecoin,address,lastheightd,mincon
         jadd64bits(retjson,"RTbalance",iguana_RTbalance(coin,address));
         array = cJSON_CreateArray();
         jaddistr(array,address);
-        /*if ( bitcoin_addr2rmd160(&addrtype,rmd160,address) < 0 )
-        {
-            jaddstr(retjson,"error","cant convert address");
-            return(jprint(retjson,1));
-        }
-        memset(pubkey33,0,sizeof(pubkey33));
-        P = calloc(coin->bundlescount,sizeof(*P));
-        //printf("Start %s balance.(%s) height.%d\n",coin->symbol,address,lastheight);
-        if ( lastheight <= 0 )
-            lastheight = IGUANA_MAXHEIGHT;
-        //iguana_RTpkhasharray(myinfo,coin,array,minconf,maxconf,&total,P,coin->bundlescount,rmd160,address,pubkey33,lastheight,0,0,0,remoteaddr,1);
-         jaddnum(retjson,"balance",dstr(total));
-         //free(P);*/
         jadd(retjson,"unspents",iguana_RTlistunspent(myinfo,coin,array,minconf,maxconf,remoteaddr,1));
+        free_json(array);
         if ( lastheight > 0 )
             jaddnum(retjson,"RTheight",coin->RTheight);
     }

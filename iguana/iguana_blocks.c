@@ -17,9 +17,9 @@
 
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
-void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_block *dest,struct iguana_msgblock *msg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
+void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,struct iguana_msgzblock *zmsg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
 {
-    int32_t i; struct iguana_zblock *zdest; struct iguana_msgzblock *zmsg;
+    int32_t i; struct iguana_block *dest = (void *)zdest; struct iguana_msgblock *msg = (void *)zmsg;
     if ( zcash == 0 )
     {
         memset(dest,0,sizeof(*dest));
@@ -35,8 +35,6 @@ void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_block *dest,str
     }
     else
     {
-        zdest = (void *)dest;
-        zmsg = (void *)msg;
         zdest->RO.allocsize = (int32_t)sizeof(struct iguana_zblock);
         zdest->RO.version = zmsg->zH.version;
         zdest->RO.prev_block = zmsg->zH.prev_block;

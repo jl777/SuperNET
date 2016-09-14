@@ -116,7 +116,7 @@ struct iguana_msgzblockhdr
     uint32_t timestamp,bits;
     bits256 bignonce;
     uint8_t var_numelements[3];
-    uint32_t solution[ZCASH_SOLUTION_ELEMENTS];
+    uint16_t solution[ZCASH_SOLUTION_ELEMENTS];
 } PACKEDSTRUCT;
 
 /*int32_t nVersion;
@@ -205,7 +205,7 @@ struct iguana_blockRO
     uint16_t txn_count,numvouts,numvins,allocsize;
 }PACKEDSTRUCT;
 
-struct iguana_zcashRO { bits256 bignonce; uint32_t numelements,solution[ZCASH_SOLUTION_ELEMENTS]; }PACKEDSTRUCT;
+struct iguana_zcashRO { bits256 bignonce; uint32_t numelements; uint16_t solution[ZCASH_SOLUTION_ELEMENTS]; }PACKEDSTRUCT;
 
 struct iguana_zblockRO
 {
