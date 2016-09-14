@@ -97,7 +97,7 @@ struct iguana_VPNversion
 	char strSubVer[80];
 	uint32_t nStartingHeight;
     uint32_t iVer,v_Network_id; uint16_t wPort; uint8_t bIsGui; uint16_t wCtPort,wPrPort;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 struct iguana_msgblockhdr
 {

@@ -201,11 +201,11 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
         return(-1);
     }
     *hash2p = iguana_calcblockhash(symbol,hashalgo,serialized,len);
-    //char str[65],str2[65]; printf("zcash.%d len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  hash2.%s\n",zcash,len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,bits256_str(str2,*hash2p));
     if ( auxpow != 0 && (msg->H.version & 0x100) != 0 )
         len += iguana_eatauxpow(myinfo,rwflag,symbol,zcash,&serialized[len],maxlen-len);
     if ( rwflag == 1 )
         x = msg->txn_count;
+    char str[65],str2[65]; printf("zcash.%d len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  hash2.%s zlen.%d\n",zcash,len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,bits256_str(str2,*hash2p),(int32_t)sizeof(struct iguana_msgzblockhdr));
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
     if ( rwflag == 0 )
     {
@@ -941,11 +941,11 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                 memset(&txdata,0,sizeof(txdata));
                 if ( ishost == 0 )
                 {
-                    if ( coin->chain->zcash != 0 )
+                    if ( coin->chain->debug != 0 )
                     {
                         int32_t i; for (i=0; i<recvlen; i++)
                             printf("%02x",data[i]);
-                        printf(" zblock.[%d]\n",recvlen);
+                        printf(" block.[%d]\n",recvlen);
                     }
                     addr->msgcounts.block++;
                     if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )
