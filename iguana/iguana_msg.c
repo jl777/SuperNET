@@ -943,7 +943,8 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                 {
                     if ( coin->chain->debug != 0 )
                     {
-                        int32_t i; for (i=0; i<recvlen; i++)
+                        int32_t i;
+                        for (i=0; i<recvlen && i<80; i++)
                             printf("%02x",data[i]);
                         printf(" block.[%d]\n",recvlen);
                     }
