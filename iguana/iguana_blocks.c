@@ -37,6 +37,9 @@ int32_t iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdes
     else
     {
         zdest->RO.allocsize = (int32_t)sizeof(struct iguana_zblock);
+        zdest->RO.txn_count = zmsg->txn_count;
+        zdest->RO.hash2 = hash2;
+        zdest->height = height;
         zdest->RO.version = zmsg->zH.version;
         zdest->RO.prev_block = zmsg->zH.prev_block;
         zdest->RO.merkle_root = zmsg->zH.merkle_root;
@@ -51,13 +54,11 @@ int32_t iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdes
     }
 }
 
-void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count)
+void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgzblock *zmsg,struct iguana_zblock *zsrc,int32_t cleartxn_count)
 {
-    int32_t i; struct iguana_msgzblock *zmsg; struct iguana_zblock *zsrc;
+    int32_t i; struct iguana_msgblock *msg = (void *)zmsg; struct iguana_block *src = (void *)zsrc;
     if ( zcash != 0 )
     {
-        zmsg = (void *)msg;
-        zsrc = (void *)src;
         memset(zmsg,0,sizeof(*zmsg));
         zmsg->zH.version = zsrc->RO.version;
         zmsg->zH.prev_block = zsrc->RO.prev_block;
@@ -70,7 +71,7 @@ void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg
         for (i=0; i<zsrc->zRO.numelements; i++)
             zmsg->zH.solution[i] = zsrc->zRO.solution[i];
         if ( cleartxn_count == 0 )
-            zmsg->txn_count = src->RO.txn_count;
+            zmsg->txn_count = zsrc->RO.txn_count;
     }
     else
     {

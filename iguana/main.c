@@ -219,7 +219,7 @@ int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
 
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port)
 {
-    struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
+    queue_t *Q; struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
     //printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
     len = (int32_t)strlen(jsonstr);
@@ -231,7 +231,10 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     ptr->retjsonstr = 0;
     safecopy(ptr->remoteaddr,remoteaddr,sizeof(ptr->remoteaddr));
     memcpy(ptr->jsonstr,jsonstr,len+1);
-    queue_enqueue("jsonQ",coin != 0 ? &coin->jsonQ : &JSON_Q,&ptr->DL,0);
+    if ( coin == 0 || (coin->FULLNODE == 0 && coin->VALIDATENODE == 0) )
+        Q = &JSON_Q;
+    else Q = &coin->jsonQ;
+    queue_enqueue("jsonQ",Q,&ptr->DL,0);
     while ( OS_milliseconds() < expiration )
     {
         usleep(100);

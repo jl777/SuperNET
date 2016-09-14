@@ -41,7 +41,7 @@ int32_t iguana_rwmem(int32_t rwflag,uint8_t *serialized,int32_t len,void *endian
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 int32_t iguana_rwvarint32(int32_t rwflag,uint8_t *serialized,uint32_t *int32p);
 int32_t iguana_rwbignum(int32_t rwflag,uint8_t *serialized,int32_t len,uint8_t *endianedp);
-int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgblock *msg,int32_t maxlen);
+int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),int32_t rwflag,bits256 *hash2p,uint8_t *serialized,struct iguana_msgzblock *zmsg,int32_t maxlen);
 int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain *chain,bits256 *hash2p,uint8_t serialized[sizeof(struct iguana_msgblock)],struct iguana_block *block);
 int32_t iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,struct iguana_msgzblock *zmsg,bits256 hash2,int32_t height);
 int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct OS_memspace *rawmem,struct OS_memspace *txmem,struct OS_memspace *hashmem,struct iguana_msghdr *H,uint8_t *data,int32_t datalen,int32_t fromcache);
@@ -53,7 +53,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 int32_t iguana_gentxarray(struct supernet_info *myinfo,struct iguana_info *coin,struct OS_memspace *mem,struct iguana_txblock *txblock,int32_t *lenp,uint8_t *data,int32_t datalen);
 int32_t iguana_gethdrs(struct iguana_info *coin,uint8_t *serialized,char *cmd,char *hashstr);
 int32_t iguana_getdata(struct iguana_info *coin,uint8_t *serialized,int32_t type,bits256 *hashes,int32_t n);
-void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgblock *msg,struct iguana_block *src,int32_t cleartxn_count);
+void iguana_blockunconv(uint8_t zcash,uint8_t auxpow,struct iguana_msgzblock *zmsg,struct iguana_zblock *zsrc,int32_t cleartxn_count);
 int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs);
 int32_t iguana_validatesigs(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t datalen);
 
@@ -294,7 +294,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,bits256 *txidp,struct iguana_txid *tx,int32_t height,struct iguana_msgvin *vins,struct iguana_msgvout *vouts,int32_t validatesigs);
 cJSON *bitcoin_txtest(struct iguana_info *coin,char *rawtxstr,bits256 txid);
 cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag);
-int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struct iguana_msgblock *msg);
+int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struct iguana_msgzblock *zmsg);
 //int32_t iguana_sig(uint8_t *sig,int32_t maxsize,uint8_t *data,int32_t datalen,bits256 privkey);
 //int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,bits256 pubkey);
 //int32_t iguana_ver(uint8_t *sig,int32_t siglen,uint8_t *data,int32_t datalen,uint8_t *pubkey);

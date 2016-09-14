@@ -316,7 +316,7 @@ char *basilisk_respond_geckoblock(struct supernet_info *myinfo,char *CMD,void *a
         //nBits = gecko_nBits(virt,&prevtimestamp,(struct iguana_block *)&virt->blocks.hwmchain,GECKO_DIFFITERS);
         //if ( gecko_blocknonce_verify(virt,data,hdrsize,nBits,virt->blocks.hwmchain.RO.timestamp,prevtimestamp) > 0 )
         {
-            iguana_rwblock(myinfo,symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,&msg,datalen);
+            iguana_rwblock(myinfo,symbol,virt->chain->zcash,virt->chain->auxpow,virt->chain->hashalgo,0,&checkhash2,data,(void *)&msg,datalen);
             if ( bits256_cmp(hash2,checkhash2) == 0 )
             {
                 if ( gecko_blocknonce_verify(virt,data,hdrsize,msg.H.bits,0,0) > 0 )

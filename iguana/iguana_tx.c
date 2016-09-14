@@ -224,7 +224,7 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
-    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgblock msgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
+    struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgzblock zmsgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
         if ( (rdata= bp->ramchain.H.data) == 0 )//&& bp == coin->current )
@@ -235,9 +235,9 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
         }
         if ( (block= bp->blocks[bundlei]) != 0 && rdata != 0 )
         {
-            iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,0);
-            msgB.txn_count = block->RO.txn_count;
-            total = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&msgB,max);
+            iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&zmsgB,(void *)block,0);
+            zmsgB.txn_count = block->RO.txn_count;
+            total = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&blockspace[sizeof(struct iguana_msghdr) + 0],&zmsgB,max);
             if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
             {
                 //static int counter;
@@ -336,7 +336,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
 
 cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block,int32_t txidsflag)
 {
-    char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgblock msg; struct iguana_msgzblock zmsg; struct iguana_zblock *zblock;
+    char str[65],hexstr[1024]; int32_t i,len,size; struct iguana_txid *tx,T; struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblock;
     bits256 hash2,nexthash2; uint8_t serialized[1024]; cJSON *array,*json = cJSON_CreateObject();
     jaddstr(json,"result","success");
     jaddstr(json,"hash",bits256_str(str,block->RO.hash2));
@@ -385,19 +385,19 @@ cJSON *iguana_blockjson(struct supernet_info *myinfo,struct iguana_info *coin,st
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
             zmsg.zH.solution[i] = zblock->zRO.solution[i];
         zmsg.txn_count = 0;//block->RO.txn_count;
-        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&zmsg,IGUANA_MAXPACKETSIZE*2);
     }
     else
     {
-        memset(&msg,0,sizeof(msg));
-        msg.H.version = block->RO.version;
-        msg.H.prev_block = block->RO.prev_block;
-        msg.H.merkle_root = block->RO.merkle_root;
-        msg.H.timestamp = block->RO.timestamp;
-        msg.H.bits = block->RO.bits;
-        msg.H.nonce = block->RO.nonce;
-        msg.txn_count = 0;//block->RO.txn_count;
-        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&msg,IGUANA_MAXPACKETSIZE*2);
+        memset(msg,0,sizeof(&msg));
+        msg->H.version = block->RO.version;
+        msg->H.prev_block = block->RO.prev_block;
+        msg->H.merkle_root = block->RO.merkle_root;
+        msg->H.timestamp = block->RO.timestamp;
+        msg->H.bits = block->RO.bits;
+        msg->H.nonce = block->RO.nonce;
+        msg->txn_count = 0;//block->RO.txn_count;
+        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&hash2,serialized,&zmsg,IGUANA_MAXPACKETSIZE*2);
     }
     init_hexbytes_noT(hexstr,serialized,len);
     jaddstr(json,"blockheader",hexstr);

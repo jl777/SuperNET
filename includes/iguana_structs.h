@@ -227,8 +227,8 @@ struct iguana_block
 
 struct iguana_zblock // mu
 {
-    iguana_blockfields;
-    struct iguana_zcashRO zRO;
+    iguana_blockfields; // this is to minimize code needed to support both types
+    struct iguana_zcashRO zRO; // if zRO is changed, the RO part must also be updated
 } PACKEDSTRUCT;
 
 #define IGUANA_LHASH_BLOCKS 0

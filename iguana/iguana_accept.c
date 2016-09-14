@@ -293,9 +293,9 @@ int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits2
 
 int32_t iguana_headerget(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_block *block)
 {
-    bits256 checkhash2; struct iguana_msgblock msgB; int32_t len = 0;
-    iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&msgB,block,1);
-    if ( (len= iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr)],&msgB,(int32_t)(maxsize-sizeof(struct iguana_msghdr)))) < 0 )
+    bits256 checkhash2; struct iguana_msgzblock zmsgB; int32_t len = 0;
+    iguana_blockunconv(coin->chain->zcash,coin->chain->auxpow,&zmsgB,(void *)block,1);
+    if ( (len= iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,1,&checkhash2,&serialized[sizeof(struct iguana_msghdr)],&zmsgB,(int32_t)(maxsize-sizeof(struct iguana_msghdr)))) < 0 )
         return(-1);
     if ( bits256_cmp(checkhash2,block->RO.hash2) != 0 )
     {

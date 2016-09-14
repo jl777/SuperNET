@@ -215,20 +215,20 @@ char *gecko_blockconstruct(struct supernet_info *myinfo,struct iguana_info *virt
         threshold = bits256_from_compact(newblock->RO.bits);
         if ( (newblock->RO.nonce= *noncep) == 0 )
         {
-            struct iguana_msgblock msg;
-            memset(&msg,0,sizeof(msg));
-            msg.H.version = newblock->RO.version;
-            msg.H.prev_block = newblock->RO.prev_block;
-            msg.H.merkle_root = newblock->RO.merkle_root;
-            msg.H.timestamp = newblock->RO.timestamp;
-            msg.H.bits = newblock->RO.bits;
+            struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg;
+            memset(&zmsg,0,sizeof(zmsg));
+            msg->H.version = newblock->RO.version;
+            msg->H.prev_block = newblock->RO.prev_block;
+            msg->H.merkle_root = newblock->RO.merkle_root;
+            msg->H.timestamp = newblock->RO.timestamp;
+            msg->H.bits = newblock->RO.bits;
             for (i=0; i<GECKO_MAXMINERITERS; i++)
             {
                 OS_randombytes((void *)noncep,sizeof(*noncep));
-                msg.H.nonce = *noncep;
+                msg->H.nonce = *noncep;
                 //n = iguana_serialize_block(virt->chain,&hash2,serialized,newblock);
                 //char str[65]; printf("nonce.%08x %s\n",newblock->RO.nonce,bits256_str(str,newblock->RO.hash2));
-                len = iguana_rwblockhdr(1,virt->chain->zcash,serialized,&msg);
+                len = iguana_rwblockhdr(1,virt->chain->zcash,serialized,&zmsg);
                 hash2 = iguana_calcblockhash(virt->symbol,virt->chain->hashalgo,serialized,len);
                 if ( bits256_cmp(threshold,hash2) > 0 )
                 {
