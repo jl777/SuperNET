@@ -17,7 +17,7 @@
 
 #define iguana_blockfind(str,coin,hash2) iguana_blockhashset(str,coin,-1,hash2,0)
 
-void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,struct iguana_msgzblock *zmsg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
+int32_t iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,struct iguana_msgzblock *zmsg,bits256 hash2,int32_t height) //uint32_t numtxids,uint32_t numunspents,uint32_t numspends,double PoW)
 {
     int32_t i; struct iguana_block *dest = (void *)zdest; struct iguana_msgblock *msg = (void *)zmsg;
     if ( zcash == 0 )
@@ -32,6 +32,7 @@ void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,s
         dest->height = height;
         dest->RO.hash2 = hash2;
         dest->RO.nonce = msg->H.nonce;
+        return(msg->txn_count);
     }
     else
     {
@@ -46,6 +47,7 @@ void iguana_blockconv(uint8_t zcash,uint8_t auxpow,struct iguana_zblock *zdest,s
             printf("unexpected varint size for zmsg.zH.numelements <- %d\n",zdest->zRO.numelements);
         for (i=0; i<ZCASH_SOLUTION_ELEMENTS; i++)
             zdest->zRO.solution[i] = zmsg->zH.solution[i];
+        return(zmsg->txn_count);
     }
 }
 
