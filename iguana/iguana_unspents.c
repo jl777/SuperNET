@@ -901,9 +901,24 @@ uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *co
     else return(0);
 }
 
+int32_t iguana_unspentfindjson(cJSON *destarray,cJSON *item)
+{
+    cJSON *destitem; int32_t i,n;
+    if ( (n= cJSON_GetArraySize(destarray)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            destitem = jitem(destarray,i);
+            if ( jint(destitem,"vout") == jint(item,"vout") && bits256_cmp(jbits256(destitem,"txid"),jbits256(item,"txid")) == 0 )
+                return(i);
+        }
+    }
+    return(-1);
+}
+
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
-    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson; bits256 hash;
+    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
     {
         retjson = cJSON_CreateArray();
@@ -952,7 +967,24 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
             jadd(vals,"addresses",jduplicate(argarray));
             if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,"",1)) != 0 )
             {
-                printf("LIST.(%s)\n",retstr);
+                if ( (retarray= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(retarray)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(retarray,i);
+                            if ( (unspents= jarray(&m,item,"unspents")) != 0 )
+                            {
+                                for (j=0; j<m; j++)
+                                    if ( iguana_unspentfindjson(retjson,jitem(unspents,j)) < 0 )
+                                        jaddi(retjson,jduplicate(jitem(unspents,j)));
+                            }
+                        }
+                    }
+                    free_json(retarray);
+                }
+                //printf("LIST.(%s)\n",retstr);
                 free(retstr);
             }
             free_json(vals);
