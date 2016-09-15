@@ -168,6 +168,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
             //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
         }
     }
+    printf("%s %.8f [%.8f - %.8f] -> %.8f\n",coinaddr,dstr(value),dstr(coin->RTcredits),dstr(coin->RTdebits),dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits));
     if ( 0 && strcmp("BTC",coin->symbol) != 0 && strcmp("LTC",coin->symbol) != 0 && strcmp("DOGE",coin->symbol) != 0 )
         printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
@@ -693,7 +694,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(-1);
         }
     }
-    char str[65]; printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,coin->histbalance+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
+    char str[65]; printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     /*if ( coin->RTmem.ptr == 0 )
