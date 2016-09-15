@@ -337,7 +337,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                             //printf("validated.[%d:%d] len.%d\n",bp->hdrsi,bundlei,total);
                             return(total);
                         }
-                    } else printf("iguana_peerblockrequest: error merkle cmp tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
+                    } else printf("iguana_peerblockrequest: %s error merkle cmp tx.[%d] for ht.%d\n",coin->symbol,i,bp->bundleheight+bundlei);
                 } else printf("iguana_peerblockrequest: error merkle verify tx.[%d] for ht.%d\n",i,bp->bundleheight+bundlei);
             } else printf("%s iguana_peerblockrequest: error getting tx.[%d] for ht.%d block.%p main.%d ht.%d\n",coin->symbol,i,bp->bundleheight+bundlei,block,block!=0?block->mainchain:-1,block!=0?block->height:-1);
         }

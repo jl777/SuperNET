@@ -1140,7 +1140,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
                 if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;
-                    printf("bundlevalidate: delete [%d:%d]\n",bp->hdrsi,i);
+                    printf("bundlevalidate: %s delete [%d:%d]\n",coin->symbol,bp->hdrsi,i);
                     iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
                     totalerrs++;
                 }
@@ -1151,7 +1151,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
                 }
             }
             free(blockspace);
-            printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
+            printf("%s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( totalerrs == 0 )
                 bp->validated = (uint32_t)time(NULL);
             else bp->startutxo = bp->utxofinish = 0;
