@@ -153,14 +153,14 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
-            printf("%s lastunspent[%d] <- %p\n",coinaddr,RTaddr->numunspents,unspent);
+            //printf("%s lastunspent[%d] <- %p\n",coinaddr,RTaddr->numunspents,unspent);
             RTaddr->numunspents++;
             unspent->prevunspent = RTaddr->lastunspent;
             RTaddr->lastunspent = unspent;
         }
         else if ( polarity < 0 )
         {
-            printf("%s lastunspent[%d] -> last.%p %p\n",coinaddr,RTaddr->numunspents,RTaddr->lastunspent,unspent);
+            //printf("%s lastunspent[%d] -> last.%p %p\n",coinaddr,RTaddr->numunspents,RTaddr->lastunspent,unspent);
             if ( RTaddr->lastunspent == unspent )
             {
                 RTaddr->lastunspent = unspent->prevunspent;
@@ -192,7 +192,7 @@ struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,u
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i; struct iguana_RTunspent *unspent; char str[65];
-    printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
+    //printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
     //fprintf(stderr,"+");
     if ( RTptr != 0 )
     {
@@ -247,7 +247,7 @@ void iguana_RTvout_create(struct iguana_info *coin,int64_t polarity,struct iguan
 void iguana_RTspend_create(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
     struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint32_t unspentind; int32_t spendlen,height; uint64_t RTspent,value; struct iguana_outpoint spentpt;
-    printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
     //fprintf(stderr,"-");

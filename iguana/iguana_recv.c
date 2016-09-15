@@ -1083,7 +1083,7 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
 
 void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32_t height)
 {
-    int32_t hdrsi,bundlei; struct iguana_bundle *bp;
+    int32_t hdrsi,bundlei; struct iguana_bundle *bp; char str[65];
     if ( block->height < 0 || block->height == height )
     {
         hdrsi = (height / coin->chain->bundlesize);
@@ -1096,7 +1096,7 @@ void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32
                 bp->speculative[bundlei] = block->RO.hash2;
             //char str[65]; printf("SET %s ht.%d in [%d:%d]\n",bits256_str(str,block->RO.hash2),height,hdrsi,bundlei);
         } //else printf("iguana_bundle_set: no bundle at [%d]\n",hdrsi);
-    } else printf("iguana_bundle_set: mismatch ht.%d vs %d\n",block->height,height);
+    } else printf("iguana_bundle_set: %s mismatch ht.%d vs %d\n",bits256_str(str,block->RO.hash2),block->height,height);
 }
 
 void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int32_t height)
