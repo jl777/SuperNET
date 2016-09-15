@@ -129,11 +129,11 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             //P = (void *)(long)((long)rdata + rdata->Poffset);
             unspentind = (tx->firstvout + i);
             u = &U[unspentind];
-            /*if ( u->vout != i || u->hdrsi != height / coin->chain->bundlesize ) //u->txidind != tx->txidind ||
+            if ( u->vout != i || u->hdrsi != height / coin->chain->bundlesize ) //u->txidind != tx->txidind ||
             {
                 printf("%s.[%d].%d iguana_voutset: vout mismatch t%d u%u || %d vs %d\n",coin->symbol,height/coin->chain->bundlesize,u->hdrsi,u->txidind,unspentind,u->vout,i);
                 return(-1);
-            }*/
+            }
             vout->value = u->value;
             vout->pk_script = scriptspace;
             scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
@@ -233,8 +233,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
-        for (i=0; i<len; i++)
-            printf("%02x",serialized[i]);
+        //for (i=0; i<len; i++)
+        //    printf("%02x",serialized[i]);
         char str[65],str2[65]; printf("\nrw.%d numvins.%d numvouts.%d error generating txbytes txid %s vs %s\n",rwflag,numvins,numvouts,bits256_str(str,*txidp),bits256_str(str2,tx->txid));
         return(-1);
     }
