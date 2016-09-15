@@ -766,11 +766,11 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         coin->RTreset_needed = 0;
     }
     iguana_RTbalance_verify("start iterate",coin);
-    if ( 0 && strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
+    if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
     {
-        if ( block->height < coin->firstRTheight+3 )
+        if ( block->height < coin->firstRTheight+1 )
             return;
-        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-3))) == 0 )
+        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-1))) == 0 )
             return;
     }
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
