@@ -100,8 +100,10 @@ int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint
     if ( u->scriptpos > 0 && u->scriptlen > 0 )
     {
         iguana_voutsfname(coin,bp->ramchain.from_ro,fname,u->fileid);
-        if ( (scriptlen= iguana_scriptdata(coin,scriptspace,coin->voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != u->scriptlen )
+        if ( (int32_t)(scriptlen= iguana_scriptdata(coin,scriptspace,coin->voutptrs[u->fileid],fname,u->scriptpos,u->scriptlen)) != (int32_t)u->scriptlen )
             printf("scriptlen.%d != %d bytes from fileid.%d[%d] %s for type.%d\n",scriptlen,u->scriptlen,u->fileid,u->scriptpos,fname,u->type);
+        if ( scriptlen < 0 )
+            scriptlen = 0;
     }
     else
     {
