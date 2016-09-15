@@ -266,7 +266,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
             {
                 if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
                 {
-                    if ( (len= iguana_ramtxbytes(coin,&blockspace[sizeof(struct iguana_msghdr) + total],max - total,&checktxid,tx,block->height,0,0,validatesigs)) > 0 && bits256_cmp(checktxid,T.txid) == 0 )
+                    if ( (len= iguana_ramtxbytes(coin,&blockspace[sizeof(struct iguana_msghdr) + total],max - total,&checktxid,tx,block->height,0,0,validatesigs)) > 0 )//&& bits256_cmp(checktxid,T.txid) == 0 )
                         total += len;
                     else
                     {
@@ -276,7 +276,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         {
                             for (i=0; i<len; i++)
                                 printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
-                            printf(" error getting txi.%d [%d:%d] cmp.%s %s\n",i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
+                            printf(" len.%d error getting txi.%d [%d:%d] cmp.%s %s\n",len,i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
                         }
                         break;
                     }
