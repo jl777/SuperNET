@@ -1100,7 +1100,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
 int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag)
 {
     static int32_t totalerrs,totalvalidated;
-    FILE *fp; char fname[1024]; uint8_t *blockspace; //uint32_t now = (uint32_t)time(NULL);
+    FILE *fp; char fname[1024]; uint8_t *blockspace; uint32_t now = (uint32_t)time(NULL);
     int32_t i,max,len,errs = 0; struct sha256_vstate vstate; bits256 validatehash; int64_t total = 0;
     if ( coin->chain->zcash != 0 )
     {
@@ -1151,10 +1151,10 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
                 }
             }
             free(blockspace);
+            printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( totalerrs == 0 )
                 bp->validated = (uint32_t)time(NULL);
             else bp->startutxo = bp->utxofinish = 0;
-            // printf("VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",bp->hdrsi,bp->bundleheight,bp->validated - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             //iguana_volatilesmap(coin,&bp->ramchain);
             //if ( bp == coin->current )
             //    coin->RTdatabad = -1;

@@ -1081,6 +1081,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
             fpos = -1;
         } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,zcash);
         *rdata = tmp;
+        fflush(fp);
         fclose(fp);
     }
 #ifdef __PNACL__
