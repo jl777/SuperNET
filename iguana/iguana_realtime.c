@@ -105,6 +105,32 @@ int64_t iguana_RTbalance(struct iguana_info *coin,char *coinaddr)
     }
 }
 
+int64_t iguana_RTnetbalance(struct iguana_info *coin)
+{
+    struct iguana_RTaddr *RTaddr,*tmp; int64_t RTdebits,RTcredits;
+    RTdebits = RTcredits = 0;
+    HASH_ITER(hh,coin->RTaddrs,RTaddr,tmp)
+    {
+        RTcredits += RTaddr->credits;
+        RTdebits += RTaddr->debits;
+    }
+    if ( RTcredits != coin->RTcredits || RTdebits != coin->RTdebits )
+        printf("RTnetbalance mismatch (%.8f %.8f) != (%.8f %.8f)\n",dstr(RTcredits),dstr(RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits));
+    return(RTcredits - RTdebits);
+}
+
+int32_t iguana_RTbalance_verify(char *str,struct iguana_info *coin)
+{
+    int64_t balance;
+    balance = iguana_RTnetbalance(coin);
+    if ( balance != (coin->RTcredits - coin->RTdebits) )
+    {
+        printf("%s RTbalance %.8f != %.8f (%.8f - %.8f)\n",str,dstr(balance),dstr(coin->RTcredits - coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits));
+        return(-1);
+    }
+    return(0);
+}
+
 void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t spendflag,int64_t value,struct iguana_RTunspent *unspent)
 {
     struct iguana_RTaddr *RTaddr; int32_t len = (int32_t)strlen(coinaddr);
@@ -667,7 +693,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(-1);
         }
     }
-    char str[65]; printf("%s RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
+    char str[65]; printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,coin->histbalance+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     /*if ( coin->RTmem.ptr == 0 )
@@ -758,6 +784,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         iguana_RTreset(coin);
         coin->RTreset_needed = 0;
     }
+    iguana_RTbalance_verify("start iterate",coin);
     if ( 0 && strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
     {
         if ( block->height < coin->firstRTheight+3 )
@@ -837,4 +864,5 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         }
         portable_mutex_unlock(&coin->RTmutex);
     }
+    iguana_RTbalance_verify("end iterate",coin);
 }
