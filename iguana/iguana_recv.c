@@ -1194,14 +1194,14 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
                     bundlei = ((mainchain->height+i) % coin->chain->bundlesize);
                     if ( hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
                     {
-                        if ( (tmp= bp->blocks[hdrsi]) != 0 )
+                        if ( (tmp= bp->blocks[hdrsi]) != 0 && tmp->height == mainchain->height+i )
                         {
                             iguana_bundle_set(coin,tmp,mainchain->height+i);
                             iguana_RTnewblock(myinfo,coin,tmp);
-                        }
+                        } else break;
                     }
                 }
-                if ( mainchain != hwmblock )
+                if ( i == n && mainchain != hwmblock )
                 {
                     iguana_hwmchain_set(coin,mainchain,mainchain->height); // trigger reprocess
                     iguana_RTnewblock(myinfo,coin,mainchain);
