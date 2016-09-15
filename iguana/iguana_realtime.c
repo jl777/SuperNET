@@ -153,13 +153,14 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
-            printf("lastunspent[%d] <- %p\n",RTaddr->numunspents,unspent);
+            printf("%s lastunspent[%d] <- %p\n",coinaddr,RTaddr->numunspents,unspent);
             RTaddr->numunspents++;
             unspent->prevunspent = RTaddr->lastunspent;
             RTaddr->lastunspent = unspent;
         }
         else if ( polarity < 0 )
         {
+            printf("%s lastunspent[%d] -> last.%p %p\n",coinaddr,RTaddr->numunspents,RTaddr->lastunspent,unspent);
             if ( RTaddr->lastunspent == unspent )
             {
                 RTaddr->lastunspent = unspent->prevunspent;
@@ -191,7 +192,7 @@ struct iguana_RTunspent *iguana_RTunspent_create(uint8_t *rmd160,int64_t value,u
 void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,char *coinaddr,uint8_t *rmd160,int32_t type,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vout,int64_t value)
 {
     int32_t i; struct iguana_RTunspent *unspent; char str[65];
-    //printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
+    printf("iguana_RTunspent.%lld %s vout.%d %.8f\n",(long long)polarity,coinaddr,vout,dstr(value));
     //fprintf(stderr,"+");
     if ( RTptr != 0 )
     {
@@ -212,13 +213,6 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
                     printf("iguana_RTunspent.%d of %d mismatch %s\n",vout,RTptr->numvouts,bits256_str(str,RTptr->txid));
                     return;
                 }
-            }
-            if ( (unspent->spend == 0 && polarity < 0) || (unspent->spend != 0 && polarity > 0) )
-            {
-                if ( unspent->parent != 0 )
-                    bits256_str(str,unspent->parent->txid);
-                else str[0] = 0;
-                printf("unspent spend.%p opposite when polarity.%lld %s/v%d\n",unspent->spend,(long long)polarity,str,unspent->vout);
             }
             iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,0,value,unspent);
             if ( polarity < 0 )
@@ -253,7 +247,7 @@ void iguana_RTvout_create(struct iguana_info *coin,int64_t polarity,struct iguan
 void iguana_RTspend_create(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_RTtxid *RTptr,struct iguana_block *block,int64_t polarity,uint8_t *script,int32_t scriptlen,bits256 txid,int32_t vini,bits256 prev_hash,int32_t prev_vout)
 {
     struct iguana_RTspend *spend; struct iguana_RTtxid *spentRTptr; struct iguana_RTunspent *unspent=0; char str[65],str2[65],coinaddr[64]; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint32_t unspentind; int32_t spendlen,height; uint64_t RTspent,value; struct iguana_outpoint spentpt;
-    //printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
+    printf("RTspend %s vini.%d spend.(%s/v%d) %lld\n",bits256_str(str,txid),vini,bits256_str(str2,prev_hash),prev_vout,(long long)polarity);
     if ( vini == 0 && bits256_nonz(prev_hash) == 0 && prev_vout < 0 )
         return;
     //fprintf(stderr,"-");
@@ -310,11 +304,12 @@ void iguana_RTspend_create(struct supernet_info *myinfo,struct iguana_info *coin
                 }
                 if ( unspent != 0 )
                 {
-                    bitcoin_address(coinaddr,coin->chain->pubtype,unspent->rmd160,sizeof(unspent->rmd160));
-                    iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,1,unspent->value,unspent);
                     if ( polarity < 0 )
                         unspent->spend = 0;
-                    else unspent->spend = spend;
+                    bitcoin_address(coinaddr,coin->chain->pubtype,unspent->rmd160,sizeof(unspent->rmd160));
+                    iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,1,unspent->value,unspent);
+                    if ( polarity > 0 )
+                        unspent->spend = spend;
                 }
             }
         } else printf("iguana_RTspend txid mismatch %llx != %llx\n",(long long)RTptr->txid.txid,(long long)txid.txid);
@@ -370,48 +365,38 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
 
 int32_t iguana_RTramchaindata(struct supernet_info *myinfo,struct iguana_info *coin,int64_t polarity,struct iguana_block *block,struct iguana_msgtx *txarray,int32_t txn_count)
 {
-    struct iguana_msgtx *tx; struct iguana_RTtxid *RTptr; int32_t iter,i,j;
+    struct iguana_msgtx *tx; struct iguana_RTtxid *RTptr; int32_t i,j;
     if ( block->RO.txn_count != txn_count )
     {
         printf("txn_count mismatch ht.%d %d != %d\n",block->height,block->RO.txn_count,txn_count);
         return(-1);
     }
-    for (iter=0; iter<2; iter++)
+    if ( polarity > 0 )
     {
         for (i=0; i<txn_count; i++)
         {
             tx = &txarray[i];
             RTptr = iguana_RTtxid_create(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,tx->serialized,tx->allocsize);
-            if ( polarity > 0 )
+            for (j=0; j<tx->tx_out; j++)
+                iguana_RTvout_create(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
+            for (j=0; j<tx->tx_in; j++)
             {
-                if ( iter == 0 )
-                {
-                    for (j=0; j<tx->tx_out; j++)
-                        iguana_RTvout_create(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
-                }
-                else
-                {
-                    for (j=0; j<tx->tx_in; j++)
-                    {
-                        iguana_RTspend_create(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
-                    }
-                }
+                iguana_RTspend_create(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
             }
-            else
+        }
+    }
+    else
+    {
+        for (i=txn_count-1; i>=0; i--)
+        {
+            tx = &txarray[i];
+            RTptr = iguana_RTtxid_create(coin,block,polarity,i,txn_count,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,tx->serialized,tx->allocsize);
+            for (j=tx->tx_in-1; j>=0; j--)
             {
-                if ( iter == 0 )
-                {
-                    for (j=tx->tx_in-1; j>=0; j--)
-                    {
-                        iguana_RTspend_create(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
-                    }
-                }
-                else
-                {
-                    for (j=tx->tx_out-1; j>=0; j--)
-                        iguana_RTvout_create(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
-                }
+                iguana_RTspend_create(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
             }
+            for (j=tx->tx_out-1; j>=0; j--)
+                iguana_RTvout_create(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
         }
     }
     return(0);
@@ -702,23 +687,13 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
     char str[65]; printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
-    /*if ( coin->RTmem.ptr == 0 )
-        iguana_meminit(&coin->RTmem,"RTmem",0,IGUANA_MAXPACKETSIZE * 2,0);
-    if ( coin->RThashmem.ptr == 0 )
-        iguana_meminit(&coin->RThashmem,"RThashmem",0,IGUANA_MAXPACKETSIZE * 2,0);
-    , iguana_memreset(&coin->RTmem), iguana_memreset(&coin->RThashmem);*/
     memset(&txdata,0,sizeof(txdata));
     iguana_memreset(&coin->RTrawmem);
-    //extern int32_t debugtest;
-    //debugtest = 1;
-    //fprintf(stderr,"T");
     if ( (n= iguana_gentxarray(myinfo,coin,&coin->RTrawmem,&txdata,&len,serialized,recvlen)) > 0 )
     {
-        //fprintf(stderr,"R");
         iguana_RTramchaindata(myinfo,coin,polarity,block,coin->RTrawmem.ptr,numtx);
         return(0);
     } else printf("gentxarray n.%d RO.txn_count.%d recvlen.%d\n",n,numtx,recvlen);
-    //debugtest = 0;
     iguana_RTreset(coin);
     return(-1);
 }
@@ -819,6 +794,10 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 {
                     if ( iguana_RTblockadd(myinfo,coin,addblock) < 0 )
                         break;
+                    //if ( iguana_RTblocksub(myinfo,coin,addblock) < 0 )
+                    //    break;
+                    //if ( iguana_RTblockadd(myinfo,coin,addblock) < 0 )
+                    //    break;
                     coin->lastRTheight = addblock->height;
                 }
                 else
