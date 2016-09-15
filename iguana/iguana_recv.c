@@ -1129,6 +1129,7 @@ void iguana_mainchain_clear(struct supernet_info *myinfo,struct iguana_info *coi
         height = oldhwm->height;
         for (i=0; i<n; i++,height--)
         {
+            iguana_RTnewblock(myinfo,coin,tmp);
             bits256_str(str,tmp->RO.hash2);
             if ( tmp->mainchain == 0 )
                 printf("%s iguana_mainchain_clear: ORPHANED ht.%d %s\n",coin->symbol,tmp->height,str);
@@ -1144,7 +1145,6 @@ void iguana_mainchain_clear(struct supernet_info *myinfo,struct iguana_info *coi
                 printf("iguana_mainchain_clear: got null tmp i.%d of %d %s\n",i,n,str);
                 return;
             }
-            iguana_RTnewblock(myinfo,coin,tmp);
         }
         if ( tmp != mainchain && coin->RTheight > 0 )
             printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d %s\n",tmp->height,mainchain->height,bits256_str(str,tmp->RO.hash2));
