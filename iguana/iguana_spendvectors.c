@@ -1140,6 +1140,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
                 if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;
+                    printf("bundlevalidate: delete [%d:%d]\n",bp->hdrsi,i);
                     iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
                     totalerrs++;
                 }
