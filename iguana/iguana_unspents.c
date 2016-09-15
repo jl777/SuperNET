@@ -434,6 +434,8 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
                 else printf("unspent has no parent?\n");
                 outpt.isptr = 1;
                 outpt.ptr = unspent;
+                outpt.txid = txid;
+                outpt.vout = unspent->vout;
                 outpt.value = unspent->value;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
                 if ( array != 0 )
