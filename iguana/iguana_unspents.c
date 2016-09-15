@@ -562,9 +562,9 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
     //printf("minconf.%d maxconf.%d max.%d addr.%s last.%d maxunspents.%d\n",minconf,maxconf,max,coinaddr,lastheight,maxunspents);
     for (total=n=i=0; i<max+(lastheight>=coin->firstRTheight); i++)
     {
+        bp = 0;
         if ( i != max && (bp= coin->bundles[i]) == 0 )
             continue;
-        else bp = 0;
         if ( bp != 0 )
         {
             if ( lastheight > 0 && bp->bundleheight > lastheight )

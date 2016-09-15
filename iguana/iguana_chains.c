@@ -483,7 +483,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
         chain->txfee = 10000;
         chain->havecltv = 1;
     }
-    else chain->txfee = 1000000;
+    else chain->txfee = 10000;
     if ( chain->unitval == 0 )
         chain->unitval = 0x1e;
     if ( argjson != 0 )
