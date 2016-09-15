@@ -555,7 +555,9 @@ int32_t iguana_rwvin(int32_t rwflag,struct iguana_info *coin,struct OS_memspace 
     if ( rwflag == 0 )
     {
         msg->scriptlen = tmp;
-        msg->vinscript = iguana_memalloc(mem,msg->scriptlen,1);
+        if ( msg->scriptlen < IGUANA_MAXSCRIPTSIZE )
+            msg->vinscript = iguana_memalloc(mem,msg->scriptlen,1);
+        else return(0);
     }
     len += iguana_rwmem(rwflag,&serialized[len],msg->scriptlen,msg->vinscript);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
@@ -575,7 +577,7 @@ int32_t iguana_rwvout(int32_t rwflag,struct OS_memspace *mem,uint8_t *serialized
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->value),&msg->value);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->pk_scriptlen);
     if ( msg->pk_scriptlen > IGUANA_MAXSCRIPTSIZE )
-        return(-1);
+        return(0);
     if ( rwflag == 0 )
         msg->pk_script = iguana_memalloc(mem,msg->pk_scriptlen,1);
     len += iguana_rwmem(rwflag,&serialized[len],msg->pk_scriptlen,msg->pk_script);
@@ -660,9 +662,9 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
         msg->vouts = iguana_memalloc(mem,msg->tx_out * sizeof(*msg->vouts),1);
     for (i=0; i<msg->tx_out; i++)
     {
-        if ( (n= iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i])) >= 0 )
+        if ( (n= iguana_rwvout(rwflag,mem,&serialized[len],&msg->vouts[i])) > 0 )
             len += n;
-        if ( n < 0 || len > maxsize )
+        if ( n <= 0 || len > maxsize )
         {
             printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
             return(-1);
