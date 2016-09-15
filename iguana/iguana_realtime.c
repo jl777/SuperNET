@@ -168,7 +168,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
             //RTaddr->unspents[i] = RTaddr->unspents[--RTaddr->numunspents];
         }
     }
-    printf("%s %.8f [%.8f - %.8f] -> %.8f\n",coinaddr,dstr(value),dstr(coin->RTcredits),dstr(coin->RTdebits),dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits));
+    //printf("%s %.8f [%.8f - %.8f] -> %.8f\n",coinaddr,dstr(value),dstr(coin->RTcredits),dstr(coin->RTdebits),dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits));
     if ( 0 && strcmp("BTC",coin->symbol) != 0 && strcmp("LTC",coin->symbol) != 0 && strcmp("DOGE",coin->symbol) != 0 )
         printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }

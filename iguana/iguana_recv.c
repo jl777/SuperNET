@@ -1121,7 +1121,7 @@ void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int
     }
 }
 
-void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainchain,struct iguana_block *oldhwm,int32_t n)
+void iguana_mainchain_clear(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *mainchain,struct iguana_block *oldhwm,int32_t n)
 {
     int32_t i,height; char str[65]; struct iguana_block *tmp = oldhwm;
     if ( mainchain != oldhwm )
@@ -1139,13 +1139,12 @@ void iguana_mainchain_clear(struct iguana_info *coin,struct iguana_block *mainch
                 tmp->mainchain = 0;
                 printf("CLEAR %s mainchain.%d %s\n",coin->symbol,height,str);
             }
-            //if ( coin->RTheight > height )
-            //    iguana_RTreset(coin);
             if ( (tmp= iguana_blockfind("clear",coin,tmp->RO.prev_block)) == 0 )
             {
                 printf("iguana_mainchain_clear: got null tmp i.%d of %d %s\n",i,n,str);
                 return;
             }
+            iguana_RTnewblock(myinfo,coin,tmp);
         }
         if ( tmp != mainchain && coin->RTheight > 0 )
             printf("iguana_mainchain_clear: unexpected mismatch ht.%d vs %d %s\n",tmp->height,mainchain->height,bits256_str(str,tmp->RO.hash2));
@@ -1178,7 +1177,7 @@ int32_t iguana_height_estimate(struct iguana_info *coin,struct iguana_block **ma
 // main context, ie single threaded
 struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block **blockp,int32_t *bundleip,struct iguana_block *origblock)
 {
-    struct iguana_block *block,*prevblock,*tmp,*mainchain,*hwmblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t i,newheight,prevbundlei,bundlei = -2; // struct iguana_ramchain blockR;
+    struct iguana_block *block,*prevblock,*tmp,*mainchain,*hwmblock; bits256 zero,hash2,prevhash2; struct iguana_bundle *prevbp,*bp = 0; int32_t i,n,hdrsi,newheight,prevbundlei,bundlei = -2; // struct iguana_ramchain blockR;
     *bundleip = -2; *blockp = 0;
     if ( origblock == 0 )
         return(0);
@@ -1197,17 +1196,26 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
         {
             if ( (newheight= iguana_height_estimate(coin,&mainchain,block)) >= coin->blocks.hwmchain.height )
             {
-                iguana_mainchain_clear(coin,mainchain,hwmblock,coin->blocks.hwmchain.height-mainchain->height);
-                tmp = block;
-                for (i=0; i<newheight-mainchain->height; i++)
+                iguana_mainchain_clear(myinfo,coin,mainchain,hwmblock,coin->blocks.hwmchain.height-mainchain->height);
+                n = (newheight - mainchain->height);
+                for (i=1; i<n; i++)
                 {
-                    iguana_bundle_set(coin,tmp,newheight-i);
-                    if ( (tmp= iguana_blockfind("hwmprev",coin,tmp->RO.prev_block)) == 0 )
-                        break;
-                    iguana_RTnewblock(myinfo,coin,tmp);
+                    hdrsi = ((mainchain->height+i) / coin->chain->bundlesize);
+                    bundlei = ((mainchain->height+i) % coin->chain->bundlesize);
+                    if ( hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
+                    {
+                        if ( (tmp= bp->blocks[hdrsi]) != 0 )
+                        {
+                            iguana_bundle_set(coin,tmp,mainchain->height+i);
+                            iguana_RTnewblock(myinfo,coin,tmp);
+                        }
+                    }
                 }
                 if ( mainchain != hwmblock )
+                {
                     iguana_hwmchain_set(coin,mainchain,mainchain->height); // trigger reprocess
+                    iguana_RTnewblock(myinfo,coin,mainchain);
+                }
             }
             else if ( coin->RTheight > 0 && newheight == coin->RTheight )
             {
