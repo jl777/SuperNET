@@ -153,7 +153,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         coin->RTcredits += polarity * value;
         if ( polarity > 0 )
         {
-            //printf("unspent[%d] <- %p\n",RTaddr->numunspents,unspent);
+            printf("lastunspent[%d] <- %p\n",RTaddr->numunspents,unspent);
             RTaddr->numunspents++;
             unspent->prevunspent = RTaddr->lastunspent;
             RTaddr->lastunspent = unspent;
@@ -214,7 +214,12 @@ void iguana_RTunspent(struct iguana_info *coin,struct iguana_RTtxid *RTptr,struc
                 }
             }
             if ( (unspent->spend == 0 && polarity < 0) || (unspent->spend != 0 && polarity > 0) )
-                printf("unspent spend.%p opposite when polarity.%lld\n",unspent->spend,(long long)polarity);
+            {
+                if ( unspent->parent != 0 )
+                    bits256_str(str,unspent->parent->txid);
+                else str[0] = 0;
+                printf("unspent spend.%p opposite when polarity.%lld %s/v%d\n",unspent->spend,(long long)polarity,str,unspent->vout);
+            }
             iguana_RTcoinaddr(coin,RTptr,block,polarity,coinaddr,unspent->rmd160,0,value,unspent);
             if ( polarity < 0 )
                 RTptr->unspents[vout] = 0;
@@ -799,7 +804,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }
-    if ( block != 0 && coin->RTheight > 0 && coin->RTheight <= coin->blocks.hwmchain.height )
+    if ( block != 0 && coin->RTheight > 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
     {
         portable_mutex_lock(&coin->RTmutex);
         if ( block->height > coin->lastRTheight )

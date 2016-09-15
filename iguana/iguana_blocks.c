@@ -653,7 +653,8 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                     //iguana_walkchain(coin);
                 }
                 struct iguana_bundle *bp; int32_t hdrsi;
-                if ( (block->height % coin->chain->bundlesize) == 0 )
+                bundlei = (block->height % coin->chain->bundlesize);
+                if ( bundlei == 0 )
                 {
                     if ( (hdrsi= block->height/coin->chain->bundlesize) < coin->bundlescount )
                     {
@@ -674,16 +675,19 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                 {
                     if ( (bp= coin->bundles[block->height / coin->chain->bundlesize]) != 0 )
                     {
-                        if ( memcmp(bp->hashes[block->height % coin->chain->bundlesize].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[block->height % coin->chain->bundlesize] )
+                        if ( memcmp(bp->hashes[bundlei].bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 || block != bp->blocks[bundlei] )
                         {
-                            if ( bits256_nonz(bp->hashes[block->height % coin->chain->bundlesize]) != 0 )
+                            if ( bits256_nonz(bp->hashes[bundlei]) != 0 )
                             {
-                                if ( bp->blocks[block->height % coin->chain->bundlesize] == 0 && block != 0 )
-                                    bp->blocks[block->height % coin->chain->bundlesize] = block;
+                                if ( bp->blocks[bundlei] == 0 && block != 0 )
+                                    bp->blocks[bundlei] = block;
                                 else
                                 {
                                     char str[65],str2[65];
-                                    printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[block->height % coin->chain->bundlesize],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[block->height % coin->chain->bundlesize]));
+                                    printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[bundlei],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[bundlei]));
+                                    bp->blocks[bundlei] = block;
+                                    bp->hashes[bundlei] = block->RO.hash2;
+
                                     //if ( bp == coin->current && coin->RTheight > 0 )
                                     //    coin->RTdatabad = 1;
                                     //iguana_bundleremove(coin,bp->hdrsi,0);
@@ -691,10 +695,10 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                                     //getchar();
                                 }
                             }
-                            iguana_blockunmark(coin,block,bp,block->height % coin->chain->bundlesize,0);
-                            iguana_bundlehash2add(coin,0,bp,block->height % coin->chain->bundlesize,block->RO.hash2);
+                            iguana_blockunmark(coin,block,bp,bundlei,0);
+                            iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                         }
-                        if ( coin->started != 0 && (block->height % coin->chain->bundlesize) == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
+                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
