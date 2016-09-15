@@ -804,8 +804,6 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
 {
     bits256 txid; int32_t vout,spentheight;
     memset(&txid,0,sizeof(txid));
-    printf("RTunspent_check needs to be ported to prevent reusing utxo, but should work if one spend per block\n");
-    return(0);
     if ( iguana_RTunspentind2txid(myinfo,coin,&spentheight,&txid,&vout,outpt) == 0 )
     {
         //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
@@ -815,6 +813,7 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
             char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",outpt.hdrsi,outpt.unspentind,bits256_str(str,txid));
             return(1);
         } else return(0);*/
+        return(0);
     }
     printf("iguana_unspent_check: couldnt find (%d %d)\n",outpt.hdrsi,outpt.unspentind);
     return(-1);
