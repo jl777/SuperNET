@@ -731,7 +731,7 @@ void iguana_startconnection(void *arg)
         printf("avoid self-loopback\n");
         return;
     }
-    printf(">>>>>>>> %s startconnection.(%s) pending.%u usock.%d addrind.%d\n",coin->symbol,addr->ipaddr,addr->pending,addr->usock,addr->addrind);
+    //printf(">>>>>>>> %s startconnection.(%s) pending.%u usock.%d addrind.%d\n",coin->symbol,addr->ipaddr,addr->pending,addr->usock,addr->addrind);
     addr->pending = (uint32_t)time(NULL);
     if ( (port= (uint16_t)(addr->ipbits >> 32)) == 0 )
         port = coin->chain->portp2p;
@@ -740,7 +740,7 @@ void iguana_startconnection(void *arg)
     if ( addr->usock < 0 || (coin->peers != 0 && coin->peers->shuttingdown != 0) )
     {
         strcpy(ipaddr,addr->ipaddr);
-        printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
+        //printf("%s refused PEER KILLED. slot.%d for %s:%d usock.%d\n",coin->symbol,addr->addrind,ipaddr,coin->chain->portp2p,addr->usock);
         iguana_iAkill(coin,addr,1);
     }
     else

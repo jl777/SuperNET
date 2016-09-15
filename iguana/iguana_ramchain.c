@@ -1083,7 +1083,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         *rdata = tmp;
         fflush(fp);
         fclose(fp);
-        sleep(3);
+        //sleep(3);
     }
 #ifdef __PNACL__
     //portable_mutex_unlock(&mutex);
