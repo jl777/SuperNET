@@ -128,7 +128,10 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             unspentind = (tx->firstvout + i);
             u = &U[unspentind];
             if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )
-                printf("%s iguana_voutset: txidind mismatch t%d u%u || %d vs %d || (%d vs %d)\n",coin->symbol,u->txidind,unspentind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
+            {
+                printf("%s.[%d].%d iguana_voutset: txidind mismatch t%d u%u || %d vs %d || (%d vs %d)\n",coin->symbol,height/coin->chain->bundlesize,u->hdrsi,u->txidind,unspentind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
+                return(-1);
+            }
             vout->value = u->value;
             vout->pk_script = scriptspace;
             scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
@@ -186,9 +189,16 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     for (i=0; i<numvins; i++)
     {
         if ( vins == 0 )
-            iguana_vinset(coin,space,height,&vin,tx,i);
-        else vin = vins[i];
+        {
+            if ( iguana_vinset(coin,space,height,&vin,tx,i) < 0 )
+            {
+                printf("iguana_ramtxbytes vinset error %d of %d\n",i,numvins);
+                return(0);
+            }
+        } else vin = vins[i];
         len += iguana_rwvin(rwflag,coin,0,&serialized[len],&vin,i);
+        if ( len > maxlen )
+            break;
     }
     if ( len > maxlen )
     {
@@ -199,9 +209,16 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     for (i=0; i<numvouts; i++)
     {
         if ( vouts == 0 )
-            iguana_voutset(coin,space,asmstr,height,&vout,tx,i);
-        else vout = vouts[i];
+        {
+            if ( iguana_voutset(coin,space,asmstr,height,&vout,tx,i) < 0 )
+            {
+                printf("iguana_ramtxbytes voutset error %d of %d\n",i,numvouts);
+                return(0);
+            }
+        } else vout = vouts[i];
         len += iguana_rwvout(rwflag,0,&serialized[len],&vout);
+        if ( len > maxlen )
+            break;
     }
     if ( len > maxlen )
     {
