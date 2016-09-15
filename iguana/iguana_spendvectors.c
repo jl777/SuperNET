@@ -281,6 +281,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
             //coin->fast[iter] = calloc(1,coin->fastsizes[iter]);
             //memcpy(coin->fast[iter],fastfind,coin->fastsizes[iter]);
         }
+        //need zB[]?
         txidind = B[starti].firsttxidind;
         spendind = B[starti].firstvin;
         for (i=starti; i<numblocks; i++)

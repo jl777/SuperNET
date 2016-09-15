@@ -413,12 +413,6 @@ struct hhbits256 { UT_hash_handle hh; bits256 txid; int32_t height; uint16_t fir
 
 struct iguana_monitorinfo { bits256 txid; int32_t numreported; uint8_t peerbits[IGUANA_MAXPEERS >> 3]; };
 
-struct iguana_RTspend
-{
-    bits256 prev_hash; int16_t prev_vout,scriptlen;
-    uint8_t vinscript[];
-};
-
 struct iguana_RTunspent
 {
     uint8_t rmd160[20];
@@ -430,6 +424,14 @@ struct iguana_RTunspent
     int16_t scriptlen;
     uint8_t locked,validflag;
     uint8_t script[];
+};
+
+struct iguana_RTspend
+{
+    bits256 prev_hash;
+    struct iguana_RTunspent *bundle_unspent;
+    int16_t prev_vout,scriptlen;
+    uint8_t vinscript[];
 };
 
 struct iguana_RTaddr
