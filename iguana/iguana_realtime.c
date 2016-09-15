@@ -272,8 +272,6 @@ void iguana_RTspend_create(struct supernet_info *myinfo,struct iguana_info *coin
                         spentpt.unspentind = unspentind;
                         spentpt.hdrsi = height / coin->chain->bundlesize;
                         spentpt.value = value;
-                        if ( strcmp(coinaddr,"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z") == 0 )
-                            printf("spend old from ht.%d (%s %.8f).%d spendlen.%d\n",RTptr->height,coinaddr,dstr(value),addrtype,spendlen);
                         iguana_RTutxofunc(coin,&spentheight,&lockedflag,spentpt,&RTspentflag,0,RTptr->height);
                         spend->bundle_unspent = unspent;
                     }

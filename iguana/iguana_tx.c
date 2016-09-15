@@ -128,7 +128,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             unspentind = (tx->firstvout + i);
             u = &U[unspentind];
             if ( u->txidind != tx->txidind || u->vout != i || u->hdrsi != height / coin->chain->bundlesize )
-                printf("iguana_voutset: txidind mismatch %d vs %d || %d vs %d || (%d vs %d)\n",u->txidind,u->txidind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
+                printf("%s iguana_voutset: txidind mismatch t%d u%u || %d vs %d || (%d vs %d)\n",coin->symbol,u->txidind,unspentind,u->vout,i,u->hdrsi,height / coin->chain->bundlesize);
             vout->value = u->value;
             vout->pk_script = scriptspace;
             scriptlen = iguana_voutscript(coin,bp,scriptspace,asmstr,u,&P[u->pkind],i);
