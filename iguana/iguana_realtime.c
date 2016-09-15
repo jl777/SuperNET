@@ -779,7 +779,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }
-    if ( block != 0 && coin->RTheight > 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
+    if ( block != 0 && coin->RTheight > 0 && coin->utxoaddrtable != 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
     {
         portable_mutex_lock(&coin->RTmutex);
         if ( block->height > coin->lastRTheight )
