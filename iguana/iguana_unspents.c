@@ -494,6 +494,8 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
             //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
             memset(&outpt,0,sizeof(outpt));
+            outpt.txid = T[U[unspentind].txidind].txid;
+            outpt.vout = unspentind - T[U[unspentind].txidind].firstvout;
             outpt.hdrsi = lastpt.hdrsi;
             outpt.isptr = 0;
             outpt.unspentind = unspentind;
