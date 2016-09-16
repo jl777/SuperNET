@@ -134,7 +134,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
                 static uint32_t counter;
                 if ( counter++ < 3 )
                     printf("%s.[%d].%d iguana_voutset: vout mismatch t%d u%u || %d vs %d, type.%d scriptpos.%d scriptlen.%d\n",coin->symbol,height/coin->chain->bundlesize,u->hdrsi,u->txidind,unspentind,u->vout,i,u->type,u->scriptpos,u->scriptlen);
-                //return(-1);
+                return(-1);
             }
             vout->value = u->value;
             vout->pk_script = scriptspace;
