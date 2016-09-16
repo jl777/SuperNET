@@ -1335,7 +1335,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
     if ( zblocks != 0 && n > 0 )
     {
         memset(prevhash2.bytes,0,sizeof(prevhash2));
-        for (i==match=0; i<n&&i<coin->chain->bundlesize; i++)
+        for (i=match=0; i<n&&i<coin->chain->bundlesize; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
             if ( bits256_cmp(zblocks[i].RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
