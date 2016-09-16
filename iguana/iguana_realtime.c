@@ -727,7 +727,7 @@ int32_t iguana_RTblockadd(struct supernet_info *myinfo,struct iguana_info *coin,
         offset = block->height - coin->firstRTheight;
         if ( coin->RTrawdata[offset] == 0 )
             coin->RTrawdata[offset] = iguana_RTrawdata(coin,block->RO.hash2,0,&coin->RTrecvlens[offset],&coin->RTnumtx[offset],0);
-        printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
+        //printf("%s RTblockadd.%d offset.%d numtx.%d len.%d\n",coin->symbol,block->height,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset]);
         block->RO.txn_count = coin->RTnumtx[offset];
         coin->RTblocks[offset] = block;
         if ( iguana_RTiterate(myinfo,coin,offset,block,1) < 0 )
@@ -814,7 +814,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             coin->RTheight += i;
             if ( coin->RTheight != coin->lastRTheight+1 )
                 printf("ERROR: ");
-            printf("%s >= RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
+            //printf("%s >= RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
         }
         else if ( block->height == coin->lastRTheight )
         {
@@ -832,7 +832,8 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         else
         {
             char str[65]; printf("reorg RTheight.%d vs block.%d %s\n",coin->RTheight,block->height,bits256_str(str,block->RO.hash2));
-            while ( coin->RTheight > block->height )
+            iguana_RTreset(coin);
+            /*while ( coin->RTheight > block->height )
             {
                 if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->RTheight-1)) < 0 )
                 {
@@ -850,7 +851,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 return;
             }
             coin->lastRTheight = block->height;
-            coin->RTheight = coin->lastRTheight+1;
+            coin->RTheight = coin->lastRTheight+1;*/
         }
         portable_mutex_unlock(&coin->RTmutex);
     }

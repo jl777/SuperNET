@@ -683,8 +683,8 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                                     bp->blocks[bundlei] = block;
                                 else
                                 {
-                                    char str[65],str2[65];
-                                    printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[bundlei],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[bundlei]));
+                                    //char str[65],str2[65];
+                                    //printf("ERROR: need to fix up bundle for height.%d (%p %p) (%s %s)\n",block->height,block,bp->blocks[bundlei],bits256_str(str,block->RO.hash2),bits256_str(str2,bp->hashes[bundlei]));
                                     bp->blocks[bundlei] = block;
                                     bp->hashes[bundlei] = block->RO.hash2;
 
