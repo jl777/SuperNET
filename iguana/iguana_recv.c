@@ -1368,14 +1368,16 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             }
             if ( bp != 0 )
             {
+                if ( firstbp == 0 )
+                    firstbp = bp, matches++;
+                else if ( bp == firstbp )
+                    matches++;
                 bp->dirty++;
                 if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
                 {
                     bp->issued[bundlei] = 1;
                     iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
                 }
-                if ( bundlei == i && bp == firstbp )
-                    match++;
             }
             prevhash2 = zblocks[i].RO.hash2;
         }
