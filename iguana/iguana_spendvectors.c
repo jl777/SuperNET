@@ -1155,7 +1155,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             }
             free(blockspace);
             printf("%s %s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,errs!=0?"NOT":"",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
-            if ( totalerrs == 0 )
+            if ( errs == 0 )
                 bp->validated = (uint32_t)time(NULL);
             else bp->startutxo = bp->utxofinish = 0;
             //iguana_volatilesmap(coin,&bp->ramchain);
