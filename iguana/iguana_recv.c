@@ -911,7 +911,7 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
     }
     if ( strcmp("BTC",coin->symbol) != 0 && n == 2 )
         iguana_sendblockreqPT(coin,addr,0,-1,zblocks[1].RO.hash2,0);
-    if ( 0 )
+    if ( 1 )
     {
         for (i=0; i<coin->bundlescount; i++)
         {
@@ -1022,7 +1022,7 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
             //n = 0;
             //if ( bp->hdrsi < coin->MAXBUNDLES || (coin->current != 0 && coin->lastpending != 0 && bp->hdrsi >= coin->current->hdrsi && bp->hdrsi <= coin->lastpending->hdrsi) )
             //    n = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
-            if ( 0 && n > 2 )
+            //if ( 0 && n > 2 )
                 printf("ALLHASHES FOUND! %d allhashes.%d issued %d\n",bp->bundleheight,coin->allhashes,n);
             //if ( bp->queued == 0 )
             //    iguana_bundleQ(myinfo,coin,bp,bp->n*5 + (rand() % 500));
@@ -1382,7 +1382,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             prevhash2 = zblocks[i].RO.hash2;
         }
         char str[65];
-        //if ( 0 && bp == coin->current )
+        if ( 0 && bp == coin->current )
             printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,zblocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         /*if ( firstbp != 0 && match >= coin->chain->bundlesize-1 )
         {
