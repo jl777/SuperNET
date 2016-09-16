@@ -339,7 +339,11 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                         fputc(0,addr->voutsfp), u->scriptpos++, scriptpos++;
                     if ( u->scriptpos != scriptpos || fwrite(script,1,scriptlen,addr->voutsfp) != scriptlen )
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
-                    else addr->dirty[0]++;
+                    else
+                    {
+                        fflush(addr->voutsfp);
+                        addr->dirty[0]++;
+                    }
 #ifdef __PNACL__
                     //portable_mutex_unlock(&mutex);
 #endif
@@ -602,7 +606,11 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
                 fputc(0,addr->vinsfp), s->scriptpos++;
             if ( (err= (int32_t)fwrite(vinscript,1,vinscriptlen,addr->vinsfp)) != vinscriptlen )
                 printf("error.%d writing vinscriptlen.%d errno.%d addrind.%d\n",err,vinscriptlen,errno,addr->addrind);
-            else addr->dirty[1]++;
+            else
+            {
+                addr->dirty[1]++;
+                fflush(addr->vinsfp);
+            }
 #ifdef __PNACL__
             //portable_mutex_unlock(&mutex);
 #endif
@@ -701,6 +709,7 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
 #endif
         startfpos = ftell(fp);
         err = fwrite(srcptr,1,len,fp);
+        fflish(fp);
 #ifdef __PNACL__
         //portable_mutex_unlock(&mutex);
 #endif
