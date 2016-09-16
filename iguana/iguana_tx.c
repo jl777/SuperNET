@@ -216,7 +216,9 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         {
             if ( iguana_voutset(coin,space,asmstr,height,&vout,tx,i) < 0 )
             {
-                printf("iguana_ramtxbytes voutset error %d of %d\n",i,numvouts);
+                static uint32_t counter;
+                if ( counter++ < 10 )
+                    printf("iguana_ramtxbytes voutset error %d of %d\n",i,numvouts);
                 return(0);
             }
         } else vout = vouts[i];
@@ -274,9 +276,9 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         total += len;
                     else
                     {
-                        //static int counter;
+                        static uint32_t counter;
                         char str[65],str2[65];
-                        //if ( counter++ < 100 )
+                        if ( counter++ < 100 )
                         {
                             for (i=0; i<len; i++)
                                 printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
