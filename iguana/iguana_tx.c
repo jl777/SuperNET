@@ -131,7 +131,7 @@ int32_t iguana_voutset(struct iguana_info *coin,uint8_t *scriptspace,char *asmst
             u = &U[unspentind];
             if ( u->vout != i || u->hdrsi != height / coin->chain->bundlesize ) //u->txidind != tx->txidind ||
             {
-                printf("%s.[%d].%d iguana_voutset: vout mismatch t%d u%u || %d vs %d\n",coin->symbol,height/coin->chain->bundlesize,u->hdrsi,u->txidind,unspentind,u->vout,i);
+                printf("%s.[%d].%d iguana_voutset: vout mismatch t%d u%u || %d vs %d, type.%d scriptpos.%d scriptlen.%d\n",coin->symbol,height/coin->chain->bundlesize,u->hdrsi,u->txidind,unspentind,u->vout,i,u->type,u->scriptpos,u->scriptlen);
                 return(-1);
             }
             vout->value = u->value;
