@@ -766,13 +766,13 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
         coin->RTreset_needed = 0;
     }
     iguana_RTbalance_verify("start iterate",coin);
-    if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
+    /*if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
     {
         if ( block->height < coin->firstRTheight+coin->minconfirms )
             return;
         if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
             return;
-    }
+    }*/
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
     {
         if ( 0 && coin->firstRTheight > 0 )
@@ -781,6 +781,11 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
     }
     if ( block != 0 && coin->RTheight > 0 && coin->utxoaddrtable != 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
     {
+        if ( block->height <= coin->lastRTheight+coin->minconfirms )
+            return;
+        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
+            return;
+        // error check to bundle boundary
         portable_mutex_lock(&coin->RTmutex);
         if ( block->height > coin->lastRTheight )
         {
