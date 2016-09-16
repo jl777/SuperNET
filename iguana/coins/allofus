@@ -17,3 +17,11 @@ sleep 5
 ../agents/iguana coins/genuno.json &
 sleep 5
 ../agents/iguana coins/genzet.json &
+sleep 5
+../agents/iguana coins/genbtm.json &
+sleep 5
+../agents/iguana coins/gencarb.json &
+sleep 5
+../agents/iguana coins/genanc.json &
+sleep 5
+../agents/iguana coins/genfrk.json &
