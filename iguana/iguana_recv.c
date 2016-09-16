@@ -1330,9 +1330,9 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
                     bp->dirty++;
-                    if ( bp->issued[bundlei] == 0 && coin->RTheight > 0 )
+                    if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
                     {
-                        bp->issued[bundlei] = 0;
+                        bp->issued[bundlei] = 1;
                         iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
                     }
                     //printf("{%d:%d} ",bp->hdrsi,bundlei);
