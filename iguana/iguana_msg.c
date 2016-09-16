@@ -205,8 +205,8 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
     if ( rwflag == 1 )
     {
         if ( zcash == 0 )
-            x = msg->txn_count;
-        else x = zmsg->txn_count;
+            x = zmsg->txn_count;
+        else x = msg->txn_count;
     }
     //char str[65],str2[65]; printf("zcash.%d len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  hash2.%s zlen.%d\n",zcash,len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,bits256_str(str2,*hash2p),(int32_t)sizeof(struct iguana_msgzblockhdr));
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
