@@ -1048,8 +1048,12 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
             return(-1);
         }
     }
-    //if ( bp->blocks[bundlei] == 0 )
+    if ( bp->blocks[bundlei] == 0 )
+    {
         firstflag = 1;
+        bp->blocks[bundlei] = block;
+        bp->hashes[bundlei] = block->RO.hash2;
+    }
     bp->blocks[bundlei] = block;
     iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
     if ( firstflag != 0 && bp->emitfinish == 0 )
@@ -1210,10 +1214,10 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
                     iguana_RTnewblock(myinfo,coin,mainchain);
                 }
             }
-            else if ( coin->RTheight > 0 && newheight == coin->RTheight )
+            else //if ( coin->RTheight > 0 && newheight == coin->RTheight )
             {
                 //printf("newheight.%d is RTheight\n",newheight);
-            }
+           }
         }
         //if ( 0 && bits256_nonz(prevhash2) > 0 )
         //    iguana_patch(coin,block);
@@ -1222,8 +1226,8 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
         {
             if ( iguana_bundlehashadd(coin,bp,bundlei,block) < 0 )
             {
-                if ( bp->emitfinish == 0 && bp->issued[bundlei] == 0 && block->issued == 0 && strcmp("BTC",coin->symbol) != 0 )//|| coin->PREFETCHLAG < 0) )
-                    iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);//coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
+                if ( bp->emitfinish == 0 && bp->issued[bundlei] == 0 && block->issued == 0 && strcmp("BTC",coin->symbol) != 0 )
+                    iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);
             }
             //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
             if ( bundlei > 0 )
@@ -1326,7 +1330,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                         coin->longestchain = block->height+1;
                     _iguana_chainlink(myinfo,coin,block);
                 }
-                char str[65]; printf("HWM in hdr's prev[%d] bp.%p bundlei.%d block.%p %s\n",i,bp,bundlei,block,bp!=0?bits256_str(str,bp->hashes[bundlei]):"()");
+                //char str[65]; printf("HWM in hdr's prev[%d] bp.%p bundlei.%d block.%p %s\n",i,bp,bundlei,block,bp!=0?bits256_str(str,bp->hashes[bundlei]):"()");
             }
             if ( i > 0 && bits256_cmp(prevhash2,zblocks[i].RO.prev_block) == 0 )
             {
@@ -1370,12 +1374,13 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
         if ( i == n && i == match && firstbp == coin->current && (addr= req->addr) != 0 )
         {
             addr->RThashes[i] = firstbp->hashes[0];
-            for (i=1; i<n; i++)
+            for (i=1; i<coin->chain->bundlesize; i++)
             {
                 iguana_serialize_block(myinfo,coin->chain,&addr->RThashes[i],serialized,(struct iguana_block *)&zblocks[i]);
             }
-            //memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));
             addr->numRThashes = n;
+            if ( iguana_allhashcmp(myinfo,coin,firstbp,addr->RThashes,coin->chain->bundlesize) > 0 )
+                return(req);
         }
     }
     return(req);
@@ -1940,10 +1945,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
-                        lag = 5;
+                        lag = 3;
                     else if ( coin->current == 0 || bp->hdrsi > coin->current->hdrsi+coin->MAXBUNDLES )
                         continue;
-                    else lag = 13;
+                    else lag = 30;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
                         if ( 0 && bp == coin->current )
