@@ -1335,7 +1335,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
     if ( zblocks != 0 && n > 0 )
     {
         memset(prevhash2.bytes,0,sizeof(prevhash2));
-        for (i=1,match=0; i<n&&i<coin->chain->bundlesize; i++)
+        for (i==match=0; i<n&&i<coin->chain->bundlesize; i++)
         {
             //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
             if ( bits256_cmp(zblocks[i].RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
@@ -1343,7 +1343,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 bp = 0, bundlei = -2;
                 if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
-                    if ( i == 1 )
+                    if ( firstbp == 0 )
                         firstbp = bp;
                     if ( block->height >= 0 && block->height+1 > coin->longestchain )
                         coin->longestchain = block->height+1;
@@ -1351,45 +1351,45 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 }
                 //char str[65]; printf("HWM in hdr's prev[%d] bp.%p bundlei.%d block.%p %s\n",i,bp,bundlei,block,bp!=0?bits256_str(str,bp->hashes[bundlei]):"()");
             }
-            if ( i > 0 && bits256_cmp(prevhash2,zblocks[i].RO.prev_block) == 0 )
+            bp = 0, bundlei = -2;
+            if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) == 0 )
             {
                 bp = 0, bundlei = -2;
-                if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
+                if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i].RO.prev_block)) != 0 )
                 {
-                    bp->dirty++;
-                    if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
+                    if ( bundlei < coin->chain->bundlesize-1 )
+                        bundlei++;
+                    else
                     {
-                        bp->issued[bundlei] = 1;
-                        iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
-                    }
-                    //printf("{%d:%d} ",bp->hdrsi,bundlei);
-                    if ( i == 1 )
-                    {
-                        firstbp = bp;
-                        iguana_checklongestchain(coin,bp,coin->chain->bundlesize);
-                    }
-                    if ( bundlei == i+1 && bp == firstbp )
-                        match++;
-                    else if ( 0 )
-                    {
-                        if ( bp != coin->current && i != coin->chain->bundlesize-1 )
-                            fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
+                        bundlei = 0;
+                        bp = coin->bundles[bp->hdrsi+1];
                     }
                 }
+            }
+            if ( bp != 0 )
+            {
+                bp->dirty++;
+                if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
+                {
+                    bp->issued[bundlei] = 1;
+                    iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
+                }
+                if ( bundlei == i && bp == firstbp )
+                    match++;
             }
             prevhash2 = zblocks[i].RO.hash2;
         }
         char str[65];
-        if ( 0 && bp == coin->current )
+        //if ( 0 && bp == coin->current )
             printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,zblocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
-        if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
+        /*if ( firstbp != 0 && match >= coin->chain->bundlesize-1 )
         {
             if ( firstbp->queued == 0 )
             {
                 //fprintf(stderr,"firstbp blockQ %d\n",firstbp->bundleheight);
                 iguana_bundleQ(myinfo,coin,firstbp,1000);
             }
-        }
+        }*/
         if ( firstbp != 0 && (addr= req->addr) != 0 && n >= coin->chain->bundlesize )
         {
             addr->RThashes[0] = firstbp->hashes[0];
