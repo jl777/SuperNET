@@ -1225,7 +1225,7 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
                 if ( bp->emitfinish == 0 && bp->issued[bundlei] == 0 && block->issued == 0 && strcmp("BTC",coin->symbol) != 0 )//|| coin->PREFETCHLAG < 0) )
                     iguana_blockQ("bundleset",coin,bp,bundlei,block->RO.hash2,1);//coin->current == 0 || bp->hdrsi <= coin->current->hdrsi+coin->MAXBUNDLES);
             }
-            fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
+            //fprintf(stderr,"bundle found %d:%d\n",bp->hdrsi,bundlei);
             if ( bundlei > 0 )
             {
                 //printf("bundlehashadd prev %d\n",bundlei);
@@ -1320,6 +1320,8 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 bp = 0, bundlei = -2;
                 if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) != 0 )
                 {
+                    if ( i == 1 )
+                        firstbp = bp;
                     if ( block->height >= 0 && block->height+1 > coin->longestchain )
                         coin->longestchain = block->height+1;
                     _iguana_chainlink(myinfo,coin,block);
@@ -1338,16 +1340,16 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                         iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
                     }
                     //printf("{%d:%d} ",bp->hdrsi,bundlei);
-                    if ( i == 0 )
+                    if ( i == 1 )
                     {
                         firstbp = bp;
-                        iguana_checklongestchain(coin,bp,n);
+                        iguana_checklongestchain(coin,bp,coin->chain->bundlesize);
                     }
                     if ( bundlei == i+1 && bp == firstbp )
                         match++;
                     else
                     {
-                        if ( bp != coin->current && i != n-1 )
+                        if ( bp != coin->current && i != coin->chain->bundlesize-1 )
                             fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
                     }
                 }
@@ -1355,7 +1357,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             prevhash2 = zblocks[i].RO.hash2;
         }
         char str[65];
-        //if ( 0 && bp == coin->current )
+        if ( 0 && bp == coin->current )
             printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,zblocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
