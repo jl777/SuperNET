@@ -348,7 +348,7 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
             }
         }
         u->txidind = ramchain->H.txidind;
-        if ( 1 && vout > 0 )
+        if ( 0 && vout > 0 )
         {
             int32_t i; for (i=0; i<20; i++)
                 printf("%02x",rmd160[i]);
@@ -1930,9 +1930,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
                     ramchain->H.ROflag = 0;
                     flag = 1;
-                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
+                    if ( addr->voutsfp != 0 ) //addr->dirty[0] != 0 &&
                         fflush(addr->voutsfp);
-                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
+                    if ( addr->vinsfp != 0 ) //addr->dirty[1] != 0 &&
                         fflush(addr->vinsfp);
                     memset(&R,0,sizeof(R));
                     if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,(uint32_t)addr->ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) == 0 )
