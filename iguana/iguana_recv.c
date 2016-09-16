@@ -1369,9 +1369,9 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
             if ( bp != 0 )
             {
                 if ( firstbp == 0 )
-                    firstbp = bp, matches++;
+                    firstbp = bp, match++;
                 else if ( bp == firstbp )
-                    matches++;
+                    match++;
                 bp->dirty++;
                 if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
                 {
