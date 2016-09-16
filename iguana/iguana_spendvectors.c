@@ -1138,7 +1138,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             iguana_volatilesmap(coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
-                char str[65]; printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hashes[i]));
+                //char str[65]; printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hashes[i]));
                 if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
                 {
                     errs++;
