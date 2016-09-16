@@ -709,7 +709,7 @@ void *iguana_ramchain_offset(char *fname,void *dest,uint8_t *lhash,FILE *fp,uint
 #endif
         startfpos = ftell(fp);
         err = fwrite(srcptr,1,len,fp);
-        fflish(fp);
+        fflush(fp);
 #ifdef __PNACL__
         //portable_mutex_unlock(&mutex);
 #endif
