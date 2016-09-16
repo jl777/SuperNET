@@ -200,7 +200,7 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
         return(-1);
     }
     *hash2p = iguana_calcblockhash(symbol,hashalgo,serialized,len);
-    if ( auxpow != 0 && (zmsg->zH.version & 0x100) != 0 )
+    if ( auxpow != 0 && (msg->H.version & 0x100) != 0 )
         len += iguana_eatauxpow(myinfo,rwflag,symbol,zcash,&serialized[len],maxlen-len);
     if ( rwflag == 1 )
     {
@@ -753,8 +753,8 @@ char *iguana_txscan(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
     extraspace = calloc(1,extralen);
     if ( coin->chain->zcash == 0 )
     {
-        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,data,&zmsg,recvlen);
-        iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,zblock,&zmsg,hash2,-1);
+        len = iguana_rwblock(myinfo,coin->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,data,(void *)msg,recvlen);
+        iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(void *)block,(void *)msg,hash2,-1);
         txn_count = msg->txn_count;
     }
     else
@@ -1005,7 +1005,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         }
         else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
         {
-            struct iguana_msgzblock zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
+            struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
             if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("BTCD",coin->symbol) != 0 )
             {
@@ -1028,10 +1028,10 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                                     coinbase_branch = calloc(1,sizeof(*coinbase_branch));
                                 if ( blockchain_branch == 0 )
                                     blockchain_branch = calloc(1,sizeof(*blockchain_branch));
-                                tmp = iguana_rwblockhdr(0,coin->chain->zcash,&data[len],(void *)&zmsg);
+                                tmp = iguana_rwblockhdr(0,coin->chain->zcash,&data[len],(void *)msg);
                                 hash2 = iguana_calcblockhash(coin->symbol,coin->chain->hashalgo,&data[len],tmp);
                                 len += tmp;
-                                if ( (zmsg.zH.version & 0x100) != 0 )
+                                if ( (msg->H.version & 0x100) != 0 )
                                 {
                                     iguana_memreset(rawmem);
                                     tx = iguana_memalloc(rawmem,sizeof(*tx),1);
