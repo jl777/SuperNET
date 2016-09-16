@@ -91,11 +91,11 @@ int32_t bitcoin_p2shscript(uint8_t *script,int32_t n,const uint8_t *p2shscript,c
         script[n++] = (p2shlen & 0xff);
         script[n++] = ((p2shlen >> 8) & 0xff);
     }
-    else
+    else if ( p2shlen > 76 )
     {
         script[n++] = 0x4c;
         script[n++] = p2shlen;
-    }
+    } else script[n++] = p2shlen;
     memcpy(&script[n],p2shscript,p2shlen), n += p2shlen;
     return(n);
 }
@@ -287,7 +287,7 @@ int32_t iguana_scriptgen(struct iguana_info *coin,int32_t *Mp,int32_t *nump,char
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
 {
     static uint8_t zero_rmd160[20];
-    char hexstr[8192]; uint8_t sha256[32],*script,type; int32_t i,n,m,plen;
+    char hexstr[8192]; uint8_t *script,type; int32_t i,n,m,plen;
     vp->N = 1;
     vp->M = 1;
     type = IGUANA_SCRIPT_STRANGE;
@@ -301,7 +301,6 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
             //vcalc_sha256(0,sha256,vp->spendscript,vp->spendlen); // e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
             //calc_rmd160(0,zero_rmd160,sha256,sizeof(sha256)); // b472a266d0bd89c13706a4132ccfb16f7c3b9fcb
             init_hexbytes_noT(hexstr,zero_rmd160,20);
-            char str[65]; printf("iguana_calcrmd160 zero len %s -> %s\n",bits256_str(str,*(bits256 *)sha256),hexstr);
         }
         memcpy(vp->rmd160,zero_rmd160,sizeof(zero_rmd160));
         return(IGUANA_SCRIPT_NULL);
@@ -447,6 +446,18 @@ int32_t iguana_calcrmd160(struct iguana_info *coin,char *asmstr,struct vin_info 
     return(vp->type);
 }
 
+char *iguana_scriptaddress(struct iguana_info *coin,char *coinaddr,uint8_t *script,int32_t scriptlen)
+{
+    struct vin_info V;
+    iguana_calcrmd160(coin,0,&V,script,scriptlen,GENESIS_PUBKEY,0,0xffffffff);
+    if ( V.coinaddr[0] != 0 )
+    {
+        strcpy(coinaddr,V.coinaddr);
+        return(coinaddr);
+    }
+    return(0);
+}
+
 //error memalloc mem.0x7f6fc6e4a2a8 94.242.229.158 alloc 1 used 2162688 totalsize.2162688 -> 94.242.229.158 (nil)
 
 int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
@@ -495,7 +506,8 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     }
     vp->numpubkeys = j;
     *userdatap = &scriptsig[n];
-    *userdatalenp = (len - n);
+    if ( len > n )
+        *userdatalenp = (len - n);
     p2shscript = 0;
     while ( n < len )
     {
@@ -681,6 +693,8 @@ int32_t iguana_vinscriptdecode(struct iguana_info *coin,struct iguana_ramchain *
         if ( p2shlen > 0 && p2shlen < IGUANA_MAXSCRIPTSIZE )
         {
             if ( p2shlen <= 75 )
+                _script[scriptlen++] = p2shlen;
+            else if ( p2shlen <= 0xff )
                 _script[scriptlen++] = 0x4c, _script[scriptlen++] = p2shlen;
             else _script[scriptlen++] = 0x4d, _script[scriptlen++] = p2shlen & 0xff, _script[scriptlen++] = (p2shlen>>8) & 0xff;
             //printf("p2shlen.%d\n",p2shlen);

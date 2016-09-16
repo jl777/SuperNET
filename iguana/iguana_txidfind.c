@@ -81,7 +81,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 x |= (*ptr & masks[modval]) >> modval;
             }
             if ( x != 0 )
-                printf("%s ",bits256_str(str,*(bits256 *)(refdata + x*refsize))), n++;
+                printf("%s ",bits256_str(str,*(bits256 *)((long)refdata + x*refsize))), n++;
         }
         printf("tableentries.%d\n",n);
     }
@@ -316,7 +316,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             if ( j < bp->n )
                             {
                                 if ( j != T[txidind].bundlei )
-                                    printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
+                                    printf("bundlei mismatch j.%d != %u\n",j,(uint32_t)T[txidind].bundlei);
                                 else
                                 {
                                     *heightp = bp->bundleheight + T[txidind].bundlei;
@@ -335,7 +335,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             return(tx);
                         }
                     }
-                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%d] %d %s vs %s\n",bp->hdrsi,T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
+                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%u] %d %s vs %s\n",bp->hdrsi,(uint32_t)T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
                     return(0);
                 }
             }
@@ -621,7 +621,7 @@ struct iguana_monitorinfo *iguana_monitorfind(struct iguana_info *coin,bits256 t
 
 struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr)
 {
-    struct iguana_monitorinfo *ptr; char str[65];
+    struct iguana_monitorinfo *ptr; //char str[65];
     if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
     {
         if ( GETBIT(ptr->peerbits,addr->addrind) == 0 )
@@ -630,7 +630,7 @@ struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 tx
             SETBIT(ptr->peerbits,addr->addrind);
             ptr->numreported++;
         }
-    } else printf("txid.%s not being monitored\n",bits256_str(str,txid));
+    } // else printf("%s txid.%s not being monitored\n",coin->symbol,bits256_str(str,txid));
     return(0);
 }
 
@@ -653,11 +653,12 @@ struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 t
 
 double iguana_txidstatus(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
+    struct iguana_outpoint outpt; int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
     if ( coin != 0 && coin->peers != 0 && (numranked= coin->peers->numranked) > 0 )
     {
-        if ( (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,0,coin->bundlescount-1,0)) != 0 )
+        if ( iguana_RTunspentindfind(myinfo,coin,&outpt,0,0,0,0,&height,txid,0,coin->bundlescount-1,0) == 0 )
         {
+            firstvout = outpt.unspentind;
             if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
                 memset(ptr,0,sizeof(*ptr));
             return((double)coin->longestchain - height);

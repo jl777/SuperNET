@@ -46,7 +46,7 @@ struct SaM_info {  bits384 bits; TRIT trits[SAM_STATE_SIZE],hash[SAM_HASH_SIZE];
 struct SaMhdr { bits384 sig; uint32_t timestamp,nonce; uint8_t numrounds,leverage; };
 
 void SaM_Initialize(struct SaM_info *state);
-int32_t SaM_Absorb(struct SaM_info *state,const uint8_t *input,const uint32_t inputSize,const uint8_t *input2,const uint32_t inputSize2);
+int32_t SaM_Absorb(struct SaM_info *state,const uint8_t *input,uint32_t inputSize,const uint8_t *input2,uint32_t inputSize2);
 bits384 SaM_emit(struct SaM_info *state);
 bits384 SaM_encrypt(uint8_t *dest,uint8_t *src,int32_t len,bits384 password,uint32_t timestamp);
 uint64_t SaM_threshold(int32_t leverage);

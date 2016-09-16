@@ -38,7 +38,7 @@ struct tradebot_info
 
 cJSON *tradebot_json(struct supernet_info *myinfo,struct exchange_info *exchange,struct tradebot_info *bot)
 {
-    char str[64]; int32_t i,numpending; double pendsum,pendvolume,vol; cJSON *json,*array,*item;
+    char str[65]; int32_t i,numpending; double pendsum,pendvolume,vol; cJSON *json,*array,*item;
     json = cJSON_CreateObject();
     jaddstr(json,"exchange",exchange->name);
     jaddstr(json,"started",utc_str(str,bot->started));

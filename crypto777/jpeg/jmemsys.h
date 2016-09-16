@@ -154,6 +154,7 @@ typedef struct backing_store_struct {
   /* For the MS-DOS manager (jmemdos.c), we need: */
   handle_union handle;		/* reference to backing-store storage object */
   char temp_name[TEMP_NAME_LENGTH]; /* name if it's a file */
+    FILE *temp_file;
 #else
 #ifdef USE_MAC_MEMMGR
   /* For the Mac manager (jmemmac.c), we need: */

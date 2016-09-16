@@ -17,11 +17,18 @@
 
 // iguana_OS has functions that invoke system calls. Whenever possible stdio and similar functions are use and most functions are fully portable and in this file. For things that require OS specific, the call is routed to iguana_OS_portable_*  Usually, all but one OS can be handled with the same code, so iguana_OS_portable.c has most of this shared logic and an #ifdef iguana_OS_nonportable.c
 
+
+#ifdef NATIVE_WINDOWS
+//#define uint64_t unsigned __int64
+#define PACKED
+#else
+#define PACKED __attribute__((packed))
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #define HAVE_STRUCT_TIMESPEC
-#include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <math.h>
@@ -30,28 +37,29 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef __MINGW
+#ifdef WIN32
 #define sleep(x) Sleep(1000*(x))
 #include "../OSlibs/win/mingw.h"
 #include "../OSlibs/win/mman.h"
 #include "../OSlibs/win/pthread.h"
 
+#ifndef NATIVE_WINDOWS
 #define EADDRINUSE WSAEADDRINUSE
+#endif
 
 #else
-//#include <sys/poll.h>
+#include <sys/time.h>
 #include <time.h>
 #include <poll.h>
 #include <netdb.h>
 #define HAVE_STRUCT_TIMESPEC
 #include <pthread.h>
-//#include <netinet/in.h>
-//#include "in.h"
 #include <sys/mman.h>
 #include <sys/socket.h>
-//#include <winsock2.h>
+#include <unistd.h>
 #define closesocket close
 #endif
+
 #ifndef MIN
 #define MIN(x, y) ( ((x)<(y))?(x):(y) )
 #endif
@@ -119,8 +127,8 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
-struct allocitem { uint32_t allocsize,type; } __attribute__((packed));
-struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } __attribute__((packed));
+struct allocitem { uint32_t allocsize,type; } PACKED;
+struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
 typedef struct queue
 {
 	struct queueitem *list;
@@ -192,8 +200,8 @@ void OS_remove_directory(char *dirname);
 int32_t OS_portable_renamefile(char *fname,char *newfname);
 int32_t OS_portable_removefile(char *fname);
 void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
-int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
-void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
+//int32_t OS_portable_syncmap(struct OS_mappedptr *mp,long len);
+//void *OS_portable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
 
 int32_t is_DST(int32_t datenum);
 int32_t extract_datenum(int32_t *yearp,int32_t *monthp,int32_t *dayp,int32_t datenum);
@@ -203,31 +211,36 @@ int32_t ecb_decrdate(int32_t *yearp,int32_t *monthp,int32_t *dayp,char *date,int
 int32_t conv_date(int32_t *secondsp,char *buf);
 uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t second);
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
-double OS_milliseconds();
 
-void OS_randombytes(uint8_t *x,long xlen);
-
-int32_t OS_truncate(char *fname,long filesize);
 char *OS_compatible_path(char *str);
-int32_t OS_renamefile(char *fname,char *newfname);
-int32_t OS_removefile(char *fname,int32_t scrubflag);
-void OS_ensure_directory(char *dirname);
-int64_t OS_filesize(char *fname);
+
 int32_t OS_compare_files(char *fname,char *fname2);
 int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag);
-int32_t OS_releasemap(void *ptr,uint64_t filesize);
 void _OS_closemap(struct OS_mappedptr *mp);
-void OS_closemap(struct OS_mappedptr *mp);
-long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
-int32_t OS_openmap(struct OS_mappedptr *mp);
-void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname);
-void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
-void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
 void *OS_loadfile(char *fname,char **bufp,long *lenp,long *allocsizep);
 void *OS_filestr(long *allocsizep,char *fname);
+void OS_closemap(struct OS_mappedptr *mp);
+int32_t OS_openmap(struct OS_mappedptr *mp);
+void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,unsigned long allocsize,int32_t rwflag,char *fname);
+void *OS_filealloc(struct OS_mappedptr *M,char *fname,struct OS_memspace *mem,long size);
+void *OS_nonportable_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+int32_t OS_nonportable_removefile(char *fname);
 
-int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
-void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
+unsigned long OS_filesize(char *fname);
+void OS_ensure_directory(char *dirname);
+long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
+int32_t OS_truncate(char *fname,long filesize);
+int32_t OS_renamefile(char *fname,char *newfname);
+int32_t OS_removefile(char *fname,int32_t scrubflag);
+
+void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+int32_t OS_releasemap(void *ptr,unsigned long filesize);
+
+double OS_milliseconds();
+void OS_randombytes(uint8_t *x,long xlen);
+
+//int32_t OS_syncmap(struct OS_mappedptr *mp,long len);
+//void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize);
 
 long myallocated(uint8_t type,long change);
 void *mycalloc(uint8_t type,int32_t n,long itemsize);
@@ -347,7 +360,7 @@ void SaM_PrepareIndices();
 // iguana_serdes.c
 #define IGUANA_LOG2PACKETSIZE 21
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
-struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } __attribute__((packed));
+struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } PACKED;
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
 int32_t iguana_validatehdr(char *symbol,struct iguana_msghdr *H);

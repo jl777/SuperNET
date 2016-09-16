@@ -68,7 +68,7 @@ bits256 bitcoin_pubkey33(secp256k1_context *ctx,uint8_t *data,bits256 privkey)
     {
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
-            printf("bitcoin_sign illegal privkey\n");
+            //printf("bitcoin_sign illegal privkey\n");
             return(pubkey);
         }
         if ( secp256k1_ec_pubkey_create(ctx,&secppub,privkey.bytes) != 0 )
@@ -108,7 +108,7 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
     {
         if ( secp256k1_ec_seckey_verify(ctx,privkey.bytes) == 0 )
         {
-            printf("bitcoin_sign illegal privkey\n");
+            //printf("bitcoin_sign illegal privkey\n");
             return(-1);
         }
         if ( secp256k1_context_randomize(ctx,seed.bytes) != 0 )

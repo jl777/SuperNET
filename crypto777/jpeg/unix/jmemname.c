@@ -11,7 +11,7 @@
  * Also, the problem of determining the amount of memory available
  * is shoved onto the user.
  */
-#include <unistd.h>
+//#include <unistd.h>
 
 #define JPEG_INTERNALS
 #include "../jinclude.h"

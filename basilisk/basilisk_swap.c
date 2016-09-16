@@ -576,11 +576,11 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
                         item = jitem(vins,i);
                         txid = jbits256(item,"txid");
                         vout = jint(item,"vout");
-                        if ( bits256_nonz(txid) != 0 )
+                        /*if ( bits256_nonz(txid) != 0 )
                         {
                             char str[65]; printf("call addspend.(%s) v.%d\n",bits256_str(str,txid),vout);
                             basilisk_addspend(myinfo,rawtx->coin->symbol,txid,vout,1);
-                        }
+                        }*/
                     }
                 }
             }

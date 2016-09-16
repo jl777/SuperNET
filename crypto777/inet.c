@@ -24,7 +24,9 @@
 #ifdef _WIN32
 #define in6_addr sockaddr
 #define in_addr_t struct sockaddr_storage
+#ifndef NATIVE_WINDOWS
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
+#endif
 
 struct sockaddr_in6 {
     short   sin6_family;

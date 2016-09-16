@@ -39,7 +39,7 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
-//HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
@@ -195,6 +195,7 @@ TWO_STRINGS(tradebot,pause,exchange,botid);
 TWO_STRINGS(tradebot,stop,exchange,botid);
 TWO_STRINGS(tradebot,resume,exchange,botid);
 
+#ifndef WIN32
 HASH_ARG(pangea,call,tablehash);
 HASH_AND_INT(pangea,raise,tablehash,numchips);
 HASH_AND_INT(pangea,bet,tablehash,numchips);
@@ -210,6 +211,7 @@ ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_INT(pangea,buyin,tablehash,numchips);
 HASH_ARG(pangea,start,tablehash);
+#endif
 
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,utime2utc,utime);

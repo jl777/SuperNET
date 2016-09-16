@@ -1035,7 +1035,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
                 if ( stringbits((char *)Exchange_funcs[i]->name) == stringbits((char *)Exchange_funcs[j]->name) )
                 {
                     printf("FIRST 8 chars of Exchange_func[].name must be unique: %d.(%s) vs %d.(%s)\n",i,Exchange_funcs[i]->name,j,Exchange_funcs[j]->name);
-                    exit(-1);
+                    iguana_exit(0,0);
                 }
         }
         didinit = 1;
@@ -1072,18 +1072,21 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
     exchange->exchangeid = exchangeid;
     safecopy(exchange->name,exchangestr,sizeof(exchange->name));
     exchange->exchangebits = stringbits(exchange->name);
-    if ( (exchange->pollgap= juint(argjson,"pollgap")) < EXCHANGES777_MINPOLLGAP )
-        exchange->pollgap = EXCHANGES777_MINPOLLGAP;
-    if ( (key= jstr(argjson,"apikey")) != 0 || (key= jstr(argjson,"key")) != 0 )
-        safecopy(exchange->apikey,key,sizeof(exchange->apikey));
-    if ( (secret= jstr(argjson,"apisecret")) != 0 || (secret= jstr(argjson,"secret")) != 0 )
-        safecopy(exchange->apisecret,secret,sizeof(exchange->apisecret));
-    if ( (userid= jstr(argjson,"userid")) != 0 )
-        safecopy(exchange->userid,userid,sizeof(exchange->userid));
-    if ( (tradepassword= jstr(argjson,"tradepassword")) != 0 )
-        safecopy(exchange->tradepassword,tradepassword,sizeof(exchange->tradepassword));
-    if ( (exchange->commission= jdouble(argjson,"commission")) > 0. )
-        exchange->commission *= .01;
+    if ( argjson != 0 )
+    {
+        if ( (exchange->pollgap= juint(argjson,"pollgap")) < EXCHANGES777_MINPOLLGAP )
+            exchange->pollgap = EXCHANGES777_MINPOLLGAP;
+        if ( (key= jstr(argjson,"apikey")) != 0 || (key= jstr(argjson,"key")) != 0 )
+            safecopy(exchange->apikey,key,sizeof(exchange->apikey));
+        if ( (secret= jstr(argjson,"apisecret")) != 0 || (secret= jstr(argjson,"secret")) != 0 )
+            safecopy(exchange->apisecret,secret,sizeof(exchange->apisecret));
+        if ( (userid= jstr(argjson,"userid")) != 0 )
+            safecopy(exchange->userid,userid,sizeof(exchange->userid));
+        if ( (tradepassword= jstr(argjson,"tradepassword")) != 0 )
+            safecopy(exchange->tradepassword,tradepassword,sizeof(exchange->tradepassword));
+        if ( (exchange->commission= jdouble(argjson,"commission")) > 0. )
+            exchange->commission *= .01;
+    }
     printf("ADDEXCHANGE.(%s) [%s, %s, %s] commission %.3f%% -> exchangeid.%d\n",exchangestr,exchange->apikey,exchange->userid,exchange->apisecret,exchange->commission * 100.,exchangeid);
     Exchanges[exchangeid] = exchange;
     //instantdex_FSMinit();
@@ -1132,7 +1135,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             {
                 if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforx") == 0 )
                     continue;
-                if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,item)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
+                if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,0)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
                     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
             }
         free_json(argjson);

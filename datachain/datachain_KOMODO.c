@@ -78,12 +78,12 @@ bits256 datachain_opreturn_convert(uint8_t *txidbytes,int32_t *txlenp,struct igu
 
 int32_t datachain_genesis_verify(struct gecko_genesis_opreturn *opret)
 {
-    int32_t txlen,datalen; bits256 txid,threshold,hash2; uint8_t serialized[1024],txidbytes[1024]; struct iguana_msgblock msg; char str[65],str2[65];
-    txid = datachain_opreturn_convert(txidbytes,&txlen,&msg,opret);
+    int32_t txlen,datalen; bits256 txid,threshold,hash2; uint8_t serialized[1024],txidbytes[1024]; struct iguana_msgzblock zmsg; char str[65],str2[65];
+    txid = datachain_opreturn_convert(txidbytes,&txlen,(void *)&zmsg,opret);
     if ( opret->nBits >= GECKO_EASIESTDIFF )
         threshold = bits256_from_compact(GECKO_EASIESTDIFF);
     else threshold = bits256_from_compact(opret->nBits);
-    datalen = iguana_rwblockhdr(1,0,serialized,&msg);
+    datalen = iguana_rwblockhdr(1,0,serialized,&zmsg);
     hash2 = iguana_calcblockhash("virtual",blockhash_sha256,serialized,datalen);
     //for (i=0; i<datalen; i++)
     //    printf("%02x",serialized[i]);
@@ -101,7 +101,7 @@ int32_t datachain_genesis_verify(struct gecko_genesis_opreturn *opret)
 
 int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,char *coinaddr,int64_t PoSvalue,uint32_t nBits,uint16_t blocktime,uint16_t port,uint8_t p2shval,uint8_t wifval)
 {
-    int32_t i,len,datalen,txlen; struct gecko_genesis_opreturn opret; bits256 threshold,txid,hash2; struct iguana_info *btcd; struct iguana_msgblock msg; uint8_t txidbytes[1024];
+    int32_t i,len,datalen,txlen; struct gecko_genesis_opreturn opret; bits256 threshold,txid,hash2; struct iguana_info *btcd; struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; uint8_t txidbytes[1024];
     btcd = iguana_coinfind("BTCD");
     memset(&opret,0,sizeof(opret));
     opret.type[0] = 'N', opret.type[1] = 'E', opret.type[2] = 'W';
@@ -117,14 +117,14 @@ int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,ch
     opret.timestamp = (uint32_t)time(NULL);
     OS_randombytes((void *)&opret.netmagic,sizeof(opret.netmagic));
     bitcoin_addr2rmd160(&opret.pubval,opret.rmd160,coinaddr);
-    txid = datachain_opreturn_convert(txidbytes,&txlen,&msg,&opret);
+    txid = datachain_opreturn_convert(txidbytes,&txlen,msg,&opret);
     if ( nBits >= GECKO_EASIESTDIFF )
         threshold = bits256_from_compact(GECKO_EASIESTDIFF);
     else threshold = bits256_from_compact(nBits);
     for (i=0; i<100000000; i++)
     {
-        opret.nonce = msg.H.nonce = i;
-        datalen = iguana_rwblockhdr(1,0,serialized,&msg);
+        opret.nonce = msg->H.nonce = i;
+        datalen = iguana_rwblockhdr(1,0,serialized,&zmsg);
         hash2 = iguana_calcblockhash(symbol,btcd->chain->hashalgo,serialized,datalen);
         if ( bits256_cmp(threshold,hash2) > 0 )
             break;
@@ -140,7 +140,7 @@ int32_t datachain_opreturn_create(uint8_t *serialized,char *symbol,char *name,ch
 
 void datachain_events_processKOMODO(struct supernet_info *myinfo,struct datachain_info *dPoW,struct datachain_event *event)
 {
-    struct gecko_chain *chain; bits256 hash2,threshold; struct gecko_genesis_opreturn opret; int32_t datalen,i,j,len,txlen; char symbol[16],name[64],magicstr[16],blockstr[8192],nbitstr[16],issuer[64],hashstr[65],str2[65],argbuf[1024],chainname[GECKO_MAXNAMELEN]; cJSON *valsobj; struct iguana_msgblock msg; uint8_t serialized[256],txidbytes[1024],buf[4]; struct iguana_info *virt,*btcd;
+    struct gecko_chain *chain; bits256 hash2,threshold; struct gecko_genesis_opreturn opret; int32_t datalen,i,j,len,txlen; char symbol[16],name[64],magicstr[16],blockstr[8192],nbitstr[16],issuer[64],hashstr[65],str2[65],argbuf[1024],chainname[GECKO_MAXNAMELEN]; cJSON *valsobj; struct iguana_msgzblock zmsg; uint8_t serialized[256],txidbytes[1024],buf[4]; struct iguana_info *virt,*btcd;
     if ( (btcd= iguana_coinfind("BTCD")) != 0 && memcmp(event->opreturn,"NEW",3) == 0 )
     {
         //int32_t i; for (i=0; i<76; i++)
@@ -151,13 +151,13 @@ void datachain_events_processKOMODO(struct supernet_info *myinfo,struct datachai
             datachain_genesis_verify(&opret);
             memset(symbol,0,sizeof(symbol)), memcpy(symbol,opret.symbol,sizeof(opret.symbol));
             memset(name,0,sizeof(name)), memcpy(name,opret.name,sizeof(opret.name));
-            hash2 = datachain_opreturn_convert(txidbytes,&txlen,&msg,&opret);
+            hash2 = datachain_opreturn_convert(txidbytes,&txlen,(void *)&zmsg,&opret);
             if ( opret.nBits >= GECKO_EASIESTDIFF )
                 threshold = bits256_from_compact(GECKO_EASIESTDIFF);
             else threshold = bits256_from_compact(opret.nBits);
-            msg.txn_count = 1;
+            zmsg.txn_count = 1;
             //n = iguana_serialize_block(virt->chain,&hash2,serialized,newblock);
-            datalen = iguana_rwblockhdr(1,0,serialized,&msg);
+            datalen = iguana_rwblockhdr(1,0,serialized,&zmsg);
             hash2 = iguana_calcblockhash(symbol,btcd->chain->hashalgo,serialized,datalen);
             for (i=0; i<datalen; i++)
                 printf("%02x",serialized[i]);
@@ -179,7 +179,7 @@ void datachain_events_processKOMODO(struct supernet_info *myinfo,struct datachai
                 init_hexbytes_noT(blockstr,serialized,datalen);
                 strcat(blockstr,"01"), datalen++;
                 init_hexbytes_noT(&blockstr[datalen << 1],txidbytes,txlen);
-                sprintf(argbuf,"{\"name\":\"%s\",\"symbol\":\"%s\",\"netmagic\":\"%s\",\"port\":%u,\"blocktime\":%u,\"pubval\":\"%02x\",\"p2shval\":\"%02x\",\"wifval\":\"%02x\",\"unitval\":\"%02x\",\"genesishash\":\"%s\",\"genesis\":{\"version\":1,\"timestamp\":%u,\"nBits\":\"%s\",\"nonce\":%d,\"merkle_root\":\"%s\"},\"genesisblock\":\"%s\"}",name,symbol,magicstr,opret.port,opret.blocktime,opret.pubval,opret.p2shval,opret.wifval,(opret.nBits >> 24) & 0xff,hashstr,opret.timestamp,nbitstr,opret.nonce,bits256_str(str2,msg.H.merkle_root),blockstr);
+                sprintf(argbuf,"{\"name\":\"%s\",\"symbol\":\"%s\",\"netmagic\":\"%s\",\"port\":%u,\"blocktime\":%u,\"pubval\":\"%02x\",\"p2shval\":\"%02x\",\"wifval\":\"%02x\",\"unitval\":\"%02x\",\"genesishash\":\"%s\",\"genesis\":{\"version\":1,\"timestamp\":%u,\"nBits\":\"%s\",\"nonce\":%d,\"merkle_root\":\"%s\"},\"genesisblock\":\"%s\"}",name,symbol,magicstr,opret.port,opret.blocktime,opret.pubval,opret.p2shval,opret.wifval,(opret.nBits >> 24) & 0xff,hashstr,opret.timestamp,nbitstr,opret.nonce,bits256_str(str2,zmsg.zH.merkle_root),blockstr);
                 if ( (valsobj= cJSON_Parse(argbuf)) != 0 )
                 {
                     printf("datachain.NEW (%s/%s port.%u blocktime.%d) issuer.%s (%s)\n",opret.symbol,opret.name,opret.port,opret.blocktime,issuer,jprint(valsobj,0));
