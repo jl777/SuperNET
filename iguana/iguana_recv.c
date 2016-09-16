@@ -1347,7 +1347,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                     }
                     if ( bundlei == i+1 && bp == firstbp )
                         match++;
-                    else
+                    else if ( 0 )
                     {
                         if ( bp != coin->current && i != coin->chain->bundlesize-1 )
                             fprintf(stderr,"recvhdr: ht.%d[%d] vs i.%d\n",bp->bundleheight,bundlei,i);
