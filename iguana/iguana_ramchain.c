@@ -341,8 +341,11 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
                     else
                     {
-                        //fflush(addr->voutsfp);
-                        //usleep(1000);
+                        if ( coin->chain->fixit != 0 )
+                        {
+                            fflush(addr->voutsfp);
+                            usleep(1000);
+                        }
                         addr->dirty[0]++;
                     }
 #ifdef __PNACL__
@@ -565,8 +568,11 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
             else
             {
                 addr->dirty[1]++;
-                //fflush(addr->vinsfp);
-                //usleep(1000);
+                if ( coin->chain->fixit != 0 )
+                {
+                    fflush(addr->vinsfp);
+                    usleep(1000);
+                }
             }
 #ifdef __PNACL__
             //portable_mutex_unlock(&mutex);
@@ -1047,7 +1053,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
             fpos = -1;
         } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,zcash);
         *rdata = tmp;
-        //fflush(fp);
+        fflush(fp);
         fclose(fp);
         //sleep(3);
     }
