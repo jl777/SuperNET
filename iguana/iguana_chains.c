@@ -342,6 +342,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         }
         chain->zcash = juint(argjson,"zcash");
         chain->debug = juint(argjson,"debug");
+        chain->fixit = juint(argjson,"fixit");
         if ( (chain->normal_txversion= juint(argjson,"normal_txversion")) == 0 )
             chain->normal_txversion = IGUANA_NORMAL_TXVERSION;
         if ( (chain->locktime_txversion= juint(argjson,"locktime_txversion")) == 0 )

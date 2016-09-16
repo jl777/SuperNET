@@ -55,7 +55,7 @@ struct iguana_chain
     char use_addmultisig,do_opreturn;
     int32_t estblocktime,protover;
     bits256 genesishash2,PoWtarget,PoStargets[16]; int32_t numPoStargets,PoSheights[16];
-    uint8_t zcash,auxpow,debug,havecltv,alertpubkey[65];
+    uint8_t zcash,fixit,auxpow,debug,havecltv,alertpubkey[65];
     uint16_t targetspacing,targettimespan; uint32_t nBits,normal_txversion,locktime_txversion;
 };
 

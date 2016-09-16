@@ -19107,3 +19107,50 @@ len = 0;
                 return(flag);
             }
 #endif
+            /*if ( (checklen= iguana_vinscriptdecode(coin,ramchain,&metalen,_script,&Kspace[rdata->scriptspace],Kspace,s)) != vinscriptlen || (vinscript != 0 && memcmp(_script,vinscript,vinscriptlen) != 0) )
+             {
+             static uint64_t counter;
+             if ( counter++ < 100 )
+             {
+             for (i=0; i<checklen; i++)
+             printf("%02x",_script[i]);
+             printf(" decoded\n");
+             for (i=0; i<vinscriptlen; i++)
+             printf("%02x",vinscript[i]);
+             printf(" vinscript\n");
+             printf("A addspend: vinscript expand error (%d vs %d) %d\n",checklen,vinscriptlen,vinscript!=0?memcmp(_script,vinscript,vinscriptlen):0);
+             }
+             }*/
+            //ramchain->H.scriptoffset += metalen;
+
+
+            /*static uint64_t good,bad;
+             if ( 0 && iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,0) < 0 )
+             {
+             static long errlen,err2len; char errbuf[1024];
+             errlen += vinscriptlen;
+             if ( iguana_metascript(coin,RAMCHAIN_ARG,s,vinscript,vinscriptlen,1) < 0 )
+             {
+             err2len += vinscriptlen;
+             errbuf[0] = 0;
+             for (i=0; i<vinscriptlen; i++)
+             sprintf(errbuf+strlen(errbuf),"%02x",vinscript[i]);
+             printf("%s <- second error with ",errbuf);
+             printf(" vinscript.%d errlens %ld %ld\n",vinscriptlen,errlen,err2len);
+             }
+             else if ( 0 && vinscriptlen > 138 )
+             {
+             errbuf[0] = 0;
+             for (i=0; i<vinscriptlen; i++)
+             sprintf(errbuf+strlen(errbuf),"%02x",vinscript[i]);
+             printf("%s bigscript ",errbuf);
+             }
+             bad += vinscriptlen;
+             } else good += vinscriptlen;
+             if ( 0 && (rand() % 100000) == 0 )
+             printf("good.%llu bad.%llu vinstats\n",(long long)good,(long long)bad);*/
+            //s->hdrsi = hdrsi;
+            //s->bundlei = bundlei;
+            //char str[65]; printf("%s set prevout.%d -> %d\n",bits256_str(str,prev_hash),prev_vout,s->prevout);
+            //if ( pkind != 0 )
+            //    s->prevspendind = A[pkind].lastspendind;
