@@ -118,7 +118,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         addr->pendtime = (uint32_t)time(NULL);
         if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
         {
-            if ( coin->RTheight == 0 && bp != coin->current && bp->issued[bundlei] > 1 && addr->pendtime < bp->issued[bundlei]+30 )
+            if ( coin->RTheight == 0 && bp != coin->current && bp->issued[bundlei] > 1 && addr->pendtime < bp->issued[bundlei]+7 )
                 return(0);
             bp->issued[bundlei] = addr->pendtime;
         }
@@ -1939,10 +1939,10 @@ int32_t iguana_reqhdrs(struct iguana_info *coin)
                 if ( (bp= coin->bundles[i]) != 0 && (bp == coin->current || bp->hdrsi == coin->blocks.hwmchain.height/coin->chain->bundlesize || i == coin->bundlescount-1 || bp->numhashes < bp->n) )
                 {
                     if ( bp == coin->current )
-                        lag = 7;
+                        lag = 5;
                     else if ( coin->current == 0 || bp->hdrsi > coin->current->hdrsi+coin->MAXBUNDLES )
                         continue;
-                    else lag = 17;
+                    else lag = 13;
                     if ( time(NULL) > bp->issuetime+lag )
                     {
                         if ( 0 && bp == coin->current )
