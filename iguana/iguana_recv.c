@@ -1354,12 +1354,9 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 }
             }
             prevhash2 = zblocks[i].RO.hash2;
-            char str[65],str2[65]; printf("%d bp.%p [%d] bundlei.%d %s prev.%s\n",i,bp,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,zblocks[i].RO.hash2),bits256_str(str2,zblocks[i].RO.prev_block));
-            //else if ( bp != firstbp )
-            //    printf("blockhash[%d] cant be found n.%d\n",i,n);
         }
         char str[65];
-        if ( 0 && bp == coin->current )
+        //if ( 0 && bp == coin->current )
             printf("i.%d n.%d match.%d blockhdrs.%s hdrsi.%d\n",i,n,match,bits256_str(str,zblocks[0].RO.hash2),firstbp!=0?firstbp->hdrsi:-1);
         if ( firstbp != 0 && match == coin->chain->bundlesize-1 && n == firstbp->n )
         {
