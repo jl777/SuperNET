@@ -1390,7 +1390,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 iguana_bundleQ(myinfo,coin,firstbp,1000);
             }
         }
-        if ( (addr= req->addr) != 0 && n >= coin->chain->bundlesize )
+        if ( firstbp != 0 && (addr= req->addr) != 0 && n >= coin->chain->bundlesize )
         {
             addr->RThashes[0] = firstbp->hashes[0];
             for (i=1; i<coin->chain->bundlesize; i++)
