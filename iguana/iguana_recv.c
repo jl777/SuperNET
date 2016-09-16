@@ -919,10 +919,29 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
                 return(-1);
         }
     }
-    req = iguana_bundlereq(coin,addr,'H',0,0);
-    req->blocks = zblocks, req->n = n;
-    HDRnet++;
-    queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+    i = 0;
+    if ( n >= 2*coin->chain->bundlesize+1 )
+    {
+        while ( n-i*coin->chain->bundlesize >= 2*coin->chain->bundlesize+1 )
+        {
+            req = iguana_bundlereq(coin,addr,'H',0,0);
+            req->blocks = mycalloc('r',coin->chain->bundlesize,sizeof(*zblocks));
+            memcpy(req->blocks,&zblocks[i++ * coin->chain->bundlesize],coin->chain->bundlesize * sizeof(*zblocks));
+            req->n = coin->chain->bundlesize;
+            HDRnet++;
+            queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+        }
+    }
+    else
+    {
+        req = iguana_bundlereq(coin,addr,'H',0,0);
+        req->blocks = zblocks, req->n = n;
+        HDRnet++;
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+        zblocks = 0;
+    }
+    if ( zblocks != 0 )
+        myfree(zblocks,sizeof(*zblocks)*n);
     return(0);
 }
 
