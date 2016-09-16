@@ -911,10 +911,13 @@ int32_t iguana_gotheadersM(struct iguana_info *coin,struct iguana_peer *addr,str
     }
     if ( strcmp("BTC",coin->symbol) != 0 && n == 2 )
         iguana_sendblockreqPT(coin,addr,0,-1,zblocks[1].RO.hash2,0);
-    for (i=0; i<coin->bundlescount; i++)
+    if ( 0 )
     {
-        if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(zblocks[1].RO.hash2,bp->hashes[1]) == 0 && bp->numhashes >= coin->chain->bundlesize )
-            return(-1);
+        for (i=0; i<coin->bundlescount; i++)
+        {
+            if ( (bp= coin->bundles[i]) != 0 && bits256_cmp(zblocks[1].RO.hash2,bp->hashes[1]) == 0 && bp->numhashes >= coin->chain->bundlesize )
+                return(-1);
+        }
     }
     req = iguana_bundlereq(coin,addr,'H',0,0);
     req->blocks = zblocks, req->n = n;
@@ -1351,7 +1354,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 }
             }
             prevhash2 = zblocks[i].RO.hash2;
-            //printf("%d bp.%p [%d] bundlei.%d %s prev.%s\n",i,bp,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,zblocks[i].RO.hash2),bits256_str(str2,zblocks[i].RO.prev_block));
+            char str[65],str2[65]; printf("%d bp.%p [%d] bundlei.%d %s prev.%s\n",i,bp,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,zblocks[i].RO.hash2),bits256_str(str2,zblocks[i].RO.prev_block));
             //else if ( bp != firstbp )
             //    printf("blockhash[%d] cant be found n.%d\n",i,n);
         }
