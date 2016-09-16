@@ -148,7 +148,8 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
             bits256_str(str2,*orighash2p), bits256_str(str3,newhash2);
             printf("WARNING iguana_hash2set overwrite %s [%s] %s with %s [%d:%d]\n",coin->symbol,debugstr,str2,str3,bp->hdrsi,bundlei);
         }
-        *orighash2p = newhash2;
+        //*orighash2p = newhash2;
+        return(-1);
     }
     if ( isinside != 0 )
     {
