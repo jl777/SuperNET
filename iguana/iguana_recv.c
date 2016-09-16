@@ -1374,12 +1374,13 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
         if ( i == n && i == match && firstbp == coin->current && (addr= req->addr) != 0 )
         {
             addr->RThashes[i] = firstbp->hashes[0];
-            for (i=1; i<n; i++)
+            for (i=1; i<coin->chain->bundlesize; i++)
             {
                 iguana_serialize_block(myinfo,coin->chain,&addr->RThashes[i],serialized,(struct iguana_block *)&zblocks[i]);
             }
-            //memcpy(addr->RThashes,blockhashes,bp->numspec * sizeof(*addr->RThashes));
             addr->numRThashes = n;
+            if ( iguana_allhashcmp(myinfo,coin,firstbp,addr->RThashes,coin->chain->bundlesize) > 0 )
+                return(req);
         }
     }
     return(req);
