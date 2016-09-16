@@ -984,7 +984,7 @@ uint32_t iguana_allhashcmp(struct supernet_info *myinfo,struct iguana_info *coin
     if ( bits256_nonz(bp->allhash) > 0 && num >= coin->chain->bundlesize && bp->emitfinish == 0 )
     {
         vcalc_sha256(0,allhash.bytes,blockhashes[0].bytes,coin->chain->bundlesize * sizeof(*blockhashes));
-        char str[65]; printf("allhashes.(%s)\n",bits256_str(str,allhash));
+        //char str[65]; printf("allhashes.(%s)\n",bits256_str(str,allhash));
         if ( memcmp(allhash.bytes,bp->allhash.bytes,sizeof(allhash)) == 0 )
         {
             if ( bp->bundleheight > 0 )
@@ -1401,7 +1401,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 iguana_serialize_block(myinfo,coin->chain,&addr->RThashes[i],serialized,(struct iguana_block *)&zblocks[i]);
             }
             addr->numRThashes = coin->chain->bundlesize;
-            printf("firstbp.[%d] call allhashes %s\n",firstbp->hdrsi,bits256_str(str,addr->RThashes[0]));
+            //printf("firstbp.[%d] call allhashes %s\n",firstbp->hdrsi,bits256_str(str,addr->RThashes[0]));
             if ( iguana_allhashcmp(myinfo,coin,firstbp,addr->RThashes,coin->chain->bundlesize) > 0 )
                 return(req);
         }
