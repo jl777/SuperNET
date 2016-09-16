@@ -1134,6 +1134,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
         {
             max = coin->blockspacesize;
             blockspace = calloc(1,max);
+            iguana_volatilespurge(coin,&bp->ramchain);
             iguana_volatilesmap(coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
