@@ -381,7 +381,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         free(unspents);
         return(0);
     }
-    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount));
+    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num)) != 0 )

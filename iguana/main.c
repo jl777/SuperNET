@@ -339,7 +339,12 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
 
 void iguana_exit(struct supernet_info *myinfo,struct iguana_bundle *bp)
 {
+    static int exiting;
     int32_t i,j,iter; struct iguana_info *coin,*tmp;
+    if ( exiting != 0 )
+        while ( 1 )
+            sleep(1);
+    exiting = 1;
     if ( myinfo == 0 )
         myinfo = SuperNET_MYINFO(0);
     printf("start EXIT\n");

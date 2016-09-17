@@ -538,15 +538,18 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
         printf("%s helperid.%d waiting for spendvectorsaved.%u v.%d u.%d b.%d vs max.%d\n",coin->symbol,helperid,coin->spendvectorsaved,iguana_validated(coin),iguana_utxofinished(coin),iguana_balancefinished(coin),max);
         sleep(2*IGUANA_NUMHELPERS+3);
     }*/
-    if ( helperid < incr )
+    if ( convertflag == 0 )
     {
-        for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
-            num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
-    }
-    while ( (n= iguana_convertfinished(coin)) < max )
-    {
-        //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
-        sleep(IGUANA_NUMHELPERS+3);
+        if ( helperid < incr )
+        {
+            for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+                num += iguana_helperB(coin,helperid,coin->bundles[hdrsi],convertflag);
+        }
+        while ( (n= iguana_convertfinished(coin)) < max )
+        {
+            //printf("helperid.%d convertfinished.%d vs max %d bundlescount.%d\n",helperid,n,max,coin->bundlescount);
+            sleep(IGUANA_NUMHELPERS+3);
+        }
     }
     if ( helperid == 0 )
     {
@@ -691,7 +694,7 @@ void iguana_helper(void *arg)
             if ( coin->firstRTheight == 0 )
             {
                 if ( coin->spendvectorsaved == 1 )
-                    iguana_utxogen(myinfo,coin,helperid,0);
+                    iguana_utxogen(myinfo,coin,helperid,1);
                 else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
                 {
                     //printf("%s spendvectorsaved.%u helperid.%d validate\n",coin->symbol,coin->spendvectorsaved,helperid);

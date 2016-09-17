@@ -255,7 +255,7 @@ int32_t iguana_bundleinitmap(struct supernet_info *myinfo,struct iguana_info *co
 
 void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t j,k,m,c,flag,bundlei,lastheight,height = -1; char checkstr[1024],line[1024];
+    int32_t j,k,m,c,flag,bundlei,lastheight,missing=0,height = -1; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
     if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && iter > 0 )
         return;
@@ -302,7 +302,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( (m < 8 || (rand() % 2) == 0) && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )
+            if ( m < coin->MAXPEERS/2 )
             {
                 if ( 0 && m == 0 )
                 {
@@ -312,12 +312,16 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
-                addr = &coin->peers->active[m++];
-                iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                //printf("call initpeer.(%s)\n",addr->ipaddr);
-                iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                //if ( (rand() % 2) == 0 )
+                {
+                    addr = &coin->peers->active[m++];
+                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
+                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                } //else
 #endif
             }
+            iguana_possible_peer(coin,line);
         }
         else
         {
@@ -374,6 +378,11 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             {
                                 if ( iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;
+                                else if ( missing++ > coin->MAXBUNDLES && strcmp("BTC",coin->symbol) == 0 )
+                                {
+                                    printf("missing.%d\n",missing);
+                                    break;
+                                }
                             }
                         }
                     }
