@@ -382,7 +382,7 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
 
 int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout)
 {
-    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t rmd160[20],pubkey33[33];
+    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384]; uint8_t rmd160[20],pubkey33[33];
     memset(outpt,0,sizeof(*outpt));
     outpt->txid = txid;
     outpt->vout = vout;
@@ -392,8 +392,9 @@ int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,
     outpt->value = u->value;
     memset(rmd160,0,sizeof(rmd160));
     memset(pubkey33,0,sizeof(pubkey33));
-    if ( iguana_scriptget(coin,scriptstr,0,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
+    if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
     {
+        printf("scriptstr.(%s)\n",scriptstr);
         outpt->spendlen = (int32_t)strlen(scriptstr) >> 1;
         if ( outpt->spendlen < sizeof(outpt->spendscript) )
             decode_hex(outpt->spendscript,outpt->spendlen,scriptstr);
@@ -993,8 +994,8 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
             jaddstr(vals,"coin",coin->symbol);
             jaddnum(vals,"history",1);
             jaddnum(vals,"firstheight",0);
-            jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
-            jaddnum(vals,"numrequired",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+            jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+            jaddnum(vals,"numrequired",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
             jadd(vals,"addresses",jduplicate(argarray));
             if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,"",1)) != 0 )
             {
