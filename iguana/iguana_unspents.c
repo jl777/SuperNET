@@ -392,7 +392,7 @@ int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,
     outpt->value = u->value;
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
     {
-        printf("scriptstr.(%s)\n",scriptstr);
+        //printf("scriptstr.(%s)\n",scriptstr);
         outpt->spendlen = (int32_t)strlen(scriptstr) >> 1;
         if ( outpt->spendlen < sizeof(outpt->spendscript) )
             decode_hex(outpt->spendscript,outpt->spendlen,scriptstr);
