@@ -167,7 +167,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jdelete(vals,"msgid");
         jaddnum(vals,"msgid",msgid);
     }
-    if ( RELAYID >= 0 )
+    if ( myinfo->NOTARY.RELAYID >= 0 )
     {
         channel = juint(vals,"channel");
         width = juint(vals,"width");
@@ -178,7 +178,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"sender"),hash);
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
@@ -189,7 +189,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             free(retstr);
     }
     if ( vals != 0 && juint(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+2));
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -203,7 +203,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
-        jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+2));
+        jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);
@@ -252,7 +252,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
     jaddnum(valsobj,"timeout",2500);
-    jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+    jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
     {

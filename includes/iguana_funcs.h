@@ -124,7 +124,7 @@ void iguana_coinargs(char *symbol,int64_t *maxrecvcachep,int32_t *minconfirmsp,i
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin);
 
 // init
-struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
+struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags);
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin);
 void iguana_initcoin(struct iguana_info *coin,cJSON *argjson);
 void iguana_coinloop(void *arg);
@@ -558,7 +558,7 @@ struct iguana_peer *iguana_peerfindipbits(struct iguana_info *coin,uint32_t ipbi
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *txids,int32_t num);
 int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t payment,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen);
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen);
-struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits);
+struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 
 void iguana_RTreset(struct iguana_info *coin);

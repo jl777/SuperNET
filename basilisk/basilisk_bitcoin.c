@@ -383,7 +383,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     int32_t i,height,vout,numsent; struct basilisk_item *ptr; char coinaddr[64],str[65]; struct basilisk_value *v; uint64_t value = 0; bits256 txid; struct iguana_outpoint outpt;
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
         return(0);
     txid = jbits256(valsobj,"txid");
     vout = jint(valsobj,"vout");
@@ -424,7 +424,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout,numrequired;
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
         return(0);
     if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
     {
@@ -516,7 +516,7 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
         return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
@@ -815,7 +815,7 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
         return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     //if ( coin == 0 )
     {
@@ -823,7 +823,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( coin != 0 )
     {
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
@@ -849,9 +849,9 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"numrequired") == 0 )
-        jaddnum(vals,"numrequired",NUMRELAYS);
+        jaddnum(vals,"numrequired",myinfo->NOTARY.NUMRELAYS);
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( coin != 0 )
     {
         //if ( juint(vals,"burn") == 0 )

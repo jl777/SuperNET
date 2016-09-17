@@ -63,6 +63,8 @@ HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
 
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);
+
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
 ZERO_ARGS(bitcoinrpc,getdifficulty);

@@ -515,9 +515,9 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->active = saved;
 }
 
-struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
+struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos; bits256 lastbundle; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos; bits256 lastbundle;
     /*if ( coin->peers == 0 )
     {
         printf("cant start privatechain directly\n");
@@ -540,7 +540,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
     if ( coin->virtualchain == 0 && coin->peers != 0 )
     {
-        if ( (coin->myservices & NODE_NETWORK) != 0 || (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) )
+        if ( myinfo->IAMNOTARY != 0 || (coin->myservices & NODE_NETWORK) != 0 || (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) )
         {
             if ( coin->peers->acceptloop == 0 && coin->peers->localaddr == 0 )
             {
@@ -553,7 +553,7 @@ struct iguana_info *iguana_coinstart(struct iguana_info *coin,int32_t initialhei
                 }
             }
         }
-        if ( coin->rpcloop == 0 )
+        if ( coin->rpcloop == 0 && strcmp(coin->chain->symbol,"NOTARY") != 0 )
         {
             myinfo->argport = coin->chain->rpcport;
             coin->rpcloop = malloc(sizeof(pthread_t));

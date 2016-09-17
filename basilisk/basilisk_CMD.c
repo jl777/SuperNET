@@ -24,25 +24,25 @@
     return(-1);
 }*/
 
-struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *btcd,uint32_t ipbits)
+struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits)
 {
     struct iguana_peer *addr; int32_t i;
-    if ( btcd == 0 )
+    if ( notaries == 0 )
         return(0);
-    if ( (addr= iguana_peerfindipbits(btcd,ipbits,0)) == 0 )
+    if ( (addr= iguana_peerfindipbits(notaries,ipbits,0)) == 0 )
     {
-        if ( (addr= iguana_peerslot(btcd,ipbits,0)) != 0 )
+        if ( (addr= iguana_peerslot(notaries,ipbits,0)) != 0 )
         {
             printf("launch peer for relay\n");
             addr->isrelay = 1;
-            RELAYID = -1;
-            for (i=0; i<NUMRELAYS; i++)
-                if ( RELAYS[i].ipbits == myinfo->myaddr.myipbits )
+            myinfo->NOTARY.RELAYID = -1;
+            for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+                if ( myinfo->NOTARY.RELAYS[i].ipbits == myinfo->myaddr.myipbits )
                 {
-                    RELAYID = i;
+                    myinfo->NOTARY.RELAYID = i;
                     break;
                 }
-            iguana_launch(btcd,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+            iguana_launch(notaries,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
     return(addr);
@@ -65,30 +65,30 @@ void basilisk_relay_remap(struct supernet_info *myinfo,struct basilisk_relay *rp
 {
     int32_t i; struct basilisk_relaystatus tmp[BASILISK_MAXRELAYS];
     // need to verify this works
-    for (i=0; i<NUMRELAYS; i++)
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
         tmp[i] = rp->reported[i];
-    for (i=0; i<NUMRELAYS; i++)
-        rp->reported[RELAYS[i].relayid] = tmp[RELAYS[i].oldrelayid];
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+        rp->reported[myinfo->NOTARY.RELAYS[i].relayid] = tmp[myinfo->NOTARY.RELAYS[i].oldrelayid];
 }
 
 void basilisk_setmyid(struct supernet_info *myinfo)
 {
-    int32_t i; char ipaddr[64]; struct iguana_info *btcd = iguana_coinfind("BTCD");
-    for (i=0; i<NUMRELAYS; i++)
+    int32_t i; char ipaddr[64]; struct iguana_info *notaries = iguana_coinfind("NOTARY");
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
-        expand_ipbits(ipaddr,RELAYS[i].ipbits);
-        if ( myinfo->myaddr.myipbits == RELAYS[i].ipbits )
-            RELAYID = i;
-        basilisk_ensurerelay(myinfo,btcd,RELAYS[i].ipbits);
+        expand_ipbits(ipaddr,myinfo->NOTARY.RELAYS[i].ipbits);
+        if ( myinfo->myaddr.myipbits == myinfo->NOTARY.RELAYS[i].ipbits )
+            myinfo->NOTARY.RELAYID = i;
+        basilisk_ensurerelay(myinfo,notaries,myinfo->NOTARY.RELAYS[i].ipbits);
     }
 }
 
 char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint32_t ipbits,bits256 pubkey)
 {
     int32_t i; struct basilisk_relay *rp;
-    for (i=0; i<NUMRELAYS; i++)
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
-        rp = &RELAYS[i];
+        rp = &myinfo->NOTARY.RELAYS[i];
         if ( ipbits == rp->ipbits )
         {
             if ( bits256_cmp(GENESIS_PUBKEY,pubkey) != 0 && bits256_nonz(pubkey) != 0 )
@@ -99,24 +99,24 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
             return(clonestr("{\"error\":\"relay already there\"}"));
         }
     }
-    if ( i >= sizeof(RELAYS)/sizeof(*RELAYS) )
-        i = (rand() % (sizeof(RELAYS)/sizeof(*RELAYS)));
+    if ( i >= sizeof(myinfo->NOTARY.RELAYS)/sizeof(*myinfo->NOTARY.RELAYS) )
+        i = (rand() % (sizeof(myinfo->NOTARY.RELAYS)/sizeof(*myinfo->NOTARY.RELAYS)));
     printf("add relay[%d] <- %x\n",i,ipbits);
-    for (i=0; i<NUMRELAYS; i++)
-        RELAYS[i].oldrelayid = i;
-    rp = &RELAYS[i];
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+        myinfo->NOTARY.RELAYS[i].oldrelayid = i;
+    rp = &myinfo->NOTARY.RELAYS[i];
     rp->ipbits = ipbits;
-    rp->relayid = NUMRELAYS;
-    basilisk_ensurerelay(myinfo,iguana_coinfind("BTCD"),rp->ipbits);
-    if ( NUMRELAYS < sizeof(RELAYS)/sizeof(*RELAYS) )
-        NUMRELAYS++;
-    qsort(RELAYS,NUMRELAYS,sizeof(RELAYS[0]),_increasing_ipbits);
-    for (i=0; i<NUMRELAYS; i++)
-        RELAYS[i].relayid = i;
+    rp->relayid = myinfo->NOTARY.NUMRELAYS;
+    basilisk_ensurerelay(myinfo,iguana_coinfind("NOTARY"),rp->ipbits);
+    if ( myinfo->NOTARY.NUMRELAYS < sizeof(myinfo->NOTARY.RELAYS)/sizeof(*myinfo->NOTARY.RELAYS) )
+        myinfo->NOTARY.NUMRELAYS++;
+    qsort(myinfo->NOTARY.RELAYS,myinfo->NOTARY.NUMRELAYS,sizeof(myinfo->NOTARY.RELAYS[0]),_increasing_ipbits);
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+        myinfo->NOTARY.RELAYS[i].relayid = i;
     basilisk_setmyid(myinfo);
-    printf("sorted MYRELAYID.%d\n",RELAYID);
-    for (i=0; i<NUMRELAYS; i++)
-        basilisk_relay_remap(myinfo,&RELAYS[i]);
+    printf("sorted MYRELAYID.%d\n",myinfo->NOTARY.RELAYID);
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+        basilisk_relay_remap(myinfo,&myinfo->NOTARY.RELAYS[i]);
     return(clonestr("{\"result\":\"relay added\"}"));
 }
 
@@ -253,6 +253,11 @@ char *basilisk_respond_getinfo(struct supernet_info *myinfo,char *CMD,void *addr
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr)
+{
+    return(basilisk_standardservice("VOT",myinfo,0,hash,vals,hexstr,0));
+}
 
 HASH_ARRAY_STRING(basilisk,addrelay,hash,vals,hexstr)
 {

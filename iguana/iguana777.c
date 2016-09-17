@@ -785,7 +785,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     }
     sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,symbol), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/%s/RT",GLOBAL_TMPDIR,coin->symbol), OS_ensure_directory(dirname);
-    iguana_coinstart(coin,coin->initialheight,coin->mapflags);
+    iguana_coinstart(myinfo,coin,coin->initialheight,coin->mapflags);
     coin->chain->minconfirms = coin->minconfirms;
     coin->started = coin;
     coin->startutc = (uint32_t)time(NULL);
@@ -846,7 +846,7 @@ void iguana_coinloop(void *arg)
                         if ( coin->MAXPEERS > IGUANA_MINPEERS )
                             coin->MAXPEERS = IGUANA_MINPEERS;
                     }
-                    if ( RELAYID < 0 )
+                    if ( myinfo->NOTARY.RELAYID < 0 )
                     {
                         if ( coin->bindsock >= 0 )
                         {

@@ -321,7 +321,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");
-        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 )
+        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"NOTARY") != 0 )
         {
             if ( chain->portp2p != 0 )
                 chain->rpcport = chain->portp2p-1;
@@ -504,7 +504,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
     if ( strcmp(chain->symbol,"BTC") == 0 )
         chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);
-    if ( chain->rpcport == 0 )
+    if ( chain->rpcport == 0 && strcmp(chain->symbol,"NOTARY") != 0 )
         chain->rpcport = chain->portp2p + 1;
 }
 
@@ -531,6 +531,8 @@ struct iguana_chain *iguana_chainfind(struct supernet_info *myinfo,char *name,cJ
         }
 	}
     chain = calloc(1,sizeof(*chain));
+    strcpy(chain->name,name);
+    strcpy(chain->symbol,name);
     iguana_chaininit(myinfo,chain,1,argjson);
     return(chain);
 }
