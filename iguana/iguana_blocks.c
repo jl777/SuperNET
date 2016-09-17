@@ -698,6 +698,12 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                             iguana_blockunmark(coin,block,bp,bundlei,0);
                             iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                         }
+                        else
+                        {
+                            bp->blocks[bundlei] = block;
+                            bp->hashes[bundlei] = block->RO.hash2;
+                            iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
+                        }
                         if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
