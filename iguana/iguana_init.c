@@ -312,7 +312,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
-                //if ( (rand() % 2) == 0 )
+                if ( (rand() % 2) == 0 )
                 {
                     addr = &coin->peers->active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
