@@ -271,7 +271,7 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
 {
     struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0; uint64_t alreadysent;
-    if ( btcd == 0 || myinfo->NOTARY.NUMRELAYS <= 0 )
+    if ( btcd == 0 || myinfo->NOTARY.NUMRELAYS <= 0 || myinfo->IAMNOTARY == 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);

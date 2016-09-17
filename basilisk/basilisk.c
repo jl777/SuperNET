@@ -228,7 +228,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             {
                 s = 0;
                 valid = (addr->supernet != 0);
-                if ( basilisk_notarycmd(type) != 0 )
+                if ( basilisk_notarycmd(type) != 0 && myinfo->IAMNOTARY != 0 )
                 {
                     valid = 0;
                     OS_randombytes((void *)&r2,sizeof(r2));
