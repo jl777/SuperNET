@@ -33,3 +33,7 @@ agents/*
 
 iguana/confs/BTC_hdrs.txt
 
+
+deprecated/.DS_Store
+
+.DS_Store
