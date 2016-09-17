@@ -380,6 +380,33 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
     else return(bundleheight);
 }
 
+int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout)
+{
+    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t rmd160[20],pubkey33[33];
+    memset(outpt,0,sizeof(*outpt));
+    outpt->txid = txid;
+    outpt->vout = vout;
+    outpt->hdrsi = hdrsi;
+    outpt->isptr = 0;
+    outpt->unspentind = unspentind;
+    outpt->value = u->value;
+    memset(rmd160,0,sizeof(rmd160));
+    memset(pubkey33,0,sizeof(pubkey33));
+    if ( iguana_scriptget(coin,scriptstr,0,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
+    {
+        outpt->spendlen = (int32_t)strlen(scriptstr) >> 1;
+        if ( outpt->spendlen < sizeof(outpt->spendscript) )
+            decode_hex(outpt->spendscript,outpt->spendlen,scriptstr);
+        else
+        {
+            outpt->spendlen = 0;
+            printf("error scriptstr.(%s) is too big for %d\n",scriptstr,(int32_t)sizeof(outpt->spendscript));
+            return(-1);
+        }
+    }
+    return(0);
+}
+
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20])
 {
     int64_t deposits,crypto777_payment; struct iguana_outpoint lastpt; uint32_t unspentind; int32_t i,j,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,p; struct iguana_unspent *U,*u; struct iguana_txid *T,*tx;
@@ -438,6 +465,13 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
                 outpt.vout = unspent->vout;
                 outpt.value = unspent->value;
                 outpt.hdrsi = unspent->height / coin->chain->bundlesize;
+                if ( (outpt.spendlen= unspent->scriptlen) > 0 && outpt.spendlen < sizeof(outpt.spendscript) )
+                    memcpy(outpt.spendscript,unspent->script,outpt.spendlen);
+                else
+                {
+                    printf("spendscript.%d doesnt fit into %d\n",outpt.spendlen,(int32_t)sizeof(outpt.spendscript));
+                    outpt.spendlen = 0;
+                }
                 if ( array != 0 )
                     jaddi(array,iguana_RTunspentjson(myinfo,coin,outpt,txid,unspent->vout,unspent->value,0,rmd160,coinaddr,pubkey33,spentheight,remoteaddr));
                 *depositsp += unspent->value;
@@ -495,13 +529,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         {
             //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
-            memset(&outpt,0,sizeof(outpt));
-            outpt.txid = T[U[unspentind].txidind].txid;
-            outpt.vout = unspentind - T[U[unspentind].txidind].firstvout;
-            outpt.hdrsi = lastpt.hdrsi;
-            outpt.isptr = 0;
-            outpt.unspentind = unspentind;
-            outpt.value = U[unspentind].value;
+            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout);
             RTspend = 0;
             if ( iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
             {

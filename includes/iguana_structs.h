@@ -183,7 +183,7 @@ struct iguana_packet { struct queueitem DL; struct iguana_peer *addr; struct tai
 
 struct msgcounts { uint32_t version,verack,getaddr,addr,inv,getdata,notfound,getblocks,getheaders,headers,tx,block,mempool,ping,pong,reject,filterload,filteradd,filterclear,merkleblock,alert; };
 
-struct iguana_fileitem { bits256 hash2; struct iguana_txdatabits txdatabits; };
+//struct iguana_fileitem { bits256 hash2; struct iguana_txdatabits txdatabits; };
 
 struct iguana_kvitem { UT_hash_handle hh; uint8_t keyvalue[]; }PACKEDSTRUCT;
 
@@ -349,7 +349,7 @@ struct iguana_peer
     struct msgcounts msgcounts;
     struct OS_memspace RAWMEM,TXDATA,HASHMEM;
     struct iguana_ramchain ramchain;
-    struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
+    //struct iguana_fileitem *filehash2; int32_t numfilehash2,maxfilehash2;
     FILE *voutsfp,*vinsfp;
     uint8_t *blockspace;//[IGUANA_MAXPACKETSIZE + 8192];
 #ifdef IGUANA_PEERALLOC
@@ -391,7 +391,7 @@ struct iguana_bundlereq
 {
     struct queueitem DL; struct iguana_info *coin; int32_t type;
     struct iguana_peer *addr; struct iguana_zblock *blocks; bits256 *hashes,txid;
-    struct iguana_txdatabits txdatabits;
+    //struct iguana_txdatabits txdatabits;
     struct iguana_msghdr H;
     int32_t allocsize,datalen,n,recvlen,numtx; uint32_t ipbits;
     struct iguana_zblock zblock;

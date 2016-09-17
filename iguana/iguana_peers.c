@@ -1188,7 +1188,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     ipbits = (uint32_t)addr->ipbits;
     vcalc_sha256(0,addr->iphash.bytes,(uint8_t *)&ipbits,sizeof(ipbits));
     //char str[65]; printf("start dedicatedloop.%s addrind.%d %s\n",addr->ipaddr,addr->addrind,bits256_str(str,addr->iphash));
-    addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
+    //addr->maxfilehash2 = IGUANA_MAXFILEITEMS;
     bufsize = IGUANA_MAXPACKETSIZE;
     if ( addr->blockspace == 0 )
         addr->blockspace = mycalloc('r',1,bufsize + 8192);
@@ -1311,8 +1311,8 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     }
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
-    if ( addr->filehash2 != 0 )
-        myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2)), addr->filehash2 = 0;
+    //if ( addr->filehash2 != 0 )
+    //    myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2)), addr->filehash2 = 0;
     if ( 0 )
     {
         iguana_mempurge(&addr->RAWMEM);
