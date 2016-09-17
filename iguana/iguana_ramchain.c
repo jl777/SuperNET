@@ -341,9 +341,9 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
                         printf("error writing vout scriptlen.%d errno.%d or scriptpos.%lld != %u\n",scriptlen,errno,(long long)scriptpos,u->scriptpos);
                     else
                     {
+                        fflush(addr->voutsfp);
                         if ( coin->chain->fixit != 0 )
                         {
-                            fflush(addr->voutsfp);
                             usleep(1000);
                         }
                         addr->dirty[0]++;
@@ -568,9 +568,9 @@ uint32_t iguana_ramchain_addspend256(struct iguana_info *coin,struct iguana_peer
             else
             {
                 addr->dirty[1]++;
+                fflush(addr->vinsfp);
                 if ( coin->chain->fixit != 0 )
                 {
-                    fflush(addr->vinsfp);
                     usleep(1000);
                 }
             }
@@ -1286,7 +1286,6 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
             for (i=0; i<bp->n; i++)
                 iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
         }
-        iguana_ramchain_free(coin,&bp->ramchain,1);
         if ( iguana_bundlefname(coin,bp,fname) == 0 )
             OS_removefile(fname,0);
         sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
@@ -1294,6 +1293,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
         sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         bp->utxofinish = bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = 0;
+        //iguana_ramchain_free(coin,&bp->ramchain,1);
         return(0);
     }
     return(-1);
@@ -1902,9 +1902,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
                     ramchain->H.ROflag = 0;
                     flag = 1;
-                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 ) //
+                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
                         fflush(addr->voutsfp);
-                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 ) //addr->dirty[1] != 0 &&
+                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
                         fflush(addr->vinsfp);
                     memset(&R,0,sizeof(R));
                     if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(coin,fname,0,1,&R,0,(uint32_t)addr->ipbits,block->RO.hash2,block->RO.prev_block,bundlei,fpos,1,0)) == 0 )
@@ -2013,7 +2013,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     }
     if ( deletefile != 0 && block != 0 )
         iguana_blockdelete(coin,block->RO.hash2,i);
-    if ( height > 0 && height < coin->blocks.hwmchain.height )
+    if ( coin->RTheight > 0 && height > 0 && height < coin->blocks.hwmchain.height )
     {
         printf("reduce HWM height from %d to %d\n",coin->blocks.hwmchain.height,height);
         if ( (block= iguana_blockfind("unmark",coin,iguana_blockhash(coin,height))) != 0 )
