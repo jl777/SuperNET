@@ -316,11 +316,12 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                 {
                     addr = &coin->peers->active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    printf("call initpeer.(%s)\n",addr->ipaddr);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-                } //else iguana_possible_peer(coin,line);
+                } //else
 #endif
             }
+            iguana_possible_peer(coin,line);
         }
         else
         {
