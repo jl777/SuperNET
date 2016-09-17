@@ -562,7 +562,9 @@ char *iguana_scriptget(struct iguana_info *coin,char *scriptstr,char *asmstr,int
 {
     int32_t scriptlen; uint8_t script[IGUANA_MAXSCRIPTSIZE]; struct vin_info V,*vp = &V;
     memset(vp,0,sizeof(*vp));
-    scriptstr[0] = asmstr[0] = 0;
+    scriptstr[0] = 0;
+    if ( asmstr != 0 )
+        asmstr[0] = 0;
     if ( pubkey33 != 0 && bitcoin_pubkeylen(pubkey33) > 0 )
         memcpy(vp->signers[0].pubkey,pubkey33,33);
     scriptlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,script,asmstr,rmd160,type,(const struct vin_info *)vp,vout);
