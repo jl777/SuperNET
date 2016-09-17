@@ -367,14 +367,14 @@ void gecko_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct ig
     }
     if ( virt->blocks.hwmchain.height < virt->longestchain-1 )
         return;
-    if ( (virt->blocks.hwmchain.height % myinfo->NOTARY.NUMRELAYS) != myinfo->NOTARY.RELAYID )
+    if ( myinfo->IAMNOTARY != 0 && (virt->blocks.hwmchain.height % myinfo->NOTARY.NUMRELAYS) != myinfo->NOTARY.RELAYID )
     {
         //if ( NUMRELAYS < 3 )
         //    return;
         gap = (int32_t)(time(NULL) - virt->blocks.hwmchain.RO.timestamp) / 60;//virt->chain->estblocktime;
         for (i=0; i<gap; i++)
         {
-            if ( ((virt->blocks.hwmchain.height+i) % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
+            if ( myinfo->IAMNOTARY != 0 && ((virt->blocks.hwmchain.height+i) % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
                 break;
         }
         if ( i == gap )

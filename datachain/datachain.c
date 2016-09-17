@@ -20,7 +20,7 @@ uint32_t datachain_checkpoint(struct supernet_info *myinfo,struct iguana_info *c
 {
     char str[65],str2[65]; struct iguana_info *btc = iguana_coinfind("BTC");
     printf("datachain_checkpoint.%s for %s.%u to %u lastheight.%d %s\n",bits256_str(str,merkle),coin->symbol,lastcheckpoint,timestamp,lastheight,bits256_str(str2,lasthash2));
-    if ( (lastheight % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
+    if ( myinfo->IAMNOTARY != 0 && (lastheight % myinfo->NOTARY.NUMRELAYS) == myinfo->NOTARY.RELAYID )
     {
         // if designated relay, submit checkpoint -> add ip/relayid to opreturn
         //
