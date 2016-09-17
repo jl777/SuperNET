@@ -380,9 +380,9 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
     else return(bundleheight);
 }
 
-int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout)
+int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout,uint8_t *rmd160,uint8_t *pubkey33)
 {
-    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384]; uint8_t rmd160[20],pubkey33[33];
+    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384]; 
     memset(outpt,0,sizeof(*outpt));
     outpt->txid = txid;
     outpt->vout = vout;
@@ -530,7 +530,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         {
             //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
-            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout);
+            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout,p->rmd160,pubkey33);
             RTspend = 0;
             if ( iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
             {
