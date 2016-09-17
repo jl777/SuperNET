@@ -789,43 +789,46 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
     }
-    if ( block == 0 )
-        block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
-    if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
-    {
-        block->hdrsi = bp->hdrsi;
-        block->bundlei = bundlei;
-    }
-    if ( bp->blocks[bundlei] == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
+    /*if ( block == 0 )
+     block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
+     if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
+     {
+     block->hdrsi = bp->hdrsi;
+     block->bundlei = bundlei;
+     }*/
+    if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
     {
         //printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
         //iguana_hash2set(coin,"noblock",bp,bundlei,origtxdata->zblock.RO.hash2);
         bp->hashes[bundlei] = origtxdata->zblock.RO.hash2;
         if ( bp->speculative != 0 )
             bp->speculative[bundlei] = bp->hashes[bundlei];
-        bp->blocks[bundlei] = block;
+        //bp->blocks[bundlei] = block;
     }
     numtx = origtxdata->zblock.RO.txn_count;
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
     //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
-    block->txvalid = 1;
-    if ( block->fpipbits != 0 && block->fpos >= 0 )
+    if ( block != 0 )
     {
-        static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
-        char str[65],str2[65];
-        numredundant++, redundantsize += recvlen;
-        if ( time(NULL) > lastdisp+30 )
+        block->txvalid = 1;
+        if ( block->fpipbits != 0 && block->fpos >= 0 )
         {
-            lastdisp = (uint32_t)time(NULL);
-            printf("%s have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",coin->symbol,bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+            static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
+            char str[65],str2[65];
+            numredundant++, redundantsize += recvlen;
+            if ( time(NULL) > lastdisp+30 )
+            {
+                lastdisp = (uint32_t)time(NULL);
+                printf("%s have %d:%d at %d | %d blocks %s redundant xfers total %s %.2f%% wasted\n",coin->symbol,bp->hdrsi,bundlei,block->fpos,numredundant,mbstr(str,redundantsize),mbstr(str2,totalrecv),100.*redundantsize/totalrecv);
+            }
+            if ( bundlei > 1 )
+            {
+                // printf("DUP s.%d [%d:%d].(%s) %s n%d\n",numsaved,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr,addr->pendblocks);
+            }
+            req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+            queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+            return;
         }
-        if ( bundlei > 1 )
-        {
-            // printf("DUP s.%d [%d:%d].(%s) %s n%d\n",numsaved,bp!=0?bp->hdrsi:-1,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr,addr->pendblocks);
-        }
-        req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
-        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-        return;
     }
     txdata = origtxdata;
     if ( iguana_ramchain_data(coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
