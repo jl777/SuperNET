@@ -1984,20 +1984,26 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
 
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
-    void *ptr; int32_t recvlen;
+    void *ptr; int32_t recvlen,height = -1;
     if ( 0 && bp != 0 )
         printf("UNMARK.[%d:%d]\n",bp->hdrsi,i);
     if ( block != 0 )
     {
+        height = block->height;
         block->queued = 0;
         block->fpipbits = 0;
         block->fpos = -1;
         block->txvalid = 0;
         block->issued = 0;
+        block->mainchain = 0;
     }
     if ( bp != 0 && i >= 0 && i < bp->n )
     {
+        if ( height < 0 || bp->bundleheight+i < height )
+            height = bp->bundleheight+i;
         bp->issued[i] = 0;
+        bp->blocks[i] = 0;
+        memset(&bp->hashes[i],0,sizeof(bp->hashes[i]));
         if ( (ptr= bp->speculativecache[i]) != 0 )
         {
             memcpy(&recvlen,ptr,sizeof(recvlen));
@@ -2007,6 +2013,12 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     }
     if ( deletefile != 0 && block != 0 )
         iguana_blockdelete(coin,block->RO.hash2,i);
+    if ( height > 0 && height < coin->blocks.hwmchain.height )
+    {
+        printf("reduce HWM height from %d to %d\n",coin->blocks.hwmchain.height,height);
+        if ( (block= iguana_blockfind("unmark",coin,iguana_blockhash(coin,height))) != 0 )
+            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
+    }
 }
 
 int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs,long *filesizes,struct iguana_bundle *bp)

@@ -807,7 +807,12 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 }
                 else
                 {
-                    printf("missing RTaddblock at i.%d RTheight.%d vs %p %d\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1);
+                    char str[65];
+                    if ( addblock != 0 )
+                        bits256_str(str,addblock->RO.hash2);
+                    else str[0] = 0;
+                    printf("mismatched RTaddblock at i.%d RTheight.%d vs %p %d %s\n",i,coin->RTheight,addblock,addblock!=0?addblock->height:-1,str);
+                    iguana_blockunmark(coin,addblock,bp,bundlei,0);
                     break;
                 }
             }
