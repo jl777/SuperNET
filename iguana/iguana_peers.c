@@ -436,12 +436,14 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
                 return(-1);
             }
         }
+#ifdef __APPLE__
         timeout.tv_sec = 0;
         timeout.tv_usec = 1000000;
-        //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
         timeout.tv_sec = 0;
         timeout.tv_usec = 1000000;
-        //setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
+        setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
+#endif
         if ( listen(sock,64) != 0 )
         {
             printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
