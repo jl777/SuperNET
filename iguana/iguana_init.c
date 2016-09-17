@@ -302,7 +302,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( (rand() % 2) == 0 && m < coin->MAXPEERS/2 )
+            if ( m < coin->MAXPEERS/2 )
             {
                 if ( 0 && m == 0 )
                 {
@@ -312,10 +312,13 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
-                addr = &coin->peers->active[m++];
-                iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
-                //printf("call initpeer.(%s)\n",addr->ipaddr);
-                iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                //if ( (rand() % 2) == 0 )
+                {
+                    addr = &coin->peers->active[m++];
+                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(line));
+                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+                } //else iguana_possible_peer(coin,line);
 #endif
             }
         }

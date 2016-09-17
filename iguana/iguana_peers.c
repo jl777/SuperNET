@@ -392,6 +392,8 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             timeout.tv_sec = 0;
             timeout.tv_usec = 30000;
             setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 10000;
             setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
         }
         opt = 0;
@@ -506,14 +508,13 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
                 //sleep(1);
                 //continue;
             }
-            printf("send errno.%d %s\n",errno,strerror(errno));
-            if ( errno != EAGAIN && errno != EWOULDBLOCK )
+            //if ( errno != EAGAIN && errno != EWOULDBLOCK )
             {
                 printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",serialized+4,addr->ipaddr,numsent,remains,len,errno,strerror(errno),addr->usock);
                 printf("bad errno.%d %s zombify.%p\n",errno,strerror(errno),&addr->dead);
                 addr->dead = (uint32_t)time(NULL);
                 return(-errno);
-            } //else usleep(*sleeptimep), *sleeptimep *= 1.1;
+            }
         }
         else if ( remains > 0 )
         {
