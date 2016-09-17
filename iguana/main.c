@@ -80,7 +80,7 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
         printf("SuperNET_MYINFO: generate session keypair\n");
-        RELAYID = -1;
+        MYINFO.NOTARY.RELAYID = -1;
     }
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);
@@ -1340,7 +1340,7 @@ STRING_ARG(SuperNET,priv2wif,priv)
 STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();
-    RELAYID = -1;
+    myinfo->NOTARY.RELAYID = -1;
     if ( myinfo->ipaddr[0] == 0 )
     {
         if ( is_ipaddr(ipaddr) != 0 )
@@ -1351,10 +1351,10 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
         }
     }
     jaddstr(retjson,"result",myinfo->ipaddr);
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
-        jaddnum(retjson,"relayid",RELAYID);
-        jaddnum(retjson,"numrelays",NUMRELAYS);
+        jaddnum(retjson,"relayid",myinfo->NOTARY.RELAYID);
+        jaddnum(retjson,"numrelays",myinfo->NOTARY.NUMRELAYS);
     }
     return(jprint(retjson,1));
 }
@@ -1546,7 +1546,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 void iguana_relays_init(struct supernet_info *myinfo)
 {
-    static char *ipaddrs[] = { "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
+    static char *ipaddrs[] = { "78.47.196.146", "5.9.102.210" };//"89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
     char *str; int32_t i;
     for (i=0; i<sizeof(ipaddrs)/sizeof(*ipaddrs); i++)
         if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddrs[i]),GENESIS_PUBKEY)) != 0 )
@@ -1568,8 +1568,17 @@ void iguana_main(void *arg)
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
-    if ( arg != 0 && strcmp((char *)arg,"OStests") == 0 )
-        do_OStests = 1;
+    myinfo->rpcport = IGUANA_RPCPORT;
+    if ( arg != 0 )
+    {
+        if ( strcmp((char *)arg,"OStests") == 0 )
+            do_OStests = 1;
+        else if ( strcmp((char *)arg,"notary") == 0 )
+        {
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+        }
+    }
 #ifdef IGUANA_OSTESTS
     do_OStests = 1;
 #endif
@@ -1580,7 +1589,6 @@ void iguana_main(void *arg)
         printf("OStests retval %d\n",retval);
         return;
     }
-    myinfo->rpcport = IGUANA_RPCPORT;
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
 #if LIQUIDITY_PROVIDER

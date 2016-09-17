@@ -247,7 +247,7 @@ struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint
     int32_t j; struct basilisk_relay *relay = 0;
     if ( (j= basilisk_relayid(myinfo,senderipbits)) >= 0 )
     {
-        relay = &RELAYS[j];
+        relay = &myinfo->NOTARY.RELAYS[j];
         if ( numrequests > relay->maxrequests )
         {
             relay->maxrequests = numrequests;
@@ -284,14 +284,14 @@ static int _cmp_requests(const void *a,const void *b)
 struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,int32_t *nump,uint8_t *space,int32_t spacesize)
 {
     int32_t i,j,n,k,m; struct basilisk_relay *relay; struct basilisk_request *requests,*rp;
-    for (j=m=0; j<NUMRELAYS; j++)
-        m += RELAYS[j].numrequests;
+    for (j=m=0; j<myinfo->NOTARY.NUMRELAYS; j++)
+        m += myinfo->NOTARY.RELAYS[j].numrequests;
     if ( m*sizeof(*requests) <= spacesize )
         requests = (void *)space;
     else requests = calloc(m,sizeof(*requests));
-    for (j=m=0; j<NUMRELAYS; j++)
+    for (j=m=0; j<myinfo->NOTARY.NUMRELAYS; j++)
     {
-        relay = &RELAYS[j];
+        relay = &myinfo->NOTARY.RELAYS[j];
         if ( (n= relay->numrequests) > 0 )
         {
             for (i=0; i<n; i++)
@@ -471,7 +471,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
         {
             printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
-            if ( RELAYID >= 0 )
+            if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
                 R.relaybits = myinfo->myaddr.myipbits;
             if ( (reqjson= basilisk_requestjson(&R)) != 0 )
                 free_json(reqjson);

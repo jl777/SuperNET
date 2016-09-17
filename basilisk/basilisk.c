@@ -17,7 +17,7 @@
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
-int32_t basilisk_specialcmd(char *cmd)
+int32_t basilisk_notarycmd(char *cmd)
 {
     //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&
     if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
@@ -149,7 +149,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
 {
     int32_t i,l,s,valid,val,n=0,retval = -1; char cmd[12]; struct iguana_info *coin,*tmp; struct iguana_peer *addr; bits256 hash; uint32_t *alreadysent,r,r2;
     if ( fanout <= 0 )
-        fanout = sqrt(NUMRELAYS) + 1;
+        fanout = sqrt(myinfo->NOTARY.NUMRELAYS) + 1;
     else if ( fanout > BASILISK_MAXFANOUT )
         fanout = BASILISK_MAXFANOUT;
     if ( type == 0 )
@@ -205,7 +205,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         }
         return(-1);
     }
-    if ( basilisk_specialcmd(type) != 0 && NUMRELAYS == 0 )
+    if ( basilisk_notarycmd(type) != 0 && myinfo->NOTARY.NUMRELAYS == 0 )
         return(-1);
     //portable_mutex_lock(&myinfo->allcoins_mutex);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
@@ -228,19 +228,19 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             {
                 s = 0;
                 valid = (addr->supernet != 0);
-                if ( basilisk_specialcmd(type) != 0 )
+                if ( basilisk_notarycmd(type) != 0 )
                 {
                     valid = 0;
                     OS_randombytes((void *)&r2,sizeof(r2));
-                    if ( (r2 % NUMRELAYS) >= sqrt(NUMRELAYS) )
+                    if ( (r2 % myinfo->NOTARY.NUMRELAYS) >= sqrt(myinfo->NOTARY.NUMRELAYS) )
                     {
                         //printf("fanout.%d s.%d n.%d skip %s\n",fanout,s,n,addr->ipaddr);
                         continue;
                     }
-                    for (s=0; s<NUMRELAYS; s++)
-                        if ( addr->ipbits != myinfo->myaddr.myipbits && RELAYS[s].ipbits == addr->ipbits )
+                    for (s=0; s<myinfo->NOTARY.NUMRELAYS; s++)
+                        if ( addr->ipbits != myinfo->myaddr.myipbits && myinfo->NOTARY.RELAYS[s].ipbits == addr->ipbits )
                             break;
-                    if ( s == NUMRELAYS )
+                    if ( s == myinfo->NOTARY.NUMRELAYS )
                     {
                         //printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
@@ -394,7 +394,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     }
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
-    minfanout = sqrt(NUMRELAYS)+1;
+    minfanout = sqrt(myinfo->NOTARY.NUMRELAYS)+1;
     if ( minfanout < 5 )
         minfanout = 5;
     if ( jobj(valsobj,"fanout") == 0 )
@@ -403,7 +403,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     if ( fanout < minfanout )
         fanout = minfanout;
     if ( (numrequired= jint(valsobj,"numrequired")) <= 0 )
-        numrequired = MAX(fanout,sqrt(NUMRELAYS)+1);
+        numrequired = MAX(fanout,sqrt(myinfo->NOTARY.NUMRELAYS)+1);
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )
@@ -424,7 +424,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_addr,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
     uint32_t nBits = 0; uint8_t space[4096],*allocptr=0,*data = 0; struct basilisk_item *ptr; int32_t datalen = 0; cJSON *retjson; char *retstr=0;
-    if ( RELAYID >= 0 && basilisk_specialcmd(CMD) == 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 && basilisk_notarycmd(CMD) == 0 )
         return(clonestr("{\"error\":\"unsupported special relay command\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
 //printf("request.(%s)\n",jprint(valsobj,0));
@@ -456,8 +456,8 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
 int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 {
     int32_t j;
-    for (j=0; j<NUMRELAYS; j++)
-        if ( RELAYS[j].ipbits == ipbits )
+    for (j=0; j<myinfo->NOTARY.NUMRELAYS; j++)
+        if ( myinfo->NOTARY.RELAYS[j].ipbits == ipbits )
             return(j);
     return(-1);
 }
@@ -473,6 +473,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_swap.c"
 #include "basilisk_DEX.c"
 #include "basilisk_ping.c"
+#include "basilisk_vote.c"
 #include "basilisk_CMD.c"
 
 void basilisk_functions(struct iguana_info *coin,int32_t protocol)
@@ -625,7 +626,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"OUT", &basilisk_respond_OUT },       // send MSG to hash/id/num
         { (void *)"MSG", &basilisk_respond_MSG },       // get MSG (hash, id, num)
         { (void *)"ADD", &basilisk_respond_addrelay },  // relays register with each other bus
+        { (void *)"VOT", &basilisk_respond_VOT },       // VOTE handler for something
         //{ (void *)"PIN", &basilisk_respond_PIN },
+        
+        
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
         { (void *)"BOX", &basilisk_respond_mailbox },    // create/send/check mailbox pubkey
@@ -666,12 +670,11 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         CMD[i] = toupper((int32_t)CMD[i]);
         cmd[i] = tolower((int32_t)CMD[i]);
     }
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 )//RELAYID >= 0 )
     {
-        if ( basilisk_specialcmd(CMD) == 0 )
+        if ( basilisk_notarycmd(CMD) == 0 )
             return;
-    }
-    else if ( basilisk_specialcmd(CMD) != 0 )
+    } else if ( basilisk_notarycmd(CMD) != 0 )
         return;
     symbol = "BTCD";
     if ( senderipbits == 0 )
@@ -729,7 +732,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         hash = jbits256(valsobj,"hash");
         timeoutmillis = jint(valsobj,"timeout");
         if ( (numrequired= jint(valsobj,"numrequired")) == 0 )
-            numrequired = sqrt(NUMRELAYS)+1;
+            numrequired = sqrt(myinfo->NOTARY.NUMRELAYS)+1;
         if ( senderipbits != 0 )
             expand_ipbits(remoteaddr,senderipbits);
         else remoteaddr[0] = 0;
@@ -737,7 +740,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
             {
-                if ( coin->FULLNODE != 0 || RELAYID >= 0 ) // iguana node
+                if ( coin->FULLNODE != 0 || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
                 {
                     //printf("FULL.%d RELAYID.%d NUMRELAYS.%d services %s\n",coin->FULLNODE,RELAYID,NUMRELAYS,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
@@ -777,7 +780,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     else ipbits = myinfo->myaddr.myipbits;
     if ( type[0] == 'P' && type[1] == 'I' && type[2] == 'N' )
     {
-        if ( strcmp(type,"PIN") == 0 && RELAYID >= 0 )
+        if ( strcmp(type,"PIN") == 0 && myinfo->NOTARY.RELAYID >= 0 )
         {
             basilisk_ping_process(myinfo,_addr,ipbits,data,datalen);
         }
@@ -787,8 +790,8 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
         //int32_t i; for (i=0; i<datalen-len; i++)
         //    printf("%02x",data[len+i]);
-        if ( RELAYID >= 0 )
-            printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",RELAYID,datalen,type,senderip!=0?senderip:"?",basilisktag);
+        if ( myinfo->NOTARY.RELAYID >= 0 )
+            printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,datalen,type,senderip!=0?senderip:"?",basilisktag);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
     }
     if ( ptr != 0 )
@@ -865,7 +868,7 @@ void basilisks_loop(void *arg)
                 }
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            if ( RELAYID >= 0 )
+            if ( myinfo->NOTARY.RELAYID >= 0 )
             {
                 basilisk_ping_send(myinfo,btcd);
             }
@@ -883,7 +886,7 @@ void basilisks_loop(void *arg)
                 }
             }
         }
-        if ( RELAYID < 0 && myinfo->expiration != 0 )
+        if ( myinfo->NOTARY.RELAYID < 0 && myinfo->expiration != 0 )
             basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
@@ -898,7 +901,7 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->messagemutex);
-        if ( RELAYID >= 0 )
+        if ( myinfo->NOTARY.RELAYID >= 0 )
             usleep(100000);
         else usleep(3000000);
     }
@@ -925,7 +928,7 @@ void basilisks_init(struct supernet_info *myinfo)
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
 {
     char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
-    if ( RELAYID >= 0 )
+    if ( myinfo->NOTARY.RELAYID >= 0 )
         return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     if ( vals == 0 )
         return(clonestr("{\"error\":\"need vals object\"}"));
@@ -934,7 +937,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
     if ( jobj(vals,"history") == 0 )
         jaddnum(vals,"history",3);
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(NUMRELAYS)+1));
+        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",juint(vals,"fanout"));
     if ( jobj(vals,"addresses") == 0 )

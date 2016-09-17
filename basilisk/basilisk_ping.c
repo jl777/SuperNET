@@ -212,9 +212,9 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     int32_t diff,i,n,len = 0; struct iguana_info *btcd; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint16_t sn; uint32_t now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
     btcd = iguana_coinfind("BTCD");
-    for (i=0; i<NUMRELAYS; i++)
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
-        rp = &RELAYS[i];
+        rp = &myinfo->NOTARY.RELAYS[i];
         rp->direct.pingdelay = 0;
         if ( rp->ipbits == senderipbits )
             rp->lastping = now;
@@ -231,7 +231,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     //len += basilisk_ping_processvirts(myinfo,btcd,addr,&data[len],datalen - len);
     for (i=0; i<numrelays; i++)
     {
-        rp = &RELAYS[i];
+        rp = &myinfo->NOTARY.RELAYS[i];
         if ( len > datalen )
             break;
         if ( (n= basilisk_ping_processrelay(myinfo,&data[len],datalen-len,rp,i)) < 0 )
@@ -253,10 +253,10 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
 {
     int32_t i,datalen = 0;
-    data[datalen++] = NUMRELAYS;
+    data[datalen++] = myinfo->NOTARY.NUMRELAYS;
     //datalen += basilisk_ping_genvirts(myinfo,&data[datalen],maxlen - datalen);
-    for (i=0; i<NUMRELAYS; i++)
-        datalen += basilisk_ping_genrelay(myinfo,&data[datalen],maxlen - datalen,&RELAYS[i]);
+    for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
+        datalen += basilisk_ping_genrelay(myinfo,&data[datalen],maxlen - datalen,&myinfo->NOTARY.RELAYS[i]);
     //datalen += basilisk_ping_genDEX(myinfo,&data[datalen],maxlen - datalen);
     datalen += basilisk_ping_genMSG(myinfo,&data[datalen],maxlen - datalen);
     //for (i=0; i<datalen; i++)
@@ -271,25 +271,25 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
 {
     struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0; uint64_t alreadysent;
-    if ( btcd == 0 || NUMRELAYS <= 0 )
+    if ( btcd == 0 || myinfo->NOTARY.NUMRELAYS <= 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
-    incr = sqrt(NUMRELAYS) + 1;
+    incr = sqrt(myinfo->NOTARY.NUMRELAYS) + 1;
     for (alreadysent=j=0; j<=incr; j++)
     {
         OS_randombytes((void *)&r,sizeof(r));
-        i = (j == 0) ? RELAYID : (r % NUMRELAYS);
-        if ( j != 0 && i == RELAYID )
-            i = (RELAYID + 1) % NUMRELAYS;
+        i = (j == 0) ? myinfo->NOTARY.RELAYID : (r % myinfo->NOTARY.NUMRELAYS);
+        if ( j != 0 && i == myinfo->NOTARY.RELAYID )
+            i = (myinfo->NOTARY.RELAYID + 1) % myinfo->NOTARY.NUMRELAYS;
         if ( (((uint64_t)1 << i) & alreadysent) != 0 )
         {
             j--;
             continue;
         }
         alreadysent |= ((uint64_t)1 << i);
-        rp = &RELAYS[i];
+        rp = &myinfo->NOTARY.RELAYS[i];
         addr = 0;
         expand_ipbits(ipaddr,rp->ipbits);
         if ( rp->ipbits == myinfo->myaddr.myipbits )

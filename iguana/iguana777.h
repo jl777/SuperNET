@@ -63,6 +63,12 @@ struct supernet_address
 struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
 struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
 
+struct komodo_notaries
+{
+    struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
+    int32_t NUMRELAYS,RELAYID;
+};
+
 struct supernet_info
 {
     struct supernet_address myaddr;
@@ -70,7 +76,7 @@ struct supernet_info
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
-    int32_t maxdelay,IAMRELAY,IAMLP,publicRPC,basilisk_busy,genesisresults;
+    int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults;
     uint32_t expiration,dirty,DEXactive,DEXpoll;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
@@ -87,6 +93,7 @@ struct supernet_info
     struct basilisk_spend *spends; int32_t numspends;
     struct peggy_info *PEGS;
     struct liquidity_info linfos[64];
+    struct komodo_notaries NOTARY;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
