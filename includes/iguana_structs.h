@@ -272,7 +272,7 @@ struct iguana_spend256 { bits256 prevhash2; uint64_t scriptpos:48,vinscriptlen:1
 // permanent readonly structs
 struct iguana_txid { bits256 txid; uint64_t txidind:29,firstvout:28,firstvin:28,bundlei:11,locktime:32,version:32,timestamp:32,extraoffset:32; uint16_t numvouts,numvins; }PACKEDSTRUCT;
 
-struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:11,type:5; int16_t vout; }PACKEDSTRUCT;
+struct iguana_unspent { uint64_t value; uint32_t txidind,pkind,prevunspentind,scriptpos; uint16_t scriptlen,hdrsi; uint16_t fileid:IGUANA_LOG2MAXPEERS+1,type:5; int16_t vout; }PACKEDSTRUCT;
 
 struct iguana_spend { uint64_t scriptpos:48,scriptlen:16; uint32_t spendtxidind,sequenceid; int16_t prevout; uint16_t fileid:15,external:1; }PACKEDSTRUCT; // numsigs:4,numpubkeys:4,p2sh:1,sighash:4
 
