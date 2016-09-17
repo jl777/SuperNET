@@ -374,6 +374,8 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             {
                                 if ( iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;
+                                else if ( strcmp("BTC",coin->symbol) == 0 )
+                                    break;
                             }
                         }
                     }
