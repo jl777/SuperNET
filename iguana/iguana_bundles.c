@@ -1409,21 +1409,6 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             }
         }
     }
-    //printf("lastbp.[%d]\n",lastpending!=0?lastpending->hdrsi:-1);
-    /*if ( m > 0 )
-    {
-        revsortds(sortbuf,m,sizeof(*sortbuf)*2);
-        for (i=0; i<m; i++)
-        {
-            if ( (bp= coin->bundles[(int32_t)sortbuf[i*2 + 1]]) != 0 )
-            {
-                bp->rank = i + 1;
-                if ( coin->peers.numranked > 0 && i < coin->peers.numranked && (addr= coin->peers.ranked[i]) != 0 )
-                    addr->bp = bp;
-            }
-        }
-    }
-    free(sortbuf);*/
     coin->numremain = n;
     coin->blocksrecv = numrecv;
     uint64_t tmp; int32_t diff,p = 0; struct tai difft,t = tai_now();
