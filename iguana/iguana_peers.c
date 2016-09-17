@@ -399,6 +399,9 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 #endif
     if ( bindflag == 0 )
     {
+        timeout.tv_sec = 10;
+        timeout.tv_usec = 0;
+        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
         result = connect(sock,(struct sockaddr *)&saddr,addrlen);
         if ( result != 0 )
         {
