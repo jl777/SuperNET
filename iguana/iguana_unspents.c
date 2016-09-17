@@ -390,8 +390,6 @@ int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,
     outpt->isptr = 0;
     outpt->unspentind = unspentind;
     outpt->value = u->value;
-    memset(rmd160,0,sizeof(rmd160));
-    memset(pubkey33,0,sizeof(pubkey33));
     if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
     {
         printf("scriptstr.(%s)\n",scriptstr);
