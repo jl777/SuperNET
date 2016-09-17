@@ -1998,6 +1998,8 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     if ( bp != 0 && i >= 0 && i < bp->n )
     {
         bp->issued[i] = 0;
+        bp->blocks[i] = 0;
+        memset(&bp->hashes[i],0,sizeof(bp->hashes[i]));
         if ( (ptr= bp->speculativecache[i]) != 0 )
         {
             memcpy(&recvlen,ptr,sizeof(recvlen));
