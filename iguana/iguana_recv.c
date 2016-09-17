@@ -871,7 +871,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
                 //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
         }
-    } else printf("nonz fpos.%d %s\n",txdata->zblock.fpos,bits256_str(str,origtxdata->zblock.RO.hash2));
+    } //else printf("nonz fpos.%d %s\n",txdata->zblock.fpos,bits256_str(str,origtxdata->zblock.RO.hash2));
 }
 
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n)
