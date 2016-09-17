@@ -392,6 +392,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             timeout.tv_sec = 0;
             timeout.tv_usec = 30000;
             setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+            setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
         }
         opt = 0;
         getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);

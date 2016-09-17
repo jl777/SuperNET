@@ -374,7 +374,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             {
                                 if ( iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;
-                                else if ( missing++ > coin->MAXBUNDLES )
+                                else if ( missing++ > coin->MAXBUNDLES && strcmp("BTC",coin->symbol) == 0 )
                                 {
                                     printf("missing.%d\n",missing);
                                     break;
