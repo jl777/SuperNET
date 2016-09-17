@@ -898,7 +898,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 printf("%s possible peer.(%s) %x already there\n",coin->symbol,ipaddr,(uint32_t)coin->peers->active[i].ipbits);
                 return(0);
             }
-        printf("%s Q possible.(%s)\n",coin->symbol,ipaddr);
+        //printf("%s Q possible.(%s)\n",coin->symbol,ipaddr);
         queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
         return((uint32_t)time(NULL));
     }
@@ -934,7 +934,7 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 ipaddr[i] = 0;
                 break;
             }
-        printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
+        //printf("%s check possible peer.(%s)\n",coin->symbol,ipaddr);
         if ( (ipbits= calc_ipbits(ipaddr)) != 0 )
         {
             expand_ipbits(checkaddr,ipbits);
