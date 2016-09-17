@@ -769,7 +769,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
                 origtxdata->zblock.RO.recvlen = 0;
                 printf("gotblockM2: error finding block %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
                 return;
-            } else printf("getblockM autoextended.[%d]\n",bp->hdrsi);
+            } //else printf("getblockM autoextended.[%d]\n",bp->hdrsi);
         }
     }
     if ( bp == 0 )
