@@ -502,8 +502,9 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
         {
             if ( errno == EAGAIN )
             {
-                sleep(1);
-                continue;
+                addr->persistent_peer = 1;
+                //sleep(1);
+                //continue;
             }
             printf("send errno.%d %s\n",errno,strerror(errno));
             if ( errno != EAGAIN && errno != EWOULDBLOCK )

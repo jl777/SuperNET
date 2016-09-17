@@ -302,7 +302,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         //printf("parse line.(%s) maxpeers.%d\n",line,coin->MAXPEERS);
         if ( iter == 0 )
         {
-            if ( (m < 8 || (rand() % 2) == 0) && (m < 32 || m < coin->MAXPEERS/2) )//&& m < 77.7 )
+            if ( (rand() % 2) == 0 && m < coin->MAXPEERS/2 )
             {
                 if ( 0 && m == 0 )
                 {
