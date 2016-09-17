@@ -1411,6 +1411,8 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    if ( wif == 0 )
+        return(clonestr("{\"error\":\"missing wif\"}"));
     myinfo->expiration++;
     if ( account == 0 || account[0] == 0 )
         account = "default";
