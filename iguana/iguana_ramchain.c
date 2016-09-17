@@ -1820,9 +1820,9 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
 {
     int32_t verifyflag = 0;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,sigsize,subdir,firsti=1,err,flag,bundlei; uint32_t scriptspace,stackspace; struct iguana_blockRO RO;
-    if ( bp == 0 || addr == 0 || (bundlei= block->bundlei) < 0 )
+    if ( block == 0 || bp == 0 || addr == 0 || (block != 0 && (bundlei= block->bundlei) < 0) )
     {
-        printf("iguana_ramchain_data: null ptr %p %p %p\n",block,bp,addr);
+        //printf("iguana_ramchain_data: null ptr %p %p %p\n",block,bp,addr);
         return(-1);
     }
 #ifdef __PNACL__
