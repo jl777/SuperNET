@@ -1149,7 +1149,9 @@ void iguana_mainchain_clear(struct supernet_info *myinfo,struct iguana_info *coi
             iguana_RTnewblock(myinfo,coin,tmp);
             bits256_str(str,tmp->RO.hash2);
             if ( tmp->mainchain == 0 )
-                printf("%s iguana_mainchain_clear: ORPHANED ht.%d %s\n",coin->symbol,tmp->height,str);
+            {
+                // printf("%s iguana_mainchain_clear: ORPHANED ht.%d %s\n",coin->symbol,tmp->height,str);
+            }
             else if ( tmp->height != height )
                 printf("iguana_mainchain_clear: unexpected ht.%d vs %d %s\n",tmp->height,height,str);
             else
