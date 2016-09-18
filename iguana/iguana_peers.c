@@ -447,14 +447,14 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
             return(-1);
         }
     }
-//#ifdef __APPLE__
+#ifdef __APPLE__
     timeout.tv_sec = 0;
     timeout.tv_usec = 30000;
     setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
     timeout.tv_sec = 0;
     timeout.tv_usec = 10000;
     setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
-//#endif
+#endif
     return(sock);
 }
 
