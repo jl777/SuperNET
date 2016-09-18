@@ -176,7 +176,7 @@ int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin
         }
         coin->peers->numranked = n;
         portable_mutex_unlock(&coin->peers_mutex);
-        printf("peer metrics NUMRANKED.%d\n",n);
+        //printf("peer metrics NUMRANKED.%d\n",n);
         if ( i > 0 )
         {
             coin->peers->avemetric = (sum / i);
