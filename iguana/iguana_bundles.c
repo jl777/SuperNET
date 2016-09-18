@@ -615,7 +615,7 @@ struct iguana_block *iguana_bundleblock(struct iguana_info *coin,bits256 *hash2p
 
 int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t priority,double mult)
 {
-    int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr; struct iguana_block *block;
+    int32_t i,max,nonz,starti,lasti,firsti,lag,num,n=0; uint32_t now; bits256 hash2; double aveduration; struct iguana_peer *addr; //struct iguana_block *block;
     if ( coin->peers == 0 )
     {
         printf("%s has no peers\n",coin->symbol);
@@ -690,7 +690,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         }
         if ( firsti >= 0 )//&& bp == coin->current )
         {
-            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
+            //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
@@ -699,7 +699,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     //if ( bp == coin->current )
                       //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                     n++;
-                    printf("send reqPT [%d:%d]\n",bp->hdrsi,firsti);
+                    //printf("send reqPT [%d:%d]\n",bp->hdrsi,firsti);
                     iguana_sendblockreqPT(coin,0,bp,firsti,hash2,0);
                 }
             } else printf("no hash for [%d:%d]\n",bp->hdrsi,firsti);

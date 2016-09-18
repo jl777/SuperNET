@@ -747,7 +747,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         bp = 0, bundlei = -2;
         if ( iguana_bundlefind(coin,&bp,&bundlei,origtxdata->zblock.RO.prev_block) == 0 )
         {
-            //printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+            printf("gotblockM: RTblock? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
             numtx = origtxdata->zblock.RO.txn_count;
             iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
             req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
@@ -774,6 +774,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     if ( bp == 0 )
     {
+        printf("gotblockM no bp %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
@@ -787,6 +788,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     {
         req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+        printf("negative speculative return %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
     /*if ( block == 0 )
@@ -807,7 +809,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     numtx = origtxdata->zblock.RO.txn_count;
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
-    //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
+    printf("getblockM update [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),block);
     if ( block != 0 )
     {
         if ( block->height < 0 )
