@@ -152,7 +152,7 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
     struct iguana_bundle *bp; uint32_t txidind;
     if ( i >= 0 && i < block->RO.txn_count )
     {
-        if ( block->height >= 0 )
+        if ( block->height >= 0 && block->bundlei >= 0 && block->bundlei < coin->chain->bundlesize )
         {
             if ( (bp= coin->bundles[block->hdrsi]) != 0 )
             {
@@ -164,7 +164,7 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
                     return(0);
                 } else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
-        } else printf("%s blocktx illegal height.%d\n",coin->symbol,block->height);
+        } else printf("%s blocktx illegal height.%d or [%d:%d]\n",coin->symbol,block->height,block->hdrsi,block->bundlei);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
     return(0);
 }
@@ -178,19 +178,13 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         version = tx->version;
         locktime = tx->locktime;
         timestamp = tx->timestamp;
+        numvins = tx->numvins;
+        numvouts = tx->numvouts;
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(version),&version);
     if ( coin->chain->isPoS != 0 )
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(timestamp),&timestamp);
-    if ( rwflag == 0 )
-    {
-        tx->version = version;
-        tx->timestamp = timestamp;
-    }
-    numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
-    if ( rwflag == 0 )
-        tx->numvins = numvins;
     memset(&vin,0,sizeof(vin));
     for (i=0; i<numvins; i++)
     {
@@ -212,8 +206,6 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         return(0);
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
-    if ( rwflag == 0 )
-        tx->numvouts = numvouts;
     for (i=0; i<numvouts; i++)
     {
         if ( vouts == 0 )
@@ -237,7 +229,13 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(locktime),&locktime);
     if ( rwflag == 0 )
+    {
+        tx->version = version;
+        tx->timestamp = timestamp;
+        tx->numvins = numvins;
+        tx->numvouts = numvouts;
         tx->locktime = locktime;
+    }
     *txidp = bits256_doublesha256(txidstr,serialized,len);
     if ( memcmp(txidp,tx->txid.bytes,sizeof(*txidp)) != 0 )
     {
@@ -276,6 +274,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
             {
                 if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
                 {
+                    printf("txi.%d i.%d o.%d %s\n",i,T.numvins,T.numvouts,bits256_str(str,T.txid));
                     if ( (len= iguana_ramtxbytes(coin,&blockspace[sizeof(struct iguana_msghdr) + total],max - total,&checktxid,tx,block->height,0,0,validatesigs)) > 0 )//&& bits256_cmp(checktxid,T.txid) == 0 )
                         total += len;
                     else
