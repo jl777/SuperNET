@@ -684,8 +684,9 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
                     bp->issued[i] = 1;
                     n++;
+                    char str[65];
                     if ( bp == coin->current )
-                        printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
+                        printf("%s issuemissing.[%d:%d]\n",bits256_str(str,hash2),bp->hdrsi,i);
                } //else printf("[z%d] ",i);
             } //else printf("%d ",now - (bp->issued[i]+lag));
         }
