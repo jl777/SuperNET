@@ -382,11 +382,7 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
 
 int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout,uint8_t *rmd160,uint8_t *pubkey33)
 {
-<<<<<<< HEAD
-    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384]; 
-=======
     char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384];
->>>>>>> master
     memset(outpt,0,sizeof(*outpt));
     outpt->txid = txid;
     outpt->vout = vout;
