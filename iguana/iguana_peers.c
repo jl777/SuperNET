@@ -393,7 +393,7 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
         //printf("keepalive.%d\n",opt);
     }
     setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
-#ifndef __APPLE__
+#ifdef __APPLE__
     setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
 #endif
 #endif
