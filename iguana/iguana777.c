@@ -712,7 +712,7 @@ void iguana_helper(void *arg)
                         {
                             if ( bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
                                 iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB);
-                            if ( bp->emitfinish != 0 )
+                            if ( bp->emitfinish != 0 && time(NULL) > bp->emitfinish+60 )
                             {
                                 if ( bp->validated == 0 )
                                     iguana_bundlevalidate(myinfo,coin,bp,1);
