@@ -2087,7 +2087,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         {
             if ( bp->emitfinish != 0 )
                 return(0);
-            if ( coin->RTheight == 0 && bp->issued[bundlei] > 0 )
+            if ( bp != coin->current && coin->RTheight == 0 && bp->issued[bundlei] > 0 )
                 return(0);
         }
         if ( priority != 0 )
