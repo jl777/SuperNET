@@ -80,7 +80,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     checkbp = 0, j = -2;
     if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n && checkbp != coin->current )
     {
-        if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0 && coin->RTheight == 0) )
+        if ( checkbp->utxofinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0 && coin->RTheight == 0) )
             return(0);
     }
     if ( checkbp != bp || j != bundlei )
@@ -127,7 +127,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         iguana_send(coin,addr,serialized,len);
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->current == bp )
+        if ( coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
