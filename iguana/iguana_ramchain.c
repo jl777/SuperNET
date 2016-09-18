@@ -2332,12 +2332,12 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                         //_iguana_chainlink(coin,block); //wrong context
                     }
                     prev2 = prev, prev = block;
-                    printf("%p.%d ",block,block->RO.txn_count);
+                    //printf("%p.%d ",block,block->RO.txn_count);
                     firsttxidind += block->RO.txn_count;
                 }
             }
         }
-        printf("mapped bundle.[%d] numtxn.%d\n",bp->hdrsi,firsttxidind);
+        //printf("mapped bundle.[%d] numtxn.%d\n",bp->hdrsi,firsttxidind);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         iguana_bundlecalcs(myinfo,coin,bp,60);
     }
