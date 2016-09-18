@@ -665,7 +665,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
 void iguana_helper(void *arg)
 {
     static uint64_t helperidbits;
-    cJSON *argjson=0; int32_t iter,n,i,j,numpeers,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,n,i,j,retval,numpeers,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     helperid %= 64;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
@@ -724,7 +724,23 @@ void iguana_helper(void *arg)
                                         if ( coin->bundles[i] == 0 || coin->bundles[i]->validated <= 1 )
                                             break;
                                     if ( i == j )
+                                    {
                                         iguana_bundlevalidate(myinfo,coin,bp,0);
+                                        if ( bp->validated > 1 )
+                                        {
+                                            for (i=0; i<j; i++)
+                                                if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
+                                                    break;
+                                            if ( bp->utxofinish == 0 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
+                                            {
+                                                if ( retval > 0 )
+                                                {
+                                                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                                                    bp->utxofinish = (uint32_t)time(NULL);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
