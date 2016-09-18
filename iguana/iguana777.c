@@ -340,7 +340,7 @@ int32_t iguana_utxofinished(struct iguana_info *coin)
     struct iguana_bundle *bp; int32_t i,n = 0;
     for (i=0; i<coin->bundlescount-1; i++)
     {
-        if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish > 1 )
+        if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish > 1 )
             n++;
     }
     return(n);
@@ -391,14 +391,14 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( iguana_bundlevalidate(myinfo,coin,bp,0) == bp->n ) //
     {
         retval = 0;
-        if ( bp->utxofinish > 1 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
+        if ( bp->emitfinish > 1 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 )
         {
             if ( retval > 0 )
             {
                 printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
                 num++;
             }
-            bp->utxofinish = (uint32_t)time(NULL);
+            bp->emitfinish = (uint32_t)time(NULL);
         } else printf("UTXO gen.[%d] utxo error\n",bp->hdrsi);
     }
     else
@@ -712,8 +712,11 @@ void iguana_helper(void *arg)
                         {
                             if ( bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
                                 iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB);
-                            if ( bp->utxofinish != 0 && bp->validated == 0 )
-                                iguana_bundlevalidate(myinfo,coin,bp,1);
+                            if ( bp->emitfinish != 0 )
+                            {
+                                if ( bp->validated == 0 )
+                                    iguana_bundlevalidate(myinfo,coin,bp,1);
+                            }
                         }
                     }
                  }

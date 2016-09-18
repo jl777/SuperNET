@@ -506,7 +506,7 @@ void iguana_oldgotblockM(struct supernet_info *myinfo,struct iguana_info *coin,s
     {
         numtx = origtxdata->zblock.RO.txn_count;
         for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
+            if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish <= 1 )
                 break;
         if ( (i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2) || coin->RTheight > 0 )
         {
@@ -676,7 +676,7 @@ void iguana_RTgotblock(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
     if ( coin->almostRT == 0 )
     {
         for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
+            if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish <= 1 )
                 break;
         if ( (i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2) || coin->RTheight > 0 )
             coin->almostRT = 1;
