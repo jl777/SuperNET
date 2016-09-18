@@ -1024,7 +1024,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         printf("ramchainsave no data ptr\n");
         return(-1);
     }
-    if ( (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?GLOBAL_DBDIR:GLOBAL_TMPDIR,fname,ipbits,hash2,prevhash2,ramchain->numblocks,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
+    if ( (bundlei >= 0 && (checki= iguana_peerfname(coin,&hdrsi,ipbits==0?GLOBAL_DBDIR:GLOBAL_TMPDIR,fname,ipbits,hash2,prevhash2,ramchain->numblocks,1)) != bundlei) || bundlei >= coin->chain->bundlesize )
     {
         printf(" wont save.(%s) bundlei.%d != checki.%d\n",fname,bundlei,checki);
         return(-1);
@@ -1280,14 +1280,15 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
     struct iguana_bundle *bp; int32_t i; char fname[1024],str[65];
     if ( hdrsi >= 0 && hdrsi < coin->bundlescount && (bp= coin->bundles[hdrsi]) != 0 )
     {
+        iguana_volatilespurge(coin,&bp->ramchain);
         printf("%s delete bundle.[%d]\n",coin->symbol,hdrsi);
+        if ( iguana_bundlefname(coin,bp,fname) == 0 )
+            OS_removefile(fname,0);
         if ( tmpfiles != 0 )
         {
             for (i=0; i<bp->n; i++)
                 iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
         }
-        if ( iguana_bundlefname(coin,bp,fname) == 0 )
-            OS_removefile(fname,0);
         sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
@@ -2031,9 +2032,9 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     }
     if ( deletefile != 0 && block != 0 )
         iguana_blockdelete(coin,block->RO.hash2,i);
-    if ( coin->RTheight > 0 && height > 0 && height < coin->blocks.hwmchain.height )
+    if ( 0 && coin->RTheight > 0 && height > 0 && height < coin->blocks.hwmchain.height )
     {
-        printf("reduce HWM height from %d to %d\n",coin->blocks.hwmchain.height,height);
+        printf("reduce %s HWM height from %d to %d\n",coin->symbol,coin->blocks.hwmchain.height,height);
         if ( (block= iguana_blockfind("unmark",coin,iguana_blockhash(coin,height))) != 0 )
             iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
     }

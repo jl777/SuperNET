@@ -47,12 +47,12 @@ void *OS_nonportable_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,l
 #include <tlhelp32.h>
 #include <time.h>
 
-#include <intrin.h>
+/*#include <intrin.h>
 static uint32_t __inline __builtin_clzll(uint64_t x) {
     unsigned long r = 0;
     _BitScanReverse64(&r, x);
     return (63-r);
-}
+}*/
 
 void usleep(int32_t micros)
 {

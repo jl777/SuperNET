@@ -214,8 +214,8 @@ struct iguana_zblockRO
 } PACKEDSTRUCT;
 
 #define iguana_blockfields      double PoW; \
-int32_t height,fpos; uint32_t fpipbits,issued,lag:18,sigsvalid:1,protected:1,peerid:12; \
-uint16_t hdrsi:15,mainchain:1,bundlei:11,valid:1,queued:1,txvalid:1,newtx:1,processed:1; \
+int32_t height,fpos; uint32_t fpipbits,issued,lag:17,sigsvalid:1,protected:1,peerid:12,processed:1; \
+uint16_t hdrsi:15,mainchain:1; int16_t bundlei:12,valid:1,queued:1,txvalid:1,newtx:1; \
 UT_hash_handle hh; struct iguana_bundlereq *req; \
 struct iguana_blockRO RO
 
