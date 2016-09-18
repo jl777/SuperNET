@@ -156,13 +156,13 @@ struct iguana_txid *iguana_blocktx(struct iguana_info *coin,struct iguana_txid *
         {
             if ( (bp= coin->bundles[block->hdrsi]) != 0 )
             {
-                if ( (txidind= block->RO.firsttxidind) > 0 )
+                if ( (txidind= block->RO.firsttxidind) == bp->firsttxidinds[block->bundlei] )
                 {
                     if ( iguana_bundletx(coin,bp,block->bundlei,tx,txidind+i) == tx )
                         return(tx);
                     printf("error getting txidind.%d + i.%d from hdrsi.%d\n",txidind,i,block->hdrsi);
                     return(0);
-                } else printf("iguana_blocktx null txidind [%d:%d] i.%d\n",block->hdrsi,block->bundlei,i);
+                } else printf("iguana_blocktx null txidind [%d:%d] i.%d txidind.%d vs %d\n",block->hdrsi,block->bundlei,i,txidind,bp->firsttxidinds[block->bundlei]);
             } else printf("iguana_blocktx no bp.[%d]\n",block->hdrsi);
         } else printf("%s blocktx illegal height.%d or [%d:%d]\n",coin->symbol,block->height,block->hdrsi,block->bundlei);
     } else printf("i.%d vs txn_count.%d\n",i,block->RO.txn_count);
@@ -274,7 +274,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
             {
                 if ( (tx= iguana_blocktx(coin,&T,block,i)) != 0 )
                 {
-                    printf("txi.%d i.%d o.%d %s\n",i,T.numvins,T.numvouts,bits256_str(str,T.txid));
+                    //printf("ht.%d [%d:%d] txi.%d i.%d o.%d %s\n",block->height,block->hdrsi,block->bundlei,i,tx->numvins,tx->numvouts,bits256_str(str,tx->txid));
                     if ( (len= iguana_ramtxbytes(coin,&blockspace[sizeof(struct iguana_msghdr) + total],max - total,&checktxid,tx,block->height,0,0,validatesigs)) > 0 )//&& bits256_cmp(checktxid,T.txid) == 0 )
                         total += len;
                     else

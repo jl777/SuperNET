@@ -2279,7 +2279,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
 {
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
-    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata;
+    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata; uint32_t firsttxidind;
     if ( bp->emitfinish > 1 )
         return(ramchain);
     memset(ramchain,0,sizeof(*ramchain));
@@ -2293,6 +2293,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
             B = RAMCHAIN_PTR(rdata,Boffset);
             T = RAMCHAIN_PTR(rdata,Toffset);
             prev = prev2 = 0;
+            firsttxidind = 1;
             for (i=0; i<bp->n; i++)
             {
                 if ( (block= bp->blocks[i]) != 0 || (block= iguana_blockhashset("bundleload",coin,bp->bundleheight+i,bp->hashes[i],1)) != 0 )
@@ -2304,6 +2305,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                     }
                     block->queued = 1;
                     block->txvalid = 1;
+                    block->RO.firsttxidind = firsttxidind;
                     block->height = bp->bundleheight + i;
                     //printf("bundleload bundlei.%d < height %d %d\n",i,block->height,i);
                     block->hdrsi = bp->hdrsi;
@@ -2311,8 +2313,10 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                     block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
                     iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,B,i);
                     //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
-                    iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
                     bp->blocks[i] = block;
+                    bp->hashes[i] = block->RO.hash2;
+                    bp->firsttxidinds[i] = firsttxidind;
+                    iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
                     if ( (prev= block->hh.prev) != 0 )
                     {
                         prev2 = prev->hh.prev;
@@ -2328,6 +2332,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                         //_iguana_chainlink(coin,block); //wrong context
                     }
                     prev2 = prev, prev = block;
+                    firsttxidind += block->RO.txn_count;
                 }
             }
         }
