@@ -625,7 +625,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
     lasti = coin->lastpending == 0 ? coin->bundlescount-1 : coin->lastpending->hdrsi;
     if ( bp->hdrsi < starti || bp->hdrsi > lasti || bp->emitfinish != 0 )//|| ((priority > 0 || bp == coin->current) && time(NULL) < bp->missingstime+3) )
     {
-        //printf("bp->hdrsi %d < %d starti || bp->hdrsi %d  > %d lasti || bp->emitfinish %d != 0\n",bp->hdrsi,starti,bp->hdrsi,lasti,bp->emitfinish);
+        printf("bp->hdrsi %d < %d starti || bp->hdrsi %d  > %d lasti || bp->emitfinish %d != 0\n",bp->hdrsi,starti,bp->hdrsi,lasti,bp->emitfinish);
         return(0);
     }
     bp->missingstime = (uint32_t)time(NULL);
@@ -657,10 +657,10 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         lasti = firsti = -1;
         for (i=nonz=0; i<bp->n; i++)
         {
-            if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 && block->mainchain != 0 )
-                continue;
-            //if ( GETBIT(bp->haveblock,i) != 0 )
+            //if ( (block= bp->blocks[i]) != 0 && block->txvalid != 0 && block->mainchain != 0 )
             //    continue;
+            if ( GETBIT(bp->haveblock,i) != 0 )
+                continue;
             nonz++;
             if ( firsti < 0 )
                 firsti = i;
@@ -690,7 +690,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
         }
         if ( firsti >= 0 )//&& bp == coin->current )
         {
-            //printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
+            printf("[%d] first missing.%d of %d\n",bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
             {
@@ -699,9 +699,10 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     //if ( bp == coin->current )
                       //  printf("iguana_bundleissuemissing.[%d:%d]\n",bp->hdrsi,i);
                     n++;
+                    printf("send reqPT [%d:%d]\n",bp->hdrsi,firsti);
                     iguana_sendblockreqPT(coin,0,bp,firsti,hash2,0);
                 }
-            }
+            } else printf("no hash for [%d:%d]\n",bp->hdrsi,firsti);
         }
     }
     //if ( n > 0 || bp == coin->current )
@@ -1432,11 +1433,11 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             if ( bp->queued == 0 )
                 iguana_bundleQ(myinfo,coin,bp,0);
         }
-        for (i=0; i<bp->n; i++)
+        for (i=j=0; i<bp->n; i++)
             if ( GETBIT(bp->haveblock,i) == 0 )
-                bp->issued[i] = 0;
+                bp->issued[i] = 0, j++;
         n = iguana_bundleissuemissing(myinfo,coin,bp,3,1.);
-        printf("issued 1st.[%d] %d\n",bp->hdrsi,n);
+        printf("issued 1st.[%d] %d of %d\n",bp->hdrsi,n,j);
     }
     if ( (coin->current= firstgap) == 0 )
     {
