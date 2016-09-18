@@ -1875,6 +1875,11 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         {
             tx = &txarray[i];
             iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
+            if ( tx->tx_out == 0 && tx->tx_in == 0 )
+            {
+                printf("strange tx without any inputs or outputs? ht.%d\n",bp->bundleheight);
+                break;
+            }
             for (j=0; j<tx->tx_out; j++)
             {
                 memset(rmd160,0,sizeof(rmd160));
