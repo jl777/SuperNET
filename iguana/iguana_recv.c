@@ -1078,12 +1078,9 @@ int32_t iguana_bundlehashadd(struct iguana_info *coin,struct iguana_bundle *bp,i
         }
     }
     if ( bp->blocks[bundlei] == 0 )
-    {
         firstflag = 1;
-        bp->blocks[bundlei] = block;
-        bp->hashes[bundlei] = block->RO.hash2;
-    }
-    bp->blocks[bundlei] = block;
+    //bp->blocks[bundlei] = block;
+    //bp->hashes[bundlei] = block->RO.hash2;
     iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
     if ( firstflag != 0 && bp->emitfinish == 0 )
     {
@@ -1128,6 +1125,7 @@ void iguana_bundle_set(struct iguana_info *coin,struct iguana_block *block,int32
         {
             bp->blocks[bundlei] = block;
             bp->hashes[bundlei] = block->RO.hash2;
+            iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
             if ( bp->speculative != 0 )
                 bp->speculative[bundlei] = block->RO.hash2;
             //char str[65]; printf("SET %s ht.%d in [%d:%d]\n",bits256_str(str,block->RO.hash2),height,hdrsi,bundlei);
