@@ -73,12 +73,12 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         return(0);
     if ( memcmp(lastreq.bytes,hash2.bytes,sizeof(hash2)) == 0 || memcmp(lastreq2.bytes,hash2.bytes,sizeof(hash2)) == 0 )
     {
-        //printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
+        printf("duplicate req %s or null addr.%p\n",bits256_str(hexstr,hash2),addr);
         if ( iamthreadsafe == 0 && (rand() % 10) != 0 )
             return(0);
     }
     checkbp = 0, j = -2;
-    if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
+    if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n && checkbp != coin->current )
     {
         if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0 && coin->RTheight == 0) )
             return(0);
@@ -103,7 +103,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     }
     if ( addr->msgcounts.verack == 0 )
     {
-        if ( (rand() % 10000) == 0 )
+        //if ( (rand() % 10000) == 0 )
             printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
         //iguana_send_version(coin,addr,coin->myservices);
         return(-1);
@@ -112,16 +112,19 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     lastreq = hash2;
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
     {
-        iguana_send(coin,addr,serialized,len);
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
         if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
         {
             if ( coin->RTheight == 0 && bp != coin->current && bp->issued[bundlei] > 1 && addr->pendtime < bp->issued[bundlei]+7 )
+            {
+                printf("SKIP.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
                 return(0);
+            }
             bp->issued[bundlei] = addr->pendtime;
         }
+        iguana_send(coin,addr,serialized,len);
         if ( block != 0 )
             block->issued = addr->pendtime;
         //if ( coin->current == bp )
