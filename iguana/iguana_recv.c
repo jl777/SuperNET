@@ -78,7 +78,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
             return(0);
     }
     checkbp = 0, j = -2;
-    if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n )
+    if ( (checkbp= iguana_bundlefind(coin,&checkbp,&j,hash2)) != 0 && j >= 0 && j < checkbp->n && checkbp != coin->current )
     {
         if ( checkbp->emitfinish != 0 || ((block= checkbp->blocks[j]) != 0 && block->txvalid != 0 && block->mainchain != 0 && block->valid != 0 && block->bundlei != 0 && coin->RTheight == 0) )
             return(0);
@@ -105,26 +105,29 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     {
         if ( (rand() % 10000) == 0 )
             printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
-        //iguana_send_version(coin,addr,coin->myservices);
-        return(-1);
+        iguana_send_version(coin,addr,coin->myservices);
+        //return(-1);
     }
     lastreq2 = lastreq;
     lastreq = hash2;
     if ( (len= iguana_getdata(coin,serialized,MSG_BLOCK,&hash2,1)) > 0 )
     {
-        iguana_send(coin,addr,serialized,len);
         coin->numreqsent++;
         addr->pendblocks++;
         addr->pendtime = (uint32_t)time(NULL);
         if ( bp != 0 && bundlei >= 0 && bundlei < bp->n )
         {
             if ( coin->RTheight == 0 && bp != coin->current && bp->issued[bundlei] > 1 && addr->pendtime < bp->issued[bundlei]+7 )
+            {
+                //printf("SKIP.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
                 return(0);
+            }
             bp->issued[bundlei] = addr->pendtime;
         }
+        iguana_send(coin,addr,serialized,len);
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( 0 && coin->RTheight > 0 )//&& coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -503,7 +506,7 @@ void iguana_oldgotblockM(struct supernet_info *myinfo,struct iguana_info *coin,s
     {
         numtx = origtxdata->zblock.RO.txn_count;
         for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
+            if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish <= 1 )
                 break;
         if ( (i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2) || coin->RTheight > 0 )
         {
@@ -673,7 +676,7 @@ void iguana_RTgotblock(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
     if ( coin->almostRT == 0 )
     {
         for (i=0; i<coin->bundlescount; i++)
-            if ( (bp= coin->bundles[i]) != 0 && bp->utxofinish <= 1 )
+            if ( (bp= coin->bundles[i]) != 0 && bp->emitfinish <= 1 )
                 break;
         if ( (i > coin->bundlescount-2 && coin->blocks.hwmchain.height > coin->longestchain-coin->chain->bundlesize*2) || coin->RTheight > 0 )
             coin->almostRT = 1;
@@ -774,6 +777,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     if ( bp == 0 )
     {
+        printf("gotblockM no bp %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
@@ -787,6 +791,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     {
         req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+        //printf("negative speculative return %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
     /*if ( block == 0 )
@@ -807,12 +812,14 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     numtx = origtxdata->zblock.RO.txn_count;
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
-    //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
+    if ( 0 && bp == coin->current )
+        printf("getblockM update [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),block);
     if ( block != 0 )
     {
         if ( block->height < 0 )
             block->bundlei = -1;
         block->txvalid = 1;
+        block->RO.txn_count = origtxdata->zblock.RO.txn_count;
         if ( block->fpipbits != 0 && block->fpos >= 0 )
         {
             static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
@@ -841,9 +848,8 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
-        if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
+        if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
             printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
-        //if ( (bp == coin->current || (coin->peers != 0 && ) && (rand() % coin->chain->bundlesize) < numsaved )
         if ( numsaved < coin->chain->bundlesize )
         {
             for (i=numsaved=0; i<coin->chain->bundlesize; i++)
@@ -2086,7 +2092,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         {
             if ( bp->emitfinish != 0 )
                 return(0);
-            if ( coin->RTheight == 0 && bp->issued[bundlei] > 0 )
+            if ( bp != coin->current && coin->RTheight == 0 && bp->issued[bundlei] > 0 )
                 return(0);
         }
         if ( priority != 0 )

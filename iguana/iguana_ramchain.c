@@ -1293,7 +1293,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
         sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
-        bp->utxofinish = bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = 0;
+        bp->startutxo = bp->balancefinish = bp->validated = bp->emitfinish = bp->converted = 0;
         //iguana_ramchain_free(coin,&bp->ramchain,1);
         return(0);
     }
@@ -1334,7 +1334,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
             {
                 ramchain->Xspendptr = ptr;
                 ramchain->numXspends = (int32_t)((filesize - sizeof(sha256)) / sizeof(*ramchain->Xspendinds));
-                bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
+                bp->startutxo = bp->emitfinish = (uint32_t)time(NULL);
                 if ( bp->Xvalid == 0 )
                 {
                     if ( (rand() % 10) == 0 )
@@ -1875,6 +1875,11 @@ long iguana_ramchain_data(struct iguana_info *coin,struct iguana_peer *addr,stru
         {
             tx = &txarray[i];
             iguana_ramchain_addtxid(coin,RAMCHAIN_ARG,tx->txid,tx->tx_out,tx->tx_in,tx->lock_time,tx->version,tx->timestamp,bundlei);
+            if ( tx->tx_out == 0 && tx->tx_in == 0 )
+            {
+                printf("strange tx without any inputs or outputs? ht.%d\n",bp->bundleheight);
+                break;
+            }
             for (j=0; j<tx->tx_out; j++)
             {
                 memset(rmd160,0,sizeof(rmd160));
@@ -1994,10 +1999,10 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
     if ( fname[0] != 0 )
     {
         OS_removefile(fname,0);
-#ifndef WIN32
+/*#ifndef WIN32
         strcat(fname,".tmp");
         OS_removefile(fname,0);
-#endif
+#endif*/
     }
 }
 
@@ -2082,7 +2087,7 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
 
 void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,struct iguana_bundle *bp,int32_t bundlei,int32_t renameflag)
 {
-    int32_t checki,hdrsi; void *ptr = 0; FILE *fp; char renamed[1024]; static const bits256 zero;
+    int32_t checki,hdrsi; long checksize; void *ptr = 0; FILE *fp; static const bits256 zero; //char renamed[1024];
     *filesizep = 0;
     fname[0] = 0;
     if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
@@ -2094,19 +2099,38 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
         return(0);
     else
     {
+        fseek(fp,0,SEEK_END);
+        checksize = ftell(fp);
         fclose(fp);
-#ifndef WIN32
+/*#ifndef WIN32
         if ( renameflag != 0 )
         {
             sprintf(renamed,"%s.tmp",fname);
-            OS_renamefile(fname,renamed);
+            OS_copyfile(fname,renamed,1);
             strcpy(fname,renamed);
         }
-#endif
+//#endif*/
         if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
         {
             printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
             return(0);
+        }
+        if ( *filesizep != checksize )
+        {
+            printf("%s *filesizep %ld != %ld\n",fname,*filesizep,checksize);
+            OS_releasemap(ptr,*filesizep);
+            sleep(1);
+            if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
+            {
+                printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
+                return(0);
+            }
+            if ( *filesizep != checksize )
+            {
+                printf("second %s failure *filesizep %ld != %ld\n",fname,*filesizep,checksize);
+                OS_releasemap(ptr,*filesizep);
+                return(0);
+            }
         }
     }
     //printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
@@ -2255,7 +2279,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
 {
     static const bits256 zero;
     struct iguana_blockRO *B; struct iguana_txid *T; int32_t i,firsti = 1; char fname[512];
-    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata;
+    struct iguana_block *block,*prev,*prev2; struct iguana_ramchain *mapchain; struct iguana_ramchaindata *rdata; uint32_t firsttxidind;
     if ( bp->emitfinish > 1 )
         return(ramchain);
     memset(ramchain,0,sizeof(*ramchain));
@@ -2264,6 +2288,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
         //char str[65]; printf("%s bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",coin->symbol,bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
+        firsttxidind = 1;
         if ( (rdata= ramchain->H.data) != 0 )
         {
             B = RAMCHAIN_PTR(rdata,Boffset);
@@ -2287,8 +2312,11 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                     block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
                     iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,B,i);
                     //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
-                    iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
                     bp->blocks[i] = block;
+                    bp->hashes[i] = block->RO.hash2;
+                    block->RO.firsttxidind = firsttxidind;
+                    bp->firsttxidinds[i] = firsttxidind;
+                    iguana_hash2set(coin,"bundleload",bp,i,block->RO.hash2);
                     if ( (prev= block->hh.prev) != 0 )
                     {
                         prev2 = prev->hh.prev;
@@ -2304,10 +2332,12 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                         //_iguana_chainlink(coin,block); //wrong context
                     }
                     prev2 = prev, prev = block;
+                    //printf("%p.%d ",block,block->RO.txn_count);
+                    firsttxidind += block->RO.txn_count;
                 }
             }
         }
-        //printf("mapped bundle.[%d]\n",bp->hdrsi);
+        //printf("mapped bundle.[%d] numtxn.%d\n",bp->hdrsi,firsttxidind);
         bp->emitfinish = (uint32_t)time(NULL) + 1;
         iguana_bundlecalcs(myinfo,coin,bp,60);
     }
@@ -2348,10 +2378,10 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
             if ( rdata->scriptspace > scriptspace )
                 scriptspace = rdata->scriptspace;
         }
-#ifndef __APPLE__
+//#ifndef __APPLE__
     numtxids *= 1.25; numexternaltxids *= 1.25, scriptspace *= 1.25;
     numunspents *= 1.25, numspends *= 1.25, numpkinds *= 1.25;
-#endif
+//#endif
     if ( mem->ptr == 0 )
     {
         while ( (allocsize= _iguana_rdata_action(fname,0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks,coin->chain->zcash)) > 2*1024LL*1024L*1024L )
