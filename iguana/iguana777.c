@@ -661,7 +661,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
 void iguana_helper(void *arg)
 {
     static uint64_t helperidbits;
-    cJSON *argjson=0; int32_t iter,n,j,numpeers,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
+    cJSON *argjson=0; int32_t iter,n,i,j,numpeers,polltimeout,type,helperid=rand(),flag,allcurrent,idle=0;
     struct iguana_helper *ptr; struct iguana_info *coin,*tmp; struct OS_memspace MEM,*MEMB; struct iguana_bundle *bp; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     helperid %= 64;
     if ( arg != 0 && (argjson= cJSON_Parse(arg)) != 0 )
@@ -715,7 +715,13 @@ void iguana_helper(void *arg)
                             if ( bp->emitfinish != 0 && time(NULL) > bp->emitfinish+60 )
                             {
                                 if ( bp->validated == 0 )
-                                    iguana_bundlevalidate(myinfo,coin,bp,1);
+                                {
+                                    for (i=0; i<j; i++)
+                                        if ( coin->bundles[i] == 0 || coin->bundles[i]->validated <= 1 )
+                                            break;
+                                    if ( i == j )
+                                        iguana_bundlevalidate(myinfo,coin,bp,1);
+                                }
                             }
                         }
                     }

@@ -1105,9 +1105,10 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     if ( coin->chain->zcash != 0 )
     {
         printf("need to process joinsplits before can validate.%s\n",coin->symbol);
+        bp->validated = (uint32_t)time(NULL);
         return(bp->n);
     }
-    if ( (coin->MAXPEERS > 1 && coin->VALIDATENODE == 0 && coin->FULLNODE == 0) || bp->ramchain.from_ro != 0 || bp == coin->current )
+    if ( (coin->MAXPEERS > 1 && coin->VALIDATENODE == 0 && coin->FULLNODE == 0) || bp->ramchain.from_ro != 0 )//|| bp == coin->current )
     {
         bp->validated = (uint32_t)time(NULL);
         return(bp->n);

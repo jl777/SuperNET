@@ -1066,7 +1066,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
                 //coin->spendvectorsaved = 0;
                 for (i=0; i<coin->bundlescount; i++)
                     if ( (tmpbp= coin->bundles[i]) != 0 )
-                        tmpbp->converted = tmpbp->balancefinish = tmpbp->validated = 0;
+                        tmpbp->converted = tmpbp->balancefinish = 0;
 #ifdef __PNACL__
                 iguana_bundlevalidate(myinfo,coin,bp,1);
 #endif
