@@ -341,7 +341,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
                             {
                                 if ( coin->PREFETCHLAG > 0 && now >= spentbp->lastprefetch+coin->PREFETCHLAG )
                                 {
-                                    printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
+                                    //printf("prefetch[%d] from.[%d] lag.%d\n",spentbp->hdrsi,bp->hdrsi,now - spentbp->lastprefetch);
                                     iguana_ramchain_prefetch(coin,&spentbp->ramchain,2);
                                     spentbp->lastprefetch = now;
                                 }
