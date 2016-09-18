@@ -103,10 +103,10 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
     }
     if ( addr->msgcounts.verack == 0 )
     {
-        //if ( (rand() % 10000) == 0 )
+        if ( (rand() % 10000) == 0 )
             printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
-        //iguana_send_version(coin,addr,coin->myservices);
-        return(-1);
+        iguana_send_version(coin,addr,coin->myservices);
+        //return(-1);
     }
     lastreq2 = lastreq;
     lastreq = hash2;
