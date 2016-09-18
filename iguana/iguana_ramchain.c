@@ -2032,9 +2032,9 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     }
     if ( deletefile != 0 && block != 0 )
         iguana_blockdelete(coin,block->RO.hash2,i);
-    if ( coin->RTheight > 0 && height > 0 && height < coin->blocks.hwmchain.height )
+    if ( 0 && coin->RTheight > 0 && height > 0 && height < coin->blocks.hwmchain.height )
     {
-        printf("reduce HWM height from %d to %d\n",coin->blocks.hwmchain.height,height);
+        printf("reduce %s HWM height from %d to %d\n",coin->symbol,coin->blocks.hwmchain.height,height);
         if ( (block= iguana_blockfind("unmark",coin,iguana_blockhash(coin,height))) != 0 )
             iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
     }
