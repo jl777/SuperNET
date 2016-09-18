@@ -1364,12 +1364,14 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             numcached += bp->numcached;
             numrecv += bp->numrecv;
             numsaved += bp->numsaved;
-            if ( bp->emitfinish > 1 )
+            if ( bp->utxofinish > 1 )
                 numutxo++;
             if ( bp->balancefinish > 1 )
                 numbalances++;
             if ( bp->validated > 1 )
                 numv++;
+            if ( bp->emitfinish == 0 && bp->ramchain.H.data != 0 )
+                bp->emitfinish = (uint32_t)time(NULL);
             if ( bp->emitfinish >= 1 )
             {
                 if ( bp->emitfinish == 1 )
@@ -1517,7 +1519,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             {
                 //printf("bundleQ.[%d]\n",j);
                 bp->balancefinish = bp->startutxo = 0;
-                bp->emitfinish = 1;
+                bp->utxofinish = 1;
                 iguana_bundleQ(myinfo,coin,bp,1000);
             }
         }
