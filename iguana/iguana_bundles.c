@@ -1423,7 +1423,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     tmp = (difft.millis * 1000000);
     tmp %= 1000000000;
     difft.millis = ((double)tmp / 1000000.);
-    if ( (bp= firstgap) != 0 )//&& coin->PREFETCHLAG < 0 )
+    if ( (bp= firstgap) != 0 )
     {
         if ( bp != coin->current )
         {
@@ -1432,11 +1432,11 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             if ( bp->queued == 0 )
                 iguana_bundleQ(myinfo,coin,bp,0);
         }
-        //else printf("issue 1st.%d\n",bp->hdrsi);
-        //for (i=0; i<bp->n; i++)
-        //    if ( GETBIT(bp->haveblock,i) == 0 )
-        //        bp->issued[i] = 0;
-        iguana_bundleissuemissing(myinfo,coin,bp,3,1.);
+        for (i=0; i<bp->n; i++)
+            if ( GETBIT(bp->haveblock,i) == 0 )
+                bp->issued[i] = 0;
+        n = iguana_bundleissuemissing(myinfo,coin,bp,3,1.);
+        printf("issued 1st.[%d] %d\n",bp->hdrsi,n);
     }
     if ( (coin->current= firstgap) == 0 )
     {
