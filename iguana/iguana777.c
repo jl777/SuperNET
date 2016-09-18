@@ -1048,7 +1048,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
         coin->polltimeout = IGUANA_DEFAULT_POLLTIMEOUT;
     coin->active = juint(json,"active");
-    if ( (coin->minconfirms = minconfirms) == 0 )
+    if ( (coin->minconfirms= minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
     if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
     {
