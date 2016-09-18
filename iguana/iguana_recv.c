@@ -127,7 +127,7 @@ int32_t iguana_sendblockreqPT(struct iguana_info *coin,struct iguana_peer *addr,
         iguana_send(coin,addr,serialized,len);
         if ( block != 0 )
             block->issued = addr->pendtime;
-        if ( coin->current == bp )
+        if ( 0 && coin->current == bp )
             printf("REQ.(%s) [%d:%d] %s n.%d\n",bits256_str(hexstr,hash2),bundlei,bp!=0?bp->hdrsi:-1,addr->ipaddr,addr->pendblocks);
     } else printf("MSG_BLOCK null datalen.%d\n",len);
     return(len);
@@ -740,6 +740,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
+    printf("getblockM %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
     iguana_peer_meminit(coin,addr);
     if ( iguana_txmerkle(coin,addr->TXDATA.ptr,(int32_t)addr->TXDATA.totalsize,origtxdata,txarray) < 0 )
         return;
