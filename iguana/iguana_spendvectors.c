@@ -1178,7 +1178,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     if ( errs != 0 )
     {
         printf("%s remove.[%d]\n",coin->symbol,bp->hdrsi);
-        //iguana_bundleremove(coin,bp->hdrsi,0);
+        iguana_bundleremove(coin,bp->hdrsi,0);
         return(-errs);
     }
     return(bp->n - errs);
