@@ -2372,10 +2372,10 @@ int64_t iguana_ramchainopen(char *fname,struct iguana_info *coin,struct iguana_r
             if ( rdata->scriptspace > scriptspace )
                 scriptspace = rdata->scriptspace;
         }
-#ifndef __APPLE__
+//#ifndef __APPLE__
     numtxids *= 1.25; numexternaltxids *= 1.25, scriptspace *= 1.25;
     numunspents *= 1.25, numspends *= 1.25, numpkinds *= 1.25;
-#endif
+//#endif
     if ( mem->ptr == 0 )
     {
         while ( (allocsize= _iguana_rdata_action(fname,0,0,0,0,1,numtxids,numunspents,numspends,numpkinds,numexternaltxids,scriptspace,0,0,0,0,0,RAMCHAIN_ARG,numblocks,coin->chain->zcash)) > 2*1024LL*1024L*1024L )
