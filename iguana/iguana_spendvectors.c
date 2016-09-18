@@ -261,7 +261,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     {
         bp->tmpspends = ramchain->Xspendinds;
         bp->numtmpspends = ramchain->numXspends;
-        bp->emitfinish = (uint32_t)time(NULL);
+        bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
         //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
@@ -622,7 +622,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
-        if ( bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
+        if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             continue;
@@ -751,7 +751,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
     }
     for (i=0; i<coin->bundlescount-1; i++)
     {
-        if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 )
+        if ( (bp= coin->bundles[i]) == 0 || bp->utxofinish <= 1 )
         {
             printf("%s initfinal break.[%d]: bp.%p or emit.%u utxofinish.%u\n",coin->symbol,i,bp,bp!=0?bp->emitfinish:-1,bp!=0?bp->utxofinish:-1);
             break;
@@ -1160,7 +1160,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             printf("%s %s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,errs!=0?"NOT":"",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( errs == 0 )
                 bp->validated = (uint32_t)time(NULL);
-            else bp->startutxo = bp->utxofinish = 0;
+            else bp->validated = bp->startutxo = bp->utxofinish = 0;
             //iguana_volatilesmap(coin,&bp->ramchain);
             //if ( bp == coin->current )
             //    coin->RTdatabad = -1;

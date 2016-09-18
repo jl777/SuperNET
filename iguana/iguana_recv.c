@@ -2039,7 +2039,7 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
         //getchar();
         return(-1);
     }
-    if ( 1 && coin->enableCACHE != 0 && iguana_speculativesearch(coin,&block,hash2) != 0 && block != 0 && block->txvalid != 0 )
+    if ( 0 && coin->enableCACHE != 0 && iguana_speculativesearch(coin,&block,hash2) != 0 && block != 0 && block->txvalid != 0 )
     {
         //printf("found valid [%d:%d] in blockQ\n",block!=0?block->hdrsi:-1,block!=0?block->bundlei:-1);
         return(0);

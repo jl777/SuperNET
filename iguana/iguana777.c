@@ -326,12 +326,16 @@ int32_t iguana_emitfinished(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( (bp= coin->bundles[i]) != 0 )
         {
+            if ( bp->emitfinish == 0 && bp->ramchain.H.data != 0 )
+                bp->emitfinish = (uint32_t)time(NULL);
             if ( bp->emitfinish > 1 )
                 n++;
+            //printf("%u ",bp->emitfinish);
             //else if ( bp->emitfinish == 0 && bp->queued == 0 )
             //    iguana_bundleQ(myinfo,coin,bp,1000);
         }
     }
+    //printf("emitfinished.%d\n",n);
     return(n);
 }
 
@@ -726,9 +730,9 @@ void iguana_helper(void *arg)
                         }
                     }
                  }
+                if ( helperid == 0 )
+                    iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
             }
-            if ( helperid == 0 )
-                iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
         }
         //portable_mutex_unlock(&myinfo->allcoins_mutex);
         n = queue_size(&bundlesQ);
