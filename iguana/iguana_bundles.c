@@ -208,7 +208,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
     {
         static uint32_t counter;
         if ( counter++ < 100 )
-            printf("iguana_bundlehash2add null hash2 bp.%p\n",bp);
+            printf("iguana_bundlehash2add %s null hash2 bp.%p\n",coin->symbol,bp);
         return(-1111);
     }
     if ( bits256_nonz(hash2) != 0 && (block= iguana_blockhashset("bundlehash2add",coin,-1,hash2,1)) != 0 )
@@ -318,7 +318,9 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         }
         else if ( setval < 0 )
         {
-            printf("neg setval error\n");
+            static uint32_t counter;
+            if ( counter++ < 100 )
+                printf("%s neg setval error\n",coin->symbol);
             err |= 64;
         }
         if ( err == 0 && blockp != 0 )
