@@ -380,9 +380,9 @@ int32_t iguana_uheight(struct iguana_info *coin,int32_t bundleheight,struct igua
     else return(bundleheight);
 }
 
-int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout)
+int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,struct iguana_unspent *u,uint32_t unspentind,int16_t hdrsi,bits256 txid,int32_t vout,uint8_t *rmd160,uint8_t *pubkey33)
 {
-    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1]; uint8_t rmd160[20],pubkey33[33];
+    char scriptstr[IGUANA_MAXSCRIPTSIZE*2+1],asmstr[16384];
     memset(outpt,0,sizeof(*outpt));
     outpt->txid = txid;
     outpt->vout = vout;
@@ -390,10 +390,9 @@ int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,
     outpt->isptr = 0;
     outpt->unspentind = unspentind;
     outpt->value = u->value;
-    memset(rmd160,0,sizeof(rmd160));
-    memset(pubkey33,0,sizeof(pubkey33));
-    if ( iguana_scriptget(coin,scriptstr,0,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
+    if ( iguana_scriptget(coin,scriptstr,asmstr,sizeof(scriptstr),outpt->hdrsi,outpt->unspentind,outpt->txid,outpt->vout,rmd160,u->type,pubkey33) != 0 )
     {
+        //printf("scriptstr.(%s)\n",scriptstr);
         outpt->spendlen = (int32_t)strlen(scriptstr) >> 1;
         if ( outpt->spendlen < sizeof(outpt->spendscript) )
             decode_hex(outpt->spendscript,outpt->spendlen,scriptstr);
@@ -529,7 +528,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         {
             //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
-            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout);
+            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout,p->rmd160,pubkey33);
             RTspend = 0;
             if ( iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
             {
@@ -841,10 +840,10 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
         //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
         //return(iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,height,minconf,coin->longestchain,U[unspentind].value));
         /*if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
-        {
-            char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",outpt.hdrsi,outpt.unspentind,bits256_str(str,txid));
-            return(1);
-        } else return(0);*/
+         {
+         char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",outpt.hdrsi,outpt.unspentind,bits256_str(str,txid));
+         return(1);
+         } else return(0);*/
         return(0);
     }
     printf("iguana_unspent_check: couldnt find (%d %d)\n",outpt.hdrsi,outpt.unspentind);
@@ -1367,9 +1366,9 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
         {
             iguana_volatilespurge(coin,&bp->ramchain);
             /*sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-            OS_removefile(fname,0);
-            sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
-            OS_removefile(fname,0);*/
+             OS_removefile(fname,0);
+             sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
+             OS_removefile(fname,0);*/
             iguana_volatilesmap(coin,&bp->ramchain);
         }
     total = 0;
@@ -1513,7 +1512,7 @@ uint64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *co
                 if ( counts[ind] > 0 )
                 {
                     qsort(&table[offsets[ind] * UTXOADDR_ITEMSIZE],counts[ind],UTXOADDR_ITEMSIZE,_utxoaddr_cmp);
-continue;
+                    continue;
                     for (j=0; j<counts[ind]; j++)
                     {
                         iguana_rwutxoaddr(0,ind,&table[(offsets[ind]+j) * UTXOADDR_ITEMSIZE],&UA);
