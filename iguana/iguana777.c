@@ -745,7 +745,7 @@ void iguana_helper(void *arg)
                             }
                         }
                     }
-                 }
+                }
                 if ( helperid == 0 )
                     iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
             }
