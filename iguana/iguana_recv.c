@@ -740,7 +740,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         printf("got block that doesnt validate? %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
-    printf("getblockM %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
+    //printf("getblockM %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
     iguana_peer_meminit(coin,addr);
     if ( iguana_txmerkle(coin,addr->TXDATA.ptr,(int32_t)addr->TXDATA.totalsize,origtxdata,txarray) < 0 )
         return;
@@ -795,13 +795,17 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         printf("negative speculative return %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
-    /*if ( block == 0 )
-        block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
-    if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
+    if ( bp == coin->current )
     {
-        block->hdrsi = bp->hdrsi;
-        block->bundlei = bundlei;
-    }*/
+        if ( block == 0 )
+            block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
+        if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
+        {
+            block->hdrsi = bp->hdrsi;
+            block->bundlei = bundlei;
+        }
+        printf("getblockM update [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),block);
+    }
     if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
     {
         //printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
@@ -813,8 +817,6 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     numtx = origtxdata->zblock.RO.txn_count;
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
-    //if ( 0 && bp == coin->current )
-        printf("getblockM update [%d:%d] %s %p\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2),block);
     if ( block != 0 )
     {
         if ( block->height < 0 )
