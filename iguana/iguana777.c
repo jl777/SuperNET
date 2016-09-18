@@ -708,14 +708,13 @@ void iguana_helper(void *arg)
                 {
                     for (j=helperid; j<coin->bundlescount; j+=IGUANA_NUMHELPERS)
                     {
-                        if ( (bp= coin->bundles[j]) != 0 && bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
+                        if ( (bp= coin->bundles[j]) != 0 )
                         {
-                            //printf("finalize.[%d]\n",bp->hdrsi);
-                            if ( iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB) > 0 )
-                                continue;
+                            if ( bp->startutxo == 0 && bp->numsaved >= coin->chain->bundlesize && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
+                                iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB);
+                            if ( bp->utxofinish != 0 && bp->validated == 0 )
+                                iguana_bundlevalidate(myinfo,coin,bp,1);
                         }
-                        if ( bp != 0 && bp->utxofinish != 0 && bp->validated == 0 )
-                            iguana_bundlevalidate(myinfo,coin,bp,1);
                     }
                  }
             }
