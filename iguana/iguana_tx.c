@@ -189,6 +189,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
     }
     numvins = tx->numvins, numvouts = tx->numvouts;
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvins);
+    if ( rwflag == 0 )
+        tx->numvins = numvins;
     memset(&vin,0,sizeof(vin));
     for (i=0; i<numvins; i++)
     {
@@ -210,6 +212,8 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
         return(0);
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&numvouts);
+    if ( rwflag == 0 )
+        tx->numvouts = numvouts;
     for (i=0; i<numvouts; i++)
     {
         if ( vouts == 0 )
