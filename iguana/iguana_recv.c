@@ -810,6 +810,8 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     //printf("getblockM update [%d:%d] %s\n",bp->hdrsi,bundlei,bits256_str(str,origtxdata->zblock.RO.hash2));
     if ( block != 0 )
     {
+        if ( block->height < 0 )
+            block->bundlei = -1;
         block->txvalid = 1;
         if ( block->fpipbits != 0 && block->fpos >= 0 )
         {
