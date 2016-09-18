@@ -819,6 +819,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         if ( block->height < 0 )
             block->bundlei = -1;
         block->txvalid = 1;
+        block->RO.txn_count = origtxdata->zblock.RO.txn_count;
         if ( block->fpipbits != 0 && block->fpos >= 0 )
         {
             static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
