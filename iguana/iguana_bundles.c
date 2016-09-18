@@ -1042,7 +1042,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
-            return(0);
+            //return(0);
         }
         bp->emitfinish = 1;
         usleep(100000); // make sure new incoming packet didnt overwrite
