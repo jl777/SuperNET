@@ -622,7 +622,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
-        if ( bp->emitfinish <= 1 || (i > 0 && bp->emitfinish <= 1) )
+        if ( bp->emitfinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             continue;
@@ -753,11 +753,11 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
     {
         if ( (bp= coin->bundles[i]) == 0 || bp->emitfinish <= 1 )
         {
-            printf("%s initfinal break.[%d]: bp.%p or emit.%u utxofinish.%u\n",coin->symbol,i,bp,bp!=0?bp->emitfinish:-1,bp!=0?bp->emitfinish:-1);
+            printf("%s initfinal break.[%d]: bp.%p or emit.%u utxofinish.%u\n",coin->symbol,i,bp,bp!=0?bp->emitfinish:-1,bp!=0?bp->utxofinish:-1);
             break;
         }
         if ( i == 0 )
-            bp->emitfinish = bp->startutxo = (uint32_t)time(NULL);
+            bp->utxofinish = bp->startutxo = (uint32_t)time(NULL);
     }
     if ( i < coin->bundlescount-1 )
     {
@@ -765,7 +765,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         for (i=0; i<coin->bundlescount-1; i++)
         {
             if ( (bp= coin->bundles[i]) != 0 )
-                bp->startutxo = bp->emitfinish = bp->converted = bp->balancefinish = bp->validated = 0;
+                bp->utxofinish = bp->startutxo = bp->emitfinish = bp->converted = bp->balancefinish = bp->validated = 0;
         }
     }
     else
@@ -1160,7 +1160,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             printf("%s %s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,errs!=0?"NOT":"",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( errs == 0 )
                 bp->validated = (uint32_t)time(NULL);
-            else bp->startutxo = bp->emitfinish = 0;
+            else bp->startutxo = bp->utxofinish = 0;
             //iguana_volatilesmap(coin,&bp->ramchain);
             //if ( bp == coin->current )
             //    coin->RTdatabad = -1;
