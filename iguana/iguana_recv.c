@@ -789,13 +789,13 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
         return;
     }
-    if ( block == 0 )
+    /*if ( block == 0 )
         block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
     if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
     {
         block->hdrsi = bp->hdrsi;
         block->bundlei = bundlei;
-    }
+    }*/
     if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
     {
         //printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
@@ -871,7 +871,12 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
                 //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
         }
-    } //else printf("nonz fpos.%d %s\n",txdata->zblock.fpos,bits256_str(str,origtxdata->zblock.RO.hash2));
+    }
+    else
+    {
+        req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
+        queue_enqueue("recvQ",&coin->recvQ,&req->DL,0);
+    }
 }
 
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n)
