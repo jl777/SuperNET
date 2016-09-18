@@ -1994,10 +1994,10 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
     if ( fname[0] != 0 )
     {
         OS_removefile(fname,0);
-#ifndef WIN32
+/*#ifndef WIN32
         strcat(fname,".tmp");
         OS_removefile(fname,0);
-#endif
+#endif*/
     }
 }
 
@@ -2095,21 +2095,21 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
     else
     {
         fclose(fp);
-#ifndef WIN32
+/*#ifndef WIN32
         if ( renameflag != 0 )
         {
             sprintf(renamed,"%s.tmp",fname);
             OS_renamefile(fname,renamed);
             strcpy(fname,renamed);
         }
-#endif
+#endif*/
         if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
         {
             printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
             return(0);
         }
     }
-    //printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
+    printf("mapped.(%s) bundlei.[%d:%d] %p[%ld]\n",fname,hdrsi,bundlei,ptr,*filesizep);
     return(ptr);
 }
 
