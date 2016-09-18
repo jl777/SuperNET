@@ -539,8 +539,10 @@ void OS_remove_directory(char *dirname)
     FILE *fp; char buf[1024];
     sprintf(buf,"%s/.tmpmarker",dirname);
     if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
+    {
         OS_removefile(buf,0);
-    else fclose(fp);
+        fclose(fp);
+    }
 //printf("skip rmdir.(%s)\n",dirname);
 return;
     sprintf(buf,"rmdir %s",dirname);
@@ -552,9 +554,6 @@ return;
         {
             //printf("error doing (%s)\n",buf);
         }
-        //sprintf(buf,"rmdir %s",dirname);
-        //if ( system(buf) != 0 )
-        //    printf("second error doing (%s)\n",buf);
     }
 }
 
