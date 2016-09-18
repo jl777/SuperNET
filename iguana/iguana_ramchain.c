@@ -1994,10 +1994,10 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
     if ( fname[0] != 0 )
     {
         OS_removefile(fname,0);
-/*#ifndef WIN32
+#ifndef WIN32
         strcat(fname,".tmp");
         OS_removefile(fname,0);
-#endif*/
+#endif
     }
 }
 
@@ -2082,7 +2082,7 @@ int32_t iguana_oldbundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **p
 
 void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,struct iguana_bundle *bp,int32_t bundlei,int32_t renameflag)
 {
-    int32_t checki,hdrsi; long checksize; void *ptr = 0; FILE *fp; static const bits256 zero; //char renamed[1024];
+    int32_t checki,hdrsi; long checksize; void *ptr = 0; FILE *fp; static const bits256 zero; char renamed[1024];
     *filesizep = 0;
     fname[0] = 0;
     if ( (checki= iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,bp->hashes[bundlei],zero,1,1)) != bundlei || bundlei < 0 || bundlei >= coin->chain->bundlesize )
@@ -2097,14 +2097,14 @@ void *iguana_bundlefile(struct iguana_info *coin,char *fname,long *filesizep,str
         fseek(fp,0,SEEK_END);
         checksize = ftell(fp);
         fclose(fp);
-/*#ifndef WIN32
+//#ifndef WIN32
         if ( renameflag != 0 )
         {
             sprintf(renamed,"%s.tmp",fname);
-            OS_renamefile(fname,renamed);
+            OS_copyfile(fname,renamed,1);
             strcpy(fname,renamed);
         }
-#endif*/
+//#endif
         if ( (ptr= OS_mapfile(fname,filesizep,0)) == 0 )
         {
             printf("error mapping.(%s) bundlei.%d\n",fname,bundlei);
