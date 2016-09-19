@@ -3,6 +3,7 @@ pkill iguana
 ../agents/iguana notary &
 sleep 3
 coins/gennotary
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 tests/addnotarys_7776
 tests/getinfoN_7776
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"activehandle\"}"
