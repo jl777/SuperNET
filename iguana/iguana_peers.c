@@ -669,6 +669,7 @@ void _iguana_processmsg(struct supernet_info *myinfo,struct iguana_info *coin,in
                     if ( addr->numrecverrs++ > 10 )
                     {
                         addr->dead = (uint32_t)time(NULL);
+                        addr->numrecverrs = 0;
                     }
                     return;
                 }
