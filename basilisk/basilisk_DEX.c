@@ -373,41 +373,6 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,uint32_t requestid,ui
     return(retstr);
 }
 
-// respond to incoming RID, ACC, DEX, QST
-
-/*char *basilisk_respond_RID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-    return(basilisk_respond_requests(myinfo,hash,juint(valsobj,"requestid"),0));
-}
-
-char *basilisk_respond_SWP(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-return(basilisk_respond_swapstatus(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
-}
-
-char *basilisk_respond_ACC(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-    uint32_t requestid,quoteid;
-    if ( (requestid= juint(valsobj,"requestid")) != 0 && (quoteid= juint(valsobj,"quoteid")) != 0 )
-        return(basilisk_respond_accept(myinfo,requestid,quoteid));
-    else return(clonestr("{\"error\":\"need nonzero requestid and quoteid\"}"));
-}
-
-char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
-{
-    char *retstr=0,buf[256]; struct basilisk_request R;
-    if ( basilisk_request_create(&R,valsobj,hash,juint(valsobj,"timestamp")) == 0 )
-    {
-        char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",R.src,dstr(R.srcamount),R.dest,bits256_str(str,hash));
-        if ( basilisk_request_enqueue(myinfo,&R) != 0 )
-        {
-            sprintf(buf,"{\"result\":\"DEX request added\",\"requestid\":%u}",R.requestid);
-            retstr = clonestr(buf);
-        } else retstr = clonestr("{\"error\":\"DEX quote couldnt be created\"}");
-    } else retstr = clonestr("{\"error\":\"missing or invalid fields\"}");
-    return(retstr);
-}*/
-
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
@@ -457,7 +422,7 @@ STRING_ARG(InstantDEX,available,source)
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
     uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
-    myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
+    myinfo->DEXactive = (uint32_t)time(NULL) + BASILISK_TIMEOUT;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"desthash") == 0 )
         jaddbits256(vals,"desthash",hash);
@@ -522,13 +487,12 @@ INT_ARG(InstantDEX,incoming,requestid)
     else if ( width > 64 )
         width = 64;
     myinfo->DEXpoll = now;
-    myinfo->DEXactive = now + INSTANTDEX_LOCKTIME;
     retjson = cJSON_CreateObject();
     DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     msgid = (uint32_t)time(NULL) + drift;
     if ( (retarray= basilisk_channelget(myinfo,myinfo->myaddr.persistent,DEX_channel,msgid,width)) != 0 )
     {
-        printf("GOT.(%s)\n",jprint(retarray,0));
+        //printf("GOT.(%s)\n",jprint(retarray,0));
         if ( (retval= basilisk_process_retarray(myinfo,0,InstantDEX_process_channelget,data,sizeof(data),DEX_channel,msgid,retarray,InstantDEX_incoming_func)) > 0 )
         {
             jaddstr(retjson,"result","success");

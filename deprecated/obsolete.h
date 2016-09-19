@@ -19152,5 +19152,40 @@ len = 0;
             //s->hdrsi = hdrsi;
             //s->bundlei = bundlei;
             //char str[65]; printf("%s set prevout.%d -> %d\n",bits256_str(str,prev_hash),prev_vout,s->prevout);
+            
             //if ( pkind != 0 )
             //    s->prevspendind = A[pkind].lastspendind;
+            // respond to incoming RID, ACC, DEX, QST
+            
+            /*char *basilisk_respond_RID(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             return(basilisk_respond_requests(myinfo,hash,juint(valsobj,"requestid"),0));
+             }
+             
+             char *basilisk_respond_SWP(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             return(basilisk_respond_swapstatus(myinfo,hash,juint(valsobj,"requestid"),juint(valsobj,"quoteid")));
+             }
+             
+             char *basilisk_respond_ACC(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             uint32_t requestid,quoteid;
+             if ( (requestid= juint(valsobj,"requestid")) != 0 && (quoteid= juint(valsobj,"quoteid")) != 0 )
+             return(basilisk_respond_accept(myinfo,requestid,quoteid));
+             else return(clonestr("{\"error\":\"need nonzero requestid and quoteid\"}"));
+             }
+             
+             char *basilisk_respond_DEX(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
+             {
+             char *retstr=0,buf[256]; struct basilisk_request R;
+             if ( basilisk_request_create(&R,valsobj,hash,juint(valsobj,"timestamp")) == 0 )
+             {
+             char str[65]; printf("DEX.(%s %.8f) -> %s %s\n",R.src,dstr(R.srcamount),R.dest,bits256_str(str,hash));
+             if ( basilisk_request_enqueue(myinfo,&R) != 0 )
+             {
+             sprintf(buf,"{\"result\":\"DEX request added\",\"requestid\":%u}",R.requestid);
+             retstr = clonestr(buf);
+             } else retstr = clonestr("{\"error\":\"DEX quote couldnt be created\"}");
+             } else retstr = clonestr("{\"error\":\"missing or invalid fields\"}");
+             return(retstr);
+             }*/

@@ -857,6 +857,7 @@ void basilisks_loop(void *arg)
             }
         }
         notary = iguana_coinfind("NOTARY");
+        now = (uint32_t)time(NULL);
         portable_mutex_unlock(&myinfo->basilisk_mutex);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
@@ -883,13 +884,13 @@ void basilisks_loop(void *arg)
                 {
                     //printf(">>>>>>>>>>>>> update %s\n",coin->symbol);
                     basilisk_unspents_update(myinfo,coin);
-                    coin->lastunspentsupdate = (uint32_t)time(NULL);
+                    coin->lastunspentsupdate = now;
                     //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
                 }
             }
-            basilisk_requests_poll(myinfo);
+            if ( myinfo->IAMLP != 0 || myinfo->DEXactive > now )
+                basilisk_requests_poll(myinfo);
         }
-        now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
         HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
         {
