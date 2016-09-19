@@ -272,7 +272,10 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
 {
     struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0; uint64_t alreadysent;
     if ( notary == 0 || myinfo->NOTARY.NUMRELAYS <= 0 || myinfo->IAMNOTARY == 0 )
+    {
+        printf("skip ping send %p %d %d\n",notary,myinfo->NOTARY.NUMRELAYS,myinfo->IAMNOTARY);
         return;
+    }
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
