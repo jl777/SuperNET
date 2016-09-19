@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7776" --data "{\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"NOTARY\",\"services\":128,\"maxpeers\":2048,\"RELAY\":0,\"VALIDATE\":0,\"portp2p\":7775,\"rpc\":0}"
+curl --url "http://127.0.0.1:7776" --data "{\"active\":1,\"agent\":\"iguana\",\"method\":\"addcoin\",\"newcoin\":\"NOTARY\",\"services\":128,\"maxpeers\":2048,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":7775,\"rpc\":0}"

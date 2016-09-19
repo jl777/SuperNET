@@ -1549,14 +1549,14 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 #include "../includes/iguana_apiundefs.h"
 
-void iguana_relays_init(struct supernet_info *myinfo)
+/*void iguana_relays_init(struct supernet_info *myinfo)
 {
     static char *ipaddrs[] = { "78.47.196.146", "5.9.102.210" };//"89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
     char *str; int32_t i;
     for (i=0; i<sizeof(ipaddrs)/sizeof(*ipaddrs); i++)
         if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddrs[i]),GENESIS_PUBKEY)) != 0 )
             free(str);
-}
+}*/
 
 void iguana_main(void *arg)
 {
