@@ -584,7 +584,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
                 remains -= recvlen;
                 //int32_t i; for (i=0; i<recvlen; i++)
                 //    printf("%02x",recvbuf[i]);
-                //printf("got %d remains.%d of total.%d from (%s)\n",recvlen,remains,len,ipaddr);
+printf("got %d remains.%d of total.%d from (%s)\n",recvlen,remains,len,ipaddr);
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
         }

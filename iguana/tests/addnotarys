@@ -7,3 +7,5 @@ curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"ad
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"89.248.160.242\"}"
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"89.248.160.243\"}"
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"89.248.160.244\"}"
+sleep 3
+./getinfoN
