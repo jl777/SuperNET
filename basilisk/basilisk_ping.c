@@ -107,7 +107,7 @@ int32_t basilisk_ping_genvirts(struct supernet_info *myinfo,uint8_t *data,int32_
 
 int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t i,msglen,len=0; uint8_t num,keylen,*msg,*key; uint32_t duration;
+    int32_t i,msglen,len=0; uint8_t num,keylen,*message,*key; uint32_t duration;
     if ( (num= data[len++]) > 0 )
     {
         //printf("processMSG num.%d datalen.%d\n",num,datalen);
@@ -127,14 +127,14 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
             }
             len += iguana_rwnum(0,&data[len],sizeof(msglen),&msglen);
             len += iguana_rwnum(0,&data[len],sizeof(duration),&duration);
-            msg = &data[len], len += msglen;
+            message = &data[len], len += msglen;
             if ( msglen <= 0 || len > datalen )
             {
                 printf("illegal msglen.%d or len.%d > %d\n",msglen,len,datalen);
                 return(0);
             }
             //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
-            basilisk_respond_addmessage(myinfo,key,keylen,msg,msglen,0,duration);
+            basilisk_respond_addmessage(myinfo,key,keylen,message,msglen,0,duration);
         }
     }
     return(len);

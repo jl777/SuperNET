@@ -610,6 +610,7 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
         else
         {
             IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
+            myinfo->remoteorigin = juint(argjson,"remoteorigin");
             free_json(argjson);
             printf("Will run (%s) after initialized with %d threads\n",COMMANDLINE_ARGFILE,IGUANA_NUMHELPERS);
         }

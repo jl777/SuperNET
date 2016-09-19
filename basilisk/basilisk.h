@@ -85,8 +85,8 @@ struct basilisk_item
 struct basilisk_message
 {
     struct queueitem DL; UT_hash_handle hh;
-    uint32_t datalen,expiration,duration;
-    uint8_t key[BASILISK_KEYSIZE],keylen;
+    uint32_t expiration,duration,datalen;
+    uint8_t keylen,broadcast,key[BASILISK_KEYSIZE];
     uint8_t data[];
 };
 
