@@ -16,7 +16,7 @@
 // included from basilisk.c
 
 #ifdef ENABLE_VIRTPING
-int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
+int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *notary,struct iguana_info *virt,struct iguana_peer *addr,int32_t height)
 {
     int32_t blocklen; bits256 hash2; uint8_t *data = 0; char str[65],strbuf[4096],*blockstr,*allocptr = 0; struct iguana_block *block;
     hash2 = iguana_blockhash(virt,height);
@@ -42,7 +42,7 @@ int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd
     {
         blockstr = basilisk_addhexstr(&allocptr,0,strbuf,sizeof(strbuf),data,blocklen);
         printf("RELAYID.%d send block.%d %s -> (%s) %s\n",myinfo->RELAYID,height,blockstr,addr->ipaddr,bits256_str(str,hash2));
-        basilisk_blocksubmit(myinfo,btcd,virt,addr,blockstr,hash2,height);
+        basilisk_blocksubmit(myinfo,notary,virt,addr,blockstr,hash2,height);
         if ( allocptr != 0 )
             free(allocptr);
         return(0);
@@ -50,7 +50,7 @@ int32_t basilisk_blocksend(struct supernet_info *myinfo,struct iguana_info *btcd
     return(-1);
 }
 
-int32_t basilisk_ping_processvirts(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_peer *addr,uint8_t *data,int32_t datalen)
+int32_t basilisk_ping_processvirts(struct supernet_info *myinfo,struct iguana_info *notary,struct iguana_peer *addr,uint8_t *data,int32_t datalen)
 {
     int32_t diff,i,j,len = 0; struct iguana_info *virt; char symbol[7]; uint32_t numvirts,height;
     len += iguana_rwvarint32(0,&data[len],&numvirts);
@@ -72,7 +72,7 @@ int32_t basilisk_ping_processvirts(struct supernet_info *myinfo,struct iguana_in
                 if ( (rand() % diff) == 0 )
                 {
                     for (j=1; height+j<virt->blocks.hwmchain.height && j<3; j++)
-                        basilisk_blocksend(myinfo,btcd,virt,addr,height+j);
+                        basilisk_blocksend(myinfo,notary,virt,addr,height+j);
                 }
             }
         }
@@ -209,9 +209,9 @@ int32_t basilisk_ping_processrelay(struct supernet_info *myinfo,uint8_t *data,in
 
 void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t diff,i,n,len = 0; struct iguana_info *btcd; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint16_t sn; uint32_t now = (uint32_t)time(NULL);
+    int32_t diff,i,n,len = 0; struct iguana_info *notary; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint16_t sn; uint32_t now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
-    btcd = iguana_coinfind("BTCD");
+    notary = iguana_coinfind("NOTARY");
     for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
         rp = &myinfo->NOTARY.RELAYS[i];
@@ -228,7 +228,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
         }
     }
     numrelays = data[len++];
-    //len += basilisk_ping_processvirts(myinfo,btcd,addr,&data[len],datalen - len);
+    //len += basilisk_ping_processvirts(myinfo,notary,addr,&data[len],datalen - len);
     for (i=0; i<numrelays; i++)
     {
         rp = &myinfo->NOTARY.RELAYS[i];
@@ -268,10 +268,10 @@ int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t max
 // encapsulate other messages inside msgQ for onetime ping
 // filter out duplicates
 
-void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
+void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
 {
     struct iguana_peer *addr; char ipaddr[64]; struct basilisk_relay *rp; uint32_t r; int32_t i,j,incr,datalen=0; uint64_t alreadysent;
-    if ( btcd == 0 || myinfo->NOTARY.NUMRELAYS <= 0 || myinfo->IAMNOTARY == 0 )
+    if ( notary == 0 || myinfo->NOTARY.NUMRELAYS <= 0 || myinfo->IAMNOTARY == 0 )
         return;
     if ( myinfo->pingbuf == 0 )
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
@@ -294,7 +294,7 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *btcd)
         expand_ipbits(ipaddr,rp->ipbits);
         if ( rp->ipbits == myinfo->myaddr.myipbits )
             basilisk_ping_process(myinfo,0,myinfo->myaddr.myipbits,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],datalen);
-        else if ( (addr= iguana_peerfindipbits(btcd,rp->ipbits,1)) != 0 && addr->usock >= 0 )
+        else if ( (addr= iguana_peerfindipbits(notary,rp->ipbits,1)) != 0 && addr->usock >= 0 )
         {
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
