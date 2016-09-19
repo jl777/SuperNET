@@ -130,7 +130,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
     {
         if ( bits256_nonz(desthash) == 0 || bits256_cmp(desthash,keydest) == 0 )
         {
-            printf("key.(%u %u) channel.%u msgid.%u width.%d match.%d\n",keychannel,keymsgid,channel,msgid,width,keymsgid-width >= msgid && keymsgid <= msgid);
+            printf("(%d >= %d %d <= %d) key.(%u %u) channel.%u msgid.%u width.%d match.%d %d %d\n",keymsgid-width,msgid,keymsgid,msgid,keychannel,keymsgid,channel,msgid,width,keymsgid-width >= msgid,keymsgid <= msgid,keymsgid-width >= msgid && keymsgid <= msgid);
             if ( keymsgid-width >= msgid && keymsgid <= msgid && keychannel == channel )
                 return(0);
             else return(-1);
