@@ -1126,7 +1126,11 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
             {
                 addr = &coin->peers->active[i];
                 if ( addr->usock >= 0 && addr->supernet != 0 && addr->ipaddr[0] != 0 )
+                {
                     jaddistr(array,addr->ipaddr);
+                    if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                        basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(addr->ipaddr),GENESIS_PUBKEY);
+                }
             }
             jadd(retjson,"supernet",array);
             jaddnum(retjson,"connections",coin->peers->numranked);
@@ -1178,11 +1182,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                                 if ( strcmp(coin->symbol,"NOTARY") == 0 )
                                 {
                                     for (j=0; j<m; j++)
-                                    {
-                                        printf("+%s ",jstri(fullnodes,j));
                                         basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(jstri(fullnodes,j)),GENESIS_PUBKEY);
-                                    }
-                                    printf(" m.%d relays added\n",m);
                                     incr = sqrt(m);
                                     if ( incr < 1 )
                                         incr = 1, j = 0;
