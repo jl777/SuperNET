@@ -1408,6 +1408,8 @@ ZERO_ARGS(SuperNET,activehandle)
     retjson = SuperNET_rosettajson(myinfo,myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
+    if ( myinfo->ipaddr[0] != 0 )
+        jaddstr(retjson,"myip",myinfo->ipaddr);
     jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
     if ( myinfo->expiration != 0 )
     {

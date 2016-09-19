@@ -871,7 +871,7 @@ void basilisks_loop(void *arg)
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             basilisk_ping_send(myinfo,notary);
-        } else printf("not notary %p %d\n",notary,myinfo->NOTARY.RELAYID);
+        } // else printf("not notary %p %d\n",notary,myinfo->NOTARY.RELAYID);
         if ( myinfo->expiration != 0 )
         {
             HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
