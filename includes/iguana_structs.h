@@ -254,6 +254,7 @@ struct iguana_blocks
 {
     char coin[8];
 	struct iguanakv *db;
+    struct iguana_zblock *zhash;
     struct iguana_block *hash; //struct iguana_blockRO *RO; int32_t maxbits;
     int32_t maxblocks,initblocks,hashblocks,pending,issuedblocks,recvblocks,emitblocks,parsedblocks,dirty;
 	struct iguana_zblock hwmchain,prev,prev2;

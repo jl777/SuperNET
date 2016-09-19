@@ -440,17 +440,30 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 {
-    if ( block->req != 0 )
+    struct iguana_zblock *zblock = (void *)block;
+    if ( coin->chain->zcash == 0 )
     {
-        printf("purge req inside block\n");
-        myfree(block->req,block->req->allocsize);
+        if ( block->req != 0 )
+        {
+            printf("purge req inside block\n");
+            myfree(block->req,block->req->allocsize);
+        }
+        free(block);
     }
-    free(block);
+    else
+    {
+        if ( zblock->req != 0 )
+        {
+            printf("purge req inside zblock\n");
+            myfree(zblock->req,zblock->req->allocsize);
+        }
+        free(zblock);
+    }
 }
 
 void iguana_blockspurge(struct iguana_info *coin)
 {
-    struct iguana_block *block,*tmp;
+    struct iguana_block *block,*tmp; struct iguana_zblock *zblock,*ztmp;
     if ( 1 && coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
@@ -459,6 +472,15 @@ void iguana_blockspurge(struct iguana_info *coin)
             iguana_blockpurge(coin,block);
         }
         coin->blocks.hash = 0;
+    }
+    if ( 1 && coin->blocks.zhash != 0 )
+    {
+        HASH_ITER(hh,coin->blocks.zhash,zblock,ztmp)
+        {
+            HASH_DEL(coin->blocks.zhash,zblock);
+            iguana_blockpurge(coin,(void *)zblock);
+        }
+        coin->blocks.zhash = 0;
     }
     /*if ( coin->blocks.RO != 0 )
     {

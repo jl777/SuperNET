@@ -174,35 +174,62 @@ struct iguana_block *iguana_prevblock(struct iguana_info *coin,struct iguana_blo
 
 void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct iguana_block *block)
 {
-    char str[65],str2[65]; struct iguana_block *next;
-    if ( memcmp(block->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
+    char str[65],str2[65]; struct iguana_block *next; struct iguana_zblock *znext,*zprev = (void *)prev,*zblock = (void *)block;
+    if ( coin->chain->zcash != 0 )
     {
-        printf("illegal blocklink mismatched hashes\n");
-        iguana_exit(0,0);
-        return;
-    }
-    block->hh.prev = prev;
-    if ( (next= prev->hh.next) != 0 )
-    {
-        if ( next != block )
+        if ( memcmp(block->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
         {
-            if ( memcmp(next->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
-            {
-                printf("illegal blocklink next mismatched hashes\n");
-                return;
-            }
-            if ( memcmp(next->RO.hash2.bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 )
-                printf("blocklink collision: %s vs %s\n",bits256_str(str,block->RO.hash2),bits256_str(str2,next->RO.hash2));
-            else printf("blocklink corruption: identical hashes with diff ptrs %s %p %p\n",bits256_str(str,block->RO.hash2),block,next);
+            printf("illegal blocklink mismatched hashes\n");
+            iguana_exit(0,0);
+            return;
         }
-        prev->hh.next = block; // could make a linked list of all at same height for multibranch
-    } else prev->hh.next = block;
-    printf("link.(%s) -> (%s)\n",bits256_str(str,prev->RO.hash2),bits256_str(str,block->RO.hash2));
+        block->hh.prev = prev;
+        if ( (next= prev->hh.next) != 0 )
+        {
+            if ( next != block )
+            {
+                if ( memcmp(next->RO.prev_block.bytes,prev->RO.hash2.bytes,sizeof(bits256)) != 0 )
+                {
+                    printf("illegal blocklink next mismatched hashes\n");
+                    return;
+                }
+                if ( memcmp(next->RO.hash2.bytes,block->RO.hash2.bytes,sizeof(bits256)) != 0 )
+                    printf("blocklink collision: %s vs %s\n",bits256_str(str,block->RO.hash2),bits256_str(str2,next->RO.hash2));
+                else printf("blocklink corruption: identical hashes with diff ptrs %s %p %p\n",bits256_str(str,block->RO.hash2),block,next);
+            }
+            prev->hh.next = block; // could make a linked list of all at same height for multibranch
+        } else prev->hh.next = block;
+    }
+    else
+    {
+        if ( memcmp(zblock->RO.prev_block.bytes,zprev->RO.hash2.bytes,sizeof(bits256)) != 0 )
+        {
+            printf("illegal blocklink mismatched zhashes\n");
+            iguana_exit(0,0);
+            return;
+        }
+        zblock->hh.prev = zprev;
+        if ( (znext= zprev->hh.next) != 0 )
+        {
+            if ( znext != zblock )
+            {
+                if ( memcmp(znext->RO.prev_block.bytes,zprev->RO.hash2.bytes,sizeof(bits256)) != 0 )
+                {
+                    printf("illegal blocklink next mismatched hashes\n");
+                    return;
+                }
+                if ( memcmp(znext->RO.hash2.bytes,zblock->RO.hash2.bytes,sizeof(bits256)) != 0 )
+                    printf("blocklink collision: %s vs %s\n",bits256_str(str,zblock->RO.hash2),bits256_str(str2,znext->RO.hash2));
+                else printf("blocklink corruption: identical hashes with diff ptrs %s %p %p\n",bits256_str(str,zblock->RO.hash2),zblock,znext);
+            }
+            zprev->hh.next = zblock; // could make a linked list of all at same height for multibranch
+        } else zprev->hh.next = zblock;
+    }
 }
 
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
-    struct iguana_block *block,*prev; int32_t size;
+    struct iguana_block *block=0,*prev; int32_t size; struct iguana_zblock *zblock=0,*zprev;
     /*while ( coin->blockdepth > 0 )
     {
         usleep(100000);
@@ -213,8 +240,10 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     }*/
     portable_mutex_lock(&coin->blocks_mutex);
     coin->blockdepth++;
-    HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
-    if ( block != 0 )
+    if ( coin->chain->zcash != 0 )
+        HASH_FIND(hh,coin->blocks.zhash,&hash2,sizeof(hash2),zblock);
+    else HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
+    if ( block != 0 || zblock != 0 )
     {
         if ( coin->blockdepth > 0 )
             coin->blockdepth--;
@@ -227,24 +256,44 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
             //printf("%d\n",1/(1 - depth/depth));
         }*/
         portable_mutex_unlock(&coin->blocks_mutex);
-        return(block);
+        return((coin->chain->zcash != 0) ? (struct iguana_block *)zblock : block);
     }
     if ( createflag > 0 )
     {
         //portable_mutex_lock(&coin->blocks_mutex);
-        size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
-        block = calloc(1,size);
-        block->RO.hash2 = hash2;
-        block->RO.allocsize = size;
-        iguana_blocksizecheck("blockhashset",coin->chain->zcash,block);
-        block->hh.itemind = height, block->height = -1;
-        HASH_ADD(hh,coin->blocks.hash,RO.hash2,sizeof(hash2),block);
-        block->hh.next = block->hh.prev = 0;
-        if ( bits256_nonz(block->RO.prev_block) > 0 )
+        if ( coin->chain->zcash == 0 )
         {
-            HASH_FIND(hh,coin->blocks.hash,&block->RO.prev_block,sizeof(block->RO.prev_block),prev);
-            if ( prev != 0 )
-                _iguana_blocklink(coin,prev,block);
+            size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
+            block = calloc(1,size);
+            block->RO.hash2 = hash2;
+            block->RO.allocsize = size;
+            iguana_blocksizecheck("blockhashset",coin->chain->zcash,block);
+            block->hh.itemind = height, block->height = -1;
+            HASH_ADD(hh,coin->blocks.hash,RO.hash2,sizeof(hash2),block);
+            block->hh.next = block->hh.prev = 0;
+            if ( bits256_nonz(block->RO.prev_block) > 0 )
+            {
+                HASH_FIND(hh,coin->blocks.hash,&block->RO.prev_block,sizeof(block->RO.prev_block),prev);
+                if ( prev != 0 )
+                    _iguana_blocklink(coin,prev,block);
+            }
+        }
+        else
+        {
+            size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
+            zblock = calloc(1,size);
+            zblock->RO.hash2 = hash2;
+            zblock->RO.allocsize = size;
+            iguana_blocksizecheck("blockhashset",coin->chain->zcash,(void *)zblock);
+            zblock->hh.itemind = height, zblock->height = -1;
+            HASH_ADD(hh,coin->blocks.zhash,RO.hash2,sizeof(hash2),zblock);
+            zblock->hh.next = zblock->hh.prev = 0;
+            if ( bits256_nonz(zblock->RO.prev_block) > 0 )
+            {
+                HASH_FIND(hh,coin->blocks.hash,&zblock->RO.prev_block,sizeof(zblock->RO.prev_block),zprev);
+                if ( zprev != 0 )
+                    _iguana_blocklink(coin,(void *)zprev,(void *)zblock);
+            }
         }
         //char str[65];
         if ( coin->virtualchain != 0 )
@@ -270,7 +319,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         //fprintf(stderr,">>>>>>>>>> OK only if rare%s create blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }*/
-    return(block);
+    return((coin->chain->zcash != 0) ? (struct iguana_block *)zblock : block);
 }
 
 bits256 *iguana_blockhashptr(struct iguana_info *coin,int32_t height)
@@ -308,15 +357,31 @@ struct iguana_block *iguana_blockptr(char *debugstr,struct iguana_info *coin,int
 
 int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *block)
 {
+    struct iguana_zblock *zblock = (void *)block;
     int32_t bsize = zcash != 0 ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block);
-    if ( block->RO.allocsize != bsize )
+    if ( zcash == 0 )
     {
-        if ( block->RO.allocsize == 0 || block->RO.allocsize < bsize )
+        if ( block->RO.allocsize != bsize )
         {
-            //printf("%s block validate warning: mismatched size %d vs %d\n",debugstr,block->RO.allocsize,bsize);
-            block->RO.allocsize = bsize;
-        } else return(-1);
-        return(bsize);
+            if ( block->RO.allocsize == 0 || block->RO.allocsize < bsize )
+            {
+                //printf("%s block validate warning: mismatched size %d vs %d\n",debugstr,block->RO.allocsize,bsize);
+                block->RO.allocsize = bsize;
+            } else return(-1);
+            return(bsize);
+        }
+    }
+    else
+    {
+        if ( zblock->RO.allocsize != bsize )
+        {
+            if ( zblock->RO.allocsize == 0 || zblock->RO.allocsize < bsize )
+            {
+                //printf("%s block validate warning: mismatched size %d vs %d\n",debugstr,block->RO.allocsize,bsize);
+                zblock->RO.allocsize = bsize;
+            } else return(-1);
+            return(bsize);
+        }
     }
     return(0);
 }
