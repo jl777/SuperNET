@@ -897,7 +897,7 @@ void basilisks_loop(void *arg)
                 HASH_DELETE(hh,myinfo->messagetable,msg);
                 QUEUEITEMS--;
                 free(msg);
-            } else printf("remains.%d\n",msg->expiration - now);
+            } //else printf("remains.%d\n",msg->expiration - now);
         }
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( myinfo->NOTARY.RELAYID >= 0 )
