@@ -125,7 +125,7 @@ int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 
 blockhashfunc iguana_hashalgo(char *hashalgostr)
 {
-    //return(blockhash_sha256);
+return(blockhash_sha256); // all coins seem to use this for genesis
     if ( hashalgostr == 0 || hashalgostr[0] == 0 || strcmp(hashalgostr,"sha256") == 0 )
         return(blockhash_sha256);
     else if ( strcmp(hashalgostr,"scrypt") == 0 )
