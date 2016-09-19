@@ -20,7 +20,7 @@ typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *
 int32_t basilisk_notarycmd(char *cmd)
 {
     //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&
-    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 )
+    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 && strcmp(cmd,"INF") != 0 )
         return(0);
     else return(1);
 }
