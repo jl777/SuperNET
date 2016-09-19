@@ -188,7 +188,7 @@ int32_t baslisk_relay_report(struct supernet_info *myinfo,uint8_t *data,int32_t 
 
 int32_t basilisk_ping_processrelay(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen,struct basilisk_relay *rp,int32_t i)
 {
-    uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits;
+    uint8_t pingdelay; int32_t j,datalen = 0; uint32_t ipbits; char ipaddr[64];
     ipbits = rp->ipbits;
     if ( maxlen < sizeof(ipbits)+1 )
     {
@@ -202,8 +202,10 @@ int32_t basilisk_ping_processrelay(struct supernet_info *myinfo,uint8_t *data,in
         datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,&rp->reported[j],pingdelay);
         return(datalen);
     }
-    printf("notified about unknown relay\n"); // parse it to match bytes sent
     datalen += baslisk_relay_report(myinfo,&data[datalen],maxlen-datalen,0,pingdelay);
+    expand_ipbits(ipaddr,ipbits);
+    printf("notified about unknown relay (%s)\n",ipaddr); // parse it to match bytes sent
+    basilisk_addrelay_info(myinfo,0,ipbits,GENESIS_PUBKEY);
     return(datalen);
 }
 
