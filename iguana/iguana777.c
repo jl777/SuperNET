@@ -933,18 +933,21 @@ void iguana_coinloop(void *arg)
                     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
                         portable_mutex_lock(&coin->allcoins_mutex);
+                        coin->busy_processing = 1;
                         flag += iguana_processrecv(myinfo,coin);
+                        coin->busy_processing = 0;
                         portable_mutex_unlock(&coin->allcoins_mutex);
-                        if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
+                        /*if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
                             hdrsi = (coin->RTheight / coin->chain->bundlesize) - 1;
                             if ( 0 && (bp= coin->bundles[hdrsi]) != 0 && bp->weights == 0 )
                                 bp->weights = iguana_PoS_weights(myinfo,coin,&refP,&bp->supply,&bp->numweights,&nonz,&errs,bp->bundleheight);
-                        }
+                        }*/
                     }
                 }
                 coin->idletime = (uint32_t)time(NULL);
+                iguana_jsonQ(myinfo,coin);
             }
         }
         //iguana_jsonQ();
