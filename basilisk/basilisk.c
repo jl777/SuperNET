@@ -20,7 +20,7 @@ typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *
 int32_t basilisk_notarycmd(char *cmd)
 {
     //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&
-    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 && strcmp(cmd,"INF") != 0 )
+    if ( strcmp(cmd,"PIN") != 0 && strcmp(cmd,"OUT") != 0 && strcmp(cmd,"MSG") != 0 && strcmp(cmd,"VOT") != 0 )
         return(0);
     else return(1);
 }
@@ -424,7 +424,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
 char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_addr,bits256 hash,cJSON *valsobj,char *hexstr,int32_t blockflag) // client side
 {
     uint32_t nBits = 0; uint8_t space[4096],*allocptr=0,*data = 0; struct basilisk_item *ptr; int32_t datalen = 0; cJSON *retjson; char *retstr=0;
-    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 && basilisk_notarycmd(CMD) == 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 && (strcmp(CMD,"INF") != 0 && basilisk_notarycmd(CMD) == 0) )
         return(clonestr("{\"error\":\"unsupported special relay command\"}"));
     data = get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr);
 //printf("request.(%s)\n",jprint(valsobj,0));
@@ -672,7 +672,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
     }
     if ( myinfo->IAMNOTARY != 0 )//RELAYID >= 0 )
     {
-        if ( basilisk_notarycmd(CMD) == 0 )
+        if ( basilisk_notarycmd(CMD) == 0 && strcmp(CMD,"INF") != 0 )
             return;
     } else if ( basilisk_notarycmd(CMD) != 0 )
         return;
