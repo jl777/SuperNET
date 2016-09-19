@@ -276,6 +276,8 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( coin != 0 )
             {
+                if ( immedmillis > 60000 )
+                    immedmillis = 60000;
                 endmillis = OS_milliseconds() + immedmillis;
                 while ( 1 )
                 {
