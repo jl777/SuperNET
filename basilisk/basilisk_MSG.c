@@ -36,7 +36,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
         for (i=0; i<BASILISK_KEYSIZE; i++)
             printf("%02x",key[i]);
-        printf(" <- ADDMSG.[%d]\n",QUEUEITEMS);
+        printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
         QUEUEITEMS++;
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( sendping != 0 )
