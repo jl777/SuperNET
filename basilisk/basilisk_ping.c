@@ -247,7 +247,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     //else printf("\n");
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
-    printf("<<<<<<<<<<< input ping from.(%s) rel.%d numrelays.%d datalen.%d relay.%d Q.%d\n",ipbuf,basilisk_relayid(myinfo,(uint32_t)calc_ipbits(ipbuf)),numrelays,datalen,myinfo->NOTARY.RELAYID,QUEUEITEMS);
+    //printf("<<<<<<<<<<< input ping from.(%s) rel.%d numrelays.%d datalen.%d relay.%d Q.%d\n",ipbuf,basilisk_relayid(myinfo,(uint32_t)calc_ipbits(ipbuf)),numrelays,datalen,myinfo->NOTARY.RELAYID,QUEUEITEMS);
 }
 
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
@@ -301,10 +301,11 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         {
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-            else //if ( datalen > 200 )
+            else if ( datalen > 200 )
                 fprintf(stderr,"+(%s).%d ",ipaddr,i);
         } //else fprintf(stderr,"-(%s).%d ",ipaddr,i);
     }
-    printf("my RELAYID.%d of %d\n",myinfo->NOTARY.RELAYID,myinfo->NOTARY.NUMRELAYS);
+    if ( datalen > 200 )
+        printf("my RELAYID.%d of %d\n",myinfo->NOTARY.RELAYID,myinfo->NOTARY.NUMRELAYS);
 }
 
