@@ -452,9 +452,26 @@ static int _bignum_cmp(const void *a,const void *b)
     return(0);
 }
 
+int32_t iguana_fastfindreset(struct iguana_info *coin)
+{
+    int32_t i,n = 0;
+    for (i=0; i<0x100; i++)
+    {
+        if ( coin->fast[i] != 0 )
+            munmap(coin->fast[i],coin->fastsizes[i]), n++;
+        if( coin->fasttables[i] != 0 )
+            free(coin->fasttables[i]);
+        coin->fast[i] = 0;
+        coin->fastsizes[i] = 0;
+        coin->fasttables[i] = 0;
+    }
+    coin->fastfind = 0;
+    return(n);
+}
+
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
-    int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
+    int32_t i,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
     //if ( strcmp("BTC",coin->symbol) != 0 )
     //    return(0);
     if ( coin->fastfind != 0 )
@@ -500,17 +517,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             coin->fastfind = (uint32_t)time(NULL);
             printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
             return(coin->fastfind);
-        }
-        else
-        {
-            for (j=0; j<i; j++)
-            {
-                munmap(coin->fast[i],coin->fastsizes[i]);
-                free(coin->fasttables[i]);
-                coin->fast[i] = 0;
-                coin->fastsizes[i] = 0;
-            }
-        }
+        } else iguana_fastfindreset(coin);
     }
     return(0);
 }

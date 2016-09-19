@@ -36,7 +36,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
         for (i=0; i<BASILISK_KEYSIZE; i++)
             printf("%02x",key[i]);
-        printf(" <- ADDMSG.[%d]\n",QUEUEITEMS);
+        printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
         QUEUEITEMS++;
         portable_mutex_unlock(&myinfo->messagemutex);
         if ( sendping != 0 )
@@ -107,30 +107,34 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 3600;
     else if ( width < 1 )
         width = 1;
+    //printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
         keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
         if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-            jaddi(array,item);
+            jaddi(array,item);//, printf("gotmsg0.(%s)\n",jprint(item,0));
         if ( origwidth > 0 )
         {
             if ( bits256_nonz(srchash) != 0 )
             {
                 keylen = basilisk_messagekey(key,channel,msgid,zero,desthash);
                 if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);
+                    jaddi(array,item);//, printf("gotmsg1.(%s)\n",jprint(item,0));
             }
             if ( bits256_nonz(desthash) != 0 )
             {
                 keylen = basilisk_messagekey(key,channel,msgid,srchash,zero);
+                //int32_t j; for (j=0; j<keylen; j++)
+                //    printf("%02x",key[j]);
+                //printf(" <- key\n");
                 if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);
+                    jaddi(array,item);//, printf("gotmsg2.(%s)\n",jprint(item,0));
             }
             if ( bits256_nonz(srchash) != 0 || bits256_nonz(desthash) != 0 )
             {
                 keylen = basilisk_messagekey(key,channel,msgid,zero,zero);
                 if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);
+                    jaddi(array,item);//, printf("gotmsg3.(%s)\n",jprint(item,0));
             }
         }
         msgid--;
@@ -140,6 +144,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jadd(retjson,"messages",array);
+        //printf("MESSAGES.(%s)\n",jprint(array,0));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"no messages\"}"));
 }
@@ -207,7 +212,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);
-        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),NUMRELAYS,juint(valsobj,"fanout"));
+        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);

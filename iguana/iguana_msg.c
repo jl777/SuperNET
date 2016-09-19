@@ -474,8 +474,11 @@ int32_t iguana_send_ping(struct supernet_info *myinfo,struct iguana_info *coin,s
   	int32_t len; uint64_t nonce; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(nonce)];
     if ( addr->msgcounts.verack == 0 )
     {
-        printf("%s send version instead of ping to %s\n",coin->symbol,addr->ipaddr);
-        return(iguana_send_version(coin,addr,coin->myservices));
+        if ( strcmp(addr->ipaddr,myinfo->ipaddr) != 0 )
+        {
+            printf("%s send version instead of ping to %s\n",coin->symbol,addr->ipaddr);
+            return(iguana_send_version(coin,addr,coin->myservices));
+        }
     }
     if ( (nonce= addr->pingnonce) == 0 )
     {
@@ -1007,7 +1010,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         {
             struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
-            if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("BTCD",coin->symbol) != 0 )
+            if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("NOTARY",coin->symbol) != 0 )
             {
                 if ( ishost == 0 )
                 {

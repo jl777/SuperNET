@@ -1098,6 +1098,7 @@ void basilisk_swaploop(void *_swap)
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 300;
+    myinfo->DEXactive = expiration;
     while ( time(NULL) < expiration )
     {
         printf("A r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
@@ -1123,6 +1124,7 @@ void basilisk_swaploop(void *_swap)
     }
     if ( time(NULL) >= expiration )
         retval = -1;
+    myinfo->DEXactive = swap->expiration;
     printf("C r%u/q%u swapstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits);
     if ( retval == 0 && (swap->statebits & 0x40) == 0 ) // send fee
     {

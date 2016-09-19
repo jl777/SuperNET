@@ -451,6 +451,7 @@ int32_t iguana_volatileupdate(struct iguana_info *coin,int32_t incremental,struc
 void iguana_utxoaddrs_purge(struct iguana_info *coin);
 int32_t iguana_utxoupdate(struct iguana_info *coin,int16_t spent_hdrsi,uint32_t spent_unspentind,uint32_t spent_pkind,uint64_t spent_value,uint32_t spendind,uint32_t fromheight,uint8_t *rmd160);
 int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr);
+int32_t iguana_fastfindreset(struct iguana_info *coin);
 int64_t iguana_unspentset(struct supernet_info *myinfo,struct iguana_info *coin);
 int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 txid,int32_t lasthdrsi);
 uint8_t iguana_addrtype(struct iguana_info *coin,uint8_t script_type);

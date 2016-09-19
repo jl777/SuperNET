@@ -557,7 +557,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    if ( 0 && addr->basilisk != 0 )
+    if ( 0 && addr->supernet != 0 )
         printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
     return(datalen);
@@ -584,7 +584,7 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
                 remains -= recvlen;
                 //int32_t i; for (i=0; i<recvlen; i++)
                 //    printf("%02x",recvbuf[i]);
-                //printf("got %d remains.%d of total.%d from (%s)\n",recvlen,remains,len,ipaddr);
+//printf("got %d remains.%d of total.%d from (%s)\n",recvlen,remains,len,ipaddr);
                 recvbuf = &recvbuf[recvlen];
             } else usleep(10000);
         }
@@ -666,7 +666,11 @@ void _iguana_processmsg(struct supernet_info *myinfo,struct iguana_info *coin,in
                     printf("%s recv error on (%s) len.%d errno.%d (%s)\n",addr->ipaddr,H.command,len,-recvlen,strerror(-recvlen));
                     if ( buf != _buf )
                         myfree(buf,len);
-                    //addr->dead = (uint32_t)time(NULL);
+                    if ( addr->numrecverrs++ > 10 )
+                    {
+                        addr->dead = (uint32_t)time(NULL);
+                        addr->numrecverrs = 0;
+                    }
                     return;
                 }
             }

@@ -400,14 +400,18 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
 
 long iguana_bundlesload(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    char fname[1024]; int32_t iter = 1; FILE *fp; long fpos = -1;
-    sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"r")) != 0 )
+    char fname[1024]; int32_t iter; FILE *fp; long fpos = -1;
+    for (iter=0; iter<2; iter++)
     {
-        iguana_parseline(myinfo,coin,iter,fp);
-        printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
-        fpos = ftell(fp);
-        fclose(fp);
+        sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "hdrs" : "oldhdrs"), OS_compatible_path(fname);
+        if ( (fp= fopen(fname,"r")) != 0 )
+        {
+            iguana_parseline(myinfo,coin,1,fp);
+            printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
+            fpos = ftell(fp);
+            fclose(fp);
+            break;
+        }
     }
     return(fpos);
 }
@@ -511,7 +515,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 
 struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t iter; long fpos; bits256 lastbundle;
+    FILE *fp; char fname[512],*symbol; int32_t j,iter; long fpos; bits256 lastbundle;
     /*if ( coin->peers == 0 )
     {
         printf("cant start privatechain directly\n");
@@ -604,21 +608,26 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
         {
         }
 #endif
-        sprintf(fname,"%s/%s_%s.txt",GLOBAL_CONFSDIR,coin->symbol,(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
-        //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-        //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
-        OS_compatible_path(fname);
-        if ( (fp= fopen(fname,"r")) != 0 )
+        fpos = -1;
+        for (j=0; j<2; j++)
         {
-            if ( coin->virtualchain == 0 || iter > 0 )
+            sprintf(fname,"%s/%s_%s%s.txt",GLOBAL_CONFSDIR,coin->symbol,j==0?"":"old",(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
+            //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+            //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
+            OS_compatible_path(fname);
+            if ( (fp= fopen(fname,"r")) != 0 )
             {
-                printf("parsefile.%d %s\n",iter,fname);
-                iguana_parseline(myinfo,coin,iter,fp);
-                printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
+                if ( coin->virtualchain == 0 || iter > 0 )
+                {
+                    printf("parsefile.%d %s\n",iter,fname);
+                    iguana_parseline(myinfo,coin,iter,fp);
+                    printf("done parsefile.%d (%s) size.%ld\n",iter,fname,fpos);
+                }
+                fpos = ftell(fp);
+                fclose(fp);
+                break;
             }
-            fpos = ftell(fp);
-            fclose(fp);
-        } else fpos = -1;
+        }
     }
 #ifndef IGUANA_DEDICATED_THREADS
     coin->peers->peersloop = iguana_launch("peersloop",iguana_peersloop,coin,IGUANA_PERMTHREAD);

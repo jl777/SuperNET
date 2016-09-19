@@ -424,7 +424,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
     struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout,numrequired;
-    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+    if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"NOTARY") != 0 )
         return(0);
     if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
     {

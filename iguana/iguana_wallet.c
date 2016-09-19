@@ -1126,7 +1126,11 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
             {
                 addr = &coin->peers->active[i];
                 if ( addr->usock >= 0 && addr->supernet != 0 && addr->ipaddr[0] != 0 )
+                {
                     jaddistr(array,addr->ipaddr);
+                    if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                        basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(addr->ipaddr),GENESIS_PUBKEY);
+                }
             }
             jadd(retjson,"supernet",array);
             jaddnum(retjson,"connections",coin->peers->numranked);
@@ -1140,7 +1144,7 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 
 ZERO_ARGS(bitcoinrpc,getinfo)
 {
-    struct basilisk_item Lptr,*ptr; int32_t i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
+    struct basilisk_item Lptr,*ptr; int32_t incr,i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
@@ -1174,7 +1178,17 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                             }
                             if ( (fullnodes= jarray(&m,item,"supernet")) != 0 )
                             {
-                                for (j=0; j<m; j++)
+                                incr = 1;
+                                if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                                {
+                                    for (j=0; j<m; j++)
+                                        basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(jstri(fullnodes,j)),GENESIS_PUBKEY);
+                                    incr = sqrt(m);
+                                    if ( incr < 1 )
+                                        incr = 1, j = 0;
+                                    else j = (myinfo->myaddr.pubkey.uints[0] % incr);
+                                } else j = 0;
+                                for (; j<m; j+=incr)
                                 {
                                     //fprintf(stderr,"[%s] ",jstri(fullnodes,j));
                                     iguana_launchpeer(coin,jstri(fullnodes,j),1);

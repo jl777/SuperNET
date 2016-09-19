@@ -95,7 +95,8 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
                 rp->pubkey = pubkey;
             if ( pubkey33 != 0 && pubkey33[0] != 0 )
                 memcpy(rp->pubkey33,pubkey33,33);
-            //printf("updated relay[%d] %x\n",i,ipbits);
+            basilisk_setmyid(myinfo);
+            //printf("updated relay[%d] %x vs mine.%x\n",i,ipbits,myinfo->myaddr.myipbits);
             return(clonestr("{\"error\":\"relay already there\"}"));
         }
     }
@@ -218,7 +219,7 @@ char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,c
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin value\"}");
     return(retstr);
 }
 
@@ -232,7 +233,7 @@ char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *add
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin balances\"}");
     return(retstr);
 }
 
@@ -247,7 +248,7 @@ char *basilisk_respond_getinfo(struct supernet_info *myinfo,char *CMD,void *addr
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin getinfo\"}");
     return(retstr);
 }
 

@@ -619,15 +619,24 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                 //printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(myinfo,coin,1),coin->spendvectorsaved);
                 if ( iguana_emitfinished(myinfo,coin,1) >= n )
                 {
-                    if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
+                    /*if ( coin->PREFETCHLAG >= 0 && coin->fastfind == 0 )
                     {
                         for (j=0; j<n; j++)
                             if ( coin->bundles[j] != 0 )
                                 iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                         sleep(3);
-                    }
+                    }*/
                     if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
                     {
+                        iguana_fastfindreset(coin);
+                        iguana_fastfindcreate(coin);
+                        if ( coin->fastfind == 0 )
+                        {
+                            for (j=0; j<n; j++)
+                                if ( coin->bundles[j] != 0 )
+                                    iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
+                            sleep(3);
+                        }
                         coin->spendvectorsaved = 1;
                         printf("update volatile data, need.%d vs utxo.%d balances.%d validated.%d\n",n,iguana_utxofinished(coin),iguana_balancefinished(coin),iguana_validated(coin));
                     }
