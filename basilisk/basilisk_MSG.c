@@ -85,6 +85,16 @@ cJSON *basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,int
 
 // respond to incoming OUT, MSG
 
+int32_t basilisk_messagekeyread(uint8_t *key,uint32_t *channelp,uint32_t *msgidp,bits256 *srchashp,bits256 *desthashp)
+{
+    int32_t keylen = 0;
+    keylen += iguana_rwnum(0,&key[keylen],sizeof(uint32_t),channelp);
+    keylen += iguana_rwnum(0,&key[keylen],sizeof(uint32_t),msgidp);
+    keylen += iguana_rwbignum(0,&key[keylen],sizeof(*srchashp),srchashp->bytes);
+    keylen += iguana_rwbignum(0,&key[keylen],sizeof(*desthashp),desthashp->bytes);
+    return(keylen);
+}
+
 int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash)
 {
     int32_t keylen = 0;
@@ -114,7 +124,17 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
 
 int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash)
 {
-    return(-1);
+    uint32_t keychannel,keymsgid; bits256 keysrc,keydest;
+    basilisk_messagekeyread(msg->key,&keychannel,&keymsgid,&keysrc,&keydest);
+    if ( keymsgid >= msgid && keymsgid+width <= msgid && keychannel == channel )
+    {
+        if ( bits256_nonz(srchash) == 0 || bits256_cmp(srchash,keysrc) == 0 )
+        {
+            if ( bits256_nonz(desthash) == 0 || bits256_cmp(desthash,keydest) == 0 )
+                return(0);
+            else return(-1);
+        } else return(-2);
+    } else return(-3);
 }
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
@@ -130,7 +150,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 1;
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
-        if ( msg->broadcast != 0 && basilisk_msgcmp(msg,width,channel,msgid,zero,zero) == 0 )
+        if ( msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
             jaddi(array,basilisk_msgjson(msg,msg->key,msg->keylen));
     }
    //printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
