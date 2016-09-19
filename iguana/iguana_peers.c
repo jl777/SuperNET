@@ -666,7 +666,10 @@ void _iguana_processmsg(struct supernet_info *myinfo,struct iguana_info *coin,in
                     printf("%s recv error on (%s) len.%d errno.%d (%s)\n",addr->ipaddr,H.command,len,-recvlen,strerror(-recvlen));
                     if ( buf != _buf )
                         myfree(buf,len);
-                    //addr->dead = (uint32_t)time(NULL);
+                    if ( addr->numrecverrs++ > 10 )
+                    {
+                        addr->dead = (uint32_t)time(NULL);
+                    }
                     return;
                 }
             }
