@@ -479,9 +479,9 @@ int32_t InstantDEX_process_channelget(struct supernet_info *myinfo,void *ptr,int
 
 INT_ARG(InstantDEX,incoming,requestid)
 {
-    cJSON *retjson,*retarray; uint32_t DEX_channel,msgid,now; int32_t retval,width,drift=3; uint8_t data[8192];
+    cJSON *retjson,*retarray; uint32_t DEX_channel,msgid,now; int32_t retval,width,drift=7; uint8_t data[8192];
     now = (uint32_t)time(NULL);
-    width = (now - myinfo->DEXpoll);
+    width = (now - myinfo->DEXpoll) + 2*drift;
     if ( width < (drift+1) )
         width = 2*drift+1;
     else if ( width > 64 )
