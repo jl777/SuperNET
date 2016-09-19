@@ -107,7 +107,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 3600;
     else if ( width < 1 )
         width = 1;
-    printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
+    //printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
         keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
@@ -144,6 +144,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jadd(retjson,"messages",array);
+        printf("MESSAGES.(%s)\n",jprint(array,0));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"no messages\"}"));
 }
