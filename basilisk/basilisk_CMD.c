@@ -96,6 +96,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
             if ( pubkey33 != 0 && pubkey33[0] != 0 )
                 memcpy(rp->pubkey33,pubkey33,33);
             //printf("updated relay[%d] %x\n",i,ipbits);
+            basilisk_setmyid(myinfo);
             return(clonestr("{\"error\":\"relay already there\"}"));
         }
     }
