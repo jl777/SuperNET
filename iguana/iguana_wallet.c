@@ -1178,7 +1178,11 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                                 if ( strcmp(coin->symbol,"NOTARY") == 0 )
                                 {
                                     for (j=0; j<m; j++)
+                                    {
+                                        printf("+%s ",jstri(fullnodes,j));
                                         basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(jstri(fullnodes,j)),GENESIS_PUBKEY);
+                                    }
+                                    printf(" m.%d relays added\n",m);
                                     incr = sqrt(m);
                                     if ( incr < 1 )
                                         incr = 1, j = 0;
