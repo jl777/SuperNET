@@ -218,7 +218,7 @@ char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,c
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin value\"}");
     return(retstr);
 }
 
@@ -232,7 +232,7 @@ char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *add
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin balances\"}");
     return(retstr);
 }
 
@@ -247,7 +247,7 @@ char *basilisk_respond_getinfo(struct supernet_info *myinfo,char *CMD,void *addr
     {
         retstr = ptr->retstr;
         ptr->finished = (uint32_t)time(NULL);
-    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
+    } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin getinfo\"}");
     return(retstr);
 }
 

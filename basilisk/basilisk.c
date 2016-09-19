@@ -840,7 +840,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *virt,*tmpcoin,*coin,*btcd; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*coin,*notary; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {
@@ -856,7 +856,7 @@ void basilisks_loop(void *arg)
             }
         }
         portable_mutex_unlock(&myinfo->basilisk_mutex);
-        if ( (btcd= iguana_coinfind("BTCD")) != 0 )
+        if ( (notary= iguana_coinfind("NOTARY")) != 0 && myinfo->NOTARY.RELAYID >= 0 )
         {
             maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
             //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -864,14 +864,11 @@ void basilisks_loop(void *arg)
             {
                 if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
                 {
-                    gecko_iteration(myinfo,btcd,virt,maxmillis), flag++;
+                    gecko_iteration(myinfo,notary,virt,maxmillis), flag++;
                 }
             }
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
-            if ( myinfo->NOTARY.RELAYID >= 0 )
-            {
-                basilisk_ping_send(myinfo,btcd);
-            }
+            basilisk_ping_send(myinfo,notary);
         }
         if ( myinfo->expiration != 0 )
         {
@@ -885,9 +882,9 @@ void basilisks_loop(void *arg)
                     //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
                 }
             }
+            if ( myinfo->NOTARY.RELAYID < 0 )
+                basilisk_requests_poll(myinfo);
         }
-        if ( myinfo->NOTARY.RELAYID < 0 && myinfo->expiration != 0 )
-            basilisk_requests_poll(myinfo);
         now = (uint32_t)time(NULL);
         portable_mutex_lock(&myinfo->messagemutex);
         HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
