@@ -440,30 +440,17 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
 
 void iguana_blockpurge(struct iguana_info *coin,struct iguana_block *block)
 {
-    struct iguana_zblock *zblock = (void *)block;
-    if ( coin->chain->zcash == 0 )
+    if ( block->req != 0 )
     {
-        if ( block->req != 0 )
-        {
-            printf("purge req inside block\n");
-            myfree(block->req,block->req->allocsize);
-        }
-        free(block);
+        printf("purge req inside block\n");
+        myfree(block->req,block->req->allocsize);
     }
-    else
-    {
-        if ( zblock->req != 0 )
-        {
-            printf("purge req inside zblock\n");
-            myfree(zblock->req,zblock->req->allocsize);
-        }
-        free(zblock);
-    }
+    free(block);
 }
 
 void iguana_blockspurge(struct iguana_info *coin)
 {
-    struct iguana_block *block,*tmp; struct iguana_zblock *zblock,*ztmp;
+    struct iguana_block *block,*tmp;
     if ( 1 && coin->blocks.hash != 0 )
     {
         HASH_ITER(hh,coin->blocks.hash,block,tmp)
@@ -473,22 +460,7 @@ void iguana_blockspurge(struct iguana_info *coin)
         }
         coin->blocks.hash = 0;
     }
-    if ( 1 && coin->blocks.zhash != 0 )
-    {
-        HASH_ITER(hh,coin->blocks.zhash,zblock,ztmp)
-        {
-            HASH_DEL(coin->blocks.zhash,zblock);
-            iguana_blockpurge(coin,(void *)zblock);
-        }
-        coin->blocks.zhash = 0;
-    }
-    /*if ( coin->blocks.RO != 0 )
-    {
-        printf("deprecated coin->blocks.RO used??\n");
-        myfree(coin->blocks.RO,coin->blocks.maxbits * sizeof(*coin->blocks.RO));
-        coin->blocks.RO = 0;
-    }
-    coin->blocks.maxbits = */coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
+    coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
     printf("clear hwmchain\n");
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
 }

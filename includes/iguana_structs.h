@@ -222,7 +222,7 @@ struct iguana_blockRO RO
 struct iguana_block
 {
     iguana_blockfields;
-    //struct iguana_zcashRO zRO[];
+    struct iguana_zcashRO zRO[];
 } PACKEDSTRUCT;
 
 struct iguana_zblock // mu
@@ -254,8 +254,7 @@ struct iguana_blocks
 {
     char coin[8];
 	struct iguanakv *db;
-    struct iguana_zblock *zhash;
-    struct iguana_block *hash; //struct iguana_blockRO *RO; int32_t maxbits;
+    struct iguana_block *hash;
     int32_t maxblocks,initblocks,hashblocks,pending,issuedblocks,recvblocks,emitblocks,parsedblocks,dirty;
 	struct iguana_zblock hwmchain,prev,prev2;
 };
