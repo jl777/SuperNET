@@ -378,7 +378,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             {
                                 if ( iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1) == 0 )
                                     lastbundle = hash2, lastheight = height;
-                                else if ( missing++ > coin->MAXBUNDLES && strcmp("BTC",coin->symbol) == 0 )
+                                else if ( missing++ > coin->MAXBUNDLES && strcmp("BTCD",coin->symbol) != 0 )
                                 {
                                     printf("missing.%d\n",missing);
                                     break;
@@ -460,13 +460,7 @@ void iguana_blockspurge(struct iguana_info *coin)
         }
         coin->blocks.hash = 0;
     }
-    /*if ( coin->blocks.RO != 0 )
-    {
-        printf("deprecated coin->blocks.RO used??\n");
-        myfree(coin->blocks.RO,coin->blocks.maxbits * sizeof(*coin->blocks.RO));
-        coin->blocks.RO = 0;
-    }
-    coin->blocks.maxbits = */coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
+    coin->blocks.maxblocks = coin->blocks.initblocks = coin->blocks.hashblocks = coin->blocks.issuedblocks = coin->blocks.recvblocks = coin->blocks.emitblocks = coin->blocks.parsedblocks = coin->blocks.dirty = 0;
     printf("clear hwmchain\n");
     memset(&coin->blocks.hwmchain,0,sizeof(coin->blocks.hwmchain));
 }
