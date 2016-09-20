@@ -232,7 +232,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
 {
     cJSON *array,*item; int32_t i,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
-    //printf("process.(%s)\n",jprint(retjson,0));
+printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {
         for (i=nonz=m=0; i<n; i++)
