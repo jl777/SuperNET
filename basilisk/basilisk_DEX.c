@@ -413,7 +413,7 @@ ZERO_ARGS(InstantDEX,allcoins)
 
 STRING_ARG(InstantDEX,available,source)
 {
-    char *retstr; cJSON *vals,*balancejson,*retjson = 0;
+    char *retstr; uint64_t total = 0; int32_t i,n; cJSON *item,*vals,*unspents,*balancejson,*retjson = 0;
     if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
@@ -423,11 +423,20 @@ STRING_ARG(InstantDEX,available,source)
             {
                 if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
                 {
-                    printf("available.(%s)\n",retstr);
+                    //printf("available.(%s)\n",retstr);
                     if ( (balancejson= cJSON_Parse(retstr)) != 0 )
                     {
+                        if ( (unspents= jarray(&n,balancejson,"unspents")) != 0 )
+                        {
+                            for (i=0; i<n; i++)
+                            {
+                                item = jitem(unspents,i);
+                                if ( jobj(item,"unspent") != 0 )
+                                    total += jdouble(item,"amount") * SATOSHIDEN;
+                            }
+                        }
                         retjson = cJSON_CreateObject();
-                        jaddnum(retjson,"result",jdouble(balancejson,"balance"));
+                        jaddnum(retjson,"result",total);
                         free_json(balancejson);
                     }
                     free(retstr);

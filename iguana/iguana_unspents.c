@@ -999,8 +999,6 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
         total = iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
         if ( rmdarray != 0 )
             free(rmdarray);
-        jaddnum(retjson,"total",dstr(total));
-        jaddnum(retjson,"balance",dstr(total));
     }
     else
     {
