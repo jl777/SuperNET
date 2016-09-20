@@ -423,6 +423,7 @@ STRING_ARG(InstantDEX,available,source)
             {
                 if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
                 {
+                    printf("available.(%s)\n",retstr);
                     if ( (balancejson= cJSON_Parse(retstr)) != 0 )
                     {
                         retjson = cJSON_CreateObject();

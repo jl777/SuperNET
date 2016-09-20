@@ -627,7 +627,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                                 iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                         sleep(3);
                     }*/
-                    if ( iguana_validated(coin) < n || iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n )
+                    if ( iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n ) //iguana_validated(coin) < n || 
                     {
                         iguana_fastfindreset(coin);
                         iguana_fastfindcreate(coin);
