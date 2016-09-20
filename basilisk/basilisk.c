@@ -820,7 +820,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     } else printf("null incoming\n");
     if ( hwm > 0. )
     {
-        if ( bits256_cmp(myinfo->myaddr.persistent,issueR.hash) == 0 ) // my request
+        if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
             printf("my req hwm %f\n",hwm);
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )

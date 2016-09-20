@@ -29,7 +29,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
         for (i=0; i<sizeof(R); i++)
             printf("%02x",((uint8_t *)&R)[i]);
         printf(" <- crc.%u\n",calc_crc32(0,(void *)&R,sizeof(R)));
-        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.hash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)));
+        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.srchash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)));
     }
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
@@ -46,7 +46,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
 {
     uint32_t requestid,quoteid;
     memset(rp,0,sizeof(*rp));
-    rp->hash = jbits256(reqjson,"hash");
+    rp->srchash = jbits256(reqjson,"srchash");
     rp->desthash = jbits256(reqjson,"desthash");
     rp->srcamount = j64bits(reqjson,"srcamount");
     rp->minamount = j64bits(reqjson,"minamount");
@@ -102,7 +102,7 @@ struct basilisk_swap *basilisk_request_started(struct supernet_info *myinfo,uint
 
 int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_request *rp)
 {
-    if ( bits256_cmp(rp->hash,ref->hash) != 0 || memcmp(rp->src,ref->src,sizeof(ref->src)) != 0 || memcmp(rp->dest,ref->dest,sizeof(ref->dest)) != 0 || rp->srcamount != ref->srcamount || rp->timestamp != ref->timestamp )
+    if ( bits256_cmp(rp->srchash,ref->srchash) != 0 || memcmp(rp->src,ref->src,sizeof(ref->src)) != 0 || memcmp(rp->dest,ref->dest,sizeof(ref->dest)) != 0 || rp->srcamount != ref->srcamount || rp->timestamp != ref->timestamp )
     {
         printf("basilisk_request_listprocess mismatched hash\n");
         return(-1);
@@ -162,7 +162,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
         pendingid = active->req.quoteid;
-    if ( bits256_cmp(myinfo->myaddr.persistent,list[0].hash) == 0 ) // my request
+    if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
         myrequest = 1;
     for (i=0; i<n; i++)
     {

@@ -548,7 +548,7 @@ struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
     uint64_t srcamount,minamount; // 16 to 31
-    bits256 hash; // 32 to 63
+    bits256 srchash; // 32 to 63
     bits256 desthash;
     char src[8],dest[8];
     //char volatile_start,message[43];

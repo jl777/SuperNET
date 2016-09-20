@@ -751,7 +751,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     swap->choosei %= INSTANTDEX_DECKSIZE;
     swap->otherchoosei = -1;
     swap->myhash = myinfo->myaddr.persistent;
-    if ( bits256_cmp(swap->myhash,swap->req.hash) == 0 )
+    if ( bits256_cmp(swap->myhash,swap->req.srchash) == 0 )
     {
         swap->otherhash = swap->req.desthash;
         if ( strcmp(swap->req.src,swap->bobstr) == 0 )
@@ -764,7 +764,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     }
     else if ( bits256_cmp(swap->myhash,swap->req.desthash) == 0 )
     {
-        swap->otherhash = swap->req.hash;
+        swap->otherhash = swap->req.srchash;
         if ( strcmp(swap->req.dest,swap->bobstr) == 0 )
             swap->iambob = 1;
         else if ( strcmp(swap->req.src,swap->alicestr) != 0 )
