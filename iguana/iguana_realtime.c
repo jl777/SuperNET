@@ -767,12 +767,12 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
     }
     iguana_RTbalance_verify("start iterate",coin);
     /*if ( strcmp(coin->symbol,"BTC") != 0 && strcmp(coin->symbol,"LTC") != 0 )
-    {
-        if ( block->height < coin->firstRTheight+coin->minconfirms )
-            return;
-        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
-            return;
-    }*/
+     {
+     if ( block->height < coin->firstRTheight+coin->minconfirms )
+     return;
+     if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
+     return;
+     }*/
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
     {
         if ( 0 && coin->firstRTheight > 0 )
@@ -817,11 +817,8 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 }
             }
             coin->RTheight += i;
-<<<<<<< HEAD
-=======
             //if ( coin->RTheight != coin->lastRTheight+1 )
             //    printf("ERROR: ");
->>>>>>> master
             //printf("%s >= RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
         }
         else if ( block->height == coin->lastRTheight )
@@ -842,24 +839,24 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             char str[65]; printf("reorg RTheight.%d vs block.%d %s\n",coin->RTheight,block->height,bits256_str(str,block->RO.hash2));
             iguana_RTreset(coin);
             /*while ( coin->RTheight > block->height )
-            {
-                if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->RTheight-1)) < 0 )
-                {
-                    printf("error subtracting %d\n",coin->RTheight-1);
-                    coin->lastRTheight = coin->RTheight-1;
-                    portable_mutex_unlock(&coin->RTmutex);
-                    return;
-                }
-                coin->RTheight--;
-            }
-            if ( iguana_RTblockadd(myinfo,coin,block) < 0 )
-            {
-                printf("error adding %d\n",block->height);
-                portable_mutex_unlock(&coin->RTmutex);
-                return;
-            }
-            coin->lastRTheight = block->height;
-            coin->RTheight = coin->lastRTheight+1;*/
+             {
+             if ( iguana_RTblocksub(myinfo,coin,iguana_RTblock(coin,coin->RTheight-1)) < 0 )
+             {
+             printf("error subtracting %d\n",coin->RTheight-1);
+             coin->lastRTheight = coin->RTheight-1;
+             portable_mutex_unlock(&coin->RTmutex);
+             return;
+             }
+             coin->RTheight--;
+             }
+             if ( iguana_RTblockadd(myinfo,coin,block) < 0 )
+             {
+             printf("error adding %d\n",block->height);
+             portable_mutex_unlock(&coin->RTmutex);
+             return;
+             }
+             coin->lastRTheight = block->height;
+             coin->RTheight = coin->lastRTheight+1;*/
         }
         portable_mutex_unlock(&coin->RTmutex);
     }
