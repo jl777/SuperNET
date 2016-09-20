@@ -817,8 +817,8 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
                 }
             }
             coin->RTheight += i;
-            if ( coin->RTheight != coin->lastRTheight+1 )
-                printf("ERROR: ");
+            //if ( coin->RTheight != coin->lastRTheight+1 )
+            //    printf("ERROR: ");
             //printf("%s >= RTnewblock RTheight %d prev %d\n",coin->symbol,coin->RTheight,coin->lastRTheight);
         }
         else if ( block->height == coin->lastRTheight )

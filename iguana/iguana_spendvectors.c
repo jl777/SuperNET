@@ -706,18 +706,21 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
-                for (i=0; i<coin->bundlescount-1; i++)
+                if ( coin->longestchain < coin->bundlescount*coin->chain->bundlesize )
                 {
-                    if ( (bp= coin->bundles[i]) != 0 )
+                    for (i=0; i<coin->bundlescount-1; i++)
                     {
-                        bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                        if ( (bp= coin->bundles[i]) != 0 )
+                        {
+                            bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                        }
                     }
+                    coin->matchedfiles = 1;
+                    coin->spendvectorsaved = (uint32_t)time(NULL);
+                    coin->spendvalidated = 0;
+                    printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
+                    iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
                 }
-                coin->matchedfiles = 1;
-                coin->spendvectorsaved = (uint32_t)time(NULL);
-                coin->spendvalidated = 0;
-                printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
-                iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
             }
             else
             {
@@ -738,17 +741,9 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
         }
     }
-    if ( iguana_fastfindinit(coin) == 0 )//&& coin->PREFETCHLAG >= 0 )
+    if ( iguana_fastfindinit(coin) == 0 )
         iguana_fastfindcreate(coin);
-    /*for (j=0; j<coin->bundlescount; j++)
-        if ( (bp= coin->bundles[j]) != 0 )
-        {
-            iguana_volatilesalloc(coin,&bp->ramchain,1);
-            iguana_volatilesmap(coin,&bp->ramchain);
-        }
-    iguana_update_balances(coin);*/
     iguana_datachain_scan(myinfo,coin,CRYPTO777_RMD160);
-    //iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);*/
     printf("end %s volatilesinit\n",coin->symbol);
     return(coin->bundlescount);
 }
