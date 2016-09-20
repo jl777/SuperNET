@@ -439,11 +439,11 @@ STRING_ARG(InstantDEX,available,source)
                             }
                         }
 if ( total == 0 )
-total = .005;
-                        printf("n.%d total %.8f\n",n,dstr(total));
+total = 500000;
                         retjson = cJSON_CreateObject();
                         jaddnum(retjson,"result",dstr(total));
                         free_json(balancejson);
+                        printf("n.%d total %.8f (%s)\n",n,dstr(total),jprint(retjson,0));
                     }
                     free(retstr);
                 }
