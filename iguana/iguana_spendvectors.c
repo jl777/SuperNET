@@ -636,6 +636,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     }
     if ( coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
     {
+        printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
         iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
         return(coin->bundlescount);
     }
