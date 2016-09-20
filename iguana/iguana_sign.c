@@ -200,6 +200,11 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
                 if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
                     need_op0 = 1;
+                if ( V != 0 )
+                {
+                    V->spendlen = (int32_t)strlen(spendstr) >> 1;
+                    decode_hex(V->spendscript,V->spendlen,spendstr);
+                }
             }
         }
         if ( (redeemstr= jstr(vinobj,"redeemScript")) == 0 || is_hexstr(redeemstr,(int32_t)strlen(redeemstr)) <= 0 )
@@ -268,7 +273,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( vin->vinscript == 0 )
         {
-            printf("null vinscript case\n");
+            //printf("null vinscript case -> need to sign this tx\n");
             vin->vinscript = serialized;
             vin->vinscript[0] = 0;
             vin->scriptlen = 1;
@@ -344,7 +349,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     }
     //printf("output sequence.[%d] <- %x\n",len,vin->sequence);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
-    if ( spendstr != 0 )
+    if ( 0 && spendstr != 0 )
     {
         //printf("serialized.%p len.%d\n",serialized,len);
         n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,&serialized[len],spendstr);
