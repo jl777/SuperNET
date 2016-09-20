@@ -423,7 +423,7 @@ STRING_ARG(InstantDEX,available,source)
             {
                 if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
                 {
-                    //printf("available.(%s)\n",retstr);
+                    printf("available.(%s)\n",retstr);
                     if ( (balancejson= cJSON_Parse(retstr)) != 0 )
                     {
                         if ( (unspents= jarray(&n,balancejson,"unspents")) != 0 )
@@ -438,6 +438,7 @@ STRING_ARG(InstantDEX,available,source)
                                 }
                             }
                         }
+                        printf("n.%d total %.8f\n",n,dstr(total));
                         retjson = cJSON_CreateObject();
                         jaddnum(retjson,"result",dstr(total));
                         free_json(balancejson);
