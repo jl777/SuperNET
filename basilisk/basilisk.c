@@ -742,9 +742,8 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
             {
-                if ( coin->FULLNODE != 0 || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
+                if ( (coin != 0 && coin->FULLNODE != 0) || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
                 {
-                    //printf("FULL.%d RELAYID.%d NUMRELAYS.%d services %s\n",coin->FULLNODE,RELAYID,NUMRELAYS,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
