@@ -244,7 +244,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                             break;
                     if ( s == myinfo->NOTARY.NUMRELAYS )
                     {
-                        printf("skip non-relay.(%s)\n",addr->ipaddr);
+                        //printf("skip non-relay.(%s)\n",addr->ipaddr);
                         continue;
                     }
                     valid = 1;
@@ -806,7 +806,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        //printf("poll.(%s)\n",retstr);
+//printf("poll.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )

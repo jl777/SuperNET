@@ -253,7 +253,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
 
 char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
+    cJSON *retjson; double endmillis; uint64_t tag; uint32_t timeout,immedmillis; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
@@ -272,9 +272,26 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         }*/
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( jstr(json,"immediate") != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
-            retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
-        else retjsonstr = iguana_blockingjsonstr(myinfo,coin,jsonstr,tag,timeout,remoteaddr,port);
+        if ( (immedmillis= juint(json,"immediate")) != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
+        {
+            if ( coin != 0 )
+            {
+                if ( immedmillis > 60000 )
+                    immedmillis = 60000;
+                endmillis = OS_milliseconds() + immedmillis;
+                while ( 1 )
+                {
+                    if ( coin->busy_processing == 0 )
+                        break;
+                    usleep(100);
+                    if ( OS_milliseconds() > endmillis )
+                        break;
+                }
+                if ( coin->busy_processing == 0 )
+                    retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
+                else retjsonstr = clonestr("{\"error\":\"coin is busy processing\"}");
+            } else retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
+        } else retjsonstr = iguana_blockingjsonstr(myinfo,coin,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
         {
             if ( (retjsonstr[0] == '{' || retjsonstr[0] == '[') && (retjson= cJSON_Parse(retjsonstr)) != 0 )
@@ -593,6 +610,7 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
         else
         {
             IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
+            myinfo->remoteorigin = juint(argjson,"remoteorigin");
             free_json(argjson);
             printf("Will run (%s) after initialized with %d threads\n",COMMANDLINE_ARGFILE,IGUANA_NUMHELPERS);
         }

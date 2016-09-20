@@ -836,8 +836,23 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize; struct iguana_info *coin = 0;
-    char symbol[64],buf[4096],urlmethod[16],*data,url[1024],furl[1024],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
+    char symbol[64],buf[4096],*originstr,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
+    if ( myinfo->remoteorigin == 0 )
+    {
+        n = (int32_t)(strlen(urlstr) - strlen("Origin: "));
+        for (i=0; i<n; i++)
+            if ( strncmp("Origin: ",&urlstr[i],strlen("Origin: ")) == 0 )
+            {
+                originstr = &urlstr[i + strlen("Origin: ")];
+                if ( strncmp("null",originstr,strlen("null")) != 0 && strncmp("http://localhost:",originstr,strlen("http://localhost:")) != 0 && strncmp("http://127.0.0.1:",originstr,strlen("http://127.0.0.1:")) != 0 && strncmp("http://easydex.supernet.org:",originstr,strlen("http://easydex.supernet.org:")) != 0 )
+                {
+                    printf("remote Origin REJECT.(%s)\n",urlstr);
+                    return(clonestr("{\"error\":\"remote origin not enabled\"}"));
+                } //else printf("allow file://\n");
+                break;
+            }
+    }
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
     urlmethod[i++] = 0;
