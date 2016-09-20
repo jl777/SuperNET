@@ -781,7 +781,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
     }
     if ( block != 0 && coin->RTheight > 0 && coin->utxoaddrtable != 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
     {
-        if ( (block->height-coin->minconfirms) <= coin->RTheight )
+        if ( block->height <= (coin->RTheight - coin->minconfirms + 1) )
             return;
         if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
             return;
