@@ -951,7 +951,7 @@ void basilisks_loop(void *arg)
         } // else printf("not notary %p %d\n",notary,myinfo->NOTARY.RELAYID);
         else if ( myinfo->expiration != 0 )
         {
-            HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
+            /*HASH_ITER(hh,myinfo->allcoins,coin,tmpcoin)
             {
                 if ( strcmp(coin->symbol,"NOTARY") != 0 && (myinfo->Cunspents == 0 || time(NULL) > coin->lastunspentsupdate+60) )
                 {
@@ -960,7 +960,7 @@ void basilisks_loop(void *arg)
                     coin->lastunspentsupdate = now;
                     //printf(">>>>>>>>>>>>> update %s finished\n",coin->symbol);
                 }
-            }
+            }*/
             if ( myinfo->IAMLP != 0 || myinfo->DEXactive > now )
                 basilisk_requests_poll(myinfo);
         }

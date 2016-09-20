@@ -1002,6 +1002,7 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
     }
     else
     {
+        basilisk_unspents_update(myinfo,coin);
         portable_mutex_lock(&myinfo->bu_mutex);
         if ( (unspents= myinfo->Cunspents) != 0 && (array= jobj(unspents,coin->symbol)) != 0 )
             unspents = jduplicate(array);
