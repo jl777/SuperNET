@@ -991,14 +991,16 @@ int32_t iguana_unspentfindjson(cJSON *destarray,cJSON *item)
 
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
-    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
+    uint64_t total = 0; int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
     {
         retjson = cJSON_CreateArray();
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
-        iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
+        total = iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
         if ( rmdarray != 0 )
             free(rmdarray);
+        jaddnum(retjson,"total",dstr(total));
+        jaddnum(retjson,"balance",dstr(total));
     }
     else
     {
