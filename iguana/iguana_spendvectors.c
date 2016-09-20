@@ -706,6 +706,13 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
+                for (i=0; i<coin->bundlescount-1; i++)
+                {
+                    if ( (bp= coin->bundles[i]) != 0 )
+                    {
+                        bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                    }
+                }
                 coin->matchedfiles = 1;
             }
             else
