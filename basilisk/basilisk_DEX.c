@@ -456,7 +456,7 @@ STRING_ARG(InstantDEX,available,source)
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
     uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
-    myinfo->DEXactive = (uint32_t)time(NULL) + BASILISK_TIMEOUT;
+    myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"srchash") == 0 )
         jaddbits256(vals,"srchash",myinfo->myaddr.pubkey);
