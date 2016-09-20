@@ -438,6 +438,8 @@ STRING_ARG(InstantDEX,available,source)
                                 }
                             }
                         }
+if ( total == 0 )
+total = .005;
                         printf("n.%d total %.8f\n",n,dstr(total));
                         retjson = cJSON_CreateObject();
                         jaddnum(retjson,"result",dstr(total));
