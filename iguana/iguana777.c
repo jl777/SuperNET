@@ -629,7 +629,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                     }*/
                     if ( (iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n || iguana_validated(coin) < n) )
                     {
-                        printf("About to generate tables\n"), getchar();
+                        //printf("About to generate tables\n"), getchar();
                         iguana_fastfindreset(coin);
                         iguana_fastfindcreate(coin);
                         if ( coin->fastfind == 0 )
