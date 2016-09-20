@@ -845,7 +845,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             if ( strncmp("Origin: ",&urlstr[i],strlen("Origin: ")) == 0 )
             {
                 originstr = &urlstr[i + strlen("Origin: ")];
-                if ( strncmp("null",originstr,strlen("null")) != 0 && strncmp("http://localhost:",originstr,strlen("http://localhost:")) != 0 && strncmp("http://127.0.0.1:",originstr,strlen("http://127.0.0.1:")) != 0 )
+                if ( strncmp("null",originstr,strlen("null")) != 0 && strncmp("http://localhost:",originstr,strlen("http://localhost:")) != 0 && strncmp("http://127.0.0.1:",originstr,strlen("http://127.0.0.1:")) != 0 && strncmp("http://easydex.supernet.org:",originstr,strlen("http://easydex.supernet.org:")) != 0 )
                 {
                     printf("remote Origin REJECT.(%s)\n",urlstr);
                     return(clonestr("{\"error\":\"remote origin not enabled\"}"));

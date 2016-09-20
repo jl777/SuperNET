@@ -882,7 +882,7 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
         bp->hdrtime = (uint32_t)time(NULL);
         queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
     }
-    if ( strcmp("BTC",coin->symbol) != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
+    if ( time(NULL) > bp->hdrtime+dist && strcmp("BTC",coin->symbol) != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
         if ( bp->numhashes < bp->n && bp->numcached < bp->n )
         {
@@ -890,6 +890,7 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
             for (i=0; i<bp->n; i++)
                 if ( GETBIT(bp->haveblock,i) == 0 )
                     bp->issued[i] = 0;
+            bp->hdrtime = (uint32_t)time(NULL);
             queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
         }
         iguana_bundleissuemissing(myinfo,coin,bp,3,3.);
