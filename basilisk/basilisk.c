@@ -914,7 +914,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 
 void basilisks_loop(void *arg)
 {
-    struct iguana_info *virt,*tmpcoin,*coin,*notary; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
+    struct iguana_info *virt,*tmpcoin,*notary; struct basilisk_message *msg,*tmpmsg; struct basilisk_item *tmp,*pending; uint32_t now; int32_t iter,maxmillis,flag=0; struct supernet_info *myinfo = arg;
     iter = 0;
     while ( 1 )
     {

@@ -413,10 +413,29 @@ ZERO_ARGS(InstantDEX,allcoins)
 
 STRING_ARG(InstantDEX,available,source)
 {
+    char *retstr; cJSON *vals,*balancejson,*retjson = 0;
     if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
-            return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
+        {
+            //return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
+            if ( (vals= basilisk_balance_valsobj(myinfo,coin)) != 0 )
+            {
+                if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
+                {
+                    if ( (balancejson= cJSON_Parse(retstr)) != 0 )
+                    {
+                        retjson = cJSON_CreateObject();
+                        jaddnum(retjson,"result",jdouble(balancejson,"balance"));
+                        free_json(balancejson);
+                    }
+                    free(retstr);
+                }
+                free_json(vals);
+                if ( retjson != 0 )
+                    return(jprint(retjson,1));
+            }
+        }
         printf("InstantDEX_available: need to unlock wallet\n");
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     }
