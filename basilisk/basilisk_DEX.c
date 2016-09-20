@@ -100,7 +100,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->timestamp),&rp->timestamp); // must be 2nd
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quoteid),&rp->quoteid);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quotetime),&rp->quotetime);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->relaybits),&rp->relaybits);
+    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->relaybits),&rp->relaybits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->srcamount),&rp->srcamount);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->minamount),&rp->minamount);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->srchash),rp->srchash.bytes);
@@ -142,12 +142,12 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
 
 cJSON *basilisk_requestjson(struct basilisk_request *rp)
 {
-    char ipaddr[64]; cJSON *item = cJSON_CreateObject();
-    if ( rp->relaybits != 0 )
+    cJSON *item = cJSON_CreateObject();
+    /*if ( rp->relaybits != 0 )
     {
         expand_ipbits(ipaddr,rp->relaybits);
         jaddstr(item,"relay",ipaddr);
-    }
+    }*/
     jaddbits256(item,"srchash",rp->srchash);
     if ( bits256_nonz(rp->desthash) != 0 )
         jaddbits256(item,"desthash",rp->desthash);
@@ -209,6 +209,8 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         rp->srchash = jbits256(valsobj,"srchash");
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
+        //if ( jstr(valsobj,"relay") != 0 )
+        //    rp->relaybits = (uint32_t)calc_ipbits(jstr(valsobj,"relay"));
         rp->requestid = basilisk_requestid(rp);
         if ( rp->destamount != 0 && bits256_nonz(rp->desthash) != 0 )
         {
@@ -302,7 +304,7 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
                         break;
                 if ( k == m )
                 {
-                    requests[m].relaybits = relay->ipbits;
+                    //requests[m].relaybits = relay->ipbits;
                     requests[m++] = *rp;
                 }
             }
@@ -438,12 +440,14 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
         {
             printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
-            if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
-                R.relaybits = myinfo->myaddr.myipbits;
+            //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+            //    R.relaybits = myinfo->myaddr.myipbits;
             if ( (reqjson= basilisk_requestjson(&R)) != 0 )
                 free_json(reqjson);
             datalen = basilisk_rwDEXquote(1,serialized,&R);
-            printf("R.requestid.%u vs calc %u, q.%u datalen.%d\n",R.requestid,basilisk_requestid(&R),R.quoteid,datalen);
+            int32_t i; for (i=0; i<sizeof(R); i++)
+                printf("%02x",((uint8_t *)&R)[i]);
+            printf(" R.requestid.%u vs calc %u, q.%u datalen.%d\n",R.requestid,basilisk_requestid(&R),R.quoteid,datalen);
             basilisk_rwDEXquote(0,serialized,&R);
         } else printf("error creating request\n");
     }

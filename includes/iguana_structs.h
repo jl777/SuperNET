@@ -553,7 +553,7 @@ struct basilisk_request
     char src[8],dest[8];
     //char volatile_start,message[43];
     uint64_t destamount;
-    uint32_t relaybits;
+    //uint32_t relaybits;
 }; // __attribute__((packed))
 
 struct basilisk_relaystatus

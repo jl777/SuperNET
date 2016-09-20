@@ -21,7 +21,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
     R = *rp;
     R.requestid = R.quoteid = R.quotetime = 0;
     R.destamount = 0;
-    R.relaybits = 0;
+    //R.relaybits = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
     if ( 0 )
     {
@@ -38,7 +38,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.relaybits = 0;
+    R.requestid = R.quoteid = 0; //R.relaybits =
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
@@ -53,8 +53,8 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->destamount = j64bits(reqjson,"destamount");
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
-    if ( jstr(reqjson,"relay") != 0 )
-        rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
+    //if ( jstr(reqjson,"relay") != 0 )
+    //    rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
     rp->timestamp = juint(reqjson,"timestamp");
     rp->quotetime = juint(reqjson,"quotetime");
     safecopy(rp->src,jstr(reqjson,"src"),sizeof(rp->src));
@@ -67,7 +67,11 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     }
     rp->requestid = basilisk_requestid(rp);
     if ( requestid != rp->requestid )
-        printf("basilisk_parsejson requestid.%u != %u error\n",requestid,rp->requestid);
+    {
+        int32_t i; for (i=0; i<sizeof(*rp); i++)
+            printf("%02x",((uint8_t *)rp)[i]);
+        printf(" basilisk_parsejson.(%s) requestid.%u != %u error\n",jprint(reqjson,0),requestid,rp->requestid);
+    }
     return(rp);
 }
 
@@ -159,7 +163,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
-    printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
+    //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
         pendingid = active->req.quoteid;
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
@@ -230,19 +234,26 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
 
 double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
-    cJSON *array,*item; int32_t i,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
+    cJSON *array,*item; uint8_t *hexdata,*allocptr,hexspace[8192]; char *hexstr; int32_t i,hexlen,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
-printf("process.(%s)\n",jprint(retjson,0));
+//printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {
         for (i=nonz=m=0; i<n; i++)
         {
             item = jitem(array,i);
-            if ( jobj(item,"error") != 0 )
+            if ( jobj(item,"error") == 0 )
             {
+                if ( (hexstr= jstr(item,"data")) != 0 )
+                {
+                    if ( (hexdata= get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr)) != 0 )
+                    {
+                        basilisk_rwDEXquote(0,hexdata,&R);
+                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                    }
+                } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )
                 {
-                    basilisk_parsejson(&R,item);
                     if ( refR.requestid == R.requestid )
                         list[m++] = R;
                     else
@@ -258,7 +269,10 @@ printf("process.(%s)\n",jprint(retjson,0));
                 }
                 nonz++;
                 if ( m < sizeof(list)/sizeof(*list) )
-                    basilisk_parsejson(&list[m++],item);
+                {
+                    //basilisk_parsejson(&list[m++],item);
+                    list[m++] = R;
+                }
             }
         }
         //printf("process_results n.%d m.%d nonz.%d\n",n,m,nonz);
