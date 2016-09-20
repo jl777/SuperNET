@@ -804,7 +804,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
-    char *retstr; cJSON *outerarray,*retjson; int32_t i,n; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[8192]; cJSON *outerarray,*retjson; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
@@ -832,9 +832,11 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f\n",hwm);
+            printf("other req hwm %f >>>>>>>>>>> send response\n",hwm);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
+            datalen = basilisk_rwDEXquote(1,data,&issueR);
+            basilisk_channelsend(myinfo,issueR.desthash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
