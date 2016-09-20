@@ -432,11 +432,14 @@ STRING_ARG(InstantDEX,available,source)
                             {
                                 item = jitem(unspents,i);
                                 if ( jobj(item,"unspent") != 0 )
+                                {
                                     total += jdouble(item,"amount") * SATOSHIDEN;
+                                    printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
+                                }
                             }
                         }
                         retjson = cJSON_CreateObject();
-                        jaddnum(retjson,"result",total);
+                        jaddnum(retjson,"result",dstr(total));
                         free_json(balancejson);
                     }
                     free(retstr);
