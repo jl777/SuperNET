@@ -634,6 +634,11 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             from_ro = 0;
         }
     }
+    if ( coin->longestchain <= coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
+    {
+        iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
+        return(coin->bundlescount);
+    }
     /*if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
