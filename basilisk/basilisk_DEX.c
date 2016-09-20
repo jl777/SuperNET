@@ -417,8 +417,11 @@ STRING_ARG(InstantDEX,available,source)
     {
         if ( myinfo->expiration != 0 )
             return(bitcoinrpc_getbalance(myinfo,coin,json,remoteaddr,"*",coin->chain->minconfirms,1,1<<30));
-        else return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    } else return(clonestr("{\"error\":\"specified coin is not active\"}"));
+        printf("InstantDEX_available: need to unlock wallet\n");
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    }
+    printf("InstantDEX_available: %s is not active\n",source!=0?source:"");
+    return(clonestr("{\"error\":\"specified coin is not active\"}"));
 }
 
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)

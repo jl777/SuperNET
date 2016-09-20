@@ -1658,6 +1658,7 @@ STRING_AND_THREEINTS(bitcoinrpc,getbalance,account,minconf,includeempty,lastheig
     if ( rmdarray != 0 )
         free(rmdarray);
     retjson = cJSON_CreateObject();
+    printf("%s balance %.8f\n",coin->symbol,dstr(balance));
     jaddnum(retjson,"result",dstr(balance));
     return(jprint(retjson,1));
 }
