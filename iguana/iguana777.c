@@ -615,7 +615,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
             //if ( (bp= coin->current) != 0 && bp->numsaved >= coin->chain->bundlesize && bp->startutxo == 0 )
             //    iguana_bundlefinalize(myinfo,coin,bp,mem,memB);
             n = coin->bundlescount-1;
-            if ( coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
+            if ( coin->matchedfiles == 0 && coin->spendvectorsaved == 0 && coin->blocks.hwmchain.height/coin->chain->bundlesize >= (coin->longestchain-coin->chain->bundlesize)/coin->chain->bundlesize )
             {
                 //printf("%s n.%d emitfinished.%d coin->spendvectorsaved %d\n",coin->symbol,n,iguana_emitfinished(myinfo,coin,1),coin->spendvectorsaved);
                 if ( iguana_emitfinished(myinfo,coin,1) >= n )
@@ -627,8 +627,9 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                                 iguana_alloctxbits(coin,&coin->bundles[j]->ramchain);
                         sleep(3);
                     }*/
-                    if ( iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n ) //iguana_validated(coin) < n ||
+                    if ( (iguana_utxofinished(coin) < n || iguana_balancefinished(coin) < n || iguana_validated(coin) < n) )
                     {
+                        printf("About to generate tables\n"), getchar();
                         iguana_fastfindreset(coin);
                         iguana_fastfindcreate(coin);
                         if ( coin->fastfind == 0 )

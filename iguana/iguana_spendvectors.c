@@ -706,6 +706,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
+                coin->matchedfiles = 1;
             }
             else
             {
