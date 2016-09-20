@@ -78,6 +78,7 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             printf("ADD ALLCOINS.(%s) name.(%s) size %ld numvirts.%d\n",symbol,name,sizeof(*coin),myinfo->allcoins_numvirts);
             coin->symbolcrc = symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
             //portable_mutex_lock(&myinfo->allcoins_mutex);
+            coin->coinid = myinfo->totalcoins++;
                 HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             struct iguana_info *virt,*tmp;
@@ -755,7 +756,7 @@ void iguana_helper(void *arg)
                         }
                     }
                 }
-                if ( helperid == 0 )
+                if ( (helperid % IGUANA_NUMHELPERS) == (coin->coinid % IGUANA_NUMHELPERS) )
                     iguana_coin_mainiter(myinfo,coin,&numpeers,&MEM,MEMB);
             }
         }
@@ -932,11 +933,11 @@ void iguana_coinloop(void *arg)
                     }
                     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
                     {
-                        portable_mutex_lock(&coin->allcoins_mutex);
+                        //portable_mutex_lock(&coin->allcoins_mutex);
                         coin->busy_processing = 1;
                         flag += iguana_processrecv(myinfo,coin);
                         coin->busy_processing = 0;
-                        portable_mutex_unlock(&coin->allcoins_mutex);
+                        //portable_mutex_unlock(&coin->allcoins_mutex);
                         /*if ( strcmp(coin->symbol,"BTCD") == 0 && coin->RTheight > 0 && coin->RTheight > coin->chain->bundlesize )
                         {
                             int32_t hdrsi,nonz,errs; struct iguana_pkhash *refP; struct iguana_bundle *bp;
