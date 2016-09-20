@@ -714,6 +714,10 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                     }
                 }
                 coin->matchedfiles = 1;
+                coin->spendvectorsaved = (uint32_t)time(NULL);
+                coin->spendvalidated = 0;
+                printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
+                iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
             }
             else
             {
