@@ -334,6 +334,7 @@ void *basilisk_bitcoinbalances(struct basilisk_item *Lptr,struct supernet_info *
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"ipaddr",myinfo->ipaddr);
     jaddnum(retjson,"total",dstr(total));
+    jaddnum(retjson,"balance",dstr(total));
     jadd(retjson,"addresses",array);
     if ( unspents != 0 )
         jadd(retjson,"unspents",unspents);
@@ -1006,17 +1007,23 @@ void basilisk_unspents_process(struct supernet_info *myinfo,struct iguana_info *
     portable_mutex_unlock(&myinfo->bu_mutex);
 }
 
-void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *coin)
+cJSON *basilisk_balance_valsobj(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    char *retstr; cJSON *vals; int32_t oldest,i,RTheight;
-    vals = cJSON_CreateObject();
+    int32_t oldest,i,RTheight; cJSON *vals;
     for (i=oldest=0; i<BASILISK_MAXRELAYS; i++)
         if ( (RTheight= coin->relay_RTheights[i]) != 0 && (oldest == 0 || RTheight < oldest) )
             oldest = RTheight;
+    vals = cJSON_CreateObject();
     jaddnum(vals,"firstheight",oldest);
     jaddnum(vals,"history",3);
     jaddstr(vals,"coin",coin->symbol);
-    if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
+    return(vals);
+}
+
+void basilisk_unspents_update(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr; cJSON *vals;
+    if ( (vals= basilisk_balance_valsobj(myinfo,coin)) != 0 && (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
     {
         basilisk_unspents_process(myinfo,coin,retstr);
         free(retstr);
