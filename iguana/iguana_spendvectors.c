@@ -618,7 +618,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
-    for (i=0; i<coin->bundlescount; i++)//balanceswritten; i++)
+    for (i=0; i<coin->bundlescount; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
@@ -634,6 +634,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             from_ro = 0;
         }
     }
+    printf("i.%d volatilesinit\n",i);
     if ( coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
     {
         printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
@@ -790,7 +791,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         }
     }
     printf("%s i.%d bundlescount.%d\n",coin->symbol,i,coin->bundlescount);
-    if ( coin->balanceswritten > 1 )
+    //if ( coin->balanceswritten > 1 )
         coin->balanceswritten = iguana_volatilesinit(myinfo,coin);
     /*if ( coin->balanceswritten > 1 )
     {
@@ -804,7 +805,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         }
     }*/
     printf("%s i.%d balanceswritten.%d\n",coin->symbol,i,coin->balanceswritten);
-    if ( coin->balanceswritten < coin->bundlescount )
+    /*if ( coin->balanceswritten < coin->bundlescount )
     {
         for (i=0*coin->balanceswritten; i<coin->bundlescount; i++)
         {
@@ -817,7 +818,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
         printf("iguana_bundlesQ %d to %d\n",coin->balanceswritten,coin->bundlescount);
     }
     if ( (coin->origbalanceswritten= coin->balanceswritten) > 0 )
-        iguana_volatilesinit(myinfo,coin);
+        iguana_volatilesinit(myinfo,coin);*/
     iguana_savehdrs(coin);
     iguana_fastlink(coin,coin->balanceswritten * coin->chain->bundlesize - 1);
     iguana_walkchain(coin,0);
