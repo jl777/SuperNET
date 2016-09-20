@@ -21,7 +21,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
     R = *rp;
     R.requestid = R.quoteid = R.quotetime = 0;
     R.destamount = 0;
-    R.relaybits = 0;
+    //R.relaybits = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
     if ( 0 )
     {
@@ -38,7 +38,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = R.relaybits = 0;
+    R.requestid = R.quoteid = 0; //R.relaybits =
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
@@ -53,8 +53,8 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->destamount = j64bits(reqjson,"destamount");
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
-    if ( jstr(reqjson,"relay") != 0 )
-        rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
+    //if ( jstr(reqjson,"relay") != 0 )
+    //    rp->relaybits = (uint32_t)calc_ipbits(jstr(reqjson,"relay"));
     rp->timestamp = juint(reqjson,"timestamp");
     rp->quotetime = juint(reqjson,"quotetime");
     safecopy(rp->src,jstr(reqjson,"src"),sizeof(rp->src));
@@ -67,7 +67,11 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     }
     rp->requestid = basilisk_requestid(rp);
     if ( requestid != rp->requestid )
-        printf("basilisk_parsejson requestid.%u != %u error\n",requestid,rp->requestid);
+    {
+        int32_t i; for (i=0; i<sizeof(*rp); i++)
+            printf("%02x",((uint8_t *)rp)[i]);
+        printf(" basilisk_parsejson.(%s) requestid.%u != %u error\n",jprint(reqjson,0),requestid,rp->requestid);
+    }
     return(rp);
 }
 
@@ -154,95 +158,28 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
     return(0.);
 }
 
-double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
-{
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
-    memset(issueR,0,sizeof(*issueR));
-    minamount = list[0].minamount;
-    printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
-    if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
-        pendingid = active->req.quoteid;
-    if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
-        myrequest = 1;
-    for (i=0; i<n; i++)
-    {
-        if ( basilisk_request_cmpref(&list[0],&list[i]) != 0 )
-            return(-1);
-        if ( list[i].quoteid != 0 )
-        {
-            if ( bits256_cmp(myinfo->myaddr.persistent,list[i].desthash) == 0 ) // my quoteid
-                myrequest |= 2;
-            havequoteflag++;
-            if ( pendingid == 0 )
-            {
-                if ( list[i].destamount > maxamount )
-                {
-                    maxamount = list[i].destamount;
-                    maxi = i;
-                }
-            }
-            else if ( active != 0 && pendingid == list[i].quoteid )
-            {
-            }
-        } else noquoteflag++;
-    }
-    printf("myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    double retvals[4],refprice,profitmargin,aveprice,balance=0.; cJSON *retjson; char *retstr;
-    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,list[0].src,list[0].dest)) > 0. )
-    {
-        if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
-            aveprice = refprice;
-        if ( fabs(aveprice) < SMALLVAL )
-            return(0);
-        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
-        if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
-        {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                balance = jdouble(retjson,"result");
-                free_json(retjson);
-            }
-            free(retstr);
-        }
-        printf("balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",balance,dstr(destamount),aveprice,dstr(minamount));
-        if ( balance > destamount && destamount > 0 && destamount >= maxamount && destamount >= minamount )
-        {
-            metric = 1.;
-            *issueR = list[0];
-            issueR->desthash = myinfo->myaddr.persistent;
-            issueR->destamount = destamount;
-            issueR->quotetime = (uint32_t)time(NULL);
-        }
-    }
-    else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
-    {
-        if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
-        {
-            printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
-            *issueR = list[maxi];
-            if ( minamount > 0 )
-                metric = (dstr(maxamount) / dstr(minamount)) - 1.;
-            else metric = 1.;
-        }
-    }
-    return(metric);
-}
-
 double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_request *issueR,cJSON *retjson,double hwm)
 {
-    cJSON *array,*item; int32_t i,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
+    cJSON *array,*item; uint8_t *hexdata,*allocptr,hexspace[8192]; char *hexstr; int32_t i,hexlen,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
-printf("process.(%s)\n",jprint(retjson,0));
+//printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {
         for (i=nonz=m=0; i<n; i++)
         {
             item = jitem(array,i);
-            if ( jobj(item,"error") != 0 )
+            if ( jobj(item,"error") == 0 )
             {
+                if ( (hexstr= jstr(item,"data")) != 0 )
+                {
+                    if ( (hexdata= get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr)) != 0 )
+                    {
+                        basilisk_rwDEXquote(0,hexdata,&R);
+                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                    }
+                } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )
                 {
-                    basilisk_parsejson(&R,item);
                     if ( refR.requestid == R.requestid )
                         list[m++] = R;
                     else
@@ -258,7 +195,10 @@ printf("process.(%s)\n",jprint(retjson,0));
                 }
                 nonz++;
                 if ( m < sizeof(list)/sizeof(*list) )
-                    basilisk_parsejson(&list[m++],item);
+                {
+                    //basilisk_parsejson(&list[m++],item);
+                    list[m++] = R;
+                }
             }
         }
         //printf("process_results n.%d m.%d nonz.%d\n",n,m,nonz);

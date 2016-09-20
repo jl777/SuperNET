@@ -2324,7 +2324,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                     }
                     if ( prev2 != 0 && prev != 0 && strcmp(coin->symbol,"BTCD") == 0 && bp->bundleheight > 20000 && prev != 0 && iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan) != block->RO.bits )
                     {
-                        printf("nbits target error %x != %x ht.%d\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
+                        printf("warning: nbits target mismatch %x != %x ht.%d, this is normal during parallel sync\n",iguana_targetbits(coin,block,prev,prev2,1,coin->chain->targetspacing,coin->chain->targettimespan),block->RO.bits,block->height);
                     } //else printf(">>>>>>>>>> matched nbits %x ht.%d\n",block->RO.bits,block->height);
                     if ( bp->bundleheight+i == coin->blocks.hwmchain.height+1 )
                     {

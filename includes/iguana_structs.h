@@ -506,6 +506,7 @@ struct iguana_info
     uint64_t histbalance,RTcredits,RTdebits;
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    bits256 markedunspents[1024];
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
 };
@@ -553,7 +554,7 @@ struct basilisk_request
     char src[8],dest[8];
     //char volatile_start,message[43];
     uint64_t destamount;
-    uint32_t relaybits;
+    //uint32_t relaybits;
 }; // __attribute__((packed))
 
 struct basilisk_relaystatus
