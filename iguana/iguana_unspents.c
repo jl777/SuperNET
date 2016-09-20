@@ -835,8 +835,8 @@ int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *
 {
     bits256 txid; int32_t vout,spentheight;
     memset(&txid,0,sizeof(txid));
-    //if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
-    //    return(0);
+    if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
+        return(0);
     if ( iguana_RTunspentind2txid(myinfo,coin,&spentheight,&txid,&vout,outpt) == 0 )
     {
         //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);

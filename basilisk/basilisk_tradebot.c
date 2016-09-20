@@ -192,6 +192,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     {
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
+        if ( fabs(aveprice) < SMALLVAL )
+            return(0);
         destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
