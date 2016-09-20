@@ -68,7 +68,6 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
         portable_mutex_init(&coin->blocks_mutex);
         portable_mutex_init(&coin->special_mutex);
         portable_mutex_init(&coin->allcoins_mutex);
-        portable_mutex_init(&coin->allcoins_mutex);
         coin->txfee = 10000;
         iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,coin->blockspacesize,0);
         iguana_initQs(coin);

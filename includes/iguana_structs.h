@@ -483,7 +483,7 @@ struct iguana_info
     struct OS_memspace RTrawmem,RTmem,RThashmem; // struct iguana_ramchain RTramchain; 
     bits256 RThash1;
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth;
-    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint,sigserrs,sigsvalidated;
+    uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint,sigserrs,sigsvalidated,coinid;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
     int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy,almostRT,busy_processing; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
@@ -548,7 +548,7 @@ struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15
     uint64_t srcamount,minamount; // 16 to 31
-    bits256 hash; // 32 to 63
+    bits256 srchash; // 32 to 63
     bits256 desthash;
     char src[8],dest[8];
     //char volatile_start,message[43];

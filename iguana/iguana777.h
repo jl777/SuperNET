@@ -77,7 +77,7 @@ struct supernet_info
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
-    uint32_t expiration,dirty,DEXactive,DEXpoll;
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;

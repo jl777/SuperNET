@@ -457,8 +457,7 @@ rm BTC.xz; mksquashfs DB/BTC BTC.xz -comp xz -b 1048576 -comp xz -Xdict-size 102
 
 void mainloop(struct supernet_info *myinfo)
 {
-    struct iguana_info *coin,*tmp; int32_t i,counter=0,depth; portable_mutex_t *stack[IGUANA_MAXCOINS];
-    double lastmilli = 0;
+    struct iguana_info *coin; int32_t counter=0,depth; double lastmilli = 0;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -472,25 +471,9 @@ void mainloop(struct supernet_info *myinfo)
                 counter++;
                 coin = 0;
                 depth = 0;
-                if ( 1 )
-                {
-                    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
-                    {
-                        portable_mutex_lock(&coin->allcoins_mutex);
-                        stack[depth++] = &coin->allcoins_mutex;
-                    }
-                }
                 //printf("check jsonQ\n");
                 while ( iguana_jsonQ(myinfo,0) != 0 )
                     ;
-                if ( 1 )
-                {
-                    if ( depth > 0 )
-                    {
-                        for (i=depth-1; i>=0; i--)
-                            portable_mutex_unlock(stack[i]);
-                    }
-                }
                 lastmilli = OS_milliseconds();
             }
             usleep(30000);

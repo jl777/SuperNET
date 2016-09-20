@@ -103,7 +103,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->relaybits),&rp->relaybits);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->srcamount),&rp->srcamount);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->minamount),&rp->minamount);
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->hash),rp->hash.bytes);
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->srchash),rp->srchash.bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->desthash),rp->desthash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->destamount),&rp->destamount);
     if ( rwflag != 0 )
@@ -148,7 +148,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
         expand_ipbits(ipaddr,rp->relaybits);
         jaddstr(item,"relay",ipaddr);
     }
-    jaddbits256(item,"hash",rp->hash);
+    jaddbits256(item,"srchash",rp->srchash);
     if ( bits256_nonz(rp->desthash) != 0 )
         jaddbits256(item,"desthash",rp->desthash);
     jaddstr(item,"src",rp->src);
@@ -189,7 +189,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
     return(item);
 }
 
-int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits256 hash,uint32_t timestamp)
+int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits256 desthash,uint32_t timestamp)
 {
     char *dest,*src; uint32_t i;
     memset(rp,0,sizeof(*rp));
@@ -197,7 +197,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
     {
         if ( (rp->destamount= j64bits(valsobj,"destsatoshis")) != 0 )
         {
-            rp->desthash = jbits256(valsobj,"desthash");
+            rp->desthash = desthash;
             for (i=0; i<4; i++)
                 if ( rp->desthash.ulongs[i] != 0 )
                     break;
@@ -206,7 +206,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         }
         rp->minamount = j64bits(valsobj,"minamount");
         rp->timestamp = timestamp;
-        rp->hash = hash;
+        rp->srchash = jbits256(valsobj,"srchash");
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
         rp->requestid = basilisk_requestid(rp);
@@ -224,7 +224,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits)
 {
     cJSON *retjson;
-    if ( (bits256_cmp(rp->hash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
+    if ( (bits256_cmp(rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
         printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
         if ( basilisk_thread_start(myinfo,rp) != 0 )
@@ -333,7 +333,7 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
-            if ( quoteid == 0 || (quoteid == rp->quoteid && (bits256_cmp(hash,rp->hash) == 0 || bits256_cmp(hash,rp->desthash) == 0)) )
+            if ( quoteid == 0 || (quoteid == rp->quoteid && (bits256_cmp(hash,rp->srchash) == 0 || bits256_cmp(hash,rp->desthash) == 0)) )
                 qflag = 1;
             else qflag = 0;
             if ( requestid == 0 || (rp->requestid == requestid && qflag != 0) )
@@ -424,6 +424,8 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
     myinfo->DEXactive = (uint32_t)time(NULL) + BASILISK_TIMEOUT;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
+    if ( jobj(vals,"srchash") == 0 )
+        jaddbits256(vals,"srchash",myinfo->myaddr.pubkey);
     if ( jobj(vals,"desthash") == 0 )
         jaddbits256(vals,"desthash",hash);
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
