@@ -251,9 +251,26 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     return(clonestr("{\"error\":\"iguana jsonstr expired\"}"));
 }
 
+int32_t iguana_immediate(struct iguana_info *coin,int32_t immedmillis)
+{
+    double endmillis;
+    if ( immedmillis > 60000 )
+        immedmillis = 60000;
+    endmillis = OS_milliseconds() + immedmillis;
+    while ( 1 )
+    {
+        if ( coin->busy_processing == 0 )
+            break;
+        usleep(100);
+        if ( OS_milliseconds() > endmillis )
+            break;
+    }
+    return(coin->busy_processing == 0);
+}
+
 char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *retjson; double endmillis; uint64_t tag; uint32_t timeout,immedmillis; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
+    cJSON *retjson; uint64_t tag; uint32_t timeout,immedmillis; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
@@ -276,18 +293,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( coin != 0 )
             {
-                if ( immedmillis > 60000 )
-                    immedmillis = 60000;
-                endmillis = OS_milliseconds() + immedmillis;
-                while ( 1 )
-                {
-                    if ( coin->busy_processing == 0 )
-                        break;
-                    usleep(100);
-                    if ( OS_milliseconds() > endmillis )
-                        break;
-                }
-                if ( coin->busy_processing == 0 )
+                if ( iguana_immediate(coin,immedmillis) != 0 )
                     retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
                 else retjsonstr = clonestr("{\"error\":\"coin is busy processing\"}");
             } else retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);

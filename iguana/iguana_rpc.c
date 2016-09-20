@@ -708,7 +708,7 @@ struct iguana_info *iguana_coinchoose(struct supernet_info *myinfo,char *symbol,
 
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16]; int32_t i,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16]; uint32_t immed; int32_t i,n; char *retstr = 0;
     symbol[0] = 0;
     memset(params,0,sizeof(params));
     //printf("bitcoinRPC\n");
@@ -722,6 +722,11 @@ char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,ch
         //printf("method.(%s) (%s) remote.(%s) symbol.(%s)\n",method,jprint(json,0),remoteaddr,symbol);
         if ( method != 0 && symbol[0] != 0 && (coin != 0 || (coin= iguana_coinfind(symbol)) != 0) )
         {
+            if ( (immed= juint(json,"immediate")) != 0 )
+            {
+                if ( iguana_immediate(coin,immed) == 0 )
+                    return(clonestr("{\"error\":\"coin is busy processing\"}"));
+            }
             if ( (array= jarray(&n,json,"params")) == 0 )
             {
                 i = 0, n = 0;
