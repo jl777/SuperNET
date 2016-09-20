@@ -831,24 +831,65 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
     return((int32_t)sortbuf[1].uints[5]);
 }
 
+int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,bits256 txid,int32_t vout)
+{
+    int32_t i;
+    *firstslotp = -1;
+    if ( bits256_nonz(txid) != 0 && vout >= 0 )
+    {
+        txid.ushorts[0] = vout; // small chance of collision ok due to small timeframe
+        for (i=0; i<sizeof(coin->markedunspents)/sizeof(*coin->markedunspents); i++)
+        {
+            if ( *firstslotp < 0 && bits256_nonz(coin->markedunspents[i]) == 0 )
+                *firstslotp = i;
+            if ( bits256_cmp(txid,coin->markedunspents[i]) == 0 )
+                return(i);
+        }
+    }
+    if ( *firstslotp < 0 )
+    {
+        for (i=0; i<sizeof(coin->markedunspents)/sizeof(*coin->markedunspents); i++)
+            if ( bits256_nonz(coin->markedunspents[i]) == 0 )
+            {
+                *firstslotp = i;
+                break;
+            }
+    }
+    if ( *firstslotp < 0 )
+        *firstslotp = (rand() % (sizeof(coin->markedunspents)/sizeof(*coin->markedunspents)));
+    return(-1);
+}
+
+void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
+{
+    int32_t i,n,firstslot; int16_t vout; cJSON *item; bits256 txid;
+    if ( (n= cJSON_GetArraySize(vins)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(vins,i);
+            txid = jbits256(item,"txid");
+            vout = jint(item,"vout");
+            if ( bits256_nonz(txid) != 0 && vout >= 0 )
+            {
+                if ( iguana_markedunspents_find(coin,&firstslot,txid,vout) < 0 )
+                {
+                    if ( firstslot >= 0 )
+                    {
+                        char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
+                        coin->markedunspents[firstslot] = txid;
+                    }
+                }
+            }
+        }
+    }
+}
+
 int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt)
 {
-    bits256 txid; int32_t vout,spentheight;
-    memset(&txid,0,sizeof(txid));
-    if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
+    int32_t firstslot;
+    if ( iguana_markedunspents_find(coin,&firstslot,outpt.txid,outpt.vout) < 0 )
         return(0);
-    if ( iguana_RTunspentind2txid(myinfo,coin,&spentheight,&txid,&vout,outpt) == 0 )
-    {
-        //char str[65]; printf("verify %s/v%d is not already used\n",bits256_str(str,txid),vout);
-        //return(iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,height,minconf,coin->longestchain,U[unspentind].value));
-        /*if ( basilisk_addspend(myinfo,coin->symbol,txid,vout,0) != 0 )
-         {
-         char str[65]; printf("iguana_unspent_check found unspentind (%u %d) %s\n",outpt.hdrsi,outpt.unspentind,bits256_str(str,txid));
-         return(1);
-         } else return(0);*/
-        return(0);
-    }
-    printf("iguana_unspent_check: couldnt find (%d %d)\n",outpt.hdrsi,outpt.unspentind);
     return(-1);
 }
 

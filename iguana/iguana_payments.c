@@ -502,8 +502,10 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
                         {
                             senttxid = iguana_sendrawtransaction(myinfo,coin,signedtx);
                             if ( bits256_cmp(senttxid,signedtxid) == 0 )
+                            {
                                 jaddstr(retjson,"sendrawtransaction","success");
-                            else jaddbits256(retjson,"senderror",senttxid);
+                                iguana_unspents_mark(myinfo,coin,vins);
+                            } else jaddbits256(retjson,"senderror",senttxid);
                         }
                         free_json(vins);
                         free(signedtx);

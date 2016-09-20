@@ -273,7 +273,6 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( vin->vinscript == 0 )
         {
-            //printf("null vinscript case -> need to sign this tx\n");
             vin->vinscript = serialized;
             vin->vinscript[0] = 0;
             vin->scriptlen = 1;
