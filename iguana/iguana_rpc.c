@@ -1054,7 +1054,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             for (i=0; i<n; i++)
             {
                 argjson = jitem(origargjson,i);
-                //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+//printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
                 coin = iguana_coinchoose(myinfo,symbol,argjson,port);
                 if ( (retstr= SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port)) != 0 )
                 {
@@ -1072,8 +1072,11 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             coin = iguana_coinchoose(myinfo,symbol,argjson,port);
             retstr = SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port);
         }
+        free_json(argjson);
+        free_json(json);
         return(retstr);
     }
+    free_json(argjson);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
