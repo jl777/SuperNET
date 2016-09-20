@@ -261,7 +261,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
+                    //fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
                     //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
@@ -808,7 +808,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
-        printf("poll.(%s)\n",retstr);
+        //printf("poll.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )
