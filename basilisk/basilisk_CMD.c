@@ -141,6 +141,8 @@ void basilisk_request_goodbye(struct supernet_info *myinfo)
 char *basilisk_respond_addrelay(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     char *ipaddr,*retstr=0;
+    if ( valsobj == 0 )
+        return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( (ipaddr= jstr(valsobj,"ipaddr")) != 0 )
         retstr = basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddr),jbits256(valsobj,"pubkey"));
     else retstr = clonestr("{\"error\":\"need rmd160, address and ipaddr\"}");
