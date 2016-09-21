@@ -366,8 +366,11 @@ struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_r
                     return(p);
                 } else if ( pkind != 0 )
                     printf("[%d] not found pkind.%d vs num.%d RT.%d rdata.%p\n",i,pkind,rdata->numpkinds,bp->isRT,rdata);
-            } else if ( coin->spendvectorsaved > 1 && bp != coin->current && bp->bundleheight < coin->firstRTheight )
-                printf("%s.[%d] skip null rdata isRT.%d [%d]\n",coin->symbol,i,bp->isRT,coin->current!=0?coin->current->hdrsi:-1);
+            }
+            else if ( coin->spendvectorsaved > 1 && bp != coin->current && bp->bundleheight < coin->firstRTheight )
+            {
+                //printf("%s.[%d] skip null rdata isRT.%d [%d]\n",coin->symbol,i,bp->isRT,coin->current!=0?coin->current->hdrsi:-1);
+            }
         }
     }
     return(0);
@@ -991,12 +994,12 @@ int32_t iguana_unspentfindjson(cJSON *destarray,cJSON *item)
 
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
-    int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
+    uint64_t total = 0; int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
     if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
     {
         retjson = cJSON_CreateArray();
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
-        iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
+        total = iguana_RTunspents(myinfo,coin,retjson,minconf,maxconf,rmdarray,numrmds,(1 << 30),0,&numunspents,remoteaddr,includespends);
         if ( rmdarray != 0 )
             free(rmdarray);
     }

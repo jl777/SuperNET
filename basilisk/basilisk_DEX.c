@@ -413,7 +413,7 @@ ZERO_ARGS(InstantDEX,allcoins)
 
 STRING_ARG(InstantDEX,available,source)
 {
-    char *retstr; cJSON *vals,*balancejson,*retjson = 0;
+    char *retstr; uint64_t total = 0; int32_t i,n; cJSON *item,*vals,*unspents,*balancejson,*retjson = 0;
     if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
@@ -426,9 +426,24 @@ STRING_ARG(InstantDEX,available,source)
                     printf("available.(%s)\n",retstr);
                     if ( (balancejson= cJSON_Parse(retstr)) != 0 )
                     {
+                        if ( (unspents= jarray(&n,balancejson,"unspents")) != 0 )
+                        {
+                            for (i=0; i<n; i++)
+                            {
+                                item = jitem(unspents,i);
+                                if ( jobj(item,"unspent") != 0 )
+                                {
+                                    total += jdouble(item,"amount") * SATOSHIDEN;
+                                    printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
+                                }
+                            }
+                        }
+if ( total == 0 )
+total = 500000;
                         retjson = cJSON_CreateObject();
-                        jaddnum(retjson,"result",jdouble(balancejson,"balance"));
+                        jaddnum(retjson,"result",dstr(total));
                         free_json(balancejson);
+                        printf("n.%d total %.8f (%s)\n",n,dstr(total),jprint(retjson,0));
                     }
                     free(retstr);
                 }
@@ -447,7 +462,7 @@ STRING_ARG(InstantDEX,available,source)
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
     uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
-    myinfo->DEXactive = (uint32_t)time(NULL) + BASILISK_TIMEOUT;
+    myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"srchash") == 0 )
         jaddbits256(vals,"srchash",myinfo->myaddr.pubkey);

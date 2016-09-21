@@ -293,7 +293,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( coin != 0 )
             {
-                if ( iguana_immediate(coin,immedmillis) != 0 )
+                if ( immedmillis == 0 || iguana_immediate(coin,immedmillis) != 0 )
                     retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
                 else retjsonstr = clonestr("{\"error\":\"coin is busy processing\"}");
             } else retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);

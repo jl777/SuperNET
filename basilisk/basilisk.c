@@ -206,15 +206,18 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         return(-1);
     }
     if ( basilisk_notarycmd(type) != 0 && myinfo->NOTARY.NUMRELAYS == 0 )
+    {
+        printf("no notary nodes to send (%s) to\n",type);
         return(-1);
+    }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
         if (  coin->peers == 0 )
             continue;
-        //if ( basilisk_notarycmd(type) != 0 && strcmp(coin->symbol,"NOTARY") != 0 )
-        //    continue;
+        if ( basilisk_notarycmd(type) != 0 && strcmp(coin->symbol,"NOTARY") != 0 )
+            continue;
         if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
         else cmd[0] = 'S';
@@ -230,7 +233,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
             {
                 s = 0;
                 valid = (addr->supernet != 0);
-                if ( basilisk_notarycmd(type) != 0 )
+                if ( basilisk_notarycmd(type) != 0 || (strcmp(type,"INF") == 0 && strcmp(coin->symbol,"NOTARY") == 0) )
                 {
                     valid = 0;
                     /*OS_randombytes((void *)&r2,sizeof(r2));
@@ -258,7 +261,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
-                    //fprintf(stderr,"(%s).%u ",addr->ipaddr,coin->chain->portp2p);
+                    //fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
                     //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
@@ -801,7 +804,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
 
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
-    char *retstr; cJSON *outerarray,*retjson; int32_t i,n; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[8192]; cJSON *outerarray,*retjson; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
     memset(&issueR,0,sizeof(issueR));
     if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
     {
@@ -829,9 +832,11 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f\n",hwm);
+            printf("other req hwm %f >>>>>>>>>>> send response\n",hwm);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
+            datalen = basilisk_rwDEXquote(1,data,&issueR);
+            basilisk_channelsend(myinfo,issueR.desthash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
