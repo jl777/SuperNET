@@ -622,6 +622,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
+        iguana_volatilesmap(myinfo,coin,&bp->ramchain);
         if ( bp->utxofinish > 1 )
             n++;
         if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
@@ -629,7 +630,6 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             continue;
         }
-        iguana_volatilesmap(myinfo,coin,&bp->ramchain);
         if ( from_ro != 0 && (bp->ramchain.from_ro == 0 || (bp->hdrsi > 0 && bp->ramchain.from_roX == 0) || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0) )
         {
             printf("from_ro.[%d] %d %d %d %d\n",bp->hdrsi,bp->ramchain.from_ro,bp->ramchain.from_roX,bp->ramchain.from_roA,bp->ramchain.from_roU);
