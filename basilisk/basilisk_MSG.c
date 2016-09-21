@@ -29,8 +29,6 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
         if ( bits256_nonz(desthash) == 0 )
             msg->broadcast = 1;
-        if ( bits256_nonz(desthash) == 0 )
-            msg->broadcast = 1;
         msg->duration = duration;
         msg->expiration = (uint32_t)time(NULL) + duration;
         msg->keylen = keylen;
@@ -108,7 +106,7 @@ int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256
 char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
     int32_t keylen,duration; uint8_t key[BASILISK_KEYSIZE]; bits256 senderhash; char *retstr;
-    senderhash = jbits256(valsobj,"sender");
+    senderhash = jbits256(valsobj,"srchash");
     duration = juint(valsobj,"duration");
     keylen = basilisk_messagekey(key,juint(valsobj,"channel"),juint(valsobj,"msgid"),senderhash,hash);
     retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
@@ -118,7 +116,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
             duration = BASILISK_MSGDURATION;
     }
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
-    // char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(retstr);
 }
 
@@ -203,7 +201,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
     msgid = juint(valsobj,"msgid");
     channel = juint(valsobj,"channel");
     //char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,hash),juint(valsobj,"channel"),msgid,width);
-    return(basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"sender"),hash,width));
+    return(basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),hash,width));
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -212,7 +210,8 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     uint32_t msgid,width,channel;
-    jaddbits256(vals,"sender",myinfo->myaddr.persistent);
+    jaddbits256(vals,"srchash",hash);
+    jaddbits256(vals,"desthash",myinfo->myaddr.persistent);
     if ( (msgid= juint(vals,"msgid")) == 0 )
     {
         msgid = (uint32_t)time(NULL);
@@ -223,8 +222,8 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
     {
         channel = juint(vals,"channel");
         width = juint(vals,"width");
-        return(basilisk_iterate_MSG(myinfo,channel,msgid,hash,myinfo->myaddr.persistent,width));
-    } else return(basilisk_standardservice("MSG",myinfo,0,hash,vals,hexstr,1));
+        return(basilisk_iterate_MSG(myinfo,channel,msgid,myinfo->myaddr.persistent,myinfo->myaddr.persistent,width));
+    } else return(basilisk_standardservice("MSG",myinfo,0,myinfo->myaddr.persistent,vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
@@ -232,7 +231,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
     if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
-        keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"sender"),hash);
+        keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),hash);
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
         {
             retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"));
@@ -248,7 +247,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 }
 #include "../includes/iguana_apiundefs.h"
 
-int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t duration)
+int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t duration)
 {
     char *retstr,*hexstr,strbuf[4096],*ptr = 0; int32_t retval = -1; cJSON *valsobj;
     if ( (hexstr= basilisk_addhexstr(&ptr,0,strbuf,sizeof(strbuf),data,datalen)) != 0 )
@@ -260,9 +259,10 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 hash,uint32_t 
         jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
-        jaddbits256(valsobj,"sender",myinfo->myaddr.persistent);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,hash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
-        if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,hash,valsobj,hexstr)) != 0 )
+        jaddbits256(valsobj,"srchash",srchash);
+        jaddbits256(valsobj,"desthash",desthash);
+        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
+        if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,desthash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);
         if ( ptr != 0 )
@@ -296,7 +296,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
     return(retval);
 }
 
-cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t channel,uint32_t msgid,int32_t width)
+cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,int32_t width)
 {
     char *retstr; cJSON *valsobj,*retarray=0,*item;
     valsobj = cJSON_CreateObject();
@@ -308,9 +308,11 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 hash,uint32_t ch
     jaddnum(valsobj,"timeout",2500);
     jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
-    if ( (retstr= basilisk_getmessage(myinfo,0,0,0,hash,valsobj,0)) != 0 )
+    jaddbits256(valsobj,"srchash",srchash);
+    jaddbits256(valsobj,"desthash",desthash);
+    if ( (retstr= basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0)) != 0 )
     {
-        //printf("channel.%u msgid.%u gotmessage.(%s)\n",channel,msgid,retstr);
+        printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) == 0 )

@@ -160,7 +160,7 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
@@ -191,7 +191,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         } else noquoteflag++;
     }
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    double retvals[4],refprice,profitmargin,aveprice,balance=0.; cJSON *retjson; char *retstr;
+    double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,list[0].src,list[0].dest)) > 0. )
     {
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
@@ -203,12 +203,13 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                balance = jdouble(retjson,"result");
+                balance = jdouble(retjson,"result") * SATOSHIDEN;
                 free_json(retjson);
             }
             free(retstr);
         }
-        printf("%s balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",list[0].dest,balance,dstr(destamount),aveprice,dstr(minamount));
+        // BTC balance 0.00500000 destamount 0.00041951 aveprice 0.00421619 minamount 0.00020000
+        printf("%s balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(minamount));
         if ( balance > destamount && destamount > 0 && destamount >= maxamount && destamount >= minamount )
         {
             metric = 1.;
@@ -216,6 +217,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             issueR->desthash = myinfo->myaddr.persistent;
             issueR->destamount = destamount;
             issueR->quotetime = (uint32_t)time(NULL);
+            printf("issueR set!\n");
         }
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote

@@ -569,6 +569,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
 void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_block *block);
+cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,char *remoteaddr);
 void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int32_t *recvlenp,int32_t *numtxp,int32_t checkonly);
 int32_t iguana_bundlehash2_check(struct iguana_info *coin,bits256 hash2);
 void iguana_RTramchainalloc(char *fname,struct iguana_info *coin,struct iguana_bundle *bp);

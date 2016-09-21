@@ -1286,19 +1286,24 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     return(jprint(retjson,1));
 }
 
+cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,char *remoteaddr)
+{
+    if ( minconf == 0 )
+        minconf = 1;
+    if ( maxconf == 0 )
+        maxconf = (1 << 30);
+    return(iguana_RTlistunspent(myinfo,coin,array,minconf,maxconf,remoteaddr,0));
+}
+
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
     //int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
     cJSON *argarray,*retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( minconf == 0 )
-        minconf = 1;
-    if ( maxconf == 0 )
-        maxconf = (1 << 30);
     if ( (argarray= array) == 0 || cJSON_GetArraySize(array) == 0 )
         argarray = iguana_getaddressesbyaccount(myinfo,coin,"*");
-    retjson = iguana_RTlistunspent(myinfo,coin,argarray,minconf,maxconf,remoteaddr,0);
+    retjson = iguana_listunspents(myinfo,coin,argarray,minconf,maxconf,remoteaddr);
     if ( argarray != array )
         free_json(argarray);
     return(jprint(retjson,1));

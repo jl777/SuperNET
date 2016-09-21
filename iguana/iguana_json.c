@@ -651,7 +651,7 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     struct iguana_peer *addr; int32_t i,n;
     if ( coin == 0 )
         coin = iguana_coinfind(activecoin);
-    if ( strcmp(coin->symbol,"NOTARY") == 0 )
+    if ( coin != 0 && strcmp(coin->symbol,"NOTARY") == 0 )
         basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddr),GENESIS_PUBKEY);
     printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
     if ( coin != 0 && coin->peers != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )

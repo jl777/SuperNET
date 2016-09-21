@@ -221,7 +221,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
             cmd[0] = 's';
         else cmd[0] = 'S';
-        r = rand() % (coin->peers->numranked+1);
+        r = rand() % IGUANA_MAXPEERS;
         for (l=0; l<IGUANA_MAXPEERS; l++)
         {
             i = (l + r) % IGUANA_MAXPEERS;
@@ -262,7 +262,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
                     //fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
-                    //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s.(%s) [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,(char *)&data[4],*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
+                    //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
                     {
                         void *ptr; uint8_t *cipher,space[8192]; int32_t cipherlen; bits256 privkey;
@@ -320,7 +320,8 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
             if ( (virt= iguana_coinfind(symbol)) != 0 )
             {
                 jaddnum(valsobj,"hwm",virt->blocks.hwmchain.height);
-                jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
+                if ( bits256_nonz(virt->blocks.hwmchain.RO.hash2) != 0 )
+                    jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
             }
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
             //printf("sendback.%d -> %s\n",datalen,remoteaddr);
@@ -408,7 +409,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     if ( fanout < minfanout )
         fanout = minfanout;
     if ( (numrequired= jint(valsobj,"numrequired")) <= 0 )
-        numrequired = MAX(fanout,sqrt(myinfo->NOTARY.NUMRELAYS)+1);
+        numrequired = MIN(fanout,sqrt(myinfo->NOTARY.NUMRELAYS)+1);
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )
@@ -822,6 +823,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     } else printf("null incoming\n");
     if ( hwm > 0. )
     {
+        printf("hwm %f\n",hwm);
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
             printf("my req hwm %f\n",hwm);
@@ -832,11 +834,11 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f >>>>>>>>>>> send response\n",hwm);
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
-            basilisk_channelsend(myinfo,issueR.desthash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
+            basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
