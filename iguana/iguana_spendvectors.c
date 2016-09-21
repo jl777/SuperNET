@@ -722,7 +722,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                             bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
                         }
                     }
-                    coin->matchedfiles = 1;
+                    coin->matchedfiles = strcmp(coin->symbol,"BTC") == 0;
                     coin->spendvectorsaved = (uint32_t)time(NULL);
                     coin->spendvalidated = 0;
                     printf("%s UTXOGEN spendvectorsaved <- %u\n",coin->symbol,coin->spendvectorsaved);
