@@ -216,6 +216,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             issueR->desthash = myinfo->myaddr.persistent;
             issueR->destamount = destamount;
             issueR->quotetime = (uint32_t)time(NULL);
+            printf("issueR set!\n");
         }
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote

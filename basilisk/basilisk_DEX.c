@@ -423,7 +423,7 @@ STRING_ARG(InstantDEX,available,source)
             {
                 if ( (retstr= basilisk_balances(myinfo,coin,0,0,GENESIS_PUBKEY,vals,"")) != 0 )
                 {
-                    printf("available.(%s)\n",retstr);
+                    //printf("available.(%s)\n",retstr);
                     if ( (balancejson= cJSON_Parse(retstr)) != 0 )
                     {
                         if ( (unspents= jarray(&n,balancejson,"unspents")) != 0 )
@@ -434,17 +434,15 @@ STRING_ARG(InstantDEX,available,source)
                                 if ( jobj(item,"unspent") != 0 )
                                 {
                                     total += jdouble(item,"amount") * SATOSHIDEN;
-                                    printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                                 }
+                                //printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                             }
-                        }
-if ( total == 0 )
-total = 500000;
+                        } else printf("no unspents in available\n");
                         retjson = cJSON_CreateObject();
                         jaddnum(retjson,"result",dstr(total));
                         free_json(balancejson);
                         printf("n.%d total %.8f (%s)\n",n,dstr(total),jprint(retjson,0));
-                    }
+                    } else printf("parse error.(%s)\n",retstr);
                     free(retstr);
                 }
                 free_json(vals);
