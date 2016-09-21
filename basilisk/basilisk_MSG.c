@@ -18,36 +18,47 @@
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration)
 {
     struct basilisk_message *msg; int32_t i; bits256 desthash;
+    if ( keylen != BASILISK_KEYSIZE )
+        return(0);
+    portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
-    if ( msg == 0 && keylen == BASILISK_KEYSIZE )
+    if ( msg == 0 || msg->datalen != datalen )
     {
-        msg = calloc(1,sizeof(*msg) + datalen);
-        if ( duration == 0 )
-            duration = BASILISK_MSGDURATION;
-        else if ( duration > INSTANTDEX_LOCKTIME*2 )
-            duration = INSTANTDEX_LOCKTIME*2;
-        memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
-        if ( bits256_nonz(desthash) == 0 )
-            msg->broadcast = 1;
-        msg->duration = duration;
-        msg->expiration = (uint32_t)time(NULL) + duration;
-        msg->keylen = keylen;
-        memcpy(msg->key,key,keylen);
-        msg->datalen = datalen;
-        memcpy(msg->data,data,datalen);
-        portable_mutex_lock(&myinfo->messagemutex);
-        HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
-        for (i=0; i<BASILISK_KEYSIZE; i++)
-            printf("%02x",key[i]);
-        printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
-        QUEUEITEMS++;
-        portable_mutex_unlock(&myinfo->messagemutex);
-        if ( sendping != 0 )
+        if ( msg != 0 )
         {
-            queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
-            return(clonestr("{\"result\":\"message added to hashtable\"}"));
-        } else return(0);
-    } else return(0);
+            printf("overwrite delete of msg.[%d]\n",msg->datalen);
+            HASH_DELETE(hh,myinfo->messagetable,msg);
+            QUEUEITEMS--;
+            free(msg);
+        }
+        msg = calloc(1,sizeof(*msg) + datalen);
+    }
+    if ( duration == 0 )
+        duration = BASILISK_MSGDURATION;
+    else if ( duration > INSTANTDEX_LOCKTIME*2 )
+        duration = INSTANTDEX_LOCKTIME*2;
+    memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
+    if ( bits256_nonz(desthash) == 0 )
+        msg->broadcast = 1;
+    msg->duration = duration;
+    msg->expiration = (uint32_t)time(NULL) + duration;
+    msg->keylen = keylen;
+    memcpy(msg->key,key,keylen);
+    msg->datalen = datalen;
+    memcpy(msg->data,data,datalen);
+    HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+    for (i=0; i<BASILISK_KEYSIZE; i++)
+        printf("%02x",key[i]);
+    printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
+    QUEUEITEMS++;
+    if ( sendping != 0 )
+    {
+        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+        portable_mutex_unlock(&myinfo->messagemutex);
+        return(clonestr("{\"result\":\"message added to hashtable\"}"));
+    }
+    portable_mutex_unlock(&myinfo->messagemutex);
+    return(0);
 }
 
 cJSON *basilisk_msgjson(struct basilisk_message *msg,uint8_t *key,int32_t keylen)
@@ -144,12 +155,12 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
 {
     struct basilisk_message *msg,*tmpmsg; uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *item,*retjson,*array; bits256 zero;
     memset(zero.bytes,0,sizeof(zero));
-    array = cJSON_CreateArray();
     if ( (width= origwidth) > 3600 )
         width = 3600;
     else if ( width < 1 )
         width = 1;
     allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
+    array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
@@ -157,7 +168,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             jaddi(array,basilisk_msgjson(msg,msg->key,msg->keylen));
     }
     portable_mutex_unlock(&myinfo->messagemutex);
-    printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
+    printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
         if ( allflag != 0 )
@@ -209,12 +220,14 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
 
 char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    int32_t width; uint32_t msgid,channel;
+    int32_t width; uint32_t msgid,channel; char *retstr;
     width = juint(valsobj,"width");
     msgid = juint(valsobj,"msgid");
     channel = juint(valsobj,"channel");
-    //char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,hash),juint(valsobj,"channel"),msgid,width);
-    return(basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),width));
+    char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,jbits256(valsobj,"desthash")),juint(valsobj,"channel"),msgid,width);
+    retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),width);
+    printf("iterate_MSG.(%s)\n",retstr);
+    return(retstr);
 }
 
 #include "../includes/iguana_apidefs.h"
