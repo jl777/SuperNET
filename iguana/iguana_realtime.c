@@ -786,7 +786,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
             printf("ht.%d > RT.%d - %d\n",block->height,coin->RTheight,coin->minconfirms);
             return;
         }*/
-        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
+        if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms+1))) == 0 )
             return;
         // error check to bundle boundary
         portable_mutex_lock(&coin->RTmutex);
