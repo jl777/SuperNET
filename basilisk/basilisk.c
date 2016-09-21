@@ -169,7 +169,9 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         {
             printf("return after locally basilisk_msgprocess\n");
             hash = GENESIS_PUBKEY;
+            portable_mutex_lock(&myinfo->messagemutex);
             basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data,datalen);
+            portable_mutex_unlock(&myinfo->messagemutex);
             return(0);
         }
     }
@@ -795,10 +797,12 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         len += iguana_rwnum(0,data,sizeof(basilisktag),&basilisktag);
         //int32_t i; for (i=0; i<datalen-len; i++)
         //    printf("%02x",data[len+i]);
-        if ( myinfo->IAMLP == 0 )
+        if ( 0 && myinfo->IAMLP == 0 )
             printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,datalen,type,senderip!=0?senderip:"?",basilisktag);
+        portable_mutex_lock(&myinfo->messagemutex);
         basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
-        if ( myinfo->IAMLP == 0 )
+        portable_mutex_unlock(&myinfo->messagemutex);
+        if ( 0 && myinfo->IAMLP == 0 )
             printf("processed.%s from %s\n",type,senderip!=0?senderip:"?");
     }
     if ( ptr != 0 )
