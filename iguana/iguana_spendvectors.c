@@ -715,7 +715,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 fclose(fp);
                 //if ( strcmp("BTC",coin->symbol) == 0 )
                 {
-                    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
+                    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount )
                     {
                         for (i=0; i<coin->bundlescount-1; i++)
                         {
@@ -729,7 +729,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                         coin->spendvalidated = 0;
                         printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
                         iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
-                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount*coin->chain->bundlesize);
+                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount);
                 }
             }
             else
