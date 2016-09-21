@@ -217,9 +217,10 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         {
             if ( block->mainchain != 0 && (block->height % coin->chain->bundlesize) == bundlei && (block->height / coin->chain->bundlesize) == bp->hdrsi )
             {
-                printf("would have bundle block override [%d:%d]\n",bp->hdrsi,bundlei);
-                //bp->blocks[bundlei] = block;
-                //bp->hashes[bundlei] = block->RO.hash2;
+                char str[65],str2[65];
+                printf("bundle block override [%d:%d] %s <- %s\n",bp->hdrsi,bundlei,bits256_str(str,bp->blocks[bundlei]->RO.hash2),bits256_str(str2,block->RO.hash2));
+                bp->blocks[bundlei] = block;
+                bp->hashes[bundlei] = block->RO.hash2;
             }
             else if ( block->mainchain == 0 )
             {
