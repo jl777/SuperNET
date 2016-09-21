@@ -141,23 +141,26 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    struct basilisk_message *msg,*tmpmsg; uint8_t key[BASILISK_KEYSIZE]; int32_t i,keylen,width; cJSON *item,*retjson,*array; bits256 zero;
+    struct basilisk_message *msg,*tmpmsg; uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *item,*retjson,*array; bits256 zero;
     memset(zero.bytes,0,sizeof(zero));
     array = cJSON_CreateArray();
     if ( (width= origwidth) > 3600 )
         width = 3600;
     else if ( width < 1 )
         width = 1;
+    allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
-        if ( msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
+        if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
             jaddi(array,basilisk_msgjson(msg,msg->key,msg->keylen));
     }
     portable_mutex_unlock(&myinfo->messagemutex);
     //printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
+        if ( allflag != 0 )
+            break;
         keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
         if ( (item= basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
             jaddi(array,item);//, printf("gotmsg0.(%s)\n",jprint(item,0));
