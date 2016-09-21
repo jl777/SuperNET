@@ -149,7 +149,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    struct basilisk_message *msg,*tmpmsg; uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *item,*retjson,*array; bits256 zero;
+    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *item,*retjson,*array; bits256 zero; //struct basilisk_message *msg,*tmpmsg; 
     memset(zero.bytes,0,sizeof(zero));
     if ( (width= origwidth) > 3600 )
         width = 3600;
