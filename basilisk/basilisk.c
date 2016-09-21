@@ -801,7 +801,7 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
         //    printf("%02x",data[len+i]);
         if ( 0 && myinfo->IAMLP == 0 )
             printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,datalen,type,senderip!=0?senderip:"?",basilisktag);
-        if ( strcmp(type,"MSG") != 0 && strcmp(type,"OUT") != 0 )
+        if ( strcmp(type,"MSG") != 0 )//&& strcmp(type,"OUT") != 0 )
         {
             portable_mutex_lock(&myinfo->messagemutex);
             basilisk_msgprocess(myinfo,_addr,ipbits,type,basilisktag,&data[len],datalen - len);
