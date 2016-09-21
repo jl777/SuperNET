@@ -635,12 +635,12 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         }
     }
     printf("i.%d volatilesinit\n",i);
-    /*if ( strcmp("BTC",coin->symbol) == 0 && coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
+    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize >= coin->bundlescount )
     {
         printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
         iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
         return(coin->bundlescount);
-    }*/
+    }
     /*if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
