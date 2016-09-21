@@ -1416,7 +1416,7 @@ int32_t iguana_utxoaddr_validate(struct supernet_info *myinfo,struct iguana_info
              OS_removefile(fname,0);
              sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
              OS_removefile(fname,0);*/
-            iguana_volatilesmap(coin,&bp->ramchain);
+            iguana_volatilesmap(myinfo,coin,&bp->ramchain);
         }
     total = 0;
     max = 1024 * 1024 * 1024;
@@ -1488,7 +1488,7 @@ uint64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *co
         if ( (bp= coin->bundles[hdrsi]) != 0 && bp->bundleheight < maxheight )
         {
             iguana_volatilespurge(coin,&bp->ramchain);
-            if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+            if ( iguana_volatilesmap(myinfo,coin,&bp->ramchain) != 0 )
                 printf("error mapping bundle.[%d]\n",hdrsi);
             else
             {

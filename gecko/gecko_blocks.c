@@ -132,7 +132,7 @@ int32_t gecko_hwmset(struct supernet_info *myinfo,struct iguana_info *virt,struc
         printf("no bundle for %s.%d\n",virt->symbol,block->height);
         return(-1);
     }
-    if ( iguana_ramchain_data(virt,addr,txdata,txarray,block->RO.txn_count,data,datalen,bp,block) >= 0 )
+    if ( iguana_ramchain_data(myinfo,virt,addr,txdata,txarray,block->RO.txn_count,data,datalen,bp,block) >= 0 )
     {
         block->fpipbits = (uint32_t)addr->ipbits;
         block->RO.recvlen = datalen;

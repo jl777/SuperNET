@@ -418,14 +418,17 @@ void iguana_volatilespurge(struct iguana_info *coin,struct iguana_ramchain *ramc
     }
 }
 
-int32_t iguana_volatilesmap(struct iguana_info *coin,struct iguana_ramchain *ramchain)
+int32_t iguana_volatilesmap(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     int32_t iter,numhdrsi,err = -1; char fname[1024]; bits256 balancehash,allbundles; struct iguana_ramchaindata *rdata;
     if ( (rdata= ramchain->H.data) == 0 )
     {
-        if ( ramchain->height > 0 )
+        iguana_bundleload(myinfo,coin,ramchain,coin->bundles[ramchain->height/coin->chain->bundlesize],1);
+        if ( (rdata= ramchain->H.data) == 0 )
+        {
             printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
-        return(-1);
+            return(-1);
+        }
     }
     if ( ramchain->debitsfileptr != 0 && ramchain->lastspendsfileptr != 0 )
     {

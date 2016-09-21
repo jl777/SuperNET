@@ -627,7 +627,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             continue;
         }
-        iguana_volatilesmap(coin,&bp->ramchain);
+        iguana_volatilesmap(myinfo,coin,&bp->ramchain);
         if ( from_ro != 0 && (bp->ramchain.from_ro == 0 || (bp->hdrsi > 0 && bp->ramchain.from_roX == 0) || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0) )
         {
             printf("from_ro.[%d] %d %d %d %d\n",bp->hdrsi,bp->ramchain.from_ro,bp->ramchain.from_roX,bp->ramchain.from_roA,bp->ramchain.from_roU);
@@ -729,7 +729,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                         coin->spendvalidated = 0;
                         printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
                         iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
-                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount);
+                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d >= %d coin->bundlescount\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount);
                 }
             }
             else
@@ -949,7 +949,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+                if ( iguana_volatilesmap(myinfo,coin,&bp->ramchain) != 0 )
                     printf("error mapping bundle.[%d]\n",hdrsi);
             }
     }
@@ -1153,7 +1153,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             max = coin->blockspacesize;
             blockspace = calloc(1,max);
             iguana_volatilespurge(coin,&bp->ramchain);
-            iguana_volatilesmap(coin,&bp->ramchain);
+            iguana_volatilesmap(myinfo,coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
                 char str[65]; 
