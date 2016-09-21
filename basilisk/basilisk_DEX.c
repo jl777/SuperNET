@@ -420,7 +420,7 @@ STRING_ARG(InstantDEX,available,source)
         {
             if ( (unspents= iguana_listunspents(myinfo,coin,0,0,0,remoteaddr)) != 0 )
             {
-                printf("available.(%s)\n",jprint(unspents,0));
+                //printf("available.(%s)\n",jprint(unspents,0));
                 if ( (n= cJSON_GetArraySize(unspents)) > 0 )
                 {
                     for (i=0; i<n; i++)
@@ -430,7 +430,7 @@ STRING_ARG(InstantDEX,available,source)
                         {
                             total += jdouble(item,"amount") * SATOSHIDEN;
                         }
-                        printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
+                        //printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                     }
                 }
                 free_json(unspents);
