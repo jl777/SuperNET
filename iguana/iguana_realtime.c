@@ -781,8 +781,11 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
     }
     if ( block != 0 && coin->RTheight > 0 && coin->utxoaddrtable != 0 )//&& coin->RTheight <= coin->blocks.hwmchain.height )
     {
-        if ( block->height < (coin->RTheight - coin->minconfirms + 1) )
+        if ( block->height >= (coin->RTheight - coin->minconfirms) )
+        {
+            printf("ht.%d >= RT.%d - %d\n",block->height,coin->RTheight,coin->minconfirms);
             return;
+        }
         if ( (block= iguana_blockfind("RTnew",coin,iguana_blockhash(coin,block->height-coin->minconfirms))) == 0 )
             return;
         // error check to bundle boundary
