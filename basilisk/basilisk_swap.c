@@ -468,8 +468,9 @@ int32_t basilisk_process_swapget(struct supernet_info *myinfo,void *ptr,int32_t 
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
     int32_t retval; cJSON *retarray;
-    if ( (retarray= basilisk_channelget(myinfo,myinfo->myaddr.persistent,swap->req.quoteid,msgbits,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,swap->otherhash,swap->myhash,swap->req.quoteid,msgbits,0)) != 0 )
     {
+        printf("got.(%s) msgbits.%08x\n",jprint(retarray,0),msgbits);
         retval = basilisk_process_retarray(myinfo,swap,basilisk_process_swapget,data,maxlen,swap->req.quoteid,msgbits,retarray,basilisk_verify_func);
         if ( retval > 0 )
             return(0);
@@ -955,7 +956,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
 
 uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits)
 {
-    if ( basilisk_channelsend(myinfo,swap->otherhash,swap->req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2) == 0 )
+    if ( basilisk_channelsend(myinfo,swap->myhash,swap->otherhash,swap->req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2) == 0 )
         return(nextbits);
     printf("ERROR basilisk_channelsend\n");
     return(0);
