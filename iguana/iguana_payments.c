@@ -1288,24 +1288,29 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 
 cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,char *remoteaddr)
 {
+    cJSON *retjson; int32_t flag = 0;
+    if ( array == 0 )
+    {
+        array = iguana_getaddressesbyaccount(myinfo,coin,"*");
+        flag = 1;
+    }
     if ( minconf == 0 )
         minconf = 1;
     if ( maxconf == 0 )
         maxconf = (1 << 30);
-    return(iguana_RTlistunspent(myinfo,coin,array,minconf,maxconf,remoteaddr,0));
+    retjson = iguana_RTlistunspent(myinfo,coin,array,minconf,maxconf,remoteaddr,0);
+    if ( array != 0 && flag != 0 )
+        free_json(array);
+    return(retjson);
 }
 
 TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
 {
     //int32_t numrmds,numunspents=0; uint8_t *rmdarray; cJSON *retjson = cJSON_CreateArray();
-    cJSON *argarray,*retjson;
+    cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( (argarray= array) == 0 || cJSON_GetArraySize(array) == 0 )
-        argarray = iguana_getaddressesbyaccount(myinfo,coin,"*");
-    retjson = iguana_listunspents(myinfo,coin,argarray,minconf,maxconf,remoteaddr);
-    if ( argarray != array )
-        free_json(argarray);
+    retjson = iguana_listunspents(myinfo,coin,0,minconf,maxconf,remoteaddr);
     return(jprint(retjson,1));
 }
 
