@@ -251,7 +251,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             free(retstr);
     }
     if ( vals != 0 && juint(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+        jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
     return(basilisk_standardservice("OUT",myinfo,0,hash,vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -265,7 +265,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
-        jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+        jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"srchash",srchash);
@@ -314,14 +314,14 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
         msgid = (uint32_t)time(NULL);
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
-    jaddnum(valsobj,"timeout",2500);
-    jaddnum(valsobj,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+    jaddnum(valsobj,"timeout",3000);
+    jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
     jaddbits256(valsobj,"srchash",srchash);
     jaddbits256(valsobj,"desthash",desthash);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0)) != 0 )
     {
-        printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
+        //printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) == 0 )
