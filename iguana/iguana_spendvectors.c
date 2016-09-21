@@ -615,32 +615,40 @@ void iguana_truncatebalances(struct iguana_info *coin)
 int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     bits256 balancehash,allbundles; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
-    struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
+    struct sha256_vstate vstate,bstate; int32_t i,n,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
-    for (i=0; i<coin->bundlescount; i++)
+    for (i=n=0; i<coin->bundlescount; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
+        iguana_volatilesmap(myinfo,coin,&bp->ramchain);
+        if ( bp->ramchain.H.data != 0 )
+        {
+            if ( bp->startutxo == 0 )
+                bp->startutxo = (uint32_t)time(NULL) - 60;
+            if ( bp->utxofinish == 0 )
+                bp->utxofinish = (uint32_t)time(NULL);
+            n++;
+        }
         if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
             continue;
         }
-        iguana_volatilesmap(coin,&bp->ramchain);
         if ( from_ro != 0 && (bp->ramchain.from_ro == 0 || (bp->hdrsi > 0 && bp->ramchain.from_roX == 0) || bp->ramchain.from_roA == 0 || bp->ramchain.from_roU == 0) )
         {
             printf("from_ro.[%d] %d %d %d %d\n",bp->hdrsi,bp->ramchain.from_ro,bp->ramchain.from_roX,bp->ramchain.from_roA,bp->ramchain.from_roU);
             from_ro = 0;
         }
     }
-    printf("i.%d volatilesinit\n",i);
-    /*if ( strcmp("BTC",coin->symbol) == 0 && coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
+    printf("n.%d bundlescount.%d volatilesinit %d vs %d\n",n,i,(coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize,n);
+    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize > n )
     {
-        printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
+        printf("SKIP checking volatile files %d >= %d\n",(coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize,n);
         iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
         return(coin->bundlescount);
-    }*/
+    }
     /*if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
@@ -713,21 +721,24 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
-                if ( (coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
+                //if ( strcmp("BTC",coin->symbol) == 0 )
                 {
-                    for (i=0; i<coin->bundlescount-1; i++)
+                    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount )
                     {
-                        if ( (bp= coin->bundles[i]) != 0 )
+                        for (i=0; i<coin->bundlescount-1; i++)
                         {
-                            bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                            if ( (bp= coin->bundles[i]) != 0 )
+                            {
+                                bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                            }
                         }
-                    }
-                    coin->matchedfiles = 1;
-                    coin->spendvectorsaved = (uint32_t)time(NULL);
-                    coin->spendvalidated = 0;
-                    printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
-                    iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
-                } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount*coin->chain->bundlesize);
+                        coin->matchedfiles = 1;
+                        coin->spendvectorsaved = (uint32_t)time(NULL);
+                        coin->spendvalidated = 0;
+                        printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
+                        iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
+                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d >= %d coin->bundlescount\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount);
+                }
             }
             else
             {
@@ -946,7 +957,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
             if ( (bp= coin->bundles[hdrsi]) == 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                if ( iguana_volatilesmap(coin,&bp->ramchain) != 0 )
+                if ( iguana_volatilesmap(myinfo,coin,&bp->ramchain) != 0 )
                     printf("error mapping bundle.[%d]\n",hdrsi);
             }
     }
@@ -1150,7 +1161,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             max = coin->blockspacesize;
             blockspace = calloc(1,max);
             iguana_volatilespurge(coin,&bp->ramchain);
-            iguana_volatilesmap(coin,&bp->ramchain);
+            iguana_volatilesmap(myinfo,coin,&bp->ramchain);
             for (i=0; i<bp->n; i++)
             {
                 char str[65]; 

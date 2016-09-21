@@ -435,7 +435,7 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     return(0);
 }
 
-void iguana_update_balances(struct iguana_info *coin)
+void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
     if ( coin->RTheight > 0 )
@@ -494,7 +494,7 @@ void iguana_update_balances(struct iguana_info *coin)
             if ( (bp= coin->bundles[i]) != 0 && bp != coin->current )
             {
                 iguana_volatilespurge(coin,&bp->ramchain);
-                iguana_volatilesmap(coin,&bp->ramchain);
+                iguana_volatilesmap(myinfo,coin,&bp->ramchain);
             }
     }
 }
@@ -559,7 +559,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( helperid == 0 )
     {
         printf("%s start iguana_update_balances\n",coin->symbol);
-        iguana_update_balances(coin);
+        iguana_update_balances(myinfo,coin);
         printf("%s iguana_update_balances completed\n",coin->symbol);
         if ( 1 )
         {
@@ -567,7 +567,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
                 if ( (bp= coin->bundles[i]) != 0 )
                 {
                     iguana_volatilespurge(coin,&bp->ramchain);
-                    iguana_volatilesmap(coin,&bp->ramchain);
+                    iguana_volatilesmap(myinfo,coin,&bp->ramchain);
                 }
         }
     }
@@ -644,7 +644,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
                     }
                     else
                     {
-                        iguana_update_balances(coin);
+                        iguana_update_balances(myinfo,coin);
                         coin->spendvectorsaved = (uint32_t)time(NULL);
                         printf("already done UTXOGEN (%d %d %d) n.%d\n",iguana_utxofinished(coin),iguana_validated(coin),iguana_balancefinished(coin),n);
                     }
