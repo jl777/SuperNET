@@ -615,13 +615,15 @@ void iguana_truncatebalances(struct iguana_info *coin)
 int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     bits256 balancehash,allbundles; struct iguana_utxo *Uptr; struct iguana_account *Aptr;
-    struct sha256_vstate vstate,bstate; int32_t i,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
+    struct sha256_vstate vstate,bstate; int32_t i,n,from_ro,numpkinds,numunspents; struct iguana_bundle *bp; struct iguana_block *block;
     uint32_t crc,filecrc; FILE *fp; char crcfname[512],str[65],str2[65],buf[2048];
     from_ro = 1;
-    for (i=0; i<coin->bundlescount; i++)
+    for (i=n=0; i<coin->bundlescount; i++)
     {
         if ( (bp= coin->bundles[i]) == 0 )
             continue;
+        if ( bp->utxofinish > 1 )
+            n++;
         if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )
         {
             //printf("hdrsi.[%d] emitfinish.%u utxofinish.%u\n",i,bp->emitfinish,bp->utxofinish);
@@ -634,10 +636,10 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
             from_ro = 0;
         }
     }
-    printf("i.%d volatilesinit\n",i);
-    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize >= coin->bundlescount )
+    printf("n.%d bundlescount.%d volatilesinit %d vs %d\n",n,i,(coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize,n);
+    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize >= n )
     {
-        printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
+        printf("SKIP checking volatile files %d >= %d\n",(coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize,n);
         iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
         return(coin->bundlescount);
     }
