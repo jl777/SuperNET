@@ -323,7 +323,7 @@ void basilisk_sendback(struct supernet_info *myinfo,char *origCMD,char *symbol,c
                 jaddbits256(valsobj,"chaintip",virt->blocks.hwmchain.RO.hash2);
             }
             data = basilisk_jsondata(sizeof(struct iguana_msghdr),&allocptr,space,sizeof(space),&datalen,symbol,valsobj,basilisktag);
-            //printf("sendback.%d -> %s\n",datalen,remoteaddr);
+            printf("sendback.%d -> %s\n",datalen,remoteaddr);
             basilisk_sendcmd(myinfo,remoteaddr,"RET",&basilisktag,encryptflag,delaymillis,data,datalen,0,0);
             if ( allocptr != 0 )
                 free(allocptr);
@@ -408,7 +408,7 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     if ( fanout < minfanout )
         fanout = minfanout;
     if ( (numrequired= jint(valsobj,"numrequired")) <= 0 )
-        numrequired = MAX(fanout,sqrt(myinfo->NOTARY.NUMRELAYS)+1);
+        numrequired = MIN(fanout,sqrt(myinfo->NOTARY.NUMRELAYS)+1);
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
     {
         if ( (virt= iguana_coinfind(symbol)) != 0 )
@@ -749,7 +749,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                 {
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
-                        //printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
+                        printf("from_basilisk.%d ret.(%s)\n",from_basilisk,retstr);
                         //if ( from_basilisk != 0 || strcmp(CMD,"GET") == 0 )
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )

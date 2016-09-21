@@ -1146,7 +1146,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     else
     {
         valsobj = cJSON_CreateObject();
-        ptr = basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,0,1000,valsobj);
+        ptr = basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,0,3000,valsobj);
         free_json(valsobj);
         if ( ptr != 0 && ptr->retstr != 0 )
         {

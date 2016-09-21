@@ -29,8 +29,6 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
         if ( bits256_nonz(desthash) == 0 )
             msg->broadcast = 1;
-        if ( bits256_nonz(desthash) == 0 )
-            msg->broadcast = 1;
         msg->duration = duration;
         msg->expiration = (uint32_t)time(NULL) + duration;
         msg->keylen = keylen;
@@ -118,7 +116,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
             duration = BASILISK_MSGDURATION;
     }
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
-    // char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(retstr);
 }
 
@@ -314,7 +312,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
     jaddbits256(valsobj,"desthash",desthash);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0)) != 0 )
     {
-        //printf("channel.%u msgid.%u gotmessage.(%s)\n",channel,msgid,retstr);
+        printf("channel.%u msgid.%u gotmessage.(%s)\n",channel,msgid,retstr);
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) == 0 )

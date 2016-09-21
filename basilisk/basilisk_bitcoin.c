@@ -437,12 +437,12 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         Lptr->retstr = jprint(infojson,1);
         return(Lptr);
     }
-    if ( (fanout= juint(valsobj,"fanout")) < 5 )
-        fanout = 5;
+    if ( (fanout= juint(valsobj,"fanout")) < 8 )
+        fanout = 8;
     if ( (numrequired= juint(valsobj,"numrequired")) < fanout )
     {
         jaddnum(valsobj,"numrequired",fanout);
-        numrequired = fanout;
+        numrequired = 1;
     }
     ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,fanout,numrequired,basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
     return(ptr);
@@ -860,9 +860,9 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
             coin = iguana_coinfind(symbol);
     }
     if ( jobj(vals,"numrequired") == 0 )
-        jaddnum(vals,"numrequired",myinfo->NOTARY.NUMRELAYS);
+        jaddnum(vals,"numrequired",MIN(3,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+        jaddnum(vals,"fanout",MIN(3,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( coin != 0 )
     {
         //if ( juint(vals,"burn") == 0 )
