@@ -635,12 +635,12 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         }
     }
     printf("i.%d volatilesinit\n",i);
-    if ( strcmp("BTC",coin->symbol) == 0 && coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
+    /*if ( strcmp("BTC",coin->symbol) == 0 && coin->longestchain > coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms )
     {
         printf("SKIP checking volatile files %d > %d\n",coin->longestchain,coin->bundlescount*coin->chain->bundlesize-coin->chain->minconfirms);
         iguana_bundlestats(myinfo,coin,buf,IGUANA_DEFAULTLAG);
         return(coin->bundlescount);
-    }
+    }*/
     /*if ( i < coin->balanceswritten-1 )
     {
         printf("TRUNCATE balances written.%d -> %d\n",coin->balanceswritten,i);
@@ -707,7 +707,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         }
         else
         {
-            printf("%s MATCHED balancehash numhdrsi.%d crc.%08x\n",coin->symbol,coin->balanceswritten,crc);
+            printf("%s MATCHED balancehash numhdrsi.%d crc.%08x LONGEST.%d\n",coin->symbol,coin->balanceswritten,crc,coin->longestchain);
             if ( (fp= fopen(crcfname,"wb")) != 0 )
             {
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
