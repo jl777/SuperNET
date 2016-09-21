@@ -715,7 +715,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 fclose(fp);
                 //if ( strcmp("BTC",coin->symbol) == 0 )
                 {
-                    if ( (coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
+                    if ( (coin->longestchain-coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
                     {
                         for (i=0; i<coin->bundlescount-1; i++)
                         {
