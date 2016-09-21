@@ -312,7 +312,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
     jaddbits256(valsobj,"desthash",desthash);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0)) != 0 )
     {
-        printf("channel.%u msgid.%u gotmessage.(%s)\n",channel,msgid,retstr);
+        printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) == 0 )
