@@ -789,7 +789,9 @@ void basilisk_p2p(void *_myinfo,void *_addr,char *senderip,uint8_t *data,int32_t
     {
         if ( strcmp(type,"PIN") == 0 && myinfo->NOTARY.RELAYID >= 0 )
         {
+            portable_mutex_lock(&myinfo->messagemutex);
             basilisk_ping_process(myinfo,_addr,ipbits,data,datalen);
+            portable_mutex_unlock(&myinfo->messagemutex);
         }
     }
     else
@@ -885,7 +887,9 @@ void basilisks_loop(void *arg)
                     }
                 }
                 //portable_mutex_unlock(&myinfo->allcoins_mutex);
+                portable_mutex_lock(&myinfo->messagemutex);
                 basilisk_ping_send(myinfo,notary);
+                portable_mutex_unlock(&myinfo->messagemutex);
             }
         } // else printf("not notary %p %d\n",notary,myinfo->NOTARY.RELAYID);
         else if ( myinfo->expiration != 0 )
