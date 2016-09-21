@@ -833,11 +833,11 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f >>>>>>>>>>> send response\n",hwm);
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
-            basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
+            basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
