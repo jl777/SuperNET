@@ -52,13 +52,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
     QUEUEITEMS++;
     if ( sendping != 0 )
-    {
         queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
-        portable_mutex_unlock(&myinfo->messagemutex);
-        return(clonestr("{\"result\":\"message added to hashtable\"}"));
-    }
     portable_mutex_unlock(&myinfo->messagemutex);
-    return(0);
+    return(clonestr("{\"result\":\"message added to hashtable\"}"));
 }
 
 cJSON *basilisk_msgjson(struct basilisk_message *msg,uint8_t *key,int32_t keylen)
@@ -121,12 +117,12 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     desthash = jbits256(valsobj,"desthash");
     duration = juint(valsobj,"duration");
     keylen = basilisk_messagekey(key,juint(valsobj,"channel"),juint(valsobj,"msgid"),senderhash,desthash);
-    retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     if ( bits256_nonz(hash) == 0 )
     {
         if ( duration > BASILISK_MSGDURATION )
             duration = BASILISK_MSGDURATION;
     }
+    retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
     char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(retstr);
@@ -161,13 +157,13 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 1;
     allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
     array = cJSON_CreateArray();
-    portable_mutex_lock(&myinfo->messagemutex);
+    /*portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
         if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
             jaddi(array,basilisk_msgjson(msg,msg->key,msg->keylen));
     }
-    portable_mutex_unlock(&myinfo->messagemutex);
+    portable_mutex_unlock(&myinfo->messagemutex);*/
     printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
