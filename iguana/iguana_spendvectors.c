@@ -713,21 +713,24 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                 if ( fwrite(&crc,1,sizeof(crc),fp) != sizeof(crc) || fwrite(&balancehash,1,sizeof(balancehash),fp) != sizeof(balancehash) || fwrite(&allbundles,1,sizeof(allbundles),fp) != sizeof(allbundles) )
                     printf("error writing.(%s)\n",crcfname);
                 fclose(fp);
-                if ( (coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
+                if ( strcmp("BTC",coin->symbol) == 0 )
                 {
-                    for (i=0; i<coin->bundlescount-1; i++)
+                    if ( (coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize < coin->bundlescount*coin->chain->bundlesize )
                     {
-                        if ( (bp= coin->bundles[i]) != 0 )
+                        for (i=0; i<coin->bundlescount-1; i++)
                         {
-                            bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                            if ( (bp= coin->bundles[i]) != 0 )
+                            {
+                                bp->converted = bp->balancefinish = bp->validated = bp->utxofinish = (uint32_t)time(NULL);
+                            }
                         }
-                    }
-                    coin->matchedfiles = 1;
-                    coin->spendvectorsaved = (uint32_t)time(NULL);
-                    coin->spendvalidated = 0;
-                    printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
-                    iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
-                } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount*coin->chain->bundlesize);
+                        coin->matchedfiles = 1;
+                        coin->spendvectorsaved = (uint32_t)time(NULL);
+                        coin->spendvalidated = 0;
+                        printf("LONGEST.%d %s UTXOGEN spendvectorsaved <- %u\n",coin->longestchain,coin->symbol,coin->spendvectorsaved);
+                        iguana_utxoaddr_gen(myinfo,coin,(coin->bundlescount - 1) * coin->chain->bundlesize);
+                    } else printf("(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize %d < %d coin->bundlescount*coin->chain->bundlesize\n",(coin->longestchain+coin->chain->minconfirms)/coin->chain->bundlesize,coin->bundlescount*coin->chain->bundlesize);
+                }
             }
             else
             {
