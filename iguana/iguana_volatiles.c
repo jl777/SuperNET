@@ -426,7 +426,7 @@ int32_t iguana_volatilesmap(struct supernet_info *myinfo,struct iguana_info *coi
         iguana_bundleload(myinfo,coin,ramchain,coin->bundles[ramchain->height/coin->chain->bundlesize],1);
         if ( (rdata= ramchain->H.data) == 0 )
         {
-            printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
+            //printf("volatilesmap.[%d] no rdata\n",ramchain->height/coin->chain->bundlesize);
             return(-1);
         }
     }
