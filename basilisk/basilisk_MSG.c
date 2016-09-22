@@ -103,7 +103,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
         }
-        fprintf(stderr,",");
+        fprintf(stderr,"(%p).%d\n",msg,msg->datalen);
         if ( now > msg->expiration )
         {
             printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
@@ -201,9 +201,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         printf("%02x",key[i]);
     printf(" <- ADDMSG.[%d] exp %u\n",QUEUEITEMS,msg->expiration);
     QUEUEITEMS++;
+    portable_mutex_unlock(&myinfo->messagemutex);
     if ( sendping != 0 )
         queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
-    portable_mutex_unlock(&myinfo->messagemutex);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));
 }
 
