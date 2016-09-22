@@ -86,7 +86,7 @@ struct supernet_info
     portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
     struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
-    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ;
+    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
     void *ctx;
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;

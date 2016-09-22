@@ -105,7 +105,7 @@ int32_t basilisk_ping_genvirts(struct supernet_info *myinfo,uint8_t *data,int32_
 }
 #endif
 
-int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
+int32_t _basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
     int32_t i,msglen,len=0; uint8_t num,keylen,*message,*key; uint32_t duration;
     if ( (num= data[len++]) > 0 )
@@ -134,7 +134,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
                 return(0);
             }
             //printf("i.%d: keylen.%d msglen.%d\n",i,keylen,msglen);
-            basilisk_respond_addmessage(myinfo,key,keylen,message,msglen,0,duration);
+            _basilisk_respond_addmessage(myinfo,key,keylen,message,msglen,0,duration);
         }
     }
     return(len);
@@ -243,7 +243,9 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     if ( len <= datalen-sizeof(sn) )
     {
         //len += basilisk_ping_processDEX(myinfo,senderipbits,&data[len],datalen-len);
-        len += basilisk_ping_processMSG(myinfo,senderipbits,&data[len],datalen-len);
+        portable_mutex_lock(&myinfo->messagemutex);
+        len += _basilisk_ping_processMSG(myinfo,senderipbits,&data[len],datalen-len);
+        portable_mutex_unlock(&myinfo->messagemutex);
     }
     //printf("PING got %d, processed.%d from (%s)\n",datalen,len,ipbuf);
     //else printf("\n");
