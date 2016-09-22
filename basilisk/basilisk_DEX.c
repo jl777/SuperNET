@@ -495,10 +495,10 @@ INT_ARG(InstantDEX,automatched,requestid)
 
 int32_t InstantDEX_incoming_func(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    int32_t i;
-    for (i=0; i<datalen; i++)
-        printf("%02x",data[i]);
-    printf(" <- incoming\n");
+    //int32_t i;
+    //for (i=0; i<datalen; i++)
+    //    printf("%02x",data[i]);
+    //printf(" <- incoming\n");
     return(0);
 }
 

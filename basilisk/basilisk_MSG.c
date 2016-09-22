@@ -93,6 +93,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 1;
     allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
     array = cJSON_CreateArray();
+    fprintf(stderr,"{");
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
@@ -110,6 +111,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         }
     }
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
+    fprintf(stderr,"[");
     for (i=0; i<width; i++)
     {
         if ( allflag != 0 )
@@ -149,7 +151,9 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         }
         msgid--;
     }
+    fprintf(stderr,"]");
     portable_mutex_unlock(&myinfo->messagemutex);
+    fprintf(stderr,"}");
     if ( cJSON_GetArraySize(array) > 0 )
     {
         retjson = cJSON_CreateObject();
@@ -174,7 +178,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         duration = INSTANTDEX_LOCKTIME*2;
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
-    if ( msg == 0 || msg->datalen != datalen )
+    if ( msg == 0 )//|| msg->datalen != datalen )
     {
         if ( msg != 0 )
         {
@@ -195,13 +199,13 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         msg->expiration = (uint32_t)time(NULL) + duration;
         HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
         QUEUEITEMS++;
-    } else memcpy(msg->data,data,datalen);
+        for (i=0; i<BASILISK_KEYSIZE; i++)
+            printf("%02x",key[i]);
+        printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
+        if ( sendping != 0 )
+            queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+    } //else memcpy(msg->data,data,datalen);
     portable_mutex_unlock(&myinfo->messagemutex);
-    for (i=0; i<BASILISK_KEYSIZE; i++)
-        printf("%02x",key[i]);
-    printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
-    if ( sendping != 0 )
-        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));
 }
 
