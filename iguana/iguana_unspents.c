@@ -73,7 +73,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     *spentamountp = 0;
     if ( coinaddr != 0 )
         coinaddr[0] = 0;
-    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) >= 0 )
+    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) > 0 )
         unspentind = (firstvout + vout);
     else if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
         unspentind = (tp->firstvout + vout);
