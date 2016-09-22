@@ -386,6 +386,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     int32_t minfanout,numrequired,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
     //printf("request.(%s)\n",jprint(valsobj,0));
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
+    if ( str != 0 )
+        free(str);
     if ( bits256_nonz(hash) == 0 || (bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0) )
     {
         if ( jobj(valsobj,"hash") != 0 )
@@ -523,7 +525,7 @@ void basilisk_functions(struct iguana_info *coin,int32_t protocol)
 
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *hashes,int32_t num)
 {
-    bits256 hash; uint8_t *serialized; int32_t i,len = 0; char *str=0,*retstr,*hexstr,*allocptr=0,space[4096]; bits256 txid; cJSON *vals;
+    bits256 hash; uint8_t *serialized; int32_t i,len = 0; char *str=0,*retstr,*hexstr,space[4096]; bits256 txid; cJSON *vals;
     if ( virt != 0 && addr != 0 )
     {
         memset(hash.bytes,0,sizeof(hash));
@@ -540,8 +542,8 @@ int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *vi
             if ( (retstr= basilisk_standardservice(CMD,myinfo,addr,hash,vals,hexstr,0)) != 0 )
                 free(retstr);
             free_json(vals);
-            if ( allocptr != 0 )
-                free(allocptr);
+            if ( str != 0 )
+                free(str);
         }
         return(0);
     } else return(-1);
@@ -874,6 +876,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
+sleep(60);
+            printf("start swap\n");
             if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");

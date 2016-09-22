@@ -37,14 +37,16 @@ int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256
 
 cJSON *basilisk_msgjson(struct basilisk_message *msg,uint8_t *key,int32_t keylen)
 {
-    cJSON *msgjson=0; char *ptr = 0,strbuf[32768],keystr[BASILISK_KEYSIZE*2+1];
+    cJSON *msgjson=0; char *str = 0,strbuf[32768],keystr[BASILISK_KEYSIZE*2+1];
     msgjson = cJSON_CreateObject();
-    if ( basilisk_addhexstr(&ptr,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
+    if ( basilisk_addhexstr(&str,msgjson,strbuf,sizeof(strbuf),msg->data,msg->datalen) != 0 )
     {
         init_hexbytes_noT(keystr,key,keylen);
         jaddstr(msgjson,"key",keystr);
         jaddnum(msgjson,"expiration",msg->expiration);
         jaddnum(msgjson,"duration",msg->duration);
+        if ( str != 0 )
+            free(str);
     }
     else
     {
