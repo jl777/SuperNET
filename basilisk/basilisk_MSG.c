@@ -98,8 +98,12 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
         if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
+        {
+            fprintf(stderr,".");
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
+        }
+        fprintf(stderr,",");
         if ( now > msg->expiration )
         {
             printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
@@ -108,6 +112,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             free(msg);
         }
     }
+    /*
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
@@ -147,7 +152,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             }
         }
         msgid--;
-    }
+    }*/
     portable_mutex_unlock(&myinfo->messagemutex);
     fprintf(stderr,"]");
     if ( cJSON_GetArraySize(array) > 0 )
