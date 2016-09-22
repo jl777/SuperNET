@@ -251,7 +251,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                     if ( (hexdata= get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr)) != 0 )
                     {
                         basilisk_rwDEXquote(0,hexdata,&R);
-                        printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
                     }
                 } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )

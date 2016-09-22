@@ -1196,12 +1196,12 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                 }
                 else
                 {
-                    free(ptr->retstr);
+                    ptr->finished = OS_milliseconds();
                     return(jprint(array,1));
                 }
                 free_json(array);
             }
-            free(ptr->retstr);
+            ptr->finished = OS_milliseconds();
             if ( getinfoobj != 0 )
                 return(jprint(getinfoobj,1));
         }

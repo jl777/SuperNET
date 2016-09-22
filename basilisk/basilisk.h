@@ -20,7 +20,7 @@
 
 #include "../iguana/iguana777.h"
 
-#define BASILISK_TIMEOUT 5000
+#define BASILISK_TIMEOUT 15000
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
@@ -76,8 +76,8 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh;
-    double expiration; cJSON *retarray;
-    uint32_t submit,finished,basilisktag,numresults,numsent,numrequired,nBits;
+    double expiration,finished; cJSON *results[64];
+    uint32_t submit,basilisktag,numresults,numsent,numrequired,nBits,duration;
     char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 

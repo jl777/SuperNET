@@ -1039,8 +1039,8 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
             jaddstr(vals,"coin",coin->symbol);
             jaddnum(vals,"history",1);
             jaddnum(vals,"firstheight",0);
-            jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
-            jaddnum(vals,"numrequired",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+            jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+            jaddnum(vals,"numrequired",MIN(4,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
             jadd(vals,"addresses",jduplicate(argarray));
             if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,"",1)) != 0 )
             {

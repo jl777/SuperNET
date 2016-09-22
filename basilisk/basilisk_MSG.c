@@ -341,7 +341,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
         msgid = (uint32_t)time(NULL);
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
-    jaddnum(valsobj,"timeout",3000);
+    jaddnum(valsobj,"timeout",BASILISK_TIMEOUT);
     jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
     jaddbits256(valsobj,"srchash",srchash);

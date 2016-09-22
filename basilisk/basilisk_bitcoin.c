@@ -842,7 +842,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         if ( coin->FULLNODE != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
             retstr = ptr->retstr, ptr->retstr = 0;
-            ptr->finished = (uint32_t)time(NULL);
+            ptr->finished = OS_milliseconds() + 10000;
             return(retstr);
         }
     }
@@ -862,7 +862,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
     if ( jobj(vals,"numrequired") == 0 )
         jaddnum(vals,"numrequired",MIN(3,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( jobj(vals,"fanout") == 0 )
-        jaddnum(vals,"fanout",MIN(3,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+        jaddnum(vals,"fanout",MAX(3,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( coin != 0 )
     {
         //if ( juint(vals,"burn") == 0 )
