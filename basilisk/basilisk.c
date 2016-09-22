@@ -600,7 +600,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                     jaddi(pending->retarray,item);
                     if ( jobj(item,"error") == 0 )
                     {
-                        printf("numresults.%d:%d\n",pending->numresults,cJSON_GetArraySize(pending->retarray));
+                        printf("numresults.%d:%d (%s)\n",pending->numresults,cJSON_GetArraySize(pending->retarray),jprint(item,0));
                         pending->numresults++;
                     }
                 } else printf("couldnt parse.(%s)\n",retstr);
