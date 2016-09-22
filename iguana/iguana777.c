@@ -742,6 +742,7 @@ void iguana_helper(void *arg)
                                             for (i=0; i<j; i++)
                                                 if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
                                                     break;
+                                            retval = 1;
                                             if ( bp->utxofinish == 0 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
                                             {
                                                 if ( retval > 0 )

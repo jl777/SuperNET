@@ -454,7 +454,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( 0 && strcmp("RID",CMD) != 0 && strcmp("BAL",CMD) != 0 && strcmp("MSG",CMD) != 0 )
+    if ( strcmp("MSG",CMD) == 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
