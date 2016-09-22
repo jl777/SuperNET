@@ -836,7 +836,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[8192]; cJSON *outerarray,*retjson; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
     if ( time(NULL) < lastpoll+3 )
         return;
     lastpoll = (uint32_t)time(NULL);
