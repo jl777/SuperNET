@@ -325,7 +325,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
                     decode_hex(data,datalen,hexstr);
                     //printf("decoded hexstr.[%d]\n",datalen);
                     retval = datalen;
-                } else printf("datalen.%d < maxlen.%d\n",datalen,maxlen);
+                } else printf("datalen.%d >= maxlen.%d\n",datalen,maxlen);
             }
         }
     } //else printf("no hexstr.%p or datalen.%d (%s)\n",hexstr,datalen,jprint(json,0));
