@@ -98,7 +98,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     {
         HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
         {
-            if ( basilisk_msgcmp(msg,origwidth,channel,msgid,zero,desthash) == 0 )
+            if ( basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
             {
                 if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                     jaddi(array,msgjson);
