@@ -375,7 +375,7 @@ struct basilisk_item *basilisk_issueremote(struct supernet_info *myinfo,struct i
             if ( (retarray= pending->retarray) != 0 )
             {
                 pending->retstr = jprint(retarray,0);
-                //printf("num.%d:%d required.%d RETSTR.(%s)\n",pending->numresults,cJSON_GetArraySize(pending->retarray),pending->numrequired,pending->retstr);
+                printf("num.%d:%d required.%d RETSTR.(%s)\n",pending->numresults,cJSON_GetArraySize(pending->retarray),pending->numrequired,pending->retstr);
                 pending->retarray = 0;
                 free_json(retarray);
             }
@@ -401,8 +401,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     if ( (timeoutmillis= jint(valsobj,"timeout")) == 0 )
         timeoutmillis = BASILISK_TIMEOUT;
     minfanout = sqrt(myinfo->NOTARY.NUMRELAYS)+1;
-    if ( minfanout < 5 )
-        minfanout = 5;
+    if ( minfanout < 8 )
+        minfanout = 8;
     if ( jobj(valsobj,"fanout") == 0 )
         fanout = minfanout;
     else fanout = jint(valsobj,"fanout");
@@ -447,15 +447,15 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
             if ( ptr->numsent > 0 )
             {
                 //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
-                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"result","error");
                 jaddnum(retjson,"numsent",ptr->numsent);
             } else jaddstr(retjson,"error","didnt find any nodes to send to");
             retstr = jprint(retjson,1);
         }
         ptr->finished = (uint32_t)time(NULL);
     }
-    if ( strcmp("MSG",CMD) == 0 )
-        printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
+    //if ( strcmp("MSG",CMD) == 0 )
+    //    printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
 
@@ -600,7 +600,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                     jaddi(pending->retarray,item);
                     if ( jobj(item,"error") == 0 )
                     {
-                        //printf("numresults.%d:%d\n",pending->numresults,cJSON_GetArraySize(pending->retarray));
+                        printf("numresults.%d:%d\n",pending->numresults,cJSON_GetArraySize(pending->retarray));
                         pending->numresults++;
                     }
                 } else printf("couldnt parse.(%s)\n",retstr);
