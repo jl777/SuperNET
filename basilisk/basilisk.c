@@ -169,9 +169,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         {
             printf("return after locally basilisk_msgprocess\n");
             hash = GENESIS_PUBKEY;
-            portable_mutex_lock(&myinfo->messagemutex);
             basilisk_msgprocess(myinfo,0,0,type,*basilisktagp,data,datalen);
-            portable_mutex_unlock(&myinfo->messagemutex);
             return(0);
         }
     }
