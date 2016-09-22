@@ -250,6 +250,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                 {
                     if ( (hexdata= get_dataptr(0,&allocptr,&hexlen,hexspace,sizeof(hexspace),hexstr)) != 0 )
                     {
+                        memset(&R,0,sizeof(R));
                         basilisk_rwDEXquote(0,hexdata,&R);
                         //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
                     }
