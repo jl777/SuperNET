@@ -635,7 +635,6 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         { (void *)"VOT", &basilisk_respond_VOT },       // VOTE handler for something
         //{ (void *)"PIN", &basilisk_respond_PIN },
         
-        
         // encrypted data for jumblr
         { (void *)"HOP", &basilisk_respond_forward },    // message forwarding
         { (void *)"BOX", &basilisk_respond_mailbox },    // create/send/check mailbox pubkey
@@ -748,6 +747,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( (coin != 0 && coin->FULLNODE != 0) || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
                 {
+                    printf("\n call %s from_basilisk.%d (%s)\n",addr->ipaddr,from_basilisk,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
                         printf("%s from_basilisk.%d ret.(%s)\n",addr->ipaddr,from_basilisk,retstr);
