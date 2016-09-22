@@ -68,17 +68,18 @@ cJSON *_basilisk_respond_getmessage(struct supernet_info *myinfo,uint8_t *key,in
 
 int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash)
 {
-    uint32_t keychannel,keymsgid; bits256 keysrc,keydest;
+    uint32_t keychannel,keymsgid,n=0; bits256 keysrc,keydest;
     basilisk_messagekeyread(msg->key,&keychannel,&keymsgid,&keysrc,&keydest);
     if ( bits256_nonz(srchash) == 0 || bits256_cmp(srchash,keysrc) == 0 )
     {
         if ( bits256_nonz(desthash) == 0 || bits256_cmp(desthash,keydest) == 0 )
         {
-            while ( width >= 0 )
+            while ( width >= 0 && n < 60 )
             {
                 if ( msgid == keymsgid && keychannel == channel )
                     return(0);
                 msgid--;
+                n++;
             }
             return(-1);
         } else return(-2);
@@ -87,7 +88,8 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    uint8_t key[BASILISK_KEYSIZE]; int32_t i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg; uint32_t now = (uint32_t)time(NULL);
+    uint8_t key[BASILISK_KEYSIZE]; int32_t i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg; uint32_t origmsgid,now = (uint32_t)time(NULL);
+    origmsgid = msgid;
     memset(zero.bytes,0,sizeof(zero));
     if ( (width= origwidth) > 3600 )
         width = 3600;
@@ -138,7 +140,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     {
         HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
         {
-            if ( basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
+            if ( basilisk_msgcmp(msg,origwidth,channel,origmsgid,zero,zero) == 0 )
             {
                 if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                     jaddi(array,msgjson);

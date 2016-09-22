@@ -760,7 +760,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             free(retstr);
                         break;
                     } else printf("services null return\n");
-                } else printf("non-relay got unhandled.(%s)\n",type);
+                } else printf("non-relay got %s unhandled.(%s)\n",coin!=0?coin->symbol:"",type);
             }
         }
         free_json(valsobj);
