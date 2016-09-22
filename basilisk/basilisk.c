@@ -778,15 +778,21 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
         expand_ipbits(senderip,ptr->ipbits);
         if ( ptr->type[0] == 'P' && ptr->type[1] == 'I' && ptr->type[2] == 'N' )
         {
-            if ( strcmp(ptr->type,"PIN") == 0 && myinfo->NOTARY.RELAYID >= 0 )
+            if ( myinfo->NOTARY.RELAYID >= 0 )
+            {
+                fprintf(stderr,"P");
                 basilisk_ping_process(myinfo,ptr->addr,ptr->ipbits,ptr->data,ptr->datalen);
+                fprintf(stderr,"p");
+            }
         }
         else
         {
             len += iguana_rwnum(0,ptr->data,sizeof(basilisktag),&basilisktag);
             if ( 0 && myinfo->IAMLP == 0 )
                 printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,ptr->datalen,ptr->type,senderip!=0?senderip:"?",basilisktag);
+            fprintf(stderr,"%s ",ptr->type);
             basilisk_msgprocess(myinfo,ptr->addr,ptr->ipbits,ptr->type,basilisktag,&ptr->data[len],ptr->datalen - len);
+            fprintf(stderr,"%s n.%d\n",ptr->type,n);
             if ( 0 && myinfo->IAMLP == 0 )
                 printf("processed.%s from %s\n",ptr->type,senderip!=0?senderip:"?");
         }
@@ -811,6 +817,7 @@ struct basilisk_p2pitem *basilisk_p2pitem_create(struct iguana_info *coin,struct
 void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
     uint32_t ipbits; int32_t msglen; void *ptr = 0; uint8_t space[4096]; bits256 senderpub;
+    fprintf(stderr,"P2P ");
     ipbits = (uint32_t)calc_ipbits(senderip);
     if ( encrypted != 0 )
     {
@@ -829,6 +836,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
     else ipbits = myinfo->myaddr.myipbits;
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
     queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
+    fprintf(stderr,"p2p\n");
 }
 
 void basilisk_requests_poll(struct supernet_info *myinfo)
@@ -936,9 +944,13 @@ void basilisks_loop(void *arg)
     while ( 1 )
     {
         startmilli = OS_milliseconds();
+        fprintf(stderr,"G");
         basilisk_issued_purge(myinfo,600000);
+        fprintf(stderr,"I");
         basilisk_iteration(myinfo);
+        fprintf(stderr,"2");
         basilisk_p2pQ_process(myinfo,777);
+        fprintf(stderr,"\n");
         if ( myinfo->NOTARY.RELAYID >= 0 )
             endmilli = startmilli + 500;
         else endmilli = startmilli + 2500;
