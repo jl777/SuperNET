@@ -778,7 +778,7 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
         {
             if ( myinfo->NOTARY.RELAYID >= 0 )
             {
-                fprintf(stderr,"P");
+                fprintf(stderr,"P.%d ",ptr->datalen);
                 basilisk_ping_process(myinfo,ptr->addr,ptr->ipbits,ptr->data,ptr->datalen);
                 fprintf(stderr,"p");
             }
@@ -807,6 +807,7 @@ struct basilisk_p2pitem *basilisk_p2pitem_create(struct iguana_info *coin,struct
     ptr->coin = coin;
     ptr->addr = addr;
     ptr->ipbits = ipbits;
+    ptr->datalen = datalen;
     safecopy(ptr->type,type,sizeof(ptr->type));
     memcpy(ptr->data,data,datalen);
     return(ptr);
@@ -831,6 +832,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
     if ( senderip != 0 && senderip[0] != 0 && strcmp(senderip,"127.0.0.1") != 0 )
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = myinfo->myaddr.myipbits;
+    fprintf(stderr,"p2pQ.%d ",datalen);
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
     queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
 }
