@@ -771,9 +771,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
 
 int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
 {
-    struct basilisk_p2pitem *ptr; char senderip[64]; uint32_t n=0,basilisktag,len = 0;
+    struct basilisk_p2pitem *ptr; char senderip[64]; uint32_t n=0,basilisktag,len;
     while ( n < maxiters && (ptr= queue_dequeue(&myinfo->p2pQ,0)) != 0 )
     {
+        len = 0;
         expand_ipbits(senderip,ptr->ipbits);
         if ( ptr->type[0] == 'P' && ptr->type[1] == 'I' && ptr->type[2] == 'N' )
         {
@@ -795,12 +796,12 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
     return(n);
 }
 
-struct basilisk_p2pitem *basilisk_p2pitem_create(void *_coin,void *_addr,char *type,uint32_t ipbits,uint8_t *data,int32_t datalen)
+struct basilisk_p2pitem *basilisk_p2pitem_create(struct iguana_info *coin,struct iguana_peer *addr,char *type,uint32_t ipbits,uint8_t *data,int32_t datalen)
 {
     struct basilisk_p2pitem *ptr;
     ptr = calloc(1,sizeof(*ptr) + datalen);
-    ptr->coin = _coin;
-    ptr->addr = _addr;
+    ptr->coin = coin;
+    ptr->addr = addr;
     ptr->ipbits = ipbits;
     safecopy(ptr->type,type,sizeof(ptr->type));
     memcpy(ptr->data,data,datalen);
