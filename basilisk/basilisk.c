@@ -912,12 +912,11 @@ void basilisk_iteration(struct supernet_info *myinfo)
             QUEUEITEMS--;
             free(msg);
         }
-        if ( myinfo->NOTARY.RELAYID >= 0 )
-            basilisk_ping_send(myinfo,notary);
     }
     portable_mutex_unlock(&myinfo->messagemutex);
     if ( myinfo->NOTARY.RELAYID >= 0 )
     {
+        basilisk_ping_send(myinfo,notary);
         if ( notary != 0 )
         {
             maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
@@ -946,7 +945,7 @@ void basilisks_loop(void *arg)
         basilisk_issued_purge(myinfo,600000);
         fprintf(stderr,"I");
         basilisk_iteration(myinfo);
-        fprintf(stderr,"2");
+        fprintf(stderr," backI\n");
         basilisk_p2pQ_process(myinfo,777);
         fprintf(stderr,"\n");
         if ( myinfo->NOTARY.RELAYID >= 0 )
