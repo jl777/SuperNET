@@ -94,24 +94,6 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     char str[65],str2[65]; printf("MSGiterate (%s) -> (%s)\n",bits256_str(str,srchash),bits256_str(str2,desthash));
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->messagemutex);
-    if ( bits256_nonz(srchash) == 0 )
-    {
-        HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
-        {
-            if ( basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
-            {
-                if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
-                    jaddi(array,msgjson);
-            }
-            if ( now > msg->expiration )
-            {
-                printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
-                HASH_DELETE(hh,myinfo->messagetable,msg);
-                QUEUEITEMS--;
-                free(msg);
-            }
-        }
-    }
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
@@ -149,6 +131,27 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             }
         }
         msgid--;
+    }
+    if ( bits256_nonz(srchash) == 0 )
+    {
+        HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
+        {
+            if ( basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0 )
+            {
+                if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
+                    jaddi(array,msgjson);
+            }
+        }
+    }
+    HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
+    {
+        if ( now > msg->expiration+60 )
+        {
+            printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
+            HASH_DELETE(hh,myinfo->messagetable,msg);
+            QUEUEITEMS--;
+            free(msg);
+        }
     }
     portable_mutex_unlock(&myinfo->messagemutex);
     if ( cJSON_GetArraySize(array) > 0 )
