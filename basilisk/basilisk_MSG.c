@@ -85,7 +85,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg,*firstmsg = 0; uint32_t now = (uint32_t)time(NULL);
+    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg; uint32_t now = (uint32_t)time(NULL);
     memset(zero.bytes,0,sizeof(zero));
     if ( (width= origwidth) > 3600 )
         width = 3600;
@@ -93,24 +93,14 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 1;
     allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
     array = cJSON_CreateArray();
-    fprintf(stderr,"[");
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
-        if ( firstmsg == 0 )
-            firstmsg = msg;
-        else if ( firstmsg == msg )
-        {
-            printf("got 1stmsg.%p again?\n",firstmsg);
-            break;
-        }
         if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
         {
-            fprintf(stderr,".");
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
         }
-        fprintf(stderr,"(%p).%d 1st.%p\n",msg,msg->datalen,firstmsg);
         if ( now > msg->expiration )
         {
             printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
@@ -160,7 +150,6 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         msgid--;
     }
     portable_mutex_unlock(&myinfo->messagemutex);
-    fprintf(stderr,"]");
     if ( cJSON_GetArraySize(array) > 0 )
     {
         retjson = cJSON_CreateObject();
@@ -229,7 +218,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
     }
     retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
-    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    //char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
     return(retstr);
 }
 
