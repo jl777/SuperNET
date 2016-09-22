@@ -1310,7 +1310,7 @@ TWOINTS_AND_ARRAY(bitcoinrpc,listunspent,minconf,maxconf,array)
     cJSON *retjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    retjson = iguana_listunspents(myinfo,coin,0,minconf,maxconf,remoteaddr);
+    retjson = iguana_listunspents(myinfo,coin,array,minconf,maxconf,remoteaddr);
     return(jprint(retjson,1));
 }
 
