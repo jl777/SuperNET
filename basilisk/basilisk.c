@@ -941,8 +941,8 @@ void basilisks_loop(void *arg)
         basilisk_iteration(myinfo);
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
-            endmilli = startmilli + 2500;
-        else endmilli = startmilli + 5000;
+            endmilli = startmilli + 500;
+        else endmilli = startmilli + 2000;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
