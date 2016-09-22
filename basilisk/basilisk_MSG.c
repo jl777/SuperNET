@@ -250,7 +250,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jaddbits256(vals,"srchash",hash);
     if ( bits256_cmp(GENESIS_PUBKEY,jbits256(vals,"desthash")) == 0 )
         jaddbits256(vals,"desthash",myinfo->myaddr.persistent);
-    char str[65]; printf("getmessage for (%s)\n",bits256_str(str,jbits256(vals,"desthash")));
+    //char str[65]; printf("getmessage for (%s)\n",bits256_str(str,jbits256(vals,"desthash")));
     if ( (msgid= juint(vals,"msgid")) == 0 )
     {
         msgid = (uint32_t)time(NULL);
