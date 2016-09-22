@@ -829,6 +829,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = myinfo->myaddr.myipbits;
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
+    queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
 }
 
 void basilisk_requests_poll(struct supernet_info *myinfo)
