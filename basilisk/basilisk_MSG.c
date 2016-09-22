@@ -91,6 +91,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 3600;
     else if ( width < 1 )
         width = 1;
+    char str[65],str2[65]; printf("MSGiterate (%s) -> (%s)\n",bits256_str(str,srchash),bits256_str(str2,desthash));
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->messagemutex);
     if ( bits256_nonz(srchash) == 0 )
@@ -247,6 +248,7 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jaddbits256(vals,"srchash",hash);
     if ( bits256_cmp(GENESIS_PUBKEY,jbits256(vals,"desthash")) == 0 )
         jaddbits256(vals,"desthash",myinfo->myaddr.persistent);
+    char str[65]; printf("getmessage for (%s)\n",bits256_str(str,jbits256(vals,"desthash")));
     if ( (msgid= juint(vals,"msgid")) == 0 )
     {
         msgid = (uint32_t)time(NULL);

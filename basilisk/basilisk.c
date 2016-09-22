@@ -451,7 +451,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
                 {
                     //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
                     jaddstr(retjson,"result","error");
-                    jaddnum(retjson,"numsent",ptr->numsent);
+                    jaddnum(retjson,"packetsize",ptr->numsent);
                 } else jaddstr(retjson,"error","didnt find any nodes to send to");
             }
             retstr = jprint(retjson,1);
