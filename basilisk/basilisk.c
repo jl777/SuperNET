@@ -748,10 +748,10 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
             {
                 if ( (coin != 0 && coin->FULLNODE != 0) || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
                 {
-                    printf("\n call %s from_basilisk.%d (%s)\n",addr->ipaddr,from_basilisk,type);
+                    //printf("\n call %s from_basilisk.%d (%s)\n",addr->ipaddr,from_basilisk,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
                     {
-                        printf("%s from_basilisk.%d ret.(%s)\n",addr->ipaddr,from_basilisk,retstr);
+                        //printf("%s from_basilisk.%d ret.(%s)\n",addr->ipaddr,from_basilisk,retstr);
                         //if ( from_basilisk != 0 || strcmp(CMD,"GET") == 0 )
                             basilisk_sendback(myinfo,CMD,symbol,remoteaddr,basilisktag,retstr);
                         if ( retstr != 0 )
