@@ -91,13 +91,13 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 3600;
     else if ( width < 1 )
         width = 1;
-    allflag = 0;//(bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
+    allflag = (bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0);
     array = cJSON_CreateArray();
     fprintf(stderr,"{");
     portable_mutex_lock(&myinfo->messagemutex);
-    /*HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
+    HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
-        if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
+        if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,srchash,desthash) == 0) )
         {
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
@@ -109,9 +109,9 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             QUEUEITEMS--;
             free(msg);
         }
-    }*/
+    }
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
-    fprintf(stderr,"[");
+    /*fprintf(stderr,"[");
     for (i=0; i<width; i++)
     {
         if ( allflag != 0 )
@@ -151,7 +151,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         }
         msgid--;
     }
-    fprintf(stderr,"]");
+    fprintf(stderr,"]");*/
     portable_mutex_unlock(&myinfo->messagemutex);
     fprintf(stderr,"}");
     if ( cJSON_GetArraySize(array) > 0 )
