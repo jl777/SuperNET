@@ -156,9 +156,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jadd(retjson,"messages",array);
-        //printf("MESSAGES.(%s)\n",jprint(array,0));
+        printf("MESSAGES.(%s)\n",jprint(array,0));
         return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"no messages\"}"));
+    }
+    printf("no matching messages\n");
+    return(clonestr("{\"error\":\"no messages\"}"));
 }
 
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration)

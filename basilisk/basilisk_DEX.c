@@ -453,7 +453,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"srchash") == 0 )
-        jaddbits256(vals,"srchash",myinfo->myaddr.pubkey);
+        jaddbits256(vals,"srchash",myinfo->myaddr.persistent);
     if ( jobj(vals,"desthash") == 0 )
         jaddbits256(vals,"desthash",hash);
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
