@@ -815,7 +815,6 @@ struct basilisk_p2pitem *basilisk_p2pitem_create(struct iguana_info *coin,struct
 void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted)
 {
     uint32_t ipbits; int32_t msglen; void *ptr = 0; uint8_t space[4096]; bits256 senderpub;
-    fprintf(stderr,"P2P ");
     ipbits = (uint32_t)calc_ipbits(senderip);
     if ( encrypted != 0 )
     {
@@ -834,7 +833,6 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
     else ipbits = myinfo->myaddr.myipbits;
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
     queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
-    fprintf(stderr,"p2p\n");
 }
 
 void basilisk_requests_poll(struct supernet_info *myinfo)
@@ -950,8 +948,8 @@ void basilisks_loop(void *arg)
         basilisk_p2pQ_process(myinfo,777);
         fprintf(stderr,"\n");
         if ( myinfo->NOTARY.RELAYID >= 0 )
-            endmilli = startmilli + 500;
-        else endmilli = startmilli + 2500;
+            endmilli = startmilli + 2500;
+        else endmilli = startmilli + 5000;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
