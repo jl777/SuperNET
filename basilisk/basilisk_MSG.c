@@ -85,7 +85,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg; uint32_t now = (uint32_t)time(NULL);
+    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg,*firstmsg = 0; uint32_t now = (uint32_t)time(NULL);
     memset(zero.bytes,0,sizeof(zero));
     if ( (width= origwidth) > 3600 )
         width = 3600;
@@ -97,13 +97,20 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
+        if ( firstmsg == 0 )
+            firstmsg = msg;
+        else if ( firstmsg == msg )
+        {
+            printf("got 1stmsg.%p again?\n",firstmsg);
+            break;
+        }
         if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
         {
             fprintf(stderr,".");
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
         }
-        fprintf(stderr,"(%p).%d\n",msg,msg->datalen);
+        fprintf(stderr,"(%p).%d 1st.%p\n",msg,msg->datalen,firstmsg);
         if ( now > msg->expiration )
         {
             printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
@@ -112,7 +119,6 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             free(msg);
         }
     }
-    /*
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
@@ -152,7 +158,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             }
         }
         msgid--;
-    }*/
+    }
     portable_mutex_unlock(&myinfo->messagemutex);
     fprintf(stderr,"]");
     if ( cJSON_GetArraySize(array) > 0 )
@@ -170,6 +176,10 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     struct basilisk_message *msg; int32_t i; bits256 desthash;
     if ( keylen != BASILISK_KEYSIZE )
         return(0);
+    if ( duration == 0 )
+        duration = BASILISK_MSGDURATION;
+    else if ( duration > INSTANTDEX_LOCKTIME*2 )
+        duration = INSTANTDEX_LOCKTIME*2;
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
     if ( msg == 0 || msg->datalen != datalen )
@@ -182,21 +192,17 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
             free(msg);
         }
         msg = calloc(1,sizeof(*msg) + datalen);
-    }
-    if ( duration == 0 )
-        duration = BASILISK_MSGDURATION;
-    else if ( duration > INSTANTDEX_LOCKTIME*2 )
-        duration = INSTANTDEX_LOCKTIME*2;
-    memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
-    if ( bits256_nonz(desthash) == 0 )
-        msg->broadcast = 1;
-    msg->duration = duration;
-    msg->expiration = (uint32_t)time(NULL) + duration;
-    msg->keylen = keylen;
-    memcpy(msg->key,key,keylen);
-    msg->datalen = datalen;
-    memcpy(msg->data,data,datalen);
-    HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+        msg->keylen = keylen;
+        memcpy(msg->key,key,keylen);
+        msg->datalen = datalen;
+        memcpy(msg->data,data,datalen);
+        memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
+        if ( bits256_nonz(desthash) == 0 )
+            msg->broadcast = 1;
+        msg->duration = duration;
+        msg->expiration = (uint32_t)time(NULL) + duration;
+        HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+    } else memcpy(msg->data,data,datalen);
     for (i=0; i<BASILISK_KEYSIZE; i++)
         printf("%02x",key[i]);
     printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
