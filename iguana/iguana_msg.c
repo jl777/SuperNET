@@ -940,7 +940,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         } else ipaddr = 0;
         len = recvlen;
         //printf("GOT.(%s) len.%d from %s\n",H->command,recvlen,addr->ipaddr);
-        basilisk_p2p(myinfo,addr,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
+        basilisk_p2p(myinfo,coin,addr,ipaddr,data,recvlen,&H->command[strlen("SuperNET")],H->command[6] == 'e' && H->command[7] == 't');
         return(0);
     }
     if ( addr != 0 )

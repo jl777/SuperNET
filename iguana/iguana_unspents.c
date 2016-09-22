@@ -73,7 +73,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
     *spentamountp = 0;
     if ( coinaddr != 0 )
         coinaddr[0] = 0;
-    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) >= 0 )
+    if ( coin->fastfind != 0 && (firstvout= iguana_txidfastfind(coin,heightp,txid,lasthdrsi)) > 0 )
         unspentind = (firstvout + vout);
     else if ( (tp= iguana_txidfind(coin,heightp,&TX,txid,lasthdrsi)) != 0 )
         unspentind = (tp->firstvout + vout);
@@ -1039,8 +1039,8 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
             jaddstr(vals,"coin",coin->symbol);
             jaddnum(vals,"history",1);
             jaddnum(vals,"firstheight",0);
-            jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
-            jaddnum(vals,"numrequired",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+            jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+            jaddnum(vals,"numrequired",MIN(4,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
             jadd(vals,"addresses",jduplicate(argarray));
             if ( (retstr= basilisk_standardservice("BAL",myinfo,0,hash,vals,"",1)) != 0 )
             {

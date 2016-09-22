@@ -204,8 +204,8 @@ struct iguana_bundle *iguana_fastexternalspent(struct supernet_info *myinfo,stru
                 X = RAMCHAIN_PTR(rdata,Xoffset);
                 //X = (void *)(long)((long)rdata + rdata->Xoffset);
                 *prevhashp = prev_hash = X[ind];
-                if ( (unspentind= iguana_unspentindfind(myinfo,coin,&RTspent,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1,0)) != 0 )
-                    //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) >= 0 )
+                if ( (unspentind= iguana_unspentindfind(myinfo,coin,&RTspent,0,0,0,0,&height,prev_hash,prev_vout,spent_hdrsi-1,0)) > 0 )
+                    //if ( (firstvout= iguana_txidfastfind(coin,&height,prev_hash,spent_hdrsi-1)) > 0 )
                 {
                     /*duration = (OS_milliseconds() - startmillis);
                      if ( ((uint64_t)coin->txidfind_num % 100) == 1 )

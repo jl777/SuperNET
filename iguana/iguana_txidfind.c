@@ -362,13 +362,13 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
             if ( val >= tablesize )
                 val = 0;
             if ( (i= hashtable[val]) == 0 )
-                return(-1);
+                return(0);
             else
             {
                 if ( i > num )
                 {
                     printf("illegal val.%d vs num.%d tablesize.%d fastfind.%02x\n",i,num,tablesize,txid.bytes[31]);
-                    return(-1);
+                    return(0);
                 }
                 else
                 {
@@ -381,7 +381,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                         if ( *heightp >= (lasthdrsi+1)*coin->chain->bundlesize )
                         {
                             printf("txidfastfind: unexpected height.%d with lasthdrsi.%d\n",*heightp,lasthdrsi);
-                            return(-1);
+                            return(0);
                         }
                         return(firstvout);
                     }
@@ -403,7 +403,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
             }
         }
     }
-    return(-1);
+    return(0);
 }
 
 int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,uint32_t firstvout)

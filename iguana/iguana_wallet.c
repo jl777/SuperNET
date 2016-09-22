@@ -1146,7 +1146,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     else
     {
         valsobj = cJSON_CreateObject();
-        ptr = basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,0,3000,valsobj);
+        ptr = basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,0,5000,valsobj);
         free_json(valsobj);
         if ( ptr != 0 && ptr->retstr != 0 )
         {
@@ -1196,12 +1196,12 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                 }
                 else
                 {
-                    free(ptr->retstr);
+                    ptr->finished = OS_milliseconds();
                     return(jprint(array,1));
                 }
                 free_json(array);
             }
-            free(ptr->retstr);
+            ptr->finished = OS_milliseconds();
             if ( getinfoobj != 0 )
                 return(jprint(getinfoobj,1));
         }

@@ -545,6 +545,14 @@ struct _gfshare_ctx
     uint8_t sharenrs[255],buffer[];
 };
 
+struct basilisk_p2pitem
+{
+    struct queueitem DL;
+    struct iguana_info *coin; struct iguana_peer *addr;
+    uint32_t ipbits,datalen; char type[4];
+    uint8_t data[];
+};
+
 struct basilisk_request
 {
     uint32_t requestid,timestamp,quoteid,quotetime; // 0 to 15

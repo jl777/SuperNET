@@ -206,7 +206,7 @@ char *basilisk_respond_VPNmessage(struct supernet_info *myinfo,char *CMD,void *a
     if ( coin != 0 && (ptr= basilisk_bitcoinrawtx(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
     {
         retstr = ptr->retstr;
-        ptr->finished = (uint32_t)time(NULL);
+        ptr->finished = OS_milliseconds() + 10000;
     } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoinrawtx\"}");
     return(retstr);
 }*/
@@ -220,7 +220,7 @@ char *basilisk_respond_value(struct supernet_info *myinfo,char *CMD,void *addr,c
     if ( coin != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
     {
         retstr = ptr->retstr;
-        ptr->finished = (uint32_t)time(NULL);
+        ptr->finished = OS_milliseconds() + 10000;
     } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin value\"}");
     return(retstr);
 }
@@ -234,7 +234,7 @@ char *basilisk_respond_balances(struct supernet_info *myinfo,char *CMD,void *add
     if ( coin != 0 && (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
     {
         retstr = ptr->retstr;
-        ptr->finished = (uint32_t)time(NULL);
+        ptr->finished = OS_milliseconds() + 10000;
     } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin balances\"}");
     return(retstr);
 }
@@ -243,13 +243,13 @@ char *basilisk_respond_getinfo(struct supernet_info *myinfo,char *CMD,void *addr
 {
     char *symbol,*retstr=0; struct basilisk_item Lptr,*ptr; int32_t timeoutmillis; struct iguana_info *coin = 0;
     if ( (timeoutmillis= jint(valsobj,"timeout")) <= 0 )
-        timeoutmillis = 1000;
+        timeoutmillis = 5000;
     if ( (symbol= jstr(valsobj,"coin")) != 0 || (symbol= jstr(valsobj,"symbol")) != 0 )
         coin = iguana_coinfind(symbol);
     if ( coin != 0 && (ptr= basilisk_getinfo(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,valsobj)) != 0 )
     {
         retstr = ptr->retstr;
-        ptr->finished = (uint32_t)time(NULL);
+        ptr->finished = OS_milliseconds() + 10000;
     } else retstr = clonestr("{\"error\":\"no coin specified or error bitcoin getinfo\"}");
     return(retstr);
 }

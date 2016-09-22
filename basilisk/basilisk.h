@@ -20,7 +20,7 @@
 
 #include "../iguana/iguana777.h"
 
-#define BASILISK_TIMEOUT 5000
+#define BASILISK_TIMEOUT 3000
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
@@ -76,8 +76,8 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh;
-    double expiration; cJSON *retarray;
-    uint32_t submit,finished,basilisktag,numresults,numsent,numrequired,nBits;
+    double expiration,finished; cJSON *results[64];
+    uint32_t submit,basilisktag,numresults,numsent,numrequired,nBits,duration;
     char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 
@@ -102,7 +102,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 
 void basilisks_init(struct supernet_info *myinfo);
-void basilisk_p2p(void *myinfo,void *_addr,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
+void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag);
 
 uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size);

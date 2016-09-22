@@ -742,6 +742,7 @@ void iguana_helper(void *arg)
                                             for (i=0; i<j; i++)
                                                 if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
                                                     break;
+                                            retval = 1;
                                             if ( bp->utxofinish == 0 || (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
                                             {
                                                 if ( retval > 0 )
@@ -853,6 +854,11 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                {
+                    if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
+                        basilisk_requests_poll(myinfo);
+                }
                 if ( n > 1 && coin->RTheight > 0 && (rand() % 10) != 0 )
                     continue;
                 if ( coin->peers == 0 )
