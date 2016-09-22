@@ -899,33 +899,22 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 
 void basilisk_iteration(struct supernet_info *myinfo)
 {
-    struct iguana_info *virt,*tmpcoin,*notary; struct basilisk_message *msg,*tmpmsg; uint32_t now; int32_t maxmillis,flag=0;
+    struct iguana_info *notary; uint32_t now;
     now = (uint32_t)time(NULL);
     notary = iguana_coinfind("NOTARY");
-    portable_mutex_lock(&myinfo->messagemutex);
-    HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
-    {
-        if ( now > msg->expiration )
-        {
-            printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
-            HASH_DELETE(hh,myinfo->messagetable,msg);
-            QUEUEITEMS--;
-            free(msg);
-        }
-    }
-    portable_mutex_unlock(&myinfo->messagemutex);
     if ( myinfo->NOTARY.RELAYID >= 0 )
     {
         basilisk_ping_send(myinfo,notary);
-        if ( notary != 0 )
+        /*if ( notary != 0 )
         {
+         struct iguana_info *virt,*tmpcoin; int32_t maxmillis;
             maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
             HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
             {
                 if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
                     gecko_iteration(myinfo,notary,virt,maxmillis), flag++;
             }
-        }
+        }*/
     }
     else if ( myinfo->expiration != 0 )
     {

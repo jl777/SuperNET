@@ -149,7 +149,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
 
 char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash,int32_t origwidth)
 {
-    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg;
+    uint8_t key[BASILISK_KEYSIZE]; int32_t allflag,i,keylen,width; cJSON *msgjson,*item,*retjson,*array; bits256 zero; struct basilisk_message *msg,*tmpmsg; uint32_t now = (uint32_t)time(NULL);
     memset(zero.bytes,0,sizeof(zero));
     if ( (width= origwidth) > 3600 )
         width = 3600;
@@ -160,6 +160,13 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_ITER(hh,myinfo->messagetable,msg,tmpmsg)
     {
+        if ( now > msg->expiration )
+        {
+            printf("delete expired message.%p QUEUEITEMS.%d\n",msg,QUEUEITEMS);
+            HASH_DELETE(hh,myinfo->messagetable,msg);
+            QUEUEITEMS--;
+            free(msg);
+        }
         if ( allflag != 0 || (msg->broadcast != 0 && basilisk_msgcmp(msg,origwidth,channel,msgid,zero,zero) == 0) )
             if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
                 jaddi(array,msgjson);
