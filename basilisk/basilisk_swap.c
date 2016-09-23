@@ -465,7 +465,7 @@ uint32_t basilisk_swaprecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32
     *datalenp = 0;
     memset(rawcrcs,0,sizeof(rawcrcs));
     memset(datalens,0,sizeof(datalens));
-    if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,msgbits,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,msgbits,0)) != 0 )
     {
         //printf("retarray.(%s)\n",jprint(retarray,0));
         if ( (n= cJSON_GetArraySize(retarray)) > 0 )
