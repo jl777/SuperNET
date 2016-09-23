@@ -184,33 +184,43 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         duration = INSTANTDEX_LOCKTIME*2;
     portable_mutex_lock(&myinfo->messagemutex);
     HASH_FIND(hh,myinfo->messagetable,key,keylen,msg);
-    if ( msg == 0 )//|| msg->datalen != datalen )
+    if ( msg != 0 )
     {
-        if ( msg != 0 )
+        if ( msg->datalen != datalen )
         {
             printf("overwrite delete of msg.[%d]\n",msg->datalen);
             HASH_DELETE(hh,myinfo->messagetable,msg);
             QUEUEITEMS--;
             free(msg);
+            msg = 0;
         }
-        msg = calloc(1,sizeof(*msg) + datalen);
-        msg->keylen = keylen;
-        memcpy(msg->key,key,keylen);
-        msg->datalen = datalen;
-        memcpy(msg->data,data,datalen);
-        memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
-        if ( bits256_nonz(desthash) == 0 )
-            msg->broadcast = 1;
-        msg->duration = duration;
-        msg->expiration = (uint32_t)time(NULL) + duration;
-        HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
-        QUEUEITEMS++;
-        for (i=0; i<BASILISK_KEYSIZE; i++)
-            printf("%02x",key[i]);
-        printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
-        if ( sendping != 0 )
-            queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
-    } //else memcpy(msg->data,data,datalen);
+        else
+        {
+            printf("overwrite update of msg.[%d]\n",msg->datalen);
+            memcpy(msg->data,data,datalen);
+            if ( sendping != 0 )
+                queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+            portable_mutex_unlock(&myinfo->messagemutex);
+            return(clonestr("{\"result\":\"message updated\"}"));
+        }
+    }
+    msg = calloc(1,sizeof(*msg) + datalen);
+    msg->keylen = keylen;
+    memcpy(msg->key,key,keylen);
+    msg->datalen = datalen;
+    memcpy(msg->data,data,datalen);
+    memcpy(desthash.bytes,&key[BASILISK_KEYSIZE - sizeof(desthash)],sizeof(desthash));
+    if ( bits256_nonz(desthash) == 0 )
+        msg->broadcast = 1;
+    msg->duration = duration;
+    msg->expiration = (uint32_t)time(NULL) + duration;
+    HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
+    QUEUEITEMS++;
+    for (i=0; i<BASILISK_KEYSIZE; i++)
+        printf("%02x",key[i]);
+    printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
+    if ( sendping != 0 )
+        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
     portable_mutex_unlock(&myinfo->messagemutex);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));
 }
@@ -377,12 +387,14 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
 
 int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t (*process_func)(struct supernet_info *myinfo,void *ptr,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen),uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen,uint32_t expiration,uint32_t duration),uint8_t *data,int32_t maxlen,uint32_t channel,uint32_t msgid,cJSON *retarray,int32_t (*internal_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
-    cJSON *item; uint32_t duration,expiration; char *retstr; uint8_t key[BASILISK_KEYSIZE]; int32_t i,n,datalen,errs = 0;
+    cJSON *item; uint32_t duration,expiration; char *retstr; uint8_t key[BASILISK_KEYSIZE]; int32_t i,n,datalen,havedata = 0,errs = 0;
     if ( (n= cJSON_GetArraySize(retarray)) > 0 )
     {
         for (i=0; i<n; i++)
         {
             item = jitem(retarray,i);
+            if ( jobj(item,"error") != 0 )
+                continue;
             //printf("(%s).%d ",jprint(item,0),i);
             if ( (datalen= basilisk_message_returned(key,data,maxlen,item)) > 0 )
             {
@@ -392,13 +404,16 @@ int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t
                 {
                      if ( (*process_func)(myinfo,ptr,internal_func,channel,msgid,data,datalen,expiration,duration) < 0 )
                         errs++;
-                    free(retstr);
+                     else havedata++;
+                     free(retstr);
                 } // else printf("duplicate.%d skipped\n",datalen);
             }
         }
         //printf("n.%d maxlen.%d\n",n,maxlen);
     }
-    if ( errs > 0 )
+    if ( havedata == 0 )
+        return(-1);
+    else if ( errs > 0 )
         return(-errs);
-    else return(n);
+    else return(havedata);
 }

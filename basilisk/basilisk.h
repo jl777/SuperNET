@@ -48,7 +48,7 @@ struct basilisk_rawtx
     struct iguana_info *coin;
     uint64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
-    uint32_t locktime;
+    uint32_t locktime,crcs[2];
     char destaddr[64],name[32];
     uint8_t addrtype,pubkey33[33],spendscript[512],redeemscript[1024],rmd160[20];
     uint8_t *txbytes,extraspace[1024];
@@ -65,10 +65,12 @@ struct basilisk_swap
     
     bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];
     
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    uint8_t verifybuf[65536];
 };
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
