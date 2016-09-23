@@ -880,6 +880,19 @@ void iguana_coinloop(void *arg)
                 if ( coin->started == 0 && coin->active != 0 )
                 {
                     iguana_callcoinstart(myinfo,coin);
+                    if ( 0 && strcmp("BTC",coin->symbol) == 0 )
+                    {
+                        cJSON *txobj = cJSON_Parse("{\"version\":1,\"locktime\":1474666158,\"vin\":[{\"userdata\":\"51\",\"txid\":\"fc97c3675c83c09723e0b14292ddec73820cb7352166ace4fe81ed62568315f2\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a914b7a2e599edb55d3f78ebcbfd49e82dd9a12adc2487\"},\"suppress\":1,\"sequence\":0,\"redeemScript\":\"6304ae9ee557b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a914adfad35d6646a0514011ba6ab53462319b651f96882103225046c9947222ab04acdefe2ed5dec4dcb593c5e6ae58e2c61c7ace14d81b70ac68\"}],\"vout\":[{\"satoshis\":\"36042\",\"scriptPubkey\":{\"hex\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}}]}");
+                        struct vin_info V[3]; bits256 txid,checktxid; uint8_t *extraspace; struct iguana_info *coin = iguana_coinfind("BTC");
+                        memset(V,0,sizeof(V));
+                        char *txbytes = bitcoin_json2hex(myinfo,coin,&txid,txobj,V);
+                        printf("rawtx.(%s)\n",txbytes);
+                        extraspace = calloc(1,65536);
+                        txobj = bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&checktxid,0,txbytes,extraspace,65536,0,jobj(txobj,"vin"),1);
+                        printf("TXOBJ.(%s)\n",jprint(txobj,0));
+                        free(extraspace);
+                        getchar();
+                    }
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
