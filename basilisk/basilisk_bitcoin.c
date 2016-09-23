@@ -383,7 +383,7 @@ double basilisk_bitcoin_valuemetric(struct supernet_info *myinfo,struct basilisk
 
 void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    int32_t i,height,vout,numsent; struct basilisk_item *ptr; char coinaddr[64],str[65]; struct basilisk_value *v; uint64_t value = 0; bits256 txid; struct iguana_outpoint outpt;
+    int32_t i,j,height,vout,numsent; cJSON *retjson; struct basilisk_item *ptr; char coinaddr[64],str[65]; struct basilisk_value *v; uint64_t value = 0; bits256 txid; struct iguana_outpoint outpt;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
@@ -414,19 +414,35 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
                 printf("bitcoinvalue local ht.%d %s %.8f\n",v->height,v->coinaddr,dstr(v->value));
                 ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"numrequired"),basilisktag,timeoutmillis,0,basilisk_valuestr(coin,v->coinaddr,v->value,v->height,txid,vout),0,0,BASILISK_DEFAULTDIFF); // this completes immediate
                 //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
+                if ( ptr->numresults > 0 )
+                {
+                    retjson = cJSON_CreateArray();
+                    for (j=0; j<ptr->numresults; j++)
+                        jaddi(retjson,ptr->results[j]), ptr->results[j] = 0;
+                    ptr->retstr = jprint(retjson,1);
+                    //printf("numresults.%d (%p)\n",ptr->numresults,ptr);
+                }
                 return(ptr);
             }
         }
     }
     printf("bitcoinvalue issue remote tag.%u\n",basilisktag);
     ptr = basilisk_issueremote(myinfo,0,&numsent,"VAL",coin->symbol,1,valsobj,juint(valsobj,"fanout"),juint(valsobj,"numrequired"),basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    if ( ptr->numresults > 0 )
+    {
+        retjson = cJSON_CreateArray();
+        for (j=0; j<ptr->numresults; j++)
+            jaddi(retjson,ptr->results[j]), ptr->results[j] = 0;
+        ptr->retstr = jprint(retjson,1);
+        //printf("numresults.%d (%p)\n",ptr->numresults,ptr);
+    }
     //queue_enqueue("submitQ",&myinfo->basilisks.submitQ,&ptr->DL,0);
     return(ptr);
 }
 
 void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
 {
-    struct basilisk_item *ptr; cJSON *infojson; int32_t numsent,fanout,numrequired;
+    struct basilisk_item *ptr; cJSON *infojson,*retjson; int32_t j,numsent,fanout,numrequired;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"NOTARY") != 0 )
@@ -445,6 +461,14 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         numrequired = 1;
     }
     ptr = basilisk_issueremote(myinfo,0,&numsent,"INF",coin->symbol,1,valsobj,fanout,numrequired,basilisktag,timeoutmillis,0,0,0,0,BASILISK_DEFAULTDIFF);
+    if ( ptr->numresults > 0 )
+    {
+        retjson = cJSON_CreateArray();
+        for (j=0; j<ptr->numresults; j++)
+            jaddi(retjson,ptr->results[j]), ptr->results[j] = 0;
+        ptr->retstr = jprint(retjson,1);
+        //printf("numresults.%d (%p)\n",ptr->numresults,ptr);
+    }
     return(ptr);
 }
 

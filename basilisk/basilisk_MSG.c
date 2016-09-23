@@ -196,10 +196,13 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         }
         else
         {
-            printf("overwrite update of msg.[%d]\n",msg->datalen);
-            memcpy(msg->data,data,datalen);
-            if ( sendping != 0 )
-                queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+            if ( memcmp(msg->data,data,datalen) != 0 )
+            {
+                printf("overwrite update of msg.[%d] <- datalen.%d\n",msg->datalen,datalen);
+                memcpy(msg->data,data,datalen);
+                if ( sendping != 0 )
+                    queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+            }
             portable_mutex_unlock(&myinfo->messagemutex);
             return(clonestr("{\"result\":\"message updated\"}"));
         }
