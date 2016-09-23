@@ -566,6 +566,8 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
 {
     int32_t valid,bundlei,height=-1; struct iguana_block *hwmchain,*block = 0,*prev=0;
     bits256 *hash2p=0; double prevPoW = 0.;
+    if ( coin->blocks.hwmchain.height < 0 )
+        iguana_genesis(myinfo,coin,coin->chain);
     if ( newblock == 0 || newblock->RO.timestamp == 0 || bits256_nonz(newblock->RO.prev_block) == 0 )
         return(0);
     iguana_blocksizecheck("chainlink new",coin->chain->zcash,newblock);

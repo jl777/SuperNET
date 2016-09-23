@@ -11,7 +11,6 @@
  * Also, the problem of determining the amount of memory available
  * is shoved onto the user.
  */
-
 #ifndef WIN32
 #include <unistd.h>
 #endif
