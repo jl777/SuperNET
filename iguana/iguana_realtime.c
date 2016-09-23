@@ -342,7 +342,7 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         RTptr->version = version;
         RTptr->timestamp = timestamp;
         RTptr->unspents = (void *)&RTptr->spends[numvins];
-        if ( txlen > 0 )
+        if ( txlen > 0 && txlen < IGUANA_MAXPACKETSIZE )
         {
             RTptr->rawtxbytes = malloc(txlen);
             RTptr->txlen = txlen;

@@ -545,7 +545,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
         basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
         sleep(3);
-        while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
+        while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
         {
             printf("didnt get back what was sent\n");
             sleep(3);
