@@ -29,7 +29,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
     {
         for (i=0; i<numcrcs; i++)
         {
-            printf("%08x ",rawcrcs[i]);
+            //printf("%08x ",rawcrcs[i]);
             for (j=0; j<numcandidates; j++)
             {
                 if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
@@ -46,14 +46,14 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
                 numcandidates++;
             }
         }
-        printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
         if ( numcandidates > 0 )
         {
             for (j=0; j<numcandidates; j++)
                 if ( tally[j] >= mintally )
                 {
                     *datalenp = candlens[j];
-                    printf("tally[%d] %d >= mintally.%d numcrcs.%d crc %08x datalen.%d\n",j,tally[j],mintally,numcrcs,candidates[j],*datalenp);
+                    //printf("tally[%d] %d >= mintally.%d numcrcs.%d crc %08x datalen.%d\n",j,tally[j],mintally,numcrcs,candidates[j],*datalenp);
                     return(candidates[j]);
                 }
         }
