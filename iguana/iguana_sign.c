@@ -181,6 +181,15 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
     return(n);
 }
 
+int32_t iguana_scriptnum(uint8_t opcode)
+{
+    if ( opcode == 0x00 )
+        return(0);
+    else if ( opcode >= 0x51 && opcode < 0x60 )
+        return(opcode - 0x50);
+    else return(-1);
+}
+
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
     struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte,spendscript[8192]; uint32_t tmp=0; int32_t i,n,starti,spendlen,suppress_pubkeys,siglen,plen,m,endi,rwflag=1,len = 0; char *userdata=0,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
@@ -198,9 +207,9 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         vin->prev_vout = jint(vinobj,"vout");
         if ( (scriptjson= jobj(vinobj,"scriptSig")) != 0 )
             hexstr = jstr(scriptjson,"hex");
-        if ( ((spendstr= jstr(vinobj,"scriptPub")) == 0 && (spendstr= jstr(vinobj,"scriptPubkey")) == 0) || is_hexstr(spendstr,(int32_t)strlen(spendstr)) <= 0 )
+        if ( ((spendstr= jstr(vinobj,"scriptPub")) == 0 && (spendstr= jstr(vinobj,"scriptPubKey")) == 0) || is_hexstr(spendstr,(int32_t)strlen(spendstr)) <= 0 )
         {
-            if ( (obj= jobj(vinobj,"scriptPub")) != 0 || (obj= jobj(vinobj,"scriptPubkey")) != 0 )
+            if ( (obj= jobj(vinobj,"scriptPub")) != 0 || (obj= jobj(vinobj,"scriptPubKey")) != 0 )
             {
                 spendstr = jstr(obj,"hex");
                 lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
@@ -233,7 +242,8 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->prev_vout),&vin->prev_vout);
     if ( V != 0 )
     {
-        if ( vin->vinscript == 0 )
+        V->suppress_pubkeys = suppress_pubkeys;
+        if ( vin->vinscript == 0 && V->spendlen == 0 )
         {
             if ( iguana_RTunspentindfind(myinfo,coin,&outpt,V->coinaddr,spendscript,&spendlen,&V->amount,&V->height,vin->prev_hash,vin->prev_vout,coin->bundlescount-1,0) == 0 )
             {
@@ -341,6 +351,11 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         }
         n = iguana_parsehexstr(&vin->redeemscript,&vin->p2shlen,V!=0?V->p2shscript:0,V!=0?&V->p2shlen:0,&serialized[len],redeemstr);
         len += n;
+        if ( vin->redeemscript[vin->p2shlen-1] == SCRIPT_OP_CHECKMULTISIG )
+        {
+            V->M = iguana_scriptnum(vin->redeemscript[0]);
+            V->N = iguana_scriptnum(vin->redeemscript[vin->p2shlen-2]);
+        }
     }
     tmp = (len - endi);
     if ( tmp < 0x100 )
@@ -371,15 +386,20 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
     if ( spendstr != 0 )
     {
+        if ( V != 0 )
+        {
+            if ( V->spendlen == 0 )
+            {
+                V->spendlen = (int32_t)strlen(spendstr) >> 1;
+                decode_hex(V->spendscript,V->spendlen,spendstr);
+            }
+            if ( vin->spendscript == 0 )
+                vin->spendscript = V->spendscript;
+        }
         if ( vin->spendlen == 0 && vin->spendscript != 0 )
         {
             vin->spendlen = (int32_t)strlen(spendstr) >> 1;
             decode_hex(vin->spendscript,vin->spendlen,spendstr);
-        }
-        if ( V != 0 && V->spendlen == 0 )
-        {
-            V->spendlen = (int32_t)strlen(spendstr) >> 1;
-            decode_hex(V->spendscript,V->spendlen,spendstr);
         }
         //printf("serialized.%p len.%d\n",serialized,len);
         //n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,&serialized[len],spendstr);
@@ -464,13 +484,17 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
 {
     int32_t i,len; bits256 sigtxid,txid,revsigtxid; struct iguana_msgtx dest;
     dest = *msgtx;
+    dest.vins = calloc(dest.tx_in,sizeof(*dest.vins));
+    dest.vouts = calloc(dest.tx_out,sizeof(*dest.vouts));
+    memcpy(dest.vins,msgtx->vins,dest.tx_in * sizeof(*dest.vins));
+    memcpy(dest.vouts,msgtx->vouts,dest.tx_out * sizeof(*dest.vouts));
     memset(sigtxid.bytes,0,sizeof(sigtxid));
     if ( hashtype != SIGHASH_ALL )
     {
         printf("currently only SIGHASH_ALL supported, not %d\n",hashtype);
         return(sigtxid);
     }
-    for (i=0; i<msgtx->tx_in; i++)
+    for (i=0; i<dest.tx_in; i++)
     {
         if ( i == vini )
         {
@@ -486,6 +510,9 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         dest.vins[i].redeemscript = 0;
     }
     len = iguana_rwmsgtx(coin,height,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0,0,suppress_pubkeys);
+    for (i=0; i<len; i++)
+        printf("%02x",serialized[i]);
+    printf(" <- sigtx\n");
     if ( len > 0 ) // (dest.tx_in != 1 || bits256_nonz(dest.vins[0].prev_hash) != 0) && dest.vins[0].scriptlen > 0 &&
     {
 #ifdef BTC2_VERSION
@@ -496,22 +523,42 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
             sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-        //char str[65]; printf("SIGTXID.(%s)\n",bits256_str(str,sigtxid));
+        char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     }
+    free(dest.vins);
+    free(dest.vouts);
     return(sigtxid);
+}
+
+void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript,int32_t maxsize)
+{
+    char *redeemstr,*hexstr; cJSON *sobj;
+    if ( (redeemstr= jstr(item,"redeemScript")) != 0 && is_hexstr(redeemstr,0) > 0 )
+        vin->p2shlen = (int32_t)strlen(redeemstr) >> 1;
+    if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && (vin->spendlen == 0 || vin->spendscript == 0) )
+    {
+        vin->spendlen = (int32_t)strlen(hexstr) >> 1;
+        if ( vin->spendlen < maxsize )
+        {
+            if ( vin->spendscript == 0 )
+                vin->spendscript = spendscript;
+            decode_hex(vin->spendscript,vin->spendlen,hexstr);
+        }
+    }
 }
 
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys)
 {
-    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[8192],*txstart = serialized,*sigser=0; char txidstr[65],*redeemstr,*hexstr; cJSON *vin,*sobj,*array=0; bits256 sigtxid;
+    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[8192],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
     {
         jaddnum(json,"version",msg->version);
-        array = cJSON_CreateArray();
+        vinarray = cJSON_CreateArray();
+        voutarray = cJSON_CreateArray();
         if ( rwflag == 0 )
             sigser = calloc(1,maxsize*2);
-        //printf("json.%p array.%p sigser.%p\n",json,array,sigser);
+        //printf("json.%p array.%p sigser.%p\n",json,vinarray,sigser);
     }
     //printf("version.%d\n",msg->version);
     if ( coin->chain->isPoS != 0 )
@@ -539,22 +586,12 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     for (i=0; i<msg->tx_in; i++)
     {
         //printf("vin.%d starts offset.%d\n",i,len);
-        if ( vins != 0 && (vin= jitem(vins,i)) != 0 )
-        {
-            if ( (redeemstr= jstr(vin,"redeemScript")) != 0 && is_hexstr(redeemstr,0) > 0 )
-                msg->vins[i].p2shlen = (int32_t)strlen(redeemstr) >> 1;
-            if ( (sobj= jobj(vin,"scriptPubkey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && msg->vins[i].spendlen == 0 )
-            {
-                msg->vins[i].spendlen = (int32_t)strlen(hexstr) >> 1;
-                if ( msg->vins[i].spendscript == 0 && msg->vins[i].spendlen < sizeof(spendscript) )
-                {
-                    msg->vins[i].spendscript = spendscript;
-                    decode_hex(spendscript,msg->vins[i].spendlen,hexstr);
-                }
-            }
-        }
+        if ( vins != 0 && jitem(vins,i) != 0 )
+            iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
+        if ( msg->vins[i].spendscript == spendscript )
+            msg->vins[i].spendscript = 0;
         //printf("vin.%d n.%d len.%d\n",i,n,len);
         len += n;
         if ( len > maxsize )
@@ -562,26 +599,6 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             printf("invalid tx_in.%d len.%d vs maxsize.%d\n",msg->tx_in,len,maxsize);
             return(-1);
         }
-        if ( array != 0 )
-        {
-            if ( sigser != 0 && vins != 0 )
-            {
-                //set spendscript here
-                printf("vini.%d spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
-                sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
-            } else memset(sigtxid.bytes,0,sizeof(sigtxid));
-            jaddi(array,iguana_vinjson(coin,&msg->vins[i],sigtxid));
-        }
-        if ( msg->vins[i].spendscript == spendscript )
-            msg->vins[i].spendscript = 0;
-    }
-    if ( array != 0 )
-    {
-        if ( sigser != 0 )
-            free(sigser);
-        jadd(json,"vin",array);
-        jaddnum(json,"numvins",msg->tx_in);
-        array = cJSON_CreateArray();
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( rwflag == 0 )
@@ -611,13 +628,8 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             printf("invalid tx_out.%d len.%d vs maxsize.%d n.%d\n",msg->tx_out,len,maxsize,n);
             return(-1);
         }
-        if ( array != 0 )
-            jaddi(array,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
-    }
-    if ( array != 0 )
-    {
-        jadd(json,"vout",array);
-        jaddnum(json,"numvouts",msg->tx_out);
+        if ( voutarray != 0 )
+            jaddi(voutarray,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
     //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
@@ -640,6 +652,29 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             jaddnum(json,"ddosflag",ddosflag);
             jaddstr(json,"vpnstr",vpnstr);
         }
+    }
+    if ( sigser != 0 && vinarray != 0 )
+    {
+        for (i=0; i<msg->tx_in; i++)
+        {
+            if ( vins != 0 && jitem(vins,i) != 0 )
+            {
+                iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
+                sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
+                //printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
+                jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
+                if ( msg->vins[i].spendscript == spendscript )
+                    msg->vins[i].spendscript = 0;
+            }
+        }
+        free(sigser);
+        jadd(json,"vin",vinarray);
+        jaddnum(json,"numvins",msg->tx_in);
+    }
+    if ( voutarray != 0 )
+    {
+        jadd(json,"vout",voutarray);
+        jaddnum(json,"numvouts",msg->tx_out);
     }
     *txidp = bits256_doublesha256(txidstr,txstart,len);
     if ( json != 0 )
@@ -969,6 +1004,7 @@ int32_t iguana_vininfo_create(struct supernet_info *myinfo,struct iguana_info *c
         for (i=0; i<msgtx->tx_in; i++)
         {
             vp = &V[i];
+            //printf("VINS.(%s)\n",jprint(jitem(vins,i),0));
             len += iguana_parsevinobj(myinfo,coin,&serialized[len],maxsize,&msgtx->vins[i],jitem(vins,i),vp);
             if ( msgtx->vins[i].sequence < IGUANA_SEQUENCEID_FINAL )
                 finalized = 0;
@@ -1361,6 +1397,8 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         V->signers[i].privkey = privkey;
                         if ( bits256_nonz(privkey) != 0 )
                             iguana_ensure_privkey(myinfo,coin,privkey);
+                        if ( V->suppress_pubkeys == 0 && bitcoin_pubkeylen(V->signers[i].pubkey) <= 0 )
+                            bitcoin_pubkey33(myinfo->ctx,V->signers[i].pubkey,privkey);
                     }
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);

@@ -897,7 +897,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
 
     basilisk_rawtx_setparms("alicepayment",myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
     basilisk_rawtx_setparms("bobspend",myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
-    swap->bobspend.suppress_pubkeys = 0;
+    swap->bobspend.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
     swap->alicereclaim.suppress_pubkeys = 1;
     return(swap);

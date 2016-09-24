@@ -168,7 +168,7 @@ struct iguana_msgtx
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
     uint8_t *serialized;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 struct iguana_msgjoinsplit
 {

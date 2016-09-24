@@ -957,7 +957,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( (scripthexstr= jstr(item,"spendscript")) == 0 )
                 {
-                    if ( (scriptobj= jobj(item,"scriptPubkey")) != 0 )
+                    if ( (scriptobj= jobj(item,"scriptPubKey")) != 0 )
                         scripthexstr = jstr(scriptobj,"hex");
                 }
                 if ( scripthexstr != 0 )

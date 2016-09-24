@@ -1153,12 +1153,12 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
             jaddbits256(newvin,"txid",txid);
             jaddnum(newvin,"vout",vout);
             p2shlen = spendlen = 0;
-            if ( ((str= jstr(item,"scriptPub")) != 0 || (str= jstr(item,"scriptPubkey")) != 0) && is_hexstr(str,(int32_t)strlen(str)) > 0 )
+            if ( ((str= jstr(item,"scriptPub")) != 0 || (str= jstr(item,"scriptPubKey")) != 0) && is_hexstr(str,(int32_t)strlen(str)) > 0 )
             {
                 spendlen = (int32_t)strlen(str) >> 1;
                 decode_hex(spendscript,spendlen,str);
             }
-            else if ( ((obj= jobj(item,"scriptPub")) != 0 || (obj= jobj(item,"scriptPubkey")) != 0) && (hexstr= jstr(obj,"hex")) != 0 )
+            else if ( ((obj= jobj(item,"scriptPub")) != 0 || (obj= jobj(item,"scriptPubKey")) != 0) && (hexstr= jstr(obj,"hex")) != 0 )
             {
                 spendlen = (int32_t)strlen(hexstr) >> 1;
                 decode_hex(spendscript,spendlen,hexstr);
@@ -1175,7 +1175,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
             if ( spendlen > 0 )
             {
                 init_hexbytes_noT(scriptstr,spendscript,spendlen);
-                jaddstr(newvin,"scriptPub",scriptstr);
+                jaddstr(newvin,"scriptPubKey",scriptstr);
             }
             if ( (str= jstr(item,"redeemScript")) != 0 )
             {

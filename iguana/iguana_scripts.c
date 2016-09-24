@@ -288,8 +288,10 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
 {
     static uint8_t zero_rmd160[20];
     char hexstr[8192]; uint8_t *script,type; int32_t i,n,m,plen;
-    vp->N = 1;
-    vp->M = 1;
+    if ( vp->N == 0 )
+        vp->N = 1;
+    if ( vp->M == 0 )
+        vp->M = 1;
     type = IGUANA_SCRIPT_STRANGE;
     init_hexbytes_noT(hexstr,vp->spendscript,vp->spendlen);
     //char str[65]; printf("script.(%s).%d in %s len.%d plen.%d spendlen.%d cmp.%d\n",hexstr,vp->spendlen,bits256_str(str,vp->vin.prev_hash),vp->spendlen,bitcoin_pubkeylen(&vp->spendscript[1]),vp->spendlen,vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG);

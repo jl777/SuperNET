@@ -331,7 +331,7 @@ cJSON *bitcoin_vout(uint64_t satoshis,char *paymentscriptstr)
     skey = cJSON_CreateObject();
     jaddstr(skey,"hex",paymentscriptstr);
     //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
-    jadd(item,"scriptPubkey",skey);
+    jadd(item,"scriptPubKey",skey);
     return(item);
 }
 
