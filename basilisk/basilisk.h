@@ -17,6 +17,7 @@
 #define H_BASILISK_H
 
 #define BASILISK_DISABLEWAITTX
+//#define BASILISK_DISABLETX
 
 #include "../iguana/iguana777.h"
 
