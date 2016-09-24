@@ -338,7 +338,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         if ( flag != 0 )
             free_json(privkeys);
     }
-    printf("signed.(%s)\n",signedtx!=0?signedtx:"");
+    printf("completed.%d signed.(%s)\n",*completedp,signedtx!=0?signedtx:"");
     return(signedtx);
 }
 
@@ -413,11 +413,9 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
                 spendlen = bitcoin_standardspend(spendscript,0,rmd160);
                 bitcoin_txoutput(txobj,spendscript,spendlen,change);
-                int32_t i; for (i=0; i<oplen; i++)
-                    printf("%02x",spendscript[i]);
-                printf(" changeaddr.%s\n",changeaddr);
                 if ( opreturn != 0 )
                 {
+                    int32_t i;
                     for (i=0; i<oplen; i++)
                         printf("%02x",opreturn[i]);
                     printf(" <- got opret\n");

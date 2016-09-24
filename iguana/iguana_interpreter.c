@@ -1065,7 +1065,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     free(stacks);
                     return(-1);
                 }
-                printf("user data stackdepth.%d dlen.%d\n",stacks->stackdepth,dlen);
+                //printf("user data stackdepth.%d dlen.%d\n",stacks->stackdepth,dlen);
             }
             if ( len != V->userdatalen )
             {

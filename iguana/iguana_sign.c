@@ -503,7 +503,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
 
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys)
 {
-    int32_t i,n,len = 0,extraused=0; uint8_t *txstart = serialized,*sigser=0; char txidstr[65],*redeemstr; cJSON *vin,*array=0; bits256 sigtxid;
+    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[8192],*txstart = serialized,*sigser=0; char txidstr[65],*redeemstr,*hexstr; cJSON *vin,*sobj,*array=0; bits256 sigtxid;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
     {
@@ -543,6 +543,15 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
         {
             if ( (redeemstr= jstr(vin,"redeemScript")) != 0 && is_hexstr(redeemstr,0) > 0 )
                 msg->vins[i].p2shlen = (int32_t)strlen(redeemstr) >> 1;
+            if ( (sobj= jobj(vin,"scriptPubkey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && msg->vins[i].spendlen == 0 )
+            {
+                msg->vins[i].spendlen = (int32_t)strlen(hexstr) >> 1;
+                if ( msg->vins[i].spendscript == 0 && msg->vins[i].spendlen < sizeof(spendscript) )
+                {
+                    msg->vins[i].spendscript = spendscript;
+                    decode_hex(spendscript,msg->vins[i].spendlen,hexstr);
+                }
+            }
         }
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
@@ -563,6 +572,8 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             } else memset(sigtxid.bytes,0,sizeof(sigtxid));
             jaddi(array,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
+        if ( msg->vins[i].spendscript == spendscript )
+            msg->vins[i].spendscript = 0;
     }
     if ( array != 0 )
     {
@@ -785,7 +796,7 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,int32_t height,bits256 *txidp,s
 
 int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,struct vin_info *V)
 {
-    int32_t vini,j,scriptlen,p2shlen,userdatalen,need_op0=0,siglen,plen,len = 0; uint8_t *script,*redeemscript=0,*userdata=0; struct vin_info *vp;
+    int32_t vini,j,scriptlen,p2shlen,userdatalen,siglen,plen,len = 0; uint8_t *script,*redeemscript=0,*userdata=0; struct vin_info *vp;
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
         vp = &V[vini];
@@ -806,17 +817,17 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
         }
         if ( msgtx->vins[vini].spendlen > 33 && msgtx->vins[vini].spendscript[msgtx->vins[vini].spendlen - 1] == SCRIPT_OP_CHECKMULTISIG )
         {
-            need_op0 = 1;
-            printf("found multisig spendscript\n");
+            //need_op0 = 1;
+            //printf("found multisig spendscript\n");
         }
         if ( redeemscript != 0 && p2shlen > 33 && redeemscript[p2shlen - 1] == SCRIPT_OP_CHECKMULTISIG )
         {
-            need_op0 = 1;
-            printf("found multisig redeemscript\n");
+            //need_op0 = 1;
+            //printf("found multisig redeemscript\n");
         }
         msgtx->vins[vini].vinscript = script = &serialized[len];
         msgtx->vins[vini].vinscript[0] = 0;
-        scriptlen = need_op0;
+        scriptlen = 0;//need_op0;
         for (j=0; j<vp->N; j++)
         {
             if ( (siglen= vp->signers[j].siglen) > 0 )
@@ -1099,8 +1110,8 @@ void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32
         return;
     scriptstr = scriptbuf, maxlen = sizeof(scriptbuf);
     init_hexbytes_noT(scriptstr,script,scriptlen);
-    if ( strcmp(fieldname,"userdata") == 0 )
-        printf("SCRIPT_USERDATA.(%s)\n",scriptstr);
+    //if ( strcmp(fieldname,"userdata") == 0 )
+    //    printf("SCRIPT_USERDATA.(%s)\n",scriptstr);
     if ( strcmp(fieldname,"coinbase") == 0 )
         jaddstr(dest,"coinbase",scriptstr);
     else
