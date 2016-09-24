@@ -899,7 +899,7 @@ void iguana_coinloop(void *arg)
                         if ( (signedtx= iguana_signrawtx(myinfo,coin,1000000,&signedtxid,&completed,jobj(tx,"vin"),txbytes,privkeys,V)) != 0 )
                             printf("signedtx.(%s)\n",signedtx);
                         free(extraspace);
-                        getchar();
+                        //getchar();
                     }
                 }
                 now = (uint32_t)time(NULL);
