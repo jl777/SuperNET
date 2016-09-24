@@ -463,6 +463,9 @@ int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info 
     {
         if ( (unspentind= iguana_unspentindfind(myinfo,coin,&RTspend,coinaddr,spendscript,spendlenp,valuep,heightp,txid,vout,lasthdrsi,mempool)) != 0 )
         {
+            char str[65];
+            if ( unspentind == 0xffffffff )
+                printf("neg 1 unspentind? %s/v%d\n",bits256_str(str,txid),vout);
             if ( valuep != 0 && *valuep == 0 )
                 *valuep = RTspend;
             outpt->hdrsi = *heightp / coin->chain->bundlesize;
