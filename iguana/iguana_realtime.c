@@ -413,7 +413,7 @@ int64_t _RTgettxout(struct iguana_info *coin,struct iguana_RTtxid **ptrp,int32_t
     *scriptlenp = 0;
     memset(rmd160,0,20);
     coinaddr[0] = 0;
-    if ( RTptr != 0 && (RTptr->height <= coin->blocks.hwmchain.height || mempool != 0) )
+    if ( RTptr != 0 )// && (RTptr->height <= coin->blocks.hwmchain.height || mempool != 0) )
     {
         if ( vout >= 0 && vout < RTptr->txn_count && (unspent= RTptr->unspents[vout]) != 0 )
         {
