@@ -371,7 +371,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
     if ( spendstr != 0 )
     {
-        if ( vin->spendlen == 0 )
+        if ( vin->spendlen == 0 && vin->spendscript != 0 )
         {
             vin->spendlen = (int32_t)strlen(spendstr) >> 1;
             decode_hex(vin->spendscript,vin->spendlen,spendstr);
