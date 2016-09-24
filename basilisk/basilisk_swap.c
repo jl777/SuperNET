@@ -134,7 +134,7 @@ int32_t basilisk_confirmsobj(cJSON *item)
 int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx *rawtx)
 {
     cJSON *argjson,*valuearray=0; char *valstr; int32_t i,n,retval = -1;
-#ifdef BASILISK_DISABLETX
+#ifdef BASILISK_DISABLEWAITTX
     return(10);
 #endif
     argjson = cJSON_CreateObject();
