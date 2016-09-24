@@ -499,7 +499,7 @@ STRING_ARG(InstantDEX,available,source)
             }
             retjson = cJSON_CreateObject();
             jaddnum(retjson,"result",dstr(total));
-            printf("(%s) n.%d total %.8f (%s)\n",jprint(unspents,0),n,dstr(total),jprint(retjson,0));
+            printf(" n.%d total %.8f (%s)\n",n,dstr(total),jprint(retjson,0));
             return(jprint(retjson,1));
         }
         printf("InstantDEX_available: need to unlock wallet\n");

@@ -71,7 +71,6 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         }
         if ( (p2shlen= msg->p2shlen) > 0 && msg->redeemscript != 0 )
         {
-            //printf("p2shlen.%d %x\n",p2shlen,p2shlen);
             if ( p2shlen < 76 )
                 serialized[len++] = p2shlen;
             else if ( p2shlen <= 0xff )
@@ -86,6 +85,12 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
                 serialized[len++] = ((p2shlen >> 8) & 0xff);
             } else return(-1);
             memcpy(&serialized[len],msg->redeemscript,p2shlen), len += p2shlen;
+            {
+                int32_t j;
+                for (j=0; j<p2shlen; j++)
+                    printf("%02x",msg->redeemscript[j]);
+                printf(" p2shlen.%d %x\n",p2shlen,p2shlen);
+            }
         }
     }
     //printf("sequence starts.%d\n",len);
@@ -178,7 +183,7 @@ int32_t iguana_parsehexstr(uint8_t **destp,uint16_t *lenp,uint8_t *dest2,int32_t
 
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
-    struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte,spendscript[8192]; uint32_t tmp=0; int32_t i,n,starti,spendlen,suppress_pubkeys,siglen,plen,m,endi,rwflag=1,need_op0=0,len = 0; char *userdata=0,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
+    struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte,spendscript[8192]; uint32_t tmp=0; int32_t i,n,starti,spendlen,suppress_pubkeys,siglen,plen,m,endi,rwflag=1,len = 0; char *userdata=0,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
     //printf("PARSEVIN.(%s) vin.%p\n",jprint(vinobj,0),vin);
     if ( V == 0 )
         memset(vin,0,sizeof(*vin));
@@ -199,8 +204,8 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 spendstr = jstr(obj,"hex");
                 lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
-                if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
-                    need_op0 = 1;
+                //if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
+                //    need_op0 = 1;
                 if ( V != 0 )
                 {
                     V->spendlen = (int32_t)strlen(spendstr) >> 1;
@@ -214,8 +219,8 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 redeemstr = jstr(obj,"hex");
                 lastbyte = _decode_hex(&redeemstr[strlen(redeemstr)-2]);
-                if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
-                    need_op0 = 1;
+                //if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
+                //    need_op0 = 1;
             }
         }
         if ( (userdata= jstr(vinobj,"userdata")) == 0 || is_hexstr(userdata,(int32_t)strlen(userdata)) <= 0 )
@@ -251,29 +256,36 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
     endi = len;
     //printf("rwflag.%d len.%d tmp.%d\n",rwflag,len,tmp);
-    if ( need_op0 != 0 )
-        serialized[len++] = 0; // hack for bug for bug backward compatibility
+    //if ( need_op0 != 0 )
+    //    serialized[len++] = 0; // hack for bug for bug backward compatibility
     if ( hexstr != 0 )
     {
         n = (int32_t)strlen(hexstr) >> 1;
         //printf("add.(%s) offset.%d\n",hexstr,len);
         vin->vinscript = &serialized[len];
         decode_hex(&serialized[len],n,hexstr);
-        vin->scriptlen = n + need_op0;
+        vin->scriptlen = n;// + need_op0;
         if ( V != 0 )
         {
             i = m = 0;
             while ( m < n )
             {
                 siglen = serialized[len + m++];
-                if ( i == 0 && m == 1 && siglen == 0 ) // multisig backward compatible
-                    continue;
-                memcpy(V->signers[i].sig,&serialized[len + m],siglen);
+                //if ( i == 0 && m == 1 && siglen == 0 ) // multisig backward compatible
+                //    continue;
+                if ( serialized[len + m + siglen - 1] == SIGHASH_ALL )
+                    memcpy(V->signers[i++].sig,&serialized[len + m],siglen);
+                {
+                    int32_t j;
+                    for (j=0; j<siglen; j++)
+                        printf("%02x",serialized[len + m + j]);
+                    printf(" (%d)\n",siglen);
+                }
                 m += siglen;
                 i++;
             }
             if ( m != n )
-                printf("ERROR: len.%d n.%d i.%d\n",m,n,i);
+                printf("ERROR: (%s) len.%d n.%d i.%d\n",hexstr,m,n,i);
         }
         len += n;
     } //else printf("iguana_parsevinobj: hex script missing (%s)\n",jprint(vinobj,0));
@@ -357,11 +369,21 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     }
     //printf("len.%d tmp.%d output sequence.[%d] <- %x\n",len,tmp,len,vin->sequence);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
-    if ( 0 && spendstr != 0 )
+    if ( spendstr != 0 )
     {
+        if ( vin->spendlen == 0 )
+        {
+            vin->spendlen = (int32_t)strlen(spendstr) >> 1;
+            decode_hex(vin->spendscript,vin->spendlen,spendstr);
+        }
+        if ( V != 0 && V->spendlen == 0 )
+        {
+            V->spendlen = (int32_t)strlen(spendstr) >> 1;
+            decode_hex(V->spendscript,V->spendlen,spendstr);
+        }
         //printf("serialized.%p len.%d\n",serialized,len);
-        n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,&serialized[len],spendstr);
-        len += n;
+        //n = iguana_parsehexstr(&vin->spendscript,&vin->spendlen,V!=0?V->spendscript:0,V!=0?&V->spendlen:0,&serialized[len],spendstr);
+        //len += n;
     }
     return(len);
 }
