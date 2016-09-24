@@ -239,6 +239,7 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
         {
             if ( iguana_RTunspentindfind(myinfo,virt,&outpt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1) == 0 )
             {
+                printf("gecko txarrived\n");
                 if ( iguana_unspentavail(myinfo,virt,outpt,minconf,maxconf) != value )
                 {
                     printf("vin.%d already spent\n",i);

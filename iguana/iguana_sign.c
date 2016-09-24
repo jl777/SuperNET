@@ -759,7 +759,12 @@ cJSON *bitcoin_data2json(struct iguana_info *coin,int32_t height,bits256 *txidp,
         jaddstr(txobj,"coin",coin->symbol);
     }
     if ( n != len )
-        printf("data2json n.%d vs len.%d\n",n,len);
+    {
+        int32_t i;
+        for (i=0; i<=len; i++)
+            printf("%02x",serialized[i]);
+        printf(" data2json n.%d vs len.%d\n",n,len);
+    }
     return(txobj);
 }
 

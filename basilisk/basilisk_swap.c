@@ -719,7 +719,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
     printf("%s locktime.%u\n",rawtx->name,locktime);
     if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj)) != 0 )
     {
-        printf("%s got.(%s)\n",str,retstr);
+        printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
         flag = 0;
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
@@ -738,7 +738,6 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
     } else printf("error creating %s feetx\n",iambob != 0 ? "BOB" : "ALICE");
     free_json(privkeyarray);
     free_json(valsobj);
-    printf("rawtx retval.%d\n",retval);
     return(retval);
 }
 
@@ -1059,7 +1058,7 @@ void basilisk_sendpubkeys(struct supernet_info *myinfo,struct basilisk_swap *swa
 {
     int32_t datalen;
     datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-    printf("send deck.%d\n",datalen);
+    //printf("send deck.%d\n",datalen);
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01,swap->crcs_mypub);
 }
 
@@ -1067,7 +1066,7 @@ int32_t basilisk_checkdeck(struct supernet_info *myinfo,struct basilisk_swap *sw
 {
     if ( (swap->statebits & 0x02) == 0 )
     {
-        printf("check for other deck\n");
+        //printf("check for other deck\n");
         if ( basilisk_swapget(myinfo,swap,0x02,data,maxlen,basilisk_verify_otherdeck) == 0 )
             swap->statebits |= 0x02;
         else return(-1);
@@ -1108,7 +1107,7 @@ void basilisk_sendchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
 void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     uint8_t pubkey33[33]; char str[65];
-    printf("check otherchoosei\n");
+    //printf("check otherchoosei\n");
     if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
     {
         if ( swap->iambob != 0 )
@@ -1160,7 +1159,7 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
         for (i=0; i<20; i++)
             data[datalen++] = swap->secretAm[i];
     }
-    printf("send privkeys.%d\n",datalen);
+    //printf("send privkeys.%d\n",datalen);
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10,swap->crcs_myprivs);
 }
 
