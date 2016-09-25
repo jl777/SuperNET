@@ -331,7 +331,7 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,int32_t pushpriv,bits256 privkey
     {
         userdata[len++] = sizeof(privkey);
         for (i=0; i<sizeof(privkey); i++)
-            userdata[len++] = privkey.bytes[sizeof(privkey) - 1 - i];
+            userdata[len++] = privkey.bytes[i];//sizeof(privkey) - 1 - i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
     return(len);
