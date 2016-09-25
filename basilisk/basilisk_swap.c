@@ -1555,7 +1555,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
         printf("finished swapstate.%x other.%x\n",swap->statebits,swap->otherstatebits);
-        sleep(3 + (swap->iambob == 0)*10);
+        sleep(1 + (swap->iambob == 0));
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }

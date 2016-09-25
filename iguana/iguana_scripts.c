@@ -36,8 +36,13 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
 
 int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
+    int32_t i;
     script[n++] = SCRIPT_OP_HASH160;
-    script[n++] = 0x14; memcpy(&script[n],secret160,0x14); n += 0x14;
+    script[n++] = 0x14;
+    for (i=0; i<20; i++)
+        script[n+i] = secret160[19-i];
+    //memcpy(&script[n],secret160,0x14);
+    n += 0x14;
     script[n++] = SCRIPT_OP_EQUALVERIFY;
     return(n);
 }

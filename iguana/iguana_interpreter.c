@@ -1337,8 +1337,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
-                    uint8_t rmd160[20],revdata[0x100]; bits256 hash;
-                    if ( (datalen= iguana_databuf(revdata,args[0])) <= sizeof(revdata) )
+                    uint8_t revrmd160[20],rmd160[20],revdata[0x100]; bits256 hash;
+                    if ( (datalen= iguana_databuf(databuf,args[0])) <= sizeof(revdata) )
                     {
                         //for (i=0; i<datalen; i++)
                         //    revdata[i] = databuf[datalen - 1 - i];
@@ -1354,8 +1354,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            calc_rmd160_sha256(rmd160,revdata,datalen);
-                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
+                            calc_rmd160_sha256(revrmd160,revdata,datalen);
+                            for (i=0; i<20; i++)
+                                rmd160[i] = revrmd160[19 - i];
+                            iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
                             vcalc_sha256(0,hash.bytes,revdata,datalen);
