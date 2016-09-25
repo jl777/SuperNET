@@ -383,9 +383,7 @@ int32_t iguana_RTramchaindata(struct supernet_info *myinfo,struct iguana_info *c
             for (j=0; j<tx->tx_out; j++)
                 iguana_RTvout_create(coin,polarity,RTptr,block,tx->txid,j,&tx->vouts[j]);
             for (j=0; j<tx->tx_in; j++)
-            {
                 iguana_RTspend_create(myinfo,coin,RTptr,block,polarity,tx->vins[j].vinscript,tx->vins[j].scriptlen,tx->txid,j,tx->vins[j].prev_hash,tx->vins[j].prev_vout);
-            }
         }
     }
     else

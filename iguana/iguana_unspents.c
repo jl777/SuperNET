@@ -1132,7 +1132,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                     printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
                     unspents++;
                     numunspents++;
-                    if ( numunspents > max || sum > 10*required )
+                    if ( numunspents >= max )//|| sum > 10*required )
                         break;
                 }
             }
@@ -1607,7 +1607,7 @@ uint64_t iguana_utxoaddr_gen(struct supernet_info *myinfo,struct iguana_info *co
                 printf("delete bad utxoaddr files\n");
                 OS_removefile(fname,0);
                 OS_removefile(fname2,0);
-            } else return(iguana_RTstart(myinfo,coin,height));
+            } else return(coin->histbalance);//iguana_RTstart(myinfo,coin,height));
         }
     }
     free(counts);

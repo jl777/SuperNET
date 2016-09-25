@@ -53,8 +53,6 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
-//need vin when creating rawtx
-//utxo reuse?
 //auto create utxo
 
 #define SCRIPT_OP_IF 0x63
@@ -362,8 +360,10 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
 int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
     uint8_t userdata[512]; int32_t len = 0;
-    printf("basilisk_bobdeposit_refund\n");
     len = basilisk_swapuserdata(userdata,1,swap->privBn,0x03,swap->pubB0,0);
+    int32_t i; for (i=0; i<len; i++)
+        printf("%02x",userdata[i]);
+    printf(" <- basilisk_bobdeposit_refund\n");
     return(basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len));
 }
 
