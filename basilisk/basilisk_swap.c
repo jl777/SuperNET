@@ -174,7 +174,7 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
     if ( data != 0 && datalen != 0 )
     {
         char str[65];
-#ifdef BASILISK_DISABLETX
+#ifdef BASILISK_DISABLESENDTX
         txid = bits256_doublesha256(0,data,datalen);
         printf("%s <- dont sendrawtransaction (%s)\n",name,bits256_str(str,txid));
         return(txid);
