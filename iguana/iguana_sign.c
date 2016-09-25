@@ -824,7 +824,7 @@ cJSON *bitcoin_hex2json(struct iguana_info *coin,int32_t height,bits256 *txidp,s
 
 int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,struct vin_info *V)
 {
-    int32_t vini,j,scriptlen,p2shlen,userdatalen,siglen,plen,len = 0; uint8_t *script,*redeemscript=0,*userdata=0; struct vin_info *vp;
+    int32_t vini,j,scriptlen,p2shlen,userdatalen,siglen,plen,need_op0=0,len = 0; uint8_t *script,*redeemscript=0,*userdata=0; struct vin_info *vp;
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
         vp = &V[vini];
@@ -845,17 +845,17 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
         }
         if ( msgtx->vins[vini].spendlen > 33 && msgtx->vins[vini].spendscript[msgtx->vins[vini].spendlen - 1] == SCRIPT_OP_CHECKMULTISIG )
         {
-            //need_op0 = 1;
-            //printf("found multisig spendscript\n");
+            need_op0 = 1;
+            printf("found multisig spendscript\n");
         }
         if ( redeemscript != 0 && p2shlen > 33 && redeemscript[p2shlen - 1] == SCRIPT_OP_CHECKMULTISIG )
         {
-            //need_op0 = 1;
-            //printf("found multisig redeemscript\n");
+            need_op0 = 1;
+            printf("found multisig redeemscript\n");
         }
         msgtx->vins[vini].vinscript = script = &serialized[len];
         msgtx->vins[vini].vinscript[0] = 0;
-        scriptlen = 0;//need_op0;
+        scriptlen = need_op0;
         for (j=0; j<vp->N; j++)
         {
             if ( (siglen= vp->signers[j].siglen) > 0 )
