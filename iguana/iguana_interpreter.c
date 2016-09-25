@@ -1337,34 +1337,28 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
-                    uint8_t revrmd160[20],rmd160[20],revdata[0x100]; bits256 hash;
-                    if ( (datalen= iguana_databuf(databuf,args[0])) <= sizeof(revdata) )
-                    {
-                        //for (i=0; i<datalen; i++)
-                        //    revdata[i] = databuf[datalen - 1 - i];
-                    } else printf("datalen.%d too big for %d\n",datalen,(int32_t)sizeof(revdata));
+                    uint8_t revrmd160[20],rmd160[20]; bits256 hash;
+                    datalen = iguana_databuf(databuf,args[0]);
                     switch ( op->opcode )
                     {
                         case IGUANA_OP_RIPEMD160:
-                            calc_rmd160(0,rmd160,revdata,datalen);
+                            calc_rmd160(0,rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA1:
-                            calc_sha1(0,rmd160,revdata,datalen);
+                            calc_sha1(0,rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
                             calc_rmd160_sha256(revrmd160,databuf,datalen);
-                            //for (i=0; i<20; i++)
-                            //    rmd160[i] = revrmd160[19 - i];
                             iguana_pushdata(stacks,0,revrmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
-                            vcalc_sha256(0,hash.bytes,revdata,datalen);
+                            vcalc_sha256(0,hash.bytes,databuf,datalen);
                             iguana_pushdata(stacks,0,hash.bytes,sizeof(hash));
                             break;
                         case IGUANA_OP_HASH256:
-                            hash = bits256_doublesha256(0,revdata,datalen);
+                            hash = bits256_doublesha256(0,databuf,datalen);
                             iguana_pushdata(stacks,0,hash.bytes,sizeof(hash));
                             break;
                         case IGUANA_OP_CHECKSIG: case IGUANA_OP_CHECKSIGVERIFY:
