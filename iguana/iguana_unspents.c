@@ -839,7 +839,7 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
 
 int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,bits256 txid,int32_t vout)
 {
-    int32_t i; char str[65];
+    int32_t i; //char str[65];
     *firstslotp = -1;
     if ( bits256_nonz(txid) != 0 && vout >= 0 )
     {
