@@ -761,9 +761,17 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
                 for (i=0; i<n; i++)
                 {
                     if ( (retval= basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,jitem(retarray,i),lockinputs,V)) == 0 )
+                    {
+                        rawtx->vins = jobj(jitem(retarray,i),"vins");
                         break;
+                    }
                 }
-            } else retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,lockinputs,V);
+            }
+            else
+            {
+                retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,lockinputs,V);
+                rawtx->vins = jobj(retarray,"vins");
+            }
             free(retarray);
         } else printf("error parsing.(%s)\n",retstr);
         free(retstr);

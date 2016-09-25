@@ -865,7 +865,7 @@ int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,
 
 void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,n,firstslot; int16_t vout; cJSON *item; bits256 txid;
+    int32_t i,n,firstslot; int16_t vout; cJSON *item; bits256 txid; char str[65];
     if ( (n= cJSON_GetArraySize(vins)) > 0 )
     {
         for (i=0; i<n; i++)
@@ -879,10 +879,10 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                 {
                     if ( firstslot >= 0 )
                     {
-                        char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
+                        printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
                         coin->markedunspents[firstslot] = txid;
                     }
-                }
+                } else printf("error firstslot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
             }
         }
     }
