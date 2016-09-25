@@ -53,7 +53,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         printf("iguana_vinparse illegal scriptlen.%d\n",msg->scriptlen);
         return(-1);
     }
-    //printf("len.%d scriptlen.%d user.%d p2sh.%d\n",len,msg->scriptlen,msg->userdatalen,msg->p2shlen);
+    printf("len.%d scriptlen.%d user.%d p2sh.%d\n",len,msg->scriptlen,msg->userdatalen,msg->p2shlen);
     if ( rwflag == 0 )
     {
         msg->vinscript = &serialized[len];
@@ -93,7 +93,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
             }
         }
     }
-    //printf("sequence starts.%d\n",len);
+    printf("sequence starts.%d %08x\n",len,*(int32_t *)&serialized[len]);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->sequence),&msg->sequence);
     if ( 0 )
     {
@@ -358,22 +358,14 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     tmp = (len - endi);
-    if ( tmp < 0x100 )
+    if ( tmp < 0xfd )
     {
         serialized[starti] = tmp;
         for (i=starti+1; i<starti+1+tmp; i++)
             serialized[i] = serialized[i+2];
-        //printf("tmp.%d (len.%d - starti.%d) i.%d\n",tmp,len,starti,i);
+        printf("tmp.%d (len.%d - starti.%d) i.%d\n",tmp,len,starti,i);
         len -= 2;
     }
-    /*else if ( tmp < 0x10000 )
-    {
-        serialized[starti] = 0xfc;
-        serialized[starti+1] = tmp;
-        for (i=starti+2; i<starti+2+tmp; i++)
-            serialized[i] = serialized[i+1];
-        len--;
-    }*/
     else
     {
         //for (i=0; i<len; i++)
@@ -382,7 +374,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         serialized[starti+1] = (tmp & 0xff);
         serialized[starti+2] = ((tmp >> 8) & 0xff);
     }
-    //printf("len.%d tmp.%d output sequence.[%d] <- %x\n",len,tmp,len,vin->sequence);
+    printf("len.%d tmp.%d output sequence.[%d] <- %x\n",len,tmp,len,vin->sequence);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->sequence),&vin->sequence);
     if ( spendstr != 0 )
     {
@@ -585,14 +577,14 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        //printf("vin.%d starts offset.%d\n",i,len);
+        printf("vin.%d starts offset.%d\n",i,len);
         if ( vins != 0 && jitem(vins,i) != 0 )
             iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
         if ( msg->vins[i].spendscript == spendscript )
             msg->vins[i].spendscript = 0;
-        //printf("vin.%d n.%d len.%d\n",i,n,len);
+        printf("vin.%d n.%d len.%d\n",i,n,len);
         len += n;
         if ( len > maxsize )
         {
@@ -600,6 +592,9 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             return(-1);
         }
     }
+    for (i=0; i<4; i++)
+        printf("%02x",serialized[len+i]);
+    printf(" len.%d\n",len);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( rwflag == 0 )
     {
@@ -657,6 +652,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     {
         for (i=0; i<msg->tx_in; i++)
         {
+            memset(sigtxid.bytes,0,sizeof(sigtxid));
             if ( vins != 0 && jitem(vins,i) != 0 )
             {
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
@@ -665,7 +661,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
                 jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
                     msg->vins[i].spendscript = 0;
-            }
+            } else jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
         free(sigser);
         jadd(json,"vin",vinarray);
@@ -1395,10 +1391,16 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         privkeystr = jstr(item,0);
                         privkey = iguana_str2priv(myinfo,coin,privkeystr);
                         V->signers[i].privkey = privkey;
+                        if ( i < numinputs )
+                            V[i].signers[0].privkey = privkey;
                         if ( bits256_nonz(privkey) != 0 )
                             iguana_ensure_privkey(myinfo,coin,privkey);
                         if ( V->suppress_pubkeys == 0 && bitcoin_pubkeylen(V->signers[i].pubkey) <= 0 )
+                        {
                             bitcoin_pubkey33(myinfo->ctx,V->signers[i].pubkey,privkey);
+                            if ( i < numinputs )
+                                memcpy(V[i].signers[0].pubkey,V->signers[i].pubkey,bitcoin_pubkeylen(V->signers[i].pubkey));
+                        }
                     }
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);

@@ -489,7 +489,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
             {
                 if ( (rawtx= jstr(retjson,"rawtx")) != 0 && (vins= jobj(retjson,"vins")) != 0 )
                 {
-                    if ( (signedtx= iguana_signrawtx(myinfo,coin,coin->blocks.hwmchain.height,&signedtxid,&completed,vins,rawtx,0,0)) != 0 )
+                    if ( (signedtx= iguana_signrawtx(myinfo,coin,coin->blocks.hwmchain.height,&signedtxid,&completed,vins,rawtx,0,V)) != 0 )
                     {
                         iguana_RTunspentslock(myinfo,coin,vins);
                         retjson = cJSON_CreateObject();
@@ -1287,10 +1287,11 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
 cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,char *remoteaddr)
 {
     cJSON *retjson; int32_t flag = 0;
-    if ( array == 0 )
+    if ( array == 0 || is_cJSON_Array(array) == 0 || cJSON_GetArraySize(array) <= 0 )
     {
         array = iguana_getaddressesbyaccount(myinfo,coin,"*");
         flag = 1;
+        //printf("listunspent.(%s)\n",jprint(array,0));
     }
     if ( minconf == 0 )
         minconf = 1;

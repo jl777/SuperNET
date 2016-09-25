@@ -190,34 +190,34 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 
 int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen)
 {
-    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info V; uint32_t locktime=0;
-    memset(&V,0,sizeof(V));
+    char *rawtxbytes,*signedtx,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t retval = -1; struct vin_info *V; uint32_t locktime=0;
+    V = calloc(16,sizeof(*V));
     if ( dest == &swap->aliceclaim )
         locktime = swap->locktime + INSTANTDEX_LOCKTIME;
-    V.signers[0].privkey = privkey;
-    bitcoin_pubkey33(myinfo->ctx,V.signers[0].pubkey,privkey);
+    V[0].signers[0].privkey = privkey;
+    bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
     privkeys = cJSON_CreateArray();
     bitcoin_priv2wif(wifstr,privkey,rawtx->coin->chain->wiftype);
     jaddistr(privkeys,wifstr);
     if ( privkey2 != 0 )
     {
-        V.signers[1].privkey = *privkey2;
-        bitcoin_pubkey33(myinfo->ctx,V.signers[1].pubkey,*privkey2);
+        V[0].signers[1].privkey = *privkey2;
+        bitcoin_pubkey33(myinfo->ctx,V[0].signers[1].pubkey,*privkey2);
         bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
         jaddistr(privkeys,wifstr);
-        V.N = V.M = 2;
+        V[0].N = V[0].M = 2;
         char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
-    } else V.N = V.M = 1;
-    V.suppress_pubkeys = dest->suppress_pubkeys;
+    } else V[0].N = V[0].M = 1;
+    V[0].suppress_pubkeys = dest->suppress_pubkeys;
     if ( dest->redeemlen != 0 )
-        memcpy(V.p2shscript,dest->redeemscript,dest->redeemlen), V.p2shlen = dest->redeemlen;
+        memcpy(V[0].p2shscript,dest->redeemscript,dest->redeemlen), V[0].p2shlen = dest->redeemlen;
     txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,rawtx->coin->chain->locktime_txversion);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )
     {
-        memcpy(V.userdata,userdata,userdatalen);
-        V.userdatalen = userdatalen;
+        memcpy(V[0].userdata,userdata,userdatalen);
+        V[0].userdatalen = userdatalen;
         init_hexbytes_noT(hexstr,userdata,userdatalen);
         jaddstr(item,"userdata",hexstr);
     }
@@ -243,10 +243,10 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     jadd(txobj,"vin",vins);
     printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name,dest->suppress_pubkeys);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
-    if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,&V)) != 0 )
+    if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,V)) != 0 )
     {
         printf("(%s) spend.%s rawtx.(%s) userdatalen.%d p2shlen.%d\n",jprint(txobj,0),rawtx->name,rawtxbytes,userdatalen,dest->redeemlen);
-        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,&V)) != 0 )
+        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,V)) != 0 )
         {
             printf("rawtx spend signedtx.(%s)\n",signedtx);
             dest->datalen = (int32_t)strlen(signedtx) >> 1;
@@ -514,7 +514,9 @@ uint32_t basilisk_swaprecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32
         }
         free_json(retarray);
         if ( (crc= basilisk_majority32(datalenp,rawcrcs,datalens,numcrcs)) != 0 )
-            printf("have majority crc.%08x\n",crc);
+        {
+            //printf("have majority crc.%08x\n",crc);
+        }
         //else printf("no majority from rawcrcs.%d\n",numcrcs);
     }
     return(crc);
@@ -651,11 +653,51 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct basilisk_swap 
     return(n);
 }
 
-int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct basilisk_rawtx *rawtx,cJSON *item,cJSON *privkeyarray,int32_t lockinputs,struct vin_info *V)
+cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    char *signedtx,*txbytes; cJSON *vins; int32_t i,n,retval = -1;
+    cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid;
+    privkeyarray = cJSON_CreateArray();
+    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
+    if ( (n= cJSON_GetArraySize(vins)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(vins,i);
+            txid = jbits256(item,"txid");
+            vout = jint(item,"vout");
+            if ( bits256_nonz(txid) != 0 && vout >= 0 )
+            {
+                iguana_txidcategory(myinfo,coin,account,coinaddr,txid,vout);
+                if ( coinaddr[0] == 0 && (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 )
+                {
+                    len = (int32_t)strlen(hexstr) >> 1;
+                    if ( len < (sizeof(script) << 1) )
+                    {
+                        decode_hex(script,len,hexstr);
+                        if ( len == 25 && script[0] == 0x76 && script[1] == 0xa9 && script[2] == 0x14 )
+                            bitcoin_address(coinaddr,coin->chain->pubtype,script+3,20);
+                    }
+                }
+                if ( coinaddr[0] != 0 )
+                {
+                    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
+                    {
+                        bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
+                        jaddistr(privkeyarray,waddr->wifstr);
+                    } else printf("cant find (%s) in wallet\n",coinaddr);
+                } else printf("cant coinaddr from (%s).v%d\n",bits256_str(str,txid),vout);
+            } else printf("invalid txid/vout %d of %d\n",i,n);
+        }
+    }
+    return(privkeyarray);
+}
+
+int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct basilisk_rawtx *rawtx,cJSON *item,int32_t lockinputs,struct vin_info *V)
+{
+    char *signedtx,*txbytes; cJSON *vins,*privkeyarray; int32_t i,n,retval = -1;
     if ( (txbytes= jstr(item,"rawtx")) != 0 && (vins= jobj(item,"vins")) != 0 )
     {
+        privkeyarray = basilisk_privkeyarray(myinfo,rawtx->coin,vins);
         if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray,V)) != 0 )
         {
             if ( lockinputs != 0 )
@@ -679,33 +721,23 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
             free(signedtx);
             retval = 0;
         } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
+        free_json(privkeyarray);
     }
     return(retval);
 }
 
 int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],wifstr[64],*retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0,*privkeyarray,*addresses; struct vin_info *V;
-    //if ( (waddr= iguana_getaccountaddress(myinfo,rawtx->coin,0,0,rawtx->coin->changeaddr,"change")) == 0 )
+    char *retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0; struct vin_info *V;
+    //bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
     if ( rawtx->coin->changeaddr[0] == 0 )
     {
         bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
         printf("set change address.(%s)\n",rawtx->coin->changeaddr);
     }
     init_hexbytes_noT(scriptstr,script,scriptlen);
-    privkeyarray = cJSON_CreateArray();
-    addresses = cJSON_CreateArray();
-    bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
-    if ( (waddr= iguana_waddresssearch(myinfo,&wacct,coinaddr)) != 0 )
-    {
-        bitcoin_priv2wif(wifstr,waddr->privkey,rawtx->coin->chain->wiftype);
-        jaddistr(privkeyarray,waddr->wifstr);
-    }
     basilisktag = (uint32_t)rand();
-    jaddistr(addresses,coinaddr);
     valsobj = cJSON_CreateObject();
-    //jadd(valsobj,"addresses",addresses);
     jaddstr(valsobj,"coin",rawtx->coin->symbol);
     jaddstr(valsobj,"spendscript",scriptstr);
     jaddstr(valsobj,"changeaddr",rawtx->coin->changeaddr);
@@ -728,15 +760,14 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
                 n = cJSON_GetArraySize(retarray);
                 for (i=0; i<n; i++)
                 {
-                    if ( (retval= basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,jitem(retarray,i),privkeyarray,lockinputs,V)) == 0 )
+                    if ( (retval= basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,jitem(retarray,i),lockinputs,V)) == 0 )
                         break;
                 }
-            } else retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,privkeyarray,lockinputs,V);
+            } else retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,lockinputs,V);
             free(retarray);
         } else printf("error parsing.(%s)\n",retstr);
         free(retstr);
     } else printf("error creating %s feetx\n",iambob != 0 ? "BOB" : "ALICE");
-    free_json(privkeyarray);
     free_json(valsobj);
     free(V);
     return(retval);
@@ -1044,13 +1075,16 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
 
 uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits)
 {
-    if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 && bits256_nonz(rawtx->signedtxid) != 0 && bits256_nonz(rawtx->actualtxid) == 0 )
+    if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
-        rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
-        char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
-        if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
-            return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits,rawtx->crcs));
-        else return(nextbits);
+        if ( bits256_nonz(rawtx->signedtxid) != 0 && bits256_nonz(rawtx->actualtxid) == 0 )
+        {
+            rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
+            char str[65],str2[65]; printf("rawtxsend %s vs %s\n",bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
+            if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
+                return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits,rawtx->crcs));
+        }
+        return(nextbits);
     } else printf("error from basilisk_swapdata_rawtx %p len.%d\n",rawtx->txbytes,rawtx->datalen);
     return(0);
 }

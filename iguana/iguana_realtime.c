@@ -511,6 +511,7 @@ int64_t iguana_txidamount(struct supernet_info *myinfo,struct iguana_info *coin,
 char *iguana_txidcategory(struct supernet_info *myinfo,struct iguana_info *coin,char *account,char *coinaddr,bits256 txid,int32_t vout)
 {
     struct iguana_outpoint outpt; struct iguana_waccount *wacct; struct iguana_waddress *waddr; int32_t ismine=0,spendlen,height = 0; uint64_t value; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    coinaddr[0] = 0;
     iguana_RTunspentindfind(myinfo,coin,&outpt,coinaddr,spendscript,&spendlen,&value,&height,txid,vout,(coin->firstRTheight/coin->chain->bundlesize) - 1,0);
     account[0] = 0;
     if ( coinaddr[0] != 0 )
