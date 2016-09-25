@@ -295,6 +295,8 @@ void iguana_RTspend_create(struct supernet_info *myinfo,struct iguana_info *coin
                         bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
                         unspent = iguana_RTunspent_create(rmd160,value,spendscript,spendlen>0?spendlen:0,0,prev_vout);
                         memset(&spentpt,0,sizeof(spentpt));
+                        spentpt.txid = prev_hash;
+                        spentpt.vout = prev_vout;
                         spentpt.unspentind = unspentind;
                         spentpt.hdrsi = height / coin->chain->bundlesize;
                         spentpt.value = value;

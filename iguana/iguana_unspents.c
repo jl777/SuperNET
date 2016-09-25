@@ -66,7 +66,7 @@ int32_t iguana_RTunspentind2txid(struct supernet_info *myinfo,struct iguana_info
 
 int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *spentamountp,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
-    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int64_t value; struct iguana_outpoint spentpt; int32_t pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = 0;
+    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int64_t value; struct iguana_outpoint spentpt; int32_t firstslot,pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = 0;
     //portable_mutex_lock(&coin->RTmutex);
     if ( valuep != 0 )
         *valuep = 0;
@@ -96,7 +96,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
             spentpt.hdrsi = bp->hdrsi;
             spentpt.unspentind = unspentind;
             bitcoin_address(coinaddr,iguana_addrtype(coin,U[unspentind].type),P[pkind].rmd160,sizeof(P[pkind].rmd160));
-            if ( iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,&bp->ramchain,spentpt,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
+            if ( iguana_markedunspents_find(coin,&firstslot,txid,vout) < 0 && iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,&bp->ramchain,spentpt,0,1,coin->longestchain,U[unspentind].value) == 0 ) //bp == coin->current ? &coin->RTramchain :
             {
                 if ( valuep != 0 )
                     *valuep = U[unspentind].value;
@@ -489,7 +489,7 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
 
 int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int64_t *spentp,struct iguana_outpoint *unspents,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,struct iguana_outpoint lastpt,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespent)
 {
-    struct iguana_unspent *U; struct iguana_utxo *U2; int32_t spentflag,max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_outpoint outpt; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0; //struct iguana_spend *S;
+    struct iguana_unspent *U; struct iguana_utxo *U2; int32_t firstslot,vout,spentflag,max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_outpoint outpt; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0; bits256 txid;
     max = *nump;
     *spentp = *nump = 0;
     if ( 0 && coin->RTramchain_busy != 0 )
@@ -514,9 +514,10 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
     {
         if ( ramchain->height < (coin->bundlescount-1)*coin->chain->bundlesize )
         {
-            //printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-1)*coin->chain->bundlesize,ramchain->Uextras,rdata);
-        } else iguana_volatilesalloc(coin,ramchain,0);
-        return(0);
+            printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-1)*coin->chain->bundlesize,ramchain->Uextras,rdata);
+        }
+        iguana_volatilesmap(myinfo,coin,ramchain);
+        //return(0);
     }
     unspentind = lastpt.unspentind;
     U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -531,9 +532,11 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
         {
             //printf("u%u ",unspentind);
             deposits += U[unspentind].value;
-            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,T[U[unspentind].txidind].txid,unspentind - T[U[unspentind].txidind].firstvout,p->rmd160,pubkey33);
+            txid = T[U[unspentind].txidind].txid;
+            vout = unspentind - T[U[unspentind].txidind].firstvout;
+            iguana_outpt_set(coin,&outpt,&U[unspentind],unspentind,lastpt.hdrsi,txid,vout,p->rmd160,pubkey33);
             RTspend = 0;
-            if ( iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
+            if ( iguana_markedunspents_find(coin,&firstslot,txid,vout) < 0 && iguana_RTspentflag(myinfo,coin,&RTspend,&spentheight,ramchain,outpt,lastheight,minconf,maxconf,U[unspentind].value) == 0 )
             {
                 if ( *nump < max && unspents != 0 )
                     unspents[*nump] = outpt;
@@ -1082,7 +1085,7 @@ cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coi
 
 int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *totalp,struct iguana_outpoint *unspents,int32_t max,uint64_t required,int32_t minconf,cJSON *addresses,char *remoteaddr)
 {
-    uint64_t sum = 0; int32_t i,n,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr,*spendscriptstr; struct iguana_outpoint outpt; cJSON *array,*item;
+    uint64_t sum = 0; int32_t i,n,firstslot,numunspents,numaddrs; uint8_t pubkey[65]; char *coinaddr,*spendscriptstr; struct iguana_outpoint outpt; cJSON *array,*item;
     *totalp = 0;
     numunspents = 0;
     if ( (numaddrs= cJSON_GetArraySize(addresses)) == 0 )
@@ -1111,6 +1114,8 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
+                    if ( iguana_markedunspents_find(coin,&firstslot,jbits256(item,"txid"),jint(item,"vout")) >= 0 )
+                        continue;
                     if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                     {
                         printf("no spendscriptstr.(%s)\n",jprint(item,0));

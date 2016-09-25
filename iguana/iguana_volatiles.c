@@ -216,7 +216,7 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
 
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
-    uint32_t numunspents; int32_t RTspentflag,spentflag,lockedflag,fromheight=0; uint64_t confs;//,RTspend = 0;
+    uint32_t numunspents; int32_t firstslot,RTspentflag,spentflag,lockedflag,fromheight=0; uint64_t confs;
     struct iguana_ramchaindata *rdata; struct iguana_RTunspent *unspent;
     *spentheightp = -1;
     if ( coin->disableUTXO != 0 )
@@ -228,6 +228,8 @@ int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (unspent= spentpt.ptr) != 0 )
         {
+            if ( unspent->parent != 0 && iguana_markedunspents_find(coin,&firstslot,unspent->parent->txid,unspent->vout) >= 0 )
+                return(1);
             *spentheightp = unspent->fromheight;
             if ( unspent->spend != 0 )
             {
