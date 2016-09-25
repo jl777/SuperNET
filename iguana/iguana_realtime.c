@@ -688,7 +688,12 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             return(-1);
         }
     }
-    char str[65]; printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
+    char str[65];
+    if ( block->height > coin->maxRTheight )
+    {
+        coin->maxRTheight = block->height;
+        printf("%s %.8f [%.8f %.8f] RTiterate.%lld %d tx.%d len.%d %s\n",coin->symbol,dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits),dstr(coin->RTcredits),dstr(coin->RTdebits),(long long)polarity,offset,coin->RTnumtx[offset],coin->RTrecvlens[offset],bits256_str(str,block->RO.hash2));
+    }
     if ( coin->RTrawmem.ptr == 0 )
         iguana_meminit(&coin->RTrawmem,"RTrawmem",0,IGUANA_MAXPACKETSIZE * 2,0);
     memset(&txdata,0,sizeof(txdata));

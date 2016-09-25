@@ -501,12 +501,12 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
-        if ( numbuf != 0 )
+        /*if ( numbuf != 0 )
         {
             int32_t i; for (i=0; i<numlen; i++)
                 printf("%02x",numbuf[i]);
         } else printf("%lld",(long long)num64);
-        printf(" PUSHDATA len.%d\n",numlen);
+        printf(" PUSHDATA len.%d\n",numlen);*/
         if ( stacks->stackdepth < stacks->maxstackdepth )
         {
             if ( stacks->logarray != 0 )
@@ -733,7 +733,7 @@ int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeya
     {
         if ( (retval= (bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
         {
-            if ( 1 )
+            if ( 0 )
             {
                 int32_t i; char str[65];
                 for (i=0; i<siglen; i++)
@@ -1021,7 +1021,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     free(stacks);
                     return(-1);
                 }
-                printf("pushdata siglen.%d depth.%d\n",V->signers[i].siglen,stacks->stackdepth);
+                //printf("pushdata siglen.%d depth.%d\n",V->signers[i].siglen,stacks->stackdepth);
             }
         }
         for (i=0; i<V->N; i++)
@@ -1032,7 +1032,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 if ( V->suppress_pubkeys == 0 && (V->spendscript[0] != plen || V->spendscript[V->spendlen - 1] != IGUANA_OP_CHECKSIG || bitcoin_pubkeylen(&V->spendscript[1]) <= 0) )
                 {
                     iguana_pushdata(stacks,0,V->signers[i].pubkey,plen);
-                    printf(">>>>>>>>> suppress.%d pushdata [%02x %02x] plen.%d depth.%d\n",V->suppress_pubkeys,V->signers[i].pubkey[0],V->signers[i].pubkey[1],plen,stacks->stackdepth);
+                    //printf(">>>>>>>>> suppress.%d pushdata [%02x %02x] plen.%d depth.%d\n",V->suppress_pubkeys,V->signers[i].pubkey[0],V->signers[i].pubkey[1],plen,stacks->stackdepth);
                 } // else printf("<<<<<<<<<< skip pubkey push %d script[0].%d spendlen.%d depth.%d\n",plen,V->spendscript[0],V->spendlen,stacks->stackdepth);
             }
         }

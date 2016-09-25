@@ -53,6 +53,10 @@
  Alice timeout event is triggered if INSTANTDEX_LOCKTIME elapses from the start of a FSM instance. Bob timeout event is triggered after INSTANTDEX_LOCKTIME*2
  */
 
+//need vin when creating rawtx
+//utxo reuse?
+//auto create utxo
+
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -647,12 +651,12 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct basilisk_swap 
     return(n);
 }
 
-int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct basilisk_rawtx *rawtx,cJSON *item,cJSON *privkeyarray,int32_t lockinputs)
+int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct basilisk_rawtx *rawtx,cJSON *item,cJSON *privkeyarray,int32_t lockinputs,struct vin_info *V)
 {
     char *signedtx,*txbytes; cJSON *vins; int32_t i,n,retval = -1;
     if ( (txbytes= jstr(item,"rawtx")) != 0 && (vins= jobj(item,"vins")) != 0 )
     {
-        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray,0)) != 0 )
+        if ( (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&rawtx->signedtxid,&rawtx->completed,vins,txbytes,privkeyarray,V)) != 0 )
         {
             if ( lockinputs != 0 )
             {
@@ -665,11 +669,6 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
                         item = jitem(vins,i);
                         txid = jbits256(item,"txid");
                         vout = jint(item,"vout");
-                        /*if ( bits256_nonz(txid) != 0 )
-                        {
-                            char str[65]; printf("call addspend.(%s) v.%d\n",bits256_str(str,txid),vout);
-                            basilisk_addspend(myinfo,rawtx->coin->symbol,txid,vout,1);
-                        }*/
                     }
                 }
             }
@@ -686,7 +685,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
 
 int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf)
 {
-    struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],wifstr[64],*retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0,*privkeyarray,*addresses;
+    struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],wifstr[64],*retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0,*privkeyarray,*addresses; struct vin_info *V;
     //if ( (waddr= iguana_getaccountaddress(myinfo,rawtx->coin,0,0,rawtx->coin->changeaddr,"change")) == 0 )
     if ( rawtx->coin->changeaddr[0] == 0 )
     {
@@ -717,7 +716,8 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
     jaddnum(valsobj,"timeout",30000);
     rawtx->locktime = locktime;
     printf("%s locktime.%u\n",rawtx->name,locktime);
-    if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj)) != 0 )
+    V = calloc(16,sizeof(*V));
+    if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)) != 0 )
     {
         printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
         flag = 0;
@@ -728,16 +728,17 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,int32_t iambob
                 n = cJSON_GetArraySize(retarray);
                 for (i=0; i<n; i++)
                 {
-                    if ( (retval= basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,jitem(retarray,i),privkeyarray,lockinputs)) == 0 )
+                    if ( (retval= basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,jitem(retarray,i),privkeyarray,lockinputs,V)) == 0 )
                         break;
                 }
-            } else retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,privkeyarray,lockinputs);
+            } else retval = basilisk_rawtx_return(myinfo,rawtx->coin->blocks.hwmchain.height,rawtx,retarray,privkeyarray,lockinputs,V);
             free(retarray);
         } else printf("error parsing.(%s)\n",retstr);
         free(retstr);
     } else printf("error creating %s feetx\n",iambob != 0 ? "BOB" : "ALICE");
     free_json(privkeyarray);
     free_json(valsobj);
+    free(V);
     return(retval);
 }
 

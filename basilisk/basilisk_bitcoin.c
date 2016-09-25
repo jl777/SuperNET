@@ -542,7 +542,7 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
-char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj)
+char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj,struct vin_info *V)
 {
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     if ( valsobj == 0 )
@@ -593,7 +593,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                     oplen = 0;
                 } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
-            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr);
+            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V);
             //printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
         }
         if ( rawtx != 0 )
@@ -895,7 +895,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals,0)) != 0 )
         {
             printf("rawtx.(%s)\n",retstr);
             if ( (amount= j64bits(vals,"satoshis")) == 0 )
