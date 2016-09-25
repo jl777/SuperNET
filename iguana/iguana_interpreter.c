@@ -1353,11 +1353,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             calc_rmd160_sha256(revrmd160,databuf,datalen);
                             for (i=0; i<20; i++)
                             {
-                                rmd160[i] = i;//revrmd160[19-i];
+                                rmd160[i] = revrmd160[19-i];
                                 printf("%02x",revrmd160[i]);
                             }
                             printf(" <- rev OP_HASH160\n");
-                            iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
+                            iguana_pushdata(stacks,0,revrmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
                             vcalc_sha256(0,hash.bytes,databuf,datalen);
