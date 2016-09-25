@@ -47,6 +47,7 @@ struct basilisk_rawtx
     bits256 txid,signedtxid,actualtxid;
     struct iguana_msgtx msgtx;
     struct iguana_info *coin;
+    cJSON *vins;
     uint64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
     uint32_t locktime,crcs[2];

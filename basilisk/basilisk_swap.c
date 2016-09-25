@@ -1295,6 +1295,7 @@ void basilisk_swaploop(void *_swap)
                     {
                         retval = 0;
                         printf("GENERATED BOB DEPOSIT\n");
+                        iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobdeposit.vins);
                         break;
                     }
                 }
@@ -1313,6 +1314,7 @@ void basilisk_swaploop(void *_swap)
                     {
                         retval = 0;
                         printf("GENERATED BOB PAYMENT\n");
+                        iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
                         break;
                     }
                 }
@@ -1336,12 +1338,17 @@ void basilisk_swaploop(void *_swap)
                     else
                     {
                         retval = 0;
+                        printf("ALICE PAYMENT created\n");
+                        iguana_unspents_mark(myinfo,swap->alicecoin,swap->alicepayment.vins);
                         break;
                     }
                 }
             }
             if ( basilisk_rawtx_gen("myfee",myinfo,swap->iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.spendlen,swap->myfee.coin->chain->txfee,1) == 0 )
+            {
                 swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
+                iguana_unspents_mark(myinfo,swap->iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
+            }
             else
             {
                 printf("error creating myfee\n");
