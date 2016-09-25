@@ -843,14 +843,14 @@ int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,
     *firstslotp = -1;
     if ( bits256_nonz(txid) != 0 && vout >= 0 )
     {
-        txid.ushorts[0] = vout; // small chance of collision ok due to small timeframe
+        txid.ushorts[15] = vout; // small chance of collision ok due to small timeframe
         for (i=0; i<sizeof(coin->markedunspents)/sizeof(*coin->markedunspents); i++)
         {
             if ( *firstslotp < 0 && bits256_nonz(coin->markedunspents[i]) == 0 )
                 *firstslotp = i;
             if ( bits256_cmp(txid,coin->markedunspents[i]) == 0 )
             {
-                printf("%s.v%d marked in slot.[%d]\n",bits256_str(str,txid),vout,i);
+                //printf("%s.v%d marked in slot.[%d]\n",bits256_str(str,txid),vout,i);
                 return(i);
             }
         }
@@ -864,7 +864,7 @@ int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,
                 break;
             }
     }
-    printf("%s.v%d not marked\n",bits256_str(str,txid),vout);
+    //printf("%s.v%d not marked\n",bits256_str(str,txid),vout);
     if ( *firstslotp < 0 )
         *firstslotp = (rand() % (sizeof(coin->markedunspents)/sizeof(*coin->markedunspents)));
     return(-1);
@@ -888,7 +888,7 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                     {
                         printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
                         coin->markedunspents[firstslot] = txid;
-                        coin->markedunspents[firstslot].ushorts[0] = vout;
+                        coin->markedunspents[firstslot].ushorts[15] = vout;
                     }
                 } else printf("error firstslot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
             }
