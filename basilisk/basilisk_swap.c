@@ -1049,7 +1049,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
         for (i=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
         {
             for (j=0; j<32; j++)
-                otherpriv.bytes[j] = data[len++];
+                otherpriv.bytes[31-j] = data[len++];
             if ( i != swap->choosei )
             {
                 pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
