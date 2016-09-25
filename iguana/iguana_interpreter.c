@@ -1354,7 +1354,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            calc_rmd160_sha256(revrmd160,revdata,datalen);
+                            calc_rmd160_sha256(revrmd160,databuf,datalen);
                             for (i=0; i<20; i++)
                                 rmd160[i] = revrmd160[19 - i];
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
