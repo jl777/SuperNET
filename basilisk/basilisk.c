@@ -302,7 +302,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
                     {
-                        printf("already sent to %s\n",addr->ipaddr);
+                        //printf("already sent to %s\n",addr->ipaddr);
                         continue;
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )

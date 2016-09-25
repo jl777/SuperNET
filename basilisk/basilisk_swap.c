@@ -1294,6 +1294,7 @@ void basilisk_swaploop(void *_swap)
                     else
                     {
                         retval = 0;
+                        printf("GENERATED BOB DEPOSIT\n");
                         break;
                     }
                     for (i=0; i<3; i++)
@@ -1308,6 +1309,7 @@ void basilisk_swaploop(void *_swap)
                         else
                         {
                             retval = 0;
+                            printf("GENERATED BOB PAYMENT\n");
                             break;
                         }
                     }
