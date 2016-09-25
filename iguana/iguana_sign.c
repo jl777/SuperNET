@@ -26,14 +26,14 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
     if ( rwflag == 1 )
     {
         tmp = msg->scriptlen + msg->userdatalen + msg->p2shlen;
-        /*if ( msg->p2shlen != 0 )
+        if ( msg->p2shlen != 0 )
         {
             if ( msg->p2shlen < 76 )
                 tmp++;
             else if ( msg->p2shlen < 0x100 )
                 tmp += 2;
             else tmp += 3;
-        }*/
+        }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
     if ( rwflag == 0 )
