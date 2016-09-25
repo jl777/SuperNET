@@ -1340,8 +1340,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     uint8_t rmd160[20],revdata[0x100]; bits256 hash;
                     if ( (datalen= iguana_databuf(databuf,args[0])) <= sizeof(revdata) )
                     {
-                        for (i=0; i<datalen; i++)
-                            revdata[i] = databuf[datalen-1-i];
+                        //for (i=0; i<datalen; i++)
+                        //    revdata[i] = databuf[i];
                     } else printf("datalen.%d too big for %d\n",datalen,(int32_t)sizeof(revdata));
                     switch ( op->opcode )
                     {
