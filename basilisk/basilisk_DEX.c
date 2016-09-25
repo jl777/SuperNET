@@ -492,7 +492,7 @@ STRING_ARG(InstantDEX,available,source)
                         {
                             total += jdouble(item,"amount") * SATOSHIDEN;
                         }
-                        //printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
+                        printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                     }
                 }
                 free_json(unspents);
