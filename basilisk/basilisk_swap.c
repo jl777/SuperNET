@@ -1297,21 +1297,23 @@ void basilisk_swaploop(void *_swap)
                         printf("GENERATED BOB DEPOSIT\n");
                         break;
                     }
-                    for (i=0; i<3; i++)
+                }
+                for (i=0; i<3; i++)
+                {
+                    if ( retval < 0 )
+                        break;
+                    basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
+                    if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
                     {
-                        basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
-                        if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
-                        {
-                            printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.spendlen);
-                            retval = -2;
-                            sleep(3);
-                        }
-                        else
-                        {
-                            retval = 0;
-                            printf("GENERATED BOB PAYMENT\n");
-                            break;
-                        }
+                        printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.spendlen);
+                        retval = -2;
+                        sleep(3);
+                    }
+                    else
+                    {
+                        retval = 0;
+                        printf("GENERATED BOB PAYMENT\n");
+                        break;
                     }
                 }
                 /*if ( basilisk_bobpayment_reclaim(myinfo,swap) < 0 || basilisk_bobdeposit_refund(myinfo,swap) < 0 )
