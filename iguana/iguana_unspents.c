@@ -1122,7 +1122,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                     printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
                     unspents++;
                     numunspents++;
-                    if ( numunspents > max || sum > required )
+                    if ( numunspents > max || sum > 10*required )
                         break;
                 }
             }
