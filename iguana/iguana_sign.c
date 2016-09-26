@@ -930,14 +930,25 @@ int32_t iguana_msgtx_Vset(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *signedtxidp,char **signedtx,struct iguana_msgtx *msgtx,uint8_t *serialized,int32_t maxlen,struct vin_info *V,uint32_t sighash,int32_t signtx,int32_t suppress_pubkeys)
 {
-    bits256 sigtxid; uint8_t *sig; struct vin_info *vp; char vpnstr[64]; int32_t complete=0,plen,j,vini=0,flag=0,siglen,numvouts,numsigs;
+    bits256 sigtxid; uint8_t *sig,*script; struct vin_info *vp; char vpnstr[64]; int32_t scriptlen,complete=0,plen,j,vini=0,flag=0,siglen,numvouts,numsigs;
     numvouts = msgtx->tx_out;
     vpnstr[0] = 0;
     *signedtx = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
-        sigtxid = bitcoin_sigtxid(coin,height,serialized,maxlen,msgtx,vini,msgtx->vins[vini].spendscript,msgtx->vins[vini].spendlen,sighash,vpnstr,suppress_pubkeys);
+        if ( V->p2shscript != 0 && V->p2shlen != 0 )
+        {
+            script = V->p2shscript;
+            scriptlen = V->p2shlen;
+            printf("V->p2shlen.%d\n",V->p2shlen);
+        }
+        else
+        {
+            script = msgtx->vins[vini].spendscript;
+            scriptlen = msgtx->vins[vini].spendlen;
+        }
+        sigtxid = bitcoin_sigtxid(coin,height,serialized,maxlen,msgtx,vini,script,scriptlen,sighash,vpnstr,suppress_pubkeys);
         if ( bits256_nonz(sigtxid) != 0 )
         {
             vp = &V[vini];

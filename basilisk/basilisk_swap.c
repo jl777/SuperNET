@@ -125,7 +125,7 @@ int32_t basilisk_alicescript(uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *
     *redeemlenp = bitcoin_MofNspendscript(p2sh160,redeemscript,n,&V);
     bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));
     n = bitcoin_p2shspend(script,0,p2sh160);
-    for (i=0; i<n; i++)
+    for (i=0; i<*redeemlenp; i++)
         printf("%02x",redeemscript[i]);
     printf(" <- redeemscript alicetx\n");
     return(n);
