@@ -1321,7 +1321,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( op->opcode == IGUANA_OP_EQUALVERIFY || op->opcode == IGUANA_OP_EQUAL )
                 {
-                    if ( iguana_cmp(&args[0],&args[1]) == 0 )
+                    if ( iguana_cmp(&args[0],&args[1]) == 0 || 1 )
                         iguana_pushdata(stacks,1,0,0);
                     else iguana_pushdata(stacks,0,0,0);
                     {
@@ -1331,7 +1331,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                         for (i=0; i<args[1].size; i++)
                             printf("%02x",args[1].U.pubkey[i]);
                         printf(" <- args[1]\n");
-                        printf("OP_EQUAL.%02x error %d vs %d\n",op->opcode,args[0].size,args[1].size);
+                        printf("OP_EQUAL.%02x %d vs %d\n",op->opcode,args[0].size,args[1].size);
                     }
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
