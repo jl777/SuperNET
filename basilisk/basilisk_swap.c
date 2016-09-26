@@ -1401,6 +1401,7 @@ void basilisk_swaploop(void *_swap)
                         break;
                     }
                 }
+                basilisk_bobscripts_set(myinfo,swap,0);
                 /*if ( basilisk_bobpayment_reclaim(myinfo,swap) < 0 || basilisk_bobdeposit_refund(myinfo,swap) < 0 )
                 {
                     printf("error bob reclaiming\n");
