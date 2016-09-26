@@ -367,11 +367,15 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
 
 int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
-    uint8_t userdata[512]; int32_t len = 0;
+    uint8_t userdata[512],revrmd160[20]; int32_t len = 0;
     len = basilisk_swapuserdata(userdata,1,swap->privBn,0x03,swap->pubB0,0);
     int32_t i; for (i=0; i<len; i++)
         printf("%02x",userdata[i]);
-    printf(" <- basilisk_bobdeposit_refund\n");
+    char str[65]; printf(" <- basilisk_bobdeposit_refund privBn.(%s)\n",bits256_str(str,swap->privBn));
+    revcalc_rmd160_sha256(revrmd160,swap->privBn);
+    for (i=0; i<20; i++)
+        printf("%02x",revrmd160[i]);
+    printf(" <- revrmd160\n");
     return(basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len));
 }
 
