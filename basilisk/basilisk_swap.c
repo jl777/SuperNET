@@ -511,6 +511,7 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
                 swap->privAm = privkey;
                 vcalc_sha256(0,swap->secretAm256,privkey.bytes,sizeof(privkey));
                 printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
+                basilisk_bobscripts_set(swap,0);
             }
             else
             {
@@ -519,7 +520,6 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
                 printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
                 basilisk_bobscripts_set(swap,1);
             }
-            basilisk_bobscripts_set(swap,0);
             char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
         }
@@ -1232,7 +1232,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 vcalc_sha256(0,swap->secretBn256,swap->privBn.bytes,sizeof(swap->privBn));
                 swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
                 printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
-                basilisk_bobscripts_set(swap,0);
+                basilisk_bobscripts_set(swap,1);
              }
         }
         else
@@ -1245,7 +1245,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 vcalc_sha256(0,swap->secretAm256,swap->privAm.bytes,sizeof(swap->privAm));
                 swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
                 printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
-                basilisk_bobscripts_set(swap,1);
+                basilisk_bobscripts_set(swap,0);
                 for (i=0; i<3; i++)
                 {
                     basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
