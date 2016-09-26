@@ -534,7 +534,7 @@ void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript
         vin->spendlen = vin->p2shlen;
         hexstr = redeemstr;
     }
-    if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && (vin->spendlen == 0 || vin->spendscript == 0) )
+    else if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && (vin->spendlen == 0 || vin->spendscript == 0) )
     {
         vin->spendlen = (int32_t)strlen(hexstr) >> 1;
     }
