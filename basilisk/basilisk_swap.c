@@ -403,7 +403,7 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
 
 int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
-    uint8_t userdata[512],revrmd160[20]; int32_t len = 0;
+    uint8_t userdata[512],revrmd160[20],testpub[33]; int32_t len = 0;
     len = basilisk_swapuserdata(userdata,1,swap->privBn,0x03,swap->pubB0,0,1);
     int32_t i; for (i=0; i<len; i++)
         printf("%02x",userdata[i]);
@@ -412,6 +412,10 @@ int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_
     for (i=0; i<20; i++)
         printf("%02x",revrmd160[i]);
     printf(" <- revrmd160\n");
+    bitcoin_pubkey33(myinfo->ctx,testpub,swap->myprivs[0]);
+    if ( memcmp(swap->pubB0.bytes,testpub+1,32) == 0 )
+        printf("VERIFIED priv -> pub\n");
+    else printf("ERROR priv -> pub\n");
     return(basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len));
 }
 

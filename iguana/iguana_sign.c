@@ -1253,7 +1253,7 @@ cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
-    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,i,scriptlen,activescriptlen,errs = 0; cJSON *spendscript,*item;
+    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,errs = 0; cJSON *spendscript,*item;
     for (vini=0; vini<numvins; vini++)
     {
         if ( V[vini].p2shlen > 0 )
@@ -1276,8 +1276,6 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         }
         else if ( scriptlen != activescriptlen || memcmp(script,activescript,scriptlen) != 0 )
         {
-            for (i=0; i<V[vini].spendlen; i++)
-                printf("%02x",V[vini].spendscript[i]);
             if ( logarray != 0 )
             {
                 item = cJSON_CreateObject();
@@ -1287,7 +1285,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
                 init_hexbytes_noT(str,script,scriptlen);
                 jaddstr(item,"reconstructed",str);
                 jaddi(logarray,item);
-            } else printf(" scriptlen mismatch.%d vs %d or miscompare\n",scriptlen,V[vini].spendlen);
+            } else printf(" scriptlen mismatch.%d vs %d or miscompare\n",scriptlen,activescriptlen);
             errs++;
         }
     }
