@@ -69,13 +69,14 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
 
 int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *script,int32_t n,uint32_t *locktimep,int32_t *secretstartp,struct basilisk_swap *swap,int32_t depositflag)
 {
-    uint8_t pubkeyA[33],pubkeyB[33],*secret160,*secret256; bits256 cltvpub,destpub; int32_t i;
+    uint8_t pubkeyA[33],pubkeyB[33],*secret160,*secret256; bits256 privkey,cltvpub,destpub; int32_t i;
     *locktimep = swap->locktime;
     if ( depositflag != 0 )
     {
         *locktimep += INSTANTDEX_LOCKTIME;
         cltvpub = swap->pubA0;
         destpub = swap->pubB0;
+        privkey = swap->privBn;
         secret160 = swap->secretBn;
         secret256 = swap->secretBn256;
         pubkeyA[0] = 0x02;
@@ -85,6 +86,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     {
         cltvpub = swap->pubB1;
         destpub = swap->pubA0;
+        privkey = swap->privAm;
         secret160 = swap->secretAm;
         secret256 = swap->secretAm256;
         pubkeyA[0] = 0x03;
@@ -109,7 +111,20 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
     if ( 1 )
+    {
+        if ( bits256_nonz(privkey) != 0 )
+        {
+            uint8_t bufA[20],bufB[20];
+            revcalc_rmd160_sha256(bufA,privkey);
+            calc_rmd160_sha256(bufB,privkey.bytes,sizeof(privkey));
+            if ( memcmp(bufA,secret160,sizeof(bufA)) == 0 )
+                printf("MATCHES BUFA\n");
+            else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
+                printf("MATCHES BUFB\n");
+            else printf("secret160 matches neither\n");
+        }
         n = bitcoin_revealsecret160(redeemscript,n,secret160);
+    }
     else
     {
         redeemscript[n++] = 0xa8;//IGUANA_OP_SHA256;
