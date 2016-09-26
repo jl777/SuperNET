@@ -1095,6 +1095,8 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
                     swap->pubAm.bytes[i] = data[len++];
                 for (i=0; i<20; i++)
                     swap->secretAm[i] = data[len++];
+                for (i=0; i<32; i++)
+                    swap->secretAm256[i] = data[len++];
             }
             else
             {
@@ -1102,6 +1104,8 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
                     swap->pubBn.bytes[i] = data[len++];
                 for (i=0; i<20; i++)
                     swap->secretBn[i] = data[len++];
+                for (i=0; i<32; i++)
+                    swap->secretBn256[i] = data[len++];
             }
         } else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
@@ -1224,6 +1228,8 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
             data[datalen++] = swap->pubBn.bytes[i];
         for (i=0; i<20; i++)
             data[datalen++] = swap->secretBn[i];
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->secretBn256[i];
     }
     else
     {
@@ -1231,6 +1237,8 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
             data[datalen++] = swap->pubAm.bytes[i];
         for (i=0; i<20; i++)
             data[datalen++] = swap->secretAm[i];
+        for (i=0; i<32; i++)
+            data[datalen++] = swap->secretAm256[i];
     }
     //printf("send privkeys.%d\n",datalen);
     swap->statebits |= basilisk_swapsend(myinfo,swap,0x20,data,datalen,0x10,swap->crcs_myprivs);
@@ -1290,11 +1298,17 @@ void basilisk_swaploop(void *_swap)
                 printf("%02x",swap->secretAm[i]);
             printf(" <- secretAm\n");
             for (i=0; i<32; i++)
+                printf("%02x",swap->secretAm256[i]);
+            printf(" <- secretAm256\n");
+            for (i=0; i<32; i++)
                 printf("%02x",swap->pubAm.bytes[i]);
             printf(" <- pubAm\n");
             for (i=0; i<20; i++)
                 printf("%02x",swap->secretBn[i]);
             printf(" <- secretBn\n");
+            for (i=0; i<32; i++)
+                printf("%02x",swap->secretBn256[i]);
+            printf(" <- secretBn256\n");
             for (i=0; i<32; i++)
                 printf("%02x",swap->pubBn.bytes[i]);
             printf(" <- pubBn\n");
