@@ -1210,7 +1210,7 @@ void basilisk_sendchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    uint8_t pubkey33[33]; char str[65],str2[65]; 
+    uint8_t pubkey33[33]; char str[65],str2[65];
     //printf("check otherchoosei\n");
     if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
     {
@@ -1355,14 +1355,7 @@ void basilisk_swaploop(void *_swap)
             for (i=0; i<32; i++)
                 printf("%02x",swap->pubB1.bytes[i]);
             printf(" <- pubB1\n");
-            swap->bobpayment.spendlen = basilisk_bobscript(swap->bobpayment.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.locktime,&swap->bobpayment.secretstart,swap,0);
-            for (i=0; i<swap->bobpayment.redeemlen; i++)
-                printf("%02x",swap->bobpayment.redeemscript[i]);
-            printf(" <- bobpayment.%d\n",i);
-            swap->bobdeposit.spendlen = basilisk_bobscript(swap->bobdeposit.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.locktime,&swap->bobdeposit.secretstart,swap,1);
-            for (i=0; i<swap->bobdeposit.redeemlen; i++)
-                printf("%02x",swap->bobdeposit.redeemscript[i]);
-            printf(" <- bobdeposit.%d\n",i);
+            basilisk_bobscripts_set(swap);
             if ( swap->iambob != 0 )
             {
                 for (i=0; i<3; i++)
@@ -1382,6 +1375,7 @@ void basilisk_swaploop(void *_swap)
                         break;
                     }
                 }
+                basilisk_bobscripts_set(swap);
                 for (i=0; i<3; i++)
                 {
                     if ( retval < 0 )
