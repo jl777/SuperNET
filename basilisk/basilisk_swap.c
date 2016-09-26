@@ -119,8 +119,8 @@ int32_t basilisk_alicescript(uint8_t *redeemscript,int32_t *redeemlenp,uint8_t *
 {
     uint8_t i,p2sh160[20]; struct vin_info V;
     memset(&V,0,sizeof(V));
-    memcpy(&V.signers[1].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[1].pubkey[0] = 0x02;
-    memcpy(&V.signers[0].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[0].pubkey[0] = 0x03;
+    memcpy(&V.signers[0].pubkey[1],pubAm.bytes,sizeof(pubAm)), V.signers[0].pubkey[0] = 0x02;
+    memcpy(&V.signers[1].pubkey[1],pubBn.bytes,sizeof(pubBn)), V.signers[1].pubkey[0] = 0x03;
     V.M = V.N = 2;
     *redeemlenp = bitcoin_MofNspendscript(p2sh160,redeemscript,n,&V);
     bitcoin_address(msigaddr,altps2h,p2sh160,sizeof(p2sh160));

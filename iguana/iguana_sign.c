@@ -524,12 +524,19 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
 
 void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript,int32_t maxsize)
 {
-    char *redeemstr,*hexstr; cJSON *sobj;
+    char *redeemstr,*hexstr=0; cJSON *sobj;
     if ( (redeemstr= jstr(item,"redeemScript")) != 0 && is_hexstr(redeemstr,0) > 0 )
+    {
         vin->p2shlen = (int32_t)strlen(redeemstr) >> 1;
+        vin->spendlen = vin->p2shlen;
+        hexstr = redeemstr;
+    }
     if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 && is_hexstr(hexstr,0) > 0 && (vin->spendlen == 0 || vin->spendscript == 0) )
     {
         vin->spendlen = (int32_t)strlen(hexstr) >> 1;
+    }
+    if ( hexstr != 0 && vin->spendlen != 0 )
+    {
         if ( vin->spendlen < maxsize )
         {
             if ( vin->spendscript == 0 )
@@ -541,7 +548,7 @@ void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript
 
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys)
 {
-    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[8192],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
+    int32_t i,n,len = 0,extraused=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->version),&msg->version);
     if ( json != 0 )
     {

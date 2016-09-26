@@ -786,7 +786,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             return(0);
         }
         printf("n.%d stackdepth.%d\n",n,stacks->stackdepth);
-        for (i=N-1; i>=0; i--)
+        for (i=0; i<N; i++)
         {
             if ( stacks->stackdepth <= 0 )
                 return(0);
