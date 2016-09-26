@@ -318,10 +318,10 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,int32_t height,s
         for (i=0; i<rawtx->datalen; i++)
             printf("%02x",rawtx->txbytes[i]);
         printf(" <- rawtx\n");
-        printf("%s rawtx data compare error, len %d vs %d\n",rawtx->name,rawtx->datalen,datalen);
-        return(-1);
+        printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->datalen,datalen);
+        //return(-1);
     }
-    if ( (txobj= bitcoin_data2json(rawtx->coin,height,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),rawtx->txbytes,rawtx->datalen,0,suppress_pubkeys)) != 0 )
+    if ( (txobj= bitcoin_data2json(rawtx->coin,height,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->actualtxid = rawtx->signedtxid;
         char str[65]; printf("got txid.%s\n",bits256_str(str,rawtx->signedtxid));
