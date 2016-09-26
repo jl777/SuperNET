@@ -110,7 +110,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     redeemscript[n++] = 0x20;
     memcpy(&script[n],secret256,0x20);
     n += 0x20;
-    redeemscript[n++] = 0x88; SCRIPT_OP_EQUALVERIFY;
+    redeemscript[n++] = 0x88; //SCRIPT_OP_EQUALVERIFY;
 
     n = bitcoin_pubkeyspend(redeemscript,n,pubkeyB);
     redeemscript[n++] = SCRIPT_OP_ENDIF;
