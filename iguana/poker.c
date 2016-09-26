@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <unistd.h>
 
 #define CLUB_SUIT              (1)
 #define DIAMOND_SUIT           (2)
@@ -626,8 +625,8 @@ void poker_test()
 	}
     starttime = (uint32_t)time(NULL);
 #ifndef _WIN32
-    while ( (uint32_t)time(NULL) == starttime )
-        usleep(100);
+    //while ( (uint32_t)time(NULL) == starttime )
+    //    usleep(100);
     total = counter = 0;
     while ( (uint32_t)time(NULL) < starttime+11 )
     {

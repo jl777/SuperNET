@@ -107,14 +107,14 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     while ( (item= calloc(1,sizeof(struct allocitem) + allocsize + 16)) == 0 )
     {
         char str[65];
-        printf("mycalloc: need to wait for memory.(%d,%ld) %s to be available\n",n,itemsize,mbstr(str,allocsize));
+        printf("mycalloc.%c: need to wait for memory.(%d,%ld) %s to be available\n",type,n,itemsize,mbstr(str,allocsize));
         sleep(1);
     }
     //printf("calloc origptr.%p retptr.%p size.%ld\n",item,(void *)(long)item + sizeof(*item),allocsize);
     item->allocsize = (uint32_t)allocsize;
     item->type = type;
     //portable_mutex_unlock(&MEMmutex);
-    return((void *)(long)item + sizeof(*item));
+    return((void *)((long)item + sizeof(*item)));
 }
 
 void *queueitem(char *str)
@@ -429,7 +429,7 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 #endif
     if ( (mem->used + size) <= mem->totalsize )
     {
-        ptr = (void *)(long)((long)(mem->ptr + mem->used));
+        ptr = (void *)(long)(((long)mem->ptr + mem->used));
         mem->used += size;
         if ( size*clearflag != 0 )
             memset(ptr,0,size);
@@ -539,8 +539,10 @@ void OS_remove_directory(char *dirname)
     FILE *fp; char buf[1024];
     sprintf(buf,"%s/.tmpmarker",dirname);
     if ( (fp= fopen(OS_compatible_path(buf),"rb")) != 0 )
+    {
         OS_removefile(buf,0);
-    else fclose(fp);
+        fclose(fp);
+    }
 //printf("skip rmdir.(%s)\n",dirname);
 return;
     sprintf(buf,"rmdir %s",dirname);
@@ -552,9 +554,6 @@ return;
         {
             //printf("error doing (%s)\n",buf);
         }
-        //sprintf(buf,"rmdir %s",dirname);
-        //if ( system(buf) != 0 )
-        //    printf("second error doing (%s)\n",buf);
     }
 }
 
@@ -584,9 +583,9 @@ void OS_ensure_directory(char *dirname)
     } else fclose(fp);//, printf("%s exists\n",fname);
 }
 
-int64_t OS_filesize(char *fname)
+unsigned long OS_filesize(char *fname)
 {
-    FILE *fp; uint64_t fsize = 0;
+    FILE *fp; unsigned long fsize = 0;
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
         fseek(fp,0,SEEK_END);
@@ -641,7 +640,7 @@ int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag)
     return(len);
 }
 
-int32_t OS_releasemap(void *ptr,uint64_t filesize)
+int32_t OS_releasemap(void *ptr,unsigned long filesize)
 {
 	int32_t retval;
     if ( ptr == 0 )
@@ -728,7 +727,7 @@ long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag)
 
 int32_t OS_openmap(struct OS_mappedptr *mp)
 {
-	uint64_t allocsize = mp->allocsize;
+	unsigned long allocsize = mp->allocsize;
     if ( mp->actually_allocated != 0 )
 	{
 		if ( mp->fileptr == 0 )
@@ -757,9 +756,9 @@ int32_t OS_openmap(struct OS_mappedptr *mp)
 	return(0);
 }
 
-void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,uint64_t allocsize,int32_t rwflag,char *fname)
+void *OS_mappedptr(void **ptrp,struct OS_mappedptr *mp,unsigned long allocsize,int32_t rwflag,char *fname)
 {
-	uint64_t filesize;
+	unsigned long filesize;
 	mp->actually_allocated = 0;//!os_supports_mappedfiles();
     if ( fname != 0 )
 	{
@@ -876,7 +875,7 @@ void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite) // win and pna
 	return(OS_portable_mapfile(fname,filesizep,enablewrite));
 }
 
-int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement sync
+/*int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement sync
 {
     return(OS_portable_syncmap(mp,len));
 }
@@ -884,7 +883,7 @@ int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement s
 void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize) // no syncmap no tmpalloc
 {
     return(OS_portable_tmpalloc(dirname,name,mem,origsize));
-}
+}*/
 
 void OS_init()
 {
@@ -893,7 +892,7 @@ void OS_init()
     decode_hex(GENESIS_PUBKEY.bytes,sizeof(GENESIS_PUBKEY),GENESIS_PUBKEYSTR);
     decode_hex(GENESIS_PRIVKEY.bytes,sizeof(GENESIS_PRIVKEY),GENESIS_PRIVKEYSTR);
     SaM_PrepareIndices();
-    return(OS_portable_init());
+    OS_portable_init();
 }
 
 int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
@@ -930,4 +929,109 @@ int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
     if ( fgets(line,max,stdin) != 0 )
         line[strlen(line)-1] = 0;
     return((int32_t)strlen(line));
+}
+
+
+//////////// test suite for:
+/*
+int64_t OS_filesize(char *fname);
+void OS_ensure_directory(char *dirname);
+long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
+int32_t OS_truncate(char *fname,long filesize);
+int32_t OS_renamefile(char *fname,char *newfname);
+int32_t OS_removefile(char *fname,int32_t scrubflag);
+
+void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+int32_t OS_releasemap(void *ptr,uint64_t filesize);
+
+double OS_milliseconds();
+void OS_randombytes(uint8_t *x,long xlen);
+*/
+
+int32_t iguana_OStests()
+{
+    static uint16_t pairs[0x100][0x100],mappairs[0x100][0x100];
+    uint8_t buf[4096],*bufptr; int32_t val,min,minij,maxij,max,i,j,histo[0x100],retval = 0,n=0; double startmilli,endmilli; FILE *fp; char *name,*name2,*dirname; long filesize; void *fileptr;
+    startmilli = OS_milliseconds();
+    printf("\n>>>>>>>>>> starting tests. Please count the seconds (or use stopwatch)\n");
+    name = "OStests";
+    name2 = "OStests2";
+    dirname = "tmp";
+    fp = fopen(name,"wb");
+    memset(histo,0,sizeof(histo));
+    memset(pairs,0,sizeof(pairs));
+    memset(mappairs,0,sizeof(mappairs));
+    for (i=0; i<4096; i++)
+    {
+        OS_randombytes(buf,sizeof(buf));
+        for (j=0; j<sizeof(buf); j++)
+        {
+            if ( (n++ % 100000) == 0 )
+                printf("%02x ",buf[j]);
+            if ( fp != 0 )
+                fputc(buf[j],fp);
+            histo[buf[j]]++;
+            if ( j > 0 )
+                pairs[buf[j-1]][buf[j]]++;
+        }
+    }
+    fclose(fp);
+    printf("\nend of random bytes\n\n");
+    if ( OS_filesize(name) != n )
+        printf("FAIL OS_filesize %lld != %d error and if OS_filesize doesnt work, nothing else will work\n",(long long)OS_filesize(name),n), retval--;
+    else
+    {
+        printf("PASS OS_filesize.(%s) matches %d\n",name,n);
+        OS_renamefile(name,name2);
+        if ( OS_filesize(name2) != n )
+            printf("FAIL OS_renamefile returns filesize %lld != %d\n",(long long)OS_filesize(name2),n), retval--;
+        else printf("PASS OS_renamefile (%s) -> (%s) worked\n",name,name2);
+        if ( (fileptr= OS_mapfile(name2,&filesize,0)) == 0 )
+            printf("FAIL OS_mapfile.(%s) returns null\n",name2), retval--;
+        else if ( filesize != n )
+            printf("FAIL OS_mapfile.(%s) returns %ld != %d\n",name2,filesize,n), retval--;
+        else
+        {
+            bufptr = fileptr;
+            for (i=0; i<4096; i++)
+            {
+                memcpy(buf,bufptr,sizeof(buf));
+                bufptr += sizeof(buf);
+                for (j=1; j<sizeof(buf); j++)
+                    mappairs[buf[j-1]][buf[j]]++;
+            }
+            if ( memcmp(pairs,mappairs,sizeof(pairs)) != 0 )
+                printf("FAIL OS_mapfile.(%s) %ld data error pairs[][] != mappairs[][]\n",name2,filesize), retval--;
+            else printf("PASS OS_mapfile.(%s) %ld regenerated identical pairs[][]\n",name2,filesize);
+            if ( OS_releasemap(fileptr,filesize) != 0 )
+                printf("FAIL OS_releasemap.(%s) %ld returns error\n",name2,filesize), retval--;
+            else printf("PASS OS_releasemap.(%s) %ld returns success\n",name2,filesize);
+        }
+        
+        OS_removefile(name2,0);
+        if ( OS_filesize(name2) == n )
+            printf("FAIL OS_removefile.(%s) didnt work\n",name2), retval--;
+        else if ( (fp= fopen(name2,"rb")) != 0 )
+            printf("FAIL OS_removefile.(%s) didnt work fopen fp.%p\n",name2,fp), fclose(fp), retval--;
+        else printf("PASS OS_removefile.(%s) worked\n",name2);
+    }
+    minij = min = (1 << 30);
+    maxij = max = -1;
+    for (i=0; i<0x100; i++)
+    {
+        if ( (val= histo[i]) > max )
+            max = val;
+        else if ( val < min )
+            min = val;
+        for (j=0; j<0x100; j++)
+        {
+            if ( (val= pairs[i][j]) > maxij )
+                maxij = val;
+            else if ( val < minij )
+                minij = val;
+        }
+    }
+    endmilli = OS_milliseconds();
+    printf("\n\nDid that take %.3f seconds? If not, there is a problem with OS_milliseconds\n\nMake sure above numbers look random and the min/max are within specified range:\n<3%% %.2f%% min %d max %d | <75%% %.3f%% minij %d maxij %d\n",(endmilli - startmilli)/1000.,100*(double)max/min - 100.,min,max,100*(double)maxij/minij - 100.,minij,maxij);
+    return(retval);
 }

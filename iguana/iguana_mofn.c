@@ -656,7 +656,7 @@ bits256 iguana_schnorr_noncepair(void *ctx,bits256 *pubkey,uint8_t odd_even,bits
     if ( j == maxj )
     {
         printf("couldnt generate even noncepair\n");
-        exit(-1);
+        iguana_exit(0,0);
     }
     return(privnonce);
 }

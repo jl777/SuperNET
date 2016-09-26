@@ -21,7 +21,7 @@ struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct igua
     int32_t j,firstz,numother; bits256 *othertxids; struct gecko_mempool *otherpool = 0;
     othertxids = 0;
     numother = firstz = 0;
-    for (j=0; j<NUMRELAYS; j++)
+    for (j=0; j<myinfo->NOTARY.NUMRELAYS; j++)
     {
         if ( (otherpool= virt->mempools[j]) != 0 )
         {
@@ -44,22 +44,22 @@ struct gecko_mempool *gecko_mempoolfind(struct supernet_info *myinfo,struct igua
 void gecko_mempool_sync(struct supernet_info *myinfo,struct iguana_info *virt,bits256 *reftxids,int32_t numtx)
 {
     int32_t i,j,k,n,num,numother; struct iguana_peer *addr; bits256 txid,*txids; struct gecko_mempool *pool,*otherpool; struct iguana_info *coin;
-    if ( (pool= virt->mempool) == 0 || NUMRELAYS <= 0 )
+    if ( (pool= virt->mempool) == 0 || myinfo->NOTARY.NUMRELAYS <= 0 )
         return;
-    n = sqrt(NUMRELAYS) + 2;
-    if ( n > NUMRELAYS )
-        NUMRELAYS = n;
+    n = sqrt(myinfo->NOTARY.NUMRELAYS) + 2;
+    if ( n > myinfo->NOTARY.NUMRELAYS )
+        myinfo->NOTARY.NUMRELAYS = n;
     i = (myinfo->myaddr.myipbits % n);
     txids = calloc(pool->numtx,sizeof(bits256));
     if ( virt->peers == 0 )
         coin = iguana_coinfind("BTCD");
     else coin = virt;
-    for (; i<NUMRELAYS; i+=n)
+    for (; i<myinfo->NOTARY.NUMRELAYS; i+=n)
     {
         printf("mempool_sync.%d\n",i);
-        if ( (addr= iguana_peerfindipbits(coin,RELAYS[i].ipbits,1)) != 0 )
+        if ( (addr= iguana_peerfindipbits(coin,myinfo->NOTARY.RELAYS[i].ipbits,1)) != 0 )
         {
-            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,RELAYS[i].ipbits)) != 0 )
+            if ( (otherpool= gecko_mempoolfind(myinfo,virt,&numother,myinfo->NOTARY.RELAYS[i].ipbits)) != 0 )
             {
                 for (j=num=0; j<pool->numtx; j++)
                 {
@@ -226,10 +226,10 @@ int32_t basilisk_respond_geckogettx(struct supernet_info *myinfo,struct iguana_i
 
 char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char *remoteaddr,uint8_t *serialized,int32_t datalen,bits256 txid)
 {
-    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf,unspentind; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd; struct iguana_outpoint outpt;
+    struct gecko_mempool *pool; int64_t txfee,vinstotal,voutstotal; uint64_t value; int32_t i,numvins,numvouts,txlen,spentheight,minconf,maxconf; struct iguana_msgtx msg; char *rawtx; struct gecko_memtx *memtx; struct iguana_info *btcd; struct iguana_outpoint outpt;
     memset(&msg,0,sizeof(msg));
     iguana_memreset(&virt->TXMEM);
-    txlen = iguana_rwtx(virt->chain->zcash,0,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
+    txlen = iguana_rwtx(myinfo,virt->chain->zcash,0,virt,&virt->TXMEM,serialized,&msg,datalen,&txid,virt->chain->isPoS,strcmp("VPN",virt->symbol) == 0);
     vinstotal = voutstotal = 0;
     maxconf = virt->longestchain;
     minconf = virt->chain->minconfirms;
@@ -237,11 +237,9 @@ char *gecko_txarrived(struct supernet_info *myinfo,struct iguana_info *virt,char
     {
         for (i=0; i<numvins; i++)
         {
-            if ( (unspentind= iguana_RTunspentindfind(myinfo,virt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1)) != 0 )
+            if ( iguana_RTunspentindfind(myinfo,virt,&outpt,0,0,0,&value,&spentheight,msg.vins[i].prev_hash,msg.vins[i].prev_vout,virt->bundlescount-1,1) == 0 )
             {
-                memset(&outpt,0,sizeof(outpt));
-                outpt.hdrsi = spentheight / virt->chain->bundlesize;
-                outpt.unspentind = unspentind;
+                printf("gecko txarrived\n");
                 if ( iguana_unspentavail(myinfo,virt,outpt,minconf,maxconf) != value )
                 {
                     printf("vin.%d already spent\n",i);

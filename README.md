@@ -2,12 +2,12 @@
 
 OS | Build Status 
 -------------|------
-Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Unix-jl777)](https://jenkinsmaster.sprnt.pw/job/Unix-jl777)
-Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=PNaCl-jl777)](https://jenkinsmaster.sprnt.pw/job/PNaCl-jl777/)
-Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=Android)](https://jenkinsmaster.sprnt.pw/job/Android/)
-iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iOS)](https://jenkinsmaster.sprnt.pw/job/iOS/)
-Windows 32 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win32/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win32/)
-Windows 64 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/badge/icon)](https://jenkinsmaster.sprnt.pw/job/Win64-jl777/)
+Unix (Ubuntu 14.04) | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iguana-unix-jl777-release-v0.1)](https://jenkinsmaster.sprnt.pw/job/iguana-unix-jl777-release-v0.1)
+Chrome | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iguana-pnacl-jl777-release-v0.1)](https://jenkinsmaster.sprnt.pw/job/iguana-pnacl-jl777-release-v0.1/)
+Android | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iguana-android-jl777-release-v0.1)](https://jenkinsmaster.sprnt.pw/job/iguana-android-jl777-release-v0.1/)
+iOS | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=iguana-ios-jl777-release-v0.1)](https://jenkinsmaster.sprnt.pw/job/iguana-ios-jl777-release-v0.1/)
+Windows 32 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/iguana-win32-jl777-release-v0.1/badge/icon)](https://jenkinsmaster.sprnt.pw/job/iguana-win32-jl777-release-v0.1/)
+Windows 64 Bit | [![Build Status](https://jenkinsmaster.sprnt.pw/job/iguana-win64-jl777-release-v0.1/badge/icon)](https://jenkinsmaster.sprnt.pw/job/iguana-win64-jl777-release-v0.1/)
 docs.supernet.org | [![Build Status](https://jenkinsmaster.sprnt.pw/buildStatus/icon?job=docs.supernet.org-updating)](https://jenkinsmaster.sprnt.pw/job/docs.supernet.org-updating/)
 
 ---
@@ -24,7 +24,7 @@ komodo: this is the top secret project I cant talk about publicly yet
 
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get install git build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
+> ```sudo apt-get update; sudo apt-get install git libcurl4-openssl-dev build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 

@@ -16,11 +16,12 @@
 #ifndef H_BASILISK_H
 #define H_BASILISK_H
 
-#define BASILISK_DISABLETX
+#define BASILISK_DISABLESENDTX
+#define BASILISK_DISABLEWAITTX
 
 #include "../iguana/iguana777.h"
 
-#define BASILISK_TIMEOUT 30000
+#define BASILISK_TIMEOUT 3000
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
@@ -46,9 +47,10 @@ struct basilisk_rawtx
     bits256 txid,signedtxid,actualtxid;
     struct iguana_msgtx msgtx;
     struct iguana_info *coin;
+    cJSON *vins;
     uint64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
-    uint32_t locktime;
+    uint32_t locktime,crcs[2];
     char destaddr[64],name[32];
     uint8_t addrtype,pubkey33[33],spendscript[512],redeemscript[1024],rmd160[20];
     uint8_t *txbytes,extraspace[1024];
@@ -65,10 +67,13 @@ struct basilisk_swap
     
     bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];
+    uint8_t secretAm256[32],secretBn256[32];
     
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    uint8_t verifybuf[65536];
 };
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
@@ -76,8 +81,8 @@ struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vou
 struct basilisk_item
 {
     struct queueitem DL; UT_hash_handle hh;
-    double expiration; cJSON *retarray;
-    uint32_t submit,finished,basilisktag,numresults,numsent,numrequired,nBits;
+    double expiration,finished; cJSON *results[64];
+    uint32_t submit,basilisktag,numresults,numsent,numrequired,nBits,duration;
     char symbol[32],CMD[4],remoteaddr[64],*retstr;
 };
 
@@ -85,8 +90,8 @@ struct basilisk_item
 struct basilisk_message
 {
     struct queueitem DL; UT_hash_handle hh;
-    uint32_t datalen,expiration,duration;
-    uint8_t key[BASILISK_KEYSIZE],keylen;
+    uint32_t expiration,duration,datalen;
+    uint8_t keylen,broadcast,key[BASILISK_KEYSIZE];
     uint8_t data[];
 };
 
@@ -102,7 +107,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *addr,uint32_t sender
 int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *type,uint32_t *basilisktagp,int32_t encryptflag,int32_t delaymillis,uint8_t *data,int32_t datalen,int32_t fanout,uint32_t nBits); // data must be offset by sizeof(iguana_msghdr)+sizeof(basilisktag)
 
 void basilisks_init(struct supernet_info *myinfo);
-void basilisk_p2p(void *myinfo,void *_addr,char *ipaddr,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
+void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,char *senderip,uint8_t *data,int32_t datalen,char *type,int32_t encrypted);
 uint8_t *basilisk_jsondata(int32_t extraoffset,uint8_t **ptrp,uint8_t *space,int32_t spacesize,int32_t *datalenp,char *symbol,cJSON *sendjson,uint32_t basilisktag);
 
 uint8_t *SuperNET_ciphercalc(void **ptrp,int32_t *cipherlenp,bits256 *privkeyp,bits256 *destpubkeyp,uint8_t *data,int32_t datalen,uint8_t *space2,int32_t space2size);
@@ -120,5 +125,7 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
 void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn);
 void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33);
 void basilisk_setmyid(struct supernet_info *myinfo);
+int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp);
+cJSON *basilisk_requestjson(struct basilisk_request *rp);
 
 #endif

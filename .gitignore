@@ -1,11 +1,7 @@
 
 *.o
-
-
-
-
-
 agents/iguana.exe
+Debug/*
 
 iguana/pnacl/Release/iguana_unstripped.pexe
 
@@ -37,3 +33,7 @@ agents/*
 
 iguana/confs/BTC_hdrs.txt
 
+
+deprecated/.DS_Store
+
+.DS_Store

@@ -64,7 +64,7 @@ see https://www.gnu.org/licenses/.  */
 #define GMP_ULONG_HIGHBIT ((uint64_t) 1 << (GMP_ULONG_BITS - 1))
 
 #define GMP_ABS(x) ((x) >= 0 ? (x) : -(x))
-#define GMP_NEG_CAST(T,x) (-((T)((x) + 1) - 1))
+#define GMP_NEG_CAST(T,x) (-(int64_t)((T)((x) + 1) - 1))
 
 #define GMP_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define GMP_MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -90,8 +90,8 @@ see https://www.gnu.org/licenses/.  */
 #define gmp_ctz(count, x) do {						\
     mp_limb_t __ctz_x = (x);						\
     uint32_t __ctz_c = 0;						\
-    gmp_clz (__ctz_c, __ctz_x & - __ctz_x);				\
-    (count) = GMP_LIMB_BITS - 1 - __ctz_c;				\
+    gmp_clz (__ctz_c, __ctz_x & - (int64_t)__ctz_x);				\
+    (count) = GMP_LIMB_BITS - 1 - (int64_t)__ctz_c;				\
   } while (0)
 
 #define gmp_add_ssaaaa(sh, sl, ah, al, bh, bl) \
@@ -141,7 +141,7 @@ see https://www.gnu.org/licenses/.  */
     gmp_umul_ppmm (_qh, _ql, (nh), (di));				\
     gmp_add_ssaaaa (_qh, _ql, _qh, _ql, (nh) + 1, (nl));		\
     _r = (nl) - _qh * (d);						\
-    _mask = -(mp_limb_t) (_r > _ql); /* both > and >= are OK */		\
+    _mask = -(_r > _ql); /* both > and >= are OK */		\
     _qh += _mask;							\
     _r += _mask & (d);							\
     if (_r >= (d))							\
@@ -168,7 +168,7 @@ see https://www.gnu.org/licenses/.  */
     (q)++;								\
 									\
     /* Conditionally adjust q and the remainders */			\
-    _mask = - (mp_limb_t) ((r1) >= _q0);				\
+    _mask = -((r1) >= _q0);				\
     (q) += _mask;							\
     gmp_add_ssaaaa ((r1), (r0), (r1), (r0), _mask & (d1), _mask & (d0)); \
     if ((r1) >= (d1))							\
@@ -3517,7 +3517,7 @@ static void mpn_div_qr_2_preinv (mp_ptr qp, mp_ptr rp, mp_srcptr np, mp_size_t n
     uint32_t shift;
     mp_size_t i;
     mp_limb_t d1, d0, di, r1, r0;
-    mp_ptr tp;
+    mp_ptr tp=0;
     
     assert (nn >= 2);
     shift = inv->shift;
@@ -3553,8 +3553,8 @@ static void mpn_div_qr_2_preinv (mp_ptr qp, mp_ptr rp, mp_srcptr np, mp_size_t n
         assert ((r0 << (GMP_LIMB_BITS - shift)) == 0);
         r0 = (r0 >> shift) | (r1 << (GMP_LIMB_BITS - shift));
         r1 >>= shift;
-        
-        free (tp);
+        if ( tp != 0 )
+            free (tp);
     }
     
     rp[1] = r1;
@@ -4232,9 +4232,9 @@ static mp_limb_t mpn_div_qr_1 (mp_ptr qp, mp_srcptr np, mp_size_t nn, mp_limb_t 
                 mpn_copyi (qp, np, nn);
             else
             {
-                uint32_t shift;
+                uint64_t shift;
                 gmp_ctz (shift, d);
-                mpn_rshift (qp, np, nn, shift);
+                mpn_rshift (qp, np, nn, (uint32_t)shift);
             }
         }
         return r;

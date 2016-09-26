@@ -1079,7 +1079,7 @@ void calc_md2str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     bits128 x;
     calc_md2(hexstr,buf,msg,len);
     decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
+    //memcpy(buf,x.bytes,sizeof(x));
 }
 
 void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
@@ -1087,7 +1087,7 @@ void calc_md4str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     bits128 x;
     calc_md4(hexstr,buf,msg,len);
     decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
+    //memcpy(buf,x.bytes,sizeof(x));
 }
 
 void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
@@ -1095,7 +1095,7 @@ void calc_md5str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)
     bits128 x;
     calc_md5(hexstr,msg,len);
     decode_hex(buf,sizeof(x),hexstr);
-    memcpy(buf,x.bytes,sizeof(x));
+    //memcpy(buf,x.bytes,sizeof(x));
 }
 
 void calc_crc32str(char *hexstr,uint8_t *buf,uint8_t *msg,int32_t len)

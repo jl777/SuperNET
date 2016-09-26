@@ -81,7 +81,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 x |= (*ptr & masks[modval]) >> modval;
             }
             if ( x != 0 )
-                printf("%s ",bits256_str(str,*(bits256 *)(refdata + x*refsize))), n++;
+                printf("%s ",bits256_str(str,*(bits256 *)((long)refdata + x*refsize))), n++;
         }
         printf("tableentries.%d\n",n);
     }
@@ -316,7 +316,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             if ( j < bp->n )
                             {
                                 if ( j != T[txidind].bundlei )
-                                    printf("bundlei mismatch j.%d != %d\n",j,T[txidind].bundlei);
+                                    printf("bundlei mismatch j.%d != %u\n",j,(uint32_t)T[txidind].bundlei);
                                 else
                                 {
                                     *heightp = bp->bundleheight + T[txidind].bundlei;
@@ -335,7 +335,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                             return(tx);
                         }
                     }
-                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%d] %d %s vs %s\n",bp->hdrsi,T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
+                    char str[65],str2[65]; printf("iguana_txidfind mismatch.[%d:%u] %d %s vs %s\n",bp->hdrsi,(uint32_t)T[txidind].extraoffset,txidind,bits256_str(str,txid),bits256_str(str2,T[txidind].txid));
                     return(0);
                 }
             }
@@ -362,13 +362,13 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
             if ( val >= tablesize )
                 val = 0;
             if ( (i= hashtable[val]) == 0 )
-                return(-1);
+                return(0);
             else
             {
                 if ( i > num )
                 {
                     printf("illegal val.%d vs num.%d tablesize.%d fastfind.%02x\n",i,num,tablesize,txid.bytes[31]);
-                    return(-1);
+                    return(0);
                 }
                 else
                 {
@@ -381,7 +381,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                         if ( *heightp >= (lasthdrsi+1)*coin->chain->bundlesize )
                         {
                             printf("txidfastfind: unexpected height.%d with lasthdrsi.%d\n",*heightp,lasthdrsi);
-                            return(-1);
+                            return(0);
                         }
                         return(firstvout);
                     }
@@ -403,7 +403,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
             }
         }
     }
-    return(-1);
+    return(0);
 }
 
 int32_t iguana_fastfindadd(struct iguana_info *coin,bits256 txid,int32_t height,uint32_t firstvout)
@@ -452,9 +452,26 @@ static int _bignum_cmp(const void *a,const void *b)
     return(0);
 }
 
+int32_t iguana_fastfindreset(struct iguana_info *coin)
+{
+    int32_t i,n = 0;
+    for (i=0; i<0x100; i++)
+    {
+        if ( coin->fast[i] != 0 )
+            munmap(coin->fast[i],coin->fastsizes[i]), n++;
+        if( coin->fasttables[i] != 0 )
+            free(coin->fasttables[i]);
+        coin->fast[i] = 0;
+        coin->fastsizes[i] = 0;
+        coin->fasttables[i] = 0;
+    }
+    coin->fastfind = 0;
+    return(n);
+}
+
 uint32_t iguana_fastfindinit(struct iguana_info *coin)
 {
-    int32_t i,j,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
+    int32_t i,iter,num,tablesize,*hashtable; uint8_t *sorted; char fname[1024];
     //if ( strcmp("BTC",coin->symbol) != 0 )
     //    return(0);
     if ( coin->fastfind != 0 )
@@ -500,17 +517,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             coin->fastfind = (uint32_t)time(NULL);
             printf("initialized fastfind.%s iter.%d\n",coin->symbol,iter);
             return(coin->fastfind);
-        }
-        else
-        {
-            for (j=0; j<i; j++)
-            {
-                munmap(coin->fast[i],coin->fastsizes[i]);
-                free(coin->fasttables[i]);
-                coin->fast[i] = 0;
-                coin->fastsizes[i] = 0;
-            }
-        }
+        } else iguana_fastfindreset(coin);
     }
     return(0);
 }
@@ -621,7 +628,7 @@ struct iguana_monitorinfo *iguana_monitorfind(struct iguana_info *coin,bits256 t
 
 struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 txid,struct iguana_peer *addr)
 {
-    struct iguana_monitorinfo *ptr; char str[65];
+    struct iguana_monitorinfo *ptr; //char str[65];
     if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
     {
         if ( GETBIT(ptr->peerbits,addr->addrind) == 0 )
@@ -630,7 +637,7 @@ struct iguana_monitorinfo *iguana_txidreport(struct iguana_info *coin,bits256 tx
             SETBIT(ptr->peerbits,addr->addrind);
             ptr->numreported++;
         }
-    } else printf("txid.%s not being monitored\n",bits256_str(str,txid));
+    } // else printf("%s txid.%s not being monitored\n",coin->symbol,bits256_str(str,txid));
     return(0);
 }
 
@@ -653,11 +660,12 @@ struct iguana_monitorinfo *iguana_txidmonitor(struct iguana_info *coin,bits256 t
 
 double iguana_txidstatus(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
+    struct iguana_outpoint outpt; int32_t height,firstvout,numranked; struct iguana_monitorinfo *ptr; char str[65];
     if ( coin != 0 && coin->peers != 0 && (numranked= coin->peers->numranked) > 0 )
     {
-        if ( (firstvout= iguana_RTunspentindfind(myinfo,coin,0,0,0,0,&height,txid,0,coin->bundlescount-1,0)) != 0 )
+        if ( iguana_RTunspentindfind(myinfo,coin,&outpt,0,0,0,0,&height,txid,0,coin->bundlescount-1,0) == 0 )
         {
+            firstvout = outpt.unspentind;
             if ( (ptr= iguana_monitorfind(coin,txid)) != 0 )
                 memset(ptr,0,sizeof(*ptr));
             return((double)coin->longestchain - height);

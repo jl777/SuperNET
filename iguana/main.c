@@ -80,7 +80,7 @@ struct supernet_info *SuperNET_MYINFO(char *passphrase)
         OS_randombytes(MYINFO.privkey.bytes,sizeof(MYINFO.privkey));
         MYINFO.myaddr.pubkey = curve25519(MYINFO.privkey,curve25519_basepoint9());
         printf("SuperNET_MYINFO: generate session keypair\n");
-        RELAYID = -1;
+        MYINFO.NOTARY.RELAYID = -1;
     }
     if ( passphrase == 0 || passphrase[0] == 0 )
         return(&MYINFO);
@@ -134,11 +134,13 @@ void SuperNET_MYINFOadd(struct supernet_info *myinfo)
     }
 }
 
-char *iguana_JSON(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint16_t port)
+char *iguana_JSON(void *_myinfo,void *_coin,char *jsonstr,uint16_t port)
 {
-    char *retstr=0; cJSON *json;
+    char *retstr=0; cJSON *json; struct supernet_info *myinfo = _myinfo; struct iguana_info *coin = _coin;
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
+        if ( myinfo == 0 )
+            myinfo = SuperNET_MYINFO(0);
         retstr = SuperNET_JSON(myinfo,coin,json,"127.0.0.1",port);
         free_json(json);
     }
@@ -208,7 +210,7 @@ int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
     {
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
-        printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
+        //printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
         queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
         return(1);
     }
@@ -217,7 +219,7 @@ int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
 
 char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *coin,char *jsonstr,uint64_t tag,int32_t maxmillis,char *remoteaddr,uint16_t port)
 {
-    struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
+    queue_t *Q; struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
     //printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
     len = (int32_t)strlen(jsonstr);
@@ -229,7 +231,10 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     ptr->retjsonstr = 0;
     safecopy(ptr->remoteaddr,remoteaddr,sizeof(ptr->remoteaddr));
     memcpy(ptr->jsonstr,jsonstr,len+1);
-    queue_enqueue("jsonQ",coin != 0 ? &coin->jsonQ : &JSON_Q,&ptr->DL,0);
+    if ( coin == 0 || (coin->FULLNODE == 0 && coin->VALIDATENODE == 0) )
+        Q = &JSON_Q;
+    else Q = &coin->jsonQ;
+    queue_enqueue("jsonQ",Q,&ptr->DL,0);
     while ( OS_milliseconds() < expiration )
     {
         usleep(100);
@@ -246,9 +251,26 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     return(clonestr("{\"error\":\"iguana jsonstr expired\"}"));
 }
 
+int32_t iguana_immediate(struct iguana_info *coin,int32_t immedmillis)
+{
+    double endmillis;
+    if ( immedmillis > 60000 )
+        immedmillis = 60000;
+    endmillis = OS_milliseconds() + immedmillis;
+    while ( 1 )
+    {
+        if ( coin->busy_processing == 0 )
+            break;
+        usleep(100);
+        if ( OS_milliseconds() > endmillis )
+            break;
+    }
+    return(coin->busy_processing == 0);
+}
+
 char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *retjson; uint64_t tag; uint32_t timeout; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
+    cJSON *retjson; uint64_t tag; uint32_t timeout,immedmillis; char *jsonstr,*retjsonstr,*retstr = 0; //*hexmsg,*method,
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
@@ -267,9 +289,15 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
         }*/
         jsonstr = jprint(json,0);
         //printf("RPC? (%s)\n",jsonstr);
-        if ( jstr(json,"immediate") != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
-            retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
-        else retjsonstr = iguana_blockingjsonstr(myinfo,coin,jsonstr,tag,timeout,remoteaddr,port);
+        if ( (immedmillis= juint(json,"immediate")) != 0 || ((remoteaddr == 0 || remoteaddr[0] == 0) && port == IGUANA_RPCPORT) )
+        {
+            if ( coin != 0 )
+            {
+                if ( immedmillis == 0 || iguana_immediate(coin,immedmillis) != 0 )
+                    retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
+                else retjsonstr = clonestr("{\"error\":\"coin is busy processing\"}");
+            } else retjsonstr = SuperNET_jsonstr(myinfo,jsonstr,remoteaddr,port);
+        } else retjsonstr = iguana_blockingjsonstr(myinfo,coin,jsonstr,tag,timeout,remoteaddr,port);
         if ( retjsonstr != 0 )
         {
             if ( (retjsonstr[0] == '{' || retjsonstr[0] == '[') && (retjson= cJSON_Parse(retjsonstr)) != 0 )
@@ -332,18 +360,24 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
     return(retstr);
 }
 
-void iguana_exit()
+void iguana_exit(struct supernet_info *myinfo,struct iguana_bundle *bp)
 {
-    int32_t j,iter; struct iguana_info *coin,*tmp;
+    static int exiting;
+    int32_t i,j,iter; struct iguana_info *coin,*tmp;
+    if ( exiting != 0 )
+        while ( 1 )
+            sleep(1);
+    exiting = 1;
+    if ( myinfo == 0 )
+        myinfo = SuperNET_MYINFO(0);
     printf("start EXIT\n");
     for (iter=0; iter<3; iter++)
     {
         if ( iter == 0 )
-            basilisk_request_goodbye(SuperNET_MYINFO(0));
+            basilisk_request_goodbye(myinfo);
         else
         {
-            //portable_mutex_lock(&Allcoins_mutex);
-            HASH_ITER(hh,Allcoins,coin,tmp)
+            HASH_ITER(hh,myinfo->allcoins,coin,tmp)
             {
                 if ( coin->peers != 0 )
                 {
@@ -360,22 +394,28 @@ void iguana_exit()
                     }
                 }
             }
-            //portable_mutex_unlock(&Allcoins_mutex);
         }
         sleep(3);
     }
-    printf("sockets closed, now EXIT\n");
+    printf("sockets closed\n");
+    if ( bp != 0 )
+        iguana_bundleremove(bp->coin,bp->hdrsi,1);
+    for (i=0; i<10; i++)
+    {
+        printf("need to exit, please restart after shutdown in %d seconds, or just ctrl-C\n",10-i);
+        sleep(1);
+    }
     exit(0);
 }
 
 #ifndef _WIN32
 #include <signal.h>
-void sigint_func() { printf("\nSIGINT\n"); iguana_exit(); }
-void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(); }
-void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(); }
-void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(); }
-void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(); }
-void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(); }
+void sigint_func() { printf("\nSIGINT\n"); iguana_exit(0,0); }
+void sigillegal_func() { printf("\nSIGILL\n"); iguana_exit(0,0); }
+void sighangup_func() { printf("\nSIGHUP\n"); iguana_exit(0,0); }
+void sigkill_func() { printf("\nSIGKILL\n"); iguana_exit(0,0); }
+void sigabort_func() { printf("\nSIGABRT\n"); iguana_exit(0,0); }
+void sigquit_func() { printf("\nSIGQUIT\n"); iguana_exit(0,0); }
 void sigchild_func() { printf("\nSIGCHLD\n"); signal(SIGCHLD,sigchild_func); }
 void sigalarm_func() { printf("\nSIGALRM\n"); signal(SIGALRM,sigalarm_func); }
 void sigcontinue_func() { printf("\nSIGCONT\n"); signal(SIGCONT,sigcontinue_func); }
@@ -417,8 +457,7 @@ rm BTC.xz; mksquashfs DB/BTC BTC.xz -comp xz -b 1048576 -comp xz -Xdict-size 102
 
 void mainloop(struct supernet_info *myinfo)
 {
-    struct iguana_info *coin,*tmp; int32_t i,counter=0,depth; portable_mutex_t *stack[IGUANA_MAXCOINS];
-    double lastmilli = 0;
+    struct iguana_info *coin; int32_t counter=0,depth; double lastmilli = 0;
     sleep(3);
     printf("mainloop\n");
     while ( 1 )
@@ -432,25 +471,9 @@ void mainloop(struct supernet_info *myinfo)
                 counter++;
                 coin = 0;
                 depth = 0;
-                if ( 1 )
-                {
-                    HASH_ITER(hh,myinfo->allcoins,coin,tmp)
-                    {
-                        portable_mutex_lock(&coin->allcoins_mutex);
-                        stack[depth++] = &coin->allcoins_mutex;
-                    }
-                }
                 //printf("check jsonQ\n");
                 while ( iguana_jsonQ(myinfo,0) != 0 )
                     ;
-                if ( 1 )
-                {
-                    if ( depth > 0 )
-                    {
-                        for (i=depth-1; i>=0; i--)
-                            portable_mutex_unlock(stack[i]);
-                    }
-                }
                 lastmilli = OS_milliseconds();
             }
             usleep(30000);
@@ -519,7 +542,7 @@ void iguana_appletests(struct supernet_info *myinfo)
     char genesisblock[1024];
     //iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
     
-    iguana_chaingenesis("LTC",0,0,0,bits256_conv("12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2"),genesisblock,"sha256",1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
+    iguana_chaingenesis(myinfo,"LTC",0,0,0,bits256_conv("12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2"),genesisblock,"sha256",1,1317972665,0x1e0ffff0,2084524493,bits256_conv("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9")); // LTC
         //char *Str = "01000000f615f7ce3b4fc6b8f61e8f89aedb1d0852507650533a9e3b10b9bbcc30639f279fcaa86746e1ef52d3edb3c4ad8259920d509bd073605c9bf1d59983752a6b06b817bb4ea78e011d012d59d4";
         // https://litecoin.info/Scrypt  0000000110c8357966576df46f3b802ca897deb7ad18b12f1c24ecff6386ebd9
         //uint8_t buf[1000]; bits256 shash,hash2; char str[65],str2[65];
@@ -542,7 +565,7 @@ void iguana_appletests(struct supernet_info *myinfo)
             bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
         printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
        getchar();**/
-        if ( 1 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( 0 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 1 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTC"),cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
@@ -576,6 +599,7 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
         else
         {
             IGUANA_NUMHELPERS = juint(argjson,"numhelpers");
+            myinfo->remoteorigin = juint(argjson,"remoteorigin");
             free_json(argjson);
             printf("Will run (%s) after initialized with %d threads\n",COMMANDLINE_ARGFILE,IGUANA_NUMHELPERS);
         }
@@ -1160,7 +1184,7 @@ ZERO_ARGS(SuperNET,stop)
 {
     if ( remoteaddr == 0 || strncmp(remoteaddr,"127.0.0.1",strlen("127.0.0.1")) == 0 )
     {
-        iguana_exit();
+        iguana_exit(myinfo,0);
         return(clonestr("{\"result\":\"exit started\"}"));
     } else return(clonestr("{\"error\":\"cant do a remote stop of this node\"}"));
 }
@@ -1328,7 +1352,7 @@ STRING_ARG(SuperNET,priv2wif,priv)
 STRING_ARG(SuperNET,myipaddr,ipaddr)
 {
     cJSON *retjson = cJSON_CreateObject();
-    RELAYID = -1;
+    myinfo->NOTARY.RELAYID = -1;
     if ( myinfo->ipaddr[0] == 0 )
     {
         if ( is_ipaddr(ipaddr) != 0 )
@@ -1339,10 +1363,10 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
         }
     }
     jaddstr(retjson,"result",myinfo->ipaddr);
-    if ( RELAYID >= 0 )
+    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
-        jaddnum(retjson,"relayid",RELAYID);
-        jaddnum(retjson,"numrelays",NUMRELAYS);
+        jaddnum(retjson,"relayid",myinfo->NOTARY.RELAYID);
+        jaddnum(retjson,"numrelays",myinfo->NOTARY.NUMRELAYS);
     }
     return(jprint(retjson,1));
 }
@@ -1391,6 +1415,10 @@ ZERO_ARGS(SuperNET,activehandle)
     retjson = SuperNET_rosettajson(myinfo,myinfo->persistent_priv,0);
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"handle",myinfo->handle);
+    if ( myinfo->ipaddr[0] != 0 )
+        jaddstr(retjson,"myip",myinfo->ipaddr);
+    if ( myinfo->IAMRELAY != 0 )
+        jaddnum(retjson,"notary",myinfo->NOTARY.RELAYID);
     jaddbits256(retjson,"persistent",myinfo->myaddr.persistent);
     if ( myinfo->expiration != 0 )
     {
@@ -1532,18 +1560,18 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 #include "../includes/iguana_apiundefs.h"
 
-void iguana_relays_init(struct supernet_info *myinfo)
+/*void iguana_relays_init(struct supernet_info *myinfo)
 {
-    static char *ipaddrs[] = { "89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
+    static char *ipaddrs[] = { "78.47.196.146", "5.9.102.210" };//"89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
     char *str; int32_t i;
     for (i=0; i<sizeof(ipaddrs)/sizeof(*ipaddrs); i++)
         if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddrs[i]),GENESIS_PUBKEY)) != 0 )
             free(str);
-}
+}*/
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1; struct supernet_info *myinfo; //cJSON *argjson = 0;
+    int32_t usessl = 0, ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo;
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -1556,39 +1584,54 @@ void iguana_main(void *arg)
     iguana_Qinit();
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
-    //void test_mimblewimble(void *ctx);
-    //test_mimblewimble(myinfo->ctx);
-    if ( 0 )
-    {
-        int32_t i; for (i=0; i<10; i++)
-            iguana_schnorr(myinfo);
-        getchar();
-    }
     myinfo->rpcport = IGUANA_RPCPORT;
+    if ( arg != 0 )
+    {
+        if ( strcmp((char *)arg,"OStests") == 0 )
+            do_OStests = 1;
+        else if ( strcmp((char *)arg,"notary") == 0 )
+        {
+            myinfo->rpcport = IGUANA_NOTARYPORT;
+            myinfo->IAMNOTARY = 1;
+        }
+    }
+#ifdef IGUANA_OSTESTS
+    do_OStests = 1;
+#endif
+    if ( do_OStests != 0 )
+    {
+        int32_t iguana_OStests();
+        int32_t retval = iguana_OStests();
+        printf("OStests retval %d\n",retval);
+        return;
+    }
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
-#if LIQUIDITY_PROVIDER
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
-    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
-#endif
-    if ( iguana_commandline(myinfo,arg) == 0 )
+    if ( myinfo->IAMNOTARY == 0 )
     {
-        iguana_helpinit(myinfo);
-        iguana_relays_init(myinfo);
-        basilisks_init(myinfo);
-#ifdef __APPLE__
-        iguana_appletests(myinfo);
+#if LIQUIDITY_PROVIDER
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
+        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
 #endif
-    }
+        if ( iguana_commandline(myinfo,arg) == 0 )
+        {
+            iguana_helpinit(myinfo);
+            //iguana_relays_init(myinfo);
+            basilisks_init(myinfo);
+#ifdef __APPLE__
+            iguana_appletests(myinfo);
+#endif
+        }
+    } else basilisks_init(myinfo);
     iguana_launchdaemons(myinfo);
 }
 

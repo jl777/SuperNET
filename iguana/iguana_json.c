@@ -651,6 +651,8 @@ TWO_STRINGS(iguana,addnode,activecoin,ipaddr)
     struct iguana_peer *addr; int32_t i,n;
     if ( coin == 0 )
         coin = iguana_coinfind(activecoin);
+    if ( coin != 0 && strcmp(coin->symbol,"NOTARY") == 0 )
+        basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddr),GENESIS_PUBKEY);
     printf("coin.%p.[%s] addnode.%s -> %s\n",coin,coin!=0?coin->symbol:"",activecoin,ipaddr);
     if ( coin != 0 && coin->peers != 0 && ipaddr != 0 && is_ipaddr(ipaddr) != 0 )
     {
@@ -908,7 +910,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
     if ( coinstr != 0 && coinstr[0] != 0 )
         coin = iguana_coinfind(coinstr);
     if ( strcmp(agentstr,"bitcoinrpc") == 0 && coin == 0 )
-        return(clonestr("{\"error\":\"bitcoinrpc needs coin\"}"));
+        return(clonestr("{\"error\":\"bitcoinrpc needs coin that is active\"}"));
 #define IGUANA_ARGS myinfo,coin,json,remoteaddr
 #define IGUANA_DISPATCH0(agent,name) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS))
 #define IGUANA_DISPATCH_S(agent,name,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jstr(json,#str)))

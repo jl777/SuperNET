@@ -16,9 +16,19 @@
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
+#if defined(_WIN32) || defined(_WIN64)
+#define WIN32
+#endif
+
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
 #define WIN32
+#endif
+
+#ifdef WIN32
+#define __MINGW
+
+
 #else
 #ifndef __MINGW
 #include <arpa/inet.h>
@@ -41,11 +51,7 @@ struct exchange_info;
 #include "../includes/iguana_defines.h"
 #include "../includes/iguana_types.h"
 #include "../includes/iguana_structs.h"
-#include "../includes/iguana_funcs.h"
-#include "../includes/iguana_globals.h"
 #include "../basilisk/basilisk.h"
-#include "../gecko/gecko.h"
-
 
 struct supernet_address
 {
@@ -57,6 +63,12 @@ struct supernet_address
 struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
 struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
 
+struct komodo_notaries
+{
+    struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
+    int32_t NUMRELAYS,RELAYID;
+};
+
 struct supernet_info
 {
     struct supernet_address myaddr;
@@ -64,27 +76,39 @@ struct supernet_info
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
-    int32_t maxdelay,IAMRELAY,IAMLP,publicRPC,basilisk_busy,genesisresults;
-    uint32_t expiration,dirty,DEXactive,DEXpoll;
+    int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins;
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
     portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
-    struct queueitem *DEX_quotes;
+    struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
-    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ;
+    struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
     void *ctx;
     uint8_t *pingbuf;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     struct peggy_info *PEGS;
     struct liquidity_info linfos[64];
+    struct komodo_notaries NOTARY;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
 };
+
+#include "../includes/iguana_funcs.h"
+#include "../includes/iguana_globals.h"
+#include "../gecko/gecko.h"
+
+#ifndef MAX
+#define MAX(a,b) ((a) >= (b) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
 #endif
