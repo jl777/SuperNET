@@ -1210,7 +1210,7 @@ void basilisk_sendchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    uint8_t pubkey33[33]; char str[65],str2[65];
+    uint8_t pubkey33[33]; char str[65],str2[65]; int32_t i;
     //printf("check otherchoosei\n");
     if ( basilisk_swapget(myinfo,swap,0x08,data,maxlen,basilisk_verify_choosei) == 0 )
     {
@@ -1238,6 +1238,21 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
                 printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
                 basilisk_bobscripts_set(swap);
+                for (i=0; i<3; i++)
+                {
+                    basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
+                    if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
+                    {
+                        printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.spendlen);
+                        sleep(3);
+                    }
+                    else
+                    {
+                        printf("GENERATED BOB PAYMENT\n");
+                        iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
+                        break;
+                    }
+                }
             }
         }
         swap->statebits |= 0x08;
@@ -1372,26 +1387,6 @@ void basilisk_swaploop(void *_swap)
                         retval = 0;
                         printf("GENERATED BOB DEPOSIT\n");
                         iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobdeposit.vins);
-                        break;
-                    }
-                }
-                basilisk_bobscripts_set(swap);
-                for (i=0; i<3; i++)
-                {
-                    if ( retval < 0 )
-                        break;
-                    basilisk_rawtx_gen("payment",myinfo,1,1,&swap->bobpayment,swap->bobpayment.locktime,swap->bobpayment.spendscript,swap->bobpayment.spendlen,swap->bobpayment.coin->chain->txfee,1);
-                    if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.spendlen == 0 )
-                    {
-                        printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.spendlen);
-                        retval = -2;
-                        sleep(3);
-                    }
-                    else
-                    {
-                        retval = 0;
-                        printf("GENERATED BOB PAYMENT\n");
-                        iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
                         break;
                     }
                 }
