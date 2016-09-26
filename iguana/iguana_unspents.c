@@ -1129,7 +1129,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                     iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"),jdouble(item,"amount") * SATOSHIDEN,spendscriptstr);
                     *unspents = outpt;
                     sum += outpt.value;
-                    printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
+                    //printf("ITEM.(%s) %.8f\n",jprint(item,0),dstr(outpt.value));
                     unspents++;
                     numunspents++;
                     if ( numunspents >= max )//|| sum > 10*required )

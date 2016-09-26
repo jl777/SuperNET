@@ -482,8 +482,15 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
         if ( basilisk_verify_pubpair(&wrongfirstbyte,swap,swap->choosei,pubkey33[0],pubi,txid) == 0 )
         {
             if ( swap->iambob != 0 )
+            {
                 swap->privAm = privkey;
-            else swap->privBn = privkey;
+                vcalc_sha256(0,swap->secretAm256,privkey.bytes,sizeof(privkey));
+            }
+            else
+            {
+                swap->privBn = privkey;
+                vcalc_sha256(0,swap->secretBn256,privkey.bytes,sizeof(privkey));
+            }
             char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
         }
