@@ -66,7 +66,7 @@ int32_t iguana_RTunspentind2txid(struct supernet_info *myinfo,struct iguana_info
 
 int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *spentamountp,char *coinaddr,uint8_t *spendscript,int32_t *spendlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool)
 {
-    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; int64_t RTspend; int64_t value; struct iguana_outpoint spentpt; int32_t firstslot,pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = 0;
+    struct iguana_txid *tp,TX; struct gecko_memtx *memtx; struct iguana_pkhash *P; struct iguana_unspent *U; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; uint64_t RTspend,value; struct iguana_outpoint spentpt; int32_t firstslot,pkind,hdrsi,firstvout,spentheight,flag=0,unspentind = 0;
     //portable_mutex_lock(&coin->RTmutex);
     if ( valuep != 0 )
         *valuep = 0;
@@ -167,9 +167,9 @@ cJSON *ramchain_unspentjson(struct iguana_unspent *up,uint32_t unspentind)
     return(item);
 }
 
-cJSON *ramchain_spentjson(struct supernet_info *myinfo,struct iguana_info *coin,int32_t spentheight,bits256 txid,int32_t vout,int64_t uvalue)
+cJSON *ramchain_spentjson(struct supernet_info *myinfo,struct iguana_info *coin,int32_t spentheight,bits256 txid,int32_t vout,uint64_t uvalue)
 {
-    char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i,ind; struct iguana_block *block; int64_t value,total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
+    char coinaddr[64]; bits256 hash2,*X; struct iguana_txid T,*tx,*spentT,*spent_tx; struct iguana_bundle *bp; int32_t j,i,ind; struct iguana_block *block; uint64_t value,total = 0; struct iguana_unspent *U,*u; struct iguana_pkhash *P; struct iguana_spend *S,*s; struct iguana_ramchaindata *rdata; cJSON *addrs,*item,*voutobj;
     item = cJSON_CreateObject();
     hash2 = iguana_blockhash(coin,spentheight);
     if ( (block= iguana_blockfind("spent",coin,hash2)) != 0 && (bp= coin->bundles[spentheight/coin->chain->bundlesize]) != 0 && (rdata= bp->ramchain.H.data) != 0 )
@@ -254,7 +254,7 @@ cJSON *ramchain_spentjson(struct supernet_info *myinfo,struct iguana_info *coin,
     return(item);
 }
 
-cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt,bits256 txid,int32_t vout,int64_t value,struct iguana_unspent *up,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t spentheight,char *remoteaddr)
+cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt,bits256 txid,int32_t vout,uint64_t value,struct iguana_unspent *up,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t spentheight,char *remoteaddr)
 {
     /*{
      "txid" : "d54994ece1d11b19785c7248868696250ab195605b469632b7bd68130e880c9a",
@@ -317,7 +317,7 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
     return(item);
 }
 
-struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,int64_t *depositsp,struct iguana_outpoint *lastptp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
+struct iguana_pkhash *iguana_pkhashfind(struct iguana_info *coin,struct iguana_ramchain **ramchainp,uint64_t *depositsp,struct iguana_outpoint *lastptp,struct iguana_pkhash *p,uint8_t rmd160[20],int32_t firsti,int32_t endi)
 {
     uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds,i; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_account *ACCTS; struct iguana_RTaddr *RTaddr;
     *depositsp = 0;
@@ -411,7 +411,7 @@ int32_t iguana_outpt_set(struct iguana_info *coin,struct iguana_outpoint *outpt,
 
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20])
 {
-    int64_t deposits,crypto777_payment; struct iguana_outpoint lastpt; uint32_t unspentind; int32_t i,j,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,p; struct iguana_unspent *U,*u; struct iguana_txid *T,*tx;
+    uint64_t deposits,crypto777_payment; struct iguana_outpoint lastpt; uint32_t unspentind; int32_t i,j,num,uheight; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; struct iguana_pkhash *P,p; struct iguana_unspent *U,*u; struct iguana_txid *T,*tx;
     for (i=num=0; i<coin->bundlescount&&i*coin->chain->bundlesize<coin->firstRTheight; i++)
     {
         if ( (bp= coin->bundles[i]) != 0 )
@@ -446,7 +446,7 @@ int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *c
     return(num);
 }
 
-int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,cJSON *array,int64_t *spentp,int64_t *depositsp,struct iguana_outpoint *unspents,int32_t max,uint8_t *rmd160,char *coinaddr,uint8_t *pubkey33,struct iguana_outpoint lastpt,int32_t lastheight)
+int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,cJSON *array,uint64_t *spentp,uint64_t *depositsp,struct iguana_outpoint *unspents,int32_t max,uint8_t *rmd160,char *coinaddr,uint8_t *pubkey33,struct iguana_outpoint lastpt,int32_t lastheight)
 {
     int32_t spentheight,n = 0; struct iguana_outpoint outpt; bits256 txid; struct iguana_RTtxid *parent; struct iguana_RTunspent *unspent = lastpt.ptr;
     while ( unspent != 0 )
@@ -487,9 +487,9 @@ int32_t iguana_RTscanunspents(struct supernet_info *myinfo,struct iguana_info *c
     return(n);
 }
 
-int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int64_t *spentp,struct iguana_outpoint *unspents,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,struct iguana_outpoint lastpt,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespent)
+int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,uint64_t *spentp,struct iguana_outpoint *unspents,int32_t *nump,struct iguana_ramchain *ramchain,struct iguana_pkhash *p,struct iguana_outpoint lastpt,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespent)
 {
-    struct iguana_unspent *U; struct iguana_utxo *U2; int32_t firstslot,vout,spentflag,max,uheight,spentheight; uint32_t pkind=0,unspentind; int64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_outpoint outpt; struct iguana_ramchaindata *rdata = 0; int64_t RTspend = 0; bits256 txid;
+    struct iguana_unspent *U; struct iguana_utxo *U2; int32_t firstslot,vout,spentflag,max,uheight,spentheight; uint32_t pkind=0,unspentind; uint64_t spent = 0,checkval,deposits = 0; struct iguana_txid *T; struct iguana_account *A2; struct iguana_outpoint outpt; struct iguana_ramchaindata *rdata = 0; uint64_t RTspend = 0; bits256 txid;
     max = *nump;
     *spentp = *nump = 0;
     if ( 0 && coin->RTramchain_busy != 0 )
@@ -583,7 +583,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
 
 int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,int32_t maxunspents,char *remoteaddr,int32_t includespent)
 {
-    int32_t i,n,m,numunspents; int64_t spent,deposits,netbalance,total; struct iguana_outpoint lastpt; struct iguana_pkhash *p,_p; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
+    int32_t i,n,m,numunspents; uint64_t spent,deposits,netbalance,total; struct iguana_outpoint lastpt; struct iguana_pkhash *p,_p; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
     if ( coin->RTheight == 0 )
         return(-1);
     if ( 0 && coin->RTramchain_busy != 0 )
@@ -651,7 +651,7 @@ int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *co
     return(n);
 }
 
-int64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,char *remoteaddr,int32_t includespent)
+uint64_t iguana_RTunspents(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint8_t *rmdarray,int32_t numrmds,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,char *remoteaddr,int32_t includespent)
 {
     uint64_t total=0,sum=0; struct iguana_pkhash *P; uint8_t *addrtypes,*pubkeys; int32_t i,j,numunspents,maxunspents,flag = 0; char coinaddr[64];
     //portable_mutex_lock(&coin->RTmutex);
@@ -731,9 +731,9 @@ uint8_t *iguana_rmdarray(struct supernet_info *myinfo,struct iguana_info *coin,i
     return(rmdarray);
 }
 
-int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_pkhash **Ptrp,int64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight)
+uint64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_pkhash **Ptrp,uint64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight)
 {
-    int64_t balance,total,supply,*weights=0; uint32_t pkind; int32_t j,numrmds,minconf,neg,numunspents,nonz,num=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; struct iguana_pkhash *refP; uint8_t rmd160[20],*rmdarray; cJSON *array; char coinaddr[64]; //struct iguana_account *A2; struct iguana_utxo *U2;
+    uint64_t balance,total,supply,*weights=0; uint32_t pkind; int32_t j,numrmds,minconf,neg,numunspents,nonz,num=0; struct iguana_bundle *bp; struct iguana_ramchaindata *rdata; struct iguana_pkhash *refP; uint8_t rmd160[20],*rmdarray; cJSON *array; char coinaddr[64]; //struct iguana_account *A2; struct iguana_utxo *U2;
     *supplyp = 0;
     *numacctsp = *nonzp = 0;
     *errsp = 1;
@@ -779,7 +779,7 @@ int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coi
         if ( weights[pkind] != 0 )
         {
             nonz++;
-            if ( weights[pkind] < 0 )
+            if ( weights[pkind] != 0 )
                 neg++, weights[pkind] = 0;
             else supply += weights[pkind];
         }
@@ -791,7 +791,7 @@ int64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coi
     return(weights);
 }
 
-bits256 iguana_staker_hash2(bits256 refhash2,uint8_t *refrmd160,uint8_t *rmd160,int64_t weight)
+bits256 iguana_staker_hash2(bits256 refhash2,uint8_t *refrmd160,uint8_t *rmd160,uint64_t weight)
 {
     bits256 hash2;
     vcalc_sha256cat(hash2.bytes,refhash2.bytes,sizeof(refhash2),rmd160,20);
@@ -807,7 +807,7 @@ int _cmp_hashes(const void *a,const void *b)
 #undef hashb
 }
 
-int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,int64_t *weights,int32_t numweights,bits256 *sortbuf)
+int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,uint64_t *weights,int32_t numweights,bits256 *sortbuf)
 {
     int32_t i,j,n = 0; bits256 ind,refhash2 = *hash2p;
     memset(sortbuf,0,sizeof(*sortbuf) * 2 * numweights);
@@ -957,7 +957,7 @@ int32_t iguana_RTuvaltxid(struct supernet_info *myinfo,bits256 *txidp,struct igu
 
 uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt,int32_t minconf,int32_t maxconf)
 {
-    struct iguana_ramchain *ramchain; struct iguana_bundle *bp; int64_t RTspend=0; int32_t spentheight,spentflag; struct iguana_unspent *U,*u; struct iguana_ramchaindata *rdata;
+    struct iguana_ramchain *ramchain; struct iguana_bundle *bp; uint64_t RTspend=0; int32_t spentheight,spentflag; struct iguana_unspent *U,*u; struct iguana_ramchaindata *rdata;
     if ( (bp= coin->bundles[outpt.hdrsi]) == 0 )
         return(-1);
     ramchain = &bp->ramchain;//(bp == coin->current) ? &coin->RTramchain : &bp->ramchain;

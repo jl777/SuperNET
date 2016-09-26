@@ -214,7 +214,7 @@ int32_t iguana_RTutxofunc(struct iguana_info *coin,int32_t *fromheightp,int32_t 
     return(utxo.spentflag);
 }
 
-int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,int64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
+int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount)
 {
     uint32_t numunspents; int32_t firstslot,RTspentflag,spentflag,lockedflag,fromheight=0; uint64_t confs;
     struct iguana_ramchaindata *rdata; struct iguana_RTunspent *unspent;
