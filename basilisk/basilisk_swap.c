@@ -312,6 +312,12 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,int32_t height,s
     }
     else if ( datalen != rawtx->datalen || memcmp(rawtx->txbytes,data,datalen) != 0 )
     {
+        int32_t i; for (i=0; i<datalen; i++)
+            printf("%02x",data[i]);
+        printf(" <- received\n");
+        for (i=0; i<rawtx->datalen; i++)
+            printf("%02x",rawtx->txbytes[i]);
+        printf(" <- rawtx\n");
         printf("%s rawtx data compare error, len %d vs %d\n",rawtx->name,rawtx->datalen,datalen);
         return(-1);
     }
