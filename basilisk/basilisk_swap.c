@@ -90,6 +90,9 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         pubkeyA[0] = 0x03;
         pubkeyB[0] = 0x02;
     }
+    for (i=0; i<32; i++)
+        printf("%02x",secret256[i]);
+    printf(" <- secret256\n");
     if ( bits256_nonz(cltvpub) == 0 || bits256_nonz(destpub) == 0 )
         return(-1);
     for (i=0; i<20; i++)
@@ -121,7 +124,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     n = bitcoin_p2shspend(script,0,rmd160);
     for (i=0; i<n; i++)
         printf("%02x",script[i]);
-    char str[65]; printf(" <- redeem bobtx dflag.%d %s\n",depositflag,bits256_str(str,cltvpub));
+    char str[65]; printf(" <- redeem.%d bobtx dflag.%d %s\n",n,depositflag,bits256_str(str,cltvpub));
     return(n);
 }
 
