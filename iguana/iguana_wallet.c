@@ -381,7 +381,7 @@ cJSON *iguana_waddressjson(struct iguana_info *coin,cJSON *item,struct iguana_wa
     //jaddstr(item,"wif",waddr->wifstr);
     init_hexbytes_noT(str,waddr->rmd160,20);
     jaddstr(item,"rmd160",str);
-    jaddstr(item,"coin",coin->symbol);
+    jaddstr(item,"coin",coin != 0 ? coin->symbol : waddr->symbol);
     if ( waddr->scriptlen > 0 )
     {
         init_hexbytes_noT(redeemScript,waddr->redeemScript,waddr->scriptlen);
