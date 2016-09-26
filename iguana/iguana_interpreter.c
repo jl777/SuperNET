@@ -733,16 +733,16 @@ int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeya
     {
         if ( (retval= (bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
         {
-            if ( 1 )
-            {
-                int32_t i; char str[65];
-                for (i=0; i<siglen; i++)
-                    printf("%02x",sig[i]);
-                printf(" sig, ");
-                for (i=0; i<plen; i++)
-                    printf("%02x",pubkey[i]);
-                printf(" checksig sigtxid.%s\n",bits256_str(str,sigtxid));
-            }
+        }
+        if ( 1 )
+        {
+            int32_t i; char str[65];
+            for (i=0; i<siglen; i++)
+                printf("%02x",sig[i]);
+            printf(" sig, ");
+            for (i=0; i<plen; i++)
+                printf("%02x",pubkey[i]);
+            printf(" checksig sigtxid.%s, retval.%d\n",bits256_str(str,sigtxid),retval);
         }
         return(retval);
     }
@@ -1158,7 +1158,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        //printf("{%s}\n",str);
+        printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1233,7 +1233,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             errs++;
                         }
                         stacks->ifdepth--;
-                        //printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                        printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
                         break;
                     case IGUANA_OP_VERIFY:
                         break;
@@ -1250,12 +1250,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             {
                 if ( stacks->lastpath[stacks->ifdepth] < 0 )
                 {
-                    //printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
+                    printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
                     if ( stacks->logarray )
                         jaddistr(stacks->logarray,"skip");
                     continue;
                 }
-                //printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
+                printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
             }
             if ( op->opcode <= IGUANA_OP_16 || ++numops <= MAX_OPS_PER_SCRIPT )
             {
@@ -1323,8 +1323,9 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 {
                     if ( iguana_cmp(&args[0],&args[1]) == 0 )
                         iguana_pushdata(stacks,1,0,0);
-                    else iguana_pushdata(stacks,0,0,0);
+                    else
                     {
+                        iguana_pushdata(stacks,0,0,0);
                         for (i=0; i<args[0].size; i++)
                             printf("%02x",args[0].U.pubkey[i]);
                         printf(" <- args[0]\n");
