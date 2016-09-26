@@ -393,7 +393,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
                 return(0);
             }
-            if ( (change= (total - (satoshis + txfee))) > 0 && (changeaddr == 0 || changeaddr[0] == 0) )
+            if ( (change= (total - (satoshis + txfee))) > 10000 && (changeaddr == 0 || changeaddr[0] == 0) )
             {
                 printf("no changeaddr for %.8f\n",dstr(change));
                 free_json(vins);
@@ -401,7 +401,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 return(0);
             }
             iguana_createvins(myinfo,coin,txobj,vins);
-            if ( change > 0 )
+            if ( change > 10000 )
             {
                 if ( iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
                 {

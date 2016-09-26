@@ -1321,7 +1321,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( op->opcode == IGUANA_OP_EQUALVERIFY || op->opcode == IGUANA_OP_EQUAL )
                 {
-                    if ( iguana_cmp(&args[0],&args[1]) == 0 || 1 )
+                    if ( iguana_cmp(&args[0],&args[1]) == 0 )
                         iguana_pushdata(stacks,1,0,0);
                     else iguana_pushdata(stacks,0,0,0);
                     {
