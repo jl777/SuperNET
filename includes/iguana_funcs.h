@@ -418,6 +418,7 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
 int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,char *coinaddr,uint8_t *spendscript,int32_t *scriptlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool);
 int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,char *address);
 int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag);
+void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash);
 struct iguana_utxo iguana_utxofind(struct iguana_info *coin,struct iguana_outpoint spentpt,int32_t *RTspendflagp,int32_t lockflag);
 bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,char *str);
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount);

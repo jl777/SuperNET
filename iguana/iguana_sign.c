@@ -1286,7 +1286,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
                 jaddstr(item,"reconstructed",str);
                 jaddi(logarray,item);
             } else printf(" scriptlen mismatch.%d vs %d or miscompare\n",scriptlen,activescriptlen);
-            errs++;
+            //errs++;
         }
     }
     if ( errs != 0 )
