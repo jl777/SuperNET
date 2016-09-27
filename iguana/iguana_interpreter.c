@@ -785,7 +785,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             printf("iguana_checkmultisig n.%d != N.%d\n",n,N);
             return(0);
         }
-        printf("n.%d stackdepth.%d\n",n,stacks->stackdepth);
+        //printf("n.%d stackdepth.%d\n",n,stacks->stackdepth);
         for (i=0; i<N; i++)
         {
             if ( stacks->stackdepth <= 0 )
@@ -794,9 +794,9 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             if ( len == bitcoin_pubkeylen(pubkeys[i]) )
             {
                 numsigners++;
-                for (j=0; j<33; j++)
-                    printf("%02x",pubkeys[i][j]);
-                printf(" <- pubkey.[%d]\n",i);
+                //for (j=0; j<33; j++)
+                //    printf("%02x",pubkeys[i][j]);
+                //printf(" <- pubkey.[%d]\n",i);
             }
             else
             {
@@ -810,7 +810,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
         if ( stacks->stackdepth <= 0 )
             return(0);
         m = (int32_t)iguana_num(iguana_pop(stacks));
-        printf("m.%d stackdepth.%d\n",m,stacks->stackdepth);
+        //printf("m.%d stackdepth.%d\n",m,stacks->stackdepth);
 
         if ( m != M )
         {
@@ -824,13 +824,13 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             siglens[i] = iguana_databuf(sigs[i],iguana_pop(stacks));
             if ( siglens[i] <= 0 || siglens[i] > 74 )
                 break;
-            for (j=0; j<siglens[i]; j++)
-                printf("%02x",sigs[i][j]);
-            printf(" <- sigs[%d]\n",i);
+            //for (j=0; j<siglens[i]; j++)
+            //    printf("%02x",sigs[i][j]);
+            //printf(" <- sigs[%d]\n",i);
         }
         if ( i == numsigners )
         {
-            char str[65]; printf("sigtxid.(%s)\n",bits256_str(str,txhash2));
+            //char str[65]; printf("sigtxid.(%s)\n",bits256_str(str,txhash2));
             if ( stacks->stackdepth > 0 )
                 iguana_pop(stacks); // for backward compatibility
             j = numsigners-1;
@@ -849,7 +849,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             }
         }
     }
-    printf("valid.%d j.%d M.%d N.%d numsigners.%d\n",valid,j,M,N,numsigners);
+    //printf("valid.%d j.%d M.%d N.%d numsigners.%d\n",valid,j,M,N,numsigners);
     return(0);
 }
 
@@ -1158,7 +1158,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        printf("{%s}\n",str);
+        //printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1250,12 +1250,12 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
             {
                 if ( stacks->lastpath[stacks->ifdepth] < 0 )
                 {
-                    printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
+                    //printf("SKIP opcode.%02x depth.%d\n",op->opcode,stacks->stackdepth);
                     if ( stacks->logarray )
                         jaddistr(stacks->logarray,"skip");
                     continue;
                 }
-                printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
+                //printf("conditional opcode.%02x stackdepth.%d\n",op->opcode,stacks->stackdepth);
             }
             if ( op->opcode <= IGUANA_OP_16 || ++numops <= MAX_OPS_PER_SCRIPT )
             {
@@ -1326,6 +1326,8 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     else
                     {
                         iguana_pushdata(stacks,0,0,0);
+                    }
+                    {
                         for (i=0; i<args[0].size; i++)
                             printf("%02x",args[0].U.pubkey[i]);
                         printf(" <- args[0]\n");
@@ -1338,9 +1340,9 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
                     uint8_t rmd160[20],revdatabuf[MAX_SCRIPT_ELEMENT_SIZE]; bits256 hash;
-                    datalen = iguana_databuf(revdatabuf,args[0]);
+                    datalen = iguana_databuf(databuf,args[0]);
                     for (i=0; i<datalen; i++)
-                        databuf[i] = revdatabuf[datalen-1-i];
+                        revdatabuf[i] = databuf[datalen-1-i];
                     switch ( op->opcode )
                     {
                         case IGUANA_OP_RIPEMD160:
@@ -1352,14 +1354,18 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            //if ( datalen == 32 )
-                            //    revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
-                            //else
-                            calc_rmd160_sha256(rmd160,databuf,datalen);
+                            if ( datalen == 32 )
+                            {
+                                revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
+                                printf("SPECIAL CASE REVERSE\n");
+                            } else calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
                             vcalc_sha256(0,hash.bytes,databuf,datalen);
+                            for (i=0; i<datalen; i++)
+                                printf("%02x",databuf[i]);
+                            printf(" -> sha256 %s\n",bits256_str(str,hash));
                             iguana_pushdata(stacks,0,hash.bytes,sizeof(hash));
                             break;
                         case IGUANA_OP_HASH256:
