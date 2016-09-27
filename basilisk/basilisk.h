@@ -128,5 +128,6 @@ void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basi
 void basilisk_setmyid(struct supernet_info *myinfo);
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp);
 cJSON *basilisk_requestjson(struct basilisk_request *rp);
+void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 
 #endif
