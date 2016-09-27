@@ -395,10 +395,7 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
     datalen += (int32_t)recvbuf[1] << 8;
     data = &recvbuf[2];
     if ( (rawtx->redeemlen= data[datalen++]) > 0 && rawtx->redeemlen < 0x100 )
-    {
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->redeemlen);
-        datalen += rawtx->redeemlen;
-    }
     printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->txbytes == 0 )
     {
