@@ -902,11 +902,12 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
     if ( didinit == 0 )
     {
         char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
-        sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol);
+        sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
         if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
         {
             if ( (array= cJSON_Parse(filestr)) != 0 )
             {
+                printf("iguana_unspents_markinit.(%s)\n",fname);
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
                 {
                     for (i=0; i<n; i++)
@@ -914,6 +915,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
                         item = jitem(array,i);
                         filetxid = jbits256i(item,0);
                         filevout = jinti(item,1);
+                        char str[65]; printf("[%d] %s %d\n",i,bits256_str(str,filetxid),filevout);
                         if ( iguana_markedunspents_find(coin,&firstslot,filetxid,filevout) < 0 )
                         {
                             if ( firstslot >= 0 )
@@ -926,7 +928,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
                     }
                 }
                 free_json(array);
-            }
+            } else printf("parse error.(%s)\n",filestr);
             free(filestr);
         }
         didinit = 1;
