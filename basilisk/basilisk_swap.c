@@ -413,10 +413,10 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
         rawtx->actualtxid = rawtx->signedtxid;
         char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,rawtx->signedtxid),jprint(txobj,0));
         rawtx->locktime = rawtx->msgtx.lock_time;
-        if ( (vins= jarray(&n,txobj,"vin")) != 0 && n > 0 )
+        if ( swap->iambob == 0 && (vins= jarray(&n,txobj,"vin")) != 0 && n > 0 )
         {
             vin = jitem(vins,0);
-            if ( (hexstr= jstr(vin,"scriptSig")) != 0 && (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(scriptsig) )
+            if ( (skey= jobj(vin,"scriptSig")) != 0 && (hexstr= jstr(skey,"hex")) != 0 && (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(scriptsig) )
             {
                 decode_hex(scriptsig,hexlen,hexstr);
                 if ( hexlen > 33 && (scriptsig[32] == 0 || scriptsig[32] == 0x51) )
