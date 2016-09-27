@@ -921,7 +921,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
             {
                 if ( firstslot >= 0 )
                 {
-                    char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
+                    char str[65]; printf("%s slot.[%d] <- %s/v%d\n",fname,firstslot,bits256_str(str,filetxid),filevout);
                     coin->markedunspents[firstslot] = filetxid;
                     coin->markedunspents[firstslot].ushorts[15] = filevout;
                 }
