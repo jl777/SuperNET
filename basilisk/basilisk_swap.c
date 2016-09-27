@@ -1299,10 +1299,12 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
 {
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
-        if ( bits256_nonz(rawtx->signedtxid) != 0 && bits256_nonz(rawtx->actualtxid) == 0 )
+        if ( bits256_nonz(rawtx->signedtxid) != 0 )//&& bits256_nonz(rawtx->actualtxid) == 0 )
         {
+            char str[65],str2[65];
             rawtx->actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->datalen);
-            char str[65],str2[65]; printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
+            if ( bits256_nonz(rawtx->actualtxid) == 0 )
+                printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
             if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
                 return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits,rawtx->crcs));
         }
