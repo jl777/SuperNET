@@ -393,8 +393,11 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
     int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr;
     datalen = recvbuf[0];
     datalen += (int32_t)recvbuf[1] << 8;
-    data = &recvbuf[2];
-    if ( (rawtx->redeemlen= data[datalen++]) > 0 && rawtx->redeemlen < 0x100 )
+    if ( datalen > 65536 )
+        return(-1);
+    rawtx->redeemlen = recvbuf[2];
+    data = &recvbuf[3];
+    if ( rawtx->redeemlen > 0 && rawtx->redeemlen < 0x100 )
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->redeemlen);
     printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->txbytes == 0 )
@@ -1341,11 +1344,10 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                 sendlen = 0;
                 sendbuf[sendlen++] = rawtx->datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->datalen >> 8) & 0xff;
-                memcpy(&sendbuf[sendlen],rawtx->txbytes,sendlen);
-                sendlen += rawtx->datalen;
+                sendbuf[sendlen++] = rawtx->redeemlen;
+                memcpy(&sendbuf[sendlen],rawtx->txbytes,rawtx->datalen), sendlen += rawtx->datalen;
                 if ( rawtx->redeemlen > 0 && rawtx->redeemlen < 0x100 )
                 {
-                    sendbuf[sendlen++] = rawtx->redeemlen;
                     memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->redeemlen);
                     sendlen += rawtx->redeemlen;
                 }
