@@ -39,9 +39,9 @@ struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct 
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp)
         {
-            printf("%s ",waddr->coinaddr);
+            //printf("%s ",waddr->coinaddr);
         }
-        printf("not in %s\n",wacct->account);
+        //printf("not in %s\n",wacct->account);
     }
     //if ( waddr != 0 && coin != 0 && strcmp(coin->symbol,waddr->symbol) != 0 )
     //    return(0);
