@@ -159,7 +159,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         *secretstartp = n + 2;
     if ( 1 )
     {
-        if ( bits256_nonz(privkey) != 0 )
+        if ( 0 && bits256_nonz(privkey) != 0 )
         {
             uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
@@ -464,7 +464,7 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
 
 int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t delay)
 {
-    uint8_t userdata[512],revrmd160[20],testpub[33]; int32_t retval,len = 0;
+    uint8_t userdata[512]; int32_t retval,len = 0;
     len = basilisk_swapuserdata(userdata,swap->privBn,0,swap->myprivs[0]);
     if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len)) == 0 )
     {
@@ -743,7 +743,6 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
                 swap->privBn = privkey;
                 vcalc_sha256(0,swap->secretBn256,privkey.bytes,sizeof(privkey));
                 printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
-                basilisk_bobscripts_set(myinfo,swap,1);
             }
             char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
