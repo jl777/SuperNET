@@ -24,24 +24,42 @@
  e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
  */
 
+#define DISABLE_CHECKSIG
+
 /*
  both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
  
  Alice altpayment: OP_2 <alice_pubM> <bob_pubN> OP_2 OP_CHECKMULTISIG
  
  Bob deposit:
+ #ifndef DISABLE_CHECKSIG
  OP_IF
  <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP <alice_pubA0> OP_CHECKSIG
  OP_ELSE
  OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
  OP_ENDIF
+ #else
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP OP_SHA256 <sha256(alice_privA0)> OP_EQUAL
+ OP_ELSE
+ OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY OP_SHA256 <sha256(bob_privB0)> OP_EQUAL
+ OP_ENDIF
+#endif
  
  Bob paytx:
+ #ifndef DISABLE_CHECKSIG
  OP_IF
  <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
  OP_ELSE
  OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY <alice_pubA0> OP_CHECKSIG
  OP_ENDIF
+ #else
+ OP_IF
+ <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP OP_SHA256 <sha256(bob_privB1)> OP_EQUAL
+ OP_ELSE
+ OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY OP_SHA256 <sha256(alice_privA0)> OP_EQUAL
+ OP_ENDIF
+ #endif
  
  Naming convention are pubAi are alice's pubkeys (seems only pubA0 and not pubA1)
  pubBi are Bob's pubkeys
@@ -83,7 +101,6 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
-#define DISABLE_CHECKSIG
 
 bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 {

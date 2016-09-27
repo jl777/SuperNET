@@ -49,7 +49,7 @@ int32_t bitcoin_secret256spend(uint8_t *script,int32_t n,bits256 secret)
     script[n++] = SCRIPT_OP_SHA256;
     script[n++] = 0x20;
     memcpy(&script[n],secret.bytes,0x20);
-    n += 0x14;
+    n += 0x20;
     script[n++] = SCRIPT_OP_EQUAL;
     return(n);
 }
