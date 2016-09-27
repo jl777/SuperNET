@@ -543,6 +543,30 @@ char *iguana_txidcategory(struct supernet_info *myinfo,struct iguana_info *coin,
     } else return("unknown");
 }
 
+int32_t iguana_scriptsigextract(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *script,int32_t maxsize,bits256 txid,int32_t vini)
+{
+    return(-1);
+}
+
+int32_t iguana_vinifind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *spentfrom,bits256 txid,int32_t vout)
+{
+    int32_t vini = -1; //char *txbytes; char str[65]; cJSON *txobj;
+    memset(spentfrom,0,sizeof(*spentfrom));
+    /*if ( (txbytes= iguana_txbytes(myinfo,swap->bobcoin,txid)) != 0 )
+    {
+        if ( (txobj= iguana_hex2json(myinfo,swap->bobcoin,txbytes)) != 0 )
+        {
+            if ( (vins= jarray(&n,txobj,"vins")) != 0 && vini < n )
+            {
+                
+            } else printf("iguana_vinifind no vins.%p or illegal vini.%d vs n.%d\n",txobj,vini,n);
+            free_json(txobj);
+        } else printf("iguana_vinifind couldnt parse %s.(%s)\n",swap->bobcoin->symbol,txbytes);
+        free(txbytes);
+    } else printf("iguana_vinifind cant get txbytes for %s.(%s)\n",swap->bobcoin->symbol,bits256_str(str,txid));*/
+    return(vini);
+}
+
 void iguana_RTunmap(uint8_t *ptr,uint32_t len)
 {
     OS_releasemap(&ptr[-2*sizeof(len)],len+2*sizeof(len));
