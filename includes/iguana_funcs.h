@@ -422,6 +422,7 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash);
 struct iguana_utxo iguana_utxofind(struct iguana_info *coin,struct iguana_outpoint spentpt,int32_t *RTspendflagp,int32_t lockflag);
 int32_t iguana_vinifind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *spentfrom,bits256 txid,int32_t vout);
 int32_t iguana_scriptsigextract(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *script,int32_t maxsize,bits256 txid,int32_t vini);
+void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin);
 
 bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,char *str);
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount);

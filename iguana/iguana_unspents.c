@@ -839,13 +839,7 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
 
 int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,bits256 txid,int32_t vout)
 {
-    static int32_t didinit;
-    int32_t i; //char str[65];
-    if ( didinit == 0 )
-    {
-        printf("Load recent unspents here!\n");
-        didinit = 1;
-    }
+    int32_t i;
     *firstslotp = -1;
     if ( bits256_nonz(txid) != 0 && vout >= 0 )
     {
@@ -899,6 +893,43 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                 } else printf("error firstslot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
             }
         }
+    }
+}
+
+void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    static int32_t didinit;
+    if ( didinit == 0 )
+    {
+        char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
+        sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol);
+        if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
+        {
+            if ( (array= cJSON_Parse(filestr)) != 0 )
+            {
+                if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        filetxid = jbits256i(item,0);
+                        filevout = jinti(item,1);
+                        if ( iguana_markedunspents_find(coin,&firstslot,filetxid,filevout) < 0 )
+                        {
+                            if ( firstslot >= 0 )
+                            {
+                                char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
+                                coin->markedunspents[firstslot] = filetxid;
+                                coin->markedunspents[firstslot].ushorts[15] = filevout;
+                            }
+                        }
+                    }
+                }
+                free_json(array);
+            }
+            free(filestr);
+        }
+        didinit = 1;
     }
 }
 
