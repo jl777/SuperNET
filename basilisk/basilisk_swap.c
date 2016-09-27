@@ -1140,7 +1140,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("neither src nor dest error\n");
         return(0);
     }
-    if ( bits256_nonz(myinfo->persistent_priv) == 0 || (x= instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->myhash,0x02+swap->iambob)) != 2 + INSTANTDEX_DECKSIZE )
+    if ( bits256_nonz(myinfo->persistent_priv) == 0 || (x= instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->orderhash,0x02+swap->iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
         printf("couldnt generate privkeys %d\n",x);
         return(0);
@@ -1802,6 +1802,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
     if ( i == myinfo->numswaps && i < sizeof(myinfo->swaps)/sizeof(*myinfo->swaps) )
     {
         swap = calloc(1,sizeof(*swap));
+        vcalc_sha256(0,swap->orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->req = *rp;
         swap->myinfo = myinfo;
         printf("START swap requestid.%u\n",rp->requestid);

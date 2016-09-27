@@ -59,7 +59,7 @@ struct basilisk_rawtx
 struct basilisk_swap
 {
     struct basilisk_request req;
-    struct supernet_info *myinfo; bits256 myhash,otherhash;
+    struct supernet_info *myinfo; bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,locktime;
     struct iguana_info *bobcoin,*alicecoin; char bobstr[64],alicestr[64];
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
