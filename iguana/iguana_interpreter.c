@@ -1337,8 +1337,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
-                    uint8_t rmd160[20]; bits256 hash;
-                    datalen = iguana_databuf(databuf,args[0]);
+                    uint8_t rmd160[20],revdatabuf[MAX_SCRIPT_ELEMENT_SIZE]; bits256 hash;
+                    datalen = iguana_databuf(revdatabuf,args[0]);
+                    for (i=0; i<datalen; i++)
+                        databuf[i] = revdatabuf[datalen-1-i];
                     switch ( op->opcode )
                     {
                         case IGUANA_OP_RIPEMD160:
@@ -1350,9 +1352,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            if ( datalen == 32 )
-                                revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
-                            else calc_rmd160_sha256(rmd160,databuf,datalen);
+                            //if ( datalen == 32 )
+                            //    revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
+                            //else
+                            calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
