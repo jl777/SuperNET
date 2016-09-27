@@ -1276,7 +1276,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
                     swap->secretBn[i] = data[len++];
                 for (i=0; i<32; i++)
                     swap->secretBn256[i] = data[len++];
-                basilisk_bobscripts_set(myinfo,swap,0);
+                //basilisk_bobscripts_set(myinfo,swap,0);
             }
         } else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
@@ -1381,7 +1381,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 vcalc_sha256(0,swap->secretAm256,swap->privAm.bytes,sizeof(swap->privAm));
                 swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
                 printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
-                basilisk_bobscripts_set(myinfo,swap,0);
+                //basilisk_bobscripts_set(myinfo,swap,0);
             }
         }
         swap->statebits |= 0x08;
