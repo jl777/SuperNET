@@ -872,7 +872,7 @@ int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,
 
 void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,n,firstslot; int16_t vout; cJSON *item; bits256 txid; char str[65];
+    int32_t i,n,firstslot; int16_t vout; cJSON *item; bits256 txid; char str[65],fname[1024];
     if ( (n= cJSON_GetArraySize(vins)) > 0 )
     {
         for (i=0; i<n; i++)
@@ -889,6 +889,19 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                         printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
                         coin->markedunspents[firstslot] = txid;
                         coin->markedunspents[firstslot].ushorts[15] = vout;
+                        if ( coin->utxofp == 0 )
+                        {
+                            sprintf(fname,"%s/%s/utxo.dat",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
+                            if ( (coin->utxofp= fopen(fname,"rb+")) == 0 )
+                                coin->utxofp = fopen(fname,"wb");
+                            else fseek(coin->utxofp,0,SEEK_END);
+                            if ( coin->utxofp != 0 )
+                            {
+                                fwrite(txid.bytes,1,sizeof(txid),coin->utxofp);
+                                fwrite(&vout,1,sizeof(vout),coin->utxofp);
+                                fflush(coin->utxofp);
+                            }
+                        }
                     }
                 } else printf("error firstslot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
             }
@@ -898,7 +911,24 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
 
 void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
+    char *filestr,fname[1024]; FILE *fp; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
+    sprintf(fname,"%s/%s/utxo.dat",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        while ( fread(&filetxid,1,sizeof(filetxid),fp) == sizeof(filetxid) && fread(&filevout,1,sizeof(filevout),fp) == sizeof(filevout) )
+        {
+            if ( iguana_markedunspents_find(coin,&firstslot,filetxid,filevout) < 0 )
+            {
+                if ( firstslot >= 0 )
+                {
+                    char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
+                    coin->markedunspents[firstslot] = filetxid;
+                    coin->markedunspents[firstslot].ushorts[15] = filevout;
+                }
+            }
+        }
+        fclose(fp);
+    }
     sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
     if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
     {
