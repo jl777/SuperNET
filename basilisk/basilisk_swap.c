@@ -42,7 +42,7 @@
  OP_IF
  <now + INSTANTDEX_LOCKTIME*2> OP_CLTV OP_DROP OP_SHA256 <sha256(alice_privA0)> OP_EQUAL
  OP_ELSE
- OP_HASH160 <hash(alice_privM)> OP_EQUALVERIFY OP_SHA256 <sha256(bob_privB0)> OP_EQUAL
+ OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY OP_SHA256 <sha256(bob_privB0)> OP_EQUAL
  OP_ENDIF
 #endif
  
@@ -518,10 +518,12 @@ int32_t basilisk_bobpayment_reclaim(struct supernet_info *myinfo,struct basilisk
 
 int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    uint8_t userdata[512]; int32_t i,retval,len = 0; struct basilisk_swap *swap = ptr;
+    uint8_t userdata[512]; int32_t i,retval,len = 0; bits256 revAm; struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(myinfo,swap,swap->bobcoin->blocks.hwmchain.height,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
-        len = basilisk_swapuserdata(swap,userdata,swap->privAm,0,swap->myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
+        for (i=0; i<32; i++)
+            revAm.bytes[i] = swap->privAm.bytes[31-i];
+        len = basilisk_swapuserdata(swap,userdata,revAm,0,swap->myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
         char str[65]; printf("bobpaid.(%s)\n",bits256_str(str,swap->privAm));
         if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->alicespend,&swap->bobpayment,swap->myprivs[0],0,userdata,len)) == 0 )
         {
@@ -730,7 +732,7 @@ void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *
                 {
                     for (j=0; j<swap->bobpayment.datalen; j++)
                         printf("%02x",swap->bobpayment.txbytes[j]);
-                    printf(" <- bobdeposit.%d\n",swap->bobpayment.datalen);
+                    printf(" <- bobpayment.%d\n",swap->bobpayment.datalen);
                     for (j=0; j<swap->bobpayment.redeemlen; j++)
                         printf("%02x",swap->bobpayment.redeemscript[j]);
                     printf(" <- redeem.%d\n",swap->bobpayment.redeemlen);
