@@ -338,7 +338,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         if ( flag != 0 )
             free_json(privkeys);
     }
-    char str[65]; printf("completed.%d %s signed.(%s)\n",*completedp,bits256_str(str,*signedtxidp),signedtx!=0?signedtx:"");
+    //char str[65]; printf("completed.%d %s signed.(%s)\n",*completedp,bits256_str(str,*signedtxidp),signedtx!=0?signedtx:"");
     return(signedtx);
 }
 
