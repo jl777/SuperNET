@@ -98,6 +98,15 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
     calc_rmd160_sha256(rmd160,hash.bytes,sizeof(hash));
 }
 
+bits256 revcalc_sha256(bits256 revhash)
+{
+    bits256 hash,dest; int32_t i;
+    for (i=0; i<32; i++)
+        hash.bytes[i] = revhash.bytes[31-i];
+    vcalc_sha256(0,dest.bytes,hash.bytes,sizeof(hash));
+    return(dest);
+}
+
 #define SCRIPT_OP_IF 0x63
 #define SCRIPT_OP_ELSE 0x67
 #define SCRIPT_OP_ENDIF 0x68
@@ -106,7 +115,8 @@ bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 {
     bits256 reveal;
 #ifdef DISABLE_CHECKSIG
-    vcalc_sha256(0,reveal.bytes,privkey.bytes,sizeof(privkey));
+    //vcalc_sha256(0,reveal.bytes,privkey.bytes,sizeof(privkey));
+    reveal = revcalc_sha256(privkey);
     char str[65],str2[65]; printf("priv.(%s) -> reveal.(%s)\n",bits256_str(str,privkey),bits256_str(str2,reveal));
 #else
     reveal = pubkey;
@@ -440,25 +450,6 @@ int32_t basilisk_swapuserdata(struct basilisk_swap *swap,uint8_t *userdata,bits2
             userdata[len++] = privkey.bytes[i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
-/*#ifdef DISABLE_CHECKSIG
-    if ( swap->iambob == 0 && redeemscript != 0 && redeemlen > 0 )
-    {
-        if ( redeemlen < 76 )
-            userdata[len++] = redeemlen;
-        else if ( redeemlen <= 0xff )
-        {
-            userdata[len++] = 0x4c;
-            userdata[len++] = redeemlen;
-        }
-        else if ( redeemlen <= 0xffff )
-        {
-            userdata[len++] = 0x4d;
-            userdata[len++] = (redeemlen & 0xff);
-            userdata[len++] = ((redeemlen >> 8) & 0xff);
-        }
-        memcpy(&userdata[len],redeemscript,redeemlen), len += redeemlen;
-    }
-#endif*/
     return(len);
 }
 
