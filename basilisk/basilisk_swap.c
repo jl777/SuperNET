@@ -399,6 +399,7 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->redeemlen);
         datalen += rawtx->redeemlen;
     }
+    printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
     if ( rawtx->txbytes == 0 )
     {
         rawtx->txbytes = calloc(1,datalen);
@@ -1351,6 +1352,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->redeemlen);
                     sendlen += rawtx->redeemlen;
                 }
+                printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 return(basilisk_swapsend(myinfo,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->crcs));
             }
         }
