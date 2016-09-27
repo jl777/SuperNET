@@ -169,7 +169,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         *secretstartp = n + 2;
     if ( 1 )
     {
-        if ( 0 && bits256_nonz(privkey) != 0 )
+        if ( 1 && bits256_nonz(privkey) != 0 )
         {
             uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
@@ -179,7 +179,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
                 printf("MATCHES BUFB\n");
             else printf("secret160 matches neither\n");
-            memcpy(secret160,bufA,20);
+            memcpy(secret160,bufB,20);
         }
         n = bitcoin_secret160verify(redeemscript,n,secret160);
     }
