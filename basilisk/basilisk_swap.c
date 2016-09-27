@@ -115,8 +115,8 @@ bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 {
     bits256 reveal;
 #ifdef DISABLE_CHECKSIG
-    //vcalc_sha256(0,reveal.bytes,privkey.bytes,sizeof(privkey));
-    reveal = revcalc_sha256(privkey);
+    vcalc_sha256(0,reveal.bytes,privkey.bytes,sizeof(privkey));
+    //reveal = revcalc_sha256(privkey);
     char str[65],str2[65]; printf("priv.(%s) -> reveal.(%s)\n",bits256_str(str,privkey),bits256_str(str2,reveal));
 #else
     reveal = pubkey;
