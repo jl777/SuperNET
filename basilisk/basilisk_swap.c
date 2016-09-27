@@ -335,7 +335,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->spendlen,dest->amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->txid,txobj,V)) != 0 )
     {
-        //printf("needsig.%d (%s) spend.%s rawtx.(%s) userdatalen.%d p2shlen.%d\n",needsig,jprint(txobj,0),rawtx->name,rawtxbytes,userdatalen,dest->redeemlen);
+        printf("needsig.%d (%s) spend.%s rawtx.(%s) userdatalen.%d p2shlen.%d\n",needsig,jprint(txobj,0),rawtx->name,rawtxbytes,userdatalen,dest->redeemlen);
         if ( needsig == 0 )
             signedtx = rawtxbytes;
         if ( signedtx != 0 || (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&dest->signedtxid,&dest->completed,vins,rawtxbytes,privkeys,V)) != 0 )
@@ -410,6 +410,11 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
                 {
                     decode_hex(rawtx->spendscript,hexlen,hexstr);
                     rawtx->spendlen = hexlen;
+                    if ( (hexstr= jstr(vout,"redeemScript")) != 0 && (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(rawtx->spendscript) )
+                    {
+                        decode_hex(rawtx->redeemscript,hexlen,hexstr);
+                        rawtx->redeemlen = hexlen;
+                    }
                     basilisk_txlog(myinfo,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
                     retval = 0;
                 }
@@ -435,6 +440,7 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
             userdata[len++] = privkey.bytes[i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
+#ifdef DISABLE_CHECKSIG
     if ( redeemscript != 0 && redeemlen > 0 )
     {
         if ( redeemlen < 76 )
@@ -452,6 +458,7 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
         }
         memcpy(&userdata[len],redeemscript,redeemlen), len += redeemlen;
     }
+#endif
     return(len);
 }
 
