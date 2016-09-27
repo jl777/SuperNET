@@ -316,7 +316,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
         V[0].userdatalen = userdatalen;
         init_hexbytes_noT(hexstr,userdata,userdatalen);
         jaddstr(item,"userdata",hexstr);
-        jaddnum(item,"sequence",0);
+        //jaddnum(item,"sequence",0);
 #ifdef DISABLE_CHECKSIG
         needsig = 0;
 #endif
@@ -1630,10 +1630,11 @@ void basilisk_swaploop(void *_swap)
     }
     while ( retval == 0 && time(NULL) < swap->expiration )  // both sides have setup required data and paid txfee
     {
-        printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits,swap->otherstatebits);
+        if ( (rand() % 30) == 0 )
+            printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->req.requestid,swap->req.quoteid,swap->statebits,swap->otherstatebits);
         if ( swap->iambob != 0 )
         {
-            printf("BOB\n");
+            //printf("BOB\n");
             if ( (swap->statebits & 0x100) == 0 )
             {
                 printf("send bobdeposit\n");
@@ -1714,7 +1715,7 @@ void basilisk_swaploop(void *_swap)
         }
         else
         {
-            printf("ALICE\n");
+            //printf("ALICE\n");
             // [BLOCKING: depfound] Alice waits for deposit to confirm and sends altpayment
             if ( (swap->statebits & 0x200) == 0 )
             {
@@ -1796,8 +1797,9 @@ void basilisk_swaploop(void *_swap)
                 break;
             }
         }
-        printf("finished swapstate.%x other.%x\n",swap->statebits,swap->otherstatebits);
-        sleep(3 + (swap->iambob == 0));
+        if ( (rand() % 30) == 0 )
+            printf("finished swapstate.%x other.%x\n",swap->statebits,swap->otherstatebits);
+        sleep(1);//3 + (swap->iambob == 0));
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
