@@ -440,7 +440,7 @@ int32_t basilisk_swapuserdata(struct basilisk_swap *swap,uint8_t *userdata,bits2
             userdata[len++] = privkey.bytes[i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
-#ifdef DISABLE_CHECKSIG
+/*#ifdef DISABLE_CHECKSIG
     if ( swap->iambob == 0 && redeemscript != 0 && redeemlen > 0 )
     {
         if ( redeemlen < 76 )
@@ -458,7 +458,7 @@ int32_t basilisk_swapuserdata(struct basilisk_swap *swap,uint8_t *userdata,bits2
         }
         memcpy(&userdata[len],redeemscript,redeemlen), len += redeemlen;
     }
-#endif
+#endif*/
     return(len);
 }
 
