@@ -898,41 +898,36 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
 
 void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    static int32_t didinit;
     char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
-    if ( didinit == 0 )
+    sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
+    if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
     {
-        sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
-        if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
+        if ( (array= cJSON_Parse(filestr)) != 0 )
         {
-            if ( (array= cJSON_Parse(filestr)) != 0 )
+            printf("iguana_unspents_markinit.(%s)\n",fname);
+            if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
             {
-                printf("iguana_unspents_markinit.(%s)\n",fname);
-                if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+                for (i=0; i<n; i++)
                 {
-                    for (i=0; i<n; i++)
+                    item = jitem(array,i);
+                    filetxid = jbits256i(item,0);
+                    filevout = jinti(item,1);
+                    char str[65]; printf("[%d] %s %d\n",i,bits256_str(str,filetxid),filevout);
+                    if ( iguana_markedunspents_find(coin,&firstslot,filetxid,filevout) < 0 )
                     {
-                        item = jitem(array,i);
-                        filetxid = jbits256i(item,0);
-                        filevout = jinti(item,1);
-                        char str[65]; printf("[%d] %s %d\n",i,bits256_str(str,filetxid),filevout);
-                        if ( iguana_markedunspents_find(coin,&firstslot,filetxid,filevout) < 0 )
+                        if ( firstslot >= 0 )
                         {
-                            if ( firstslot >= 0 )
-                            {
-                                char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
-                                coin->markedunspents[firstslot] = filetxid;
-                                coin->markedunspents[firstslot].ushorts[15] = filevout;
-                            }
+                            char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
+                            coin->markedunspents[firstslot] = filetxid;
+                            coin->markedunspents[firstslot].ushorts[15] = filevout;
                         }
                     }
                 }
-                free_json(array);
-            } else printf("parse error.(%s)\n",filestr);
-            free(filestr);
-        } else printf("couldnt open.(%s)\n",fname);
-        didinit = 1;
-    }
+            }
+            free_json(array);
+        } else printf("parse error.(%s)\n",filestr);
+        free(filestr);
+    } else printf("couldnt open.(%s)\n",fname);
 }
 
 int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt)
