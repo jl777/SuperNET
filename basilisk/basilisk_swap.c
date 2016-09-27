@@ -466,17 +466,6 @@ int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_
 {
     uint8_t userdata[512],revrmd160[20],testpub[33]; int32_t retval,len = 0;
     len = basilisk_swapuserdata(userdata,swap->privBn,0,swap->myprivs[0]);
-    int32_t i; for (i=0; i<len; i++)
-        printf("%02x",userdata[i]);
-    char str[65]; printf(" <-basilisk_bobdeposit_refund privBn.(%s)\n",bits256_str(str,swap->privBn));
-    revcalc_rmd160_sha256(revrmd160,swap->privBn);
-    for (i=0; i<20; i++)
-        printf("%02x",revrmd160[i]);
-    printf(" <- revrmd160\n");
-    bitcoin_pubkey33(myinfo->ctx,testpub,swap->myprivs[0]);
-    if ( memcmp(swap->pubB0.bytes,testpub+1,32) == 0 )
-        printf("VERIFIED priv -> pub\n");
-    else printf("ERROR priv -> pub\n");
     if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len)) == 0 )
     {
         basilisk_txlog(myinfo,swap,&swap->bobrefund,delay);
@@ -1148,6 +1137,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     swap->bobspend.suppress_pubkeys = 1;
     basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
     swap->alicereclaim.suppress_pubkeys = 1;
+    printf("IAMBOB.%d\n",swap->iambob);
     return(swap);
 }
 // end of alice/bob code
@@ -1620,6 +1610,7 @@ void basilisk_swaploop(void *_swap)
             }
             else if ( (swap->statebits & 0x4000) == 0 )
             {
+                basilisk_bobscripts_set(myinfo,swap,0);
                 printf("send bobpayment\n");
                 swap->statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000);
             }
