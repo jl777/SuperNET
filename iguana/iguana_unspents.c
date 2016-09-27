@@ -899,9 +899,9 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
 void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     static int32_t didinit;
+    char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
     if ( didinit == 0 )
     {
-        char *filestr,fname[1024]; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
         sprintf(fname,"%s/%s/utxo.json",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
         if ( (filestr= OS_filestr(&filesize,fname)) != 0 )
         {
@@ -930,7 +930,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
                 free_json(array);
             } else printf("parse error.(%s)\n",filestr);
             free(filestr);
-        }
+        } else printf("couldnt open.(%s)\n",fname);
         didinit = 1;
     }
 }
