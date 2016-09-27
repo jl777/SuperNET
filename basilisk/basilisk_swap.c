@@ -482,10 +482,13 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
 
 int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t delay)
 {
-    uint8_t userdata[512]; int32_t retval,len = 0;
+    uint8_t userdata[512]; int32_t i,retval,len = 0; char str[65];
     len = basilisk_swapuserdata(swap,userdata,swap->privBn,0,swap->myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.redeemlen);
     if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len)) == 0 )
     {
+        for (i=0; i<swap->bobrefund.datalen; i++)
+            printf("%02x",swap->bobrefund.txbytes[i]);
+        printf(" <- bobrefund.(%s)\n",bits256_str(str,swap->bobrefund.txid));
         basilisk_txlog(myinfo,swap,&swap->bobrefund,delay);
         return(retval);
     }
@@ -731,7 +734,7 @@ void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *
                     for (j=0; j<swap->bobpayment.redeemlen; j++)
                         printf("%02x",swap->bobpayment.redeemscript[j]);
                     printf(" <- redeem.%d\n",swap->bobpayment.redeemlen);
-                    printf("GENERATED BOB PAYMENT.(%s)\n",bits256_str(str,swap->bobpayment.actualtxid));
+                    printf("GENERATED BOB PAYMENT.(%s)\n",bits256_str(str,swap->bobpayment.txid));
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
                     basilisk_bobpayment_reclaim(myinfo,swap,INSTANTDEX_LOCKTIME);
                     break;
@@ -760,7 +763,7 @@ void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *
                     for (j=0; j<swap->bobdeposit.redeemlen; j++)
                         printf("%02x",swap->bobdeposit.redeemscript[j]);
                     printf(" <- redeem.%d\n",swap->bobdeposit.redeemlen);
-                    printf("GENERATED BOB DEPOSIT.(%s)\n",bits256_str(str,swap->bobdeposit.actualtxid));
+                    printf("GENERATED BOB DEPOSIT.(%s)\n",bits256_str(str,swap->bobdeposit.txid));
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobdeposit.vins);
                     basilisk_bobdeposit_refund(myinfo,swap,INSTANTDEX_LOCKTIME);
                     break;
