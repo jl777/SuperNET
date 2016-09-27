@@ -388,9 +388,17 @@ int32_t basilisk_verify_otherfee(struct supernet_info *myinfo,void *ptr,uint8_t 
     return(0);
 }
 
-int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *data,int32_t datalen,int32_t suppress_pubkeys)
+int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    int32_t retval=-1,hexlen,n; cJSON *txobj,*skey,*vouts,*vout,*vins,*vin; char *hexstr; uint8_t scriptsig[4096];
+    int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr;
+    datalen = recvbuf[0];
+    datalen += (int32_t)recvbuf[1] << 8;
+    data = &recvbuf[2];
+    if ( (rawtx->redeemlen= data[datalen++]) > 0 && rawtx->redeemlen < 0x100 )
+    {
+        memcpy(rawtx->redeemscript,&data[datalen],rawtx->redeemlen);
+        datalen += rawtx->redeemlen;
+    }
     if ( rawtx->txbytes == 0 )
     {
         rawtx->txbytes = calloc(1,datalen);
@@ -411,22 +419,8 @@ int32_t basilisk_rawtx_spendscript(struct supernet_info *myinfo,struct basilisk_
     if ( (txobj= bitcoin_data2json(rawtx->coin,height,&rawtx->signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->actualtxid = rawtx->signedtxid;
-        char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,rawtx->signedtxid),jprint(txobj,0));
+        //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,rawtx->signedtxid),jprint(txobj,0));
         rawtx->locktime = rawtx->msgtx.lock_time;
-        if ( swap->iambob == 0 && (vins= jarray(&n,txobj,"vin")) != 0 && n > 0 )
-        {
-            vin = jitem(vins,0);
-            if ( (skey= jobj(vin,"scriptSig")) != 0 && (hexstr= jstr(skey,"hex")) != 0 && (hexlen= (int32_t)strlen(hexstr) >> 1) < sizeof(scriptsig) )
-            {
-                decode_hex(scriptsig,hexlen,hexstr);
-                if ( hexlen > 33 && (scriptsig[32] == 0 || scriptsig[32] == 0x51) )
-                {
-                    printf("EXTRACT.%s scriptsig.(%s)\n",rawtx->name,hexstr+66);
-                    memcpy(rawtx->redeemscript,&scriptsig[33],hexlen - 33);
-                    rawtx->redeemlen = hexlen - 33;
-                }
-            }
-        }
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
             vout = jitem(vouts,v);
@@ -1335,6 +1329,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
 
 uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits)
 {
+    uint8_t sendbuf[32768]; int32_t sendlen;
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
         if ( bits256_nonz(rawtx->signedtxid) != 0 )//&& bits256_nonz(rawtx->actualtxid) == 0 )
@@ -1344,7 +1339,20 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
             if ( bits256_nonz(rawtx->actualtxid) == 0 )
                 printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->signedtxid),bits256_str(str2,rawtx->actualtxid));
             if ( bits256_nonz(rawtx->actualtxid) != 0 && msgbits != 0 )
-                return(basilisk_swapsend(myinfo,swap,msgbits,rawtx->txbytes,rawtx->datalen,nextbits,rawtx->crcs));
+            {
+                sendlen = 0;
+                sendbuf[sendlen++] = rawtx->datalen & 0xff;
+                sendbuf[sendlen++] = (rawtx->datalen >> 8) & 0xff;
+                memcpy(&sendbuf[sendlen],rawtx->txbytes,sendlen);
+                sendlen += rawtx->datalen;
+                if ( rawtx->redeemlen > 0 && rawtx->redeemlen < 0x100 )
+                {
+                    sendbuf[sendlen++] = rawtx->redeemlen;
+                    memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->redeemlen);
+                    sendlen += rawtx->redeemlen;
+                }
+                return(basilisk_swapsend(myinfo,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->crcs));
+            }
         }
         return(nextbits);
     } else printf("error from basilisk_swapdata_rawtx %p len.%d\n",rawtx->txbytes,rawtx->datalen);
