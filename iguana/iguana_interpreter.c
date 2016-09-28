@@ -1365,7 +1365,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             {
                                 revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
                                 printf("SPECIAL CASE REVERSE\n");
-                            } else*/
+                            } else
                             for (i=0; i<32; i++)
                                 printf("%02x",databuf[i]);
                             printf(" <- databuf\n");
@@ -1383,7 +1383,10 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             calc_rmd160_sha256(rmd160,databuf,datalen);
                             for (i=0; i<20; i++)
                                 printf("%02x",rmd160[i]);
-                            printf(" <- rmd160 databuf\n");
+                            printf(" <- rmd160 databuf\n");*/
+                            if ( datalen == 32 )
+                                calc_rmd160_sha256(rmd160,revdatabuf,datalen);
+                            else calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:

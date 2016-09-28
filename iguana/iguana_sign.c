@@ -492,9 +492,9 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         {
             dest.vins[i].vinscript = spendscript;
             dest.vins[i].scriptlen = spendlen;
-            //int32_t j; for (j=0; j<spendlen; j++)
-            //    printf("%02x",spendscript[j]);
-            //printf(" tmpscript.%d vini.%d\n",spendlen,vini);
+            int32_t j; for (j=0; j<spendlen; j++)
+                printf("%02x",spendscript[j]);
+            printf(" tmpscript.%d vini.%d\n",spendlen,vini);
         }
         else
         {
