@@ -1368,7 +1368,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->redeemlen);
                     sendlen += rawtx->redeemlen;
                 }
-                printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
+                //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 return(basilisk_swapsend(myinfo,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->crcs));
             }
         }

@@ -1253,9 +1253,11 @@ cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
-    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,errs = 0; cJSON *spendscript,*item;
+    uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript,savescript[IGUANA_MAXSCRIPTSIZE]; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item;
     for (vini=0; vini<numvins; vini++)
     {
+        savelen = V[vini].spendlen;
+        memcpy(savescript,V[vini].spendscript,savelen);
         if ( V[vini].p2shlen > 0 )
         {
             activescript = V[vini].p2shscript;
@@ -1266,12 +1268,15 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
             activescript = V[vini].spendscript;
             activescriptlen = V[vini].spendlen;
         }
+        memcpy(V[vini].spendscript,activescript,activescriptlen);
+        V[vini].spendlen = activescriptlen;
         spendscript = iguana_spendasm(coin,activescript,activescriptlen);
         if ( activescriptlen < 16 )
             continue;
         //printf("interpreter.(%s)\n",jprint(spendscript,0));
         if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) < 0 )
         {
+            printf("bitcoin_assembler error scriptlen.%d\n",scriptlen);
             errs++;
         }
         else if ( scriptlen != activescriptlen || memcmp(script,activescript,scriptlen) != 0 )
@@ -1280,14 +1285,22 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
             {
                 item = cJSON_CreateObject();
                 jaddstr(item,"error","script reconstruction failed");
-                init_hexbytes_noT(str,activescript,activescriptlen);
+            }
+            init_hexbytes_noT(str,activescript,activescriptlen);
+            printf("activescript.(%s)\n",str);
+            if ( logarray != 0 )
                 jaddstr(item,"original",str);
-                init_hexbytes_noT(str,script,scriptlen);
+            init_hexbytes_noT(str,script,scriptlen);
+            printf("reconstructed.(%s)\n",str);
+            if ( logarray != 0 )
+            {
                 jaddstr(item,"reconstructed",str);
                 jaddi(logarray,item);
             } else printf(" scriptlen mismatch.%d vs %d or miscompare\n",scriptlen,activescriptlen);
-            //errs++;
+            errs++;
         }
+        memcpy(V[vini].spendscript,savescript,savelen);
+        V[vini].spendlen = savelen;
     }
     if ( errs != 0 )
         return(-errs);

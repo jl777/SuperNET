@@ -501,12 +501,12 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
-        /*if ( numbuf != 0 )
+        if ( numbuf != 0 )
         {
             int32_t i; for (i=0; i<numlen; i++)
                 printf("%02x",numbuf[i]);
         } else printf("%lld",(long long)num64);
-        printf(" PUSHDATA len.%d\n",numlen);*/
+        printf(" PUSHDATA len.%d\n",numlen);
         if ( stacks->stackdepth < stacks->maxstackdepth )
         {
             if ( stacks->logarray != 0 )
@@ -858,12 +858,21 @@ int32_t iguana_checklocktimeverify(struct iguana_info *coin,int64_t tx_lockval,u
 {
     int64_t nLockTime = iguana_num(Snum);
     if ( nLockTime < 0 || tx_lockval < 0 )
+    {
+        printf("CLTV.0 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     else if ( ((tx_lockval < LOCKTIME_THRESHOLD && nLockTime < LOCKTIME_THRESHOLD) ||
           (tx_lockval >= LOCKTIME_THRESHOLD && nLockTime >= LOCKTIME_THRESHOLD)) == 0 )
+    {
+        printf("CLTV.1 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     else if ( nLockTime > tx_lockval )
+    {
+        printf("CLTV.2 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     return(0);
 }
 
@@ -1298,7 +1307,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                     for (i=0; i<numargs; i++)
                         args[numargs - 1 - i] = iguana_pop(stacks);
                 }
-                //printf("%02x: numargs.%d depth.%d\n",op->opcode,numargs,stacks->stackdepth);
+                printf("%02x: numargs.%d depth.%d\n",op->opcode,numargs,stacks->stackdepth);
                 if ( stacks->logarray != 0 )
                 {
                     char tmpstr[1096];
