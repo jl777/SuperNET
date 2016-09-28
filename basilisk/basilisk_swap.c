@@ -24,7 +24,7 @@
  e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
  */
 
-#define DISABLE_CHECKSIG
+//#define DISABLE_CHECKSIG
 
 /*
  both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
@@ -84,6 +84,8 @@ Alice spends alicepayment as soon as privBn is seen
 Bob will spend bobpayment after INSTANTDEX_LOCKTIME
 Alice spends bobdeposit in 2*INSTANTDEX_LOCKTIME
 */
+
+// negative spend if value too small
 
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
 {
