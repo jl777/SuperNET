@@ -1300,11 +1300,11 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
                 jaddstr(item,"error","script reconstruction failed");
             }
             init_hexbytes_noT(str,activescript,activescriptlen);
-            printf("activescript.(%s)\n",str);
+            //printf("activescript.(%s)\n",str);
             if ( logarray != 0 )
                 jaddstr(item,"original",str);
             init_hexbytes_noT(str,script,scriptlen);
-            printf("reconstructed.(%s)\n",str);
+            //printf("reconstructed.(%s)\n",str);
             if ( logarray != 0 )
             {
                 jaddstr(item,"reconstructed",str);
