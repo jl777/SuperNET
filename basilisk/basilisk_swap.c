@@ -97,7 +97,7 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
     bits256 hash; int32_t i;
     for (i=0; i<32; i++)
         hash.bytes[i] = revhash.bytes[31-i];
-    calc_rmd160_sha256(rmd160,revhash.bytes,sizeof(revhash));
+    calc_rmd160_sha256(rmd160,hash.bytes,sizeof(hash));
 }
 
 bits256 revcalc_sha256(bits256 revhash)
@@ -171,7 +171,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         *secretstartp = n + 2;
     if ( 1 )
     {
-        if ( 0 && bits256_nonz(privkey) != 0 )
+        if ( 1 && bits256_nonz(privkey) != 0 )
         {
             uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
@@ -182,6 +182,12 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
                 printf("MATCHES BUFB\n");
             else printf("secret160 matches neither\n");
             memcpy(secret160,bufA,20);
+            for (i=0; i<20; i++)
+                printf("%02x",bufA[i]);
+            printf(" <- revcalc\n");
+            for (i=0; i<20; i++)
+                printf("%02x",bufB[i]);
+            printf(" <- calc\n");
         }
         n = bitcoin_secret160verify(redeemscript,n,secret160);
     }
