@@ -205,6 +205,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     if ( (hexstr= jstr(vinobj,"coinbase")) == 0 )
     {
         vin->prev_hash = jbits256(vinobj,"txid");
+        char str[65]; printf("vin->prev_hash.(%s)\n",bits256_str(str,vin->prev_hash));
         vin->prev_vout = jint(vinobj,"vout");
         if ( (scriptjson= jobj(vinobj,"scriptSig")) != 0 )
             hexstr = jstr(scriptjson,"hex");
@@ -213,13 +214,16 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             if ( (obj= jobj(vinobj,"scriptPub")) != 0 || (obj= jobj(vinobj,"scriptPubKey")) != 0 )
             {
                 spendstr = jstr(obj,"hex");
-                lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
-                //if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
-                //    need_op0 = 1;
-                if ( V != 0 )
+                if ( spendstr[0] != 0 )
                 {
-                    V->spendlen = (int32_t)strlen(spendstr) >> 1;
-                    decode_hex(V->spendscript,V->spendlen,spendstr);
+                    lastbyte = _decode_hex(&spendstr[strlen(spendstr)-2]);
+                    //if ( lastbyte == SCRIPT_OP_CHECKMULTISIG )
+                    //    need_op0 = 1;
+                    if ( V != 0 )
+                    {
+                        V->spendlen = (int32_t)strlen(spendstr) >> 1;
+                        decode_hex(V->spendscript,V->spendlen,spendstr);
+                    }
                 }
             }
         }
@@ -239,6 +243,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 userdata = jstr(obj,"hex");
         }
     }
+    char str[65]; printf("rw.%d prevhash.(%s)\n",rwflag,bits256_str(str,vin->prev_hash));
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(vin->prev_hash),vin->prev_hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->prev_vout),&vin->prev_vout);
     if ( V != 0 )
