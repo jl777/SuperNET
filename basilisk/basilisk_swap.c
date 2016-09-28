@@ -207,9 +207,9 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     *redeemlenp = n;
     calc_rmd160_sha256(rmd160,redeemscript,n);
     n = bitcoin_p2shspend(script,0,rmd160);
-    for (i=0; i<n; i++)
-        printf("%02x",script[i]);
-    char str[65]; printf(" <- redeem.%d bobtx dflag.%d %s\n",n,depositflag,bits256_str(str,cltvpub));
+    //for (i=0; i<n; i++)
+    //    printf("%02x",script[i]);
+    //char str[65]; printf(" <- redeem.%d bobtx dflag.%d %s\n",n,depositflag,bits256_str(str,cltvpub));
     return(n);
 }
 
@@ -718,7 +718,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
 
 void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag)
 {
-    int32_t i,j; char str[65];
+    int32_t i,j; //char str[65];
     if ( genflag != 0 && swap->iambob == 0 )
         printf("basilisk_bobscripts_set WARNING: alice generating BOB tx\n");
     if ( depositflag == 0 )
@@ -1265,7 +1265,7 @@ int32_t basilisk_verify_choosei(struct supernet_info *myinfo,void *ptr,uint8_t *
         len += iguana_rwnum(0,data,sizeof(otherchoosei),&otherchoosei);
         if ( otherchoosei >= 0 && otherchoosei < INSTANTDEX_DECKSIZE )
         {
-            printf("otherchoosei.%d\n",otherchoosei);
+            //printf("otherchoosei.%d\n",otherchoosei);
             swap->otherchoosei = otherchoosei;
             if ( swap->iambob != 0 )
             {
@@ -1308,7 +1308,7 @@ int32_t basilisk_verify_otherdeck(struct supernet_info *myinfo,void *ptr,uint8_t
 int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
     int32_t i,j,wrongfirstbyte=0,errs=0,len = 0; bits256 otherpriv,pubi; uint8_t secret160[20],otherpubkey[33]; uint64_t txid; struct basilisk_swap *swap = ptr;
-    printf("verify privkeys choosei.%d otherchoosei.%d datalen.%d vs %d\n",swap->choosei,swap->otherchoosei,datalen,(int32_t)sizeof(swap->privkeys)+20+32);
+    //printf("verify privkeys choosei.%d otherchoosei.%d datalen.%d vs %d\n",swap->choosei,swap->otherchoosei,datalen,(int32_t)sizeof(swap->privkeys)+20+32);
     if ( swap->cutverified == 0 && swap->otherchoosei >= 0 && datalen == sizeof(swap->privkeys)+20+2*32 )
     {
         for (i=errs=0; i<sizeof(swap->privkeys)/sizeof(*swap->privkeys); i++)
@@ -1348,7 +1348,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
             }
         } else printf("failed verification: wrong firstbyte.%d errs.%d\n",wrongfirstbyte,errs);
     }
-    printf("privkeys errs.%d wrongfirstbyte.%d\n",errs,wrongfirstbyte);
+    //printf("privkeys errs.%d wrongfirstbyte.%d\n",errs,wrongfirstbyte);
     return(errs);
 }
 
@@ -1449,7 +1449,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 revcalc_rmd160_sha256(swap->secretBn,swap->privBn);//.bytes,sizeof(swap->privBn));
                 vcalc_sha256(0,swap->secretBn256,swap->privBn.bytes,sizeof(swap->privBn));
                 swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
-                printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
+                //printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
                 basilisk_bobscripts_set(myinfo,swap,1,1);
              }
         }
@@ -1462,7 +1462,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 revcalc_rmd160_sha256(swap->secretAm,swap->privAm);//.bytes,sizeof(swap->privAm));
                 vcalc_sha256(0,swap->secretAm256,swap->privAm.bytes,sizeof(swap->privAm));
                 swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
-                printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
+                //printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
                 //basilisk_bobscripts_set(myinfo,swap,0);
             }
         }
