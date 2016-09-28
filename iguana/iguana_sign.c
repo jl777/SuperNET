@@ -305,14 +305,14 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
         }
         len += n;
     } //else printf("iguana_parsevinobj: hex script missing (%s)\n",jprint(vinobj,0));
-    if ( (pubkeysjson= jarray(&n,vinobj,"pubkeys")) != 0 )
+    if ( (pubkeysjson= jarray(&n,vinobj,"pubkeys")) != 0 && vin->vinscript != 0 )
     {
-        if ( vin->vinscript == 0 )
+        /*if ( vin->vinscript == 0 )
         {
             vin->vinscript = serialized;
             vin->vinscript[0] = 0;
             vin->scriptlen = 1;
-        }
+        }*/
         for (i=0; i<n; i++)
         {
             if ( (pubkeystr= jstr(jitem(pubkeysjson,i),0)) != 0 && (plen= (int32_t)strlen(pubkeystr) >> 1) > 0 )
