@@ -34,13 +34,23 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
     return(n);
 }
 
-int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
+int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
     script[n++] = SCRIPT_OP_HASH160;
     script[n++] = 0x14;
     memcpy(&script[n],secret160,0x14);
     n += 0x14;
     script[n++] = SCRIPT_OP_EQUALVERIFY;
+    return(n);
+}
+
+int32_t bitcoin_secret256spend(uint8_t *script,int32_t n,bits256 secret)
+{
+    script[n++] = SCRIPT_OP_SHA256;
+    script[n++] = 0x20;
+    memcpy(&script[n],secret.bytes,0x20);
+    n += 0x20;
+    script[n++] = SCRIPT_OP_EQUAL;
     return(n);
 }
 
@@ -168,7 +178,7 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
     n = bitcoin_checklocktimeverify(script,n,locktime);
     n = bitcoin_standardspend(script,n,rmd160A);
     script[n++] = SCRIPT_OP_ELSE;
-    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_secret160verify(script,n,secret160);
     n = bitcoin_standardspend(script,n,rmd160B);
     script[n++] = SCRIPT_OP_ENDIF;
     calc_rmd160_sha256(p2sh_rmd160,script,n);

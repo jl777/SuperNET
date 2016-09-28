@@ -33,7 +33,9 @@
 #define SCRIPT_OP_ENDIF 0x68
 #define SCRIPT_OP_DROP 0x75
 #define SCRIPT_OP_EQUALVERIFY 0x88
+#define SCRIPT_OP_SHA256 0xa8
 #define SCRIPT_OP_HASH160 0xa9
+
 #define SCRIPT_OP_EQUAL 0x87
 #define SCRIPT_OP_CHECKSIG 0xac
 #define SCRIPT_OP_CHECKMULTISIG 0xae
@@ -49,7 +51,6 @@ int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t 
 
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
 int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
-int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 
 int32_t bitcoin_pubkeylen(const uint8_t *pubkey);

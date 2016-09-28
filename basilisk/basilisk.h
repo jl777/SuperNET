@@ -16,7 +16,7 @@
 #ifndef H_BASILISK_H
 #define H_BASILISK_H
 
-//#define BASILISK_DISABLESENDTX
+#define BASILISK_DISABLESENDTX
 #define BASILISK_DISABLEWAITTX
 
 #include "../iguana/iguana777.h"
@@ -59,20 +59,21 @@ struct basilisk_rawtx
 struct basilisk_swap
 {
     struct basilisk_request req;
-    struct supernet_info *myinfo; bits256 myhash,otherhash;
+    struct supernet_info *myinfo; bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,locktime;
     struct iguana_info *bobcoin,*alicecoin; char bobstr[64],alicestr[64];
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
     
-    bits256 privkeys[INSTANTDEX_DECKSIZE],myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;
     uint32_t crcs_mypub[2],crcs_mychoosei[2],crcs_myprivs[2],crcs_mypriv[2];
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate;
     uint8_t secretAm[20],secretBn[20];
     uint8_t secretAm256[32],secretBn256[32];
     
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t verifybuf[65536];
 };
 
@@ -122,10 +123,11 @@ void basilisk_request_goodbye(struct supernet_info *myinfo);
 int32_t basilisk_update(char *symbol,uint32_t reftimestamp);
 void basilisk_seqresult(struct supernet_info *myinfo,char *retstr);
 struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj);
-void basilisk_alicepayment(struct supernet_info *myinfo,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn);
+void basilisk_alicepayment(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn);
 void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33);
 void basilisk_setmyid(struct supernet_info *myinfo);
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp);
 cJSON *basilisk_requestjson(struct basilisk_request *rp);
+void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 
 #endif

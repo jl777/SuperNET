@@ -418,7 +418,12 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
 int32_t iguana_RTunspentindfind(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint *outpt,char *coinaddr,uint8_t *spendscript,int32_t *scriptlenp,uint64_t *valuep,int32_t *heightp,bits256 txid,int32_t vout,int32_t lasthdrsi,int32_t mempool);
 int32_t iguana_addressvalidate(struct iguana_info *coin,uint8_t *addrtypep,char *address);
 int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256 privkey,int32_t recoverflag);
+void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash);
 struct iguana_utxo iguana_utxofind(struct iguana_info *coin,struct iguana_outpoint spentpt,int32_t *RTspendflagp,int32_t lockflag);
+int32_t iguana_vinifind(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *spentfrom,bits256 txid,int32_t vout);
+int32_t iguana_scriptsigextract(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *script,int32_t maxsize,bits256 txid,int32_t vini);
+void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin);
+
 bits256 iguana_str2priv(struct supernet_info *myinfo,struct iguana_info *coin,char *str);
 int32_t iguana_RTspentflag(struct supernet_info *myinfo,struct iguana_info *coin,uint64_t *RTspendp,int32_t *spentheightp,struct iguana_ramchain *ramchain,struct iguana_outpoint spentpt,int32_t height,int32_t minconf,int32_t maxconf,uint64_t amount);
 int32_t iguana_voutscript(struct iguana_info *coin,struct iguana_bundle *bp,uint8_t *scriptspace,char *asmstr,struct iguana_unspent *u,struct iguana_pkhash *p,int32_t txi);
@@ -523,6 +528,8 @@ void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t dest
 void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_block *src);
 int32_t iguana_blocksizecheck(char *debugstr,uint8_t zcash,struct iguana_block *block);
 void basilisk_miner(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,int32_t maxmillis,char *mineraddr);
+int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20]);
+int32_t bitcoin_secret256spend(uint8_t *script,int32_t n,bits256 secret);
 int32_t bitcoin_pubkeyspend(uint8_t *script,int32_t n,uint8_t pubkey[66]);
 int32_t basilisk_blocksubmit(struct supernet_info *myinfo,struct iguana_info *btcd,struct iguana_info *virt,struct iguana_peer *addr,char *blockstr,bits256 hash2,int32_t height);
 struct supernet_info *SuperNET_MYINFO(char *passphrase);
@@ -578,7 +585,7 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
 void iguana_RTspendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp);
 int64_t iguana_RTbalance(struct iguana_info *coin,char *coinaddr);
 double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *base,char *rel,double basevolume);
-int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20]);
+int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20]);
 int64_t iguana_lockval(int32_t finalized,int64_t locktime);
 uint64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_pkhash **Ptrp,uint64_t *supplyp,int32_t *numacctsp,int32_t *nonzp,int32_t *errsp,int32_t lastheight);
 int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,uint64_t *weights,int32_t numweights,bits256 *sortbuf);

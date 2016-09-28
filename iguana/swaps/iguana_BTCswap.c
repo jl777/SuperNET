@@ -90,7 +90,7 @@ int32_t instantdex_bobscript(uint8_t *script,int32_t n,uint32_t *locktimep,int32
     script[n++] = SCRIPT_OP_ELSE;
     if ( secretstartp != 0 )
         *secretstartp = n + 2;
-    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_secret160verify(script,n,secret160);
     n = bitcoin_pubkeyspend(script,n,pubkeyB);
     script[n++] = SCRIPT_OP_ENDIF;
     return(n);
@@ -1227,7 +1227,7 @@ char *instantdex_bailintx(struct iguana_info *coin,bits256 *txidp,struct bitcoin
     bitcoin_txoutput(coin,txobj,scriptv0,scriptv0len,spend->satoshis);
     if ( isbob != 0 )
     {
-        scriptv1len = bitcoin_revealsecret160(scriptv1,0,x);
+        scriptv1len = bitcoin_secret160verify(scriptv1,0,x);
         scriptv1len = bitcoin_pubkeyspend(scriptv1,scriptv1len,pubkey);
     } else scriptv1len = bitcoin_p2shspend(scriptv1,0,x);
     bitcoin_txoutput(coin,txobj,scriptv1,scriptv1len,spend->txfee);

@@ -291,7 +291,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
             while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
             {
-                printf("didnt get back what was sent\n");
+                //printf("didnt get back what was sent\n");
                 sleep(3);
                 basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
                 numiters++;
@@ -547,7 +547,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         sleep(3);
         while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
         {
-            printf("didnt get back what was sent\n");
+            //printf("didnt get back what was sent\n");
             sleep(3);
             basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
             numiters++;
