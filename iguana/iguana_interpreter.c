@@ -1352,11 +1352,11 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            if ( datalen == 32 )
+                            /*if ( datalen == 32 )
                             {
                                 revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
                                 printf("SPECIAL CASE REVERSE\n");
-                            } else
+                            } else*/
                             calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
