@@ -34,11 +34,23 @@ int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20])
     return(n);
 }
 
-int32_t bitcoin_revealsecret160(uint8_t *script,int32_t n,uint8_t secret160[20])
+int32_t bitcoin_secret160verify(uint8_t *script,int32_t n,uint8_t secret160[20])
 {
     script[n++] = SCRIPT_OP_HASH160;
-    script[n++] = 0x14; memcpy(&script[n],secret160,0x14); n += 0x14;
+    script[n++] = 0x14;
+    memcpy(&script[n],secret160,0x14);
+    n += 0x14;
     script[n++] = SCRIPT_OP_EQUALVERIFY;
+    return(n);
+}
+
+int32_t bitcoin_secret256spend(uint8_t *script,int32_t n,bits256 secret)
+{
+    script[n++] = SCRIPT_OP_SHA256;
+    script[n++] = 0x20;
+    memcpy(&script[n],secret.bytes,0x20);
+    n += 0x20;
+    script[n++] = SCRIPT_OP_EQUAL;
     return(n);
 }
 
@@ -166,7 +178,7 @@ int32_t bitcoin_cltvscript(uint8_t p2shtype,char *ps2h_coinaddr,uint8_t p2sh_rmd
     n = bitcoin_checklocktimeverify(script,n,locktime);
     n = bitcoin_standardspend(script,n,rmd160A);
     script[n++] = SCRIPT_OP_ELSE;
-    n = bitcoin_revealsecret160(script,n,secret160);
+    n = bitcoin_secret160verify(script,n,secret160);
     n = bitcoin_standardspend(script,n,rmd160B);
     script[n++] = SCRIPT_OP_ENDIF;
     calc_rmd160_sha256(p2sh_rmd160,script,n);
@@ -288,8 +300,10 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
 {
     static uint8_t zero_rmd160[20];
     char hexstr[8192]; uint8_t *script,type; int32_t i,n,m,plen;
-    vp->N = 1;
-    vp->M = 1;
+    if ( vp->N == 0 )
+        vp->N = 1;
+    if ( vp->M == 0 )
+        vp->M = 1;
     type = IGUANA_SCRIPT_STRANGE;
     init_hexbytes_noT(hexstr,vp->spendscript,vp->spendlen);
     //char str[65]; printf("script.(%s).%d in %s len.%d plen.%d spendlen.%d cmp.%d\n",hexstr,vp->spendlen,bits256_str(str,vp->vin.prev_hash),vp->spendlen,bitcoin_pubkeylen(&vp->spendscript[1]),vp->spendlen,vp->spendscript[vp->spendlen-1] == SCRIPT_OP_CHECKSIG);

@@ -39,9 +39,9 @@ struct iguana_waddress *iguana_waddressfind(struct supernet_info *myinfo,struct 
     {
         HASH_ITER(hh,wacct->waddr,waddr,tmp)
         {
-            printf("%s ",waddr->coinaddr);
+            //printf("%s ",waddr->coinaddr);
         }
-        printf("not in %s\n",wacct->account);
+        //printf("not in %s\n",wacct->account);
     }
     //if ( waddr != 0 && coin != 0 && strcmp(coin->symbol,waddr->symbol) != 0 )
     //    return(0);
@@ -381,7 +381,7 @@ cJSON *iguana_waddressjson(struct iguana_info *coin,cJSON *item,struct iguana_wa
     //jaddstr(item,"wif",waddr->wifstr);
     init_hexbytes_noT(str,waddr->rmd160,20);
     jaddstr(item,"rmd160",str);
-    jaddstr(item,"coin",waddr->symbol);
+    jaddstr(item,"coin",coin != 0 ? coin->symbol : waddr->symbol);
     if ( waddr->scriptlen > 0 )
     {
         init_hexbytes_noT(redeemScript,waddr->redeemScript,waddr->scriptlen);
@@ -957,7 +957,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( (scripthexstr= jstr(item,"spendscript")) == 0 )
                 {
-                    if ( (scriptobj= jobj(item,"scriptPubkey")) != 0 )
+                    if ( (scriptobj= jobj(item,"scriptPubKey")) != 0 )
                         scripthexstr = jstr(scriptobj,"hex");
                 }
                 if ( scripthexstr != 0 )

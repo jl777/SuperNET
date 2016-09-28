@@ -244,6 +244,68 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,ui
     } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
 
+void basilisk_requests_poll(struct supernet_info *myinfo)
+{
+    static uint32_t lastpoll;
+    char *retstr; uint8_t data[32768],buf[4096]; cJSON *outerarray,*retjson; uint32_t msgid,crcs[2],crc,channel; int32_t datalen,i,n,numiters; struct basilisk_request issueR; double hwm = 0.;
+    if ( time(NULL) < lastpoll+3 )
+        return;
+    lastpoll = (uint32_t)time(NULL);
+    memset(&issueR,0,sizeof(issueR));
+    //printf("Call incoming\n");
+    if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
+    {
+        //printf("poll.(%s)\n",retstr);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )
+            {
+                for (i=0; i<n; i++)
+                    hwm = basilisk_process_results(myinfo,&issueR,jitem(outerarray,i),hwm);
+            } //else hwm = basilisk_process_results(myinfo,&issueR,outerarray,hwm);
+            free_json(retjson);
+        }
+        free(retstr);
+    } else printf("null incoming\n");
+    if ( hwm > 0. )
+    {
+        printf("hwm %f\n",hwm);
+        if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
+        {
+            printf("my req hwm %f\n",hwm);
+            if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
+                free(retstr);
+            if ( (retstr= basilisk_start(myinfo,&issueR,1)) != 0 )
+                free(retstr);
+        }
+        else //if ( issueR.quoteid == 0 )
+        {
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
+            issueR.quoteid = basilisk_quoteid(&issueR);
+            issueR.desthash = myinfo->myaddr.persistent;
+            datalen = basilisk_rwDEXquote(1,data,&issueR);
+            msgid = (uint32_t)time(NULL);
+            channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+            crcs[0] = crcs[1] = 0;
+            numiters = 0;
+            basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
+            while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
+            {
+                //printf("didnt get back what was sent\n");
+                sleep(3);
+                basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
+                numiters++;
+            }
+            if ( crc != 0 )
+            {
+                printf("crc.%08x -> basilisk_start\n",crc);
+                if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
+                    free(retstr);
+            }
+        } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
+    }
+}
+
 struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint32_t senderipbits,int32_t numrequests)
 {
     int32_t j; struct basilisk_relay *relay = 0;
@@ -426,7 +488,7 @@ STRING_ARG(InstantDEX,available,source)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(unspents,i);
-                        if ( jobj(item,"unspent") != 0 )
+                        //if ( jobj(item,"unspent") != 0 )
                         {
                             total += jdouble(item,"amount") * SATOSHIDEN;
                         }
@@ -437,7 +499,7 @@ STRING_ARG(InstantDEX,available,source)
             }
             retjson = cJSON_CreateObject();
             jaddnum(retjson,"result",dstr(total));
-            printf("(%s) n.%d total %.8f (%s)\n",jprint(unspents,0),n,dstr(total),jprint(retjson,0));
+            printf(" n.%d total %.8f (%s)\n",n,dstr(total),jprint(retjson,0));
             return(jprint(retjson,1));
         }
         printf("InstantDEX_available: need to unlock wallet\n");
@@ -450,7 +512,7 @@ STRING_ARG(InstantDEX,available,source)
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
     uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
-    myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT;
+    myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT + 60;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"srchash") == 0 )
         jaddbits256(vals,"srchash",myinfo->myaddr.persistent);
@@ -477,9 +539,20 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     } else printf("error creating request\n");
     if ( datalen > 0 )
     {
+        uint32_t msgid,crc,crcs[2],numiters = 0; uint8_t buf[4096];
         memset(hash.bytes,0,sizeof(hash));
+        msgid = (uint32_t)time(NULL);
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
-        if ( basilisk_channelsend(myinfo,R.srchash,R.desthash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
+        basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
+        sleep(3);
+        while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
+        {
+            //printf("didnt get back what was sent\n");
+            sleep(3);
+            basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
+            numiters++;
+        }
+        if ( crc != 0 )//basilisk_channelsend(myinfo,R.srchash,R.desthash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
             return(clonestr("{\"result\":\"DEX message sent\"}"));
         else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
     }

@@ -17,6 +17,50 @@
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
+uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t datalens[64],int32_t numcrcs)
+{
+    int32_t tally[64],candlens[64],i,j,mintally,numcandidates = 0; uint32_t candidates[64];
+    *datalenp = 0;
+    mintally = (numcrcs >> 1) + 1;
+    memset(tally,0,sizeof(tally));
+    memset(candlens,0,sizeof(candlens));
+    memset(candidates,0,sizeof(candidates));
+    if ( numcrcs > 0 )
+    {
+        for (i=0; i<numcrcs; i++)
+        {
+            //printf("%08x ",rawcrcs[i]);
+            for (j=0; j<numcandidates; j++)
+            {
+                if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
+                {
+                    tally[j]++;
+                    break;
+                }
+            }
+            if ( j == numcandidates )
+            {
+                tally[numcandidates] = 1;
+                candlens[numcandidates] = datalens[i];
+                candidates[numcandidates] = rawcrcs[i];
+                numcandidates++;
+            }
+        }
+        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        if ( numcandidates > 0 )
+        {
+            for (j=0; j<numcandidates; j++)
+                if ( tally[j] >= mintally )
+                {
+                    *datalenp = candlens[j];
+                    //printf("tally[%d] %d >= mintally.%d numcrcs.%d crc %08x datalen.%d\n",j,tally[j],mintally,numcrcs,candidates[j],*datalenp);
+                    return(candidates[j]);
+                }
+        }
+    }
+    return(0);
+}
+
 int32_t basilisk_notarycmd(char *cmd)
 {
     //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&
@@ -258,7 +302,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                 for (s=0; s<n; s++)
                     if ( alreadysent[s] == addr->ipbits )
                     {
-                        printf("already sent to %s\n",addr->ipaddr);
+                        //printf("already sent to %s\n",addr->ipaddr);
                         continue;
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
@@ -386,6 +430,8 @@ struct basilisk_item *basilisk_requestservice(struct supernet_info *myinfo,struc
     int32_t minfanout,numrequired,timeoutmillis,numsent,delaymillis,encryptflag,fanout; struct basilisk_item *ptr; char buf[4096],*symbol,*str = 0; struct iguana_info *virt;
     //printf("request.(%s)\n",jprint(valsobj,0));
     basilisk_addhexstr(&str,valsobj,buf,sizeof(buf),data,datalen);
+    if ( str != 0 )
+        free(str);
     if ( bits256_nonz(hash) == 0 || (bits256_cmp(hash,GENESIS_PUBKEY) != 0 && bits256_nonz(hash) != 0) )
     {
         if ( jobj(valsobj,"hash") != 0 )
@@ -523,7 +569,7 @@ void basilisk_functions(struct iguana_info *coin,int32_t protocol)
 
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *hashes,int32_t num)
 {
-    bits256 hash; uint8_t *serialized; int32_t i,len = 0; char *str=0,*retstr,*hexstr,*allocptr=0,space[4096]; bits256 txid; cJSON *vals;
+    bits256 hash; uint8_t *serialized; int32_t i,len = 0; char *str=0,*retstr,*hexstr,space[4096]; bits256 txid; cJSON *vals;
     if ( virt != 0 && addr != 0 )
     {
         memset(hash.bytes,0,sizeof(hash));
@@ -540,8 +586,8 @@ int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *vi
             if ( (retstr= basilisk_standardservice(CMD,myinfo,addr,hash,vals,hexstr,0)) != 0 )
                 free(retstr);
             free_json(vals);
-            if ( allocptr != 0 )
-                free(allocptr);
+            if ( str != 0 )
+                free(str);
         }
         return(0);
     } else return(-1);
@@ -601,7 +647,7 @@ void basilisk_result(struct supernet_info *myinfo,char *remoteaddr,uint32_t basi
                         jaddstr(item,"myip",remoteaddr);
                     if ( pending->numresults < sizeof(pending->results)/sizeof(*pending->results) )
                     {
-                        //printf("%p.(RESULT).%d\n",pending,pending->numresults);
+                        //printf("%p.(%s).%d\n",pending,jprint(item,0),pending->numresults);
                         pending->results[pending->numresults++] = item;
                     }
                 } else printf("couldnt parse.(%s)\n",retstr);
@@ -758,7 +804,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
                             free(retstr);
                         break;
                     } else printf("services null return\n");
-                } else printf("non-relay got unhandled.(%s)\n",type);
+                } else printf("non-relay got %s unhandled.(%s)\n",coin!=0?coin->symbol:"",type);
             }
         }
         free_json(valsobj);
@@ -833,53 +879,6 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
     queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
 }
 
-void basilisk_requests_poll(struct supernet_info *myinfo)
-{
-    static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
-    if ( time(NULL) < lastpoll+3 )
-        return;
-    lastpoll = (uint32_t)time(NULL);
-    memset(&issueR,0,sizeof(issueR));
-    //printf("Call incoming\n");
-    if ( (retstr= InstantDEX_incoming(myinfo,0,0,0,0)) != 0 )
-    {
-        //printf("poll.(%s)\n",retstr);
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )
-            {
-                for (i=0; i<n; i++)
-                    hwm = basilisk_process_results(myinfo,&issueR,jitem(outerarray,i),hwm);
-            } //else hwm = basilisk_process_results(myinfo,&issueR,outerarray,hwm);
-            free_json(retjson);
-        }
-        free(retstr);
-    } else printf("null incoming\n");
-    if ( hwm > 0. )
-    {
-        printf("hwm %f\n",hwm);
-        if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
-        {
-            printf("my req hwm %f\n",hwm);
-            if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
-                free(retstr);
-            if ( (retstr= basilisk_start(myinfo,&issueR,1)) != 0 )
-                free(retstr);
-        }
-        else //if ( issueR.quoteid == 0 )
-        {
-            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
-            issueR.quoteid = basilisk_quoteid(&issueR);
-            issueR.desthash = myinfo->myaddr.persistent;
-            datalen = basilisk_rwDEXquote(1,data,&issueR);
-            basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16),(uint32_t)time(NULL),data,datalen,0);
-            if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
-                free(retstr);
-        } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
-    }
-}
-
 int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 {
     struct basilisk_item *tmp,*pending; cJSON *item; int32_t i,n = 0; double startmilli = OS_milliseconds();
@@ -941,8 +940,8 @@ void basilisks_loop(void *arg)
         basilisk_iteration(myinfo);
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
-            endmilli = startmilli + 500;
-        else endmilli = startmilli + 2000;
+            endmilli = startmilli + 250;
+        else endmilli = startmilli + 1000;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;

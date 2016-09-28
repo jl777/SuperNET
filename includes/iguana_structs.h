@@ -168,7 +168,7 @@ struct iguana_msgtx
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
     uint8_t *serialized;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 struct iguana_msgjoinsplit
 {
@@ -286,7 +286,7 @@ struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spent
 struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; }PACKEDSTRUCT;
 #endif
 struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; }PACKEDSTRUCT;
-struct iguana_utxoaddr { UT_hash_handle hh; int64_t histbalance; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; }PACKEDSTRUCT;
+struct iguana_utxoaddr { UT_hash_handle hh; uint64_t histbalance; uint32_t pkind:31,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; }PACKEDSTRUCT;
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; }PACKEDSTRUCT; // unspentind
@@ -384,7 +384,7 @@ struct iguana_bundle
     bits256 prevbundlehash2,hashes[IGUANA_MAXBUNDLESIZE+1],nextbundlehash2,allhash,*speculative,validatehash;
     struct iguana_ramchain ramchain; uint8_t red,green,blue;
     struct iguana_spendvector *tmpspends; int32_t numtmpspends;
-    int64_t *weights,supply; int32_t numweights;
+    uint64_t *weights,supply; int32_t numweights;
 };
 
 struct iguana_bundlereq
@@ -485,7 +485,7 @@ struct iguana_info
     int32_t numremain,numpendings,zcount,recvcount,bcount,pcount,lastbundle,numsaved,pendbalances,numverified,blockdepth,matchedfiles;
     uint32_t recvtime,hdrstime,backstoptime,lastbundletime,numreqsent,numbundlesQ,lastbundleitime,lastdisp,RTgenesis,firstRTgenesis,RTstarti,idletime,stucktime,stuckmonitor,maxstuck,lastreqtime,RThdrstime,nextchecked,lastcheckpoint,sigserrs,sigsvalidated,coinid;
     double bandwidth,maxbandwidth,backstopmillis; bits256 backstophash2; int64_t spaceused;
-    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy,almostRT,busy_processing; bits256 reqtxids[64];
+    int32_t disableUTXO,initialheight,mapflags,minconfirms,numrecv,bindsock,isRT,backstop,blocksrecv,merging,firstRTheight,maxRTheight,polltimeout,numreqtxids,allhashes,balanceflush,basilisk_busy,almostRT,busy_processing; bits256 reqtxids[64];
     void *launched,*started,*rpcloop;
     uint64_t bloomsearches,bloomhits,bloomfalse,collisions,txfee_perkb,txfee;
     uint8_t *blockspace; int32_t blockspacesize; struct OS_memspace blockMEM,RTHASHMEM;
@@ -506,6 +506,7 @@ struct iguana_info
     uint64_t histbalance,RTcredits,RTdebits;
     void *utxoaddrfileptr; long utxoaddrfilesize;
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
+    FILE *utxofp;
     bits256 markedunspents[1024];
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;

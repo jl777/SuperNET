@@ -179,7 +179,7 @@ STRING_AND_INT(iguana,bundleaddresses,activecoin,height)
 
 STRING_AND_INT(iguana,PoSweights,activecoin,height)
 {
-    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; struct iguana_pkhash *refP; int64_t *weights,supply; cJSON *retjson;
+    struct iguana_info *ptr; int32_t num,nonz,errs,bundleheight; struct iguana_pkhash *refP; uint64_t *weights,supply; cJSON *retjson;
     if ( (ptr= iguana_coinfind(activecoin)) != 0 )
     {
         //for (bundleheight=coin->chain->bundlesize; bundleheight<height; bundleheight+=coin->chain->bundlesize)
