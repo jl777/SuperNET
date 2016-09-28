@@ -181,7 +181,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
                 printf("MATCHES BUFB\n");
             else printf("secret160 matches neither\n");
-            memcpy(secret160,bufB,20);
+            memcpy(secret160,bufA,20);
             for (i=0; i<20; i++)
                 printf("%02x",bufA[i]);
             printf(" <- revcalc\n");
