@@ -97,7 +97,7 @@ void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
     bits256 hash; int32_t i;
     for (i=0; i<32; i++)
         hash.bytes[i] = revhash.bytes[31-i];
-    calc_rmd160_sha256(rmd160,hash.bytes,sizeof(hash));
+    calc_rmd160_sha256(rmd160,revhash.bytes,sizeof(revhash));
 }
 
 bits256 revcalc_sha256(bits256 revhash)
@@ -171,7 +171,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         *secretstartp = n + 2;
     if ( 1 )
     {
-        if ( 1 && bits256_nonz(privkey) != 0 )
+        if ( 0 && bits256_nonz(privkey) != 0 )
         {
             uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
