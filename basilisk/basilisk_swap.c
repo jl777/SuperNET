@@ -292,7 +292,7 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
     return(txid);
 }
 
-int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen)
+int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
     char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t needsig=1,retval = -1; struct vin_info *V; uint32_t locktime=0;
     V = calloc(16,sizeof(*V));
@@ -313,6 +313,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
         //char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
     } else V[0].N = V[0].M = 1;
     V[0].suppress_pubkeys = dest->suppress_pubkeys;
+    V[0].ignore_cltverr = ignore_cltverr;
     if ( dest->redeemlen != 0 )
         memcpy(V[0].p2shscript,dest->redeemscript,dest->redeemlen), V[0].p2shlen = dest->redeemlen;
     txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,userdata == 0 ? 1 : 1);//rawtx->coin->chain->locktime_txversion);
@@ -478,7 +479,7 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
     if ( basilisk_rawtx_spendscript(myinfo,swap,swap->bobcoin->blocks.hwmchain.height,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
         len = basilisk_swapuserdata(swap,userdata,zero,1,swap->myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.redeemlen);
-        if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->aliceclaim,&swap->bobdeposit,swap->myprivs[0],0,userdata,len)) == 0 )
+        if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->aliceclaim,&swap->bobdeposit,swap->myprivs[0],0,userdata,len,1)) == 0 )
         {
             basilisk_txlog(myinfo,swap,&swap->aliceclaim,INSTANTDEX_LOCKTIME*2);
             return(retval);
@@ -492,7 +493,7 @@ int32_t basilisk_bobdeposit_refund(struct supernet_info *myinfo,struct basilisk_
 {
     uint8_t userdata[512]; int32_t i,retval,len = 0; char str[65];
     len = basilisk_swapuserdata(swap,userdata,swap->privBn,0,swap->myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.redeemlen);
-    if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len)) == 0 )
+    if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobrefund,&swap->bobdeposit,swap->myprivs[0],0,userdata,len,0)) == 0 )
     {
         for (i=0; i<swap->bobrefund.datalen; i++)
             printf("%02x",swap->bobrefund.txbytes[i]);
@@ -515,7 +516,7 @@ int32_t basilisk_bobpayment_reclaim(struct supernet_info *myinfo,struct basilisk
     uint8_t userdata[512]; int32_t retval,len = 0; static bits256 zero;
     printf("basilisk_bobpayment_reclaim\n");
     len = basilisk_swapuserdata(swap,userdata,zero,1,swap->myprivs[1],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
-    if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobreclaim,&swap->bobpayment,swap->myprivs[1],0,userdata,len)) == 0 )
+    if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->bobreclaim,&swap->bobpayment,swap->myprivs[1],0,userdata,len,0)) == 0 )
     {
         basilisk_txlog(myinfo,swap,&swap->bobreclaim,delay);
         return(retval);
@@ -532,7 +533,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
             revAm.bytes[i] = swap->privAm.bytes[31-i];
         len = basilisk_swapuserdata(swap,userdata,revAm,0,swap->myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
         char str[65]; printf("bobpaid.(%s)\n",bits256_str(str,swap->privAm));
-        if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->alicespend,&swap->bobpayment,swap->myprivs[0],0,userdata,len)) == 0 )
+        if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->alicespend,&swap->bobpayment,swap->myprivs[0],0,userdata,len,1)) == 0 )
         {
             for (i=0; i<swap->alicespend.datalen; i++)
                 printf("%02x",swap->alicespend.txbytes[i]);
@@ -549,7 +550,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
     int32_t retval;
     //printf("alicepayment_spend\n");
     swap->alicepayment.spendlen = basilisk_alicescript(swap->alicepayment.redeemscript,&swap->alicepayment.redeemlen,swap->alicepayment.spendscript,0,swap->alicepayment.destaddr,swap->alicecoin->chain->p2shtype,swap->pubAm,swap->pubBn);
-    if ( (retval= basilisk_rawtx_sign(myinfo,swap->alicecoin->blocks.hwmchain.height,swap,dest,&swap->alicepayment,swap->privAm,&swap->privBn,0,0)) == 0 )
+    if ( (retval= basilisk_rawtx_sign(myinfo,swap->alicecoin->blocks.hwmchain.height,swap,dest,&swap->alicepayment,swap->privAm,&swap->privBn,0,0,1)) == 0 )
     {
         basilisk_txlog(myinfo,swap,dest,0); // bobspend or alicereclaim
         return(retval);
