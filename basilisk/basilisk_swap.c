@@ -171,7 +171,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
         *secretstartp = n + 2;
     if ( 1 )
     {
-        if ( 1 && bits256_nonz(privkey) != 0 )
+        if ( 0 && bits256_nonz(privkey) != 0 )
         {
             uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
@@ -181,13 +181,13 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
                 printf("MATCHES BUFB\n");
             else printf("secret160 matches neither\n");
-            memcpy(secret160,bufB,20);
             for (i=0; i<20; i++)
                 printf("%02x",bufA[i]);
             printf(" <- revcalc\n");
             for (i=0; i<20; i++)
                 printf("%02x",bufB[i]);
             printf(" <- calc\n");
+            memcpy(secret160,bufB,20);
         }
         n = bitcoin_secret160verify(redeemscript,n,secret160);
     }
@@ -362,7 +362,9 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
             decode_hex(dest->txbytes,dest->datalen,signedtx);
             if ( signedtx != rawtxbytes )
                 free(signedtx);
-            retval = 0;
+            if ( dest->completed != 0 )
+                retval = 0;
+            else printf("couldnt sign transaction %s\n",rawtx->name);
         } else printf("error signing\n");
         free(rawtxbytes);
     } else printf("error making rawtx\n");
