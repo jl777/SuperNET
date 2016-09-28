@@ -745,7 +745,7 @@ void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *
                     for (j=0; j<swap->bobpayment.redeemlen; j++)
                         printf("%02x",swap->bobpayment.redeemscript[j]);
                     printf(" <- redeem.%d\n",swap->bobpayment.redeemlen);
-                    printf("GENERATED BOB PAYMENT.(%s)\n",bits256_str(str,swap->bobpayment.txid));
+                    printf("GENERATED BOB PAYMENT\n");
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
                     basilisk_bobpayment_reclaim(myinfo,swap,INSTANTDEX_LOCKTIME);
                     break;
@@ -774,7 +774,7 @@ void basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *
                     for (j=0; j<swap->bobdeposit.redeemlen; j++)
                         printf("%02x",swap->bobdeposit.redeemscript[j]);
                     printf(" <- redeem.%d\n",swap->bobdeposit.redeemlen);
-                    printf("GENERATED BOB DEPOSIT.(%s)\n",bits256_str(str,swap->bobdeposit.txid));
+                    printf("GENERATED BOB DEPOSIT\n");
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobdeposit.vins);
                     basilisk_bobdeposit_refund(myinfo,swap,INSTANTDEX_LOCKTIME);
                     break;

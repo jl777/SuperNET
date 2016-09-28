@@ -1416,7 +1416,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( op->opcode == IGUANA_OP_CHECKLOCKTIMEVERIFY ) // former OP_NOP2
                 {
-                    if ( V->ignore_cltverr != 0 || iguana_checklocktimeverify(coin,nLockTime,V->sequence,args[0]) < 0 )
+                    if ( V->ignore_cltverr == 0 && iguana_checklocktimeverify(coin,nLockTime,V->sequence,args[0]) < 0 )
                     {
                         iguana_stack(stacks,args,1,"0","");
                         errs++;
