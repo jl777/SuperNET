@@ -22,7 +22,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
 {
     int32_t p2shlen,len = 0; uint32_t tmp;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
-    char str[65]; printf("prev_hash.(%s)\n",bits256_str(str,msg->prev_hash));
+    //char str[65]; printf("prev_hash.(%s)\n",bits256_str(str,msg->prev_hash));
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
     if ( rwflag == 1 )
     {
@@ -205,7 +205,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
     if ( (hexstr= jstr(vinobj,"coinbase")) == 0 )
     {
         vin->prev_hash = jbits256(vinobj,"txid");
-        char str[65]; printf("vin->prev_hash.(%s)\n",bits256_str(str,vin->prev_hash));
+        //char str[65]; printf("vin->prev_hash.(%s)\n",bits256_str(str,vin->prev_hash));
         vin->prev_vout = jint(vinobj,"vout");
         if ( (scriptjson= jobj(vinobj,"scriptSig")) != 0 )
             hexstr = jstr(scriptjson,"hex");
@@ -243,7 +243,7 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 userdata = jstr(obj,"hex");
         }
     }
-    char str[65]; printf("rw.%d prevhash.(%s)\n",rwflag,bits256_str(str,vin->prev_hash));
+    //char str[65]; printf("rw.%d prevhash.(%s)\n",rwflag,bits256_str(str,vin->prev_hash));
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(vin->prev_hash),vin->prev_hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(vin->prev_vout),&vin->prev_vout);
     if ( V != 0 )
@@ -498,9 +498,9 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         {
             dest.vins[i].vinscript = spendscript;
             dest.vins[i].scriptlen = spendlen;
-            int32_t j; for (j=0; j<spendlen; j++)
-                printf("%02x",spendscript[j]);
-            printf(" tmpscript.%d vini.%d\n",spendlen,vini);
+            //int32_t j; for (j=0; j<spendlen; j++)
+            //    printf("%02x",spendscript[j]);
+            //printf(" tmpscript.%d vini.%d\n",spendlen,vini);
         }
         else
         {
@@ -513,9 +513,9 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         dest.vins[i].userdatalen = 0;
     }
     len = iguana_rwmsgtx(coin,height,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0,0,suppress_pubkeys);
-    for (i=0; i<len; i++)
-        printf("%02x",serialized[i]);
-    printf(" <- sigtx len.%d supp.%d user[0].%d\n",len,suppress_pubkeys,dest.vins[0].userdatalen);
+    //for (i=0; i<len; i++)
+    //    printf("%02x",serialized[i]);
+    //printf(" <- sigtx len.%d supp.%d user[0].%d\n",len,suppress_pubkeys,dest.vins[0].userdatalen);
     if ( len > 0 ) // (dest.tx_in != 1 || bits256_nonz(dest.vins[0].prev_hash) != 0) && dest.vins[0].scriptlen > 0 &&
     {
 #ifdef BTC2_VERSION
@@ -596,12 +596,12 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        printf("vin.%d starts offset.%d\n",i,len);
+        //printf("vin.%d starts offset.%d\n",i,len);
         if ( vins != 0 && jitem(vins,i) != 0 )
             iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
-        printf("serialized vin.[%02x %02x %02x]\n",serialized[len],serialized[len+1],serialized[len+2]);
+        //printf("serialized vin.[%02x %02x %02x]\n",serialized[len],serialized[len+1],serialized[len+2]);
         if ( msg->vins[i].spendscript == spendscript )
             msg->vins[i].spendscript = 0;
         //printf("vin.%d n.%d len.%d\n",i,n,len);
@@ -977,13 +977,13 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
                     char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
-                    int32_t i; for (i=0; i<siglen; i++)
+                    /*int32_t i; for (i=0; i<siglen; i++)
                         printf("%02x",sig[i]);
                     printf(" sig, ");
                     for (i=0; i<plen; i++)
                         printf("%02x",vp->signers[j].pubkey[i]);
                     // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
-                    printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));
+                    printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));*/
                 }
                 if ( sig == 0 || siglen == 0 )
                 {
