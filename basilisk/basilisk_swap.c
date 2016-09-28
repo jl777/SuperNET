@@ -181,7 +181,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
                 printf("MATCHES BUFB\n");
             else printf("secret160 matches neither\n");
-            memcpy(secret160,bufB,20);
+            memcpy(secret160,bufA,20);
             for (i=0; i<20; i++)
                 printf("%02x",bufA[i]);
             printf(" <- revcalc\n");
@@ -457,7 +457,7 @@ int32_t basilisk_swapuserdata(struct basilisk_swap *swap,uint8_t *userdata,bits2
     {
         userdata[len++] = sizeof(privkey);
         for (i=0; i<sizeof(privkey); i++)
-            userdata[len++] = privkey.bytes[31-i];
+            userdata[len++] = privkey.bytes[i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
     return(len);
