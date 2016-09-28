@@ -698,7 +698,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
 
 bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *txstartp,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,cJSON *txobj,struct vin_info *V)
 {
-    int32_t i,numvins,numvouts,len = 0,rwflag=1; cJSON *array=0; bits256 txid; char vpnstr[64];
+    int32_t i,j,n,numvins,numvouts,len = 0,rwflag=1; cJSON *array=0; bits256 txid; char vpnstr[64];
     memset(&txid,0,sizeof(txid));
     memset(msg,0,sizeof(*msg));
     *txstartp = 0;
@@ -727,8 +727,11 @@ bits256 iguana_parsetxobj(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             for (i=0; i<msg->tx_in; i++)
             {
-                //printf("parsetxobj vinobj.%d starts offset.%d\n",i,len);
-                len += iguana_parsevinobj(myinfo,coin,&serialized[len],maxsize,&msg->vins[i],jitem(array,i),V!=0?&V[i]:0);
+                n = iguana_parsevinobj(myinfo,coin,&serialized[len],maxsize,&msg->vins[i],jitem(array,i),V!=0?&V[i]:0);
+                for (j=0; j<8; j++)
+                    printf("%02x",serialized[len+j]);
+                char str[65]; printf(" <- vinobj.%d starts offset.%d %s\n",i,len,bits256_str(str,msg->vins[i].prev_hash));
+                len += n;
             }
         }
     }
