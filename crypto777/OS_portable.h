@@ -44,6 +44,7 @@
 #define sleep(x) Sleep(1000*(x))
 #include "../OSlibs/win/mingw.h"
 #include "../OSlibs/win/mman.h"
+#define PTW32_STATIC_LIB
 #include "../OSlibs/win/pthread.h"
 
 #ifndef NATIVE_WINDOWS
