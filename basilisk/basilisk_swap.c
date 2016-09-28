@@ -85,13 +85,6 @@ Bob will spend bobpayment after INSTANTDEX_LOCKTIME
 Alice spends bobdeposit in 2*INSTANTDEX_LOCKTIME
 */
 
-// negative spend if value too small
-
-void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
-{
-    // save in append only for backstop reclaiming
-}
-
 void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
 {
     bits256 hash; int32_t i;
@@ -342,8 +335,8 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     jaddstr(sobj,"hex",hexstr);
     jadd(item,"scriptPubKey",sobj);
     jaddnum(item,"suppress",dest->suppress_pubkeys);
-    //if ( locktime != 0 )
-    //    jaddnum(item,"sequence",0);
+    if ( locktime != 0 )
+        jaddnum(item,"sequence",0);
     if ( (dest->redeemlen= rawtx->redeemlen) != 0 )
     {
         init_hexbytes_noT(hexstr,rawtx->redeemscript,rawtx->redeemlen);

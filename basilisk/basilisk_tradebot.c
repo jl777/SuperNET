@@ -15,6 +15,26 @@
 
 // included from basilisk.c
 
+void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
+{
+    // save in append only for backstop reclaiming
+    // delay -1 -> dont issue, else submit after delay
+}
+
+void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
+{
+    // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
+    if ( iambob != 0 )
+    {
+        
+    }
+    else
+    {
+        
+    }
+}
+
+
 uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
@@ -74,20 +94,6 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     }
     return(rp);
 }
-
-void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
-{
-    // update balance, compare to target balance, issue balancing trade via central exchanges, if needed 
-    if ( iambob != 0 )
-    {
-        
-    }
-    else
-    {
-        
-    }
-}
-
 
 struct basilisk_swap *basilisk_request_started(struct supernet_info *myinfo,uint32_t requestid)
 {
@@ -160,7 +166,7 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; uint64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
@@ -210,7 +216,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         }
         // BTC balance 0.00500000 destamount 0.00041951 aveprice 0.00421619 minamount 0.00020000
         printf("%s balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(minamount));
-        if ( balance > destamount && destamount > 0 && destamount >= maxamount && destamount >= minamount )
+        if ( balance > destamount && (int64_t)destamount > 0 && destamount >= maxamount && destamount >= minamount )
         {
             metric = 1.;
             *issueR = list[0];
