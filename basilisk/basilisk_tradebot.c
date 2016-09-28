@@ -18,7 +18,7 @@
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
 {
     // save in append only for backstop reclaiming
-    // delay -1 -> dont issue, else submit after delay
+    // delay -1 -> dont issue, else submit after block timestamp is delay after swap->started
 }
 
 void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)

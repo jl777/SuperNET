@@ -335,8 +335,8 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     jaddstr(sobj,"hex",hexstr);
     jadd(item,"scriptPubKey",sobj);
     jaddnum(item,"suppress",dest->suppress_pubkeys);
-    if ( locktime != 0 )
-        jaddnum(item,"sequence",0);
+    //if ( locktime != 0 )
+    //    jaddnum(item,"sequence",0);
     if ( (dest->redeemlen= rawtx->redeemlen) != 0 )
     {
         init_hexbytes_noT(hexstr,rawtx->redeemscript,rawtx->redeemlen);
