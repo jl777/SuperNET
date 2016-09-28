@@ -302,7 +302,7 @@ cJSON *gecko_paymentsobj(struct supernet_info *myinfo,cJSON *txjson,cJSON *valso
     if ( (txversion= juint(valsobj,"txversion")) == 0 )
         txversion = (locktime == 0) ? IGUANA_NORMAL_TXVERSION : IGUANA_LOCKTIME_TXVERSION;
     if ( txjson == 0 )
-        txjson = bitcoin_txcreate(1,locktime,txversion);
+        txjson = bitcoin_txcreate(1,locktime,txversion,juint(valsobj,"timestamp"));
     if ( (array= jarray(&n,valsobj,"payments")) != 0 && n > 0 )
     {
         for (i=0; i<n; i++)
