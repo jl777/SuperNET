@@ -22,6 +22,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
 {
     int32_t p2shlen,len = 0; uint32_t tmp;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
+    char str[65]; printf("prev_hash.(%s)\n",bits256_str(str,msg->prev_hash));
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
     if ( rwflag == 1 )
     {
@@ -503,11 +504,13 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         }
         dest.vins[i].p2shlen = 0;
         dest.vins[i].redeemscript = 0;
+        dest.vins[i].userdata = 0;
+        dest.vins[i].userdatalen = 0;
     }
     len = iguana_rwmsgtx(coin,height,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0,0,suppress_pubkeys);
     for (i=0; i<len; i++)
         printf("%02x",serialized[i]);
-    printf(" <- sigtx\n");
+    printf(" <- sigtx len.%d supp.%d user[0].%d\n",len,suppress_pubkeys,dest.vins[0].userdatalen);
     if ( len > 0 ) // (dest.tx_in != 1 || bits256_nonz(dest.vins[0].prev_hash) != 0) && dest.vins[0].scriptlen > 0 &&
     {
 #ifdef BTC2_VERSION
@@ -588,11 +591,12 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
     }
     for (i=0; i<msg->tx_in; i++)
     {
-        //printf("vin.%d starts offset.%d\n",i,len);
+        printf("vin.%d starts offset.%d\n",i,len);
         if ( vins != 0 && jitem(vins,i) != 0 )
             iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
         if ( (n= iguana_vinparse(coin,rwflag,&serialized[len],&msg->vins[i])) < 0 )
             return(-1);
+        printf("serialized vin.[%02x %02x %02x]\n",serialized[len],serialized[len+1],serialized[len+2]);
         if ( msg->vins[i].spendscript == spendscript )
             msg->vins[i].spendscript = 0;
         //printf("vin.%d n.%d len.%d\n",i,n,len);
@@ -981,7 +985,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                 if ( bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,vp->signers[j].pubkey,bitcoin_pubkeylen(vp->signers[j].pubkey)) < 0 )
                 {
                     
-                    //printf("SIG.%d.%d ERROR siglen.%d\n",vini,j,siglen);
+                    printf("SIG.%d.%d ERROR siglen.%d\n",vini,j,siglen);
                 }
                 else
                 {
