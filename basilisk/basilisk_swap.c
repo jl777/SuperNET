@@ -457,7 +457,7 @@ int32_t basilisk_swapuserdata(struct basilisk_swap *swap,uint8_t *userdata,bits2
     {
         userdata[len++] = sizeof(privkey);
         for (i=0; i<sizeof(privkey); i++)
-            userdata[len++] = privkey.bytes[i];
+            userdata[len++] = privkey.bytes[31 - i];
     }
     userdata[len++] = 0x51 * ifpath; // ifpath == 1 -> if path, 0 -> else path
     return(len);
@@ -528,7 +528,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
     {
         for (i=0; i<32; i++)
             revAm.bytes[i] = swap->privAm.bytes[31-i];
-        len = basilisk_swapuserdata(swap,userdata,revAm,0,swap->myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
+        len = basilisk_swapuserdata(swap,userdata,swap->privAm,0,swap->myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.redeemlen);
         char str[65]; printf("bobpaid.(%s)\n",bits256_str(str,swap->privAm));
         if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->blocks.hwmchain.height,swap,&swap->alicespend,&swap->bobpayment,swap->myprivs[0],0,userdata,len)) == 0 )
         {
