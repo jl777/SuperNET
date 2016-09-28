@@ -790,7 +790,7 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
     {
         for (j=0; j<32; j++)
             privkey.bytes[j] = data[len++];
-        calc_rmd160_sha256(secret160,privkey.bytes,sizeof(privkey));
+        revcalc_rmd160_sha256(secret160,privkey);//.bytes,sizeof(privkey));
         memcpy(&txid,secret160,sizeof(txid));
         pubi = bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
         if ( basilisk_verify_pubpair(&wrongfirstbyte,swap,swap->choosei,pubkey33[0],pubi,txid) == 0 )
@@ -933,7 +933,7 @@ int32_t basilisk_priviextract(struct supernet_info *myinfo,struct iguana_info *c
         {
             for (i=0; i<32; i++)
                 privkey.bytes[i] = scriptsig[scriptlen - 33 + i];
-            calc_rmd160_sha256(rmd160,privkey.bytes,sizeof(privkey));
+            revcalc_rmd160_sha256(rmd160,privkey);//.bytes,sizeof(privkey));
             if ( memcmp(secret160,rmd160,sizeof(rmd160)) == sizeof(rmd160) )
             {
                 *destp = privkey;
@@ -1026,7 +1026,7 @@ int32_t instantdex_pubkeyargs(struct supernet_info *myinfo,struct basilisk_swap 
         if ( m < INSTANTDEX_DECKSIZE )
         {
             swap->privkeys[m] = privkey;
-            calc_rmd160_sha256(secret160,privkey.bytes,sizeof(privkey));
+            revcalc_rmd160_sha256(secret160,privkey);//.bytes,sizeof(privkey));
             memcpy(&txid,secret160,sizeof(txid));
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][0],sizeof(txid),&txid);
             len += iguana_rwnum(1,(uint8_t *)&swap->deck[m][1],sizeof(pubi.txid),&pubi.txid);
@@ -1314,7 +1314,7 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
             if ( i != swap->choosei )
             {
                 pubi = bitcoin_pubkey33(myinfo->ctx,otherpubkey,otherpriv);
-                calc_rmd160_sha256(secret160,otherpriv.bytes,sizeof(otherpriv));
+                revcalc_rmd160_sha256(secret160,otherpriv);//.bytes,sizeof(otherpriv));
                 memcpy(&txid,secret160,sizeof(txid));
                 errs += basilisk_verify_pubpair(&wrongfirstbyte,swap,i,otherpubkey[0],pubi,txid);
             }
@@ -1442,7 +1442,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
             {
                 swap->privBn = swap->privkeys[swap->otherchoosei];
                 memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-                calc_rmd160_sha256(swap->secretBn,swap->privBn.bytes,sizeof(swap->privBn));
+                revcalc_rmd160_sha256(swap->secretBn,swap->privBn);//.bytes,sizeof(swap->privBn));
                 vcalc_sha256(0,swap->secretBn256,swap->privBn.bytes,sizeof(swap->privBn));
                 swap->pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privBn);
                 printf("set privBn.%s %s\n",bits256_str(str,swap->privBn),bits256_str(str2,*(bits256 *)swap->secretBn256));
@@ -1455,7 +1455,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
             {
                 swap->privAm = swap->privkeys[swap->otherchoosei];
                 memset(&swap->privkeys[swap->otherchoosei],0,sizeof(swap->privkeys[swap->otherchoosei]));
-                calc_rmd160_sha256(swap->secretAm,swap->privAm.bytes,sizeof(swap->privAm));
+                revcalc_rmd160_sha256(swap->secretAm,swap->privAm);//.bytes,sizeof(swap->privAm));
                 vcalc_sha256(0,swap->secretAm256,swap->privAm.bytes,sizeof(swap->privAm));
                 swap->pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->privAm);
                 printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
