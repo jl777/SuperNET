@@ -505,9 +505,9 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         dest.vins[i].redeemscript = 0;
     }
     len = iguana_rwmsgtx(coin,height,1,0,serialized,maxlen,&dest,&txid,vpnstr,0,0,0,suppress_pubkeys);
-    //for (i=0; i<len; i++)
-    //    printf("%02x",serialized[i]);
-    //printf(" <- sigtx\n");
+    for (i=0; i<len; i++)
+        printf("%02x",serialized[i]);
+    printf(" <- sigtx\n");
     if ( len > 0 ) // (dest.tx_in != 1 || bits256_nonz(dest.vins[0].prev_hash) != 0) && dest.vins[0].scriptlen > 0 &&
     {
 #ifdef BTC2_VERSION
@@ -518,7 +518,7 @@ bits256 bitcoin_sigtxid(struct iguana_info *coin,int32_t height,uint8_t *seriali
         revsigtxid = bits256_doublesha256(0,serialized,len);
         for (i=0; i<sizeof(revsigtxid); i++)
             sigtxid.bytes[31-i] = revsigtxid.bytes[i];
-        //char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
+        char str[65]; printf("SIGTXID.(%s) numvouts.%d\n",bits256_str(str,sigtxid),dest.tx_out);
     }
     free(dest.vins);
     free(dest.vouts);
@@ -964,13 +964,14 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                         bitcoin_pubkey33(coin->ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
-                    /*int32_t i; for (i=0; i<siglen; i++)
+                    char str[65]; printf("SIGTXID.(%s) ",bits256_str(str,sigtxid));
+                    int32_t i; for (i=0; i<siglen; i++)
                         printf("%02x",sig[i]);
                     printf(" sig, ");
                     for (i=0; i<plen; i++)
                         printf("%02x",vp->signers[j].pubkey[i]);
                     // s2 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1;
-                    char str[65]; printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));*/
+                    printf(" SIGNEDTX.[%02x] siglen.%d priv.%s\n",sig[siglen-1],siglen,bits256_str(str,vp->signers[j].privkey));
                 }
                 if ( sig == 0 || siglen == 0 )
                 {
@@ -986,13 +987,13 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                 {
                     flag++;
                     numsigs++;
-                    /*int32_t z;
+                    int32_t z;
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]n\n",j);
                     for (z=0; z<33; z++)
-                        printf("%02x",vp->signers[j].pubkey[z]);*/
-                    //printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);
+                        printf("%02x",vp->signers[j].pubkey[z]);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);
                 }
             }
             if ( numsigs >= vp->M )
