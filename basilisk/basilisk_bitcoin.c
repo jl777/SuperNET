@@ -571,7 +571,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 )
     {
-        if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion)) != 0 )
+        if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,juint(valsobj,"timestamp"))) != 0 )
         {
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
             decode_hex(buf,spendlen,spendscriptstr);

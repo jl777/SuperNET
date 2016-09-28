@@ -1235,13 +1235,13 @@ cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_
     return(txobj);
 }
 
-cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion)
+cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp)
 {
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
     jaddnum(json,"locktime",locktime);
     if ( isPoS != 0 )
-        jaddnum(json,"timestamp",time(NULL));
+        jaddnum(json,"timestamp",timestamp == 0 ? time(NULL) : timestamp);
     jadd(json,"vin",cJSON_CreateArray());
     jadd(json,"vout",cJSON_CreateArray());
     return(json);
@@ -1346,7 +1346,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     if ( M > N || N > 3 )
         return(clonestr("{\"error\":\"illegal M or N\"}"));
     memset(&V,0,sizeof(V));
-    txobj = bitcoin_txcreate(active->chain->isPoS,0,coin->chain->normal_txversion);
+    txobj = bitcoin_txcreate(active->chain->isPoS,0,coin->chain->normal_txversion,0);
     if ( destaddress[0] != 0 && destamount > 0. )
         bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
     if ( destaddress2[0] != 0 && destamount2 > 0. )
