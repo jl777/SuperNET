@@ -271,6 +271,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         free(retstr);
     } else printf("null incoming\n");
+    channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     if ( hwm > 0. )
     {
         printf("hwm %f\n",hwm);
@@ -279,8 +280,20 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             printf("my req hwm %f\n",hwm);
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
-            if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
-                free(retstr);
+            basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
+            numiters = 0;
+            while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
+            {
+                printf("didnt get back what was sent\n");
+                sleep(3);
+                basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
+                numiters++;
+            }
+            if ( crc != 0 )
+            {
+                if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                    free(retstr);
+            } else printf("couldnt accept offer\n");
         }
         else //if ( issueR.quoteid == 0 )
         {
@@ -289,7 +302,6 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
-            channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
             crcs[0] = crcs[1] = 0;
             numiters = 0;
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);

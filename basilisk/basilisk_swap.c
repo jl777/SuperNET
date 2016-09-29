@@ -1806,10 +1806,10 @@ void basilisk_swaploop(void *_swap)
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 600;
     myinfo->DEXactive = expiration;
-    basilisk_sendstate(myinfo,swap,data,maxlen);
     while ( (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
     {
         printf("A r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
+        basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_sendpubkeys(myinfo,swap,data,maxlen); // send pubkeys
         if ( basilisk_checkdeck(myinfo,swap,data,maxlen) == 0) // check for other deck 0x02
             basilisk_sendchoosei(myinfo,swap,data,maxlen);
@@ -1924,7 +1924,7 @@ void basilisk_swaploop(void *_swap)
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
-    int32_t i; uint8_t data[64]; struct basilisk_swap *swap = 0;
+    int32_t i; uint32_t channel; cJSON *retarray; struct basilisk_swap *swap = 0;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1945,8 +1945,11 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             {
                 printf("waiting for offer to be accepted\n");
                 sleep(3);
-                if ( basilisk_swapget(myinfo,swap,0,data,sizeof(data),basilisk_verify_otherstatebits) == sizeof(statebits) )
-                    statebits = swap->I.otherstatebits;
+                channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+                if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
+                {
+                    printf("RETARRAY.(%s)\n",jprint(retarray,0));
+                }
             }
             fprintf(stderr,"launch.%d %d\n",myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
             if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
