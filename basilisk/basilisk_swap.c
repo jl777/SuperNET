@@ -1941,10 +1941,10 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         printf("START swap requestid.%u\n",rp->requestid);
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
-            m = n = 0;
             starttime = (uint32_t)time(NULL);
-            while ( m <= n/2 && time(NULL) < starttime+300 )
+            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+300 )
             {
+                m = n = 0;
                 printf("waiting for offer to be accepted\n");
                 sleep(3);
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
@@ -1957,13 +1957,14 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                             item = jitem(msgobj,i);
                             if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
                                 m++;
+                            else printf("(%s)\n",jprint(item,0));
                         }
-                    }
-                }
+                    } else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
+                } else printf("no retarray\n");
             }
-            if ( m > n/2 )
+            if ( statebits != 0 || m > n/2 )
             {
-                fprintf(stderr,"launch.%d %d\n",myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
+                fprintf(stderr,"m.%d n.%d launch.%d %d\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     
