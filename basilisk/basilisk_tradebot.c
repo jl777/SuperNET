@@ -178,6 +178,10 @@ void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,stru
         if ( (jsonstr= OS_filestr(&filesize,fname)) != 0 )
         {
             jsonstr[strlen(jsonstr)-1] = ']';
+            if ( jsonstr[strlen(jsonstr)-2] == ',' )
+                jsonstr[strlen(jsonstr)-2] = ' ';
+            if ( jsonstr[strlen(jsonstr)-3] == ',' )
+                jsonstr[strlen(jsonstr)-3] = ' ';
             if ( (dexobj= cJSON_Parse(jsonstr)) != 0 )
             {
                 if ( is_cJSON_Array(dexobj) != 0 && (n= cJSON_GetArraySize(dexobj)) > 0 )

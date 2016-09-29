@@ -105,7 +105,7 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
             {
                 pricesum += (quote.price * quote.volume);
                 totalvol += quote.volume;
-                //printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
+                printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
             }
         }
         if ( totalvol > 0. )
