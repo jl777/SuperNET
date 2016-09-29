@@ -1869,6 +1869,7 @@ void basilisk_swaploop(void *_swap)
             for (i=0; i<32; i++)
                 printf("%02x",swap->pubB1.bytes[i]);
             printf(" <- pubB1\n");*/
+            basilisk_txlog(myinfo,swap,0,-1);
             if ( swap->I.iambob != 0 )
             {
                 if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
@@ -1901,7 +1902,6 @@ void basilisk_swaploop(void *_swap)
             {
                 swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
                 iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
-                basilisk_txlog(myinfo,swap,0,-1);
                 basilisk_txlog(myinfo,swap,&swap->myfee,-1);
             }
             else

@@ -17,7 +17,7 @@
 void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
     // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    double price,volume,srcamount,destamount,profitmargin,dir=0.;
+    double price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64];
     srcamount = swap->I.req.srcamount;
     destamount = swap->I.req.destamount;
     profitmargin = (double)swap->I.req.profitmargin / 1000000.;
@@ -26,14 +26,17 @@ void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         printf("illegal amount for balancing %f %f\n",srcamount,destamount);
         return;
     }
+    strcpy(rel,"BTC");
     if ( strcmp(swap->I.req.src,"BTC") == 0 )
     {
+        strcpy(base,swap->I.req.dest);
         price = (srcamount / destamount);
         volume = destamount / SATOSHIDEN;
         dir = -1.;
     }
     else if ( strcmp(swap->I.req.dest,"BTC") == 0 )
     {
+        strcpy(base,swap->I.req.src);
         price = (destamount / srcamount);
         volume = srcamount / SATOSHIDEN;
         dir = 1.;
@@ -46,6 +49,9 @@ void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
     if ( iambob != 0 )
     {
         printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
+        if ( dir < 0. )
+            InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+        else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
     }
     else
     {
