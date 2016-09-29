@@ -24,7 +24,7 @@
  e) BEFORE Bob broadcasts deposit, Alice broadcasts BTC denominated fee in cltv so if trade isnt done fee is reclaimed
  */
 
-//#define DISABLE_CHECKSIG
+//#define DISABLE_CHECKSIG // unsolved MITM (evil peer)
 
 /*
  both fees are standard payments: OP_DUP OP_HASH160 FEE_RMD160 OP_EQUALVERIFY OP_CHECKSIG
@@ -287,13 +287,13 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 
 int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
-    char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t needsig=1,retval = -1; uint32_t timestamp; struct vin_info *V; uint32_t locktime=0;
+    char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t needsig=1,retval = -1; uint32_t timestamp,sequenceid=0xffffffff; struct vin_info *V; uint32_t locktime=0;
     V = calloc(16,sizeof(*V));
     timestamp = swap->started;
     if ( dest == &swap->aliceclaim )
-        locktime = (timestamp + INSTANTDEX_LOCKTIME + 3);
+        locktime = swap->bobdeposit.locktime - 1, sequenceid = 0;
     else if ( dest == &swap->bobreclaim )
-        locktime = (timestamp + 2*INSTANTDEX_LOCKTIME + 3);
+        locktime = swap->bobpayment.locktime - 1, sequenceid = 0;
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
     privkeys = cJSON_CreateArray();
@@ -321,7 +321,6 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
         V[0].userdatalen = userdatalen;
         init_hexbytes_noT(hexstr,userdata,userdatalen);
         jaddstr(item,"userdata",hexstr);
-        //jaddnum(item,"sequence",0);
 #ifdef DISABLE_CHECKSIG
         needsig = 0;
 #endif
@@ -335,8 +334,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     jaddstr(sobj,"hex",hexstr);
     jadd(item,"scriptPubKey",sobj);
     jaddnum(item,"suppress",dest->suppress_pubkeys);
-    //if ( locktime != 0 )
-    //    jaddnum(item,"sequence",0);
+    jaddnum(item,"sequence",sequenceid);
     if ( (dest->redeemlen= rawtx->redeemlen) != 0 )
     {
         init_hexbytes_noT(hexstr,rawtx->redeemscript,rawtx->redeemlen);
@@ -1522,7 +1520,7 @@ void basilisk_swaploop(void *_swap)
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 300;
+    expiration = (uint32_t)time(NULL) + 600;
     myinfo->DEXactive = expiration;
     while ( time(NULL) < expiration )
     {
@@ -1533,7 +1531,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
-        sleep(3);
+        sleep(1);
     }
     while ( time(NULL) < expiration )
     {
@@ -1544,7 +1542,7 @@ void basilisk_swaploop(void *_swap)
             swap->statebits |= 0x20;
             break;
         }
-        sleep(3 + (swap->iambob == 0)*10);
+        sleep(1);//3 + (swap->iambob == 0)*10);
     }
     if ( time(NULL) >= expiration )
         retval = -1;
@@ -1641,7 +1639,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->otherstatebits & 0x80) != 0 && (swap->statebits & 0x80) != 0 )
             break;
-        sleep(3 + (swap->iambob == 0)*10);
+        sleep(1);//3 + (swap->iambob == 0)*10);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->otherstatebits & 0x80) == 0 )
