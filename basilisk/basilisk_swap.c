@@ -291,9 +291,9 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     V = calloc(16,sizeof(*V));
     timestamp = swap->started;
     if ( dest == &swap->aliceclaim )
-        locktime = swap->bobdeposit.locktime - 1, sequenceid = 0;
+        locktime = swap->bobdeposit.locktime + 1, sequenceid = 0;
     else if ( dest == &swap->bobreclaim )
-        locktime = swap->bobpayment.locktime - 1, sequenceid = 0;
+        locktime = swap->bobpayment.locktime + 1, sequenceid = 0;
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
     privkeys = cJSON_CreateArray();
@@ -1190,22 +1190,22 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         basilisk_rawtx_setparms("myfee",myinfo,swap,&swap->myfee,swap->alicecoin,0,0,swap->alicesatoshis/INSTANTDEX_DECKSIZE,0,0);
         alicepub33 = myinfo->persistent_pubkey33;
     }
-    basilisk_rawtx_setparms("bobdeposit",myinfo,swap,&swap->bobdeposit,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis*1.1,4,0);
-    basilisk_rawtx_setparms("bobrefund",myinfo,swap,&swap->bobrefund,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("bobdeposit",myinfo,swap,&swap->bobdeposit,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis + (swap->bobsatoshis>>3) + swap->bobcoin->txfee,4,0);
+    basilisk_rawtx_setparms("bobrefund",myinfo,swap,&swap->bobrefund,swap->bobcoin,1,4,swap->bobsatoshis + (swap->bobsatoshis>>3),1,bobpub33);
     swap->bobrefund.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("aliceclaim",myinfo,swap,&swap->aliceclaim,swap->bobcoin,1,4,swap->bobsatoshis*1.1-swap->bobcoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("aliceclaim",myinfo,swap,&swap->aliceclaim,swap->bobcoin,1,4,swap->bobsatoshis + (swap->bobsatoshis>>3),1,alicepub33);
     swap->aliceclaim.suppress_pubkeys = 1;
 
-    basilisk_rawtx_setparms("bobpayment",myinfo,swap,&swap->bobpayment,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis,3,0);
-    basilisk_rawtx_setparms("alicespend",myinfo,swap,&swap->alicespend,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("bobpayment",myinfo,swap,&swap->bobpayment,swap->bobcoin,swap->bobconfirms,0,swap->bobsatoshis + swap->bobcoin->txfee,3,0);
+    basilisk_rawtx_setparms("alicespend",myinfo,swap,&swap->alicespend,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis,1,alicepub33);
     swap->alicespend.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("bobreclaim",myinfo,swap,&swap->bobreclaim,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis - swap->bobcoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("bobreclaim",myinfo,swap,&swap->bobreclaim,swap->bobcoin,swap->bobconfirms,3,swap->bobsatoshis,1,bobpub33);
     swap->bobreclaim.suppress_pubkeys = 1;
 
-    basilisk_rawtx_setparms("alicepayment",myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis,2,0);
-    basilisk_rawtx_setparms("bobspend",myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,bobpub33);
+    basilisk_rawtx_setparms("alicepayment",myinfo,swap,&swap->alicepayment,swap->alicecoin,swap->aliceconfirms,0,swap->alicesatoshis+swap->alicecoin->txfee,2,0);
+    basilisk_rawtx_setparms("bobspend",myinfo,swap,&swap->bobspend,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis,1,bobpub33);
     swap->bobspend.suppress_pubkeys = 1;
-    basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis-swap->alicecoin->txfee,1,alicepub33);
+    basilisk_rawtx_setparms("alicereclaim",myinfo,swap,&swap->alicereclaim,swap->alicecoin,swap->aliceconfirms,2,swap->alicesatoshis,1,alicepub33);
     swap->alicereclaim.suppress_pubkeys = 1;
     printf("IAMBOB.%d\n",swap->iambob);
     return(swap);
