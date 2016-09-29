@@ -372,7 +372,11 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
+    {
+        if ( active->I.req.quoteid != 0 )
+            return(0.);
         pendingid = active->I.req.quoteid;
+    }
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
         myrequest = 1;
     for (i=0; i<n; i++)

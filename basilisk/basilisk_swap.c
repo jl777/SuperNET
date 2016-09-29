@@ -1201,22 +1201,12 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         swap->I.otherhash = swap->I.req.desthash;
         if ( strcmp(swap->I.req.src,swap->I.bobstr) == 0 )
             swap->I.iambob = 1;
-        else if ( strcmp(swap->I.req.dest,swap->I.alicestr) == 0 )
-        {
-            printf("neither bob nor alice error\n");
-            return(0);
-        }
     }
     else if ( bits256_cmp(swap->I.myhash,swap->I.req.desthash) == 0 )
     {
         swap->I.otherhash = swap->I.req.srchash;
         if ( strcmp(swap->I.req.dest,swap->I.bobstr) == 0 )
             swap->I.iambob = 1;
-        else if ( strcmp(swap->I.req.src,swap->I.alicestr) != 0 )
-        {
-            printf("neither alice nor bob error\n");
-            return(0);
-        }
     }
     else
     {
@@ -1228,7 +1218,6 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
         return(0);
     }
-
     if ( bits256_nonz(myinfo->persistent_priv) == 0 || (x= instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
         printf("couldnt generate privkeys %d\n",x);
