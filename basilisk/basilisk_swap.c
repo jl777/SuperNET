@@ -1924,7 +1924,7 @@ void basilisk_swaploop(void *_swap)
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
-    int32_t i; uint32_t channel; cJSON *retarray; struct basilisk_swap *swap = 0;
+    int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1941,22 +1941,35 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         printf("START swap requestid.%u\n",rp->requestid);
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
-            while ( statebits == 0 )
+            m = n = 0;
+            starttime = (uint32_t)time(NULL);
+            while ( m <= n/2 && time(NULL) < starttime+300 )
             {
                 printf("waiting for offer to be accepted\n");
                 sleep(3);
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
                 if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                 {
-                    printf("RETARRAY.(%s)\n",jprint(retarray,0));
+                    if ( (msgobj= jarray(&n,retarray,"messages")) != 0 && n > 0 )
+                    {
+                        for (i=m=0; i<n; i++)
+                        {
+                            item = jitem(msgobj,i);
+                            if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
+                                m++;
+                        }
+                    }
                 }
             }
-            fprintf(stderr,"launch.%d %d\n",myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
-            if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
+            if ( m > n/2 )
             {
-                
-            }
-            myinfo->swaps[myinfo->numswaps++] = swap;
+                fprintf(stderr,"launch.%d %d\n",myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
+                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
+                {
+                    
+                }
+                myinfo->swaps[myinfo->numswaps++] = swap;
+            } else printf("%u/%u offer wasnt accepted\n",rp->requestid,rp->quoteid);
         }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
