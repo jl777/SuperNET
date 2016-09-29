@@ -405,7 +405,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
-        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
+        //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
+        destamount = (1.0 - profitmargin) * retvals[0] * list[0].srcamount;
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
