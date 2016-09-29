@@ -173,7 +173,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
         int32_t i; struct basilisk_request R;
         if ( basilisk_parsejson(&R,item) != 0 )
         {
-            if ( memcmp(&R,rp,sizeof(*rp)) != 0 )
+            if ( memcmp(&R,rp,sizeof(*rp)-sizeof(uint32_t)) != 0 )
             {
                 for (i=0; i<sizeof(*rp); i++)
                     printf("%02x",((uint8_t *)rp)[i]);
