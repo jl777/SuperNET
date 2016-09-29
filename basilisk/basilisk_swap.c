@@ -1958,7 +1958,6 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                             item = jitem(retarray,i);
                             if ( (msgobj= jarray(&n,item,"messages")) != 0 && n > 0 )
                             {
-                                printf("msgobj.(%s)\n",jprint(msgobj,0));
                                 item = jitem(msgobj,0);
                                 if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
                                     m++;

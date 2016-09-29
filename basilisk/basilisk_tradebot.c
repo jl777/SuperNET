@@ -45,11 +45,11 @@ void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
     }
     if ( iambob != 0 )
     {
-        printf("BOB: price %f * vol %f -> %s newprice %f\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price);
+        printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
     }
     else
     {
-        printf("ALICE: price %f * vol %f -> %s newprice %f\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price);
+        printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
     }
 }
 
@@ -216,9 +216,12 @@ void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,stru
         dexobj = basilisk_swapobj(myinfo,swap);
     if ( dexobj != 0 && (jsonstr= jprint(dexobj,1)) != 0 )
     {
-        printf("%s\n",jsonstr);
-        fprintf(myinfo->dexfp,"%s,\n",jsonstr);
-        fflush(myinfo->dexfp);
+        //printf("%s\n",jsonstr);
+        if ( myinfo->dexfp != 0 )
+        {
+            fprintf(myinfo->dexfp,"%s,\n",jsonstr);
+            fflush(myinfo->dexfp);
+        }
         free(jsonstr);
     }
 }
