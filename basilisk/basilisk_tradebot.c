@@ -48,14 +48,23 @@ void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
     }
     if ( iambob != 0 )
     {
-        printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
-        if ( dir < 0. )
-            InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-        else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+        if ( myinfo->IAMLP != 0 )
+        {
+            printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
+            if ( dir < 0. )
+                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+        }
     }
     else
     {
-        printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
+        if ( myinfo->IAMLP != 0 )
+        {
+            printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
+            if ( dir > 0. )
+                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+        }
     }
 }
 
