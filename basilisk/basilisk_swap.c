@@ -1951,18 +1951,21 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
                 if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                 {
-                    printf("RETARRAY.(%s)\n",jprint(retarray,0));
-                    if ( (msgobj= jarray(&n,retarray,"messages")) != 0 && n > 0 )
+                    if ( is_cJSON_Array(retarray) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
                     {
-                        printf("msgobj.(%s)\n",jprint(msgobj,0));
-                        for (i=m=0; i<n; i++)
+                        for (i=0; i<n; i++)
                         {
-                            item = jitem(msgobj,i);
-                            if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
-                                m++;
-                            else printf("(%s)\n",jprint(item,0));
+                            item = jitem(retarray,i);
+                            if ( (msgobj= jarray(&n,item,"messages")) != 0 && n > 0 )
+                            {
+                                printf("msgobj.(%s)\n",jprint(msgobj,0));
+                                item = jitem(msgobj,0);
+                                if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
+                                    m++;
+                                else printf("(%s)\n",jprint(item,0));
+                            } else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
                         }
-                    } else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
+                    }
                 } else printf("no retarray\n");
             }
             if ( statebits != 0 || m > n/2 )
