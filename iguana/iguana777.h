@@ -89,6 +89,7 @@ struct supernet_info
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
     void *ctx;
     uint8_t *pingbuf;
+    FILE *dexfp;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     struct peggy_info *PEGS;

@@ -14,11 +14,114 @@
  ******************************************************************************/
 
 // included from basilisk.c
+cJSON *basilisk_rawtxobj(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
+{
+    cJSON *obj = cJSON_CreateObject();
+    return(obj);
+}
+
+cJSON *basilisk_swapobj(struct supernet_info *myinfo,struct basilisk_swap *swap)
+{
+    char hexstr[sizeof(swap->I)*2+1]; cJSON *obj = cJSON_CreateObject();
+    init_hexbytes_noT(hexstr,(void *)&swap->I,sizeof(swap->I));
+    jaddstr(obj,"name","swap");
+    jaddnum(obj,"requestid",swap->I.req.requestid);
+    jaddnum(obj,"quoteid",swap->I.req.quoteid);
+    jadd(obj,"req",basilisk_requestjson(&swap->I.req));
+    jaddstr(obj,"info",hexstr);
+    return(obj);
+}
+
+int32_t basilisk_swapconv(struct supernet_info *myinfo,struct basilisk_swap *swap,cJSON *obj)
+{
+    char *hexstr;
+    if ( (hexstr= jstr(obj,"info")) != 0 && strlen(hexstr) == sizeof(swap->I)*2 )
+    {
+        decode_hex((void *)&swap->I,sizeof(swap->I),hexstr);
+        if ( juint(obj,"requestid") == swap->I.req.requestid && juint(obj,"quoteid") == swap->I.req.quoteid )
+            return(0);
+        printf("swapconv mismatched req/quote %d %d, %d %d\n",juint(obj,"requestid"),swap->I.req.requestid,juint(obj,"quoteid"),swap->I.req.quoteid);
+    } else printf("no info field in swap obj\n");
+    return(-1);
+}
+
+struct basilisk_swap *basilisk_swapstore(struct supernet_info *myinfo,struct basilisk_swap *swap)
+{
+    return(swap);
+}
+
+struct basilisk_swap *basilisk_swapload(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t requestid,uint32_t quoteid)
+{
+    return(swap);
+}
+
+int32_t basilisk_txitem(struct supernet_info *myinfo,struct basilisk_swap *swap,cJSON *obj)
+{
+    return(0);
+}
+
+void basilisk_swapstart(struct supernet_info *myinfo) // scan saved tmpswap, purge if complete, else Q
+{
+    
+}
 
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
 {
-    // save in append only for backstop reclaiming
-    // delay -1 -> dont issue, else submit after block timestamp is delay after swap->started
+    char fname[1024],*jsonstr; long filesize; cJSON *item,*dexobj = 0; int32_t i,n,pending; struct basilisk_swap tmpswap,*swapptr;
+    sprintf(fname,"%s/DEX.log",GLOBAL_DBDIR), OS_compatible_path(fname);
+    if ( myinfo->dexfp == 0 )
+    {
+        if ( (jsonstr= OS_filestr(&filesize,fname)) != 0 )
+        {
+            jsonstr[strlen(jsonstr)-1] = ']';
+            if ( (dexobj= cJSON_Parse(jsonstr)) != 0 )
+            {
+                if ( is_cJSON_Array(dexobj) != 0 && (n= cJSON_GetArraySize(dexobj)) > 0 )
+                {
+                    pending = 0;
+                    memset(&tmpswap,0,sizeof(tmpswap));
+                    swapptr = 0;
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(dexobj,i);
+                        if ( jstr(item,"name") != 0 && strcmp(jstr(item,"name"),"swap") == 0 )
+                        {
+                            if ( basilisk_swapconv(myinfo,&tmpswap,item) == 0 )
+                                swapptr = basilisk_swapstore(myinfo,&tmpswap);
+                        }
+                        else if ( swapptr != 0 )
+                        {
+                            if ( swapptr->I.req.requestid == juint(item,"requestid") && swapptr->I.req.quoteid == juint(item,"quoteid") )
+                                basilisk_txitem(myinfo,swapptr,item);
+                        }
+                        else if ( (swapptr= basilisk_swapload(myinfo,&tmpswap,juint(item,"requestid"),juint(item,"quoteid"))) != 0 )
+                            basilisk_txitem(myinfo,swapptr,item);
+                    }
+                    basilisk_swapstart(myinfo);
+                }
+                free_json(dexobj);
+                dexobj = 0;
+            } else printf("basilisk_txlog error parsing.(%s)\n",jsonstr);
+            free(jsonstr);
+        }
+        if ( (myinfo->dexfp= fopen(fname,"rb+")) != 0 )
+            fseek(myinfo->dexfp,0,SEEK_END);
+        else if ( (myinfo->dexfp= fopen(fname,"wb")) != 0 )
+            fprintf(myinfo->dexfp,"[\n");
+    }
+    if ( rawtx != 0 )
+    {
+        // delay -1 -> dont issue, else submit after block timestamp is delay after swap->started
+        dexobj = basilisk_rawtxobj(myinfo,swap,rawtx);
+    }
+    else if ( swap != 0 )
+        dexobj = basilisk_swapobj(myinfo,swap);
+    if ( dexobj != 0 && (jsonstr= jprint(dexobj,1)) != 0 )
+    {
+        printf("%s\n",jsonstr);
+        fprintf(myinfo->dexfp,"%s,\n",jsonstr);
+        free(jsonstr);
+    }
 }
 
 void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
@@ -100,7 +203,7 @@ struct basilisk_swap *basilisk_request_started(struct supernet_info *myinfo,uint
     int32_t i; struct basilisk_swap *active = 0;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
-        if ( myinfo->swaps[i]->req.requestid == requestid )
+        if ( myinfo->swaps[i]->I.req.requestid == requestid )
         {
             //printf("REQUEST STARTED.[%d] <- req.%u\n",i,requestid);
             active = myinfo->swaps[i];
@@ -171,7 +274,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
-        pendingid = active->req.quoteid;
+        pendingid = active->I.req.quoteid;
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
         myrequest = 1;
     for (i=0; i<n; i++)
