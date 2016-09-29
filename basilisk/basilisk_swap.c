@@ -1939,6 +1939,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         swap->I.req = *rp;
         swap->myinfo = myinfo;
         printf("START swap requestid.%u\n",rp->requestid);
+        m = n = 0;
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
             starttime = (uint32_t)time(NULL);
@@ -1950,8 +1951,10 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
                 if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                 {
+                    printf("RETARRAY.(%s)\n",jprint(retarray,0));
                     if ( (msgobj= jarray(&n,retarray,"messages")) != 0 && n > 0 )
                     {
+                        printf("msgobj.(%s)\n",jprint(msgobj,0));
                         for (i=m=0; i<n; i++)
                         {
                             item = jitem(msgobj,i);
