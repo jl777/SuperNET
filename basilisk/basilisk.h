@@ -42,18 +42,24 @@
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 
-struct basilisk_rawtx
+struct basilisk_rawtxinfo
 {
+    char destaddr[64];
     bits256 txid,signedtxid,actualtxid;
-    struct iguana_msgtx msgtx;
-    struct iguana_info *coin;
-    cJSON *vins;
     uint64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
     uint32_t locktime,crcs[2];
-    char destaddr[64],name[32];
-    uint8_t addrtype,pubkey33[33],spendscript[512],redeemscript[1024],rmd160[20];
-    uint8_t *txbytes,extraspace[1024];
+    uint8_t addrtype,pubkey33[33],rmd160[20];
+};
+
+struct basilisk_rawtx
+{
+    char name[32];
+    struct iguana_msgtx msgtx;
+    struct basilisk_rawtxinfo I;
+    struct iguana_info *coin;
+    cJSON *vins;
+    uint8_t *txbytes,spendscript[512],redeemscript[1024],extraspace[1024];
 };
 
 struct basilisk_swapinfo
@@ -61,7 +67,7 @@ struct basilisk_swapinfo
     struct basilisk_request req;
     char bobstr[64],alicestr[64];
     bits256 myhash,otherhash,orderhash;
-    uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,locktime;
+    uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
     int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
     

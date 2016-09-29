@@ -14,10 +14,112 @@
  ******************************************************************************/
 
 // included from basilisk.c
+void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
+{
+    // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
+    double price,volume,srcamount,destamount,profitmargin,dir=0.;
+    srcamount = swap->I.req.srcamount;
+    destamount = swap->I.req.destamount;
+    profitmargin = (double)swap->I.req.profitmargin / 1000000.;
+    if ( srcamount <= SMALLVAL || destamount <= SMALLVAL )
+    {
+        printf("illegal amount for balancing %f %f\n",srcamount,destamount);
+        return;
+    }
+    if ( strcmp(swap->I.req.src,"BTC") == 0 )
+    {
+        price = (srcamount / destamount);
+        volume = destamount / SATOSHIDEN;
+        dir = -1.;
+    }
+    else if ( strcmp(swap->I.req.dest,"BTC") == 0 )
+    {
+        price = (destamount / srcamount);
+        volume = srcamount / SATOSHIDEN;
+        dir = 1.;
+    }
+    else
+    {
+        printf("only BTC trades can be balanced, not (%s/%s)\n",swap->I.req.src,swap->I.req.dest);
+        return;
+    }
+    if ( iambob != 0 )
+    {
+        printf("BOB: price %f * vol %f -> %s newprice %f\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price);
+    }
+    else
+    {
+        printf("ALICE: price %f * vol %f -> %s newprice %f\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price);
+    }
+}
+
+
 cJSON *basilisk_rawtxobj(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
-    cJSON *obj = cJSON_CreateObject();
+    char hexstr[sizeof(rawtx->I)*2+1+4096]; cJSON *obj = cJSON_CreateObject();
+    jaddstr(obj,"name",rawtx->name);
+    init_hexbytes_noT(hexstr,(void *)&rawtx->I,sizeof(rawtx->I));
+    jaddstr(obj,"info",hexstr);
+    if ( rawtx->I.datalen < sizeof(hexstr)/2 )
+    {
+        init_hexbytes_noT(hexstr,(void *)rawtx->txbytes,rawtx->I.datalen);
+        jaddstr(obj,"txbytes",hexstr);
+    }
     return(obj);
+}
+
+struct basilisk_rawtx *basilisk_nameconv(struct supernet_info *myinfo,struct basilisk_swap *swap,char *name)
+{
+    if ( strcmp("myfee",name) == 0 )
+        return(&swap->myfee);
+    else if ( strcmp("otherfee",name) == 0 )
+        return(&swap->otherfee);
+    else if ( strcmp("bobdeposit",name) == 0 )
+        return(&swap->bobdeposit);
+    else if ( strcmp("bobrefund",name) == 0 )
+        return(&swap->bobrefund);
+    else if ( strcmp("aliceclaim",name) == 0 )
+        return(&swap->aliceclaim);
+    else if ( strcmp("bobpayment",name) == 0 )
+        return(&swap->bobpayment);
+    else if ( strcmp("alicespend",name) == 0 )
+        return(&swap->alicespend);
+    else if ( strcmp("bobreclaim",name) == 0 )
+        return(&swap->bobreclaim);
+    else if ( strcmp("alicepayment",name) == 0 )
+        return(&swap->alicepayment);
+    else if ( strcmp("bobspend",name) == 0 )
+        return(&swap->bobspend);
+    else if ( strcmp("alicereclaim",name) == 0 )
+        return(&swap->alicereclaim);
+    else return(0);
+}
+
+int32_t basilisk_txitem(struct supernet_info *myinfo,struct basilisk_swap *swap,cJSON *obj)
+{
+    char *hexstr,*name; struct basilisk_rawtx *rawtx = 0;
+    if ( (name= jstr(obj,"name")) == 0 || (rawtx= basilisk_nameconv(myinfo,swap,name)) == 0 )
+    {
+        printf("basilisk_txitem illegal name.(%s)\n",name);
+        return(-1);
+    }
+    if ( rawtx != 0 && (hexstr= jstr(obj,"info")) != 0 && strlen(hexstr) == sizeof(rawtx->I)*2 )
+    {
+        decode_hex((void *)&rawtx->I,sizeof(rawtx->I),hexstr);
+        if ( (hexstr= jstr(obj,"txbytes")) != 0 && strlen(hexstr) == rawtx->I.datalen*2 )
+        {
+            if ( rawtx->txbytes == 0 )
+            {
+                printf("free (%s) txbytes\n",name);
+                free(rawtx->txbytes);
+            }
+            rawtx->txbytes = calloc(1,rawtx->I.datalen);
+            decode_hex((void *)rawtx->txbytes,rawtx->I.datalen,hexstr);
+        }
+        printf("PROCESS.(%s)\n",jprint(obj,0));
+        return(0);
+    }
+    return(-1);
 }
 
 cJSON *basilisk_swapobj(struct supernet_info *myinfo,struct basilisk_swap *swap)
@@ -47,17 +149,13 @@ int32_t basilisk_swapconv(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 struct basilisk_swap *basilisk_swapstore(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
+    // save based on requestid/quoteid
     return(swap);
 }
 
 struct basilisk_swap *basilisk_swapload(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t requestid,uint32_t quoteid)
 {
     return(swap);
-}
-
-int32_t basilisk_txitem(struct supernet_info *myinfo,struct basilisk_swap *swap,cJSON *obj)
-{
-    return(0);
 }
 
 void basilisk_swapstart(struct supernet_info *myinfo) // scan saved tmpswap, purge if complete, else Q
@@ -120,30 +218,17 @@ void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,stru
     {
         printf("%s\n",jsonstr);
         fprintf(myinfo->dexfp,"%s,\n",jsonstr);
+        fflush(myinfo->dexfp);
         free(jsonstr);
     }
 }
-
-void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
-{
-    // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    if ( iambob != 0 )
-    {
-        
-    }
-    else
-    {
-        
-    }
-}
-
 
 uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
     R.requestid = R.quoteid = R.quotetime = 0;
-    R.destamount = 0;
+    R.destamount = R.profitmargin = 0;
     //R.relaybits = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
     if ( 0 )
@@ -161,7 +246,7 @@ uint32_t basilisk_quoteid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
     R = *rp;
-    R.requestid = R.quoteid = 0; //R.relaybits =
+    R.requestid = R.quoteid = R.profitmargin = 0; //R.relaybits =
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
@@ -326,6 +411,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             issueR->desthash = myinfo->myaddr.persistent;
             issueR->destamount = destamount;
             issueR->quotetime = (uint32_t)time(NULL);
+            issueR->profitmargin = (uint32_t)(profitmargin * 1000000);
             printf("issueR set!\n");
         }
     }
