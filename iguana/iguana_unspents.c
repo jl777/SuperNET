@@ -517,7 +517,11 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
             printf("iguana_pkhashbalance.[%d] %d: unexpected null spents.%p or rdata.%p\n",ramchain->height,(coin->bundlescount-1)*coin->chain->bundlesize,ramchain->Uextras,rdata);
         }
         iguana_volatilesmap(myinfo,coin,ramchain);
-        //return(0);
+        if ( ramchain->Uextras == 0 || (rdata= ramchain->H.data) == 0 )
+        {
+            printf("couldnt map ramchain %d\n",ramchain->height);
+            return(0);
+        }
     }
     unspentind = lastpt.unspentind;
     U = RAMCHAIN_PTR(rdata,Uoffset);
@@ -573,7 +577,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
             }
             unspentind = U2[unspentind].prevunspentind;
         }
-        if ( 0 && llabs(spent - checkval - RTspend) > SMALLVAL )
+        if ( 0 && llabs((int64_t)spent - (int64_t)checkval - (int64_t)RTspend) > SMALLVAL )
             printf("spend %s: [%d] deposits %.8f spent %.8f check %.8f (%.8f) vs A2[%u] %.8f\n",lastheight==IGUANA_MAXHEIGHT?"checkerr":"",lastpt.hdrsi,dstr(deposits),dstr(spent),dstr(checkval)+dstr(RTspend),dstr(*spentp),pkind,dstr(A2[pkind].total));
     }
     (*spentp) = spent;
