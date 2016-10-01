@@ -86,6 +86,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
+THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag);
 
 ZERO_ARGS(bitcoinrpc,walletlock);
 TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);

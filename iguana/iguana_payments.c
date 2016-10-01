@@ -354,7 +354,10 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                 }
             }
             if ( vins != 0 && V == 0 )
+            {
                 V = calloc(cJSON_GetArraySize(vins),sizeof(*V)), allocflag = 1;
+                //iguana_vinprivkeys(myinfo,coin,V,vins);
+            }
             rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,V);
             if ( allocflag != 0 )
                 free(V);
@@ -1356,6 +1359,7 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
     //iguana_unspentset(myinfo,coin);
     n = cJSON_GetArraySize(payments);
     item = payments->child;
+    retjson = cJSON_CreateArray();
     for (required=i=0; i<n; i++)
     {
         if ( item != 0 && (coinaddr= item->string) != 0 )
@@ -1365,14 +1369,30 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
             printf("(%s %.8f) ",coinaddr,dstr(val));
             if ( (str= sendtoaddress(myinfo,coin,remoteaddr,coinaddr,val,coin->txfee,comment,"",minconf,fromaccount)) != 0 )
             {
-                free(str);
+                jaddistr(retjson,str);
             }
             required += val;
         }
         item = item->next;
     }
     printf("required %.8f\n",dstr(required));
+    return(jprint(retjson,1));
+}
+
+THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag)
+{
+    char *rawtx; int32_t completed; cJSON *retjson; bits256 signedtxid;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     retjson = cJSON_CreateObject();
+    if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->persistent_priv,satoshis,duplicates,&completed,&signedtxid,sendflag)) != 0 )
+    {
+        jaddstr(retjson,"result",rawtx);
+        jaddbits256(retjson,"txid",signedtxid);
+        jadd(retjson,"completed",completed != 0 ? jtrue() : jfalse());
+    } else jaddstr(retjson,"error","couldnt create duplicates tx");
     return(jprint(retjson,1));
 }
 

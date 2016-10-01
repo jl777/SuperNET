@@ -882,12 +882,7 @@ void iguana_coinloop(void *arg)
                 if ( coin->started == 0 && coin->active != 0 )
                 {
                     iguana_callcoinstart(myinfo,coin);
-                    /*if ( strcmp("BTC",coin->symbol) == 0 )
-                    {
-                        uint8_t redeemscript;
-                        n = bitcoin_checklocktimeverify(redeemscript,n,time(NULL)+300);
-                    }
-                    if ( 0 && strcmp("BTC",coin->symbol) == 0 )
+                    /*if ( 0 && strcmp("BTC",coin->symbol) == 0 )
                     {
                         char *txstr = "0100000001d378ebd1b0c230b4d078288cf95fe28d7b3032d28c47de22ed6140d845dcb01f00000000d147304402204dd322834ff15cf1526dae3940521bb504b365b194515725d9c0f81dfbeae68d02205fb8fd269e3f2ddf7d0a17b056d2904ce572b8f22edeb39cd4c209fcf5244645011d74c7e7d8a2041be600e74708276d79ff001e754269b6e868ccf517f87f3d004c674c6763040cd6e557b175210326af93b75917b4903d7acdf8e2a560357ce18b7615cc7de02ade4f62861a57dfac67a9149c41c06aac6a7fcfd29eef87c4a633b9126b8b09882102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac68ffffffff01127b0000000000001976a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac00000000";
                         cJSON *txobj = cJSON_Parse("{\"version\":1,\"locktime\":1474666158,\"vin\":[{\"userdata\":\"51\",\"txid\":\"fc97c3675c83c09723e0b14292ddec73820cb7352166ace4fe81ed62568315f2\",\"vout\":0,\"scriptPubKey\":{\"hex\":\"a914b7a2e599edb55d3f78ebcbfd49e82dd9a12adc2487\"},\"suppress\":1,\"sequence\":0,\"redeemScript\":\"6304ae9ee557b1752102a9669e63ef1ab04913615c2f3887ea3584f81e5f08feee9535b19ab3739d8afdac67a914adfad35d6646a0514011ba6ab53462319b651f96882103225046c9947222ab04acdefe2ed5dec4dcb593c5e6ae58e2c61c7ace14d81b70ac68\"}],\"vout\":[{\"satoshis\":\"36042\",\"scriptPubkey\":{\"hex\":\"76a914b7128d2ee837cf03e30a2c0e3e0181f7b9669bb688ac\"}}]}");

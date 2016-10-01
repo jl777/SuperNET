@@ -144,7 +144,6 @@ int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
     return((int32_t)strlen(wifstr));
 }
 
-#ifdef bitcoincancalulatebalances
 uint64_t bitcoin_parseunspent(struct iguana_info *coin,struct bitcoin_unspent *unspent,double minconfirms,char *account,cJSON *item)
 {
     char *hexstr,coinaddr[64];
@@ -385,7 +384,6 @@ char *bitcoin_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJ
         printf("need to patch locktime\n");
     return(rawtx);
 }
-#endif
 
 #define EXCHANGE_NAME "bitcoin"
 #define UPDATE bitcoin ## _price

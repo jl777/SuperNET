@@ -495,6 +495,7 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
 struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,uint8_t *data,int32_t datalen);
 void instantdex_FSMinit();
+char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,bits256 privkey,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag);
 int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V);

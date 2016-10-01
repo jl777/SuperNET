@@ -13,8 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
-// Todo: monitor blockchains
+// Todo: monitor blockchains, ie complete extracting scriptsig
 // mode to autocreate required outputs
+// more better LP commands
 
 
 // included from basilisk.c
