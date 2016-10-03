@@ -1232,7 +1232,3 @@ char *busdata_sync(uint32_t *noncep,char *jsonstr,char *broadcastmode,char *dest
     return(0);
 }
 
-// getnewaddress, setaccount, validate address, restart, validate address
-
-// importprivkey, setaccount, validate, restart, validate
-

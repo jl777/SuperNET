@@ -542,6 +542,46 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
+char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,bits256 privkey,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag)
+{
+    uint8_t script[35],pubkey33[33]; int32_t i,spendlen; cJSON *txobj=0,*addresses=0,*vins=0; char *rawtx=0,*signedtx,changeaddr[64];
+    *completedp = 0;
+    if ( signedtxidp != 0 )
+        memset(signedtxidp,0,sizeof(*signedtxidp));
+    bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
+    {
+        if ( duplicates <= 0 )
+            duplicates = 1;
+        bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
+        spendlen = bitcoin_pubkeyspend(script,0,pubkey33);
+        for (i=0; i<duplicates; i++)
+            bitcoin_txoutput(txobj,script,spendlen,satoshis);
+        addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
+        rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,coin->txfee + duplicates*coin->txfee/10,addresses,0,0,0,0,"127.0.0.1",0,1);
+        printf("duplicatesTX.(%s)\n",rawtx);
+        if ( signedtxidp != 0 )
+        {
+            if ( (signedtx= iguana_signrawtx(myinfo,coin,0,signedtxidp,completedp,vins,rawtx,0,0)) != 0 )
+            {
+                free(rawtx);
+                if ( *completedp != 0 && sendflag != 0 )
+                {
+                    iguana_sendrawtransaction(myinfo,coin,signedtx);
+                }
+                rawtx = signedtx;
+            } else printf("error signing raw utxoduplicates tx\n");
+        }
+    }
+    if ( vins != 0 )
+        free_json(vins);
+    if ( txobj != 0 )
+        free_json(txobj);
+    if ( addresses != 0 )
+        free_json(addresses);
+    return(rawtx);
+}
+
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj,struct vin_info *V)
 {
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
@@ -593,7 +633,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                     oplen = 0;
                 } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
-            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V);
+            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
             //printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
         }
         if ( rawtx != 0 )

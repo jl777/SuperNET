@@ -950,7 +950,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
     memset(signedtxidp,0,sizeof(*signedtxidp));
     for (vini=0; vini<msgtx->tx_in; vini++)
     {
-        if ( V->p2shscript != 0 && V->p2shlen != 0 )
+        if ( V->p2shscript[0] != 0 && V->p2shlen != 0 )
         {
             script = V->p2shscript;
             scriptlen = V->p2shlen;
