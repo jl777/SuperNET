@@ -204,6 +204,31 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     }
 }
 
+int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
+{
+    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash; cJSON *array,*json;
+    *numtxp = *blocktimep = 0;
+    besthash = dpow_getbestblockhash(myinfo,coin);
+    if ( bits256_nonz(besthash) != 0 )
+    {
+        if ( (json= dpow_getblock(myinfo,coin,besthash)) != 0 )
+        {
+            if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
+            {
+                if ( (array= jarray(&n,json,"tx")) != 0 )
+                {
+                    for (i=0; i<n&&i<maxtx; i++)
+                        txs[i] = jbits256i(array,i);
+                    //printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
+                    *numtxp = n;
+                }
+            } else height = -1;
+            free_json(json);
+        }
+    }
+    return(height);
+}
+
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
     int32_t i,n,vout,haveutxo = 0; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str; uint8_t script[35];
@@ -692,31 +717,6 @@ void dpow_statemachinestart(void *ptr)
             deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,desthash.hash,desthash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
     }
     free(ptr);
-}
-
-int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
-{
-    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash; cJSON *array,*json;
-    *numtxp = *blocktimep = 0;
-    besthash = dpow_getbestblockhash(myinfo,coin);
-    if ( bits256_nonz(besthash) != 0 )
-    {
-        if ( (json= dpow_getblock(myinfo,coin,besthash)) != 0 )
-        {
-            if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
-            {
-                if ( (array= jarray(&n,json,"tx")) != 0 )
-                {
-                    for (i=0; i<n&&i<maxtx; i++)
-                        txs[i] = jbits256i(array,i);
-                    //printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
-                    *numtxp = n;
-                }
-            } else height = -1;
-            free_json(json);
-        }
-    }
-    return(height);
 }
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)

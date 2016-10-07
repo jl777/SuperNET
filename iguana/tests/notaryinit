@@ -8,6 +8,9 @@ tests/getinfoN_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 ./wp
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"activehandle\"}"
+sleep 3
 btc_7776
+sleep 3
 kmd_7776
+sleep 3
 tests/dpow_7776
