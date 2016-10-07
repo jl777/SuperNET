@@ -858,12 +858,21 @@ int32_t iguana_checklocktimeverify(struct iguana_info *coin,int64_t tx_lockval,u
 {
     int64_t nLockTime = iguana_num(Snum);
     if ( nLockTime < 0 || tx_lockval < 0 )
+    {
+        printf("CLTV.0 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     else if ( ((tx_lockval < LOCKTIME_THRESHOLD && nLockTime < LOCKTIME_THRESHOLD) ||
           (tx_lockval >= LOCKTIME_THRESHOLD && nLockTime >= LOCKTIME_THRESHOLD)) == 0 )
+    {
+        printf("CLTV.1 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     else if ( nLockTime > tx_lockval )
+    {
+        printf("CLTV.2 nLockTime.%lld tx_lockval.%lld\n",(long long)nLockTime,(long long)tx_lockval);
         return(-1);
+    }
     return(0);
 }
 
@@ -1233,7 +1242,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             errs++;
                         }
                         stacks->ifdepth--;
-                        printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
+                        //printf("OP_ENDIF status.%d depth.%d\n",stacks->lastpath[stacks->ifdepth],stacks->stackdepth);
                         break;
                     case IGUANA_OP_VERIFY:
                         break;
@@ -1352,12 +1361,32 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            if ( datalen == 32 )
+                            /*if ( datalen == 32 )
                             {
                                 revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
                                 printf("SPECIAL CASE REVERSE\n");
                             } else
+                            for (i=0; i<32; i++)
+                                printf("%02x",databuf[i]);
+                            printf(" <- databuf\n");
+                            for (i=0; i<32; i++)
+                                printf("%02x",revdatabuf[i]);
+                            printf(" <- revdatabuf\n");
+                            calc_rmd160_sha256(rmd160,revdatabuf,datalen);
+                            for (i=0; i<20; i++)
+                                printf("%02x",rmd160[i]);
+                            printf(" <- rmd160 revdatabuf\n");
+                            revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
+                            for (i=0; i<20; i++)
+                                printf("%02x",rmd160[i]);
+                            printf(" <- rmd160 special\n");
                             calc_rmd160_sha256(rmd160,databuf,datalen);
+                            for (i=0; i<20; i++)
+                                printf("%02x",rmd160[i]);
+                            printf(" <- rmd160 databuf\n");*/
+                            if ( datalen == 32 )
+                                calc_rmd160_sha256(rmd160,revdatabuf,datalen);
+                            else calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_SHA256:
@@ -1387,7 +1416,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( op->opcode == IGUANA_OP_CHECKLOCKTIMEVERIFY ) // former OP_NOP2
                 {
-                    if ( iguana_checklocktimeverify(coin,nLockTime,V->sequence,args[0]) < 0 )
+                    if ( V->ignore_cltverr == 0 && iguana_checklocktimeverify(coin,nLockTime,V->sequence,args[0]) < 0 )
                     {
                         iguana_stack(stacks,args,1,"0","");
                         errs++;

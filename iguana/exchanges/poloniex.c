@@ -160,6 +160,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 && (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,EXCHANGE_AUTHURL,payload)) != 0 )
     {
         txid = (get_API_nxt64bits(cJSON_GetObjectItem(json,"orderNumber")) << 32) | get_API_nxt64bits(cJSON_GetObjectItem(json,"tradeID"));
+        printf("poloniex.%llu (%s)\n",(long long)txid,jprint(json,0));
         free_json(json);
     }
     return(txid);

@@ -1,0 +1,1 @@
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTC\",\"agent\":\"iguana\",\"method\":\"splitfunds\",\"satoshis\":\"1000\",\"sendflag\":1,\"duplicates\":10}"

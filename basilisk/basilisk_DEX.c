@@ -100,7 +100,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->timestamp),&rp->timestamp); // must be 2nd
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quoteid),&rp->quoteid);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->quotetime),&rp->quotetime);
-    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->relaybits),&rp->relaybits);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->optionhours),&rp->optionhours);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->srcamount),&rp->srcamount);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->minamount),&rp->minamount);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(rp->srchash),rp->srchash.bytes);
@@ -163,6 +163,8 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
+    jaddnum(item,"optionhours",rp->optionhours);
+    jaddnum(item,"profit",(double)rp->profitmargin / 1000000.);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf("quoteid mismatch %u vs %u\n",basilisk_quoteid(rp),rp->quoteid);
     if ( basilisk_requestid(rp) != rp->requestid )
@@ -171,7 +173,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
         int32_t i; struct basilisk_request R;
         if ( basilisk_parsejson(&R,item) != 0 )
         {
-            if ( memcmp(&R,rp,sizeof(*rp)) != 0 )
+            if ( memcmp(&R,rp,sizeof(*rp)-sizeof(uint32_t)) != 0 )
             {
                 for (i=0; i<sizeof(*rp); i++)
                     printf("%02x",((uint8_t *)rp)[i]);
@@ -207,6 +209,8 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         rp->minamount = j64bits(valsobj,"minamount");
         rp->timestamp = timestamp;
         rp->srchash = jbits256(valsobj,"srchash");
+        rp->optionhours = jint(valsobj,"optionhours");
+        rp->profitmargin = jdouble(valsobj,"profit") * 1000000;
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
         //if ( jstr(valsobj,"relay") != 0 )
@@ -223,13 +227,13 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
     return(-1);
 }
 
-char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits)
+char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
     cJSON *retjson;
     if ( (bits256_cmp(rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
         printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
-        if ( basilisk_thread_start(myinfo,rp) != 0 )
+        if ( basilisk_thread_start(myinfo,rp,statebits,optionduration) != 0 )
         {
             basilisk_request_enqueue(myinfo,rp);
             return(clonestr("{\"result\":\"started atomic swap thread\"}"));
@@ -267,6 +271,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         free(retstr);
     } else printf("null incoming\n");
+    channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     if ( hwm > 0. )
     {
         printf("hwm %f\n",hwm);
@@ -275,8 +280,20 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             printf("my req hwm %f\n",hwm);
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
-            if ( (retstr= basilisk_start(myinfo,&issueR,1)) != 0 )
-                free(retstr);
+            basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
+            numiters = 0;
+            while ( numiters < 10 && (crc= basilisk_swapcrcsend(myinfo,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
+            {
+                printf("didnt get back what was sent\n");
+                sleep(3);
+                basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
+                numiters++;
+            }
+            if ( crc != 0 )
+            {
+                if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                    free(retstr);
+            } else printf("couldnt accept offer\n");
         }
         else //if ( issueR.quoteid == 0 )
         {
@@ -285,7 +302,6 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
-            channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
             crcs[0] = crcs[1] = 0;
             numiters = 0;
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
@@ -299,7 +315,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             if ( crc != 0 )
             {
                 printf("crc.%08x -> basilisk_start\n",crc);
-                if ( (retstr= basilisk_start(myinfo,&issueR,0)) != 0 )
+                if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
             }
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
@@ -424,7 +440,7 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,uint32_t requestid,ui
             if ( rp->requestid == requestid && rp->quoteid == quoteid )
             {
                 printf("start from accept\n");
-                retstr = basilisk_start(myinfo,rp,1);
+                retstr = basilisk_start(myinfo,rp,1,0);
                 break;
             }
         }
@@ -511,7 +527,7 @@ STRING_ARG(InstantDEX,available,source)
 
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
-    uint8_t serialized[512]; struct basilisk_request R; cJSON *reqjson; uint32_t datalen=0,DEX_channel;
+    uint8_t serialized[512]; char buf[512]; struct basilisk_request R; int32_t iambob,optionhours; cJSON *reqjson; uint32_t datalen=0,DEX_channel; struct iguana_info *bobcoin,*alicecoin;
     myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT + 60;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN);
     if ( jobj(vals,"srchash") == 0 )
@@ -526,7 +542,23 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     memset(&R,0,sizeof(R));
     if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
     {
-        printf("R.requestid.%u vs calc %u, q.%u\n",R.requestid,basilisk_requestid(&R),R.quoteid);
+        iambob = bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,R.src,R.dest,myinfo->myaddr.persistent,GENESIS_PUBKEY);
+        if ( (optionhours= jint(vals,"optionhours")) != 0 )
+        {
+            printf("iambob.%d optionhours.%d R.requestid.%u vs calc %u, q.%u\n",iambob,R.optionhours,R.requestid,basilisk_requestid(&R),R.quoteid);
+            if ( iambob != 0 && optionhours > 0 )
+            {
+                sprintf(buf,"{\"error\":\"illegal call option request hours.%d when iambob.%d\"}",optionhours,iambob);
+                printf("ERROR.(%s)\n",buf);
+                return(clonestr(buf));
+            }
+            else if ( iambob == 0 && optionhours < 0 )
+            {
+                sprintf(buf,"{\"error\":\"illegal put option request hours.%d when iambob.%d\"}",optionhours,iambob);
+                printf("ERROR.(%s)\n",buf);
+                return(clonestr(buf));
+            }
+        }
         //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
         //    R.relaybits = myinfo->myaddr.myipbits;
         if ( (reqjson= basilisk_requestjson(&R)) != 0 )

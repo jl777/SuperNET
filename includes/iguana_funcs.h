@@ -306,7 +306,7 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname);
 bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_chain *chain);
 
-cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion);
+cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp);
 cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
 cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys);
 
@@ -495,9 +495,10 @@ struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
 struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,uint8_t *data,int32_t datalen);
 void instantdex_FSMinit();
+char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,bits256 privkey,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag);
 int32_t bitcoin_p2shspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins);
-char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V);
+char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V,int32_t maxmode);
 int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t burned,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout);
 void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int32_t height,bits256 txid,int32_t vout,uint8_t rmd160[20],int64_t value);
 cJSON *bitcoin_data2json(struct iguana_info *coin,int32_t height,bits256 *txidp,struct iguana_msgtx *msgtx,uint8_t *extraspace,int32_t extralen,uint8_t *serialized,int32_t len,cJSON *vins,int32_t suppress_pubkeys);

@@ -132,15 +132,6 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="pthreadVC2.lib" />
-    <Library Include="OSlibs\win\libpthreadGC2.a" />
-    <Library Include="OSlibs\win\libpthreadGC2_64.a" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="pthreadvc2.dll" />
-    <None Include="ucrtbased.dll" />
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
 </Project>

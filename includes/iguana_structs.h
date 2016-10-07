@@ -517,7 +517,7 @@ struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],r
 struct vin_info
 {
     struct iguana_msgvin vin; uint64_t amount; cJSON *extras; bits256 sigtxid;
-    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs,height,hashtype,userdatalen,suppress_pubkeys;
+    int32_t M,N,validmask,spendlen,type,p2shlen,numpubkeys,numsigs,height,hashtype,userdatalen,suppress_pubkeys,ignore_cltverr;
     uint32_t sequence,unspentind; struct vin_signer signers[16]; char coinaddr[65];
     uint8_t rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE],p2shscript[IGUANA_MAXSCRIPTSIZE],userdata[IGUANA_MAXSCRIPTSIZE];
 };
@@ -563,8 +563,8 @@ struct basilisk_request
     char src[8],dest[8];
     //char volatile_start,message[43];
     uint64_t destamount;
-    //uint32_t relaybits;
-}; // __attribute__((packed))
+    int32_t optionhours,profitmargin;
+} PACKEDSTRUCT;
 
 struct basilisk_relaystatus
 {

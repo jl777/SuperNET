@@ -944,7 +944,7 @@ int64_t oldiguana_waccountbalance(struct supernet_info *myinfo,struct iguana_inf
 
 cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,j,n,numinputs,scriptlen; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,*scripthexstr,coinaddr[64]; cJSON *scriptobj,*privkeys,*item; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
+    int32_t i,n,numinputs,scriptlen; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char *addresses,*address,*scripthexstr,coinaddr[64]; cJSON *scriptobj,*privkeys,*item; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE];
     privkeys = cJSON_CreateArray();
     if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
     {
@@ -970,19 +970,17 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
             //if ( (address= iguana_RTinputaddress(myinfo,coin,coinaddr,&spentpt,jitem(vins,i))) != 0 )
             if ( address != 0 )
             {
-                for (j=0; j<n; j++)
-                {
-                    if ( strcmp(&addresses[64 * j],address) == 0 )
-                        break;
-                }
-                if ( j == n )
-                    strcpy(&addresses[64 * n++],address);
+                strcpy(&addresses[64 * n++],address);
             } else printf("cant get address from.(%s)\n",jprint(item,0));
         }
         for (i=0; i<n; i++)
         {
             if ( (waddr= iguana_waddresssearch(myinfo,&wacct,&addresses[i * 64])) != 0 )
+            {
+                printf("%s ",waddr->wifstr);
                 jaddistr(privkeys,waddr->wifstr);
+            }
+            else printf("cant find waddr for %s\n",&addresses[i*64]);
         }
         free(addresses);
     }
@@ -1343,6 +1341,10 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     iguana_walletinitcheck(myinfo,coin);
+    if ( coin != 0 )
+    {
+        bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    }
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
 }
