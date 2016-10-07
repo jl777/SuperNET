@@ -32,7 +32,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
-            printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
+            //printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
             if ( is_hexstr(retstr,0) == sizeof(blockhash)*2 )
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
             free(retstr);
@@ -251,6 +251,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
         }
         free_json(unspents);
     }
+    printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
 
@@ -261,6 +262,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
+        printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -344,6 +346,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
             }
         }
     }
+    printf("most.%d n.%d\n",most,n);
     return(num);
 }
 
@@ -385,6 +388,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
         txobj = bitcoin_txoutput(txobj,script,sizeof(script),satoshis);
     }
     *vinsp = vins;
+    printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
     
@@ -454,6 +458,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
             }
         }
     }
+    printf("matches.%d num.%d\n",matches,num);
     return(matches);
 }
 
@@ -704,7 +709,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
-                    printf("%s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
+                    //printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
                     *numtxp = n;
                 }
             } else height = -1;
@@ -738,6 +743,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     void **ptrs;
+    printf("%s srcupdate ht.%d\n",dp->symbol,height);
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( dp->destupdated != 0 && bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash) != 0 )
@@ -789,6 +795,7 @@ void dpow_destconfirm(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
+    printf("%s destupdate ht.%d\n",dp->dest,height);
     dp->destupdated = timestamp;
     dpow_checkpointset(myinfo,&dp->destchaintip,height,hash,timestamp,blocktime);
     dpow_approvedset(myinfo,dp,&dp->destchaintip,dp->desttx,dp->numdesttx);
