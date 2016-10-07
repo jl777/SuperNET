@@ -1,7 +1,7 @@
 myip=`cat myip.txt`
 pkill iguana
 ../agents/iguana notary &
-sleep 3
+sleep 4
 coins/gennotary
 tests/addnotarys_7776
 tests/getinfoN_7776
