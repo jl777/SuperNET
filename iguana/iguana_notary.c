@@ -727,9 +727,9 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     {
         if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
         {
-            printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);
             newfifo[offset] = fifo[i];
         }
+        printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
