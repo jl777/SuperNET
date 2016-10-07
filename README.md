@@ -176,3 +176,5 @@ The ipaddress is only used for registering notary node and not directly correlat
 4. copy SuperNET/iguana/coins/btc btc_7776 kmd and kmd_7776 up one directory to SuperNET/iguana and edit "path" to match your home directory. if your home directory is /home/username then \"path\":\"home/username\"
 
 5. make a copy of SuperNET/iguana/wp -> SuperNET/iguana/wp_7776 and change port 7778 to port 7776
+
+6. make a copy of SuperNET/iguana/tests/dpow_7776 to SuperNET/iguana/dpow_7776 and edit the pubkey to match your btcpubkey from above
