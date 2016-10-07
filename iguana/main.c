@@ -221,7 +221,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
 {
     queue_t *Q; struct iguana_jsonitem *ptr; int32_t len,allocsize; double expiration;
     expiration = OS_milliseconds() + maxmillis;
-    printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
+    //printf("blocking case.(%s) %.0f maxmillis.%d\n",jsonstr,OS_milliseconds(),maxmillis);
     len = (int32_t)strlen(jsonstr);
     allocsize = sizeof(*ptr) + len + 1;
     ptr = mycalloc('J',1,allocsize);
