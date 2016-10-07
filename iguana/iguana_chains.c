@@ -310,7 +310,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             conf[0] = 0;
         else safecopy(conf,jstr(argjson,"conf"),sizeof(conf));
         if ( conf[0] != 0 )
-            printf("CONF.(%s)\n",conf);
+            printf("PATH.(%s) CONF.(%s)\n",path!=0?path:"",conf);
         safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
         //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
