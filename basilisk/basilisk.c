@@ -931,6 +931,7 @@ void basilisk_iteration(struct supernet_info *myinfo)
 
 void basilisks_loop(void *arg)
 {
+    static uint32_t counter;
     struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli;
     iter = 0;
     while ( 1 )
@@ -941,7 +942,8 @@ void basilisks_loop(void *arg)
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
-            iguana_dPoWupdate(myinfo);
+            if ( (counter++ % 20) == 0 )
+                iguana_dPoWupdate(myinfo);
             endmilli = startmilli + 500;
         }
         else if ( myinfo->IAMLP != 0 )

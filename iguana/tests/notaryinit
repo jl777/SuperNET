@@ -1,13 +1,13 @@
 myip=`cat myip.txt`
 pkill iguana
 ../agents/iguana notary &
-sleep 3
+sleep 4
 coins/gennotary
 tests/addnotarys_7776
 tests/getinfoN_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 ./wp
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"activehandle\"}"
-btc_7776
-kmd_7776
+./btc_7776
+./kmd_7776
 tests/dpow_7776
