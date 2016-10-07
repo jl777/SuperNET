@@ -13,6 +13,13 @@
  *                                                                            *
  ******************************************************************************/
 
+// Todo list:
+// a) updating latest notarized height based on the notarized tx data
+// b) prevent overwriting blocks below notarized height
+// c) detection of special transactions to update list of current notaries
+// d) award 5% APR for utxo older than a week when they are spent
+// e) round robin mining difficulty
+
 #include "iguana777.h"
 #include "notaries.h"
 
@@ -721,15 +728,22 @@ void dpow_statemachinestart(void *ptr)
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i,offset; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
+    int32_t i; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
+        /*if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
+        {
             newfifo[offset] = fifo[i];
+        }
+        printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);*/
+        newfifo[i] = fifo[i-1];
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
+    for (i=0; i<DPOW_FIFOSIZE; i++)
+        printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
+    printf(" <- fifo\n");
 }
 
 void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *checkpoint,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -743,8 +757,8 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     void **ptrs;
-    printf("%s srcupdate ht.%d destupdated.%u nonz.%d\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash));
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
+    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %llx\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash),(long long)dp->last.blockhash.hash.txid);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( dp->destupdated != 0 && bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash) != 0 )
     {

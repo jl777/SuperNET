@@ -156,3 +156,25 @@ once jsoncmp is built, then ./test shows how to use it
 
 the idea is to issue a curl command into a /tmp/file and then use jsoncmp to verify the exact value of one or more fields. it will print to stdout JSON with "error" or "result" and to stderr if there is an error
 
+##### ../agents/iguana notary
+Here are some preliminary instructions for iguana dPoW support:
+0. Install and start ../agents/iguana add any coin via coins/genbtcd or coins/basilisk
+
+1. Create an iguana wallet with encryptwallet if you dont already have one:
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"encryptwallet\",\"passphrase\":\"use high entropy passphrase that generates the pubkey\"}"
+
+2. Create an executable (chmod +x) file "SuperNET/iguana/wp" with the following in it:
+curl --url "http://127.0.0.1:7778" --data "{\"method\":\"walletpassphrase\",\"params\":[\"same passphrase as above\", 9999999]}"
+
+Now from SuperNET/iguana if you run ./wp it will show the various addresses including "btcpubkey" which is your notary pubkey. Post this in #notarynode if you havent already.
+
+3. create a text file SuperNET/iguana/myip.txt with just your ip address in it:
+12.34.56.78
+
+The ipaddress is only used for registering notary node and not directly correlated with your pubkey.
+
+4. copy SuperNET/iguana/coins/btc btc_7776 kmd and kmd_7776 up one directory to SuperNET/iguana and edit "path" to match your home directory. if your home directory is /home/username then \"path\":\"home/username\"
+
+5. make a copy of SuperNET/iguana/wp -> SuperNET/iguana/wp_7776 and change port 7778 to port 7776
+
+6. make a copy of SuperNET/iguana/tests/dpow_7776 to SuperNET/iguana/dpow_7776 and edit the pubkey to match your btcpubkey from above

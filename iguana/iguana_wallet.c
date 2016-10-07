@@ -1351,9 +1351,9 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
 
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
 {
-    char *retstr;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
+    char *retstr,buf[128],wifstr[128]; cJSON *retjson; int32_t need_KMD = 0,need_BTC = 0;
+    if ( remoteaddr != 0 || coin == 0 )
+        return(clonestr("{\"error\":\"no remote encrypt or no coin\"}"));
     iguana_walletlock(myinfo,coin);
     if ( password == 0 || password[0] == 0 )
         password = passphrase;
@@ -1366,12 +1366,35 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     //myinfo->expiration = (uint32_t)time(NULL) + 3600*24;
     struct iguana_waddress waddr; struct iguana_waccount *wacct;
+    memset(&waddr,0,sizeof(waddr));
     if ( (wacct= iguana_waccountcreate(myinfo,"default")) != 0 )
     {
         if ( iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,&waddr,myinfo->persistent_priv) != 0 )
             iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
         else printf("couldnt waddresscalc persistent\n");
     } else printf("coildnt create default account\n");
+    if ( waddr.wifstr[0] != 0 && bits256_nonz(waddr.privkey) != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+    {
+        free(retstr);
+        bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+        sprintf(buf,"%swif",coin->symbol);
+        jaddstr(retjson,buf,wifstr);
+        if ( strcmp(coin->symbol,"KMD") != 0 )
+            need_KMD = 1;
+        if ( strcmp(coin->symbol,"BTC") != 0 )
+            need_BTC = 1;
+        if ( need_KMD != 0 && (coin= iguana_coinfind("KMD")) != 0 )
+        {
+            bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"KMDwif",wifstr);
+        }
+        if ( need_BTC != 0 )
+        {
+            bitcoin_priv2wif(wifstr,waddr.privkey,128);
+            jaddstr(retjson,"BTCwif",wifstr);
+        }
+        retstr = jprint(retjson,1);
+    }
     //iguana_walletinitcheck(myinfo,coin);
     myinfo->dirty = (uint32_t)time(NULL);
     myinfo->expiration = 0;
