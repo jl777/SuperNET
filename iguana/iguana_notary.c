@@ -726,10 +726,16 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
         if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
+        {
+            printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);
             newfifo[offset] = fifo[i];
+        }
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
+    for (i=0; i<DPOW_FIFOSIZE; i++)
+        printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
+    printf(" <- fifo\n");
 }
 
 void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *checkpoint,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -743,8 +749,8 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     void **ptrs;
-    printf("%s srcupdate ht.%d destupdated.%u nonz.%d\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash));
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
+    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %llx\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash),(long long)dp->last.blockhash.hash.txid);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( dp->destupdated != 0 && bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash) != 0 )
     {
