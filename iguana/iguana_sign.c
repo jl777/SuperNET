@@ -1435,8 +1435,11 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     {
                         item = jitem(privkeys,i);
                         privkeystr = jstr(item,0);
+                        if ( privkeystr == 0 || privkeystr[0] == 0 )
+                            continue;
                         privkey = iguana_str2priv(myinfo,coin,privkeystr);
-                        V->signers[i].privkey = privkey;
+                        if ( i < V->N )
+                            V->signers[i].privkey = privkey;
                         if ( i < numinputs )
                             V[i].signers[0].privkey = privkey;
                         if ( bits256_nonz(privkey) != 0 )

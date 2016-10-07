@@ -6,4 +6,8 @@ coins/gennotary
 tests/addnotarys_7776
 tests/getinfoN_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+./wp
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"activehandle\"}"
+coins/btc_7776
+coins/kmd_7776
+tests/dpow_7776

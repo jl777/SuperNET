@@ -537,7 +537,7 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
     printf("%s MYSERVICES.%llx\n",coin->symbol,(long long)coin->myservices);
     if ( coin->virtualchain == 0 && coin->peers != 0 )
     {
-        if ( myinfo->IAMNOTARY != 0 || (coin->myservices & NODE_NETWORK) != 0 || (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) )
+        if ( myinfo->IAMNOTARY != 0 || (coin->myservices & NODE_NETWORK) != 0 || (coin->FULLNODE > 0 || coin->VALIDATENODE > 0) )
         {
             if ( coin->peers->acceptloop == 0 && coin->peers->localaddr == 0 )
             {

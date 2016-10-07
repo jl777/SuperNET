@@ -52,6 +52,7 @@ struct exchange_info;
 #include "../includes/iguana_types.h"
 #include "../includes/iguana_structs.h"
 #include "../basilisk/basilisk.h"
+#include "dPoW.h"
 
 struct supernet_address
 {
@@ -62,12 +63,6 @@ struct supernet_address
 
 struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
 struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
-
-struct komodo_notaries
-{
-    struct basilisk_relay RELAYS[BASILISK_MAXRELAYS];
-    int32_t NUMRELAYS,RELAYID;
-};
 
 struct supernet_info
 {
@@ -90,6 +85,7 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     FILE *dexfp;
+    struct dpow_info DPOW;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     struct peggy_info *PEGS;

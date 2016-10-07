@@ -231,7 +231,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     ptr->retjsonstr = 0;
     safecopy(ptr->remoteaddr,remoteaddr,sizeof(ptr->remoteaddr));
     memcpy(ptr->jsonstr,jsonstr,len+1);
-    if ( coin == 0 || (coin->FULLNODE == 0 && coin->VALIDATENODE == 0) )
+    if ( coin == 0 || coin->FULLNODE < 0 || (coin->FULLNODE == 0 && coin->VALIDATENODE == 0) )
         Q = &JSON_Q;
     else Q = &coin->jsonQ;
     queue_enqueue("jsonQ",Q,&ptr->DL,0);

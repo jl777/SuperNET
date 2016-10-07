@@ -310,7 +310,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             conf[0] = 0;
         else safecopy(conf,jstr(argjson,"conf"),sizeof(conf));
         if ( conf[0] != 0 )
-            printf("CONF.(%s)\n",conf);
+            printf("PATH.(%s) CONF.(%s)\n",path!=0?path:"",conf);
         safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
         //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
@@ -500,7 +500,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
     if ( chain->zcash != 0 )
-        chain->bundlesize = 500;
+        chain->bundlesize = 1000;
     if ( strcmp(chain->symbol,"BTC") == 0 )
         chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);

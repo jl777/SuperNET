@@ -290,7 +290,7 @@ int32_t basilisk_bitcoinscan(struct iguana_info *coin,uint8_t origblockspace[IGU
 
 int32_t basilisk_bitcoinavail(struct iguana_info *coin)
 {
-    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
+    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
         return(1);
     //else if ( coin->chain->serverport[0] != 0 )
     //    return(1);
@@ -392,7 +392,7 @@ void *basilisk_bitcoinvalue(struct basilisk_item *Lptr,struct supernet_info *myi
     vout = jint(valsobj,"vout");
     if ( coin != 0 && basilisk_bitcoinavail(coin) != 0 )
     {
-        if ( (coin->VALIDATENODE != 0 || coin->FULLNODE != 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
+        if ( (coin->VALIDATENODE > 0 || coin->FULLNODE > 0) )//&& coinaddr != 0 && coinaddr[0] != 0 )
         {
             if ( iguana_RTunspentindfind(myinfo,coin,&outpt,coinaddr,0,0,&value,&height,txid,vout,coin->bundlescount,0) == 0 )
             {
@@ -447,7 +447,7 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"NOTARY") != 0 )
         return(0);
-    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
+    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
     {
         infojson = iguana_getinfo(myinfo,coin);
         Lptr->retstr = jprint(infojson,1);
@@ -542,9 +542,9 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
-char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,bits256 privkey,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag)
+char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *pubkey33,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag,cJSON *addresses)
 {
-    uint8_t script[35],pubkey33[33]; int32_t i,spendlen; cJSON *txobj=0,*addresses=0,*vins=0; char *rawtx=0,*signedtx,changeaddr[64];
+    uint8_t script[35]; int32_t i,spendlen; cJSON *txobj=0,*vins=0; char *rawtx=0,*signedtx,changeaddr[64];
     *completedp = 0;
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
@@ -553,11 +553,9 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     {
         if ( duplicates <= 0 )
             duplicates = 1;
-        bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
         spendlen = bitcoin_pubkeyspend(script,0,pubkey33);
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
-        addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,coin->txfee + duplicates*coin->txfee/10,addresses,0,0,0,0,"127.0.0.1",0,1);
         printf("duplicatesTX.(%s)\n",rawtx);
         if ( signedtxidp != 0 )
@@ -577,8 +575,6 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         free_json(vins);
     if ( txobj != 0 )
         free_json(txobj);
-    if ( addresses != 0 )
-        free_json(addresses);
     return(rawtx);
 }
 
@@ -903,7 +899,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
             timeoutmillis = BASILISK_TIMEOUT;
-        if ( coin->FULLNODE != 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        if ( coin->FULLNODE > 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
         {
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = OS_milliseconds() + 10000;
