@@ -20,7 +20,7 @@ char *Notaries[][2] =
 {
     { "jl777_testA", "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828" },
     { "jl777_testB", "02ebfc784a4ba768aad88d44d1045d240d47b26e248cafaf1c5169a42d7a61d344" },
-    { "jl777_testC", "020e0f6fe6e0fcdcac541eb728d6fe538a12adff20412b3c8a7fa892b223a47c2f" },
+    //{ "jl777_testC", "020e0f6fe6e0fcdcac541eb728d6fe538a12adff20412b3c8a7fa892b223a47c2f" },
     /*{ "badass_EU", "034ca7bf1b9f084643960525a01d96949f36fdca35fe27f88ae9b167d496a75aa2" },
     { "crackers_NA", "03d40a9123a081c1513e5900f8bf47590952fd0d5587f64715b4b65af8d6be4985" },
     { "movecrypto_EU", "025b1e33dba14a0d4645e88f14992137e5c185708c7a2c219caffdf32dd6405e6e" },
