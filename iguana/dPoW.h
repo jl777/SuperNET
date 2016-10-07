@@ -16,7 +16,7 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
-#define DPOW_BTCSTR "BTCD"
+#define DPOW_BTCSTR "BTC"
 #define DPOW_UTXOSIZE 6000
 
 #define DPOW_FIFOSIZE 64
