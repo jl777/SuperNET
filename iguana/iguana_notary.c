@@ -743,7 +743,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
     void **ptrs;
-    printf("%s srcupdate ht.%d\n",dp->symbol,height);
+    printf("%s srcupdate ht.%d destupdated.%u nonz.%d\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash));
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( dp->destupdated != 0 && bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash) != 0 )
