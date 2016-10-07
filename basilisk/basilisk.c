@@ -792,7 +792,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
         {
             if ( strcmp((char *)basilisk_services[i][0],type) == 0 )
             {
-                if ( (coin != 0 && coin->FULLNODE != 0) || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
+                if ( (coin != 0 && coin->FULLNODE > 0) || myinfo->NOTARY.RELAYID >= 0 ) // iguana node
                 {
                     //printf("\n call %s from_basilisk.%d (%s)\n",addr->ipaddr,from_basilisk,type);
                     if ( (retstr= (*basilisk_services[i][1])(myinfo,type,addr,remoteaddr,basilisktag,valsobj,data,datalen,hash,from_basilisk)) != 0 )
@@ -940,8 +940,13 @@ void basilisks_loop(void *arg)
         basilisk_iteration(myinfo);
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
-            endmilli = startmilli + 250;
-        else endmilli = startmilli + 1000;
+        {
+            iguana_dPoWupdate(myinfo);
+            endmilli = startmilli + 500;
+        }
+        else if ( myinfo->IAMLP != 0 )
+            endmilli = startmilli + 1000;
+        else endmilli = startmilli + 2000;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
@@ -992,7 +997,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         timeoutmillis = BASILISK_TIMEOUT;
     if ( coin != 0 )
     {
-        if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
         {
             if ( (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
             {

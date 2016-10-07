@@ -1139,7 +1139,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     struct basilisk_item Lptr,*ptr; int32_t incr,i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
         return(jprint(iguana_getinfo(myinfo,coin),1));
     else
     {

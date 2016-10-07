@@ -1071,7 +1071,7 @@ int32_t iguana_unspentfindjson(cJSON *destarray,cJSON *item)
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
     uint64_t total = 0; int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
-    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         retjson = cJSON_CreateArray();
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
@@ -1168,7 +1168,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
     }
     memset(pubkey,0,sizeof(pubkey));
     //remains = required * 1.1 + coin->txfee;
-    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         for (i=numunspents=0; i<numaddrs; i++)
         {
@@ -1178,7 +1178,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
             }
         }
     }
-    else
+    else if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 )
     {
         if ( (array= iguana_RTlistunspent(myinfo,coin,addresses,minconf,1<<30,remoteaddr,0)) != 0 )
         {
@@ -1205,6 +1205,38 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                 }
             }
             free_json(array);
+        }
+    }
+    else
+    {
+        for (i=numunspents=0; i<numaddrs; i++)
+        {
+            if ( (coinaddr= jstri(addresses,i)) != 0 )
+            {
+                if ( (array= dpow_listunspent(myinfo,coin,coinaddr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(array)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
+                            {
+                                printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                                continue;
+                            }
+                            iguana_outptset(myinfo,coin,&outpt,jbits256(item,"txid"),jint(item,"vout"),jdouble(item,"amount") * SATOSHIDEN,spendscriptstr);
+                            *unspents = outpt;
+                            sum += outpt.value;
+                            unspents++;
+                            numunspents++;
+                            if ( numunspents >= max )//|| sum > 10*required )
+                                break;
+                        }
+                    }
+                    free_json(array);
+                }
+            }
         }
     }
     *totalp = sum;

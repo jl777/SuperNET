@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+TWO_STRINGS(iguana,dpow,symbol,pubkey);
+
 #ifdef INCLUDE_PAX
 ZERO_ARGS(pax,start);
 #endif

@@ -385,7 +385,7 @@ int32_t iguana_send_version(struct iguana_info *coin,struct iguana_peer *addr,ui
 	msg.nServices = (myservices & NODE_NETWORK);
 	msg.nTime = (int64_t)time(NULL);
 	msg.nonce = coin->instance_nonce;
-    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
         sprintf(msg.strSubVer,"/iguana 0.00/");
     else sprintf(msg.strSubVer,"/basilisk 0.00/");
     //printf("SEND.(%s) -> (%s)\n",msg.strSubVer,addr->ipaddr);
@@ -404,7 +404,7 @@ int32_t iguana_send_VPNversion(struct iguana_info *coin,struct iguana_peer *addr
 	msg.nServices = (myservices & NODE_NETWORK);
 	msg.nTime = (int64_t)time(NULL);
 	msg.nonce = 0;//coin->instance_nonce;
-    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
         sprintf(msg.strSubVer,"/iguana 0.00/");
     else sprintf(msg.strSubVer,"/basilisk 0.00/");
 	msg.nStartingHeight = coin->blocks.hwmchain.height;
@@ -416,7 +416,7 @@ void iguana_supernet_ping(struct supernet_info *myinfo,struct iguana_info *coin,
 {
     if ( addr->supernet != 0 || addr->basilisk != 0 )
     {
-        //if ( coin->FULLNODE != 0 )
+        //if ( coin->FULLNODE > 0 )
         //    basilisk_relays_send(myinfo,addr);
         //printf("send getpeers to %s\n",addr->ipaddr);
         //printf("maybe send basilisk ping here?\n");

@@ -479,7 +479,7 @@ ZERO_ARGS(InstantDEX,allcoins)
     {
         if ( coin->virtualchain != 0 )
             jaddistr(virtual,coin->symbol);
-        if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
             jaddistr(full,coin->symbol);
         else jaddistr(basilisk,coin->symbol);
     }

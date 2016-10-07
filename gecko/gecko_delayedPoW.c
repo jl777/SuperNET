@@ -120,7 +120,7 @@ int32_t gecko_hashstampsupdate(struct iguana_info *coin,struct gecko_sequence *s
 int32_t gecko_sequpdate(struct supernet_info *myinfo,char *symbol,uint32_t reftimestamp)
 {
     struct gecko_sequence *seq=0; int32_t max=0,firstpossible=0; struct iguana_info *coin; struct iguana_block *block;
-    if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->FULLNODE != 0 || coin->VALIDATENODE != 0) )
+    if ( (coin= iguana_coinfind(symbol)) != 0 && (coin->FULLNODE > 0 || coin->VALIDATENODE > 0) )
     {
         if ( strcmp(symbol,"BTCD") == 0 )
         {

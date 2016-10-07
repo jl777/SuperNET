@@ -1764,32 +1764,12 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
-    if ( retval != 0 )
-    {
-        printf("end of atomic swap\n");
-        if ( swap->I.iambob != 0 && swap->bobdeposit.txbytes != 0 )
-        {
-            printf("BOB reclaims refund\n");
-            basilisk_bobdeposit_refund(myinfo,swap,0);
-            if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobrefund,0x40000000) == 0 ) // use secretBn
-            {
-                printf("Bob submit error getting refund of deposit\n");
-            }
-            else
-            {
-                // maybe wait for bobrefund to be confirmed
-                for (j=datalen=0; j<32; j++)
-                    data[datalen++] = swap->I.privBn.bytes[j];
-                basilisk_swapsend(myinfo,swap,0x40000000,data,datalen,0x40000000,swap->I.crcs_mypriv);
-            }
-        }
-    }
     return(retval);
 }
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; uint32_t expiration; int32_t retval=0,i,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration; int32_t retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfo;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -1906,6 +1886,25 @@ void basilisk_swaploop(void *_swap)
         sleep(1);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
+        if ( time(NULL) > swap->I.expiration )
+            break;
+    }
+    printf("end of atomic swap\n");
+    if ( swap->I.iambob != 0 && swap->bobdeposit.txbytes != 0 )
+    {
+        printf("BOB reclaims refund\n");
+        basilisk_bobdeposit_refund(myinfo,swap,0);
+        if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobrefund,0x40000000) == 0 ) // use secretBn
+        {
+            printf("Bob submit error getting refund of deposit\n");
+        }
+        else
+        {
+            // maybe wait for bobrefund to be confirmed
+            for (j=datalen=0; j<32; j++)
+                data[datalen++] = swap->I.privBn.bytes[j];
+            basilisk_swapsend(myinfo,swap,0x40000000,data,datalen,0x40000000,swap->I.crcs_mypriv);
+        }
     }
     printf("%s swap finished statebits %x\n",swap->I.iambob!=0?"BOB":"ALICE",swap->I.statebits);
     basilisk_swap_purge(myinfo,swap);

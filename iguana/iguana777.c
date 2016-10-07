@@ -856,6 +856,8 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( coin->FULLNODE < 0 )
+                    continue;
                 if ( strcmp(coin->symbol,"NOTARY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
@@ -951,7 +953,7 @@ void iguana_coinloop(void *arg)
                                         }
                                     }
                                 }
-                                if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+                                if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
                                 {
                                     if ( coin->peers->numranked > 0 )
                                         iguana_send_ping(myinfo,coin,coin->peers->ranked[rand() % coin->peers->numranked]);
@@ -964,7 +966,7 @@ void iguana_coinloop(void *arg)
                             coin->peers->lastmetrics = iguana_updatemetrics(myinfo,coin); // ranks peers
                         }
                     }
-                    if ( coin->FULLNODE != 0 || coin->VALIDATENODE != 0 || coin->MAXPEERS == 1 )
+                    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->MAXPEERS == 1 )
                     {
                         //portable_mutex_lock(&coin->allcoins_mutex);
                         coin->busy_processing = 1;
@@ -1104,12 +1106,12 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         return(0);
     }
     if ( jobj(json,"RELAY") != 0 )
-        coin->FULLNODE = juint(json,"RELAY");
+        coin->FULLNODE = jint(json,"RELAY");
     else coin->FULLNODE = (strcmp(coin->symbol,"BTCD") == 0);
     if ( jobj(json,"VALIDATE") != 0 )
         coin->VALIDATENODE = juint(json,"VALIDATE");
     else coin->VALIDATENODE = (strcmp(coin->symbol,"BTCD") == 0);
-    if ( coin->VALIDATENODE != 0 || coin->FULLNODE != 0 )
+    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
         SuperNET_MYINFO(0)->IAMRELAY++;
 #ifdef __PNACL
     coin->VALIDATENODE = coin->FULLNODE = 0;

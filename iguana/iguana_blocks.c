@@ -125,7 +125,7 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
         iguana_blocksizecheck("blockcopy src",coin->chain->zcash,origblock);
         if ( block->RO.allocsize != origblock->RO.allocsize )
             printf("missing space for zcash block.%d origblock.%d\n",block->RO.allocsize,origblock->RO.allocsize);
-        else
+        //else
         {
             struct iguana_zblock *zblock = (void *)block;
             struct iguana_zblock *origzblock = (void *)origblock;

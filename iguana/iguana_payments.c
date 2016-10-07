@@ -384,7 +384,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
 void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
     struct iguana_outpoint spentpt; char coinaddr[64]; int32_t i,RTspentflag,num,spentheight,lockedflag;
-    if ( coin->MAXPEERS == 1 || coin->FULLNODE != 0 || coin->VALIDATENODE != 0 )
+    if ( coin->MAXPEERS == 1 || coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         num = cJSON_GetArraySize(vins);
         for (i=0; i<num; i++)
@@ -1153,7 +1153,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,0)) != 0 )
+    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,1,0)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )
@@ -1394,18 +1394,25 @@ S_A_I_S(bitcoinrpc,sendmany,fromaccount,payments,minconf,comment)
 
 THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag)
 {
-    char *rawtx; int32_t completed; cJSON *retjson; bits256 signedtxid;
+    char *rawtx; uint8_t pubkey33[33]; int32_t completed; cJSON *retjson,*addresses; bits256 signedtxid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    if ( coin == 0 )
+        return(clonestr("{\"error\":\"need active coin\"}"));
     retjson = cJSON_CreateObject();
-    if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->persistent_priv,satoshis,duplicates,&completed,&signedtxid,sendflag)) != 0 )
+    bitcoin_pubkey33(myinfo->ctx,pubkey33,myinfo->persistent_priv);
+    addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
+    if ( (rawtx= iguana_utxoduplicates(myinfo,coin,pubkey33,satoshis,duplicates,&completed,&signedtxid,sendflag,addresses)) != 0 )
     {
         jaddstr(retjson,"result",rawtx);
         jaddbits256(retjson,"txid",signedtxid);
         jadd(retjson,"completed",completed != 0 ? jtrue() : jfalse());
+        free(rawtx);
     } else jaddstr(retjson,"error","couldnt create duplicates tx");
+    if ( addresses != 0 )
+        free_json(addresses);
     return(jprint(retjson,1));
 }
 
