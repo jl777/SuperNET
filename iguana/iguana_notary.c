@@ -32,7 +32,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     {
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
-            printf("getbestblockhash.(%s)\n",retstr);
+            printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
             if ( is_hexstr(retstr,0) == sizeof(blockhash)*2 )
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
             free(retstr);
@@ -56,7 +56,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     {
         sprintf(buf,"\"%s\"",bits256_str(str,blockhash));
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
-        printf("getblock.(%s)\n",retstr);
+        //printf("getblock.(%s)\n",retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
