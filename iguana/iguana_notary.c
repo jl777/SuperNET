@@ -721,15 +721,16 @@ void dpow_statemachinestart(void *ptr)
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i,offset; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
+    int32_t i; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
+        /*if ( (offset= (tip.blockhash.height - fifo[i].blockhash.height)) >= 0 && offset < DPOW_FIFOSIZE )
         {
             newfifo[offset] = fifo[i];
         }
-        printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);
+        printf("[offset %d = (%d - %d)] <- i.%d\n",offset,tip.blockhash.height,fifo[i].blockhash.height,i);*/
+        newfifo[i] = fifo[i-1];
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
