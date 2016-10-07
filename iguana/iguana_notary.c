@@ -13,6 +13,13 @@
  *                                                                            *
  ******************************************************************************/
 
+// Todo list:
+// a) updating latest notarized height based on the notarized tx data
+// b) prevent overwriting blocks below notarized height
+// c) detection of special transactions to update list of current notaries
+// d) award 5% APR for utxo older than a week when they are spent
+// e) round robin mining difficulty
+
 #include "iguana777.h"
 #include "notaries.h"
 
