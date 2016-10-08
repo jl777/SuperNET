@@ -215,7 +215,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
 {
     int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash; cJSON *array,*json;
     *numtxp = *blocktimep = 0;
-    besthash = dpow_getbestblockhash(myinfo,coin);
+    *blockhashp = besthash = dpow_getbestblockhash(myinfo,coin);
     if ( bits256_nonz(besthash) != 0 )
     {
         if ( (json= dpow_getblock(myinfo,coin,besthash)) != 0 )
