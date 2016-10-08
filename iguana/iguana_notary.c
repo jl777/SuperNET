@@ -437,7 +437,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,lastk,mask,0,hashmsg,btctxid)) != 0 )
+    if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,lastk,mask,1,hashmsg,btctxid)) != 0 )
     {
         if ( (rawtx= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
         {
