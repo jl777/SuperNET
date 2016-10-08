@@ -121,7 +121,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
             json = cJSON_Parse(retstr);
             printf("%s listunspent.(%s)\n",coin->symbol,retstr);
             free(retstr);
-        }
+        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -589,7 +589,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         return(0xffffffff);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j];
-    printf("%s statemachine state.%d\n",coin->symbol,state);
+    printf("%s statemachine state.%d %s\n",coin->symbol,state,coinaddr);
     switch ( state )
     {
         case 0:
