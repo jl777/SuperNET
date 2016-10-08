@@ -434,6 +434,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
                 {
                     init_hexbytes_noT(scriptstr,notaries[i].sig,notaries[i].siglen);
                     jaddstr(item,"scriptSig",scriptstr);
+                    printf("sig%d.(%s)\n",i,scriptstr);
                 }
                 jaddi(vins,item);
                 bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0);
@@ -449,7 +450,8 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
         txobj = bitcoin_txoutput(txobj,script,sizeof(script),satoshis);
     }
     *vinsp = vins;
-    //printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
+    if ( usesigs != 0 )
+        printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
     
@@ -534,7 +536,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
             }
         }
     }
-    printf("matches.%d num.%d\n",matches,num);
+    printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
 }
 
@@ -576,7 +578,6 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,k,mask,1,hashmsg,btctxid)) != 0 )
             {
-                printf("finaltx.(%s)\n",jprint(txobj,0));
                 if ( (rawtx= bitcoin_json2hex(myinfo,coin,signedtxidp,txobj,0)) != 0 )
                 {
                     printf("signedtx.(%s)\n",rawtx);
