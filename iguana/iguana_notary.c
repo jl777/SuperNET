@@ -591,7 +591,9 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 {
     // todo: add RBF support
     bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64],str[65],str2[65]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
-    incr = sqrt(numnotaries) + 1;
+    if ( numnotaries > 8 )
+        incr = sqrt(numnotaries) + 1;
+    else incr = 1;
     channel = 'd' | ('P' << 8) | ('o' << 16) | ('W' << 24);
     bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->DPOW.minerkey33,33);
     if ( bits256_nonz(hashmsg) == 0 )
@@ -623,7 +625,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 1: // wait for utxo, send utxo to all other nodes
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
-                for (i=(myind % incr); i<numnotaries; i+=incr)
+                i = (myind % incr);
+                for (; i<numnotaries; i+=incr)
                 {
                     for (j=0; j<sizeof(srchash); j++)
                     {
