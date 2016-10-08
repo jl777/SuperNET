@@ -300,7 +300,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        //printf("messages.(%s)\n",jprint(msgobj,0));
+        printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
