@@ -295,7 +295,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 
 int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON *json)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[sizeof(bits256)*2+1]; char *keystr,*hexstr; int32_t i,j,n,datalen,retval = -1;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[sizeof(bits256)*2+1]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,j,n,datalen,retval = -1;
     *voutp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
@@ -320,7 +320,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
                         }
                         *voutp = data[sizeof(bits256) * 2];
                         retval = datalen;
-                        printf("hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,*hashmsgp),bits256_str(str,*txidp),*voutp);
+                        printf("hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
