@@ -449,6 +449,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                     if ( (vin= jarray(&m,txobj2,"vin")) != 0 && myind < m )
                     {
                         item = jitem(vin,myind);
+                        printf("myvin.(%s)\n",jprint(item,0));
                         if ( (sigobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sigobj,"hex")) != 0 )
                         {
                             siglen = (int32_t)strlen(sigstr) >> 1;
@@ -461,6 +462,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                             {
                                 for (j=0; j<sizeof(desthash); j++)
                                     desthash.bytes[j] = notaries[i].pubkey[j+1];
+                                printf("send to notary.%d\n",i);
                                 basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,600);
                             }
                             retval = 0;
