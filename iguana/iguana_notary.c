@@ -320,7 +320,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
                         }
                         *voutp = data[sizeof(bits256) * 2];
                         retval = datalen;
-                        printf("hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
+                        printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
