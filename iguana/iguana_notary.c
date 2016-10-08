@@ -413,7 +413,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
 
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t lastk,uint64_t mask,int32_t usesigs,bits256 hashmsg,bits256 btctxid)
 {
-    int32_t i,j,m=0; char scriptstr[256]; cJSON *txobj=0,*vins=0,*item; uint64_t satoshis; uint8_t script[35];
+    int32_t i,j,m=0,siglen; char scriptstr[256]; cJSON *txobj=0,*vins=0,*item; uint64_t satoshis; uint8_t script[35],*sig;
     if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
     {
         vins = cJSON_CreateArray();
@@ -430,14 +430,17 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
                 script[34] = 0xac;
                 init_hexbytes_noT(scriptstr,script,35);
                 jaddstr(item,"scriptPubKey",scriptstr);
+                sig = 0, siglen = 0;
                 if ( usesigs != 0 && notaries[i].siglen > 0 )
                 {
                     init_hexbytes_noT(scriptstr,notaries[i].sig,notaries[i].siglen);
                     jaddstr(item,"scriptSig",scriptstr);
                     printf("sig%d.(%s)\n",i,scriptstr);
+                    sig = notaries[i].sig;
+                    siglen = notaries[i].siglen;
                 }
                 jaddi(vins,item);
-                bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0);
+                bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
                 m++;
                 if ( m == numnotaries/2+1 && i == lastk )
                     break;

@@ -1140,7 +1140,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
                 else sequenceid = 0xffffffff;
             }
             jaddnum(newvin,"sequence",sequenceid);
-            bitcoin_txinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0);
+            bitcoin_txinput(coin,txobj,txid,vout,sequenceid,spendscript,spendlen,redeemscript,p2shlen,0,0,0,0);
             jadd(newvin,"pubkeys",pubkeys);
             jaddi(newvins,newvin);
         }
