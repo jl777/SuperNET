@@ -115,7 +115,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     char buf[128],*retstr; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
     {
-        sprintf(buf,"1, 99999999, [\"%s\"]",coinaddr);
+        sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
@@ -198,7 +198,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         array = cJSON_CreateArray();
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
-        printf("%s sendrawtransaction.(%s)\n",coin->symbol,paramstr);
+        //printf("%s sendrawtransaction.(%s)\n",coin->symbol,paramstr);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
         free(paramstr);
         return(retstr);
@@ -285,10 +285,11 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                     }
                 }
             }
-        } else printf("null array size\n");
+        } // else printf("null array size\n");
         free_json(unspents);
     } else printf("null return from dpow_listunspent\n");
-    printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
+    if ( haveutxo > 0 )
+        printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
 
@@ -586,7 +587,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx)
 {
     // todo: add RBF support
-    bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
+    bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64],str[65],str2[65]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
     incr = sqrt(numnotaries) + 1;
     channel = 'd' | ('P' << 8) | ('o' << 16) | ('W' << 24);
     bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->DPOW.minerkey33,33);
@@ -628,6 +629,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                         data[j+sizeof(bits256)] = txid.bytes[j];
                     }
                     data[sizeof(bits256)*2] = vout;
+                    printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
                     basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,sizeof(data),600);
                 }
                 state = 2;
