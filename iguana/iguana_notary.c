@@ -709,7 +709,7 @@ void dpow_statemachinestart(void *ptr)
     dp->checkpoint = checkpoint;
     srchash = checkpoint.blockhash;
     desthash = dp->notarized[0];
-    printf("DPOW statemachine checkpoint.%d src.%p dest.%p\n",checkpoint.blockhash.height,src,dest);
+    printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     while ( src != 0 && dest != 0 && (srcstate != 0xffffffff || deststate != 0xffffffff) )
     {
         sleep(10);
@@ -718,10 +718,13 @@ void dpow_statemachinestart(void *ptr)
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             break;
         }
-        if ( srcstate == 0 )
-            srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
-        if ( deststate == 0 )
+        if ( deststate != 0xffffffff )
             deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,desthash.hash,desthash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
+        if ( deststate == 0xffffffff )
+        {
+            if ( srcstate != 0xffffffff )
+                srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
+        }
     }
     free(ptr);
 }
@@ -756,16 +759,17 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
-    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %llx\n",dp->symbol,height,dp->destupdated,bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash),(long long)dp->last.blockhash.hash.txid);
+    checkpoint = dp->srcfifo[dp->srcconfirms];
+    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( dp->destupdated != 0 && bits256_nonz(dp->srcfifo[dp->srcconfirms].blockhash.hash) != 0 )
+    if ( dp->destupdated != 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 )
     {
         ptrs = calloc(1,sizeof(void *)*2 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
-        memcpy(&ptrs[2],&dp->srcfifo[dp->srcconfirms],sizeof(dp->srcfifo[dp->srcconfirms]));
+        memcpy(&ptrs[2],&checkpoint,sizeof(checkpoint));
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
