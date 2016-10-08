@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+// bugs: construct finaltx
+
 // Todo list:
 // a) updating latest notarized height based on the notarized tx data
 // b) prevent overwriting blocks below notarized height
@@ -84,7 +86,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
     char *retstr,*paramstr; cJSON *array;
-    if ( coin->FULLNODE < 0 )
+    if ( 0 && coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -93,7 +95,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
     }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    else if ( 1 )//coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         retstr = bitcoinrpc_decoderawtransaction(myinfo,coin,0,0,rawtx,1);
     }
@@ -476,9 +478,13 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                     {
                         if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
                         {
-                            printf("txobj2.(%s)\n",jprint(txobj2,0));
+                            //printf("txobj2.(%s)\n",jprint(txobj2,0));
                             if ( (vin= jarray(&m,txobj2,"vin")) != 0 && myind < m )
                             {
+                                for (j=0; j<m; j++)
+                                {
+                                    //find myind
+                                }
                                 item = jitem(vin,myind);
                                 printf("myvin.(%s)\n",jprint(item,0));
                                 if ( (sigobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sigobj,"hex")) != 0 )
@@ -579,6 +585,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         *maskp = mask;
         if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
         {
+            // change to hardcoded tx output
             if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,k,mask,1,hashmsg,btctxid)) != 0 )
             {
                 if ( (rawtx= bitcoin_json2hex(myinfo,coin,signedtxidp,txobj,0)) != 0 )
