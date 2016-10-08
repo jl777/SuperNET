@@ -90,7 +90,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         jaddistr(array,rawtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",paramstr);
-        printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
+        //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
@@ -527,6 +527,9 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
                 notaries[senderind].k = refk;
                 notaries[senderind].mask = refmask;
                 memcpy(notaries[senderind].sig,data+11,data[10]);
+                int32_t j; for (j=0; j<notaries[senderind].siglen; j++)
+                    printf("%02x",notaries[senderind].sig[j]);
+                printf(" <- sender.%d siglen.%d\n",i,data[10]);
                 matches++;
             }
         }
@@ -573,8 +576,10 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,k,mask,1,hashmsg,btctxid)) != 0 )
             {
+                printf("finaltx.(%s)\n",jprint(txobj,0));
                 if ( (rawtx= bitcoin_json2hex(myinfo,coin,signedtxidp,txobj,0)) != 0 )
                 {
+                    printf("signedtx.(%s)\n",rawtx);
                     strcpy(signedtx,rawtx);
                     free(rawtx);
                 }
