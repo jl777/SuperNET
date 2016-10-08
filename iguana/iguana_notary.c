@@ -435,7 +435,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     int32_t i,j,siglen,m=0; char *rawtx,*sigstr; cJSON *txobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128],extraspace[8192],serialized[16384]; bits256 txid,srchash,desthash; struct iguana_msgtx msgtx; uint32_t channel;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     for (j=0; j<sizeof(srchash); j++)
-        srchash.bytes[j] = myinfo->DPOW.minerkey33[j];
+        srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,lastk,mask,0,hashmsg,btctxid)) != 0 )
     {
         if ( (rawtx= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
@@ -507,7 +507,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     *maskp = 0;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     for (j=0; j<sizeof(desthash); j++)
-        desthash.bytes[j] = myinfo->DPOW.minerkey33[j];
+        desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     num = 0;
     k_masks = calloc(4096,128);
     for (i=0; i<numnotaries; i++)
@@ -594,7 +594,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     if ( bits256_nonz(hashmsg) == 0 )
         return(0xffffffff);
     for (j=0; j<sizeof(srchash); j++)
-        srchash.bytes[j] = myinfo->DPOW.minerkey33[j];
+        srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     printf("%s statemachine state.%d %s\n",coin->symbol,state,coinaddr);
     switch ( state )
     {
