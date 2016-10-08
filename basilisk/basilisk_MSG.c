@@ -95,7 +95,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         width = 3600;
     else if ( width < 1 )
         width = 1;
-    char str[65],str2[65]; printf("MSGiterate (%s) -> (%s)\n",bits256_str(str,srchash),bits256_str(str2,desthash));
+   // char str[65],str2[65]; printf("MSGiterate (%s) -> (%s)\n",bits256_str(str,srchash),bits256_str(str2,desthash));
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->messagemutex);
     //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
@@ -163,10 +163,10 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         jadd(retjson,"messages",array);
-        printf("MESSAGES.(%s)\n",jprint(array,0));
+        //printf("MESSAGES.(%s)\n",jprint(array,0));
         return(jprint(retjson,1));
     }
-    printf("no matching messages\n");
+    //printf("no matching messages\n");
     return(clonestr("{\"error\":\"no messages\"}"));
 }
 
