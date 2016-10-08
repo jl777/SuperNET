@@ -144,7 +144,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddi(array,vins);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"signrawtransaction",paramstr);
-        printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+        //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
         return(retstr);
     }
@@ -300,7 +300,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        printf("messages.(%s)\n",jprint(msgobj,0));
+        //printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -427,7 +427,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
         txobj = bitcoin_txoutput(txobj,script,sizeof(script),satoshis);
     }
     *vinsp = vins;
-    printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
+    //printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
     
@@ -446,6 +446,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 memset(&msgtx,0,sizeof(msgtx));
                 if ( (txobj2= bitcoin_hex2json(coin,height,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized,vins,1)) != 0 )
                 {
+                    printf("txobj2.(%s)\n",jprint(txobj2,0));
                     if ( (vin= jarray(&m,txobj2,"vin")) != 0 && myind < m )
                     {
                         item = jitem(vin,myind);
