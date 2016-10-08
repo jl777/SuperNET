@@ -455,7 +455,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
     
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid)
 {
-    int32_t i,j,siglen,m=0,retval=-1; char *rawtx,*rawtx2,*sigstr; cJSON *txobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128]; bits256 txid,srchash,desthash; uint32_t channel;
+    int32_t i,j,siglen,m=0,retval=-1; char *rawtx,*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128]; bits256 txid,srchash,desthash; uint32_t channel;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
@@ -463,44 +463,44 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     {
         if ( (rawtx= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
         {
-            if ( (signedtx= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
+            if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
-                if ( (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
+                if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
-                    if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
+                    if ( (signedtx= jstr(signobj,"result")) != 0 && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
-                        printf("txobj2.(%s)\n",jprint(txobj2,0));
-                        if ( (vin= jarray(&m,txobj2,"vin")) != 0 && myind < m )
+                        if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
                         {
-                            item = jitem(vin,myind);
-                            printf("myvin.(%s)\n",jprint(item,0));
-                            if ( (sigobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sigobj,"hex")) != 0 )
+                            printf("txobj2.(%s)\n",jprint(txobj2,0));
+                            if ( (vin= jarray(&m,txobj2,"vin")) != 0 && myind < m )
                             {
-                                siglen = (int32_t)strlen(sigstr) >> 1;
-                                data[0] = myind;
-                                data[1] = lastk;
-                                iguana_rwnum(1,&data[2],sizeof(mask),(uint8_t *)&mask);
-                                data[10] = siglen;
-                                decode_hex(data+11,siglen,sigstr);
-                                for (i=0; i<numnotaries; i++)
+                                item = jitem(vin,myind);
+                                printf("myvin.(%s)\n",jprint(item,0));
+                                if ( (sigobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sigobj,"hex")) != 0 )
                                 {
-                                    for (j=0; j<sizeof(desthash); j++)
-                                        desthash.bytes[j] = notaries[i].pubkey[j+1];
-                                    printf("send to notary.%d\n",i);
-                                    basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,600);
+                                    siglen = (int32_t)strlen(sigstr) >> 1;
+                                    data[0] = myind;
+                                    data[1] = lastk;
+                                    iguana_rwnum(1,&data[2],sizeof(mask),(uint8_t *)&mask);
+                                    data[10] = siglen;
+                                    decode_hex(data+11,siglen,sigstr);
+                                    for (i=0; i<numnotaries; i++)
+                                    {
+                                        for (j=0; j<sizeof(desthash); j++)
+                                            desthash.bytes[j] = notaries[i].pubkey[j+1];
+                                        printf("send to notary.%d\n",i);
+                                        basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,600);
+                                    }
+                                    retval = 0;
                                 }
-                                retval = 0;
                             }
+                            free_json(txobj2);
                         }
-                        free_json(txobj2);
+                        free(rawtx2);
                     }
-                    free(rawtx2);
+                    free_json(signobj);
                 }
-                /*memset(&msgtx,0,sizeof(msgtx));
-                if ( (txobj2= bitcoin_hex2json(coin,height,&txid,&msgtx,rawtx,extraspace,sizeof(extraspace),serialized,vins,1)) != 0 )
-                {
-                }*/
-                free(signedtx);
+                free(jsonstr);
             }
             free(rawtx);
         }
