@@ -555,13 +555,15 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
 void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *recvmaskp,uint32_t channel,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,bits256 hashmsg)
 {
     int32_t i,j,k,m; cJSON *item,*retarray; bits256 desthash,srchash,checkmsg;
+    for (j=0; j<sizeof(srchash); j++)
+        srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     for (i=0; i<numnotaries; i++)
     {
         if ( (*recvmaskp & (1LL << i)) != 0 )
             continue;
-        for (j=0; j<sizeof(srchash); j++)
+        for (j=0; j<sizeof(desthash); j++)
             desthash.bytes[j] = notaries[i].pubkey[j+1];
-        if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
+        if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
         {
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
