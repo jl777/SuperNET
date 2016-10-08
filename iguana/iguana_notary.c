@@ -119,7 +119,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
-            printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+            //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
             free(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
@@ -192,11 +192,16 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
-    bits256 txid; cJSON *json;
+    bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
     if ( coin->FULLNODE < 0 )
     {
-        printf("%s sendrawtransaction.(%s)\n",coin->symbol,signedtx);
-        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",signedtx));
+        array = cJSON_CreateArray();
+        jaddistr(array,signedtx);
+        paramstr = jprint(array,1);
+        printf("%s sendrawtransaction.(%s)\n",coin->symbol,paramstr);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
+        free(paramstr);
+        return(retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
