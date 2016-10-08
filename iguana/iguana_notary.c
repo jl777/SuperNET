@@ -700,6 +700,7 @@ void dpow_statemachinestart(void *ptr)
             myind = i;
     }
     bitcoin_address(coinaddr,src->chain->pubtype,myinfo->DPOW.minerkey33,33);
+    printf(" myaddr.%s\n",coinaddr);
     if ( myind < 0 )
     {
         printf("statemachinestart this node %s is not official notary\n",coinaddr);
@@ -719,11 +720,17 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
         if ( deststate != 0xffffffff )
+        {
+            printf("DEST.%08x\n",deststate);
             deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,desthash.hash,desthash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
+        } else printf("deststate.%08x\n",deststate);
         if ( deststate == 0xffffffff )
         {
             if ( srcstate != 0xffffffff )
+            {
+                printf("SRC.%08x\n",srcstate);
                 srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,notaries,n,myind,&recvmask,&signedtxid,signedtx);
+            }
         }
     }
     free(ptr);
