@@ -83,15 +83,15 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
-    char *retstr,buf[16384];
+    char *retstr,*paramstr; cJSON *array;
     if ( coin->FULLNODE < 0 )
     {
-        if ( strlen(rawtx) < sizeof(buf)-5 )
-        {
-            sprintf(buf,"[\"%s\"]",rawtx);
-            retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",buf);
-            printf("%s decoderawtransaction.(%s)\n",coin->symbol,buf);
-        } else retstr = clonestr("{\"error\":\"rawtx too big\"}");
+        array = cJSON_CreateArray();
+        jaddistr(array,rawtx);
+        paramstr = jprint(array,1);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",paramstr);
+        printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
+        free(paramstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
