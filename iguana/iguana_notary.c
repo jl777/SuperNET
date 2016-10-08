@@ -564,7 +564,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
             continue;
         for (j=0; j<sizeof(desthash); j++)
             desthash.bytes[j] = notaries[i].pubkey[j+1];
-        if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
+        if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
         {
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
@@ -640,14 +640,17 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 2:
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
+            printf("STATE2: RECVMASK.%llx\n",(long long)*recvmaskp);
             if ( bitweight(*recvmaskp) > numnotaries/2 )
                 state = 3;
             break;
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
+            printf("STATE3: RECVMASK.%llx\n",(long long)*recvmaskp);
             if ( bitweight(*recvmaskp) > numnotaries/2+1 )
             {
+                printf("too many entries, prune to %d\n",numnotaries/2+1);
                 mask = 0;
                 for (j=m=0; j<numnotaries; j++)
                 {
@@ -662,6 +665,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             } else mask = *recvmaskp;
             if ( bitweight(mask) == numnotaries/2+1 )
             {
+                printf("signtxgen\n");
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid) == 0 )
                     state = 4;
             } else printf("mask.%llx wt.%d\n",(long long)mask,bitweight(mask));
@@ -674,6 +678,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 {
                     if ( (retstr= dpow_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
+                        dp->destupdated = 0;
                         printf("sendrawtransaction.(%s)\n",retstr);
                         free(retstr);
                     }
@@ -791,7 +796,6 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
-        dp->destupdated = 0;
     }
 }
 
