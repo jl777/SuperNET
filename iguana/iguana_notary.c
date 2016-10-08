@@ -433,7 +433,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
     
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid)
 {
-    int32_t i,j,siglen,m=0; char *rawtx,*sigstr; cJSON *txobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128],extraspace[8192],serialized[16384]; bits256 txid,srchash,desthash; struct iguana_msgtx msgtx; uint32_t channel;
+    int32_t i,j,siglen,m=0,retval=-1; char *rawtx,*sigstr; cJSON *txobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128],extraspace[8192],serialized[16384]; bits256 txid,srchash,desthash; struct iguana_msgtx msgtx; uint32_t channel;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
@@ -463,6 +463,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     desthash.bytes[j] = notaries[i].pubkey[j+1];
                                 basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,600);
                             }
+                            retval = 0;
                         }
                     }
                     fprintf(stderr,"free txobj2\n");
@@ -479,7 +480,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         fprintf(stderr,"free vins\n");
         free_json(vins);
     }
-    return(-1);
+    return(retval);
 }
 
 int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint8_t *k_masks,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
