@@ -300,7 +300,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        printf("messages.(%s)\n",jprint(msgobj,0));
+        //printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -308,7 +308,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
             {
                 decode_hex(key,BASILISK_KEYSIZE,keystr);
                 datalen >>= 1;
-                if ( datalen < sizeof(data) )
+                if ( datalen <= sizeof(data) )
                 {
                     decode_hex(data,datalen,hexstr);
                     if ( datalen == sizeof(data) )
@@ -320,6 +320,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
                         }
                         *voutp = data[sizeof(bits256) * 2];
                         retval = datalen;
+                        printf("hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,*hashmsgp),bits256_str(str,*txidp),*voutp);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
