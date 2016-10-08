@@ -465,13 +465,18 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                             }
                         }
                     }
+                    fprintf(stderr,"free txobj2\n");
                     free_json(txobj2);
                 }
+                fprintf(stderr,"free signedtx\n");
                 free(signedtx);
             }
+            fprintf(stderr,"free rawtx\n");
             free(rawtx);
         }
+        fprintf(stderr,"free txobj\n");
         free_json(txobj);
+        fprintf(stderr,"free vins\n");
         free_json(vins);
     }
     return(-1);
