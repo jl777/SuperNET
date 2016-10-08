@@ -731,7 +731,7 @@ void dpow_statemachinestart(void *ptr)
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE];
+    int32_t i; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; char str[65];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
@@ -746,7 +746,7 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     memcpy(fifo,newfifo,sizeof(newfifo));
     for (i=0; i<DPOW_FIFOSIZE; i++)
         printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
-    printf(" <- fifo\n");
+    printf(" <- fifo %s\n",bits256_str(str,tip.blockhash.hash));
 }
 
 void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *checkpoint,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -828,7 +828,7 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 
 void iguana_dPoWupdate(struct supernet_info *myinfo)
 {
-    int32_t height; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest; struct dpow_info *dp = &myinfo->DPOW;
+    int32_t height; char str[65]; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest; struct dpow_info *dp = &myinfo->DPOW;
     if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         strcpy(dp->dest,DPOW_BTCSTR);
@@ -848,7 +848,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
-            printf("%s got height.%d vs last.%d\n",dp->dest,height,dp->destchaintip.blockhash.height);
+            printf("%s %s height.%d vs last.%d\n",dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
                 printf("iguana_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
@@ -859,7 +859,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
-            printf("%s got height.%d vs last.%d\n",dp->symbol,height,dp->last.blockhash.height);
+            printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( height < dp->last.blockhash.height )
             {
                 printf("iguana_dPoWupdate src.%s reorg detected %d vs %d approved.%d notarized.%d\n",dp->symbol,height,dp->last.blockhash.height,dp->approved[0].height,dp->notarized[0].height);
