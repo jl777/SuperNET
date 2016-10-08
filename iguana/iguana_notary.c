@@ -119,7 +119,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
         {
             json = cJSON_Parse(retstr);
-            printf("%s listunspent.(%s)\n",coin->symbol,retstr);
+            printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
             free(retstr);
         } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     }
