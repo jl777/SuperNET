@@ -714,7 +714,6 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 printf("signtxgen\n");
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid) == 0 )
                 {
-                    dp->destupdated = 0;
                     state = 4;
                 }
             } else printf("mask.%llx wt.%d\n",(long long)mask,bitweight(mask));
@@ -728,6 +727,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 {
                     if ( (retstr= dpow_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
+                        dp->destupdated = 0;
                         printf("sendrawtransaction.(%s)\n",retstr);
                         free(retstr);
                     }
