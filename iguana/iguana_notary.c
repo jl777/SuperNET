@@ -86,7 +86,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
     char *retstr,*paramstr; cJSON *array;
-    if ( 0 && coin->FULLNODE < 0 )
+    if ( coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -95,7 +95,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
     }
-    else if ( 1 )//coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         retstr = bitcoinrpc_decoderawtransaction(myinfo,coin,0,0,rawtx,1);
     }
@@ -161,7 +161,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
     cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    if ( 0 && coin->FULLNODE < 0 )
+    if ( coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -172,7 +172,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         free(paramstr);
         return(retstr);
     }
-    else if ( 1 )//coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         privkeys = cJSON_CreateArray();
         if ( (n= cJSON_GetArraySize(vins)) > 0 )
