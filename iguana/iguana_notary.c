@@ -630,7 +630,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         break;
                                     } else printf("notmine.(%s)\n",jprint(item,0));
                                 }
-                            }
+                            } else printf("no vin[] (%s)\n",jprint(txobj2,0));
                             free_json(txobj2);
                         }
                         free(rawtx2);
@@ -934,13 +934,14 @@ void dpow_statemachinestart(void *ptr)
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; char str[65];
+    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; char str[65];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        newfifo[i] = fifo[i-1];
-        if ( bits256_nonz(newfifo[i].blockhash.hash) != 0 && (tip.blockhash.height - newfifo[i].blockhash.height) != i )
-            printf("(%d != %d) ",(tip.blockhash.height - newfifo[i].blockhash.height),i);
+        if ( bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - newfifo[i-1].blockhash.height) != i )
+            printf("(%d != %d) ",(tip.blockhash.height - newfifo[i-1].blockhash.height),i);
+        if ( (ind= (tip.blockhash.height - newfifo[i-1].blockhash.height)) >= 0 && ind < DPOW_FIFOSIZE )
+            newfifo[ind] = fifo[i-1];
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
