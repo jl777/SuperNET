@@ -876,7 +876,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; uint64_t recvmask = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],str[65],coinaddr[64]; bits256 signedtxid,zero; struct dpow_entry notaries[DPOW_MAXRELAYS];
+    int32_t i,n,myind = -1; uint64_t recvmask = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS];
     memset(&zero,0,sizeof(zero));
     memset(notaries,0,sizeof(notaries));
     myinfo = ptrs[0];
@@ -918,14 +918,16 @@ void dpow_statemachinestart(void *ptr)
         if ( deststate != 0xffffffff )
         {
             printf("DEST.%08x %s\n",deststate,bits256_str(str,srchash.hash));
-            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notaries,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
+            deststate = 0xffffffff;//dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notaries,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
         } else printf("deststate.%08x\n",deststate);
         if ( deststate == 0xffffffff )
         {
             if ( srcstate != 0xffffffff )
             {
+                for (i=0; i<32; i++)
+                    signedtxid.bytes[i] = i;
                 printf("SRC.%08x\n",srcstate);
-                srcstate = 0xffffffff;//dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,signedtxid,notaries,n,myind,&recvmask,&signedtxid2,signedtx2,timestamp);
+                srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,signedtxid,notaries,n,myind,&recvmask,&signedtxid2,signedtx2,timestamp);
             }
         }
     }
