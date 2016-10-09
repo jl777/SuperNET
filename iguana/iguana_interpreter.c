@@ -1300,7 +1300,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 {
                     if ( stacks->stackdepth < op->stackitems )
                     {
-                        printf("stackdepth.%d needed.%d (%s) at offset.%ld\n",stacks->stackdepth,op->stackitems,str,(long)str-(long)asmstr);
+                        //printf("stackdepth.%d needed.%d (%s) at offset.%ld\n",stacks->stackdepth,op->stackitems,str,(long)str-(long)asmstr);
                         errs++;
                         break;
                     }

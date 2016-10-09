@@ -544,8 +544,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     {
                                         for (j=0; j<sizeof(desthash); j++)
                                             desthash.bytes[j] = notaries[i].pubkey[j+1];
-                                        printf("send to notary.%d\n",i);
-                                        basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,600);
+                                        //printf("send to notary.%d\n",i);
+                                        basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,120);
                                     }
                                     retval = 0;
                                 }
@@ -681,7 +681,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx,uint32_t timestamp)
 {
     // todo: add RBF support
-    bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64],str[65],str2[65]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
+    bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
     if ( numnotaries > 8 )
         incr = sqrt(numnotaries) + 1;
     else incr = 1;
@@ -727,8 +727,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                         data[j+sizeof(bits256)] = txid.bytes[j];
                     }
                     data[sizeof(bits256)*2] = vout;
-                    printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
-                    basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,sizeof(data),600);
+                    //printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
+                    basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,sizeof(data),120);
                 }
                 state = 2;
             }

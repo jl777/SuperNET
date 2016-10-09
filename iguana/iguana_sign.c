@@ -319,7 +319,11 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
             if ( (pubkeystr= jstr(jitem(pubkeysjson,i),0)) != 0 && (plen= (int32_t)strlen(pubkeystr) >> 1) > 0 )
             {
                 if ( V != 0 )
+                {
                     memcpy(V->signers[i].pubkey,&vin->vinscript[vin->scriptlen],plen);
+                    if ( V->spendlen == 35 && V->spendscript[0] == 33 && V->spendscript[34] == 0xac )
+                        suppress_pubkeys = 1;
+                }
                 if ( suppress_pubkeys == 0 )
                 {
                     printf("addpub.(%s)\n",pubkeystr);
@@ -1292,7 +1296,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         //printf("interpreter.(%s)\n",jprint(spendscript,0));
         if ( (scriptlen= bitcoin_assembler(coin,logarray,script,spendscript,1,nLockTime,&V[vini])) < 0 )
         {
-            printf("bitcoin_assembler error scriptlen.%d\n",scriptlen);
+            //printf("bitcoin_assembler error scriptlen.%d\n",scriptlen);
             errs++;
         }
         else if ( scriptlen != activescriptlen || memcmp(script,activescript,scriptlen) != 0 )
@@ -1457,12 +1461,12 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
                 if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
-                    int32_t tmp;
+                    int32_t tmp; char str[65];
                     if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
-                        printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
+                        //printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
-                    }
+                    } else printf("%s signed\n",bits256_str(str,*signedtxidp));
                 }
             }
         }
