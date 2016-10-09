@@ -650,7 +650,7 @@ int32_t is_bitcoinrpc(struct supernet_info *myinfo,char *method,char *remoteaddr
     {
         if ( strcmp(RPCcalls[i].name,method) == 0 )
         {
-            if ( remoteaddr == 0 || remoteaddr[0] == 0 || strcmp(remoteaddr,"127.0.0.1") == 0 )
+            if ( remoteaddr == 0 || remoteaddr[0] == 0 || strncmp(remoteaddr,"127.0.0.",strlen("127.0.0.")) == 0 )
             return(1);
             if ( RPCcalls[i].remoteflag != 0 && myinfo->publicRPC != 0 )
                 return(i);
@@ -850,6 +850,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             if ( strncmp("Origin: ",&urlstr[i],strlen("Origin: ")) == 0 )
             {
                 originstr = &urlstr[i + strlen("Origin: ")];
+                if ( strncmp(originstr,"http://127.0.0.",strlen("http://127.0.0.")) == 0 )
+                    originstr = "http://127.0.0.1:";
                 if ( strncmp("null",originstr,strlen("null")) != 0 && strncmp("http://localhost:",originstr,strlen("http://localhost:")) != 0 && strncmp("http://127.0.0.1:",originstr,strlen("http://127.0.0.1:")) != 0 && strncmp("http://easydex.supernet.org:",originstr,strlen("http://easydex.supernet.org:")) != 0 )
                 {
                     printf("remote Origin REJECT.(%s)\n",urlstr);
@@ -1135,6 +1137,8 @@ void iguana_rpcloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(remoteaddr,ipbits);
+        if ( strncmp(remoteaddr,"127.0.0.",strlen("127.0.0.")) == 0 )
+            strcpy(remoteaddr,"127.0.0.1");
         memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
         remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
         buf = jsonbuf;

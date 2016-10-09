@@ -13,7 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
-// bugs: construct finaltx
+// bugs: construct finaltx, src vs dest messages, rotating myind position
 
 // Todo list:
 // a) updating latest notarized height based on the notarized tx data
