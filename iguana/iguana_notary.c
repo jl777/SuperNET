@@ -632,11 +632,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                 }
                             } else printf("no vin[] (%s)\n",jprint(txobj2,0));
                             free_json(txobj2);
-                        }
+                        } else printf("cant parse.(%s)\n",rawtx2);
                         free(rawtx2);
-                    }
+                    } else printf("error decoding (%s)\n",signedtx==0?"":signedtx);
                     free_json(signobj);
-                }
+                } else printf("error parsing.(%s)\n",jsonstr);
                 free(jsonstr);
             }
         }
@@ -938,8 +938,8 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - newfifo[i-1].blockhash.height) != i )
-            printf("(%d != %d) ",(tip.blockhash.height - newfifo[i-1].blockhash.height),i);
+        if ( bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
+            printf("(%d != %d) ",(tip.blockhash.height - fifo[i-1].blockhash.height),i);
         if ( (ind= (tip.blockhash.height - fifo[i-1].blockhash.height)) >= 0 && ind < DPOW_FIFOSIZE )
             newfifo[ind] = fifo[i-1];
     }
