@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#define WHITELIST_IPADDR ""
+
 #include "iguana777.h"
 //#include "SuperNET.h"
 
@@ -842,7 +844,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize; struct iguana_info *coin = 0;
     char symbol[64],buf[4096],*originstr,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
-    printf("rpcparse.(%s)\n",urlstr);
+    //printf("rpcparse.(%s)\n",urlstr);
     if ( myinfo->remoteorigin == 0 )
     {
         n = (int32_t)(strlen(urlstr) - strlen("Origin: "));
@@ -1137,8 +1139,8 @@ void iguana_rpcloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(remoteaddr,ipbits);
-        printf("RPC.(%s) %x\n",remoteaddr,ipbits);
-        if ( strncmp(remoteaddr,"127.0.0.",strlen("127.0.0.")) == 0 )
+        //printf("RPC.(%s) %x\n",remoteaddr,ipbits);
+        if ( strcmp(WHITELIST_IPADDR,remoteaddr) == 0 || strncmp(remoteaddr,"127.0.0.",strlen("127.0.0.")) == 0 )
             strcpy(remoteaddr,"127.0.0.1");
         memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
         remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
