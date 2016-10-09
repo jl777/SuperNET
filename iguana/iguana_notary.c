@@ -1092,8 +1092,17 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
+    char *retstr;
     if ( myinfo->NOTARY.RELAYID < 0 )
-        return(clonestr("{\"error\":\"must be running as notary node\"}"));
+    {
+        if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
+        {
+            printf("addrelay.(%s)\n",retstr);
+            free(retstr);
+        }
+        if ( myinfo->NOTARY.RELAYID < 0 )
+            return(clonestr("{\"error\":\"must be running as notary node\"}"));
+    }
     if ( myinfo->DPOW.symbol[0] != 0 )
         return(clonestr("{\"error\":\"cant dPoW more than one coin at a time\"}"));
     if ( pubkey == 0 || pubkey[0] == 0 || is_hexstr(pubkey,0) != 66 )
