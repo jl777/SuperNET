@@ -856,7 +856,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 {
                     state = 4;
                 }
-            } else printf("mask.%llx wt.%d\n",(long long)mask,bitweight(mask));
+            } else printf("state 3 not done: mask.%llx wt.%d m.%d vs.%d\n",(long long)mask,bitweight(mask),m,numnotaries/2+1);
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
@@ -886,7 +886,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; uint64_t recvmask = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS],notariesBTC[DPOW_MAXRELAYS];
+    int32_t i,n,myind = -1; uint64_t recvmask = 0,recvmaskBTC = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS],notariesBTC[DPOW_MAXRELAYS];
     memset(&zero,0,sizeof(zero));
     memset(notaries,0,sizeof(notaries));
     memset(notariesBTC,0,sizeof(notariesBTC));
@@ -931,7 +931,7 @@ void dpow_statemachinestart(void *ptr)
         if ( deststate != 0xffffffff )
         {
             printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
-            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
+            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmaskBTC,&signedtxid,signedtx,timestamp);
         }
         if ( deststate == 0xffffffff )
         {
