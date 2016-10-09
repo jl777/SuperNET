@@ -163,7 +163,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
     cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    if ( coin->FULLNODE < 0 )
+    if ( 0 )//coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -224,8 +224,8 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         array = cJSON_CreateArray();
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
-        //printf("%s sendrawtransaction.(%s)\n",coin->symbol,paramstr);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
+        printf(">>>>>>>>>>> %s sendrawtransaction.(%s) -> %s\n",coin->symbol,paramstr,retstr);
         free(paramstr);
         return(retstr);
     }
@@ -922,16 +922,16 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( deststate != 0xffffffff )
         {
-            printf("DEST.%08x %s\n",deststate,bits256_str(str,srchash.hash));
+            printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
-        } else printf("deststate.%08x\n",deststate);
+        }
         if ( deststate == 0xffffffff )
         {
             if ( srcstate != 0xffffffff )
             {
                 //for (i=0; i<32; i++)
                 //    signedtxid.bytes[i] = i;
-                printf("SRC.%08x %s\n",srcstate,bits256_str(str,signedtxid));
+                printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcstate,bits256_str(str,signedtxid));
                 srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,signedtxid,notaries,n,myind,&recvmask,&signedtxid2,signedtx2,timestamp);
             }
         }
