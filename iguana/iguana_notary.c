@@ -600,6 +600,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
             {
                 if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
+                    printf("dpowsign.(%s)\n",jsonstr);
                     if ( (signedtx= jstr(signobj,"result")) != 0 && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
                         if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
