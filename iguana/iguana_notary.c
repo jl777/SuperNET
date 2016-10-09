@@ -422,7 +422,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
     if ( isPoS != 0 )
         len += iguana_rwnum(1,&serialized[len],sizeof(timestamp),&timestamp);
-    len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&numnotaries);
+    m = (numnotaries >> 1) + 1;
+    len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<numnotaries; j++)
     {
         i = ((height % numnotaries) + j) % numnotaries;
