@@ -610,7 +610,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                 for (j=0; j<m; j++)
                                 {
                                     item = jitem(vin,j);
-                                    if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 )
+                                    if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                     {
                                         printf("MINE.(%s)\n",jprint(item,0));
                                         siglen = (int32_t)strlen(sigstr) >> 1;
