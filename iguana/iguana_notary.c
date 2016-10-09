@@ -394,9 +394,9 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                             {
                                 if ( ++k_masks[(j << 7) + 127] == 0 )
                                     k_masks[(j << 7) + 126]++;
-                                printf("duplicate.%d i.%d j.%d num.%d mismatch %02x %02x\n",duplicate,i,j,num,k_masks[(j << 7) + 126],k_masks[(j << 7) + 127]);
+                                //printf("duplicate.%d i.%d j.%d num.%d mismatch %02x %02x\n",duplicate,i,j,num,k_masks[(j << 7) + 126],k_masks[(j << 7) + 127]);
                             }
-                        } else printf("duplicate.%d i.%d j.%d num.%d mismatch\n",duplicate,i,j,num);
+                        } //else printf("duplicate.%d i.%d j.%d num.%d mismatch\n",duplicate,i,j,num);
                     }
                     if ( duplicate == 0 && num < 4096 )
                     {
@@ -407,7 +407,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                         siglen = data[10];
                         sig = data+11;
                         memcpy(&k_masks[num << 7],data,datalen);
-                        printf(">>>>>>> num.%d sender.%d lastk.%d mask.%llx datalen.%d\n",num,senderind,lastk,(long long)mask,datalen);
+                        //printf(">>>>>>> num.%d sender.%d lastk.%d mask.%llx datalen.%d\n",num,senderind,lastk,(long long)mask,datalen);
                         num++;
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
@@ -426,7 +426,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
             }
         }
     }
-    printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
+    //printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
     return(num);
 }
 
@@ -661,7 +661,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
         senderind = data[0];
         lastk = data[1];
         iguana_rwnum(0,&data[2],sizeof(mask),(uint8_t *)&mask);
-        if ( senderind < numnotaries && lastk == refk && mask == refmask && notaries[senderind].height == refheight )
+        if ( senderind < numnotaries && lastk == refk && mask == refmask )//&& notaries[senderind].height == refheight )
         {
             if ( (notaries[senderind].siglen= data[10]) < sizeof(notaries[senderind].sig) )
             {
@@ -676,7 +676,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
             }
         } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx senderheight.%d refheight.%d\n",senderind,numnotaries,lastk,refk,(long long)mask,(long long)refmask,notaries[senderind].height,refheight);
     }
-    printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
+    //printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
 }
 
