@@ -720,8 +720,8 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             char str[65];
             *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
             printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
-        }
-    }
+        } else printf("mostsignedtx most.%d\n",most);
+    } else printf("mostsignedtx num.%d\n",num);
     free(k_masks);
     return(most);
 }
@@ -826,7 +826,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
-            printf("STATE3: BTC.%d RECVMASK.%llx\n",bits256_nonz(btctxid),(long long)*recvmaskp);
+            printf("STATE3: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
             if ( bitweight(*recvmaskp) > numnotaries/2+1 )
             {
                 printf("too many entries, prune to %d\n",numnotaries/2+1);
@@ -852,7 +852,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
-            printf("STATE4\n");
+            printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
             if ( (m= dpow_mostsignedtx(myinfo,dp,coin,signedtxidp,signedtx,&mask,&k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp)) > 0 )
             {
                 if ( m >= numnotaries/2+1 )
