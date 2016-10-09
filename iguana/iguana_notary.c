@@ -415,8 +415,8 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
 
 bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint64_t mask,int32_t k)
 {
-    uint32_t i,j,m,locktime,numvouts,version,siglen,len,sequenceid = 0xffffffff;  uint64_t satoshis;
-    uint8_t serialized[16384];
+    uint32_t i,j,m,locktime,numvouts,version,siglen,len,sequenceid = 0xffffffff;
+    uint64_t satoshis,satoshisB; uint8_t serialized[16384];
     len = locktime = 0;
     version = numvouts = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
@@ -442,6 +442,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
     }
     len += iguana_rwvarint32(1,&serialized[len],&numvouts);
     satoshis = DPOW_UTXOSIZE * m * .76;
+    if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
+        satoshis = satoshisB;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     serialized[len++] = 35;
     serialized[len++] = 33;
@@ -505,6 +507,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
 {
     int32_t i,j,siglen,m=0,retval=-1; char *rawtx,*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sigobj,*txobj2,*vins,*item,*vin; uint8_t data[128]; bits256 txid,srchash,desthash; uint32_t channel;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
+    if ( bits256_nonz(btctxid) == 0 )
+        channel = ~channel;
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (txobj= dpow_createtx(coin,&vins,notaries,numnotaries,height,lastk,mask,1,hashmsg,btctxid,timestamp)) != 0 )
@@ -598,6 +602,8 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     memset(signedtxidp,0,sizeof(*signedtxidp));
     signedtx[0] = 0;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
+    if ( bits256_nonz(btctxid) == 0 )
+        channel = ~channel;
     for (j=0; j<sizeof(desthash); j++)
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     num = 0;
@@ -679,6 +685,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         incr = sqrt(numnotaries) + 1;
     else incr = 1;
     channel = 'd' | ('P' << 8) | ('o' << 16) | ('W' << 24);
+    if ( bits256_nonz(btctxid) == 0 )
+        channel = ~channel;
     bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->DPOW.minerkey33,33);
     if ( bits256_nonz(hashmsg) == 0 )
         return(0xffffffff);
