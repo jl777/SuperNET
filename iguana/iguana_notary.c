@@ -371,7 +371,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
 
 int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastflag)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[128]; char *keystr,*hexstr; int32_t duplicate,i,j,n,datalen,most = 0;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[512]; char *keystr,*hexstr; int32_t duplicate,i,j,n,datalen,most = 0;
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
         for (i=0; i<n; i++)
@@ -381,7 +381,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
             {
                 decode_hex(key,BASILISK_KEYSIZE,keystr);
                 datalen >>= 1;
-                if ( datalen < sizeof(data) )
+                if ( datalen <= sizeof(data) )
                 {
                     decode_hex(data,datalen,hexstr);
                     for (j=duplicate=0; j<num; j++)
@@ -394,8 +394,9 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                             {
                                 if ( ++k_masks[(j << 7) + 127] == 0 )
                                     k_masks[(j << 7) + 126]++;
+                                printf("duplicate.%d i.%d j.%d num.%d mismatch %02x %02x\n",duplicate,i,j,num,k_masks[(j << 7) + 126],k_masks[(j << 7) + 127]);
                             }
-                        }
+                        } else printf("duplicate.%d i.%d j.%d num.%d mismatch\n",duplicate,i,j,num);
                     }
                     if ( duplicate == 0 && num < 4096 )
                     {
@@ -406,7 +407,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                         siglen = data[10];
                         sig = data+11;
                         memcpy(&k_masks[num << 7],data,datalen);
-                        //printf("num.%d sender.%d lastk.%d %llx\n",num,senderind,lastk,(long long)mask);
+                        printf("num.%d sender.%d lastk.%d %llx\n",num,senderind,lastk,(long long)mask);
                         num++;
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
@@ -699,7 +700,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             srchash.bytes[j] = notaries[i].pubkey[j+1];
         if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
         {
-            printf("RETARRAY.(%s)\n",jprint(retarray,0));
+            //printf("RETARRAY.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
                 for (k=0; k<m; k++)
