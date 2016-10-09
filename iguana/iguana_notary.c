@@ -815,7 +815,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                         data[j+sizeof(bits256)] = txid.bytes[j];
                     }
                     data[sizeof(bits256)*2] = vout;
-                    //printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
+                    char str[65],str2[65]; printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
                     basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,sizeof(data),120);
                 }
                 state = 2;
