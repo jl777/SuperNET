@@ -527,7 +527,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
     memcpy(&serialized[len],data,opretlen), len += opretlen;
     len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
     init_hexbytes_noT(signedtx,serialized,len);
-    printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
+    //printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
     return(bits256_doublesha256(0,serialized,len));
 }
 
