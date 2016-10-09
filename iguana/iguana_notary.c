@@ -603,7 +603,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         {
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
-                printf("dpowsign.(%s)\n",jsonstr);
+                //printf("dpowsign.(%s)\n",jsonstr);
                 if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
                     if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
@@ -732,7 +732,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
 
 void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *recvmaskp,uint32_t channel,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,bits256 hashmsg)
 {
-    int32_t i,j,k,m; cJSON *item,*retarray; bits256 desthash,srchash,checkmsg;
+    int32_t i,j,k,m,vout; cJSON *item,*retarray; bits256 desthash,srchash,checkmsg,txid;
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     for (i=0; i<numnotaries; i++)
@@ -749,10 +749,15 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
                 for (k=0; k<m; k++)
                 {
                     item = jitem(retarray,k);
-                    if ( dpow_message_utxo(&checkmsg,&notaries[i].prev_hash,&notaries[i].prev_vout,item) == sizeof(bits256)*2+1 )
+                    if ( dpow_message_utxo(&checkmsg,&txid,&vout,item) == sizeof(bits256)*2+1 )
                     {
                         if ( bits256_cmp(checkmsg,hashmsg) == 0 )
                         {
+                            if ( bits256_nonz(txid) != 0 )
+                            {
+                                notaries[i].prev_hash = txid;
+                                notaries[i].prev_vout = vout;
+                            }
                             notaries[i].height = height;
                             *recvmaskp |= (1LL << i);
                             break;
@@ -768,7 +773,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx,uint32_t timestamp)
 {
     // todo: add RBF support
-    bits256 txid,signedtxid; int32_t vout,completed,i,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
+    bits256 txid,signedtxid; int32_t vout,completed,i,nonz,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
     if ( numnotaries > 8 )
         incr = sqrt(numnotaries) + 1;
     else incr = 1;
@@ -836,18 +841,20 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             {
                 printf("too many entries, prune to %d\n",numnotaries/2+1);
                 mask = 0;
-                for (j=m=0; j<numnotaries; j++)
+                for (j=m=nonz=0; j<numnotaries; j++)
                 {
                     k = ((heightmsg % numnotaries) + j) % numnotaries;
                     if ( ((1LL << k) & *recvmaskp) != 0 )
                     {
+                        if ( bits256_nonz(notaries[k].prev_hash) != 0 )
+                            nonz++;
                         mask |= (1LL << k);
                         if ( ++m >= numnotaries/2+1 )
                             break;
                     }
                 }
             } else mask = *recvmaskp;
-            if ( bitweight(mask) == numnotaries/2+1 )
+            if ( bitweight(mask) == numnotaries/2+1 && k == numnotaries/2+1 )
             {
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp) == 0 )
                 {
