@@ -163,7 +163,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
     cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    if ( 0 )//coin->FULLNODE < 0 )
+    if ( coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -602,7 +602,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 {
                     if ( (signedtx= jstr(signobj,"result")) != 0 && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
-                        printf("dpowsign.(%s)\n",rawtx2);
+                        //printf("dpowsign.(%s)\n",rawtx2);
                         if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
                         {
                             if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
@@ -612,6 +612,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     item = jitem(vin,j);
                                     if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 )
                                     {
+                                        printf("MINE.(%s)\n",jprint(item,0));
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         data[0] = myind;
                                         data[1] = lastk;
@@ -622,7 +623,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
-                                            //printf("send to notary.%d\n",i);
+                                            printf("send.(%s) to notary.%d\n",sigstr,i);
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,120);
                                         }
                                         retval = 0;
@@ -938,7 +939,7 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
         newfifo[i] = fifo[i-1];
-        if ( (tip.blockhash.height - newfifo[i].blockhash.height) != i )
+        if ( bits256_nonz(newfifo[i].blockhash.hash) != 0 && (tip.blockhash.height - newfifo[i].blockhash.height) != i )
             printf("(%d != %d) ",(tip.blockhash.height - newfifo[i].blockhash.height),i);
     }
     newfifo[0] = tip;
