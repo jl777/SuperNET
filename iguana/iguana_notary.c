@@ -455,11 +455,15 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *btctxid,char *src)
 {
     int32_t i,opretlen = 0;
-    opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
+    for (opretlen=0; opretlen<sizeof(*hashmsg); opretlen++)
+        opret[opretlen] = hashmsg->bytes[opretlen];
+   // opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( bits256_nonz(*btctxid) != 0 )
     {
-        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*btctxid),btctxid->bytes);
+        for (i=0; i<sizeof(*hashmsg); i++,opretlen++)
+            opret[opretlen] = btctxid->bytes[opretlen];
+        //opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*btctxid),btctxid->bytes);
         if ( rwflag != 0 )
         {
             for (i=0; src[i]!=0; i++)
@@ -500,7 +504,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
             if ( siglen > 0 )
                 memcpy(&serialized[len],notaries[i].sig,siglen), len += siglen;
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
-            printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
+            //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
             m++;
             if ( m == numnotaries/2+1 && i == k )
                 break;
@@ -567,7 +571,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
                 }
                 jaddi(vins,item);
                 bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
-                printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
+                //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
                 if ( m == numnotaries/2+1 && i == lastk )
                     break;
@@ -617,7 +621,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     item = jitem(vin,j);
                                     if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                     {
-                                        printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
+                                        //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         data[0] = myind;
                                         data[1] = lastk;
@@ -628,7 +632,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
-                                            printf("send.(%s) to notary.%d\n",sigstr,i);
+                                            //printf("send.(%s) to notary.%d\n",sigstr,i);
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,120);
                                         }
                                         retval = 0;
@@ -723,7 +727,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             char str[65];
             *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
-            printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
+            //printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
         } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,k,(long long)mask);
     } else printf("mostsignedtx num.%d\n",num);
     free(k_masks);
@@ -743,7 +747,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
             desthash.bytes[j] = notaries[i].pubkey[j+1];
         if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
         {
-            printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
+            //printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
                 for (k=0; k<m; k++)
