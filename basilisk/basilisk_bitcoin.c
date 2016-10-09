@@ -616,7 +616,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
             if ( (opreturn= jstr(valsobj,"opreturn")) != 0 && (oplen= is_hexstr(opreturn,0)) > 0 )
             {
                 oplen >>= 1;
-                if ( (strcmp("BTC",coin->symbol) == 0 && oplen < 77) || coin->chain->do_opreturn == 0 )
+                if ( (strcmp("BTC",coin->symbol) == 0 && oplen < 76) || coin->chain->do_opreturn == 0 )
                 {
                     decode_hex(&buf[sizeof(buf) - oplen],oplen,opreturn);
                     spendlen = datachain_datascript(coin,buf,&buf[sizeof(buf) - oplen],oplen);

@@ -172,7 +172,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
 
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration)
 {
-    struct basilisk_message *msg; int32_t i; bits256 desthash;
+    struct basilisk_message *msg; bits256 desthash;
     if ( keylen != BASILISK_KEYSIZE )
     {
         printf("basilisk_respond_addmessage keylen.%d != %d\n",keylen,BASILISK_KEYSIZE);
@@ -219,9 +219,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     msg->expiration = (uint32_t)time(NULL) + duration;
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
-    for (i=0; i<BASILISK_KEYSIZE; i++)
-        printf("%02x",key[i]);
-    printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
+    //for (i=0; i<BASILISK_KEYSIZE; i++)
+    //    printf("%02x",key[i]);
+    //printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     if ( sendping != 0 )
         queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
     portable_mutex_unlock(&myinfo->messagemutex);
