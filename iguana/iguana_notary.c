@@ -876,9 +876,10 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; uint64_t recvmask = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS];
+    int32_t i,n,myind = -1; uint64_t recvmask = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS],notariesBTC[DPOW_MAXRELAYS];
     memset(&zero,0,sizeof(zero));
     memset(notaries,0,sizeof(notaries));
+    memset(notariesBTC,0,sizeof(notariesBTC));
     myinfo = ptrs[0];
     dp = ptrs[1];
     memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
@@ -889,7 +890,9 @@ void dpow_statemachinestart(void *ptr)
     for (i=0; i<n; i++)
     {
         decode_hex(notaries[i].pubkey,33,Notaries[i][1]);
+        decode_hex(notariesBTC[i].pubkey,33,Notaries[i][1]);
         bitcoin_address(coinaddr,src->chain->pubtype,notaries[i].pubkey,33);
+        bitcoin_address(coinaddr,src->chain->pubtype,notariesBTC[i].pubkey,33);
         printf("%s.%d ",coinaddr,i);
         if ( memcmp(notaries[i].pubkey,myinfo->DPOW.minerkey33,33) == 0 )
             myind = i;
@@ -918,7 +921,7 @@ void dpow_statemachinestart(void *ptr)
         if ( deststate != 0xffffffff )
         {
             printf("DEST.%08x %s\n",deststate,bits256_str(str,srchash.hash));
-            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notaries,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
+            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmask,&signedtxid,signedtx,timestamp);
         } else printf("deststate.%08x\n",deststate);
         if ( deststate == 0xffffffff )
         {
