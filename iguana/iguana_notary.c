@@ -455,15 +455,11 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *btctxid,char *src)
 {
     int32_t i,opretlen = 0;
-    for (opretlen=0; opretlen<sizeof(*hashmsg); opretlen++)
-        opret[opretlen] = hashmsg->bytes[opretlen];
-   // opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
+    opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( bits256_nonz(*btctxid) != 0 )
     {
-        for (i=0; i<sizeof(*hashmsg); i++,opretlen++)
-            opret[opretlen] = btctxid->bytes[opretlen];
-        //opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*btctxid),btctxid->bytes);
+        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*btctxid),btctxid->bytes);
         if ( rwflag != 0 )
         {
             for (i=0; src[i]!=0; i++)
@@ -725,7 +721,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         *maskp = mask;
         if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
         {
-            char str[65];
+            //char str[65];
             *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
             //printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
         } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,k,(long long)mask);
