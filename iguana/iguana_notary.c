@@ -407,7 +407,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                         siglen = data[10];
                         sig = data+11;
                         memcpy(&k_masks[num << 7],data,datalen);
-                        printf("num.%d sender.%d lastk.%d %llx\n",num,senderind,lastk,(long long)mask);
+                        printf(">>>>>>> num.%d sender.%d lastk.%d mask.%llx datalen.%d\n",num,senderind,lastk,(long long)mask,datalen);
                         num++;
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
@@ -422,11 +422,11 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
             if ( n > most )
             {
                 most = n;
-                memcpy(&k_masks[num << 7],&k_masks[i << 7],1 << 7);
+                memcpy(&k_masks[num << 7],&k_masks[j << 7],1 << 7);
             }
         }
     }
-    //printf("most.%d n.%d\n",most,n);
+    printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
     return(num);
 }
 
