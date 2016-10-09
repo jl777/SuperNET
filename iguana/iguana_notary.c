@@ -837,24 +837,20 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
             printf("STATE3: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
-            if ( bitweight(*recvmaskp) > numnotaries/2+1 )
+            mask = 0;
+            for (j=m=nonz=0; j<numnotaries; j++)
             {
-                printf("too many entries, prune to %d\n",numnotaries/2+1);
-                mask = 0;
-                for (j=m=nonz=0; j<numnotaries; j++)
+                k = ((heightmsg % numnotaries) + j) % numnotaries;
+                if ( ((1LL << k) & *recvmaskp) != 0 )
                 {
-                    k = ((heightmsg % numnotaries) + j) % numnotaries;
-                    if ( ((1LL << k) & *recvmaskp) != 0 )
-                    {
-                        if ( bits256_nonz(notaries[k].prev_hash) != 0 )
-                            nonz++;
-                        mask |= (1LL << k);
-                        if ( ++m >= numnotaries/2+1 )
-                            break;
-                    }
+                    if ( bits256_nonz(notaries[k].prev_hash) != 0 )
+                        nonz++;
+                    mask |= (1LL << k);
+                    if ( ++m >= numnotaries/2+1 )
+                        break;
                 }
-            } else mask = *recvmaskp;
-            if ( bitweight(mask) == numnotaries/2+1 && k == numnotaries/2+1 )
+            }
+            if ( bitweight(mask) == numnotaries/2+1 && m == numnotaries/2+1 )
             {
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp) == 0 )
                 {
