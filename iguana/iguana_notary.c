@@ -625,7 +625,11 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         *lastkp = k;
         *maskp = mask;
         if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
+        {
+            char str[65];
             *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k);
+            printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
+        }
     }
     free(k_masks);
     return(most);
