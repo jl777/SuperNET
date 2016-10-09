@@ -497,6 +497,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
             if ( siglen > 0 )
                 memcpy(&serialized[len],notaries[i].sig,siglen), len += siglen;
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
+            printf("VINI.%d <- i.%d\n",m,i);
             m++;
             if ( m == numnotaries/2+1 && i == k )
                 break;
@@ -563,6 +564,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
                 }
                 jaddi(vins,item);
                 bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
+                printf("VINI.%d <- i.%d\n",m,i);
                 m++;
                 if ( m == numnotaries/2+1 && i == lastk )
                     break;
@@ -598,11 +600,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         {
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
+                printf("dpowsign.(%s)\n",jsonstr);
                 if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
                     if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                     {
-                        //printf("dpowsign.(%s)\n",rawtx2);
                         if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
                         {
                             if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
@@ -824,7 +826,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
-            printf("STATE3: RECVMASK.%llx\n",(long long)*recvmaskp);
+            printf("STATE3: BTC.%d RECVMASK.%llx\n",bits256_nonz(btctxid),(long long)*recvmaskp);
             if ( bitweight(*recvmaskp) > numnotaries/2+1 )
             {
                 printf("too many entries, prune to %d\n",numnotaries/2+1);
