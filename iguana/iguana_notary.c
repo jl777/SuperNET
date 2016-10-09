@@ -638,7 +638,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 }
                 free(jsonstr);
             }
-            free(rawtx);
         }
         free_json(txobj);
         //fprintf(stderr,"free vins\n");
