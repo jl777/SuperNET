@@ -674,7 +674,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
                     printf(" <- sender.%d siglen.%d\n",i,data[10]);
                 matches++;
             }
-        }
+        } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx senderheight.%d refheight.%d\n",senderind,numnotaries,lastk,refk,(long long)mask,(long long)refmask,notaries[senderind].height,refheight);
     }
     printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
@@ -724,7 +724,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             char str[65];
             *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
             printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
-        } else printf("mostsignedtx most.%d\n",most);
+        } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,k,(long long)mask);
     } else printf("mostsignedtx num.%d\n",num);
     free(k_masks);
     return(most);
