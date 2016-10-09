@@ -515,7 +515,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     opretlen = dpow_rwopret(1,opret,&hashmsg,&heightmsg,&btctxid,src);
-    opretlen = dpow_opreturnscript(data,opret,opretlen), len += opretlen;
+    opretlen = dpow_opreturnscript(data,opret,opretlen);
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;
     else
