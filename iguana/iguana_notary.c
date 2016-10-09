@@ -497,7 +497,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
             if ( siglen > 0 )
                 memcpy(&serialized[len],notaries[i].sig,siglen), len += siglen;
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
-            printf("VINI.%d <- i.%d\n",m,i);
+            printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
             m++;
             if ( m == numnotaries/2+1 && i == k )
                 break;
@@ -564,7 +564,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
                 }
                 jaddi(vins,item);
                 bitcoin_txinput(coin,txobj,notaries[i].prev_hash,notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
-                printf("VINI.%d <- i.%d\n",m,i);
+                printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
                 if ( m == numnotaries/2+1 && i == lastk )
                     break;
@@ -614,7 +614,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     item = jitem(vin,j);
                                     if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                     {
-                                        printf("MINE.(%s)\n",jprint(item,0));
+                                        printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         data[0] = myind;
                                         data[1] = lastk;
