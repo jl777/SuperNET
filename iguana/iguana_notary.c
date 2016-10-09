@@ -634,7 +634,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                             free_json(txobj2);
                         } else printf("cant parse.(%s)\n",rawtx2);
                         free(rawtx2);
-                    } else printf("error decoding (%s)\n",signedtx==0?"":signedtx);
+                    } else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
                     free_json(signobj);
                 } else printf("error parsing.(%s)\n",jsonstr);
                 free(jsonstr);
