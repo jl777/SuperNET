@@ -390,7 +390,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                         siglen = data[10];
                         sig = data+11;
                         memcpy(&k_masks[num << 7],data,datalen);
-                        printf("num.%d sender.%d lastk.%d %llx\n",num,senderind,lastk,(long long)mask);
+                        //printf("num.%d sender.%d lastk.%d %llx\n",num,senderind,lastk,(long long)mask);
                         num++;
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
@@ -409,7 +409,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
             }
         }
     }
-    printf("most.%d n.%d\n",most,n);
+    //printf("most.%d n.%d\n",most,n);
     return(num);
 }
 
@@ -498,7 +498,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
         txobj = bitcoin_txoutput(txobj,script,sizeof(script),satoshis);
     }
     *vinsp = vins;
-    if ( usesigs != 0 )
+    if ( 0 && usesigs != 0 )
         printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
@@ -585,7 +585,8 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
                 memcpy(notaries[senderind].sig,data+11,data[10]);
                 int32_t j; for (j=0; j<notaries[senderind].siglen; j++)
                     printf("%02x",notaries[senderind].sig[j]);
-                printf(" <- sender.%d siglen.%d\n",i,data[10]);
+                if ( notaries[senderind].siglen > 0 )
+                    printf(" <- sender.%d siglen.%d\n",i,data[10]);
                 matches++;
             }
         }
