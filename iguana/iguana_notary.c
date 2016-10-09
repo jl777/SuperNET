@@ -448,7 +448,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t he
     decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
     serialized[len++] = 0xac;
     len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
-    return(bits256_doublesha256(signedtx,serialized,len));
+    init_hexbytes_noT(signedtx,serialized,len);
+    return(bits256_doublesha256(0,serialized,len));
 }
 
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t lastk,uint64_t mask,int32_t usesigs,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
