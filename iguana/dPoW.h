@@ -42,7 +42,7 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t destupdated,srcconfirms,numdesttx,numsrctx;
+    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit;
 };
 
 

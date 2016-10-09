@@ -285,7 +285,7 @@ int32_t dpow_vini_ismine(struct supernet_info *myinfo,cJSON *item)
 
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
-    int32_t i,n,vout,haveutxo = 0; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str; uint8_t script[35];
+    int32_t i,n,vout,haveutxo = 0; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
     if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr)) != 0 )
@@ -305,7 +305,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             {
                 item = jitem(unspents,i);
                 satoshis = SATOSHIDEN * jdouble(item,"amount");
-                if ( satoshis == DPOW_UTXOSIZE && dpow_vini_ismine(myinfo,item) == 0 )
+                if ( satoshis == DPOW_UTXOSIZE && (address= jstr(item,"address")) != 0 && strcmp(address,coinaddr) == 0 )
                 {
                     if ( (str= jstr(item,"scriptPubKey")) != 0 && is_hexstr(str,0) == sizeof(script)*2 )
                     {
@@ -778,8 +778,9 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 0:
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 )
                 state = 1;
-            if ( haveutxo < 10 )
+            if ( haveutxo < 10 && time(NULL) > dp->lastsplit+600 )
             {
+                printf("haveutxo.%d\n",haveutxo);
                 addresses = cJSON_CreateArray();
                 jaddistr(addresses,coinaddr);
                 if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->DPOW.minerkey33,DPOW_UTXOSIZE,10,&completed,&signedtxid,0,addresses)) != 0 )
@@ -792,6 +793,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                     free(rawtx);
                 }
                 free_json(addresses);
+                dp->lastsplit = (uint32_t)time(NULL);
             }
             break;
         case 1: // wait for utxo, send utxo to all other nodes
