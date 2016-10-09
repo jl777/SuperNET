@@ -1137,6 +1137,7 @@ void iguana_rpcloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(remoteaddr,ipbits);
+        printf("RPC.(%s) %x\n",remoteaddr,ipbits);
         if ( strncmp(remoteaddr,"127.0.0.",strlen("127.0.0.")) == 0 )
             strcpy(remoteaddr,"127.0.0.1");
         memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
