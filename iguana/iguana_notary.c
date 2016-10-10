@@ -526,46 +526,6 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
     return(retval);
 }
 
-int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,int32_t lastflag)
-{
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE]; struct dpow_sigentry dsig; char *keystr,*hexstr; uint8_t data[sizeof(struct dpow_sigentry)]; int32_t duplicate,i,j,n,datalen,most = 0;
-    if ( (msgobj= jarray(&n,json,"messages")) != 0 )
-    {
-        for (i=0; i<n; i++)
-        {
-            item = jitem(msgobj,i);
-            if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
-            {
-                decode_hex(key,BASILISK_KEYSIZE,keystr);
-                datalen >>= 1;
-                if ( datalen <= sizeof(data) )
-                {
-                    decode_hex(data,datalen,hexstr);
-                    dpow_rwsigentry(0,data,&dsig);
-                    for (j=duplicate=0; j<num; j++)
-                        dpow_sigbufcmp(&duplicate,&dsig,&dsigs[j]);
-                    if ( duplicate == 0 && num < 4096 )
-                        dsigs[num++] = dsig;
-                } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
-            }
-        }
-    }
-    if ( lastflag != 0 && num > 0 )
-    {
-        for (j=0; j<num; j++)
-        {
-            n = dsigs[j].refcount;
-            if ( n > most )
-            {
-                most = n;
-                dsigs[num] = dsigs[j];
-            }
-        }
-    }
-    //printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
-    return(num);
-}
-
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t lastk,uint64_t mask,int32_t usesigs,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
 {
     int32_t i,j,m=0,siglen; char scriptstr[256]; cJSON *txobj=0,*vins=0,*item; uint64_t satoshis; uint8_t script[35],*sig;
@@ -615,7 +575,50 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
         printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
-    
+
+int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,int32_t lastflag)
+{
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE]; struct dpow_sigentry dsig; char *keystr,*hexstr; uint8_t data[sizeof(struct dpow_sigentry)]; int32_t duplicate,i,j,n,datalen,most = 0;
+    if ( (msgobj= jarray(&n,json,"messages")) != 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(msgobj,i);
+            if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+            {
+                decode_hex(key,BASILISK_KEYSIZE,keystr);
+                datalen >>= 1;
+                if ( datalen <= sizeof(data) )
+                {
+                    decode_hex(data,datalen,hexstr);
+                    dpow_rwsigentry(0,data,&dsig);
+                    for (j=duplicate=0; j<num; j++)
+                        dpow_sigbufcmp(&duplicate,&dsig,&dsigs[j]);
+                    if ( duplicate == 0 && num < 4096 )
+                    {
+                        dsigs[num++] = dsig;
+                        printf("add dsig[%d]\n",num);
+                    }
+                } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
+            }
+        }
+    }
+    if ( lastflag != 0 && num > 0 )
+    {
+        for (j=0; j<num; j++)
+        {
+            n = dsigs[j].refcount;
+            if ( n > most )
+            {
+                most = n;
+                dsigs[num] = dsigs[j];
+            }
+        }
+    }
+    printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
+    return(num);
+}
+
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp,bits256 beacon)
 {
     int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash; uint32_t channel; struct dpow_sigentry dsig;
@@ -732,7 +735,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             desthash.bytes[j] = notaries[i].pubkey[j+1];
         if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
         {
-            //printf("RETARRAY.(%s)\n",jprint(retarray,0));
+            printf("RETARRAY.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
                 for (k=0; k<m; k++)
@@ -754,11 +757,11 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             *maskp = dsig.mask;
             if ( (most= dpow_dsigs_match(notaries,numnotaries,dsigs,num,dsig.lastk,dsig.mask,height)) >= numnotaries/2+1 )
             {
-                //char str[65];
+                char str[65];
                 *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,dsig.mask,dsig.lastk,hashmsg,height,btctxid,dp->symbol);
-                //printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
+                printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
             } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,dsig.lastk,(long long)dsig.mask);
-        }
+        } else printf("null mask.0\n");
     } else printf("mostsignedtx num.%d\n",num);
     free(dsigs);
     return(most);
