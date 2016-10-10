@@ -347,12 +347,12 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *tx
 
 int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits256 *commitp,cJSON *json)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[sizeof(bits256)*3+1]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[512]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
     *voutp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        //printf("messages.(%s)\n",jprint(msgobj,0));
+        printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -360,15 +360,9 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
             {
                 decode_hex(key,BASILISK_KEYSIZE,keystr);
                 datalen >>= 1;
-                if ( datalen <= sizeof(data) )
-                {
-                    decode_hex(data,datalen,hexstr);
-                    if ( datalen == sizeof(data) )
-                    {
-                        retval = dpow_rwutxobuf(0,data,hashmsgp,txidp,voutp,commitp);
-                        printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
-                    }
-                } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
+                decode_hex(data,datalen,hexstr);
+                retval = dpow_rwutxobuf(0,data,hashmsgp,txidp,voutp,commitp);
+                printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
             }
         }
     }
