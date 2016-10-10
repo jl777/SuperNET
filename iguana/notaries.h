@@ -36,6 +36,7 @@ char *Notaries[][2] =
      { "titomane_EU", "020c909e72415d1abf151b5cbb521c2a1e14a92fb262cdd3237557da804334e1da" },
      { "supernet_AE", "029d93ef78197dc93892d2a30e5a54865f41e0ca3ab7eb8e3dcbc59c8756b6e355" },
      { "supernet_EU", "02061c6278b91fd4ac5cab4401100ffa3b2d5a277e8f71db23401cc071b3665546" },
+     { "yassin_EU", "027804b371e4e1965e85311c99f6bf8d7160275f96d2f4312327396e4c476d36aa" },
     { "Server1","0221876c8259764224dc1a7b70ec956f3fbe9a768cd77f13082cfa60eb6aa2d068"},
     { "Server2","03c7c14e6b1f94585bb571cf3ee5eb9b9ab54bd23d0acb8cf13edad1c515842b66"},
     { "Server3","02d28f8992ff0cd68c5d558cf55ec5b3ada25151519a6cea8cef1bac04c40023b6"},
