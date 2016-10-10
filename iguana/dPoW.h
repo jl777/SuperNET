@@ -17,7 +17,7 @@
 #define INCLUDE_DPOW_H
 
 #define DPOW_BTCSTR "BTC"
-#define DPOW_UTXOSIZE 6000
+#define DPOW_UTXOSIZE 10000
 
 #define DPOW_FIFOSIZE 64
 #define DPOW_MAXTX 8192
@@ -42,7 +42,7 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t destupdated,srcconfirms,numdesttx,numsrctx;
+    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit;
 };
 
 

@@ -942,7 +942,7 @@ void basilisks_loop(void *arg)
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
-            if ( (counter++ % 20) == 0 )
+            if ( (counter++ % 10) == 0 )
                 iguana_dPoWupdate(myinfo);
             endmilli = startmilli + 500;
         }

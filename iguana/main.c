@@ -1585,6 +1585,8 @@ void iguana_main(void *arg)
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
+//myinfo->rpcport = IGUANA_NOTARYPORT;
+//myinfo->IAMNOTARY = 1;
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
