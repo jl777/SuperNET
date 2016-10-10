@@ -242,7 +242,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
         if ( duration > BASILISK_MSGDURATION )
             duration = BASILISK_MSGDURATION;
     }
-    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s from.%s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash),remoteaddr);
+    char str[65]; printf("add message.[%d] %s from.%s\n",datalen,bits256_str(str,hash),remoteaddr);
     retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
     return(retstr);
@@ -250,13 +250,15 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
 
 char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk)
 {
-    int32_t width; uint32_t msgid,channel; char *retstr;
-    width = juint(valsobj,"width");
-    msgid = juint(valsobj,"msgid");
-    channel = juint(valsobj,"channel");
-    char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d from.%s\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,jbits256(valsobj,"desthash")),juint(valsobj,"channel"),msgid,width,remoteaddr);
-    retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),width);
-    //printf("iterate_MSG.(%s)\n",retstr);
+    int32_t width; uint32_t msgid,channel; char *retstr=0;
+    if ( valsobj != 0 )
+    {
+        width = juint(valsobj,"width");
+        msgid = juint(valsobj,"msgid");
+        channel = juint(valsobj,"channel");
+        char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d from.%s\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,jbits256(valsobj,"desthash")),juint(valsobj,"channel"),msgid,width,remoteaddr);
+        retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),width);
+    }
     return(retstr);
 }
 
@@ -270,7 +272,6 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jaddbits256(vals,"srchash",hash);
     if ( bits256_cmp(GENESIS_PUBKEY,jbits256(vals,"desthash")) == 0 )
         jaddbits256(vals,"desthash",myinfo->myaddr.persistent);
-    //char str[65]; printf("getmessage for (%s)\n",bits256_str(str,jbits256(vals,"desthash")));
     if ( (msgid= juint(vals,"msgid")) == 0 )
     {
         msgid = (uint32_t)time(NULL);
@@ -323,7 +324,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"srchash",srchash);
         jaddbits256(valsobj,"desthash",desthash);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
+        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS);
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,desthash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);
@@ -346,7 +347,7 @@ int32_t basilisk_message_returned(uint8_t *key,uint8_t *data,int32_t maxlen,cJSO
             {
                 decode_hex(key,BASILISK_KEYSIZE,keystr);
                 datalen >>= 1;
-                if ( datalen < maxlen )
+                if ( datalen <= maxlen )
                 {
                     decode_hex(data,datalen,hexstr);
                     //printf("decoded hexstr.[%d]\n",datalen);
@@ -374,7 +375,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
     jaddbits256(valsobj,"desthash",desthash);
     if ( (retstr= basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0)) != 0 )
     {
-        //printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
+        printf("channel.%u msgid.%u gotmessage.(%d)\n",channel,msgid,(int32_t)strlen(retstr));
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
             if ( is_cJSON_Array(retarray) == 0 )
