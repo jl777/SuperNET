@@ -519,7 +519,7 @@ int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,in
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        printf("messages.(%s)\n",jprint(msgobj,0));
+        //printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -529,7 +529,7 @@ int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,in
                 datalen >>= 1;
                 decode_hex(data,datalen,hexstr);
                 retval = dpow_rwutxobuf(0,data,hashmsgp,txidp,voutp,commitp,senderpub);
-                printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
+                //printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
             }
         }
     }
@@ -789,7 +789,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
     {
-        printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
+        //printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
         if ( (m= cJSON_GetArraySize(retarray)) != 0 )
         {
             for (k=flag=0; k<m; k++)
@@ -808,11 +808,12 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
                                     notaries[j].prev_hash = txid;
                                     notaries[j].prev_vout = vout;
                                     notaries[j].commit = commit;
+                                    notaries[j].height = height;
+                                    *recvmaskp |= (1LL << j);
+                                    flag++;
+                                    char str[65]; printf("got utxo from notary.%d mask.%llx %s\n",j,(long long)*recvmaskp,bits256_str(str,txid));
+                                    break;
                                 }
-                                notaries[j].height = height;
-                                *recvmaskp |= (1LL << j);
-                                flag++;
-                                break;
                             }
                         }
                         if ( flag != 0 )
