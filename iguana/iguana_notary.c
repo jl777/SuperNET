@@ -715,8 +715,6 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
 int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t *maskp,int32_t *lastkp,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
 {
     uint32_t channel; uint8_t *k_masks; bits256 srchash,desthash; cJSON *retarray,*item; int32_t i,num,j,k,m,most = 0; uint64_t mask;
-    *lastkp = -1;
-    *maskp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     signedtx[0] = 0;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
@@ -748,15 +746,18 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     if ( num > 0 )
     {
         uint8_t sig[76]; int32_t siglen,senderind; bits256 beacon;
-        dpow_rwsigbuf(0,&k_masks[num << 7],sig,&siglen,maskp,&senderind,lastkp,&beacon);
-        k = *lastkp;
-        mask = *maskp;
-        if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
+        dpow_rwsigbuf(0,&k_masks[num << 7],sig,&siglen,&mask,&senderind,&k,&beacon);
+        if ( mask != 0 )
         {
-            //char str[65];
-            *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
-            //printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
-        } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,k,(long long)mask);
+            *lastkp = k;
+            *maskp = mask;
+            if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
+            {
+                //char str[65];
+                *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,mask,k,hashmsg,height,btctxid,dp->symbol);
+                //printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
+            } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,k,(long long)mask);
+        }
     } else printf("mostsignedtx num.%d\n",num);
     free(k_masks);
     return(most);
