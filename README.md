@@ -221,3 +221,10 @@ pico wp_7776
 
 cp dpow_7776 ../
 pico dpow_7776
+
+7. create addnode_7776 with your ip address, run this to add your ip address to getinfoN_7776
+
+8. make sure system clock is synchronized
+sudo service ntp stop
+sudo ntpdate -s time.nist.gov
+sudo service ntp start

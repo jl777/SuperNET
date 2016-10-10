@@ -597,7 +597,7 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                     if ( duplicate == 0 && num < 4096 )
                     {
                         dsigs[num++] = dsig;
-                        printf("add dsig[%d]\n",num);
+                        printf("add dsig[%d] sender.%d lastk.%d mask.%llx\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
@@ -613,9 +613,9 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                 most = n;
                 dsigs[num] = dsigs[j];
             }
+            printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
         }
     }
-    printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
     return(num);
 }
 
@@ -728,6 +728,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     num = 0;
+    memset(&dsig,0,sizeof(dsig));
     dsigs = calloc(4096,sizeof(struct dpow_sigentry));
     for (i=0; i<numnotaries; i++)
     {
