@@ -33,7 +33,7 @@ struct dpow_entry
     uint64_t mask;
     int32_t prev_vout,height;
     uint8_t pubkey[33],k,siglen,sig[76];
-} PACKED;
+};
 
 struct dpow_sigentry
 {
@@ -41,7 +41,7 @@ struct dpow_sigentry
     uint64_t mask;
     int32_t refcount;
     uint8_t senderind,lastk,siglen,sig[76];
-} PACKED;
+};
 
 int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 {
@@ -700,12 +700,12 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
 int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,struct dpow_sigentry *dsigs,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
 {
     struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;
+    printf("dsigs_match\n");
     for (i=0; i<num; i++)
     {
         dpow_rwsigentry(0,(uint8_t *)&dsigs[i],&dsig);
-        if ( dsig.senderind < numnotaries && dsig.lastk == refk && dsig.mask == refmask )
+        if ( (senderind= dsig.senderind) < numnotaries && dsig.lastk == refk && dsig.mask == refmask )
         {
-            senderind = dsig.senderind;
             if ( (notaries[senderind].siglen= dsig.siglen) < sizeof(notaries[senderind].sig) )
             {
                 notaries[senderind].k = refk;
@@ -765,9 +765,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             *maskp = dsig.mask;
             if ( (most= dpow_dsigs_match(notaries,numnotaries,dsigs,num,dsig.lastk,dsig.mask,height)) >= numnotaries/2+1 )
             {
-                char str[65];
                 *signedtxidp = dpow_notarytx(signedtx,coin->chain->isPoS,timestamp,height,notaries,numnotaries,dsig.mask,dsig.lastk,hashmsg,height,btctxid,dp->symbol);
-                printf("notarytx %s %s\n",bits256_str(str,*signedtxidp),signedtx);
             } else printf("mostsignedtx most.%d k.%d mask.%llx\n",most,dsig.lastk,(long long)dsig.mask);
         } else printf("null mask.0\n");
     } else printf("mostsignedtx num.%d\n",num);
