@@ -254,7 +254,7 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
     width = juint(valsobj,"width");
     msgid = juint(valsobj,"msgid");
     channel = juint(valsobj,"channel");
-    //char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,jbits256(valsobj,"desthash")),juint(valsobj,"channel"),msgid,width);
+    char str[65],str2[65]; printf("%s -> %s channel.%u msgid.%x width.%d from.%s\n",bits256_str(str,jbits256(valsobj,"sender")),bits256_str(str2,jbits256(valsobj,"desthash")),juint(valsobj,"channel"),msgid,width,remoteaddr);
     retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),width);
     //printf("iterate_MSG.(%s)\n",retstr);
     return(retstr);
