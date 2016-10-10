@@ -846,7 +846,7 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
 struct basilisk_p2pitem *basilisk_p2pitem_create(struct iguana_info *coin,struct iguana_peer *addr,char *type,uint32_t ipbits,uint8_t *data,int32_t datalen)
 {
     struct basilisk_p2pitem *ptr;
-    ptr = calloc(1,sizeof(*ptr) + datalen);
+    ptr = calloc(1,sizeof(*ptr) + datalen + 16);
     ptr->coin = coin;
     ptr->addr = addr;
     ptr->ipbits = ipbits;
@@ -939,6 +939,7 @@ void basilisks_loop(void *arg)
         startmilli = OS_milliseconds();
         basilisk_issued_purge(myinfo,600000);
         basilisk_iteration(myinfo);
+        basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
             if ( (counter++ % 10) == 0 )
@@ -950,7 +951,6 @@ void basilisks_loop(void *arg)
         else endmilli = startmilli + 2000;
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
-        basilisk_p2pQ_process(myinfo,777);
         iter++;
     }
 }

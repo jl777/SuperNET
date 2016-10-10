@@ -207,7 +207,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
             return(clonestr("{\"result\":\"message updated\"}"));
         }
     }
-    msg = calloc(1,sizeof(*msg) + datalen);
+    msg = calloc(1,sizeof(*msg) + datalen + 16);
     msg->keylen = keylen;
     memcpy(msg->key,key,keylen);
     msg->datalen = datalen;
