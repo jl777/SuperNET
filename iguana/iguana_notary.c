@@ -650,7 +650,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     item = jitem(vin,j);
                                     if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                     {
-                                        uint8_t sig[128]; int32_t lastk,siglen; uint64_t mask;
+                                        uint8_t sig[128]; int32_t siglen;
                                         //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         decode_hex(sig,siglen,sigstr);
