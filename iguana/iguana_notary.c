@@ -378,10 +378,9 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
 int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp,uint64_t *maskp,int32_t *senderindp,int32_t *lastkp)
 {
     int32_t len = 0;
-    len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
     if ( rwflag != 0 )
     {
-        data[len++] = *senderindp;
+        data[len++] = *senderindp; // must be first
         data[len++] = *lastkp;
         data[len++] = *siglenp;
         memcpy(&data[len],sig,*siglenp), len += *siglenp;
@@ -393,12 +392,32 @@ int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp
         *siglenp = data[len++];
         memcpy(sig,&data[len],*siglenp), len += *siglenp;
     }
+    len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
     return(len);
+}
+
+int32_t dpow_sigbufcmp(int32_t *duplicatep,uint8_t *sigbuf,uint8_t *refbuf,int32_t len)
+{
+    if ( memcmp(sigbuf,refbuf,len) == 0 )
+    {
+        if ( sigbuf[0] == refbuf[0] )
+        {
+            (*duplicatep)++;
+            return(0);
+        }
+        else
+        {
+            if ( ++refbuf[len+1] == 0 )
+                refbuf[len]++;
+            return(-1);
+        }
+    }
+    return(-1);
 }
 
 int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastflag)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[512]; char *keystr,*hexstr; int32_t duplicate,i,j,n,datalen,most = 0;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[1 << 7]; char *keystr,*hexstr; int32_t duplicate,i,j,n,datalen,most = 0;
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
         for (i=0; i<n; i++)
@@ -412,19 +431,7 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                 {
                     decode_hex(data,datalen,hexstr);
                     for (j=duplicate=0; j<num; j++)
-                    {
-                        if ( memcmp(data+1,&k_masks[(j << 7) + 1],9) == 0 )
-                        {
-                            if ( data[0] == k_masks[j << 7] )
-                                duplicate++;
-                            else
-                            {
-                                if ( ++k_masks[(j << 7) + 127] == 0 )
-                                    k_masks[(j << 7) + 126]++;
-                                //printf("duplicate.%d i.%d j.%d num.%d mismatch %02x %02x\n",duplicate,i,j,num,k_masks[(j << 7) + 126],k_masks[(j << 7) + 127]);
-                            }
-                        } //else printf("duplicate.%d i.%d j.%d num.%d mismatch\n",duplicate,i,j,num);
-                    }
+                        dpow_sigbufcmp(&duplicate,data,&k_masks[j << 7],126);
                     if ( duplicate == 0 && num < 4096 )
                     {
                         memcpy(&k_masks[num << 7],data,datalen);
