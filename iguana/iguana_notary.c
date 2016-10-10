@@ -784,9 +784,10 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
 void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *recvmaskp,uint32_t channel,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,bits256 hashmsg)
 {
     int32_t j,k,m,vout,flag; cJSON *item,*retarray; uint8_t senderpub[33]; bits256 desthash,commit,srchash,checkmsg,txid;
-    for (j=0; j<sizeof(srchash); j++)
+    memset(srchash.bytes,0,sizeof(srchash));
+    for (j=0; j<sizeof(desthash); j++)
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
     {
         printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
         if ( (m= cJSON_GetArraySize(retarray)) != 0 )
