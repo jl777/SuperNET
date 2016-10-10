@@ -242,7 +242,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
         if ( duration > BASILISK_MSGDURATION )
             duration = BASILISK_MSGDURATION;
     }
-    //char str[65]; printf("add message.[%d] channel.%u msgid.%x %s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash));
+    char str[65]; printf("add message.[%d] channel.%u msgid.%x %s from.%s\n",datalen,juint(valsobj,"channel"),juint(valsobj,"msgid"),bits256_str(str,hash),remoteaddr);
     retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
     return(retstr);
