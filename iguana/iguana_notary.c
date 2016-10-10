@@ -29,7 +29,7 @@
 
 struct dpow_entry
 {
-    bits256 prev_hash;
+    bits256 prev_hash,commit;
     uint64_t mask;
     int32_t prev_vout,height;
     uint8_t pubkey[33],k,siglen,sig[76];
@@ -333,9 +333,21 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     return(haveutxo);
 }
 
-int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON *json)
+int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *txid,int32_t *voutp,bits256 *commit)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[sizeof(bits256)*2+1]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,j,n,datalen,retval = -1;
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*txid),txid->bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*commit),commit->bytes);
+    if ( rwflag != 0 )
+        data[len++] = *voutp;
+    else *voutp = data[len++];
+    return(len);
+}
+
+int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits256 *commitp,cJSON *json)
+{
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[sizeof(bits256)*3+1]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
     *voutp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
@@ -353,13 +365,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,cJSON 
                     decode_hex(data,datalen,hexstr);
                     if ( datalen == sizeof(data) )
                     {
-                        for (j=0; j<sizeof(bits256); j++)
-                        {
-                            hashmsgp->bytes[j] = data[j];
-                            txidp->bytes[j] = data[j + sizeof(bits256)];
-                        }
-                        *voutp = data[sizeof(bits256) * 2];
-                        retval = datalen;
+                        retval = dpow_rwutxobuf(0,data,hashmsgp,txidp,voutp,commitp);
                         printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
@@ -428,18 +434,6 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
     }
     //printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
     return(num);
-}
-
-int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *txid,int32_t *voutp,bits256 *commit)
-{
-    int32_t len = 0;
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*txid),txid->bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*commit),commit->bytes);
-    if ( rwflag != 0 )
-        data[len++] = *voutp;
-    else *voutp = data[len++];
-    return(len);
 }
 
 int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
@@ -745,13 +739,13 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
 
 void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *recvmaskp,uint32_t channel,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,bits256 hashmsg)
 {
-    int32_t i,j,k,m,vout; cJSON *item,*retarray; bits256 desthash,srchash,checkmsg,txid;
+    int32_t i,j,k,m,vout; cJSON *item,*retarray; bits256 desthash,commit,srchash,checkmsg,txid;
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     for (i=0; i<numnotaries; i++)
     {
-        if ( (*recvmaskp & (1LL << i)) != 0 )
-            continue;
+        //if ( (*recvmaskp & (1LL << i)) != 0 )
+        //    continue;
         for (j=0; j<sizeof(desthash); j++)
             desthash.bytes[j] = notaries[i].pubkey[j+1];
         if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
@@ -762,7 +756,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
                 for (k=0; k<m; k++)
                 {
                     item = jitem(retarray,k);
-                    if ( dpow_message_utxo(&checkmsg,&txid,&vout,item) == sizeof(bits256)*2+1 )
+                    if ( dpow_message_utxo(&checkmsg,&txid,&vout,&commit,item) == sizeof(bits256)*3+1 )
                     {
                         if ( bits256_cmp(checkmsg,hashmsg) == 0 )
                         {
@@ -770,6 +764,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
                             {
                                 notaries[i].prev_hash = txid;
                                 notaries[i].prev_vout = vout;
+                                notaries[i].commit = commit;
                             }
                             notaries[i].height = height;
                             *recvmaskp |= (1LL << i);
