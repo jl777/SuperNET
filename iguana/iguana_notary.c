@@ -717,7 +717,7 @@ int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numn
                     printf(" <- sender.%d siglen.%d\n",i,dsig.siglen);
                 matches++;
             }
-        } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx senderheight.%d refheight.%d\n",senderind,numnotaries,dsig.lastk,refk,(long long)dsig.mask,(long long)refmask,notaries[senderind].height,refheight);
+        } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx  refheight.%d\n",senderind,numnotaries,dsig.lastk,refk,(long long)dsig.mask,(long long)refmask,refheight);
     }
     printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
@@ -837,7 +837,6 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 state = 1;
             if ( haveutxo < 10 && time(NULL) > dp->lastsplit+600 )
             {
-                printf("haveutxo.%d\n",haveutxo);
                 addresses = cJSON_CreateArray();
                 jaddistr(addresses,coinaddr);
                 if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->DPOW.minerkey33,DPOW_UTXOSIZE,10,&completed,&signedtxid,0,addresses)) != 0 )
