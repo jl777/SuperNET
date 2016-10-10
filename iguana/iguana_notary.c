@@ -624,7 +624,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         iguana_rwnum(1,&data[2],sizeof(mask),(uint8_t *)&mask);
                                         data[10] = siglen;
                                         decode_hex(data+11,siglen,sigstr);
-                                        for (i=(myind % incr); i<numnotaries; i+=incr)
+                                        //for (i=(myind % incr); i<numnotaries; i+=incr)
+                                        for (i=0; i<numnotaries; i++)
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
