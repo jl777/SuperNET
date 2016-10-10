@@ -382,6 +382,7 @@ int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp
     {
         data[len++] = *senderindp; // must be first
         data[len++] = *lastkp;
+        len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
         data[len++] = *siglenp;
         memcpy(&data[len],sig,*siglenp), len += *siglenp;
         for (i=0; i<sizeof(*beaconp); i++)
@@ -391,12 +392,12 @@ int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp
     {
         *senderindp = data[len++];
         *lastkp = data[len++];
+        len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
         *siglenp = data[len++];
         memcpy(sig,&data[len],*siglenp), len += *siglenp;
         for (i=0; i<sizeof(*beaconp); i++)
             beaconp->bytes[i] = data[len++];
     }
-    len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
     return(len);
 }
 
@@ -654,6 +655,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         decode_hex(sig,siglen,sigstr);
                                         datalen = dpow_rwsigbuf(1,data,sig,&siglen,&mask,&myind,&lastk,&beacon);
+                                        printf("datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,siglen,myind,lastk,(long long)mask);
                                         for (i=0; i<numnotaries; i++)
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
