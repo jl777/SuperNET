@@ -776,7 +776,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
                 for (k=0; k<m; k++)
                 {
                     item = jitem(retarray,k);
-                    if ( dpow_message_utxo(&checkmsg,&txid,&vout,&commit,item) == sizeof(bits256)*3+1 )
+                    if ( dpow_message_utxo(&checkmsg,&txid,&vout,&commit,item) > 0 )
                     {
                         if ( bits256_cmp(checkmsg,hashmsg) == 0 )
                         {
@@ -859,7 +859,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 state = 3;
             break;
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
-            dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
+            //dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
             mask = 0;
             for (j=m=nonz=0; j<numnotaries; j++)
@@ -873,7 +873,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                         break;
                 }
             }
-            printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp,(long long)mask);
+            printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(btctxid)==0,(long long)*recvmaskp,(long long)mask);
             if ( bitweight(mask) == numnotaries/2+1 && m == numnotaries/2+1 )
             {
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp,beacon) == 0 )
@@ -884,7 +884,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
             //dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
-            printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
+            printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid)==0,(long long)*recvmaskp);
             if ( (m= dpow_mostsignedtx(myinfo,dp,coin,signedtxidp,signedtx,&mask,&k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp)) > 0 )
             {
                 if ( m >= numnotaries/2+1 )
