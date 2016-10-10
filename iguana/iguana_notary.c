@@ -652,6 +652,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         printf("datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,siglen,myind,lastk,(long long)mask);
                                         for (i=0; i<numnotaries; i++)
                                         {
+                                            if ( i == myind )
+                                                continue;
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
                                             char datastr[1024];
@@ -844,6 +846,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 len = dpow_rwutxobuf(1,data,&hashmsg,&txid,&vout,&commit);
                 for (i=0; i<numnotaries; i++)
                 {
+                    if ( i == myind )
+                        continue;
                     for (j=0; j<sizeof(srchash); j++)
                         desthash.bytes[j] = notaries[i].pubkey[j+1];
                     char str[65],str2[65]; printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
