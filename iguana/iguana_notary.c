@@ -375,6 +375,27 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
     return(retval);
 }
 
+int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp,uint64_t *maskp,int32_t *senderindp,int32_t *lastkp)
+{
+    int32_t len = 0;
+    len += iguana_rwnum(0,&data[len],sizeof(*maskp),(uint8_t *)maskp);
+    if ( rwflag != 0 )
+    {
+        data[len++] = *senderindp;
+        data[len++] = *lastkp;
+        data[len++] = *siglenp;
+        memcpy(&data[len],sig,*siglenp), len += *siglenp;
+    }
+    else
+    {
+        *senderindp = data[len++];
+        *lastkp = data[len++];
+        *siglenp = data[len++];
+        memcpy(sig,&data[len],*siglenp), len += *siglenp;
+    }
+    return(len);
+}
+
 int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastflag)
 {
     cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[512]; char *keystr,*hexstr; int32_t duplicate,i,j,n,datalen,most = 0;
@@ -406,12 +427,6 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
                     }
                     if ( duplicate == 0 && num < 4096 )
                     {
-                        uint8_t *sig; int32_t senderind,lastk,siglen; uint64_t mask;
-                        senderind = data[0];
-                        lastk = data[1];
-                        iguana_rwnum(0,&data[2],sizeof(mask),(uint8_t *)&mask);
-                        siglen = data[10];
-                        sig = data+11;
                         memcpy(&k_masks[num << 7],data,datalen);
                         //printf(">>>>>>> num.%d sender.%d lastk.%d mask.%llx datalen.%d\n",num,senderind,lastk,(long long)mask,datalen);
                         num++;
@@ -593,7 +608,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
     
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
 {
-    int32_t i,j,z,siglen,m=0,incr,retval=-1; char rawtx[16384],*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[128]; bits256 txid,srchash,desthash; uint32_t channel;
+    int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[512]; bits256 txid,srchash,desthash; uint32_t channel;
     //incr = sqrt(numnotaries) + 1;
     //if ( numnotaries < 8 )
         incr = 1;
@@ -623,20 +638,17 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                     item = jitem(vin,j);
                                     if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                     {
+                                        uint8_t sig[128]; int32_t lastk,siglen; uint64_t mask;
                                         //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
                                         siglen = (int32_t)strlen(sigstr) >> 1;
-                                        data[0] = myind;
-                                        data[1] = lastk;
-                                        iguana_rwnum(1,&data[2],sizeof(mask),(uint8_t *)&mask);
-                                        data[10] = siglen;
-                                        decode_hex(data+11,siglen,sigstr);
-                                        //for (i=(myind % incr); i<numnotaries; i+=incr)
+                                        decode_hex(sig,siglen,sigstr);
+                                        datalen = dpow_rwsigbuf(1,data,sig,&siglen,&mask,&myind,&lastk);
                                         for (i=0; i<numnotaries; i++)
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
                                             //printf("send.(%s) to notary.%d\n",sigstr,i);
-                                            basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,siglen+11,120);
+                                            basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,datalen,120);
                                         }
                                         retval = 0;
                                         break;
