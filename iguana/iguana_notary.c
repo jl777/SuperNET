@@ -597,7 +597,7 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                     if ( duplicate == 0 && num < 4096 )
                     {
                         dsigs[num++] = dsig;
-                        printf("add dsig[%d] sender.%d lastk.%d mask.%llx\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask);
+                        printf("add dsig[%d] sender.%d lastk.%d mask.%llx refcount.%d\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.refcount);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
@@ -613,7 +613,7 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                 most = n;
                 dsigs[num] = dsigs[j];
             }
-            printf("lastflag.%d num.%d most.%d n.%d\n",lastflag,num,most,n);
+            printf("lastflag.%d num.%d most.%d n.%d refcount.%d\n",lastflag,num,most,n,dsigs[j].refcount);
         }
     }
     return(num);
