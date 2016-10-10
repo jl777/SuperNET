@@ -635,7 +635,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         {
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
-                printf("dpowsign.(%s)\n",jsonstr);
+                printf("mask.%llx dpowsign.(%s)\n",(long long)mask,jsonstr);
                 if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
                     if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
@@ -688,7 +688,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
     for (i=0; i<num; i++)
     {
         dpow_rwsigbuf(0,&k_masks[i << 7],sig,&siglen,&mask,&senderind,&lastk,&beacon);
-        if ( senderind < numnotaries && lastk == refk && mask == refmask )//&& notaries[senderind].height == refheight )
+        if ( senderind < numnotaries && lastk == refk && mask == refmask )
         {
             if ( (notaries[senderind].siglen= siglen) < sizeof(notaries[senderind].sig) )
             {
@@ -704,7 +704,7 @@ int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t nu
             }
         } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx senderheight.%d refheight.%d\n",senderind,numnotaries,lastk,refk,(long long)mask,(long long)refmask,notaries[senderind].height,refheight);
     }
-    //printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
+    printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
 }
 
@@ -862,7 +862,6 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             k = 0;
-            printf("STATE3: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
             mask = 0;
             for (j=m=nonz=0; j<numnotaries; j++)
             {
@@ -875,6 +874,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                         break;
                 }
             }
+            printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp,(long long)mask);
             if ( bitweight(mask) == numnotaries/2+1 && m == numnotaries/2+1 )
             {
                 if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp,beacon) == 0 )
