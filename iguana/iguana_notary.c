@@ -786,7 +786,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
     int32_t j,k,m,vout,flag; cJSON *item,*retarray; uint8_t senderpub[33]; bits256 desthash,commit,srchash,checkmsg,txid;
     for (j=0; j<sizeof(srchash); j++)
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
     {
         printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
         if ( (m= cJSON_GetArraySize(retarray)) != 0 )
