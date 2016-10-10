@@ -378,7 +378,7 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
 int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp,uint64_t *maskp,int32_t *senderindp,int32_t *lastkp)
 {
     int32_t len = 0;
-    len += iguana_rwnum(0,&data[len],sizeof(*maskp),(uint8_t *)maskp);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
     if ( rwflag != 0 )
     {
         data[len++] = *senderindp;
