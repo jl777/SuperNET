@@ -700,11 +700,10 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
 int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,struct dpow_sigentry *dsigs,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
 {
     struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;
-    printf("dsigs_match\n");
     for (i=0; i<num; i++)
     {
         dpow_rwsigentry(0,(uint8_t *)&dsigs[i],&dsig);
-        if ( (senderind= dsig.senderind) < numnotaries && dsig.lastk == refk && dsig.mask == refmask )
+        if ( (senderind= dsig.senderind) < numnotaries && senderind >= 0 && dsig.lastk == refk && dsig.mask == refmask )
         {
             if ( (notaries[senderind].siglen= dsig.siglen) < sizeof(notaries[senderind].sig) )
             {
