@@ -430,6 +430,18 @@ int32_t dpow_message_most(uint8_t *k_masks,int32_t num,cJSON *json,int32_t lastf
     return(num);
 }
 
+int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *txid,int32_t *voutp,bits256 *commit)
+{
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*txid),txid->bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(*commit),commit->bytes);
+    if ( rwflag != 0 )
+        data[len++] = *voutp;
+    else *voutp = data[len++];
+    return(len);
+}
+
 int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 {
     int32_t offset = 0;
@@ -588,8 +600,8 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
 {
     int32_t i,j,z,siglen,m=0,incr,retval=-1; char rawtx[16384],*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[128]; bits256 txid,srchash,desthash; uint32_t channel;
-    incr = sqrt(numnotaries) + 1;
-    if ( numnotaries < 8 )
+    //incr = sqrt(numnotaries) + 1;
+    //if ( numnotaries < 8 )
         incr = 1;
     channel = 's' | ('i' << 8) | ('g' << 16) | ('s' << 24);
     if ( bits256_nonz(btctxid) == 0 )
@@ -655,7 +667,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
 
 int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint8_t *k_masks,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
 {
-    int32_t i,senderind,lastk,matches = 0; uint8_t data[128]; uint64_t mask;
+    int32_t i,senderind,lastk,matches = 0; uint8_t data[512]; uint64_t mask;
     for (i=0; i<num; i++)
     {
         memcpy(data,&k_masks[i << 7],sizeof(data));
@@ -771,13 +783,14 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
     }
 }
 
-uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx,uint32_t timestamp)
+uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx,uint32_t timestamp,bits256 beacon)
 {
     // todo: add RBF support
-    bits256 txid,signedtxid; int32_t vout,completed,i,nonz,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*2+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
+    bits256 txid,signedtxid,commit; int32_t vout,completed,i,len,nonz,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*3+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
     if ( numnotaries > 8 )
         incr = sqrt(numnotaries) + 1;
     else incr = 1;
+    vcalc_sha256(0,commit.bytes,beacon.bytes,sizeof(beacon));
     channel = 'd' | ('P' << 8) | ('o' << 16) | ('W' << 24);
     if ( bits256_nonz(btctxid) == 0 )
         channel = ~channel;
@@ -813,17 +826,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 1: // wait for utxo, send utxo to all other nodes
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
-                for (i=(myind % incr); i<numnotaries; i+=incr)
+                len = dpow_rwutxobuf(1,data,&hashmsg,&txid,&vout,&commit);
+                for (i=0; i<numnotaries; i++)
                 {
                     for (j=0; j<sizeof(srchash); j++)
-                    {
                         desthash.bytes[j] = notaries[i].pubkey[j+1];
-                        data[j] = hashmsg.bytes[j];
-                        data[j+sizeof(bits256)] = txid.bytes[j];
-                    }
-                    data[sizeof(bits256)*2] = vout;
                     char str[65],str2[65]; printf("STATE1: %s send %s %s/v%d\n",coin->symbol,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
-                    basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,sizeof(data),120);
+                    basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,len,120);
                 }
                 state = 2;
             }
@@ -860,7 +869,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             } else printf("state 3 not done: mask.%llx wt.%d m.%d vs.%d\n",(long long)mask,bitweight(mask),m,numnotaries/2+1);
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
-            dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
+            //dpow_txidupdate(myinfo,dp,coin,recvmaskp,channel,heightmsg,notaries,numnotaries,myind,hashmsg);
             printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(btctxid),(long long)*recvmaskp);
             if ( (m= dpow_mostsignedtx(myinfo,dp,coin,signedtxidp,signedtx,&mask,&k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp)) > 0 )
             {
@@ -887,12 +896,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; uint64_t recvmask = 0,recvmaskBTC = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS],notariesBTC[DPOW_MAXRELAYS];
+    int32_t i,n,myind = -1; uint64_t recvmask = 0,recvmaskBTC = 0; uint32_t timestamp,srcstate=0,deststate=0; struct iguana_info *src,*dest; struct dpow_hashheight srchash,desthash; char signedtx[16384],signedtx2[16384],str[65],coinaddr[64]; bits256 beacon,signedtxid,signedtxid2,zero; struct dpow_entry notaries[DPOW_MAXRELAYS],notariesBTC[DPOW_MAXRELAYS];
     memset(&zero,0,sizeof(zero));
     memset(notaries,0,sizeof(notaries));
     memset(notariesBTC,0,sizeof(notariesBTC));
     myinfo = ptrs[0];
     dp = ptrs[1];
+    beacon = rand256(0);
     memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height);
     src = iguana_coinfind(dp->symbol);
@@ -932,7 +942,7 @@ void dpow_statemachinestart(void *ptr)
         if ( deststate != 0xffffffff )
         {
             printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
-            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmaskBTC,&signedtxid,signedtx,timestamp);
+            deststate = dpow_statemachineiterate(myinfo,dp,dest,deststate,srchash.hash,srchash.height,zero,notariesBTC,n,myind,&recvmaskBTC,&signedtxid,signedtx,timestamp,beacon);
         }
         if ( deststate == 0xffffffff )
         {
@@ -941,7 +951,7 @@ void dpow_statemachinestart(void *ptr)
                 //for (i=0; i<32; i++)
                 //    signedtxid.bytes[i] = i;
                 printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcstate,bits256_str(str,signedtxid));
-                srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,signedtxid,notaries,n,myind,&recvmask,&signedtxid2,signedtx2,timestamp);
+                srcstate = dpow_statemachineiterate(myinfo,dp,src,srcstate,srchash.hash,srchash.height,signedtxid,notaries,n,myind,&recvmask,&signedtxid2,signedtx2,timestamp,beacon);
             }
         }
     }
