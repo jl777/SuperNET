@@ -159,7 +159,7 @@ int32_t dpow_sigbufcmp(int32_t *duplicatep,struct dpow_sigentry *dsig,struct dpo
 bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint64_t mask,int32_t k,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,char *src)
 {
     uint32_t i,j,m,locktime,numvouts,version,opretlen,siglen,len,sequenceid = 0xffffffff;
-    uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[1024],data[1024];
+    uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[1024],data[4096];
     len = locktime = 0;
     version = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
@@ -514,7 +514,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 
 int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits256 *commitp,cJSON *json)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[512]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[4096]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
     *voutp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
@@ -827,7 +827,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint32_t state,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t myind,uint64_t *recvmaskp,bits256 *signedtxidp,char *signedtx,uint32_t timestamp,bits256 beacon)
 {
     // todo: add RBF support
-    bits256 txid,signedtxid,commit; int32_t vout,completed,i,len,nonz,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[sizeof(bits256)*3+1]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
+    bits256 txid,signedtxid,commit; int32_t vout,completed,i,len,nonz,j,k,m,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*retstr,coinaddr[64]; uint8_t data[4096]; uint32_t channel; bits256 srchash,desthash; uint64_t mask;
     if ( numnotaries > 8 )
         incr = sqrt(numnotaries) + 1;
     else incr = 1;
