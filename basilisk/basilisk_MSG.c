@@ -188,7 +188,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     {
         if ( msg->datalen != datalen )
         {
-            printf("overwrite delete of msg.[%d]\n",msg->datalen);
+            //printf("overwrite delete of msg.[%d]\n",msg->datalen);
             HASH_DELETE(hh,myinfo->messagetable,msg);
             QUEUEITEMS--;
             free(msg);
@@ -242,7 +242,7 @@ char *basilisk_respond_OUT(struct supernet_info *myinfo,char *CMD,void *addr,cha
         if ( duration > BASILISK_MSGDURATION )
             duration = BASILISK_MSGDURATION;
     }
-    char str[65]; printf("add message.[%d] %s from.%s\n",datalen,bits256_str(str,hash),remoteaddr);
+    //char str[65]; printf("add message.[%d] %s from.%s\n",datalen,bits256_str(str,hash),remoteaddr);
     retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,1,duration);
     // printf("OUT keylen.%d datalen.%d\n",keylen,datalen);
     return(retstr);

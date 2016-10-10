@@ -719,7 +719,7 @@ int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numn
             }
         } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx  refheight.%d\n",senderind,numnotaries,dsig.lastk,refk,(long long)dsig.mask,(long long)refmask,refheight);
     }
-    printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
+    //printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
     return(matches);
 }
 
@@ -783,7 +783,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
         //    continue;
         for (j=0; j<sizeof(desthash); j++)
             desthash.bytes[j] = notaries[i].pubkey[j+1];
-        if ( (retarray= basilisk_channelget(myinfo,desthash,srchash,channel,height,0)) != 0 )
+        if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
         {
             //printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
