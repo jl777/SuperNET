@@ -594,12 +594,17 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                     decode_hex(data,datalen,hexstr);
                     dpow_rwsigentry(0,data,&dsig);
                     for (j=duplicate=0; j<num; j++)
+                    {
                         dpow_sigbufcmp(&duplicate,&dsig,&dsigs[j]);
+                        printf("%d: sender.%d %llx.k%d siglen.%d\n",j,dsig.senderind,(long long)dsig.mask,dsig.lastk,dsig.siglen);
+                    }
                     if ( duplicate == 0 && num < 4096 )
                     {
                         dsig.refcount = 1;
+                        for (j=0; j<dsig.siglen; j++)
+                            printf("%02x",dsig.sig[j]);
+                        printf(" <- add dsig[%d] sender.%d lastk.%d mask.%llx refcount.%d\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.refcount);
                         dsigs[num++] = dsig;
-                        printf("add dsig[%d] sender.%d lastk.%d mask.%llx refcount.%d\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.refcount);
                     }
                 } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
             }
