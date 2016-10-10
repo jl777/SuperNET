@@ -519,7 +519,7 @@ int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,in
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
     {
-        //printf("messages.(%s)\n",jprint(msgobj,0));
+        printf("messages.(%s)\n",jprint(msgobj,0));
         for (i=0; i<n; i++)
         {
             item = jitem(msgobj,i);
@@ -788,7 +788,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
     {
-        //printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
+        printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
         if ( (m= cJSON_GetArraySize(retarray)) != 0 )
         {
             for (k=flag=0; k<m; k++)
