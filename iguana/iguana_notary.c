@@ -743,10 +743,10 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     }
     if ( num > 0 )
     {
-        k = k_masks[(num << 7) + 1];
-        iguana_rwnum(0,&k_masks[(num << 7) + 2],sizeof(mask),(uint8_t *)&mask);
-        *lastkp = k;
-        *maskp = mask;
+        uint8_t sig[76]; int32_t siglen,senderind; bits256 beacon;
+        dpow_rwsigbuf(0,&k_masks[num << 7],sig,&siglen,maskp,&senderind,lastkp,&beacon);
+        k = *lastkp;
+        mask = *maskp;
         if ( (most= dpow_k_masks_match(notaries,numnotaries,k_masks,num,k,mask,height)) >= numnotaries/2+1 )
         {
             //char str[65];
@@ -867,10 +867,9 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             for (j=m=nonz=0; j<numnotaries; j++)
             {
                 k = ((heightmsg % numnotaries) + j) % numnotaries;
-                if ( ((1LL << k) & *recvmaskp) != 0 )
+                if ( bits256_nonz(notaries[k].prev_hash) != 0 )
                 {
-                    if ( bits256_nonz(notaries[k].prev_hash) != 0 )
-                        nonz++;
+                    nonz++;
                     mask |= (1LL << k);
                     if ( ++m >= numnotaries/2+1 )
                         break;
