@@ -29,7 +29,7 @@
 
 struct dpow_entry
 {
-    bits256 prev_hash,commit;
+    bits256 prev_hash,commit,beacon;
     uint64_t mask;
     int32_t prev_vout,height;
     uint8_t pubkey[33],k,siglen,sig[76];
@@ -375,15 +375,17 @@ int32_t dpow_message_utxo(bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits25
     return(retval);
 }
 
-int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp,uint64_t *maskp,int32_t *senderindp,int32_t *lastkp)
+int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp,uint64_t *maskp,int32_t *senderindp,int32_t *lastkp,bits256 *beaconp)
 {
-    int32_t len = 0;
+    int32_t i,len = 0;
     if ( rwflag != 0 )
     {
         data[len++] = *senderindp; // must be first
         data[len++] = *lastkp;
         data[len++] = *siglenp;
         memcpy(&data[len],sig,*siglenp), len += *siglenp;
+        for (i=0; i<sizeof(*beaconp); i++)
+            data[len++] = beaconp->bytes[i];
     }
     else
     {
@@ -391,6 +393,8 @@ int32_t dpow_rwsigbuf(int32_t rwflag,uint8_t *data,uint8_t *sig,int32_t *siglenp
         *lastkp = data[len++];
         *siglenp = data[len++];
         memcpy(sig,&data[len],*siglenp), len += *siglenp;
+        for (i=0; i<sizeof(*beaconp); i++)
+            beaconp->bytes[i] = data[len++];
     }
     len += iguana_rwnum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
     return(len);
@@ -613,7 +617,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_entry no
     return(txobj);
 }
     
-int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp)
+int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,bits256 *signedtxidp,char *signedtx,uint64_t mask,int32_t lastk,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,int32_t height,int32_t myind,bits256 hashmsg,bits256 btctxid,uint32_t timestamp,bits256 beacon)
 {
     int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[512]; bits256 txid,srchash,desthash; uint32_t channel;
     //incr = sqrt(numnotaries) + 1;
@@ -649,7 +653,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
                                         siglen = (int32_t)strlen(sigstr) >> 1;
                                         decode_hex(sig,siglen,sigstr);
-                                        datalen = dpow_rwsigbuf(1,data,sig,&siglen,&mask,&myind,&lastk);
+                                        datalen = dpow_rwsigbuf(1,data,sig,&siglen,&mask,&myind,&lastk,&beacon);
                                         for (i=0; i<numnotaries; i++)
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
@@ -680,24 +684,22 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
 
 int32_t dpow_k_masks_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint8_t *k_masks,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
 {
-    int32_t i,senderind,lastk,matches = 0; uint8_t data[512]; uint64_t mask;
+    int32_t i,senderind,siglen,lastk,matches = 0; bits256 beacon; uint8_t sig[76]; uint64_t mask;
     for (i=0; i<num; i++)
     {
-        memcpy(data,&k_masks[i << 7],sizeof(data));
-        senderind = data[0];
-        lastk = data[1];
-        iguana_rwnum(0,&data[2],sizeof(mask),(uint8_t *)&mask);
+        dpow_rwsigbuf(0,&k_masks[i << 7],sig,&siglen,&mask,&senderind,&lastk,&beacon);
         if ( senderind < numnotaries && lastk == refk && mask == refmask )//&& notaries[senderind].height == refheight )
         {
-            if ( (notaries[senderind].siglen= data[10]) < sizeof(notaries[senderind].sig) )
+            if ( (notaries[senderind].siglen= siglen) < sizeof(notaries[senderind].sig) )
             {
                 notaries[senderind].k = refk;
                 notaries[senderind].mask = refmask;
-                memcpy(notaries[senderind].sig,data+11,data[10]);
+                notaries[senderind].beacon = beacon;
+                memcpy(notaries[senderind].sig,sig,siglen);
                 int32_t j; for (j=0; j<notaries[senderind].siglen; j++)
                     printf("%02x",notaries[senderind].sig[j]);
                 if ( notaries[senderind].siglen > 0 )
-                    printf(" <- sender.%d siglen.%d\n",i,data[10]);
+                    printf(" <- sender.%d siglen.%d\n",i,siglen);
                 matches++;
             }
         } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx senderheight.%d refheight.%d\n",senderind,numnotaries,lastk,refk,(long long)mask,(long long)refmask,notaries[senderind].height,refheight);
@@ -876,7 +878,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
             if ( bitweight(mask) == numnotaries/2+1 && m == numnotaries/2+1 )
             {
-                if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp) == 0 )
+                if ( dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp,beacon) == 0 )
                 {
                     state = 4;
                 }
@@ -899,7 +901,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 }
                 else
                 {
-                    dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp);
+                    dpow_signedtxgen(myinfo,dp,coin,signedtxidp,signedtx,mask,k,notaries,numnotaries,heightmsg,myind,hashmsg,btctxid,timestamp,beacon);
                 }
             }
             break;
