@@ -283,7 +283,9 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         width = juint(vals,"width");
         retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(vals,"srchash"),jbits256(vals,"desthash"),width);
         return(retstr);
-    } else return(basilisk_standardservice("MSG",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,1));
+    }
+    printf("getmessage not relay.%d\n",myinfo->NOTARY.RELAYID);
+    return(basilisk_standardservice("MSG",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
@@ -295,12 +297,12 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
         if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
         {
             retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"));
-        }
+        } else printf("no get_dataptr\n");
         if ( ptr != 0 )
             free(ptr);
         if ( retstr != 0 )
             free(retstr);
-    }
+    } else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
@@ -321,7 +323,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"srchash",srchash);
         jaddbits256(valsobj,"desthash",desthash);
-        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
+        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d:%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS,juint(valsobj,"fanout"));
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,desthash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);
