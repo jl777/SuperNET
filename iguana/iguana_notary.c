@@ -635,7 +635,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         {
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
-                //printf("dpowsign.(%s)\n",jsonstr);
+                printf("dpowsign.(%s)\n",jsonstr);
                 if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                 {
                     if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
