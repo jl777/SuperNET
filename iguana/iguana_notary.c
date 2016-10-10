@@ -660,7 +660,9 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         {
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
-                                            //printf("send.(%s) to notary.%d\n",sigstr,i);
+                                            char datastr[1024];
+                                            init_hexbytes_noT(datastr,data,datalen);
+                                            printf("send.(%s) to notary.%d\n",datastr,i);
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,datalen,120);
                                         }
                                         retval = 0;
