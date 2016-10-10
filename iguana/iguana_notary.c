@@ -514,7 +514,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 
 int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits256 *commitp,cJSON *json)
 {
-    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[4096]; char *keystr,*hexstr,str[65],str2[65]; int32_t i,n,datalen,retval = -1;
+    cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[4096]; char *keystr,*hexstr; int32_t i,n,datalen,retval = -1; //,str[65],str2[65]
     *voutp = -1;
     memset(txidp,0,sizeof(*txidp));
     if ( (msgobj= jarray(&n,json,"messages")) != 0 )
