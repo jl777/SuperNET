@@ -150,7 +150,7 @@ int32_t dpow_sigbufcmp(int32_t *duplicatep,struct dpow_sigentry *dsig,struct dpo
 bits256 dpow_notarytx(char *signedtx,int32_t isPoS,uint32_t timestamp,int32_t height,struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,uint64_t mask,int32_t k,bits256 hashmsg,int32_t heightmsg,bits256 btctxid,char *src)
 {
     uint32_t i,j,m,locktime,numvouts,version,opretlen,siglen,len,sequenceid = 0xffffffff;
-    uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[256],data[256];
+    uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[1024],data[1024];
     len = locktime = 0;
     version = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
@@ -702,7 +702,7 @@ int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numn
     struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;
     for (i=0; i<num; i++)
     {
-        dpow_rwsigentry(0,(uint8_t *)&dsigs[i],&dsig);
+        dsig = dsigs[i];
         if ( (senderind= dsig.senderind) < numnotaries && senderind >= 0 && dsig.lastk == refk && dsig.mask == refmask )
         {
             if ( (notaries[senderind].siglen= dsig.siglen) < sizeof(notaries[senderind].sig) )
@@ -757,7 +757,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     }
     if ( num > 0 )
     {
-        dpow_rwsigentry(0,(uint8_t *)&dsigs[num],&dsig);
+        dsig = dsigs[num];
         if ( dsig.mask != 0 )
         {
             *lastkp = dsig.lastk;
