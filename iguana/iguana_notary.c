@@ -117,6 +117,7 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     }
     else
     {
+        memset(dsig,0,sizeof(*dsig));
         dsig->senderind = data[len++];
         dsig->lastk = data[len++];
         len += iguana_rwnum(rwflag,&data[len],sizeof(dsig->mask),(uint8_t *)&dsig->mask);
