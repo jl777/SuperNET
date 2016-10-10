@@ -597,6 +597,7 @@ int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,in
                         dpow_sigbufcmp(&duplicate,&dsig,&dsigs[j]);
                     if ( duplicate == 0 && num < 4096 )
                     {
+                        dsig.refcount = 1;
                         dsigs[num++] = dsig;
                         printf("add dsig[%d] sender.%d lastk.%d mask.%llx refcount.%d\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.refcount);
                     }
