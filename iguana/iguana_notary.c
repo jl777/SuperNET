@@ -670,8 +670,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         for (i=0; i<numnotaries; i++)
                                         {
-                                            //if ( i == myind )
-                                            //    continue;
+                                            if ( i != myind )
+                                                printf("send siglen.%d -> notary.%d\n",dsig.siglen,i);
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = notaries[i].pubkey[z+1];
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,height,data,datalen,120);
@@ -743,7 +743,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
             desthash.bytes[j] = notaries[i].pubkey[j+1];
         if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
         {
-            printf("RETARRAY.(%s)\n",jprint(retarray,0));
+            //printf("RETARRAY.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
             {
                 for (k=0; k<m; k++)
