@@ -760,7 +760,6 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                         decode_hex(txid.bytes,sizeof(txid),retstr);
                                         if ( bits256_cmp(txid,bp->signedtxid) == 0 )
                                         {
-                                            bp->state = 0xffffffff;
                                             len = (int32_t)strlen(bp->signedtx) >> 1;
                                             decode_hex(txdata+32,len,bp->signedtx);
                                             for (i=0; i<bp->numnotaries; i++)
@@ -772,8 +771,8 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                                 }
                                                 basilisk_channelsend(myinfo,txid,desthash,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,120);
                                             }
-                                        }
-                                        else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
+                                            bp->state = 0xffffffff;
+                                        } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
                                     }
                                     free(retstr);
                                     retstr = 0;
@@ -798,7 +797,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
             init_hexbytes_noT(bp->signedtx,&msg->data[32],msg->datalen-32);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
-                printf("verify it is properly signed! set signedtxid to %s\n",bits256_str(str,txid));
+                printf("verify it is properly signed! set ht.%d signedtxid to %s\n",height,bits256_str(str,txid));
                 bp->signedtxid = txid;
                 bp->state = 0xffffffff;
             }
@@ -983,18 +982,17 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             destbp->state = dpow_statemachineiterate(myinfo,dp,dest,destbp,myind);
         }
-        else
+        if ( destbp->state == 0xffffffff )
         {
             srcbp->btctxid = destbp->signedtxid;
             dp->destupdated = 0;
+            printf("SET BTCTXID.(%s)\n",bits256_str(str,srcbp->btctxid));
         }
         if ( destbp->state == 0xffffffff )
         {
             if ( srcbp->state != 0xffffffff )
             {
-                //for (i=0; i<32; i++)
-                //    signedtxid.bytes[i] = i;
-                //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcstate,bits256_str(str,signedtxid));
+                printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
                 srcbp->state = dpow_statemachineiterate(myinfo,dp,src,srcbp,myind);
             }
         }
