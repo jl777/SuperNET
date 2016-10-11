@@ -789,7 +789,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     {
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
         {
-            vcalc_sha256(0,txid.bytes,msg->data[32],msg->datalen);
+            vcalc_sha256(0,txid.bytes,msg->data,msg->datalen);
             init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
