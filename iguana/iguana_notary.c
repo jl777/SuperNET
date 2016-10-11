@@ -749,7 +749,7 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
     {
         for (j=0; j<sizeof(desthash); j++)
             desthash.bytes[j] = notaries[i].pubkey[j+1];
-        if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
+        if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,1)) != 0 )
         {
             //printf("RETARRAY.(%s)\n",jprint(retarray,0));
             if ( (m= cJSON_GetArraySize(retarray)) != 0 )
@@ -787,7 +787,7 @@ void dpow_txidupdate(struct supernet_info *myinfo,struct dpow_info *dp,struct ig
     memset(srchash.bytes,0,sizeof(srchash));
     for (j=0; j<sizeof(desthash); j++)
         desthash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,height,1)) != 0 )
     {
         //printf("TXIDUPDATE.(%s)\n",jprint(retarray,0));
         if ( (m= cJSON_GetArraySize(retarray)) != 0 )
@@ -879,7 +879,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                             desthash.bytes[j] = notaries[i].pubkey[j+1];
                         basilisk_channelsend(myinfo,srchash,desthash,channel,heightmsg,data,len,120);
                     }
-                    if ( (retarray= basilisk_channelget(myinfo,srchash,zero,channel,heightmsg,0)) != 0 )
+                    if ( (retarray= basilisk_channelget(myinfo,srchash,zero,channel,heightmsg,1)) != 0 )
                     {
                         responded = cJSON_GetArraySize(retarray);
                         free_json(retarray);
