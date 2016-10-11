@@ -892,7 +892,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 2:
             bp->recvmask = dpow_lastk_mask(bp,&k);
-            printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
+            //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
             if ( bitweight(bp->recvmask) > bp->numnotaries/2 )
                 bp->state = 3;
             else bp->state = 2;
