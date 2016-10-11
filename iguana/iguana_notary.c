@@ -797,7 +797,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
             init_hexbytes_noT(bp->signedtx,&msg->data[32],msg->datalen-32);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
-                printf("verify it is properly signed! set ht.%d signedtxid to %s\n",height,bits256_str(str,txid));
+                printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
                 bp->signedtxid = txid;
                 bp->state = 0xffffffff;
             }
