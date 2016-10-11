@@ -903,45 +903,21 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
     return(n);
 }
 
-void basilisk_iteration(struct supernet_info *myinfo)
-{
-    struct iguana_info *notary; uint32_t now;
-    now = (uint32_t)time(NULL);
-    notary = iguana_coinfind("NOTARY");
-    if ( myinfo->NOTARY.RELAYID >= 0 )
-    {
-        basilisk_ping_send(myinfo,notary);
-        /*if ( notary != 0 )
-        {
-         struct iguana_info *virt,*tmpcoin; int32_t maxmillis;
-            maxmillis = (1000 / (myinfo->allcoins_numvirts + 1)) + 1;
-            HASH_ITER(hh,myinfo->allcoins,virt,tmpcoin)
-            {
-                if ( virt->started != 0 && virt->active != 0 && virt->virtualchain != 0 )
-                    gecko_iteration(myinfo,notary,virt,maxmillis), flag++;
-            }
-        }*/
-    }
-    /*else
-    {
-        if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
-            basilisk_requests_poll(myinfo);
-    }*/
-}
-
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli;
+    struct iguana_info *notary; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli;
     iter = 0;
+    notary = iguana_coinfind("NOTARY");
     while ( 1 )
     {
         startmilli = OS_milliseconds();
         basilisk_issued_purge(myinfo,600000);
-        basilisk_iteration(myinfo);
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
+            if ( notary != 0 )
+                basilisk_ping_send(myinfo,notary);
             if ( (counter++ % 10) == 0 )
                 iguana_dPoWupdate(myinfo);
             endmilli = startmilli + 500;
