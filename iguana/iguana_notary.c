@@ -859,6 +859,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                     dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol);
                 }
             }
+            if ( bp->state != 0xffffffff )
+                bp->state = 2;
             break;
     }
     return(bp->state);
