@@ -1377,6 +1377,7 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     {
         free(retstr);
         bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+        jaddbits256(retjson,"privkey",waddr.privkey);
         sprintf(buf,"%swif",coin->symbol);
         jaddstr(retjson,buf,wifstr);
         if ( strcmp(coin->symbol,"KMD") != 0 )
