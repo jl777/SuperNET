@@ -767,8 +767,8 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         flag = 1;
                     }
                 } else printf("beacon mismatch for senderind.%d\n",dsig.senderind);
-            }
-        }
+            } else printf("illegal lastk.%d or senderind.%d or senderpub.%llx\n",dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
+        } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         if ( flag == 0 )
             printf("SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
