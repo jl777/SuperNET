@@ -835,6 +835,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         return(0xffffffff);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
+    if ( bits256_nonz(bp->signedtxid) != 0 )
+        bp->state = 0xffffffff;
     if ( (rand() % 10) == 0 )
         printf("%s ht.%d FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
     switch ( bp->state )
@@ -895,13 +897,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             //printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
             if ( bp->waiting++ > 10 )
             {
-                bp->state = 2;
+                bp->state = 1;
                 bp->waiting = 0;
             }
-           if ( bp->state != 0xffffffff )
-                bp->state = 1;
             break;
     }
+    if ( bits256_nonz(bp->signedtxid) != 0 )
+        bp->state = 0xffffffff;
     return(bp->state);
 }
 
