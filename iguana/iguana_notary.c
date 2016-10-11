@@ -562,6 +562,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     dsig.mask = mask;
     dsig.senderind = myind;
     dsig.beacon = bp->beacon;
+    for (i=0; i<33; i++)
+        dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
     channel = DPOW_SIGCHANNEL;
     if ( bits256_nonz(bp->btctxid) == 0 )
         channel = DPOW_SIGBTCCHANNEL;
@@ -596,7 +598,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->siglens[dsig.lastk] = dsig.siglen;
                                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                                         ep->beacon = dsig.beacon;
-                                        
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
