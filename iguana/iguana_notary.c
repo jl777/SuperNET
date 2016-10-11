@@ -767,7 +767,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                             {
                                                 for (j=0; j<sizeof(srchash); j++)
                                                     desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
-                                                basilisk_channelsend(myinfo,txid,desthash,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len,120);
+                                                basilisk_channelsend(myinfo,desthash,txid,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len,120);
                                             }
                                         }
                                         else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
@@ -789,7 +789,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     {
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
         {
-            vcalc_sha256(0,txid.bytes,msg->data,msg->datalen);
+            vcalc_sha256(0,txid.bytes,msg->data[32],msg->datalen);
             init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
