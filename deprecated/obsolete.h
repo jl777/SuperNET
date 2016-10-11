@@ -19189,3 +19189,101 @@ len = 0;
              } else retstr = clonestr("{\"error\":\"missing or invalid fields\"}");
              return(retstr);
              }*/
+            
+            int32_t dpow_message_utxo(uint8_t *senderpub,bits256 *hashmsgp,bits256 *txidp,int32_t *voutp,bits256 *commitp,cJSON *json)
+            {
+                cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE],data[4096]; char *keystr,*hexstr; int32_t i,n,datalen,retval = -1; //,str[65],str2[65]
+                *voutp = -1;
+                memset(txidp,0,sizeof(*txidp));
+                if ( (msgobj= jarray(&n,json,"messages")) != 0 )
+                {
+                    //printf("messages.(%s)\n",jprint(msgobj,0));
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(msgobj,i);
+                        if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+                        {
+                            decode_hex(key,BASILISK_KEYSIZE,keystr);
+                            datalen >>= 1;
+                            decode_hex(data,datalen,hexstr);
+                            retval = dpow_rwutxobuf(0,data,hashmsgp,txidp,voutp,commitp,senderpub);
+                            //printf("notary.%d hashmsg.(%s) txid.(%s) v%d\n",i,bits256_str(str,*hashmsgp),bits256_str(str2,*txidp),*voutp);
+                        }
+                    }
+                }
+                return(retval);
+            }
+            int32_t dpow_message_most(struct dpow_sigentry *dsigs,int32_t num,cJSON *json,int32_t lastflag)
+            {
+                cJSON *msgobj,*item; uint8_t key[BASILISK_KEYSIZE]; struct dpow_sigentry dsig; char *keystr,*hexstr; uint8_t data[sizeof(struct dpow_sigentry)]; int32_t duplicate,i,j,n,datalen,most = 0;
+                if ( (msgobj= jarray(&n,json,"messages")) != 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(msgobj,i);
+                        if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+                        {
+                            decode_hex(key,BASILISK_KEYSIZE,keystr);
+                            datalen >>= 1;
+                            if ( datalen <= sizeof(data) )
+                            {
+                                decode_hex(data,datalen,hexstr);
+                                dpow_rwsigentry(0,data,&dsig);
+                                for (j=duplicate=0; j<num; j++)
+                                {
+                                    dpow_sigbufcmp(&duplicate,&dsig,&dsigs[j]);
+                                    printf("%d: sender.%d %llx.k%d siglen.%d\n",j,dsig.senderind,(long long)dsig.mask,dsig.lastk,dsig.siglen);
+                                }
+                                if ( duplicate == 0 && num < 4096 )
+                                {
+                                    dsig.refcount = 1;
+                                    for (j=0; j<dsig.siglen; j++)
+                                        printf("%02x",dsig.sig[j]);
+                                    printf(" <- add dsig[%d] sender.%d lastk.%d mask.%llx refcount.%d\n",num,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.refcount);
+                                    dsigs[num++] = dsig;
+                                }
+                            } else printf("datalen.%d >= maxlen.%d\n",datalen,(int32_t)sizeof(data));
+                        }
+                    }
+                }
+                if ( lastflag != 0 && num > 0 )
+                {
+                    for (j=0; j<num; j++)
+                    {
+                        n = dsigs[j].refcount;
+                        if ( n > most )
+                        {
+                            most = n;
+                            dsigs[num] = dsigs[j];
+                        }
+                        printf("lastflag.%d num.%d most.%d n.%d refcount.%d\n",lastflag,num,most,n,dsigs[j].refcount);
+                    }
+                }
+                return(num);
+            }
+
+            int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,struct dpow_sigentry *dsigs,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
+            {
+                struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;
+                for (i=0; i<num; i++)
+                {
+                    dsig = dsigs[i];
+                    if ( (senderind= dsig.senderind) < numnotaries && senderind >= 0 && dsig.lastk == refk && dsig.mask == refmask )
+                    {
+                        if ( (notaries[senderind].siglen= dsig.siglen) < sizeof(notaries[senderind].sig) )
+                        {
+                            notaries[senderind].k = refk;
+                            notaries[senderind].mask = refmask;
+                            notaries[senderind].beacon = dsig.beacon;
+                            memcpy(notaries[senderind].sig,dsig.sig,dsig.siglen);
+                            int32_t j; for (j=0; j<notaries[senderind].siglen; j++)
+                                printf("%02x",notaries[senderind].sig[j]);
+                            if ( notaries[senderind].siglen > 0 )
+                                printf(" <- sender.%d siglen.%d\n",i,dsig.siglen);
+                            matches++;
+                        }
+                    } else printf("skip senderind.%d numnotaries.%d lastk.%d refk.%d mask.%llx refmask.%llx  refheight.%d\n",senderind,numnotaries,dsig.lastk,refk,(long long)dsig.mask,(long long)refmask,refheight);
+                }
+                //printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
+                return(matches);
+            }
