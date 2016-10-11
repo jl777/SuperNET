@@ -552,10 +552,11 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,uint64_t mask,int32_t lastk,int32_t myind,char *opret_symbol)
 {
-    int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash; uint32_t channel; struct dpow_sigentry dsig;
+    int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash; uint32_t channel; struct dpow_entry *ep; struct dpow_sigentry dsig;
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
+    ep = &bp->notaries[myind];
     memset(&dsig,0,sizeof(dsig));
     dsig.lastk = lastk;
     dsig.mask = mask;
@@ -591,6 +592,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         dsig.siglen = (int32_t)strlen(sigstr) >> 1;
                                         decode_hex(dsig.sig,dsig.siglen,sigstr);
                                         datalen = dpow_rwsigentry(1,data,&dsig);
+                                        ep->masks[dsig.lastk] = dsig.mask;
+                                        ep->siglens[dsig.lastk] = dsig.siglen;
+                                        memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
+                                        ep->beacon = dsig.beacon;
+                                        
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
@@ -623,16 +629,19 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
 
 int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *maskp,int32_t *lastkp,struct dpow_block *bp,int32_t myind)
 {
-    uint64_t refmask = 0; struct dpow_entry *ep; int32_t nonz = 0,k,i,mostk = -1,most = 0;
+    uint64_t mostmask=0,refmask = 0; struct dpow_entry *ep; int32_t nonz,k,i,mostk = -1,most = 0;
     for (k=0; k<bp->numnotaries; k++)
     {
-        for (i=0; i<bp->numnotaries; i++)
+        for (refmask=i=nonz=0; i<bp->numnotaries; i++)
         {
             ep = &bp->notaries[i];
             if ( ep->masks[k] != 0 )
             {
                 if ( nonz == 0 )
+                {
                     refmask = ep->masks[k], nonz++;
+                    printf("refmask.%llx\n",(long long)refmask);
+                }
                 else if ( ep->masks[k] != refmask )
                     printf("refk.%d refmask.%llx but got %llx\n",k,(long long)refmask,(long long)ep->masks[k]);
             }
@@ -640,14 +649,16 @@ int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,stru
         if ( nonz > most )
         {
             most = nonz;
+            mostmask = refmask;
             mostk = k;
         }
+        printf("k.%d nonz.%d vs most.%d mostk.%d mostmask.%llx\n",k,nonz,most,mostk,(long long)mostmask);
     }
     if ( most > 0 )
     {
         *lastkp = mostk;
-        *maskp = refmask;
-        bp->signedtxid = dpow_notarytx(bp->signedtx,coin->chain->isPoS,bp,refmask,mostk,dp->symbol);
+        *maskp = mostmask;
+        bp->signedtxid = dpow_notarytx(bp->signedtx,coin->chain->isPoS,bp,mostmask,mostk,dp->symbol);
     } else printf("mostsignedtx most.%d\n",most);
     return(most);
 }
