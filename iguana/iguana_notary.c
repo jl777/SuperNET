@@ -790,13 +790,13 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
         {
             vcalc_sha256(0,txid.bytes,msg->data,msg->datalen);
+            init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
                 printf("verify it is properly signed! set signedtxid to %s\n",bits256_str(str,txid));
                 bp->signedtxid = txid;
-                init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
                 bp->state = 0xffffffff;
-            } else printf("txidchannel txid %s mismatch %s\n",bits256_str(str,txid),bits256_str(str2,srchash));
+            } else printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
         } else printf("txidchannel cant find bp for %d\n",height);
     }
 }
