@@ -794,7 +794,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
         {
             for (i=0; i<32; i++)
                 srchash.bytes[i] = msg->data[i];
-            vcalc_sha256(0,txid.bytes,&msg->data[32],msg->datalen-32);
+            txid = bits256_doublesha256(0,&msg->data[32],msg->datalen-32);
             init_hexbytes_noT(bp->signedtx,&msg->data[32],msg->datalen-32);
             if ( bits256_cmp(txid,srchash) == 0 )
             {
