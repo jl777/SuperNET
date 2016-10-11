@@ -719,7 +719,8 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
 {
-    bits256 hashmsg,txid,commit,srchash,desthash; uint64_t mask; uint32_t channel,height,flag = 0; int32_t i,lastk,vout,myind = -1; char *retstr=0,str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_block *bp; struct dpow_entry *ep; cJSON *retjson;
+    bits256 hashmsg,txid,commit,srchash,desthash,zero; uint64_t mask; uint32_t channel,height,flag = 0; int32_t i,lastk,vout,len,myind = -1; char *retstr=0,str[65],str2[65]; uint8_t senderpub[33],txdata[16384]; struct dpow_sigentry dsig; struct dpow_block *bp; struct dpow_entry *ep;
+    memset(zero.bytes,0,sizeof(zero));
     basilisk_messagekeyread(msg->key,&channel,&height,&srchash,&desthash);
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
@@ -775,12 +776,13 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 {
                     if ( ep->masks[dsig.lastk] == 0 )
                     {
+                        bp->recvsigmask |= (1LL << dsig.senderind);
                         ep->masks[dsig.lastk] = dsig.mask;
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
-                        if ( bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,dsig.mask) == bp->numnotaries/2+1 )
+                        printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
+                        if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == bp->numnotaries/2+1 )
                         {
                             bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
                             if ( bits256_nonz(bp->signedtxid) != 0 )
@@ -788,11 +790,17 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                 if ( (retstr= dpow_sendrawtransaction(myinfo,bp->coin,bp->signedtx)) != 0 )
                                 {
                                     printf("sendrawtransaction.(%s)\n",retstr);
-                                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                                    if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
                                     {
-                                        if ( jobj(retjson,"error") == 0 )
+                                        decode_hex(txid.bytes,sizeof(txid),retstr);
+                                        if ( bits256_cmp(txid,bp->signedtxid) == 0 )
+                                        {
                                             bp->state = 0xffffffff;
-                                        free_json(retjson);
+                                            len = (int32_t)strlen(bp->signedtx) >> 1;
+                                            decode_hex(txdata,len,bp->signedtx);
+                                            basilisk_channelsend(myinfo,txid,zero,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len,120);
+                                        }
+                                        else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
                                     }
                                     free(retstr);
                                     retstr = 0;
@@ -806,6 +814,20 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         if ( flag == 0 )
             printf("SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+    }
+    else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
+    {
+        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
+        {
+            vcalc_sha256(0,txid.bytes,msg->data,msg->datalen);
+            if ( bits256_cmp(txid,srchash) == 0 )
+            {
+                printf("verify it is properly signed! set signedtxid to %s\n",bits256_str(str,txid));
+                bp->signedtxid = txid;
+                init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
+                bp->state = 0xffffffff;
+            } else printf("txidchannel txid %s mismatch %s\n",bits256_str(str,txid),bits256_str(str2,srchash));
+        }
     }
 }
 
@@ -832,7 +854,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         return(0xffffffff);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    printf("%s FSM.%d %s BTC.%d\n",coin->symbol,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0);
+    printf("%s FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
     switch ( bp->state )
     {
         case 0:
