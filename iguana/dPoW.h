@@ -57,7 +57,7 @@ struct dpow_block
     struct iguana_info *coin; char *opret_symbol;
     uint64_t recvmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
-    uint32_t state,timestamp;
+    uint32_t state,timestamp,waiting;
     int32_t height,numnotaries,completed;
     char signedtx[32768];
 };
