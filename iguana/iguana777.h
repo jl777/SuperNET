@@ -42,6 +42,11 @@
 #define BTC2_DEFAULT_PORT 8222
 #define BTC2_DIFF_WINDOW 60
 
+#define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
+#define DPOW_UTXOBTCCHANNEL (~DPOW_UTXOCHANNEL)
+#define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
+#define DPOW_SIGBTCCHANNEL (~DPOW_SIGCHANNEL)
+
 struct supernet_info;
 struct exchange_info;
 
