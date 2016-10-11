@@ -991,7 +991,7 @@ void dpow_statemachinestart(void *ptr)
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     while ( src != 0 && dest != 0 && (srcstate != 0xffffffff || deststate != 0xffffffff) )
     {
-        sleep(1);
+        sleep(10);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
