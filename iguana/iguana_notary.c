@@ -198,7 +198,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,struct dpow_block *bp,uint64_
     memcpy(&serialized[len],data,opretlen), len += opretlen;
     len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
     init_hexbytes_noT(signedtx,serialized,len);
-    printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
+    //printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
     return(bits256_doublesha256(0,serialized,len));
 }
 
@@ -756,7 +756,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,dsig.senderpub)) != 0 )
             {
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
-                if ( bits256_cmp(ep->commit,commit) == 0 && memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
+                if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
                 {
                     if ( ep->masks[dsig.lastk] == 0 )
                     {
@@ -767,7 +767,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         flag = 1;
                     }
-                } else printf("beacon mismatch for senderind.%d\n",dsig.senderind);
+                } else printf("beacon mismatch for senderind.%d %llx vs %llx\n",dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("illegal lastk.%d or senderind.%d or senderpub.%llx\n",dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         if ( flag == 0 )
