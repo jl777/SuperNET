@@ -873,7 +873,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 responded = 0;
                 while ( responded <= numnotaries/2 )
                 {
-                    for (i=(myind % incr); i<numnotaries; i+=incr)
+                    i = ((myind + (uint32_t)rand()) % incr);
+                    for (; i<numnotaries; i+=incr)
                     {
                         for (j=0; j<sizeof(srchash); j++)
                             desthash.bytes[j] = notaries[i].pubkey[j+1];

@@ -140,24 +140,6 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     {
         if ( bits256_nonz(srchash) == 0 )
         {
-            if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
-            {
-                char *keystr,*hexstr,str[65],str2[65]; int32_t datalen; uint8_t data[1024],senderpub[33];
-                if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
-                {
-                    bits256 hashmsg,txid,commit; int32_t vout;
-                    decode_hex(key,BASILISK_KEYSIZE,keystr);
-                    datalen >>= 1;
-                    decode_hex(data,datalen,hexstr);
-                    if ( datalen == 130 )
-                    {
-                        dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub);
-                        printf("MSG hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
-                    }
-                }
-
-                free_json(msgjson);
-            }
             if ( basilisk_msgcmp(msg,origwidth,channel,origmsgid,zero,zero) == 0 )
             {
                 if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
@@ -238,6 +220,14 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
         printf("%02x",key[i]);
     printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     portable_mutex_unlock(&myinfo->messagemutex);
+    {
+        bits256 hashmsg,txid,commit; int32_t vout; char str[65],str2[65]; uint8_t senderpub[33];
+        if ( msg->datalen == 130 )
+        {
+            dpow_rwutxobuf(0,msg->data,&hashmsg,&txid,&vout,&commit,senderpub);
+            printf("MSG hashmsg.(%s) txid.(%s) v%d\n",bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
+        }
+    }
     if ( sendping != 0 )
         queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));
