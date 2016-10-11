@@ -1113,6 +1113,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     decode_hex(myinfo->DPOW.minerkey33,33,pubkey);
     if ( bitcoin_pubkeylen(myinfo->DPOW.minerkey33) <= 0 )
         return(clonestr("{\"error\":\"illegal pubkey\"}"));
+    strcpy(myinfo->DPOW.symbol,symbol);
     if ( strcmp(myinfo->DPOW.symbol,"KMD") == 0 )
     {
         strcpy(myinfo->DPOW.dest,"BTC");
