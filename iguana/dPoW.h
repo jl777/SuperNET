@@ -16,7 +16,6 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
-#define DPOW_BTCSTR "BTC"
 #define DPOW_UTXOSIZE 10000
 
 #define DPOW_FIFOSIZE 64
@@ -25,6 +24,22 @@
 #define DPOW_KOMODOCONFIRMS 1
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
+
+struct dpow_entry
+{
+    bits256 prev_hash,commit,beacon;
+    uint64_t mask;
+    int32_t prev_vout,height;
+    uint8_t pubkey[33],k,siglen,sig[76];
+};
+
+struct dpow_sigentry
+{
+    bits256 beacon;
+    uint64_t mask;
+    int32_t refcount;
+    uint8_t senderind,lastk,siglen,sig[80],senderpub[33];
+};
 
 struct komodo_notaries
 {
@@ -36,6 +51,16 @@ struct dpow_hashheight { bits256 hash; int32_t height; };
 
 struct dpow_checkpoint { struct dpow_hashheight blockhash,approved; bits256 miner; uint32_t blocktime,timestamp; };
 
+struct dpow_block
+{
+    bits256 hashmsg,btctxid,signedtxid,beacon,commit;
+    uint64_t recvmask;
+    struct dpow_entry notaries[DPOW_MAXRELAYS];
+    uint32_t state,timestamp;
+    int32_t height,numnotaries,completed;
+    char signedtx[32768];
+};
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid;
@@ -43,6 +68,7 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit;
+    struct dpow_block **srcblocks,**destblocks;
 };
 
 
