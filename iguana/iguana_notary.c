@@ -591,11 +591,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         dsig.siglen = (int32_t)strlen(sigstr) >> 1;
                                         decode_hex(dsig.sig,dsig.siglen,sigstr);
                                         datalen = dpow_rwsigentry(1,data,&dsig);
-                                        printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
+                                        //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
                                             if ( i != myind )
-                                                printf("send siglen.%d -> notary.%d\n",dsig.siglen,i);
+                                                printf(">>>>>>>>>> send lastk.%d %llx siglen.%d -> notary.%d\n",dsig.lastk,(long long)dsig.mask,dsig.siglen,i);
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = bp->notaries[i].pubkey[z+1];
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,datalen,120);
@@ -729,7 +729,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         }
                     }
                     flag = 1;
-                    printf("from.%ld got ht.%d %s/v%d\n",((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
+                    printf("<<<<<<<<<< from.%ld got ht.%d %s/v%d\n",((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
                 }
             }
         }
@@ -752,7 +752,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        printf("from.%d got lastk.%d %llx siglen.%d\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+                        printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         flag = 1;
                     }
                 } else printf("beacon mismatch for senderind.%d\n",dsig.senderind);
@@ -929,7 +929,7 @@ void dpow_statemachinestart(void *ptr)
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     while ( src != 0 && dest != 0 && (srcbp->state != 0xffffffff || destbp->state != 0xffffffff) )
     {
-        sleep(10);
+        sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
