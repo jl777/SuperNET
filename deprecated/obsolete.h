@@ -19261,7 +19261,59 @@ len = 0;
                 }
                 return(num);
             }
-
+            /*int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *maskp,int32_t *lastkp,struct dpow_block *bp,int32_t myind)
+             {
+             uint64_t mostmask=0,refmask = 0; struct dpow_entry *ep; int32_t nonz,k,i,mostk = -1,most = 0;
+             for (k=0; k<bp->numnotaries; k++)
+             {
+             for (refmask=i=nonz=0; i<bp->numnotaries; i++)
+             {
+             ep = &bp->notaries[i];
+             if ( ep->masks[k] != 0 )
+             {
+             if ( nonz == 0 )
+             {
+             refmask = ep->masks[k], nonz++;
+             printf("refmask.%llx\n",(long long)refmask);
+             }
+             else if ( ep->masks[k] != refmask )
+             printf("refk.%d refmask.%llx but got %llx\n",k,(long long)refmask,(long long)ep->masks[k]);
+             }
+             }
+             if ( nonz > most )
+             {
+             most = nonz;
+             mostmask = refmask;
+             mostk = k;
+             }
+             printf("k.%d nonz.%d vs most.%d mostk.%d mostmask.%llx\n",k,nonz,most,mostk,(long long)mostmask);
+             }
+             if ( most > 0 )
+             {
+             *lastkp = mostk;
+             *maskp = mostmask;
+             bp->signedtxid = dpow_notarytx(bp->signedtx,coin->chain->isPoS,bp,mostmask,mostk,dp->symbol);
+             } else printf("mostsignedtx most.%d\n",most);
+             return(most);
+             }*/
+            /*if ( (m= dpow_mostsignedtx(myinfo,dp,coin,&mask,&k,bp,myind)) > 0 )
+             {
+             if ( m >= bp->numnotaries/2+1 )
+             {
+             if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
+             {
+             dp->destupdated = 0;
+             printf("sendrawtransaction.(%s)\n",retstr);
+             free(retstr);
+             }
+             bp->state = 0xffffffff;
+             }
+             else
+             {
+             dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol);
+             }
+             }*/
+            
             int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,struct dpow_sigentry *dsigs,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
             {
                 struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;

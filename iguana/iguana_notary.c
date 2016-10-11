@@ -545,7 +545,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
         txobj = bitcoin_txoutput(txobj,script,sizeof(script),satoshis);
     }
     *vinsp = vins;
-    if ( usesigs != 0 )
+    if ( 0 && usesigs != 0 )
         printf("%s createtx.(%s)\n",coin->symbol,jprint(txobj,0));
     return(txobj);
 }
@@ -598,6 +598,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->siglens[dsig.lastk] = dsig.siglen;
                                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                                         ep->beacon = dsig.beacon;
+                                        bp->recvsigmask |= (1LL << dsig.senderind);
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
@@ -627,42 +628,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     }
     return(retval);
 }
-
-/*int32_t dpow_mostsignedtx(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,uint64_t *maskp,int32_t *lastkp,struct dpow_block *bp,int32_t myind)
-{
-    uint64_t mostmask=0,refmask = 0; struct dpow_entry *ep; int32_t nonz,k,i,mostk = -1,most = 0;
-    for (k=0; k<bp->numnotaries; k++)
-    {
-        for (refmask=i=nonz=0; i<bp->numnotaries; i++)
-        {
-            ep = &bp->notaries[i];
-            if ( ep->masks[k] != 0 )
-            {
-                if ( nonz == 0 )
-                {
-                    refmask = ep->masks[k], nonz++;
-                    printf("refmask.%llx\n",(long long)refmask);
-                }
-                else if ( ep->masks[k] != refmask )
-                    printf("refk.%d refmask.%llx but got %llx\n",k,(long long)refmask,(long long)ep->masks[k]);
-            }
-        }
-        if ( nonz > most )
-        {
-            most = nonz;
-            mostmask = refmask;
-            mostk = k;
-        }
-        printf("k.%d nonz.%d vs most.%d mostk.%d mostmask.%llx\n",k,nonz,most,mostk,(long long)mostmask);
-    }
-    if ( most > 0 )
-    {
-        *lastkp = mostk;
-        *maskp = mostmask;
-        bp->signedtxid = dpow_notarytx(bp->signedtx,coin->chain->isPoS,bp,mostmask,mostk,dp->symbol);
-    } else printf("mostsignedtx most.%d\n",most);
-    return(most);
-}*/
 
 uint64_t dpow_lastk_mask(struct dpow_block *bp,int32_t *lastkp)
 {
@@ -747,7 +712,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                     ep->prev_vout = vout;
                     ep->commit = commit;
                     ep->height = height;
-                    mask = dpow_lastk_mask(bp,&lastk);
+                    bp->recvmask = dpow_lastk_mask(bp,&lastk);
                     if ( bitweight(mask) >= bp->numnotaries/2+1 )
                     {
                         if ( ep->masks[lastk] == 0 )
@@ -854,7 +819,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         return(0xffffffff);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    printf("%s FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
+    if ( (rand() % 10) == 0 )
+        printf("%s FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
     switch ( bp->state )
     {
         case 0:
@@ -881,6 +847,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
                 len = dpow_rwutxobuf(1,data,&bp->hashmsg,&txid,&vout,&bp->commit,myinfo->DPOW.minerkey33);
+                bp->recvmask |= (1LL << myind);
                 for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                 {
                     for (j=0; j<sizeof(srchash); j++)
@@ -899,7 +866,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             mask = dpow_lastk_mask(bp,&k);
-            printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)mask);
+            //printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)mask);
             if ( bitweight(mask) >= bp->numnotaries/2+1 )
             {
                 if ( dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol) == 0 )
@@ -909,31 +876,14 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             } else printf("state 3 not done: mask.%llx wt.%d vs.%d\n",(long long)mask,bitweight(mask),bp->numnotaries/2+1);
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
-            printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
+            //printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
             if ( bp->waiting++ > 10 )
             {
                 bp->state = 2;
                 bp->waiting = 0;
             }
-            /*if ( (m= dpow_mostsignedtx(myinfo,dp,coin,&mask,&k,bp,myind)) > 0 )
-            {
-                if ( m >= bp->numnotaries/2+1 )
-                {
-                    if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
-                    {
-                        dp->destupdated = 0;
-                        printf("sendrawtransaction.(%s)\n",retstr);
-                        free(retstr);
-                    }
-                    bp->state = 0xffffffff;
-                }
-                else
-                {
-                    dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol);
-                }
-            }*/
-            if ( bp->state != 0xffffffff )
-                bp->state = 2;
+           if ( bp->state != 0xffffffff )
+                bp->state = 1;
             break;
     }
     return(bp->state);
