@@ -726,7 +726,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 }
             }
         }
-        if ( flag == 0 )
+        if ( 0 && flag == 0 )
             printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -785,7 +785,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 } else printf("beacon mismatch for senderind.%d %llx vs %llx\n",dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("illegal lastk.%d or senderind.%d or senderpub.%llx\n",dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        if ( flag == 0 )
+        if ( 0 && flag == 0 )
             printf("SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
@@ -801,7 +801,13 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 printf("verify it is properly signed! set signedtxid to %s\n",bits256_str(str,txid));
                 bp->signedtxid = txid;
                 bp->state = 0xffffffff;
-            } else printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
+            }
+            else
+            {
+                init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
+                printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
+                bp->signedtx[0] = 0;
+            }
         } else printf("txidchannel cant find bp for %d\n",height);
     }
 }
@@ -830,7 +836,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (rand() % 10) == 0 )
-        printf("%s FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
+        printf("%s ht.%d FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
     switch ( bp->state )
     {
         case 0:
