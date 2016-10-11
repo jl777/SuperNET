@@ -684,6 +684,21 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int32_t *lastkp)
     return(mask);
 }
 
+int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
+{
+    int32_t j,m,i;
+    for (j=m=0; j<bp->numnotaries; j++)
+    {
+        i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        if ( ((1LL << i) & mask) != 0 && bp->notaries[i].siglens[lastk] >= 64 )
+        {
+            if ( ++m >= bp->numnotaries/2+1 )
+                return(m);
+        }
+    }
+    return(-1);
+}
+
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height,int32_t destflag)
 {
     if ( destflag != 0 )
@@ -704,7 +719,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
 {
-    bits256 hashmsg,txid,commit,srchash,desthash; uint64_t mask; uint32_t channel,height,flag = 0; int32_t i,lastk,vout,myind = -1; char *retstr,str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_block *bp; struct dpow_entry *ep;
+    bits256 hashmsg,txid,commit,srchash,desthash; uint64_t mask; uint32_t channel,height,flag = 0; int32_t i,lastk,vout,myind = -1; char *retstr=0,str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_block *bp; struct dpow_entry *ep; cJSON *retjson;
     basilisk_messagekeyread(msg->key,&channel,&height,&srchash,&desthash);
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
@@ -765,7 +780,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
-                        if ( bp->coin != 0 )
+                        if ( bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,dsig.mask) == bp->numnotaries/2+1 )
                         {
                             bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
                             if ( bits256_nonz(bp->signedtxid) != 0 )
@@ -773,9 +788,15 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                 if ( (retstr= dpow_sendrawtransaction(myinfo,bp->coin,bp->signedtx)) != 0 )
                                 {
                                     printf("sendrawtransaction.(%s)\n",retstr);
+                                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                                    {
+                                        if ( jobj(retjson,"error") == 0 )
+                                            bp->state = 0xffffffff;
+                                        free_json(retjson);
+                                    }
                                     free(retstr);
+                                    retstr = 0;
                                 }
-                                bp->state = 0xffffffff;
                             }
                         }
                         flag = 1;
