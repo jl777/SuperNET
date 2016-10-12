@@ -998,6 +998,8 @@ void dpow_statemachinestart(void *ptr)
             {
                 //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
                 srcbp->state = dpow_statemachineiterate(myinfo,dp,src,srcbp,myind);
+                if ( srcbp->state == 0xffffffff )
+                    dp->destupdated = 0;
             }
         }
     }
