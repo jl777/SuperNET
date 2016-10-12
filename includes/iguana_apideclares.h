@@ -14,6 +14,8 @@
  ******************************************************************************/
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey);
+TWO_STRINGS(zcash,passthru,function,hex);
+TWO_STRINGS(komodo,passthru,function,hex);
 
 #ifdef INCLUDE_PAX
 ZERO_ARGS(pax,start);

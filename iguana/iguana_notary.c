@@ -1183,4 +1183,20 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
+TWO_STRINGS(zcash,passthru,function,hex)
+{
+    if ( (coin= iguana_coinfind("ZEC")) != 0 || coin->chain->serverport[0] == 0 )
+    {
+        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,hex));
+    } else return(clonestr("{\"error\":\"ZEC not active, start in bitcoind mode\"}"));
+}
+
+TWO_STRINGS(komodo,passthru,function,hex)
+{
+    if ( (coin= iguana_coinfind("KMD")) != 0 || coin->chain->serverport[0] == 0 )
+    {
+        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,hex));
+    } else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
