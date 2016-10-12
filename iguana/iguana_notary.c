@@ -985,18 +985,18 @@ void dpow_statemachinestart(void *ptr)
         {
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             destbp->state = dpow_statemachineiterate(myinfo,dp,dest,destbp,myind);
-        }
-        if ( destbp->state == 0xffffffff )
-        {
-            srcbp->btctxid = destbp->signedtxid;
-            dp->destupdated = 0;
-            printf("SET BTCTXID.(%s)\n",bits256_str(str,srcbp->btctxid));
+            if ( destbp->state == 0xffffffff )
+            {
+                srcbp->btctxid = destbp->signedtxid;
+                dp->destupdated = 0;
+                printf("SET BTCTXID.(%s)\n",bits256_str(str,srcbp->btctxid));
+            }
         }
         if ( destbp->state == 0xffffffff )
         {
             if ( srcbp->state != 0xffffffff )
             {
-                printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
+                //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
                 srcbp->state = dpow_statemachineiterate(myinfo,dp,src,srcbp,myind);
             }
         }
