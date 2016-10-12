@@ -146,10 +146,83 @@ int32_t dpow_sigbufcmp(int32_t *duplicatep,struct dpow_sigentry *dsig,struct dpo
     return(-1);
 }
 
+uint64_t dpow_lastk_mask(struct dpow_block *bp,int32_t *lastkp)
+{
+    int32_t j,m,k; uint64_t mask = 0;
+    *lastkp = -1;
+    for (j=m=0; j<bp->numnotaries; j++)
+    {
+        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+        {
+            mask |= (1LL << k);
+            if ( ++m >= DPOW_M(bp) )
+            {
+                *lastkp = k;
+                break;
+            }
+        }
+    }
+    return(mask);
+}
+
+int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
+{
+    int32_t j,m,i;
+    for (j=m=0; j<bp->numnotaries; j++)
+    {
+        i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 &&
+        {
+            if ( ++m >= DPOW_M(bp) )
+                return(m);
+        }
+    }
+    return(-1);
+}
+
+struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height,int32_t destflag)
+{
+    if ( destflag != 0 )
+        return(myinfo->DPOW.destblocks!=0?myinfo->DPOW.destblocks[height]:0);
+    else return(myinfo->DPOW.srcblocks!=0?myinfo->DPOW.srcblocks[height]:0);
+}
+
+struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *senderpub)
+{
+    int32_t i;
+    for (i=0; i<bp->numnotaries; i++)
+    {
+        if ( memcmp(bp->notaries[i].pubkey,senderpub,33) == 0 )
+            return(&bp->notaries[i]);
+    }
+    return(0);
+}
+
+uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int32_t *lastkp)
+{
+    int32_t j,m,k; uint64_t mask = 0;
+    for (j=m=0; j<bp->numnotaries; j++)
+    {
+        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+        {
+            mask |= (1LL << k);
+            if ( ++m >= DPOW_M(bp) )
+            {
+                *lastkp = k;
+                break;
+            }
+        }
+    }
+    return(mask);
+}
+
 bits256 dpow_notarytx(char *signedtx,int32_t isPoS,struct dpow_block *bp,uint64_t mask,int32_t lastk,char *src)
 {
     uint32_t i,j,m,locktime,numvouts,version,opretlen,siglen,len,sequenceid = 0xffffffff;
     uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[1024],data[4096];
+    mask = dpow_maskmin(mask,bp,&lastk);
     len = locktime = 0;
     version = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
@@ -507,6 +580,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *bp,int32_t lastk,uint64_t mask,int32_t usesigs)
 {
     int32_t i,j,m=0,siglen; char scriptstr[256]; cJSON *txobj=0,*vins=0,*item; uint64_t satoshis; uint8_t script[35],*sig;
+    mask = dpow_maskmin(mask,bp,&lastk);
     if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
     {
         jaddnum(txobj,"suppress",1);
@@ -557,6 +631,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,uint64_t mask,int32_t lastk,int32_t myind,char *opret_symbol)
 {
     int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash,zero; uint32_t channel; struct dpow_entry *ep; struct dpow_sigentry dsig;
+    mask = dpow_maskmin(mask,bp,&lastk);
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
@@ -638,59 +713,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
         //free_json(vins);
     }
     return(retval);
-}
-
-uint64_t dpow_lastk_mask(struct dpow_block *bp,int32_t *lastkp)
-{
-    int32_t j,m,k; uint64_t mask = 0;
-    *lastkp = -1;
-    for (j=m=0; j<bp->numnotaries; j++)
-    {
-        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
-        if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
-        {
-            mask |= (1LL << k);
-            if ( ++m >= DPOW_M(bp) )
-            {
-                *lastkp = k;
-                break;
-            }
-        }
-    }
-    return(mask);
-}
-
-int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
-{
-    int32_t j,m,i;
-    for (j=m=0; j<bp->numnotaries; j++)
-    {
-        i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
-        if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 &&
-        {
-            if ( ++m >= DPOW_M(bp) )
-                return(m);
-        }
-    }
-    return(-1);
-}
-
-struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height,int32_t destflag)
-{
-    if ( destflag != 0 )
-        return(myinfo->DPOW.destblocks!=0?myinfo->DPOW.destblocks[height]:0);
-    else return(myinfo->DPOW.srcblocks!=0?myinfo->DPOW.srcblocks[height]:0);
-}
-
-struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *senderpub)
-{
-    int32_t i;
-    for (i=0; i<bp->numnotaries; i++)
-    {
-        if ( memcmp(bp->notaries[i].pubkey,senderpub,33) == 0 )
-            return(&bp->notaries[i]);
-    }
-    return(0);
 }
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,int32_t myind)
