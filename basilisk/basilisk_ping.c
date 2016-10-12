@@ -304,11 +304,11 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         {
             if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-            else if ( datalen > 200 )
+            //else if ( datalen > 200 )
                 fprintf(stderr,"+(%s).%d ",ipaddr,i);
         } //else fprintf(stderr,"-(%s).%d ",ipaddr,i);
     }
-    if ( datalen > 200 )
+    //if ( datalen > 200 )
         printf("my RELAYID.%d of %d\n",myinfo->NOTARY.RELAYID,myinfo->NOTARY.NUMRELAYS);
 }
 
