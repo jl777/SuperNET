@@ -41,7 +41,7 @@ char *Notaries[][2] =
      { "durerus_EU", "02cc82335371a57a2bbddf301ba4249e02da2e04d33aae9bfc54bf6752631a6372" },
      { "pondsea_EU", "0225aa6f6f19e543180b31153d9e6d55d41bc7ec2ba191fd29f19a2f973544e29d" },
      { "badass_SH", "0287fed7cd90994281f308ad112230d970c04148d7017e828fee47bfaf11c50679" },
-     { "baddass_NA" "03df6bd57ff49a632be2a510dc83109ec90588f37f895b751c3b0f35712027c330" },
+     { "baddass_NA" "02afa1a9f948e1634a29dc718d218e9d150c531cfa852843a1643a02184a63c1a7" },
     /*{ "Server1","0221876c8259764224dc1a7b70ec956f3fbe9a768cd77f13082cfa60eb6aa2d068"},
     { "Server2","03c7c14e6b1f94585bb571cf3ee5eb9b9ab54bd23d0acb8cf13edad1c515842b66"},
     { "Server3","02d28f8992ff0cd68c5d558cf55ec5b3ada25151519a6cea8cef1bac04c40023b6"},

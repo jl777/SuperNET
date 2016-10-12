@@ -943,6 +943,7 @@ void basilisks_loop(void *arg)
 
 void basilisks_init(struct supernet_info *myinfo)
 {
+    iguana_initQ(&myinfo->p2pQ,"p2pQ");
     iguana_initQ(&myinfo->msgQ,"messageQ");
     portable_mutex_init(&myinfo->bu_mutex);
     portable_mutex_init(&myinfo->allcoins_mutex);
