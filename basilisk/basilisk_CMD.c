@@ -27,7 +27,7 @@
 struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits)
 {
     struct iguana_peer *addr; int32_t i;
-    if ( notaries == 0 )
+    if ( notaries == 0 || ipbits == myinfo->myaddr.myipbits )
         return(0);
     if ( (addr= iguana_peerfindipbits(notaries,ipbits,0)) == 0 )
     {
