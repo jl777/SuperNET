@@ -786,9 +786,9 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                     }
                 } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
-        } else printf("%s couldnt find senderind.%d height.%d channel.%x\n",bp->coin->symbol,dsig.senderind,height,channel);
+        } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         if ( 0 && flag == 0 )
-            printf("%s SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",bp->coin->symbol,height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+            printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
@@ -919,6 +919,7 @@ void dpow_statemachinestart(void *ptr)
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
+    dp->destupdated = 0; // prevent another state machine till next BTC block
     memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height);
     src = iguana_coinfind(dp->symbol);
@@ -946,6 +947,7 @@ void dpow_statemachinestart(void *ptr)
         dp->srcblocks[checkpoint.blockhash.height] = srcbp;
         srcbp->beacon = destbp->beacon;
         srcbp->commit = destbp->commit;
+        printf("create srcbp[%d]\n",checkpoint.blockhash.height);
         if ( (bp= dp->srcblocks[checkpoint.blockhash.height - 1000]) != 0 )
         {
             printf("purge %s.%d\n",dp->symbol,checkpoint.blockhash.height - 1000);
@@ -990,19 +992,16 @@ void dpow_statemachinestart(void *ptr)
             if ( destbp->state == 0xffffffff )
             {
                 srcbp->btctxid = destbp->signedtxid;
-                dp->destupdated = 0;
                 printf("SET BTCTXID.(%s)\n",bits256_str(str,srcbp->btctxid));
             }
         }
-        if ( destbp->state == 0xffffffff )
+        if ( destbp->state == 0xffffffff && bits256_nonz(srcbp->btctxid) != 0 )
         {
-srcbp->state = 0xffffffff;
+//srcbp->state = 0xffffffff;
             if ( srcbp->state != 0xffffffff )
             {
                 //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
                 srcbp->state = dpow_statemachineiterate(myinfo,dp,src,srcbp,myind);
-                if ( srcbp->state == 0xffffffff )
-                    dp->destupdated = 0;
             }
         }
     }

@@ -1,5 +1,18 @@
+
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"5.9.102.210\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"78.47.196.146\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"149.56.29.163\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.226\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.217\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.208\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.200\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.199\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"27.100.36.201\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.218\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.227\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"149.202.65.200\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"80.28.255.124\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"221.121.144.138\"}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"89.40.125.53\"}"
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.177.224.130\"}"
