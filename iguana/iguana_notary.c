@@ -748,7 +748,9 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        printf("<<<<<<<< %s from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
+                        for (j=0; j<dsig.siglen; j++)
+                            printf("%02x",dsig.sig[j]);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
                         if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == DPOW_M(bp) )
                         {
                             bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
@@ -773,6 +775,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                                                 }
                                                 basilisk_channelsend(myinfo,txid,desthash,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,120);
                                             }
+                                            printf("complete statemachine.%s ht.%d\n",bp->coin->symbol,bp->height);
                                             bp->state = 0xffffffff;
                                         } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
                                     }
