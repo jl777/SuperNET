@@ -918,7 +918,7 @@ void basilisks_loop(void *arg)
         {
             if ( notary != 0 )
                 basilisk_ping_send(myinfo,notary);
-            if ( (counter++ % 10) == 0 )
+            if ( (counter++ % 10) == 0 && myinfo->DPOW.symbol[0] != 0 && myinfo->DPOW.dest[0] != 0 )
                 iguana_dPoWupdate(myinfo);
             endmilli = startmilli + 500;
         }

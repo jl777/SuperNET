@@ -195,20 +195,10 @@ pico myip.txt
 
 #Put your WAN IP of your node
 
-4. Copy SuperNET/iguana/coins/btc + btc_7776 + kmd and kmd_7776 up one directory to SuperNET/iguana
+4. create a text file with the user home dir in it:
 
-cp btc ../
-cp btc_7776 ../
-cp kmd ../
-cp kmd_7776 ../
-
-Now you go to SuperNET/iguana and edit each file to show their correct path. If your home directory is /home/username then \"path\":\"home/username\". You can go to the folder .bitcoin and run pwd to fine the path eg. replace "root/username/.bitcoin\" --> "home/username/.bitcoin\" Do the same for kdm but they will be a different path again.
-
-pico btc
-pico btc_7776
-pico kmd
-pico kmd_7776
-
+pico userhome.txt
+root
 
 5. make a copy of SuperNET/iguana/wp -> SuperNET/iguana/wp_7776 and change port 7778 to port 7776
 
@@ -222,9 +212,11 @@ pico wp_7776
 cp dpow_7776 ../
 pico dpow_7776
 
-7. create addnode_7776 with your ip address, run this to add your ip address to getinfoN_7776
-
-8. make sure system clock is synchronized
+7. make sure system clock is synchronized
 sudo service ntp stop
 sudo ntpdate -s time.nist.gov
 sudo service ntp start
+
+Now things should be ready. To update and run notary node:
+pkill iguana; ./m_LP; tests/notaryinit
+

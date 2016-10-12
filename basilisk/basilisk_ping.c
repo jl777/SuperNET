@@ -250,6 +250,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
     //for (i=0; i<datalen; i++)
     //    printf("%02x",data[i]);
 printf("<<<<<<<<<<< input ping from.(%s) rel.%d numrelays.%d datalen.%d relay.%d Q.%d\n",ipbuf,basilisk_relayid(myinfo,(uint32_t)calc_ipbits(ipbuf)),numrelays,datalen,myinfo->NOTARY.RELAYID,QUEUEITEMS);
+    basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipbuf),GENESIS_PUBKEY);
 }
 
 int32_t basilisk_ping_gen(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)

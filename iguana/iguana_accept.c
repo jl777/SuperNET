@@ -98,7 +98,7 @@ void iguana_acceptloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(ipaddr,ipbits);
-        printf("incoming %s (%s:%u)\n",coin->symbol,ipaddr,cli_addr.sin_port);
+        //printf("incoming %s (%s:%u)\n",coin->symbol,ipaddr,cli_addr.sin_port);
         for (i=flag=0; i<IGUANA_MAXPEERS; i++)
         {
             addr = &coin->peers->active[i];
