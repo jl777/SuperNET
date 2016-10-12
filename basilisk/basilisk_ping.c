@@ -298,7 +298,7 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         rp = &myinfo->NOTARY.RELAYS[i];
         addr = 0;
         expand_ipbits(ipaddr,rp->ipbits);
-        if ( rp->ipbits == myinfo->myaddr.myipbits )
+        if ( 0 && rp->ipbits == myinfo->myaddr.myipbits )
             basilisk_ping_process(myinfo,0,myinfo->myaddr.myipbits,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],datalen);
         else if ( (addr= iguana_peerfindipbits(notary,rp->ipbits,1)) != 0 && addr->usock >= 0 )
         {
