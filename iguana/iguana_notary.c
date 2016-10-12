@@ -913,7 +913,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],coinaddr[64]; bits256 zero; struct dpow_block *srcbp,*destbp,*bp;
+    int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],coinaddr[64]; bits256 zero; struct dpow_block *srcbp,*destbp,*bp; uint32_t starttime = (uint32_t)time(NULL);
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
@@ -973,7 +973,7 @@ void dpow_statemachinestart(void *ptr)
     srcbp->timestamp = destbp->timestamp = checkpoint.timestamp;
     srcbp->hashmsg = destbp->hashmsg = checkpoint.blockhash.hash;
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
-    while ( src != 0 && dest != 0 && (srcbp->state != 0xffffffff || destbp->state != 0xffffffff) )
+    while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && (srcbp->state != 0xffffffff || destbp->state != 0xffffffff) )
     {
         sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
