@@ -289,6 +289,7 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         i = (j == 0) ? myinfo->NOTARY.RELAYID : ((r+j) % myinfo->NOTARY.NUMRELAYS);
         if ( j != 0 && i == myinfo->NOTARY.RELAYID )
             i = (myinfo->NOTARY.RELAYID + 1) % myinfo->NOTARY.NUMRELAYS;
+        printf("i.%d j.%d\n",i,j);
         if ( (((uint64_t)1 << i) & alreadysent) != 0 )
         {
             j--;
