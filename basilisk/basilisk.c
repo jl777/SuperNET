@@ -918,14 +918,11 @@ void basilisks_loop(void *arg)
         if ( notary == 0 )
             notary = iguana_coinfind("NOTARY");
         startmilli = OS_milliseconds();
-        printf("purge\n");
         basilisk_issued_purge(myinfo,600000);
-        printf("process\n");
         basilisk_p2pQ_process(myinfo,777);
-        printf("notary.%p RELAYID.%d\n",notary,myinfo->NOTARY.RELAYID);
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
-            if ( 0 && notary != 0 )
+            if ( notary != 0 )
                 basilisk_ping_send(myinfo,notary);
             if ( (counter++ % 10) == 0 && myinfo->DPOW.symbol[0] != 0 && myinfo->DPOW.dest[0] != 0 )
                 iguana_dPoWupdate(myinfo);

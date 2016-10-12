@@ -302,9 +302,9 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
             basilisk_ping_process(myinfo,0,myinfo->myaddr.myipbits,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],datalen);
         else if ( (addr= iguana_peerfindipbits(notary,rp->ipbits,1)) != 0 && addr->usock >= 0 )
         {
-            if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
+            if ( 0 && iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
-            //else if ( datalen > 200 )
+            else if ( datalen > 200 )
                 fprintf(stderr,"+(%s).%d ",ipaddr,i);
         } //else fprintf(stderr,"-(%s).%d ",ipaddr,i);
     }
