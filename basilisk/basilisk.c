@@ -821,23 +821,23 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
     {
         len = 0;
         expand_ipbits(senderip,ptr->ipbits);
-        printf("p2p.%d from.(%s) %c%c%c datalen.%d\n",n,senderip,ptr->type[0],ptr->type[1],ptr->type[2],ptr->datalen);
+        //printf("p2p.%d from.(%s) %c%c%c datalen.%d\n",n,senderip,ptr->type[0],ptr->type[1],ptr->type[2],ptr->datalen);
         if ( ptr->type[0] == 'P' && ptr->type[1] == 'I' && ptr->type[2] == 'N' )
         {
             if ( myinfo->NOTARY.RELAYID >= 0 )
             {
-                printf("process ping\n");
+                //printf("process ping\n");
                 basilisk_ping_process(myinfo,ptr->addr,ptr->ipbits,ptr->data,ptr->datalen);
-                printf("done process ping\n");
+                //printf("done process ping\n");
             }
         }
         else
         {
             len += iguana_rwnum(0,ptr->data,sizeof(basilisktag),&basilisktag);
-            //if ( 0 && myinfo->IAMLP == 0 )
+            if ( 0 && myinfo->IAMLP == 0 )
                 printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,ptr->datalen,ptr->type,senderip,basilisktag);
             basilisk_msgprocess(myinfo,ptr->addr,ptr->ipbits,ptr->type,basilisktag,&ptr->data[len],ptr->datalen - len);
-            //if ( 0 && myinfo->IAMLP == 0 )
+            if ( 0 && myinfo->IAMLP == 0 )
                 printf("processed.%s from %s\n",ptr->type,senderip);
         }
         free(ptr);
@@ -931,7 +931,7 @@ void basilisks_loop(void *arg)
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;
         else endmilli = startmilli + 2000;
-        printf("endmilli %f vs now %f\n",endmilli,OS_milliseconds());
+        //printf("endmilli %f vs now %f\n",endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
