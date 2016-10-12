@@ -790,23 +790,26 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
-        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 && bp->state != 0xffffffff )
+        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
-            for (i=0; i<32; i++)
-                srchash.bytes[i] = msg->data[i];
-            txid = bits256_doublesha256(0,&msg->data[32],msg->datalen-32);
-            init_hexbytes_noT(bp->signedtx,&msg->data[32],msg->datalen-32);
-            if ( bits256_cmp(txid,srchash) == 0 )
+            if ( bp->state != 0xffffffff )
             {
-                printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
-                bp->signedtxid = txid;
-                bp->state = 0xffffffff;
-            }
-            else
-            {
-                init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
-                printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
-                bp->signedtx[0] = 0;
+                for (i=0; i<32; i++)
+                    srchash.bytes[i] = msg->data[i];
+                txid = bits256_doublesha256(0,&msg->data[32],msg->datalen-32);
+                init_hexbytes_noT(bp->signedtx,&msg->data[32],msg->datalen-32);
+                if ( bits256_cmp(txid,srchash) == 0 )
+                {
+                    printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
+                    bp->signedtxid = txid;
+                    bp->state = 0xffffffff;
+                }
+                else
+                {
+                    init_hexbytes_noT(bp->signedtx,msg->data,msg->datalen);
+                    printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
+                    bp->signedtx[0] = 0;
+                }
             }
         } else printf("txidchannel cant find bp for %d\n",height);
     }
