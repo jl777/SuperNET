@@ -556,12 +556,13 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,uint64_t mask,int32_t lastk,int32_t myind,char *opret_symbol)
 {
-    int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash; uint32_t channel; struct dpow_entry *ep; struct dpow_sigentry dsig;
+    int32_t i,j,z,m=0,datalen,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[sizeof(struct dpow_sigentry)]; bits256 txid,srchash,desthash,zero; uint32_t channel; struct dpow_entry *ep; struct dpow_sigentry dsig;
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
     ep = &bp->notaries[myind];
     memset(&dsig,0,sizeof(dsig));
+    memset(&zero,0,sizeof(zero));
     dsig.lastk = lastk;
     dsig.mask = mask;
     dsig.senderind = myind;
@@ -604,13 +605,18 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->beacon = dsig.beacon;
                                         bp->recvsigmask |= (1LL << dsig.senderind);
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
-                                        for (i=0; i<bp->numnotaries; i++)
+                                        for (i=0; i<=bp->numnotaries; i++)
                                         //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
                                             if ( 0 && i != myind )
                                                 printf(">>>>>>>>>> send lastk.%d %llx siglen.%d -> notary.%d\n",dsig.lastk,(long long)dsig.mask,dsig.siglen,i);
-                                            for (z=0; z<sizeof(desthash); z++)
-                                                desthash.bytes[z] = bp->notaries[i].pubkey[z+1];
+                                            if ( i == bp->numnotaries )
+                                                desthash = zero;
+                                            else
+                                            {
+                                                for (z=0; z<sizeof(desthash); z++)
+                                                    desthash.bytes[z] = bp->notaries[i].pubkey[z+1];
+                                            }
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,datalen,120);
                                         }
                                         retval = 0;
@@ -660,7 +666,7 @@ int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
     for (j=m=0; j<bp->numnotaries; j++)
     {
         i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
-        if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 && 
+        if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 &&
         {
             if ( ++m >= DPOW_M(bp) )
                 return(m);
@@ -689,7 +695,8 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,int32_t myind)
 {
-    bits256 txid,srchash,desthash; int32_t i,j,len; char *retstr=0,str[65],str2[65]; uint8_t txdata[16384]; struct dpow_sigentry dsig;
+    bits256 txid,srchash,desthash,zero; int32_t i,j,len; char *retstr=0,str[65],str2[65]; uint8_t txdata[16384]; struct dpow_sigentry dsig;
+    memset(zero.bytes,0,sizeof(zero));
     if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == DPOW_M(bp) )
     {
         bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
@@ -705,12 +712,16 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                     {
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
-                        for (i=0; i<bp->numnotaries; i++)
+                        for (j=0; j<sizeof(srchash); j++)
+                            txdata[j] = txid.bytes[j];
+                        for (i=0; i<=bp->numnotaries; i++)
                         {
-                            for (j=0; j<sizeof(srchash); j++)
+                            if ( i == bp->numnotaries )
+                                desthash = zero;
+                            else
                             {
-                                desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
-                                txdata[j] = txid.bytes[j];
+                                for (j=0; j<sizeof(srchash); j++)
+                                    desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
                             }
                             basilisk_channelsend(myinfo,txid,desthash,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,120);
                         }
@@ -815,7 +826,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     {
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
-            if ( bp->state != 0xffffffff )
+            //if ( bp->state != 0xffffffff )
             {
                 for (i=0; i<32; i++)
                     srchash.bytes[i] = msg->data[i];
@@ -893,10 +904,15 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 len = dpow_rwutxobuf(1,data,&bp->hashmsg,&txid,&vout,&bp->commit,myinfo->DPOW.minerkey33);
                 bp->recvmask |= (1LL << myind);
                 //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
-                for (i=0; i<bp->numnotaries; i++)
+                for (i=0; i<=bp->numnotaries; i++)
                 {
-                    for (j=0; j<sizeof(srchash); j++)
-                        desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
+                    if ( i == bp->numnotaries )
+                        desthash = zero;
+                    else
+                    {
+                        for (j=0; j<sizeof(srchash); j++)
+                            desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
+                    }
                     basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,len,120);
                 }
                 bp->state = 2;
@@ -904,11 +920,16 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 2:
             len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33);
-            for (i=0; i<bp->numnotaries; i++)
+            for (i=0; i<=bp->numnotaries; i++)
             //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
             {
-                for (j=0; j<sizeof(srchash); j++)
-                    desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
+                if ( i == bp->numnotaries )
+                    desthash = zero;
+                else
+                {
+                    for (j=0; j<sizeof(srchash); j++)
+                        desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
+                }
                 basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,len,120);
             }
             bp->recvmask = dpow_lastk_mask(bp,&k);
