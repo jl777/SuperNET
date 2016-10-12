@@ -880,6 +880,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
             break;
         case 2:
+            len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33);
+            for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
+            {
+                for (j=0; j<sizeof(srchash); j++)
+                    desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
+                basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,len,120);
+            }
             bp->recvmask = dpow_lastk_mask(bp,&k);
             //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
             if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
@@ -901,7 +908,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             //printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
             if ( bp->waiting++ > 10 )
             {
-                bp->state = 1;
+                bp->state = 2;
                 bp->waiting = 0;
             }
             break;
