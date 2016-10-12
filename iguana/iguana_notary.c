@@ -493,7 +493,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                 }
             }
             if ( haveutxo == 0 )
-                printf("no utxo: (%s)\n",jprint(unspents,0));
+                printf("no utxo: need to fund address.(%s) or wait for splitfund to confirm\n",coinaddr);
         } else printf("null utxo array size\n");
         free_json(unspents);
     } else printf("null return from dpow_listunspent\n");
