@@ -1,8 +1,8 @@
-
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"5.9.102.210\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"78.47.196.146\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"149.56.29.163\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.226\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"213.202.253.10\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.217\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.208\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnode\",\"activecoin\":\"NOTARY\",\"ipaddr\":\"94.102.63.200\"}"
