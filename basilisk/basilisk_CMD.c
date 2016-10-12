@@ -32,7 +32,7 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
         return(0);
     if ( (addr= iguana_peerfindipbits(notaries,ipbits,0)) == 0 )
     {
-        if ( (addr= iguana_peerslot(notaries,ipbits,0)) != 0 )
+        if ( (addr= iguana_peerslot(notaries,ipbits,0)) != 0 && addr->isrelay == 0 )
         {
             printf("launch peer.%s for relay vs (%s)\n",ipaddr,myinfo->ipaddr);
             addr->isrelay = 1;
