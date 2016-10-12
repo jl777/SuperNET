@@ -26,6 +26,7 @@
 #include "notaries.h"
 
 #define CHECKSIG 0xac
+#define DPOW_M(bp) (2)  // (((bp)->numnotaries >> 1) + 1)
 
 int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 {
@@ -153,7 +154,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,struct dpow_block *bp,uint64_
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
     if ( isPoS != 0 )
         len += iguana_rwnum(1,&serialized[len],sizeof(bp->timestamp),&bp->timestamp);
-    m = (bp->numnotaries >> 1) + 1;
+    m = DPOW_M(bp);
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
@@ -169,7 +170,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,struct dpow_block *bp,uint64_
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
             //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
             m++;
-            if ( m == bp->numnotaries/2+1 && i == lastk )
+            if ( m == DPOW_M(bp) && i == lastk )
                 break;
         }
     }
@@ -534,7 +535,7 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
                 bitcoin_txinput(coin,txobj,bp->notaries[i].prev_hash,bp->notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
                 //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
-                if ( m == bp->numnotaries/2+1 && i == lastk )
+                if ( m == DPOW_M(bp) && i == lastk )
                     break;
             }
         }
@@ -639,7 +640,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int32_t *lastkp)
         if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
         {
             mask |= (1LL << k);
-            if ( ++m >= bp->numnotaries/2+1 )
+            if ( ++m >= DPOW_M(bp) )
             {
                 *lastkp = k;
                 break;
@@ -657,7 +658,7 @@ int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
         i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( ((1LL << i) & mask) != 0 && bp->notaries[i].siglens[lastk] >= 64 )
         {
-            if ( ++m >= bp->numnotaries/2+1 )
+            if ( ++m >= DPOW_M(bp) )
                 return(m);
         }
     }
@@ -713,7 +714,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                     ep->commit = commit;
                     ep->height = height;
                     bp->recvmask = dpow_lastk_mask(bp,&lastk);
-                    if ( bitweight(bp->recvmask) >= bp->numnotaries/2+1 )
+                    if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
                     {
                         if ( ep->masks[lastk] == 0 )
                         {
@@ -747,7 +748,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
-                        if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == bp->numnotaries/2+1 )
+                        if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == DPOW_M(bp) )
                         {
                             bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
                             if ( bits256_nonz(bp->signedtxid) != 0 )
@@ -877,20 +878,20 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         case 2:
             bp->recvmask = dpow_lastk_mask(bp,&k);
             //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
-            if ( bitweight(bp->recvmask) > bp->numnotaries/2 )
+            if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
                 bp->state = 3;
             else bp->state = 2;
             break;
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
             mask = dpow_lastk_mask(bp,&k);
             //printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)mask);
-            if ( bitweight(mask) >= bp->numnotaries/2+1 )
+            if ( bitweight(mask) >= DPOW_M(bp) )
             {
                 if ( dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol) == 0 )
                 {
                     bp->state = 4;
                 }
-            } else printf("state 3 not done: mask.%llx wt.%d vs.%d\n",(long long)mask,bitweight(mask),bp->numnotaries/2+1);
+            } else printf("state 3 not done: mask.%llx wt.%d vs.%d\n",(long long)mask,bitweight(mask),DPOW_M(bp));
             break;
         case 4: // wait for N/2+1 signed tx and broadcast
             //printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
