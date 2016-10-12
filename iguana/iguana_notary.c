@@ -613,7 +613,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         }
                                         retval = 0;
                                         break;
-                                    } else printf("notmine.(%s)\n",jprint(item,0));
+                                    } // else printf("notmine.(%s)\n",jprint(item,0));
                                 }
                             } else printf("no vin[] (%s)\n",jprint(txobj2,0));
                             free_json(txobj2);
