@@ -1183,20 +1183,32 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
+char *dpow_passthru(struct iguana_info *coin,char *function,char *hex)
+{
+    char params[32768]; int32_t len = 0;
+    if ( hex != 0 && hex[0] != 0 )
+    {
+        len = (int32_t)strlen(hex) >> 1;
+        if ( len < sizeof(params)-1 )
+            decode_hex((uint8_t *)params,(int32_t)strlen(hex),hex);
+        else len = 0;
+    }
+    params[len] = 0;
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,params));
+}
+
 TWO_STRINGS(zcash,passthru,function,hex)
 {
     if ( (coin= iguana_coinfind("ZEC")) != 0 || coin->chain->serverport[0] == 0 )
-    {
-        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,hex));
-    } else return(clonestr("{\"error\":\"ZEC not active, start in bitcoind mode\"}"));
+        return(dpow_passthru(coin,function,hex));
+    else return(clonestr("{\"error\":\"ZEC not active, start in bitcoind mode\"}"));
 }
 
 TWO_STRINGS(komodo,passthru,function,hex)
 {
     if ( (coin= iguana_coinfind("KMD")) != 0 || coin->chain->serverport[0] == 0 )
-    {
-        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,hex));
-    } else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
+        return(dpow_passthru(coin,function,hex));
+    else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"
