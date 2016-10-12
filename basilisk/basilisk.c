@@ -909,12 +909,15 @@ void basilisks_loop(void *arg)
     struct iguana_info *notary; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli;
     iter = 0;
     notary = iguana_coinfind("NOTARY");
+    printf("start basilisk loop\n");
     while ( 1 )
     {
         if ( notary == 0 )
             notary = iguana_coinfind("NOTARY");
         startmilli = OS_milliseconds();
+        printf("purge\n");
         basilisk_issued_purge(myinfo,600000);
+        printf("process\n");
         basilisk_p2pQ_process(myinfo,777);
         printf("notary.%p RELAYID.%d\n",notary,myinfo->NOTARY.RELAYID);
         if ( myinfo->NOTARY.RELAYID >= 0 )
@@ -928,6 +931,7 @@ void basilisks_loop(void *arg)
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;
         else endmilli = startmilli + 2000;
+        printf("endmilli %f vs now %f\n",endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
