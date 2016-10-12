@@ -602,7 +602,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->beacon = dsig.beacon;
                                         bp->recvsigmask |= (1LL << dsig.senderind);
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
-                                        for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
+                                        for (i=0; i<bp->numnotaries; i++)
+                                        //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
                                             if ( i != myind )
                                                 printf(">>>>>>>>>> send lastk.%d %llx siglen.%d -> notary.%d\n",dsig.lastk,(long long)dsig.mask,dsig.siglen,i);
@@ -873,7 +874,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             {
                 len = dpow_rwutxobuf(1,data,&bp->hashmsg,&txid,&vout,&bp->commit,myinfo->DPOW.minerkey33);
                 bp->recvmask |= (1LL << myind);
-                for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
+                //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
+                for (i=0; i<bp->numnotaries; i++)
                 {
                     for (j=0; j<sizeof(srchash); j++)
                         desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
@@ -884,7 +886,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 2:
             len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33);
-            for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
+            for (i=0; i<bp->numnotaries; i++)
+            //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
             {
                 for (j=0; j<sizeof(srchash); j++)
                     desthash.bytes[j] = bp->notaries[i].pubkey[j+1];
