@@ -790,7 +790,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
-        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
+        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 && bp->state != 0xffffffff )
         {
             for (i=0; i<32; i++)
                 srchash.bytes[i] = msg->data[i];
