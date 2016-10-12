@@ -660,7 +660,7 @@ int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
     for (j=m=0; j<bp->numnotaries; j++)
     {
         i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
-        if ( ((1LL << i) & mask) != 0 && bp->notaries[i].siglens[lastk] >= 64 )
+        if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 && 
         {
             if ( ++m >= DPOW_M(bp) )
                 return(m);
