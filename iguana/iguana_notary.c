@@ -162,6 +162,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t isPoS,struct dpow_block *bp,uint64_
         i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( ((1LL << i) & mask) != 0 )
         {
+            if ( bits256_nonz(bp->notaries[i].prev_hash) == 0 )
+                return(bp->notaries[i].prev_hash);
             len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[i].prev_hash),bp->notaries[i].prev_hash.bytes);
             len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[i].prev_vout),&bp->notaries[i].prev_vout);
             siglen = bp->notaries[i].siglens[lastk];
@@ -574,7 +576,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( (txobj= dpow_createtx(coin,&vins,bp,lastk,mask,1)) != 0 )
     {
         txid = dpow_notarytx(rawtx,coin->chain->isPoS,bp,mask,lastk,opret_symbol);
-        if ( rawtx[0] != 0 )
+        if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 )
         {
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
