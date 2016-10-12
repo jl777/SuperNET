@@ -289,21 +289,20 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         i = (j == 0) ? myinfo->NOTARY.RELAYID : ((r+j) % myinfo->NOTARY.NUMRELAYS);
         if ( j != 0 && i == myinfo->NOTARY.RELAYID )
             i = (myinfo->NOTARY.RELAYID + 1) % myinfo->NOTARY.NUMRELAYS;
-        printf("i.%d j.%d\n",i,j);
         if ( (((uint64_t)1 << i) & alreadysent) != 0 )
         {
             j--;
-            continue;
+            break;
         }
         alreadysent |= ((uint64_t)1 << i);
         rp = &myinfo->NOTARY.RELAYS[i];
         addr = 0;
         expand_ipbits(ipaddr,rp->ipbits);
-        if ( 0 && rp->ipbits == myinfo->myaddr.myipbits )
+        if ( rp->ipbits == myinfo->myaddr.myipbits )
             basilisk_ping_process(myinfo,0,myinfo->myaddr.myipbits,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],datalen);
         else if ( (addr= iguana_peerfindipbits(notary,rp->ipbits,1)) != 0 && addr->usock >= 0 )
         {
-            if ( 0 && iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
+            if ( iguana_queue_send(addr,0,myinfo->pingbuf,"SuperNETPIN",datalen) <= 0 )
                 printf("error sending %d to (%s)\n",datalen,addr->ipaddr);
             else if ( datalen > 200 )
                 fprintf(stderr,"+(%s).%d ",ipaddr,i);
