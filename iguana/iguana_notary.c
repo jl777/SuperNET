@@ -565,9 +565,9 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     dsig.beacon = bp->beacon;
     for (i=0; i<33; i++)
         dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
-    channel = DPOW_SIGCHANNEL;
     if ( bits256_nonz(bp->btctxid) == 0 )
         channel = DPOW_SIGBTCCHANNEL;
+    else channel = DPOW_SIGCHANNEL;
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (txobj= dpow_createtx(coin,&vins,bp,lastk,mask,1)) != 0 )
@@ -723,7 +723,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         }
                     }
                     flag = 1;
-                    printf("<<<<<<<<<< from.%ld got ht.%d %s/v%d\n",((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
+                    printf("<<<<<<<<<< %s from.%ld got ht.%d %s/v%d\n",bp->coin->symbol,((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
                 }
             }
         }
@@ -747,7 +747,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        printf("<<<<<<<< from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
+                        printf("<<<<<<<< %s from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
                         if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == DPOW_M(bp) )
                         {
                             bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
@@ -790,7 +790,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
-        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
+        if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
             for (i=0; i<32; i++)
                 srchash.bytes[i] = msg->data[i];
