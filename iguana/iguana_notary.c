@@ -605,7 +605,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         for (i=0; i<bp->numnotaries; i++)
                                         //for (i=((myind + (uint32_t)rand()) % incr); i<bp->numnotaries; i+=incr)
                                         {
-                                            if ( i != myind )
+                                            if ( 0 && i != myind )
                                                 printf(">>>>>>>>>> send lastk.%d %llx siglen.%d -> notary.%d\n",dsig.lastk,(long long)dsig.mask,dsig.siglen,i);
                                             for (z=0; z<sizeof(desthash); z++)
                                                 desthash.bytes[z] = bp->notaries[i].pubkey[z+1];

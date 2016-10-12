@@ -16,7 +16,7 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
-#define DPOW_M(bp) (5)  // (((bp)->numnotaries >> 1) + 1)
+#define DPOW_M(bp) (4)  // (((bp)->numnotaries >> 1) + 1)
 
 #define DPOW_UTXOSIZE 10000
 
