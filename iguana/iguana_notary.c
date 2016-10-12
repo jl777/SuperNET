@@ -728,7 +728,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 }
             }
         }
-        //if ( 0 && flag == 0 )
+        if ( 0 && flag == 0 )
             printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -786,7 +786,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                 } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        //if ( 0 && flag == 0 )
+        if ( 0 && flag == 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
