@@ -21,6 +21,8 @@
 // c) detection of special transactions to update list of current notaries
 // d) award 5% APR for utxo older than a week when they are spent
 // e) round robin mining difficulty
+// f) reduce cost for splitting
+// g) RBF to reduce latency
 
 #include "iguana777.h"
 #include "notaries.h"
@@ -782,11 +784,11 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
                         }
                         flag = 1;
                     }
-                } else printf("beacon mismatch for senderind.%d %llx vs %llx\n",dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
-            } else printf("illegal lastk.%d or senderind.%d or senderpub.%llx\n",dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
-        } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
+                } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
+            } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
+        } else printf("%s couldnt find senderind.%d height.%d channel.%x\n",bp->coin->symbol,dsig.senderind,height,channel);
         if ( 0 && flag == 0 )
-            printf("SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+            printf("%s SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",bp->coin->symbol,height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
@@ -994,6 +996,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( destbp->state == 0xffffffff )
         {
+srcbp->state = 0xffffffff;
             if ( srcbp->state != 0xffffffff )
             {
                 //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
