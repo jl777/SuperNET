@@ -670,8 +670,8 @@ int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height,int32_t destflag)
 {
     if ( destflag != 0 )
-        return(myinfo->DPOW.destblocks[height]);
-    else return(myinfo->DPOW.srcblocks[height]);
+        return(myinfo->DPOW.destblocks!=0?myinfo->DPOW.destblocks[height]:0);
+    else return(myinfo->DPOW.srcblocks!=0?myinfo->DPOW.srcblocks[height]:0);
 }
 
 struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,uint8_t *senderpub)
