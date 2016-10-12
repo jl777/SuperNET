@@ -911,6 +911,8 @@ void basilisks_loop(void *arg)
     notary = iguana_coinfind("NOTARY");
     while ( 1 )
     {
+        if ( notary == 0 )
+            notary = iguana_coinfind("NOTARY");
         startmilli = OS_milliseconds();
         basilisk_issued_purge(myinfo,600000);
         basilisk_p2pQ_process(myinfo,777);
