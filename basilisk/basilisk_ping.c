@@ -283,10 +283,10 @@ void basilisk_ping_send(struct supernet_info *myinfo,struct iguana_info *notary)
         myinfo->pingbuf = malloc(IGUANA_MAXPACKETSIZE);
     datalen = basilisk_ping_gen(myinfo,&myinfo->pingbuf[sizeof(struct iguana_msghdr)],IGUANA_MAXPACKETSIZE-sizeof(struct iguana_msghdr));
     incr = sqrt(myinfo->NOTARY.NUMRELAYS) + 1;
+    OS_randombytes((void *)&r,sizeof(r));
     for (alreadysent=j=0; j<=incr; j++)
     {
-        OS_randombytes((void *)&r,sizeof(r));
-        i = (j == 0) ? myinfo->NOTARY.RELAYID : (r % myinfo->NOTARY.NUMRELAYS);
+        i = (j == 0) ? myinfo->NOTARY.RELAYID : ((r+j) % myinfo->NOTARY.NUMRELAYS);
         if ( j != 0 && i == myinfo->NOTARY.RELAYID )
             i = (myinfo->NOTARY.RELAYID + 1) % myinfo->NOTARY.NUMRELAYS;
         if ( (((uint64_t)1 << i) & alreadysent) != 0 )
