@@ -169,6 +169,32 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
     return(mask);
 }
 
+int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
+{
+    int32_t i,j,m; struct dpow_entry *ep;
+    *maskp = 0;
+    for (i=0; i<bp->numnotaries; i++)
+    {
+        ep = &bp->notaries[i];
+        if ( ep->bestmask != 0 && ep->bestk >= 0 )
+        {
+            for (m=1,j=i+1; j<bp->numnotaries; j++)
+            {
+                if ( bp->notaries[j].bestmask == ep->bestmask && bp->notaries[j].bestk == ep->bestk )
+                {
+                    if ( ++m == DPOW_M(bp) )
+                    {
+                        *maskp = ep->bestmask;
+                        printf("bestk.%d mask.%llx\n",ep->bestk,(long long)ep->bestmask);
+                        return(ep->bestk);
+                    }
+                }
+            }
+        }
+    }
+    return(-1);
+}
+
 int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
 {
     int32_t j,m,i;
@@ -769,13 +795,15 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                     ep->prev_vout = vout;
                     ep->commit = commit;
                     ep->height = height;
+                    ep->bestk = lastk;
+                    ep->bestmask = mask;
                     bp->recvmask |= (1LL << senderind);
-                    if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
+                    if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
                     {
                         if ( ep->masks[lastk] == 0 )
                         {
-                            if ( dpow_signedtxgen(myinfo,bp->coin,bp,bp->recvmask,lastk,myind,bp->opret_symbol) == 0 )
-                                printf("created sig for lastk.%d %llx\n",lastk,(long long)bp->recvmask);
+                            if ( dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestmask,bp->bestk,myind,bp->opret_symbol) == 0 )
+                                printf("created sig for lastk.%d %llx\n",bp->bestk,(long long)bp->bestmask);
                         }
                     }
                     flag = 1;
@@ -947,7 +975,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
             dpow_channelget(myinfo,bp,channel);
             //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
-            if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
+            if ( bitweight(bp->bestmask) >= DPOW_M(bp) )
                 bp->state = 3;
             break;
         case 3: // create rawtx, sign, send rawtx + sig to all other nodes
@@ -955,7 +983,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             //printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)mask);
             if ( bitweight(mask) >= DPOW_M(bp) )
             {
-                if ( dpow_signedtxgen(myinfo,coin,bp,mask,lastk,myind,opret_symbol) == 0 )
+                if ( dpow_signedtxgen(myinfo,coin,bp,bp->bestmask,bp->bestk,myind,opret_symbol) == 0 )
                 {
                     bp->state = 4;
                 }

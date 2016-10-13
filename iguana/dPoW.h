@@ -31,8 +31,9 @@
 struct dpow_entry
 {
     bits256 prev_hash,commit,beacon;
-    uint64_t masks[DPOW_MAXRELAYS];
+    uint64_t masks[DPOW_MAXRELAYS],bestmask;
     int32_t prev_vout,height;
+    int8_t bestk;
     uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][76];
 };
 
@@ -58,10 +59,11 @@ struct dpow_block
 {
     bits256 hashmsg,btctxid,signedtxid,beacon,commit;
     struct iguana_info *coin; char *opret_symbol;
-    uint64_t recvmask,recvsigmask;
+    uint64_t recvmask,recvsigmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed;
+    int8_t bestk;
     char signedtx[32768];
 };
 
