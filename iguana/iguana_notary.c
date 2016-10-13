@@ -717,7 +717,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->siglens[dsig.lastk] = dsig.siglen;
                                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                                         ep->beacon = dsig.beacon;
-                                        bp->recvsigmask |= (1LL << dsig.senderind);
+                                        //bp->recvsigmask |= (1LL << dsig.senderind);
                                         //printf(">>>>>>>> datalen.%d siglen.%d myind.%d lastk.%d mask.%llx\n",datalen,dsig.siglen,dsig.senderind,dsig.lastk,(long long)dsig.mask);
                                         dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,datalen,bp->sigcrcs);
                                         retval = 0;
@@ -743,11 +743,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,int32_t myind)
 {
-    bits256 txid,srchash,zero; int32_t j,len; char *retstr=0,str[65],str2[65]; uint8_t txdata[16384]; struct dpow_sigentry dsig;
+    bits256 txid,srchash,zero; int32_t j,len; char *retstr=0,str[65],str2[65]; uint8_t txdata[16384];
     memset(zero.bytes,0,sizeof(zero));
-    if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,dsig.lastk,bp->recvsigmask) == DPOW_M(bp) )
+    if ( bp->state != 0xffffffff && bp->coin != 0 && dpow_numsigs(bp,bp->bestk,bp->bestmask) == DPOW_M(bp) )
     {
-        bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,dsig.mask,dsig.lastk,bp->opret_symbol);
+        bp->signedtxid = dpow_notarytx(bp->signedtx,bp->coin->chain->isPoS,bp,bp->bestmask,bp->bestk,bp->opret_symbol);
         if ( bits256_nonz(bp->signedtxid) != 0 )
         {
             if ( (retstr= dpow_sendrawtransaction(myinfo,bp->coin,bp->signedtx)) != 0 )
@@ -829,14 +829,13 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 {
                     if ( ep->masks[dsig.lastk] == 0 )
                     {
-                        bp->recvsigmask |= (1LL << dsig.senderind);
                         ep->masks[dsig.lastk] = dsig.mask;
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         for (j=0; j<dsig.siglen; j++)
                             printf("%02x",dsig.sig[j]);
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d %llx >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvsigmask);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         dpow_sigscheck(myinfo,bp,channel,myind);
                         flag = 1;
                     }
@@ -935,8 +934,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
-    if ( (rand() % 10) == 0 )
-        printf("%s ht.%d FSM.%d %s BTC.%d masks.(%llx %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)bp->recvsigmask);
+    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
     switch ( bp->state )
     {
         case 0:
@@ -959,7 +957,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 dp->lastsplit = (uint32_t)time(NULL);
             }
             break;
-        case 1: // wait for utxo, send utxo to all other nodes
+        case 1:
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
                 bp->recvmask |= (1LL << myind);
@@ -974,13 +972,11 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
             dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
             dpow_channelget(myinfo,bp,channel);
-            //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
             if ( bitweight(bp->bestmask) >= DPOW_M(bp) )
                 bp->state = 3;
             break;
-        case 3: // create rawtx, sign, send rawtx + sig to all other nodes
+        case 3:
             mask = dpow_lastk_mask(bp,&lastk);
-            //printf("STATE3: %s BTC.%d RECVMASK.%llx mask.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,(long long)mask);
             if ( bitweight(mask) >= DPOW_M(bp) )
             {
                 if ( dpow_signedtxgen(myinfo,coin,bp,bp->bestmask,bp->bestk,myind,opret_symbol) == 0 )
@@ -989,8 +985,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 }
             } else printf("state 3 not done: mask.%llx wt.%d vs.%d\n",(long long)mask,bitweight(mask),DPOW_M(bp));
             break;
-        case 4: // wait for N/2+1 signed tx and broadcast
-            //printf("STATE4: %s BTC.%d RECVMASK.%llx\n",coin->symbol,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask);
+        case 4:
             dpow_sigscheck(myinfo,bp,channel,myind);
             if ( bp->state != 0xffffffff && bp->waiting++ > 10 )
             {
@@ -1021,6 +1016,7 @@ void dpow_statemachinestart(void *ptr)
         destbp = calloc(1,sizeof(*destbp));
         destbp->coin = iguana_coinfind(dp->dest);
         destbp->opret_symbol = dp->symbol;
+        destbp->bestk = -1;
         dp->destblocks[checkpoint.blockhash.height] = destbp;
         destbp->beacon = rand256(0);
         vcalc_sha256(0,destbp->commit.bytes,destbp->beacon.bytes,sizeof(destbp->beacon));
@@ -1036,6 +1032,7 @@ void dpow_statemachinestart(void *ptr)
         srcbp = calloc(1,sizeof(*srcbp));
         srcbp->coin = iguana_coinfind(dp->symbol);
         srcbp->opret_symbol = dp->symbol;
+        srcbp->bestk = -1;
         dp->srcblocks[checkpoint.blockhash.height] = srcbp;
         srcbp->beacon = destbp->beacon;
         srcbp->commit = destbp->commit;

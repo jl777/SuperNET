@@ -59,7 +59,7 @@ struct dpow_block
 {
     bits256 hashmsg,btctxid,signedtxid,beacon,commit;
     struct iguana_info *coin; char *opret_symbol;
-    uint64_t recvmask,recvsigmask,bestmask;
+    uint64_t recvmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed;
