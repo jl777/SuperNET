@@ -603,6 +603,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
+    printf("myind.%d bestk.%d %llx\n",myind,bestk,(long long)bestmask);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
@@ -775,7 +776,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        if ( 0 && flag == 0 )
+        //if ( 0 && flag == 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
