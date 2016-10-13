@@ -89,6 +89,8 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,struct dpow
     len = 2;
     len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->prev_hash),ep->prev_hash.bytes);
+    if ( bits256_nonz(ep->prev_hash) == 0 )
+        return(-1);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->commit),ep->commit.bytes);
     if ( rwflag != 0 )
     {
@@ -695,9 +697,12 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                 if ( bits256_nonz(bp->notaries[k].prev_hash) == 0 )
                 {
                     bp->notaries[k].prev_hash = jbits256(item,"txid");
-                    bp->notaries[k].prev_vout = jint(item,"vout");
-                    bp->recvmask |= (1LL << k);
-                    printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
+                    if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+                    {
+                        bp->notaries[k].prev_vout = jint(item,"vout");
+                        bp->recvmask |= (1LL << k);
+                        printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
+                    }
                 }
             }
             if ( k == bestk )
@@ -737,7 +742,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                     free_json(txobj2);
                 } else printf("cant parse.(%s)\n",rawtx2);
                 free(rawtx2);
-            } else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
+            } //else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
             free_json(signobj);
         } else printf("error parsing.(%s)\n",jsonstr);
         free(jsonstr);
