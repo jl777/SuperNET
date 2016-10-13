@@ -786,7 +786,10 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
             if ( myind < 0 )
                 return;
             if ( bits256_cmp(hashmsg,bp->hashmsg) != 0 )
+            {
                 printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,hashmsg),bits256_str(str2,bp->hashmsg));
+                return;
+            }
             if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,senderpub)) != 0 )
             {
                 if ( bits256_nonz(ep->prev_hash) == 0 )
@@ -798,9 +801,9 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                     ep->bestk = lastk;
                     ep->bestmask = mask;
                     bp->recvmask |= (1LL << senderind);
-                    if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
+                    if ( bp->bestk >= 0 )
                     {
-                        if ( ep->masks[lastk] == 0 )
+                        if ( ep->masks[bp->bestk] == 0 )
                         {
                             if ( dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestmask,bp->bestk,myind,bp->opret_symbol) == 0 )
                                 printf("created sig for lastk.%d %llx\n",bp->bestk,(long long)bp->bestmask);
@@ -827,15 +830,15 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
                 {
-                    if ( ep->masks[dsig.lastk] == 0 )
+                    if ( bp->bestk >= 0 && ep->masks[bp->bestk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
                     {
-                        ep->masks[dsig.lastk] = dsig.mask;
-                        ep->siglens[dsig.lastk] = dsig.siglen;
-                        memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
+                        ep->masks[bp->bestk] = dsig.mask;
+                        ep->siglens[bp->bestk] = dsig.siglen;
+                        memcpy(ep->sigs[bp->bestk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         for (j=0; j<dsig.siglen; j++)
                             printf("%02x",dsig.sig[j]);
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,bp->bestk,(long long)dsig.mask,dsig.siglen);
                         dpow_sigscheck(myinfo,bp,channel,myind);
                         flag = 1;
                     }
@@ -934,6 +937,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
+    if ( bp->bestk < 0 )
+        bp->bestk = dpow_bestk(bp,&bp->bestmask);
     printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
     switch ( bp->state )
     {
