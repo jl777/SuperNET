@@ -175,7 +175,6 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
     int8_t lastk; uint64_t mask;
     *maskp = 0;
     mask = dpow_lastk_mask(bp,&lastk);
-    printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
     if ( lastk < 0 )
         return(-1);
     *maskp = mask;
@@ -817,15 +816,15 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
                 {
-                    if ( bp->bestk >= 0 && ep->masks[bp->bestk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
+                    if ( bp->bestk >= 0 && ep->masks[dsig.lastk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
                     {
-                        ep->masks[bp->bestk] = dsig.mask;
-                        ep->siglens[bp->bestk] = dsig.siglen;
-                        memcpy(ep->sigs[bp->bestk],dsig.sig,dsig.siglen);
+                        ep->masks[dsig.lastk] = dsig.mask;
+                        ep->siglens[dsig.lastk] = dsig.siglen;
+                        memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         for (j=0; j<dsig.siglen; j++)
                             printf("%02x",dsig.sig[j]);
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,bp->bestk,(long long)dsig.mask,dsig.siglen);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         dpow_sigscheck(myinfo,bp,channel,myind);
                         flag = 1;
                     }
@@ -961,6 +960,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
                 bp->recvmask |= (1LL << myind);
+                bp->notaries[myind].prev_hash = txid;
+                bp->notaries[myind].prev_vout = vout;
                 dpow_update(myinfo,bp,channel,srchash,myind);
                 bp->state = 2;
             }
