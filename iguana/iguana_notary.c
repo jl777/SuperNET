@@ -828,7 +828,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        if ( bp != 0 )
+        if ( 0 && bp != 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
