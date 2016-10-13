@@ -220,7 +220,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,char *src)
 {
     uint32_t i,j,m,numsigs,locktime,numvouts,version,opretlen,siglen,len,sequenceid = 0xffffffff;
-    uint64_t satoshis,satoshisB; uint8_t serialized[16384],opret[1024],data[4096];
+    uint64_t satoshis,satoshisB; uint8_t serialized[32768],opret[1024],data[4096];
     len = locktime = numsigs = 0;
     version = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
@@ -580,7 +580,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
     return(haveutxo);
 }
 
-cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *bp,int32_t usesigs)
+cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs)
 {
     int32_t i,j,m=0,siglen; char scriptstr[256]; cJSON *txobj=0,*vins=0,*item; uint64_t satoshis; uint8_t script[35],*sig;
     if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
@@ -591,31 +591,40 @@ cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *b
         for (j=0; j<bp->numnotaries; j++)
         {
             i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
-            if ( ((1LL << i) & bp->bestmask) != 0 )
+            if ( ((1LL << i) & bestmask) != 0 )
             {
-                item = cJSON_CreateObject();
-                jaddbits256(item,"txid",bp->notaries[i].prev_hash);
-                jaddnum(item,"vout",bp->notaries[i].prev_vout);
-                script[0] = 33;
-                memcpy(script+1,bp->notaries[i].pubkey,33);
-                script[34] = CHECKSIG;
-                init_hexbytes_noT(scriptstr,script,35);
-                jaddstr(item,"scriptPubKey",scriptstr);
-                sig = 0, siglen = 0;
-                if ( usesigs != 0 && bp->notaries[i].siglens[bp->bestk] > 0 )
+                if ( bits256_nonz(bp->notaries[i].prev_hash) != 0 )
                 {
-                    init_hexbytes_noT(scriptstr,bp->notaries[i].sigs[bp->bestk],bp->notaries[i].siglens[bp->bestk]);
-                    jaddstr(item,"scriptSig",scriptstr);
-                    //printf("sig%d.(%s)\n",i,scriptstr);
-                    sig = bp->notaries[i].sigs[bp->bestk];
-                    siglen = bp->notaries[i].siglens[bp->bestk];
+                    item = cJSON_CreateObject();
+                    jaddbits256(item,"txid",bp->notaries[i].prev_hash);
+                    jaddnum(item,"vout",bp->notaries[i].prev_vout);
+                    script[0] = 33;
+                    memcpy(script+1,bp->notaries[i].pubkey,33);
+                    script[34] = CHECKSIG;
+                    init_hexbytes_noT(scriptstr,script,35);
+                    jaddstr(item,"scriptPubKey",scriptstr);
+                    sig = 0, siglen = 0;
+                    if ( usesigs != 0 && bp->notaries[i].siglens[bestk] > 0 )
+                    {
+                        init_hexbytes_noT(scriptstr,bp->notaries[i].sigs[bestk],bp->notaries[i].siglens[bestk]);
+                        jaddstr(item,"scriptSig",scriptstr);
+                        //printf("sig%d.(%s)\n",i,scriptstr);
+                        sig = bp->notaries[i].sigs[bestk];
+                        siglen = bp->notaries[i].siglens[bestk];
+                    }
+                    jaddi(vins,item);
+                    bitcoin_txinput(coin,txobj,bp->notaries[i].prev_hash,bp->notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
+                    //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
+                    m++;
+                    if ( m == DPOW_M(bp) && i == bestk )
+                        break;
                 }
-                jaddi(vins,item);
-                bitcoin_txinput(coin,txobj,bp->notaries[i].prev_hash,bp->notaries[i].prev_vout,0xffffffff,script,sizeof(script),0,0,0,0,sig,siglen);
-                //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
-                m++;
-                if ( m == DPOW_M(bp) && i == bp->bestk )
-                    break;
+                else
+                {
+                    free_json(vins), vins = 0;
+                    free_json(txobj);
+                    return(0);
+                }
             }
         }
         satoshis = DPOW_UTXOSIZE * m * .76;
@@ -729,7 +738,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,char *opret_symbol,uint32_t sigchannel)
 {
-    int32_t j,incr,len,numsigs,retval=-1; char rawtx[16384]; cJSON *txobj,*vins; bits256 txid,tmp,srchash,zero; struct dpow_entry *ep; uint8_t txdata[16384];
+    int32_t j,incr,len,numsigs,retval=-1; char rawtx[32768]; cJSON *txobj,*vins; bits256 txid,tmp,srchash,zero; struct dpow_entry *ep; uint8_t txdata[32768];
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
@@ -740,7 +749,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (txobj= dpow_createtx(coin,&vins,bp,0)) != 0 )
+    if ( (txobj= dpow_createtx(coin,&vins,bp,bestk,bestmask,0)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,opret_symbol);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 )
@@ -764,7 +773,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,int32_t myind)
 {
-    bits256 txid,srchash,zero; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[16384];
+    bits256 txid,srchash,zero; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768];
     memset(zero.bytes,0,sizeof(zero));
     if ( bp->state != 0xffffffff && bp->coin != 0 )
     {
@@ -935,7 +944,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
 
 void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel)
 {
-    bits256 zero; cJSON *retarray,*item,*item2,*messages; char *datastr; int32_t i,n,j,m,datalen; uint8_t data[16384];
+    bits256 zero; cJSON *retarray,*item,*item2,*messages; char *datastr; int32_t i,n,j,m,datalen; uint8_t data[32768];
     memset(zero.bytes,0,sizeof(zero));
     if ( (retarray= basilisk_channelget(myinfo,zero,zero,channel,bp->height,1)) != 0 )
     {
