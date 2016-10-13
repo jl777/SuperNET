@@ -657,7 +657,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,char *opret_symbol,uint32_t sigchannel)
 {
-    int32_t j,m=0,incr,numsigs,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; bits256 txid,srchash,zero; struct dpow_entry *ep;
+    int32_t j,m=0,incr,len,numsigs,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; bits256 txid,tmp,srchash,zero; struct dpow_entry *ep; uint8_t txdata[16384];
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
@@ -668,11 +668,19 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (txobj= dpow_createtx(coin,&vins,bp,1)) != 0 )
+    if ( (txobj= dpow_createtx(coin,&vins,bp,0)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,opret_symbol);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0)
         {
+            memset(&tmp,0,sizeof(tmp));
+            tmp.ulongs[1] = bestmask;
+            tmp.bytes[31] = bestk;
+            len = (int32_t)strlen(rawtx) >> 1;
+            decode_hex(txdata+32,len,rawtx);
+            for (j=0; j<sizeof(srchash); j++)
+                txdata[j] = tmp.bytes[j];
+            dpow_send(myinfo,bp,zero,bp->hashmsg,(bits256_nonz(bp->btctxid) == 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
             if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
             {
                 //printf("mask.%llx dpowsign.(%s)\n",(long long)mask,jsonstr);
@@ -853,19 +861,27 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
             {
                 for (i=0; i<32; i++)
                     srchash.bytes[i] = data[i];
-                txid = bits256_doublesha256(0,&data[32],datalen-32);
-                init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
-                if ( bits256_cmp(txid,srchash) == 0 )
+                if ( srchash.ulongs[0] == 0 )
                 {
-                    printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
-                    bp->signedtxid = txid;
-                    bp->state = 0xffffffff;
+                    init_hexbytes_noT(bp->rawtx,&data[32],datalen-32);
+                    printf("got bestk.%d %llx rawtx.(%s) set utxo\n",srchash.bytes[31],(long long)srchash.ulongs[1],bp->rawtx);
                 }
                 else
                 {
-                    init_hexbytes_noT(bp->signedtx,data,datalen);
-                    printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
-                    bp->signedtx[0] = 0;
+                    txid = bits256_doublesha256(0,&data[32],datalen-32);
+                    init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
+                    if ( bits256_cmp(txid,srchash) == 0 )
+                    {
+                        printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
+                        bp->signedtxid = txid;
+                        bp->state = 0xffffffff;
+                    }
+                    else
+                    {
+                        init_hexbytes_noT(bp->signedtx,data,datalen);
+                        printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
+                        bp->signedtx[0] = 0;
+                    }
                 }
             }
         } else printf("txidchannel cant find bp for %d\n",height);

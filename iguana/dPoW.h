@@ -64,7 +64,7 @@ struct dpow_block
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed;
     int8_t bestk;
-    char signedtx[32768];
+    char signedtx[32768],rawtx[32768];
 };
 
 struct dpow_info
