@@ -655,9 +655,81 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
     dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
 }
 
+void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,char *rawtx,cJSON *vins,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel)
+{
+    int32_t j,i,k,n,m=0,flag=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep = &bp->notaries[myind];
+    if ( vins == 0 )
+    {
+        if ( (rawtx2= dpow_decoderawtransaction(myinfo,coin,rawtx)) != 0 )
+        {
+            if ( (txobj= cJSON_Parse(rawtx2)) != 0 )
+            {
+                vins = jduplicate(jobj(txobj,"vin"));
+                free_json(txobj);
+                printf("generated vins.(%s)\n",jprint(vins,0));
+            }
+            free(rawtx2);
+        }
+        if ( vins != 0 )
+        {
+            flag = 1;
+            n = cJSON_GetArraySize(vins);
+            k = (bp->height % bp->numnotaries) % bp->numnotaries;
+            for (i=n=0; i<n; i++)
+            {
+                while ( ((1LL << k) & bestmask) == 0 )
+                    if ( ++k >= bp->numnotaries )
+                        k = 0;
+                item = jitem(vins,i);
+                bp->notaries[k].prev_hash = jbits256(item,"txid");
+                bp->notaries[k].prev_vout = jint(item,"vout");
+            }
+        }
+    }
+    m = 0;
+    if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
+    {
+        //printf("mask.%llx dpowsign.(%s)\n",(long long)mask,jsonstr);
+        if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
+            {
+                if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
+                {
+                    if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
+                    {
+                        for (j=0; j<m; j++)
+                        {
+                            item = jitem(vin,j);
+                            if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
+                            {
+                                //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
+                                ep->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
+                                decode_hex(ep->sigs[bestk],ep->siglens[bestk],sigstr);
+                                ep->masks[bestk] = bestmask;
+                                ep->siglens[bestk] = ep->siglens[bestk];
+                                ep->beacon = bp->beacon;
+                                dpow_sigsend(myinfo,bp,myind,bestk,bestmask,srchash,sigchannel);
+                                retval = 0;
+                                break;
+                            } // else printf("notmine.(%s)\n",jprint(item,0));
+                        }
+                    } else printf("no vin[] (%s)\n",jprint(txobj2,0));
+                    free_json(txobj2);
+                } else printf("cant parse.(%s)\n",rawtx2);
+                free(rawtx2);
+            } else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
+            free_json(signobj);
+        } else printf("error parsing.(%s)\n",jsonstr);
+        free(jsonstr);
+    }
+    if ( flag != 0 && vins != 0 )
+        free_json(vins);
+}
+
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,char *opret_symbol,uint32_t sigchannel)
 {
-    int32_t j,m=0,incr,len,numsigs,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; bits256 txid,tmp,srchash,zero; struct dpow_entry *ep; uint8_t txdata[16384];
+    int32_t j,incr,len,numsigs,retval=-1; char rawtx[16384]; cJSON *txobj,*vins; bits256 txid,tmp,srchash,zero; struct dpow_entry *ep; uint8_t txdata[16384];
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
@@ -671,7 +743,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( (txobj= dpow_createtx(coin,&vins,bp,0)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,opret_symbol);
-        if ( bits256_nonz(txid) != 0 && rawtx[0] != 0)
+        if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 )
         {
             memset(&tmp,0,sizeof(tmp));
             tmp.ulongs[1] = bestmask;
@@ -681,43 +753,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
             for (j=0; j<sizeof(srchash); j++)
                 txdata[j] = tmp.bytes[j];
             dpow_send(myinfo,bp,zero,bp->hashmsg,(bits256_nonz(bp->btctxid) == 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
-            if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
-            {
-                //printf("mask.%llx dpowsign.(%s)\n",(long long)mask,jsonstr);
-                if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
-                {
-                    if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
-                    {
-                        if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
-                        {
-                            if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
-                            {
-                                for (j=0; j<m; j++)
-                                {
-                                    item = jitem(vin,j);
-                                    if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
-                                    {
-                                        //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
-                                        ep->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
-                                        decode_hex(ep->sigs[bestk],ep->siglens[bestk],sigstr);
-                                        ep->masks[bestk] = bestmask;
-                                        ep->siglens[bestk] = ep->siglens[bestk];
-                                        ep->beacon = bp->beacon;
-                                        dpow_sigsend(myinfo,bp,myind,bestk,bestmask,srchash,sigchannel);
-                                        retval = 0;
-                                        break;
-                                    } // else printf("notmine.(%s)\n",jprint(item,0));
-                                }
-                            } else printf("no vin[] (%s)\n",jprint(txobj2,0));
-                            free_json(txobj2);
-                        } else printf("cant parse.(%s)\n",rawtx2);
-                        free(rawtx2);
-                    } else printf("error decoding (%s) %s\n",signedtx==0?"":signedtx,jsonstr);
-                    free_json(signobj);
-                } else printf("error parsing.(%s)\n",jsonstr);
-                free(jsonstr);
-            }
         }
+        dpow_rawtxsign(myinfo,coin,bp,rawtx,vins,bestk,bestmask,myind,sigchannel);
         free_json(txobj);
         //fprintf(stderr,"free vins\n");
         //free_json(vins);
@@ -865,6 +902,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 {
                     init_hexbytes_noT(bp->rawtx,&data[32],datalen-32);
                     printf("got bestk.%d %llx rawtx.(%s) set utxo\n",srchash.bytes[31],(long long)srchash.ulongs[1],bp->rawtx);
+                    dpow_rawtxsign(myinfo,bp->coin,bp,bp->rawtx,0,srchash.bytes[31],srchash.ulongs[1],myind,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                 }
                 else
                 {
