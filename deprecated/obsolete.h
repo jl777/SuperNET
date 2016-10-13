@@ -19313,7 +19313,57 @@ len = 0;
              dpow_signedtxgen(myinfo,coin,bp,mask,k,myind,opret_symbol);
              }
              }*/
+            int32_t dpow_sigbufcmp(int32_t *duplicatep,struct dpow_sigentry *dsig,struct dpow_sigentry *refdsig)
+            {
+                if ( dsig->lastk == refdsig->lastk && dsig->siglen == refdsig->siglen && dsig->mask == refdsig->mask && memcmp(dsig->sig,refdsig->sig,dsig->siglen) == 0 && memcmp(dsig->beacon.bytes,refdsig->beacon.bytes,sizeof(dsig->beacon)) == 0 )
+                {
+                    if ( dsig->senderind == refdsig->senderind )
+                    {
+                        (*duplicatep)++;
+                        return(0);
+                    }
+                    else
+                    {
+                        refdsig->refcount++;
+                        return(-1);
+                    }
+                }
+                return(-1);
+            }
+            int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
+            {
+                int32_t j,m,i;
+                for (j=m=0; j<bp->numnotaries; j++)
+                {
+                    i = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+                    if ( bp->notaries[i].siglens[lastk] >= 64 ) //((1LL << i) & mask) != 0 &&
+                    {
+                        if ( ++m >= DPOW_M(bp) )
+                            return(m);
+                    }
+                }
+                return(-1);
+            }
+            uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int32_t *lastkp)
+            {
+                int32_t j,m,k; uint64_t mask = 0;
+                for (j=m=0; j<bp->numnotaries; j++)
+                {
+                    k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+                    if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+                    {
+                        mask |= (1LL << k);
+                        if ( ++m >= DPOW_M(bp) )
+                        {
+                            *lastkp = k;
+                            break;
+                        }
+                    }
+                }
+                return(mask);
+            }
             
+
             int32_t dpow_dsigs_match(struct dpow_entry notaries[DPOW_MAXRELAYS],int32_t numnotaries,struct dpow_sigentry *dsigs,int32_t num,int32_t refk,uint64_t refmask,int32_t refheight)
             {
                 struct dpow_sigentry dsig; int32_t i,senderind,matches = 0;
