@@ -1010,7 +1010,6 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     if ( bits256_nonz(bp->signedtxid) != 0 )
     {
         bp->state = 0xffffffff;
-        dp->destupdated = 0; // prevent another state machine till next BTC block
     }
     return(bp->state);
 }
@@ -1022,6 +1021,7 @@ void dpow_statemachinestart(void *ptr)
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
+    dp->destupdated = 0; // prevent another state machine till next BTC block
     memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height);
     src = iguana_coinfind(dp->symbol);
