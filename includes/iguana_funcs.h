@@ -490,7 +490,9 @@ char *iguana_signunspents(struct supernet_info *myinfo,struct iguana_info *coin,
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 int32_t iguana_inv2packet(uint8_t *serialized,int32_t maxsize,int32_t type,bits256 *hashes,int32_t n);
 int32_t instantdex_inv2data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct exchange_info *exchange);
+uint32_t basilisk_crcrecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,int32_t *datalenp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits);
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *encodedhash,int32_t n);
+uint32_t basilisk_crcsend(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2]);
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson);
 int32_t iguana_inv2poll(struct supernet_info *myinfo,struct iguana_info *coin);
 struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana_peer *addr,int32_t type,uint8_t *data,int32_t datalen);

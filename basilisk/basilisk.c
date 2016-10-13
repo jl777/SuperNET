@@ -17,50 +17,6 @@
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
-uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t datalens[64],int32_t numcrcs)
-{
-    int32_t tally[64],candlens[64],i,j,mintally,numcandidates = 0; uint32_t candidates[64];
-    *datalenp = 0;
-    mintally = (numcrcs >> 1) + 1;
-    memset(tally,0,sizeof(tally));
-    memset(candlens,0,sizeof(candlens));
-    memset(candidates,0,sizeof(candidates));
-    if ( numcrcs > 0 )
-    {
-        for (i=0; i<numcrcs; i++)
-        {
-            //printf("%08x ",rawcrcs[i]);
-            for (j=0; j<numcandidates; j++)
-            {
-                if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
-                {
-                    tally[j]++;
-                    break;
-                }
-            }
-            if ( j == numcandidates )
-            {
-                tally[numcandidates] = 1;
-                candlens[numcandidates] = datalens[i];
-                candidates[numcandidates] = rawcrcs[i];
-                numcandidates++;
-            }
-        }
-        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
-        if ( numcandidates > 0 )
-        {
-            for (j=0; j<numcandidates; j++)
-                if ( tally[j] >= mintally )
-                {
-                    *datalenp = candlens[j];
-                    //printf("tally[%d] %d >= mintally.%d numcrcs.%d crc %08x datalen.%d\n",j,tally[j],mintally,numcrcs,candidates[j],*datalenp);
-                    return(candidates[j]);
-                }
-        }
-    }
-    return(0);
-}
-
 int32_t basilisk_notarycmd(char *cmd)
 {
     //&& strcmp(cmd,"DEX") != 0 && strcmp(cmd,"ACC") != 0 && strcmp(cmd,"RID") != 0 &&

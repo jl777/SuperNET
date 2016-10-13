@@ -422,3 +422,124 @@ int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t
         return(-errs);
     else return(havedata);
 }
+
+uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t datalens[64],int32_t numcrcs)
+{
+    int32_t tally[64],candlens[64],i,j,mintally,numcandidates = 0; uint32_t candidates[64];
+    *datalenp = 0;
+    mintally = (numcrcs >> 1) + 1;
+    memset(tally,0,sizeof(tally));
+    memset(candlens,0,sizeof(candlens));
+    memset(candidates,0,sizeof(candidates));
+    if ( numcrcs > 0 )
+    {
+        for (i=0; i<numcrcs; i++)
+        {
+            //printf("%08x ",rawcrcs[i]);
+            for (j=0; j<numcandidates; j++)
+            {
+                if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
+                {
+                    tally[j]++;
+                    break;
+                }
+            }
+            if ( j == numcandidates )
+            {
+                tally[numcandidates] = 1;
+                candlens[numcandidates] = datalens[i];
+                candidates[numcandidates] = rawcrcs[i];
+                numcandidates++;
+            }
+        }
+        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        if ( numcandidates > 0 )
+        {
+            for (j=0; j<numcandidates; j++)
+                if ( tally[j] >= mintally )
+                {
+                    *datalenp = candlens[j];
+                    //printf("tally[%d] %d >= mintally.%d numcrcs.%d crc %08x datalen.%d\n",j,tally[j],mintally,numcrcs,candidates[j],*datalenp);
+                    return(candidates[j]);
+                }
+        }
+    }
+    return(0);
+}
+
+uint32_t basilisk_crcrecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,int32_t *datalenp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits)
+{
+    cJSON *retarray,*obj,*item,*msgarray; char *hexstr,*keystr,*retstr; uint32_t rawcrcs[64],crc=0; int32_t numcrcs=0,i,j,m,n,datalen,datalens[64];; uint8_t key[BASILISK_KEYSIZE];
+    *datalenp = 0;
+    memset(rawcrcs,0,sizeof(rawcrcs));
+    memset(datalens,0,sizeof(datalens));
+    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,msgbits,0)) != 0 )
+    {
+        //printf("retarray.(%s)\n",jprint(retarray,0));
+        if ( (n= cJSON_GetArraySize(retarray)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                obj = jitem(retarray,i);
+                if ( jobj(obj,"error") != 0 )
+                    continue;
+                if ( (msgarray= jarray(&m,obj,"messages")) != 0 )
+                {
+                    for (j=0; j<m; j++)
+                    {
+                        item = jitem(msgarray,j);
+                        keystr = hexstr = 0;
+                        datalen = 0;
+                        if ( (keystr= jstr(item,"key")) != 0 && is_hexstr(keystr,0) == BASILISK_KEYSIZE*2 && (hexstr= jstr(item,"data")) != 0 && (datalen= is_hexstr(hexstr,0)) > 0 )
+                        {
+                            decode_hex(key,BASILISK_KEYSIZE,keystr);
+                            datalen >>= 1;
+                            if ( datalen < maxlen )
+                            {
+                                decode_hex(verifybuf,datalen,hexstr);
+                                if ( (retstr= basilisk_respond_addmessage(myinfo,key,BASILISK_KEYSIZE,verifybuf,datalen,juint(item,"expiration"),juint(item,"duration"))) != 0 )
+                                {
+                                    if ( numcrcs < sizeof(rawcrcs)/sizeof(*rawcrcs) )
+                                    {
+                                        rawcrcs[numcrcs] = calc_crc32(0,verifybuf,datalen);
+                                        datalens[numcrcs] = datalen;
+                                        numcrcs++;
+                                    }
+                                    free(retstr);
+                                }
+                            } else printf("datalen.%d >= maxlen.%d\n",datalen,maxlen);
+                        } else printf("not keystr.%p or no data.%p or bad datalen.%d\n",keystr,hexstr,datalen);
+                    }
+                }
+                //printf("(%s).%d ",jprint(item,0),i);
+            }
+            //printf("n.%d maxlen.%d\n",n,maxlen);
+        }
+        free_json(retarray);
+        if ( (crc= basilisk_majority32(datalenp,rawcrcs,datalens,numcrcs)) != 0 )
+        {
+            //printf("have majority crc.%08x\n",crc);
+        }
+        //else printf("no majority from rawcrcs.%d\n",numcrcs);
+    }
+    return(crc);
+}
+
+uint32_t basilisk_crcsend(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
+{
+    uint32_t crc; int32_t recvlen;
+    if ( crcs != 0 )
+    {
+        crc = calc_crc32(0,data,datalen);
+        if ( crcs[0] != crc )
+            crcs[0] = crc, crcs[1] = 0;
+        else
+        {
+            if ( crcs[1] == 0 )
+                crcs[1] = basilisk_crcrecv(myinfo,verifybuf,maxlen,&recvlen,srchash,desthash,channel,msgbits);
+            if ( crcs[0] == crcs[1] && datalen == recvlen )
+                return(crcs[0]);
+        }
+    }
+    return(0);
+}
