@@ -688,7 +688,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
             flag = 1;
             n = cJSON_GetArraySize(vins);
             k = (bp->height % bp->numnotaries) % bp->numnotaries;
-            for (i=n=0; i<n; i++)
+            for (i=0; i<n; i++)
             {
                 while ( ((1LL << k) & bestmask) == 0 )
                     if ( ++k >= bp->numnotaries )
