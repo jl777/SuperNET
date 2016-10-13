@@ -323,7 +323,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"duration",duration);
         jaddbits256(valsobj,"srchash",srchash);
         jaddbits256(valsobj,"desthash",desthash);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS);
+        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS);
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,desthash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);

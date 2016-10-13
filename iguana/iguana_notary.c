@@ -599,16 +599,32 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 sr
     //return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
 }
 
+void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myind,int8_t bestk,uint64_t bestmask,bits256 srchash,uint32_t sigchannel)
+{
+    struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
+    ep = &bp->notaries[myind];
+    memset(&dsig,0,sizeof(dsig));
+    for (i=0; i<33; i++)
+        dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
+    dsig.lastk = bestk;
+    dsig.mask = bestmask;
+    dsig.senderind = myind;
+    dsig.beacon = bp->beacon;
+    dsig.siglen = ep->siglens[bestk];
+    memcpy(dsig.sig,ep->sigs[bestk],ep->siglens[bestk]);
+    memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
+    len = dpow_rwsigentry(1,data,&dsig);
+    dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
+}
+
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,char *opret_symbol,uint32_t sigchannel)
 {
-    int32_t i,j,m=0,incr,len,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; uint8_t data[4096]; bits256 txid,srchash,zero; struct dpow_entry *ep; struct dpow_sigentry dsig;
+    int32_t j,m=0,incr,retval=-1; char rawtx[16384],*jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*vins,*item,*vin; bits256 txid,srchash,zero; struct dpow_entry *ep;
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
-    for (i=0; i<33; i++)
-        dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
     if ( bestk < 0 )
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
@@ -640,17 +656,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         ep->masks[bestk] = bestmask;
                                         ep->siglens[bestk] = ep->siglens[bestk];
                                         ep->beacon = bp->beacon;
-                                        memset(&dsig,0,sizeof(dsig));
-                                        dsig.lastk = bestk;
-                                        dsig.mask = bestmask;
-                                        dsig.senderind = myind;
-                                        dsig.beacon = bp->beacon;
-                                        dsig.siglen = ep->siglens[bestk];
-                                        memcpy(dsig.sig,ep->sigs[bestk],ep->siglens[bestk]);
-                                        memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
-                                        len = dpow_rwsigentry(1,data,&dsig);
-                                        printf("ht.%d sendsig bestk.%d %llx\n",bp->height,bestk,(long long)bestmask);
-                                        dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
+                                        dpow_sigsend(myinfo,bp,myind,bestk,bestmask,srchash,sigchannel);
                                         retval = 0;
                                         break;
                                     } // else printf("notmine.(%s)\n",jprint(item,0));
@@ -847,19 +853,18 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     bp->bestk = dpow_bestk(bp,&bp->bestmask);
     if ( bp->bestk >= 0 )
     {
-        if ( ep->masks[bp->bestk] == 0 && dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel) == 0 )
-            bp->state = 3;
-        else bp->state = 2;
-    } else bp->state = 1;
-    if ( bp->state == 3 )
+        if ( ep->masks[bp->bestk] == 0 )
+            dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
+        else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
+
+    }
+    dpow_channelget(myinfo,bp,txidchannel);
+    if ( bp->state != 0xffffffff )
     {
-        dpow_channelget(myinfo,bp,txidchannel);
-        if ( bp->state != 0xffffffff )
-        {
-            dpow_channelget(myinfo,bp,sigchannel);
-            if ( ep->masks[bp->bestk] == 0 )
-                dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
-        }
+        dpow_channelget(myinfo,bp,sigchannel);
+        if ( ep->masks[bp->bestk] == 0 )
+            dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
+        else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
     return(bp->state);
 }
@@ -940,19 +945,11 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 bp->recvmask |= (1LL << myind);
                 bp->notaries[myind].prev_hash = txid;
                 bp->notaries[myind].prev_vout = vout;
-                dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
-            }
-            break;
-        case 2:
-            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
-            break;
-        case 3:
-            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
-            if ( bp->state != 0xffffffff && bp->waiting++ > 10 )
-            {
                 bp->state = 2;
-                bp->waiting = 0;
             }
+            break;
+        default:
+            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             break;
     }
     if ( bits256_nonz(bp->signedtxid) != 0 )
