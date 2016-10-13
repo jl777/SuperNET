@@ -132,6 +132,8 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
         len = 2;
         memset(dsig,0,sizeof(*dsig));
         dsig->senderind = data[len++];
+        if ( dsig->senderind < 0 || dsig->senderind >= DPOW_MAXRELAYS )
+            return(-1);
         dsig->lastk = data[len++];
         len += iguana_rwnum(rwflag,&data[len],sizeof(dsig->mask),(uint8_t *)&dsig->mask);
         dsig->siglen = data[len++];
@@ -666,8 +668,8 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
 
 void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct dpow_block *bp,char *rawtx,cJSON *vins,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel)
 {
-    int32_t j,i,k,n,m=0,flag=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *txobj,*signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep = &bp->notaries[myind];
-    if ( vins == 0 )
+    int32_t j,i,k,n,m=0,flag=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr,str[65]; cJSON *txobj,*signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep = &bp->notaries[myind];
+    if ( vins == 0 && bitweight(bestmask) == DPOW_M(bp) )
     {
         if ( (rawtx2= dpow_decoderawtransaction(myinfo,coin,rawtx)) != 0 )
         {
@@ -675,7 +677,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
             {
                 vins = jduplicate(jobj(txobj,"vin"));
                 free_json(txobj);
-                printf("generated vins.(%s)\n",jprint(vins,0));
+                //printf("generated vins.(%s)\n",jprint(vins,0));
             }
             free(rawtx2);
         }
@@ -690,8 +692,13 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                     if ( ++k >= bp->numnotaries )
                         k = 0;
                 item = jitem(vins,i);
-                bp->notaries[k].prev_hash = jbits256(item,"txid");
-                bp->notaries[k].prev_vout = jint(item,"vout");
+                if ( bits256_nonz(bp->notaries[k].prev_hash) == 0 )
+                {
+                    bp->notaries[k].prev_hash = jbits256(item,"txid");
+                    bp->notaries[k].prev_vout = jint(item,"vout");
+                    bp->recvmask |= (1LL << k);
+                    printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
+                }
             }
         }
     }
@@ -910,7 +917,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 if ( srchash.ulongs[0] == 0 )
                 {
                     init_hexbytes_noT(bp->rawtx,&data[32],datalen-32);
-                    printf("got bestk.%d %llx rawtx.(%s) set utxo\n",srchash.bytes[31],(long long)srchash.ulongs[1],bp->rawtx);
+                    //printf("got bestk.%d %llx rawtx.(%s) set utxo\n",srchash.bytes[31],(long long)srchash.ulongs[1],bp->rawtx);
                     dpow_rawtxsign(myinfo,bp->coin,bp,bp->rawtx,0,srchash.bytes[31],srchash.ulongs[1],myind,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                 }
                 else
