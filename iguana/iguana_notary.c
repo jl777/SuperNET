@@ -172,29 +172,14 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
 
 int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 {
-    int32_t i,j,k,m; int8_t lastk; uint64_t mask;
+    int8_t lastk; uint64_t mask;
     *maskp = 0;
     mask = dpow_lastk_mask(bp,&lastk);
     printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
     if ( lastk < 0 )
         return(-1);
-    for (i=0; i<bp->numnotaries-1; i++)
-    {
-        k = ((bp->height % bp->numnotaries) + i + 1) % bp->numnotaries;
-        for (m=1,j=k; j<bp->numnotaries; j++)
-        {
-            if ( bp->notaries[j].bestmask == mask && bp->notaries[j].bestk == lastk )
-            {
-                if ( ++m == DPOW_M(bp) )
-                {
-                    *maskp = mask;
-                    printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
-                    return(lastk);
-                }
-            }
-        }
-    }
-    return(-1);
+    *maskp = mask;
+    return(lastk);
 }
 
 int32_t dpow_numsigs(struct dpow_block *bp,int32_t lastk,uint64_t mask)
@@ -914,10 +899,19 @@ void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t
     }
 }
 
+void dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,bits256 srchash,int32_t myind)
+{
+    uint64_t mask; int32_t len; int8_t lastk; uint8_t data[4096];
+    mask = dpow_lastk_mask(bp,&lastk);
+    len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
+    dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+    dpow_channelget(myinfo,bp,channel);
+}
+
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    bits256 txid; int8_t lastk; int32_t vout,len,j,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint8_t data[4096]; uint32_t channel; bits256 srchash,zero; uint64_t mask;
+    bits256 txid; int8_t lastk; int32_t vout,j,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel; bits256 srchash,zero; uint64_t mask;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -967,18 +961,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && vout >= 0 && vout < 0x100 )
             {
                 bp->recvmask |= (1LL << myind);
-                mask = dpow_lastk_mask(bp,&lastk);
-                len = dpow_rwutxobuf(1,data,&bp->hashmsg,&txid,&vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
-                dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+                dpow_update(myinfo,bp,channel,srchash,myind);
                 bp->state = 2;
             }
             break;
         case 2:
-            mask = dpow_lastk_mask(bp,&lastk);
-            len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
-            dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
-            dpow_channelget(myinfo,bp,channel);
-            if ( bitweight(bp->bestmask) >= DPOW_M(bp) )
+            dpow_update(myinfo,bp,channel,srchash,myind);
+            if ( bitweight(bp->bestmask) >= DPOW_M(bp) && bp->bestk >= 0 )
                 bp->state = 3;
             break;
         case 3:
