@@ -170,6 +170,25 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
     return(lastk);
 }
 
+uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
+{
+    int32_t j,m,k; uint64_t mask = 0;
+    for (j=m=0; j<bp->numnotaries; j++)
+    {
+        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+        {
+            mask |= (1LL << k);
+            if ( ++m >= DPOW_M(bp) )
+            {
+                *lastkp = k;
+                break;
+            }
+        }
+    }
+    return(mask);
+}
+
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height,int32_t destflag)
 {
     if ( destflag != 0 )
@@ -636,6 +655,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
+    bestmask = dpow_maskmin(bestmask,bp,&bestk);
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
     if ( bestk < 0 )
@@ -760,7 +780,9 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
                             dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,utxodata,len,bp->utxocrcs);
                     }
-                    dpow_signedtxgen(myinfo,bp->coin,bp,ep->bestk,ep->recvmask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
+                    mask = dpow_maskmin(ep->recvmask,bp,&lastk);
+                    if ( (mask & bp->recvmask) == mask )
+                        dpow_signedtxgen(myinfo,bp->coin,bp,ep->bestk,mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                     flag = 1;
                     printf("<<<<<<<<<< %s from.%ld got ht.%d %s/v%d\n",bp->coin->symbol,((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
                 }
@@ -792,7 +814,9 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         for (j=0; j<dsig.siglen; j++)
                             printf("%02x",dsig.sig[j]);
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
-                        dpow_signedtxgen(myinfo,bp->coin,bp,dsig.lastk,dsig.mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
+                        mask = dpow_maskmin(ep->recvmask,bp,&lastk);
+                        if ( (mask & bp->recvmask) == mask )
+                            dpow_signedtxgen(myinfo,bp->coin,bp,dsig.lastk,mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                         if ( ((1LL << myind) & dsig.mask) == 0 )
                         {
                             printf("B sender.%d %llx doesnt have ours %llx\n",dsig.senderind,(long long)dsig.mask,(long long)(1LL << myind));
@@ -803,8 +827,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                     }
                 } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
-        } //else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        if ( 0 && flag == 0 )
+        } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
+        //if ( 0 && flag == 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
@@ -897,7 +921,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    int32_t j,match,sigmatch,len,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; int8_t lastk;
+    int32_t j,match,sigmatch,len,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; int8_t lastk; uint64_t sigsmask;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -923,7 +947,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
-    match = sigmatch = 0;
+    sigsmask = match = sigmatch = 0;
     if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
         for (j=0; j<bp->numnotaries; j++)
@@ -932,12 +956,15 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             {
                 match++;
                 if ( bp->notaries[j].siglens[bp->bestk] > 0 )
+                {
                     sigmatch++;
+                    sigsmask |= (1LL << j);
+                }
             }
         }
     }
     if ( (rand() % 10) == 0 )
-        printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) mymask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)(1LL << myind));
+        printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask);
     if ( sigmatch == DPOW_M(bp) )
     {
         printf("sigmatch.%d\n",sigmatch);
