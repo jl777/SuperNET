@@ -31,7 +31,7 @@
 struct dpow_entry
 {
     bits256 prev_hash,commit,beacon;
-    uint64_t masks[DPOW_MAXRELAYS],bestmask;
+    uint64_t masks[DPOW_MAXRELAYS],recvmask;
     int32_t prev_vout,height;
     int8_t bestk;
     uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][76];
