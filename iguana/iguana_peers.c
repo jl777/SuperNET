@@ -322,7 +322,7 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
         return;
     if ( addr->ipbits == 0 )
     {
-        printf("cant iAkill null ipbits\n");
+        //printf("cant iAkill null ipbits\n");
         return;
     }
     rank = addr->rank;

@@ -889,12 +889,11 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         if ( bp->bestk >= 0 )
         {
             if ( ep->masks[bp->bestk] == 0 && dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol) == 0 )
-                return(3);
-            else return(2);
-        }
-        return(1);
+                bp->state = 3;
+            else bp->state = 2;
+        } else bp->state = 1;
     }
-    else
+    if ( bp->state == 3 )
     {
         dpow_channelget(myinfo,bp,txidchannel);
         if ( bp->state != 0xffffffff )
@@ -921,7 +920,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    bits256 txid; int32_t vout,j,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
+    bits256 txid; int32_t vout,j,match,sigmatch,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -947,8 +946,20 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
-    bp->bestk = dpow_bestk(bp,&bp->bestmask);
-    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
+    match = sigmatch = 0;
+    if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
+    {
+        for (j=0; j<bp->numnotaries; j++)
+        {
+            if ( bp->notaries[j].masks[bp->bestk] == bp->bestmask )
+            {
+                match++;
+                if ( bp->notaries[j].siglens[bp->bestk] > 0 )
+                    sigmatch++;
+            }
+        }
+    }
+    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch);
     switch ( bp->state )
     {
         case 0:
@@ -977,14 +988,14 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 bp->recvmask |= (1LL << myind);
                 bp->notaries[myind].prev_hash = txid;
                 bp->notaries[myind].prev_vout = vout;
-                bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
+                dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             }
             break;
         case 2:
-            bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
+            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             break;
         case 3:
-            bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
+            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             if ( bp->state != 0xffffffff && bp->waiting++ > 10 )
             {
                 bp->state = 2;
