@@ -171,22 +171,26 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
 
 int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 {
-    int32_t i,j,m; struct dpow_entry *ep;
+    int32_t i,j,k,m; int8_t lastk; struct dpow_entry *ep; uint64_t mask;
     *maskp = 0;
+    mask = dpow_lastk_mask(bp,&lastk);
+    if ( lastk < 0 )
+        return(-1);
     for (i=0; i<bp->numnotaries; i++)
     {
-        ep = &bp->notaries[i];
-        if ( ep->bestmask != 0 && ep->bestk >= 0 )
+        k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
+        ep = &bp->notaries[k];
+        if ( mask != 0 && lastk >= 0 )
         {
-            for (m=1,j=i+1; j<bp->numnotaries; j++)
+            for (m=1,j=k+1; j<bp->numnotaries; j++)
             {
-                if ( bp->notaries[j].bestmask == ep->bestmask && bp->notaries[j].bestk == ep->bestk )
+                if ( bp->notaries[j].bestmask == mask && bp->notaries[j].bestk == lastk )
                 {
                     if ( ++m == DPOW_M(bp) )
                     {
-                        *maskp = ep->bestmask;
-                        printf("bestk.%d mask.%llx\n",ep->bestk,(long long)ep->bestmask);
-                        return(ep->bestk);
+                        *maskp = mask;
+                        printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
+                        return(lastk);
                     }
                 }
             }
