@@ -754,7 +754,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 }
             }
         }
-        if ( 0 && flag == 0 )
+        //if ( 0 && flag == 0 )
             printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -771,7 +771,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
                 {
-                    if ( bp->bestk >= 0 && ep->masks[dsig.lastk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
+                    if ( ep->masks[dsig.lastk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
                     {
                         ep->masks[dsig.lastk] = dsig.mask;
                         ep->siglens[dsig.lastk] = dsig.siglen;
@@ -780,12 +780,13 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         for (j=0; j<dsig.siglen; j++)
                             printf("%02x",dsig.sig[j]);
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+                        dpow_signedtxgen(myinfo,bp->coin,bp,dsig.lastk,dsig.mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                         flag = 1;
                     }
                 } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        //if ( 0 && flag == 0 )
+        if ( 0 && flag == 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
@@ -859,7 +860,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     mask = dpow_lastk_mask(bp,&lastk);
     for (i=0; i<bp->numnotaries; i++)
     {
-        len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[i].pubkey,&lastk,&mask);
+        len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[i].prev_hash,&bp->notaries[i].prev_vout,&bp->commit,bp->notaries[i].pubkey,&lastk,&mask);
         dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
     }
     dpow_channelget(myinfo,bp,channel);
