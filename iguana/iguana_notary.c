@@ -748,7 +748,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                     ep->bestk = lastk;
                     ep->recvmask = mask;
                     bp->recvmask |= (1LL << senderind);
-                    if ( ((1LL << myind) & mask) != 0 )
+                    if ( ((1LL << myind) & mask) == 0 )
                     {
                         printf("sender.%d %llx doesnt have ours %llx\n",senderind,(long long)mask,(long long)(1LL << myind));
                         if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
@@ -787,9 +787,9 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                             printf("%02x",dsig.sig[j]);
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         dpow_signedtxgen(myinfo,bp->coin,bp,dsig.lastk,dsig.mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
-                        if ( ((1LL << myind) & dsig.mask) != 0 )
+                        if ( ((1LL << myind) & dsig.mask) == 0 )
                         {
-                            printf("sender.%d %llx doesnt have ours %llx\n",dsig.senderind,(long long)dsig.mask,(long long)(1LL << myind));
+                            printf("B sender.%d %llx doesnt have ours %llx\n",dsig.senderind,(long long)dsig.mask,(long long)(1LL << myind));
                             if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
                                 dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
                         }
