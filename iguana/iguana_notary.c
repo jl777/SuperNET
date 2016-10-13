@@ -79,6 +79,10 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
 int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *txid,int32_t *voutp,bits256 *commit,uint8_t *senderpub,int8_t *lastkp,uint64_t *maskp)
 {
     int32_t i,len = 0;
+    if ( rwflag != 0 )
+        data[len++] = DPOW_VERSION;
+    else if ( data[len++] != DPOW_VERSION )
+        return(-1);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(*txid),txid->bytes);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(*commit),commit->bytes);
@@ -105,6 +109,7 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     int32_t i,len = 0;
     if ( rwflag != 0 )
     {
+        data[len++] = DPOW_VERSION;
         data[len++] = dsig->senderind;
         data[len++] = dsig->lastk;
         len += iguana_rwnum(rwflag,&data[len],sizeof(dsig->mask),(uint8_t *)&dsig->mask);
@@ -117,6 +122,8 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     }
     else
     {
+        if ( data[len++] != DPOW_VERSION )
+            return(-1);
         memset(dsig,0,sizeof(*dsig));
         dsig->senderind = data[len++];
         dsig->lastk = data[len++];
@@ -718,7 +725,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
     bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,myind = -1; char str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_entry *ep;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
-        dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub,&lastk,&mask);
+        if ( dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub,&lastk,&mask) < 0 )
+            return;
         if ( bp != 0 || (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
         {
             dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
@@ -751,7 +759,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
-        dpow_rwsigentry(0,data,&dsig);
+        if ( dpow_rwsigentry(0,data,&dsig) < 0 )
+            return;
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS && (bp != 0 || (bp= dpow_heightfind(myinfo,height,channel == DPOW_SIGBTCCHANNEL)) != 0) )
         {
             dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
@@ -777,7 +786,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         //if ( 0 && flag == 0 )
-            printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+            printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
@@ -1045,6 +1054,11 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( destbp->state == 0xffffffff && bits256_nonz(srcbp->btctxid) != 0 )
         {
+            if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+            {
+                printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                break;
+            }
             if ( srcbp->state != 0xffffffff )
             {
                 //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
