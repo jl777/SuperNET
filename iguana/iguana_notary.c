@@ -649,6 +649,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                         memcpy(dsig.sig,ep->sigs[bestk],ep->siglens[bestk]);
                                         memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
                                         len = dpow_rwsigentry(1,data,&dsig);
+                                        printf("ht.%d sendsig bestk.%d %llx\n",bp->height,bestk,(long long)bestmask);
                                         dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
                                         retval = 0;
                                         break;
@@ -707,7 +708,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,myind = -1; uint32_t sigchannel; char str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_entry *ep;
+    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,myind = -1; char str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_entry *ep;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
         dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub,&lastk,&mask);
@@ -838,7 +839,6 @@ void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
     uint64_t mask; int32_t len; int8_t lastk; uint8_t data[4096]; struct dpow_entry *ep;
-    
     ep = &bp->notaries[myind];
     mask = dpow_lastk_mask(bp,&lastk);
     len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
@@ -906,7 +906,8 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
         }
     }
-    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) mymask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)(1LL << myind));
+    if ( (rand() % 10) == 0 )
+        printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) mymask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)(1LL << myind));
     if ( sigmatch == DPOW_M(bp) )
     {
         dpow_sigscheck(myinfo,bp,sigchannel,myind);
