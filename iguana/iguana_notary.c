@@ -158,6 +158,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
         k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
         {
+            bp->recvmask |= (1LL << k);
             mask |= (1LL << k);
             if ( ++m >= DPOW_M(bp) )
             {
@@ -171,27 +172,24 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
 
 int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 {
-    int32_t i,j,k,m; int8_t lastk; struct dpow_entry *ep; uint64_t mask;
+    int32_t i,j,k,m; int8_t lastk; uint64_t mask;
     *maskp = 0;
     mask = dpow_lastk_mask(bp,&lastk);
+    printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
     if ( lastk < 0 )
         return(-1);
-    for (i=0; i<bp->numnotaries; i++)
+    for (i=0; i<bp->numnotaries-1; i++)
     {
-        k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
-        ep = &bp->notaries[k];
-        if ( mask != 0 && lastk >= 0 )
+        k = ((bp->height % bp->numnotaries) + i + 1) % bp->numnotaries;
+        for (m=1,j=k; j<bp->numnotaries; j++)
         {
-            for (m=1,j=k+1; j<bp->numnotaries; j++)
+            if ( bp->notaries[j].bestmask == mask && bp->notaries[j].bestk == lastk )
             {
-                if ( bp->notaries[j].bestmask == mask && bp->notaries[j].bestk == lastk )
+                if ( ++m == DPOW_M(bp) )
                 {
-                    if ( ++m == DPOW_M(bp) )
-                    {
-                        *maskp = mask;
-                        printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
-                        return(lastk);
-                    }
+                    *maskp = mask;
+                    printf("bestk.%d mask.%llx\n",lastk,(long long)mask);
+                    return(lastk);
                 }
             }
         }
@@ -941,8 +939,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
-    if ( bp->bestk < 0 )
-        bp->bestk = dpow_bestk(bp,&bp->bestmask);
+    bp->bestk = dpow_bestk(bp,&bp->bestmask);
     printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask);
     switch ( bp->state )
     {
