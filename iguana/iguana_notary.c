@@ -879,20 +879,17 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 {
     uint64_t mask; int32_t len; int8_t lastk; uint8_t data[4096]; struct dpow_entry *ep; struct dpow_sigentry dsig;
     ep = &bp->notaries[myind];
-    if ( bp->state < 3 )
+    mask = dpow_lastk_mask(bp,&lastk);
+    len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
+    dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+    dpow_channelget(myinfo,bp,channel);
+    bp->bestk = dpow_bestk(bp,&bp->bestmask);
+    if ( bp->bestk >= 0 )
     {
-        mask = dpow_lastk_mask(bp,&lastk);
-        len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,myinfo->DPOW.minerkey33,&lastk,&mask);
-        dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
-        dpow_channelget(myinfo,bp,channel);
-        bp->bestk = dpow_bestk(bp,&bp->bestmask);
-        if ( bp->bestk >= 0 )
-        {
-            if ( ep->masks[bp->bestk] == 0 && dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol) == 0 )
-                bp->state = 3;
-            else bp->state = 2;
-        } else bp->state = 1;
-    }
+        if ( ep->masks[bp->bestk] == 0 && dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol) == 0 )
+            bp->state = 3;
+        else bp->state = 2;
+    } else bp->state = 1;
     if ( bp->state == 3 )
     {
         dpow_channelget(myinfo,bp,txidchannel);
@@ -959,7 +956,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
         }
     }
-    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d)\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch);
+    printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) mymask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)(1LL << myind));
     switch ( bp->state )
     {
         case 0:
