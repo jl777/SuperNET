@@ -76,31 +76,35 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
     return(opretlen);
 }
 
-int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,bits256 *txid,int32_t *voutp,bits256 *commit,uint8_t *senderpub,int8_t *lastkp,uint64_t *maskp)
+int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,struct dpow_entry *ep)
 {
     int32_t i,len = 0;
     if ( rwflag != 0 )
-        data[len++] = DPOW_VERSION;
-    else if ( data[len++] != DPOW_VERSION )
+    {
+        data[0] = DPOW_VERSION & 0xff;
+        data[1] = (DPOW_VERSION >> 8) & 0xff;
+    }
+    else if ( (data[0]+((int32_t)data[1]<<8)) != DPOW_VERSION )
         return(-1);
+    len = 2;
     len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*txid),txid->bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*commit),commit->bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->prev_hash),ep->prev_hash.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->commit),ep->commit.bytes);
     if ( rwflag != 0 )
     {
-        data[len++] = *voutp;
+        data[len++] = ep->prev_vout;
         for (i=0; i<33; i++)
-            data[len++] = senderpub[i];
-        data[len++] = *lastkp;
+            data[len++] = ep->pubkey[i];
+        data[len++] = ep->bestk;
     }
     else
     {
-        *voutp = data[len++];
+        ep->prev_vout = data[len++];
         for (i=0; i<33; i++)
-            senderpub[i] = data[len++];
-        *lastkp = data[len++];
+            ep->pubkey[i] = data[len++];
+        ep->bestk = data[len++];
     }
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*maskp),(uint8_t *)maskp);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->recvmask),(uint8_t *)&ep->recvmask);
     return(len);
 }
 
@@ -109,7 +113,8 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     int32_t i,len = 0;
     if ( rwflag != 0 )
     {
-        data[len++] = DPOW_VERSION;
+        data[len++] = DPOW_VERSION & 0xff;
+        data[len++] = (DPOW_VERSION >> 8) & 0xff;
         data[len++] = dsig->senderind;
         data[len++] = dsig->lastk;
         len += iguana_rwnum(rwflag,&data[len],sizeof(dsig->mask),(uint8_t *)&dsig->mask);
@@ -122,8 +127,9 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     }
     else
     {
-        if ( data[len++] != DPOW_VERSION )
+        if ( (data[0]+((int32_t)data[1]<<8)) != DPOW_VERSION )
             return(-1);
+        len = 2;
         memset(dsig,0,sizeof(*dsig));
         dsig->senderind = data[len++];
         dsig->lastk = data[len++];
@@ -748,10 +754,11 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,len,myind = -1; char str[65],str2[65]; uint8_t senderpub[33],utxodata[1024]; struct dpow_sigentry dsig; struct dpow_entry *ep;
+    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,r,vout,len,myind = -1; char str[65],str2[65]; uint8_t utxodata[1024]; struct dpow_sigentry dsig; struct dpow_entry *ep,E;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
-        if ( dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub,&lastk,&mask) < 0 )
+        memset(&E,0,sizeof(E));
+        if ( dpow_rwutxobuf(0,data,&hashmsg,&E) < 0 )
             return;
         if ( bp != 0 || (bp= dpow_heightfind(myinfo,height,channel == DPOW_UTXOBTCCHANNEL)) != 0 )
         {
@@ -763,33 +770,40 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,hashmsg),bits256_str(str2,bp->hashmsg));
                 return;
             }
-            if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,senderpub)) != 0 )
+            if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,E.pubkey)) != 0 )
             {
                 if ( bits256_nonz(ep->prev_hash) == 0 )
                 {
-                    ep->prev_hash = txid;
-                    ep->prev_vout = vout;
-                    ep->commit = commit;
-                    ep->height = height;
-                    ep->bestk = lastk;
-                    ep->recvmask = mask;
+                    *ep = E;
                     bp->recvmask |= (1LL << senderind);
-                    if ( ((1LL << myind) & mask) == 0 )
+                    if ( (bp->recvmask ^ E.recvmask) != 0 )
                     {
-                        printf("sender.%d %llx doesnt have ours %llx\n",senderind,(long long)mask,(long long)(1LL << myind));
-                        if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
+                        if ( ((1LL << myind) & E.recvmask) == 0 )
+                            i = myind;
+                        else
+                        {
+                            r = (rand() % bp->numnotaries);
+                            for (j=0; j<DPOW_M(bp); j++)
+                            {
+                                i = ((bp->height % bp->numnotaries) + j + r) % bp->numnotaries;
+                                if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & bp->recvmask) == 0 )
+                                    break;
+                            }
+                        }
+                        printf("sender.%d %llx doesnt have ours %llx\n",senderind,(long long)E.recvmask,(long long)(1LL << i));
+                        if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[i])) > 0 )
                             dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,utxodata,len,bp->utxocrcs);
                     }
                     mask = dpow_maskmin(ep->recvmask,bp,&lastk);
                     if ( (mask & bp->recvmask) == mask )
                         dpow_signedtxgen(myinfo,bp->coin,bp,ep->bestk,mask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                     flag = 1;
-                    printf("<<<<<<<<<< %s from.%ld got ht.%d %s/v%d\n",bp->coin->symbol,((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,txid),vout);
+                    printf("<<<<<<<<<< %s from.%ld got ht.%d %s/v%d\n",bp->coin->symbol,((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,E.prev_hash),E.prev_vout);
                 }
             }
         }
         if ( 0 && flag == 0 && bp != 0 )
-            printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
+            printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,E.prev_hash),vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
@@ -820,7 +834,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         if ( ((1LL << myind) & dsig.mask) == 0 )
                         {
                             printf("B sender.%d %llx doesnt have ours %llx\n",dsig.senderind,(long long)dsig.mask,(long long)(1LL << myind));
-                            if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
+                            if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind])) > 0 )
                                 dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,utxodata,len,bp->utxocrcs);
                         }
                         flag = 1;
@@ -998,7 +1012,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             break;
         case 1:
             dpow_lastk_mask(bp,&lastk);
-            if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
+            if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind])) > 0 )
                 dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
             bp->recvmask |= (1LL << myind);
             bp->state = 2;
