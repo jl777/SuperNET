@@ -953,7 +953,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
             break;
         case 2:
-            if ( (retarray= basilisk_channelget(myinfo,srchash,bp->hashmsg,channel,bp->height,1)) != 0 )
+            if ( (retarray= basilisk_channelget(myinfo,zero,zero,channel,bp->height,1)) != 0 )
             {
                 printf("UTXOget.(%s)\n",jprint(retarray,0));
                 free_json(retarray);
