@@ -805,7 +805,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
                 {
-                    if ( ep->masks[dsig.lastk] == 0 && (bp->recvmask & (1LL << dsig.senderind)) != 0 )
+                    if ( ep->masks[dsig.lastk] == 0 )
                     {
                         ep->masks[dsig.lastk] = dsig.mask;
                         ep->siglens[dsig.lastk] = dsig.siglen;
@@ -825,7 +825,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         }
                         flag = 1;
                     }
-                } else printf("%s beacon mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
+                } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         if ( bp != 0 )
