@@ -754,7 +754,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                 }
             }
         }
-        //if ( 0 && flag == 0 )
+        if ( 0 && flag == 0 )
             printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,txid),vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -855,19 +855,15 @@ void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t
 
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
-    uint64_t mask; int32_t i,len; int8_t lastk; uint8_t data[4096]; struct dpow_entry *ep;
+    uint64_t mask; int32_t len; int8_t lastk; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
     mask = dpow_lastk_mask(bp,&lastk);
-    for (i=0; i<bp->numnotaries; i++)
-    {
-        len = dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[i].prev_hash,&bp->notaries[i].prev_vout,&bp->commit,bp->notaries[i].pubkey,&lastk,&mask);
+    if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&mask)) > 0 )
         dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
-    }
     dpow_channelget(myinfo,bp,channel);
-    bp->bestk = dpow_bestk(bp,&bp->bestmask);
-    if ( bp->bestk >= 0 )
+    if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
-        if ( ep->masks[bp->bestk] == 0 )
+        if ( 1 || ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
 
@@ -876,7 +872,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     if ( bp->state != 0xffffffff )
     {
         dpow_channelget(myinfo,bp,sigchannel);
-        if ( ep->masks[bp->bestk] == 0 )
+        if ( 1 || ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
