@@ -62,7 +62,7 @@ struct dpow_block
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed;
-    char signedtx[32768]; uint8_t sendbuf[32768],recvbuf[32768];
+    char signedtx[32768];
 };
 
 struct dpow_info
