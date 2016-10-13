@@ -848,7 +848,7 @@ int32_t basilisk_process_swapverify(struct supernet_info *myinfo,void *ptr,int32
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
     int32_t datalen; uint32_t crc;
-    if ( (crc= basilisk_crcrecv(myinfo,swap->verifybuf,sizeof(swap->verifybuf),&datalen,swap->I.otherhash,swap->I.myhash,swap->I.req.quoteid,msgbits)) != 0 )
+    if ( (crc= basilisk_crcrecv(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),&datalen,swap->I.otherhash,swap->I.myhash,swap->I.req.quoteid,msgbits)) != 0 )
     {
         if ( datalen > 0 && datalen < maxlen )
         {
@@ -861,7 +861,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
-    if ( basilisk_crcsend(myinfo,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
+    if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
         return(nextbits);
     //if ( basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2) == 0 )
     //    return(nextbits);

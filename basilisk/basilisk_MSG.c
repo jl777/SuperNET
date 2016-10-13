@@ -216,9 +216,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     msg->expiration = (uint32_t)time(NULL) + duration;
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
-    //int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
-    //    printf("%02x",key[i]);
-    //printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
+    int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
+        printf("%02x",key[i]);
+    printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     portable_mutex_unlock(&myinfo->messagemutex);
     if ( myinfo->NOTARY.RELAYID >= 0 )
         dpow_handler(myinfo,msg);
@@ -435,7 +435,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
     {
         for (i=0; i<numcrcs; i++)
         {
-            //printf("%08x ",rawcrcs[i]);
+            printf("%08x ",rawcrcs[i]);
             for (j=0; j<numcandidates; j++)
             {
                 if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
@@ -452,7 +452,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
                 numcandidates++;
             }
         }
-        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        printf("n.%d -> numcandidates.%d\n",i,numcandidates);
         if ( numcandidates > 0 )
         {
             for (j=0; j<numcandidates; j++)
@@ -467,13 +467,13 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
     return(0);
 }
 
-uint32_t basilisk_crcrecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,int32_t *datalenp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits)
+uint32_t basilisk_crcrecv(struct supernet_info *myinfo,int32_t width,uint8_t *verifybuf,int32_t maxlen,int32_t *datalenp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits)
 {
-    cJSON *retarray,*obj,*item,*msgarray; char *hexstr,*keystr,*retstr; uint32_t rawcrcs[64],crc=0; int32_t numcrcs=0,i,j,m,n,datalen,datalens[64];; uint8_t key[BASILISK_KEYSIZE];
+    cJSON *retarray,*obj,*item,*msgarray; char *hexstr,*keystr,*retstr; uint32_t rawcrcs[64],crc=0; int32_t numcrcs=0,i,j,m,n,datalen,datalens[64]; uint8_t key[BASILISK_KEYSIZE];
     *datalenp = 0;
     memset(rawcrcs,0,sizeof(rawcrcs));
     memset(datalens,0,sizeof(datalens));
-    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,msgbits,0)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,srchash,desthash,channel,msgbits,width)) != 0 )
     {
         //printf("retarray.(%s)\n",jprint(retarray,0));
         if ( (n= cJSON_GetArraySize(retarray)) > 0 )
@@ -525,7 +525,7 @@ uint32_t basilisk_crcrecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32_
     return(crc);
 }
 
-uint32_t basilisk_crcsend(struct supernet_info *myinfo,uint8_t *verifybuf,int32_t maxlen,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
+uint32_t basilisk_crcsend(struct supernet_info *myinfo,int32_t width,uint8_t *verifybuf,int32_t maxlen,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
     uint32_t crc; int32_t recvlen;
     if ( crcs != 0 )
@@ -536,7 +536,7 @@ uint32_t basilisk_crcsend(struct supernet_info *myinfo,uint8_t *verifybuf,int32_
         else
         {
             if ( crcs[1] == 0 )
-                crcs[1] = basilisk_crcrecv(myinfo,verifybuf,maxlen,&recvlen,srchash,desthash,channel,msgbits);
+                crcs[1] = basilisk_crcrecv(myinfo,width,verifybuf,maxlen,&recvlen,srchash,desthash,channel,msgbits);
             if ( crcs[0] == crcs[1] && datalen == recvlen )
                 return(crcs[0]);
         }

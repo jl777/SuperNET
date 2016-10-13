@@ -282,7 +282,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 free(retstr);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
             numiters = 0;
-            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
+            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
             {
                 printf("didnt get back what was sent\n");
                 sleep(3);
@@ -305,7 +305,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             crcs[0] = crcs[1] = 0;
             numiters = 0;
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
-            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
+            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
             {
                 //printf("didnt get back what was sent\n");
                 sleep(3);
@@ -577,7 +577,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
         basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
         sleep(3);
-        while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
+        while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
         {
             //printf("didnt get back what was sent\n");
             sleep(3);

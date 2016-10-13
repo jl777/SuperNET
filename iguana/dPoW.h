@@ -26,6 +26,7 @@
 #define DPOW_KOMODOCONFIRMS 1
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
+#define DPOW_CHECKPOINTFREQ 5
 
 struct dpow_entry
 {

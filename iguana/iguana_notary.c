@@ -579,7 +579,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 
 uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    return(basilisk_crcsend(myinfo,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
+    return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
 }
 
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *bp,int32_t lastk,uint64_t mask,int32_t usesigs)
@@ -700,7 +700,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
                                             basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,datalen,120);
                                         }*/
                                         //basilisk_channelsend(myinfo,srchash,zero,channel,bp->height,data,datalen,120);
-                                        dpow_send(myinfo,bp,srchash,zero,channel,bp->height,data,datalen,bp->sigcrcs);
+                                        dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,datalen,bp->sigcrcs);
                                         retval = 0;
                                         break;
                                     } // else printf("notmine.(%s)\n",jprint(item,0));
@@ -755,7 +755,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                             basilisk_channelsend(myinfo,txid,desthash,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,120);
                         }*/
                         //basilisk_channelsend(myinfo,txid,zero,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,120);
-                        dpow_send(myinfo,bp,txid,zero,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
+                        dpow_send(myinfo,bp,txid,bp->hashmsg,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
                         printf("complete statemachine.%s ht.%d\n",bp->coin->symbol,bp->height);
                         bp->state = 0xffffffff;
                     } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
@@ -947,7 +947,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                     basilisk_channelsend(myinfo,srchash,desthash,channel,bp->height,data,len,120);
                 }*/
                 //basilisk_channelsend(myinfo,srchash,zero,channel,bp->height,data,len,120);
-                dpow_send(myinfo,bp,srchash,zero,channel,bp->height,data,len,bp->utxocrcs);
+                dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
                 bp->state = 2;
             }
             break;
@@ -1112,7 +1112,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     checkpoint = dp->srcfifo[dp->srcconfirms];
     printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( dp->destupdated != 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % 10) == 0 )
+    if ( dp->destupdated != 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % DPOW_CHECKPOINTFREQ) == 0 )
     {
         ptrs = calloc(1,sizeof(void *)*2 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
