@@ -722,7 +722,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,len,myind = -1; char str[65],str2[65]; uint8_t senderpub[33]; struct dpow_sigentry dsig; struct dpow_entry *ep;
+    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,j,vout,len,myind = -1; char str[65],str2[65]; uint8_t senderpub[33],utxodata[1024]; struct dpow_sigentry dsig; struct dpow_entry *ep;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
         if ( dpow_rwutxobuf(0,data,&hashmsg,&txid,&vout,&commit,senderpub,&lastk,&mask) < 0 )
@@ -751,8 +751,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                     if ( ((1LL << myind) & mask) == 0 )
                     {
                         printf("sender.%d %llx doesnt have ours %llx\n",senderind,(long long)mask,(long long)(1LL << myind));
-                        if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
-                            dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+                        if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
+                            dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,utxodata,len,bp->utxocrcs);
                     }
                     dpow_signedtxgen(myinfo,bp->coin,bp,ep->bestk,ep->recvmask,myind,bp->opret_symbol,bits256_nonz(bp->btctxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                     flag = 1;
@@ -790,8 +790,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         if ( ((1LL << myind) & dsig.mask) == 0 )
                         {
                             printf("B sender.%d %llx doesnt have ours %llx\n",dsig.senderind,(long long)dsig.mask,(long long)(1LL << myind));
-                            if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
-                                dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+                            if ( (len= dpow_rwutxobuf(1,utxodata,&bp->hashmsg,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,&bp->commit,bp->notaries[myind].pubkey,&lastk,&bp->recvmask)) > 0 )
+                                dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,utxodata,len,bp->utxocrcs);
                         }
                         flag = 1;
                     }
