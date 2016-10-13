@@ -511,7 +511,7 @@ uint32_t basilisk_crcrecv(struct supernet_info *myinfo,uint8_t *verifybuf,int32_
                         } else printf("not keystr.%p or no data.%p or bad datalen.%d\n",keystr,hexstr,datalen);
                     }
                 }
-                //printf("(%s).%d ",jprint(item,0),i);
+                printf("(%s).%d ",jprint(item,0),i);
             }
             //printf("n.%d maxlen.%d\n",n,maxlen);
         }
