@@ -679,7 +679,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
             {
                 vins = jduplicate(jobj(txobj,"vin"));
                 free_json(txobj);
-                //printf("generated vins.(%s)\n",jprint(vins,0));
+                printf("generated vins.(%s)\n",jprint(vins,0));
             }
             free(rawtx2);
         }
@@ -694,6 +694,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                     if ( ++k >= bp->numnotaries )
                         k = 0;
                 item = jitem(vins,i);
+                printf("(%s) i.%d of %d, (%d) k.%d bestmask.%llx\n",jprint(item,0),i,n,(bp->height % bp->numnotaries) % bp->numnotaries,k,(long long)bestmask);
                 if ( bits256_nonz(bp->notaries[k].prev_hash) == 0 )
                 {
                     bp->notaries[k].prev_hash = jbits256(item,"txid");
