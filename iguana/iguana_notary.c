@@ -579,7 +579,8 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
 
 uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
+    return(basilisk_channelsend(myinfo,srchash,desthash,channel,msgbits,data,datalen,120));
+    //return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
 }
 
 cJSON *dpow_createtx(struct iguana_info *coin,cJSON **vinsp,struct dpow_block *bp,int32_t lastk,uint64_t mask,int32_t usesigs)
@@ -883,7 +884,7 @@ void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    bits256 txid; int32_t vout,len,j,k,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint8_t data[4096]; uint32_t channel; bits256 srchash,zero; uint64_t mask;
+    bits256 txid; int32_t vout,len,j,k,incr,haveutxo = 0; cJSON *addresses,*retarray; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint8_t data[4096]; uint32_t channel; bits256 srchash,zero; uint64_t mask;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -952,6 +953,11 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             }
             break;
         case 2:
+            if ( (retarray= basilisk_channelget(myinfo,srchash,bp->hashmsg,channel,bp->height,1)) != 0 )
+            {
+                printf("UTXOget.(%s)\n",jprint(retarray,0));
+                free_json(retarray);
+            }
             bp->recvmask = dpow_lastk_mask(bp,&k);
             //printf("STATE2: RECVMASK.%llx\n",(long long)bp->recvmask);
             if ( bitweight(bp->recvmask) >= DPOW_M(bp) )
