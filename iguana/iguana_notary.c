@@ -700,6 +700,9 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                     printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
                 }
             }
+            if ( k == bestk )
+                printf("extracted uxto for bestk.%d %llx\n",bestk,(long long)bestmask);
+            else printf("extracted uxto k.%d != bestk.%d\n",k,bestk);
         }
     }
     m = 0;
@@ -759,7 +762,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( (txobj= dpow_createtx(coin,&vins,bp,bestk,bestmask,0)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,opret_symbol);
-        if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 )
+        if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             memset(&tmp,0,sizeof(tmp));
             tmp.ulongs[1] = bestmask;
