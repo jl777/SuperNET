@@ -921,7 +921,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    int32_t j,match,sigmatch,len,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; int8_t lastk; uint64_t sigsmask;
+    int32_t j,match,sigmatch,len,vout,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 txid,srchash,zero; uint8_t data[4096]; int8_t lastk; uint64_t sigsmask;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -973,8 +973,12 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     switch ( bp->state )
     {
         case 0:
-            if ( (haveutxo= dpow_haveutxo(myinfo,coin,&bp->notaries[myind].prev_hash,&bp->notaries[myind].prev_vout,coinaddr)) != 0 && bits256_nonz(bp->notaries[myind].prev_hash) != 0 )
+            if ( (haveutxo= dpow_haveutxo(myinfo,coin,&txid,&vout,coinaddr)) != 0 && bits256_nonz(txid) != 0 )
+            {
+                bp->notaries[myind].prev_hash = txid;
+                bp->notaries[myind].prev_vout = vout;
                 bp->state = 1;
+            }
             if ( haveutxo < 10 && time(NULL) > dp->lastsplit+600 )
             {
                 addresses = cJSON_CreateArray();
