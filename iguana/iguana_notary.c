@@ -875,7 +875,7 @@ void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t
     }
 }
 
-int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t sigchannel,bits256 srchash,int32_t myind)
+int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
     uint64_t mask; int32_t len; int8_t lastk; uint8_t data[4096]; struct dpow_entry *ep; struct dpow_sigentry dsig;
     ep = &bp->notaries[myind];
@@ -889,26 +889,31 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         if ( bp->bestk >= 0 )
         {
             if ( ep->masks[bp->bestk] == 0 && dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol) == 0 )
-                return(2);
+                return(3);
+            else return(2);
         }
         return(1);
     }
     else
     {
-        dpow_channelget(myinfo,bp,sigchannel);
-        if ( ep->masks[bp->bestk] == 0 )
-            dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol);
-        memset(&dsig,0,sizeof(dsig));
-        dsig.lastk = bp->bestk;
-        dsig.mask = bp->bestmask;
-        dsig.senderind = myind;
-        dsig.beacon = bp->beacon;
-        dsig.siglen = ep->siglens[bp->bestk];
-        memcpy(dsig.sig,ep->sigs[bp->bestk],ep->siglens[bp->bestk]);
-        memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
-        len = dpow_rwsigentry(1,data,&dsig);
-        dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
-        dpow_sigscheck(myinfo,bp,sigchannel,myind);
+        dpow_channelget(myinfo,bp,txidchannel);
+        if ( bp->state != 0xffffffff )
+        {
+            dpow_channelget(myinfo,bp,sigchannel);
+            if ( ep->masks[bp->bestk] == 0 )
+                dpow_signedtxgen(myinfo,bp->coin,bp,myind,bp->opret_symbol);
+            memset(&dsig,0,sizeof(dsig));
+            dsig.lastk = bp->bestk;
+            dsig.mask = bp->bestmask;
+            dsig.senderind = myind;
+            dsig.beacon = bp->beacon;
+            dsig.siglen = ep->siglens[bp->bestk];
+            memcpy(dsig.sig,ep->sigs[bp->bestk],ep->siglens[bp->bestk]);
+            memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
+            len = dpow_rwsigentry(1,data,&dsig);
+            dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
+            dpow_sigscheck(myinfo,bp,sigchannel,myind);
+        }
     }
     return(bp->state);
 }
@@ -916,7 +921,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
     // todo: add RBF support
-    bits256 txid; int32_t vout,j,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel; bits256 srchash,zero;
+    bits256 txid; int32_t vout,j,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -925,12 +930,14 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     {
         channel = DPOW_UTXOBTCCHANNEL;
         sigchannel = DPOW_SIGBTCCHANNEL;
+        txidchannel = DPOW_BTCTXIDCHANNEL;
         opret_symbol = "";
     }
     else
     {
         channel = DPOW_UTXOCHANNEL;
         sigchannel = DPOW_SIGCHANNEL;
+        txidchannel = DPOW_TXIDCHANNEL;
         opret_symbol = dp->symbol;
     }
     bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->DPOW.minerkey33,33);
@@ -970,14 +977,15 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
                 bp->recvmask |= (1LL << myind);
                 bp->notaries[myind].prev_hash = txid;
                 bp->notaries[myind].prev_vout = vout;
-                bp->state = dpow_update(myinfo,bp,channel,sigchannel,srchash,myind);
+                bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             }
             break;
         case 2:
-            bp->state = dpow_update(myinfo,bp,channel,sigchannel,srchash,myind);
+            bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
             break;
         case 3:
-            if ( bp->waiting++ > 10 )
+            bp->state = dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind);
+            if ( bp->state != 0xffffffff && bp->waiting++ > 10 )
             {
                 bp->state = 2;
                 bp->waiting = 0;
