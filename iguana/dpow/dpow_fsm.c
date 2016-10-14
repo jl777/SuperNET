@@ -169,15 +169,12 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
-    else
+    if ( bp->state != 0xffffffff )
     {
         hash = srchash;
         hash.uints[0] = rand();
         if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind])) > 0 )
             dpow_send(myinfo,bp,hash,bp->hashmsg,utxochannel,bp->height,data,len,bp->utxocrcs);
-    }
-    if ( bp->state != 0xffffffff )
-    {
         if ( ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
