@@ -159,16 +159,20 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
     }
 }
 
-int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
+int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t utxochannel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
-    struct dpow_entry *ep;
+    struct dpow_entry *ep; int32_t len; uint8_t data[sizeof(*ep)];
     ep = &bp->notaries[myind];
     if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
         if ( ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
-        
+    }
+    else
+    {
+        if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind])) > 0 )
+            dpow_send(myinfo,bp,srchash,bp->hashmsg,utxochannel,bp->height,data,len,bp->utxocrcs);
     }
     if ( bp->state != 0xffffffff )
     {
