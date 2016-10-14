@@ -37,13 +37,13 @@ struct dpow_nanomsghdr
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
 {
-    sprintf(str,"tcp://%s:7774",ipaddr);
+    sprintf(str,"tcp://%s:7775",ipaddr);
     return(str);
 }
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; int32_t timeout;
+    char str[512]; int32_t timeout,retval;
     if ( myinfo->DPOW.sock < 0 && (myinfo->DPOW.sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         if ( nn_bind(myinfo->DPOW.sock,nanomsg_tcpname(str,myinfo->ipaddr)) < 0 )
@@ -56,7 +56,10 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         nn_setsockopt(myinfo->DPOW.sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
     }
     if ( myinfo->DPOW.sock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
-        nn_connect(myinfo->DPOW.sock,ipaddr);
+    {
+        retval = nn_connect(myinfo->DPOW.sock,ipaddr);
+        printf("addnotary (%s) retval.%d\n",ipaddr,retval);
+    }
 }
 
 uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
@@ -1487,6 +1490,12 @@ TWO_STRINGS(komodo,passthru,function,hex)
     if ( (coin= iguana_coinfind("KMD")) != 0 || coin->chain->serverport[0] == 0 )
         return(dpow_passthru(coin,function,hex));
     else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
+}
+
+STRING_ARG(iguana,addnotary,ipaddr)
+{
+    dpow_nanomsginit(myinfo,ipaddr);
+    return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"

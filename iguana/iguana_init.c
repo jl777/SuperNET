@@ -550,7 +550,7 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
                 }
             }
         }
-        if ( coin->rpcloop == 0 && strcmp(coin->chain->symbol,"NOTARY") != 0 )
+        if ( coin->rpcloop == 0 && strcmp(coin->chain->symbol,"RELAY") != 0 )
         {
             myinfo->argport = coin->chain->rpcport;
             coin->rpcloop = malloc(sizeof(pthread_t));

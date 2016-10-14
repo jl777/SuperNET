@@ -152,6 +152,7 @@ STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 STRING_ARG(iguana,stopcoin,activecoin);
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr);
+STRING_ARG(iguana,addnotary,ipaddr);
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);

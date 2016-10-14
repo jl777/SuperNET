@@ -213,7 +213,7 @@ void basilisk_ping_process(struct supernet_info *myinfo,struct iguana_peer *addr
 {
     int32_t diff,i,n,len = 0; struct iguana_info *notary; char ipbuf[64]; struct basilisk_relay *rp; uint8_t numrelays; uint16_t sn; uint32_t now = (uint32_t)time(NULL);
     expand_ipbits(ipbuf,senderipbits);
-    notary = iguana_coinfind("NOTARY");
+    notary = iguana_coinfind("RELAY");
     for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
         rp = &myinfo->NOTARY.RELAYS[i];

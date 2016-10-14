@@ -1120,7 +1120,7 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
                 if ( addr->usock >= 0 && addr->supernet != 0 && addr->ipaddr[0] != 0 )
                 {
                     jaddistr(array,addr->ipaddr);
-                    if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                    if ( strcmp(coin->symbol,"RELAY") == 0 )
                         basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(addr->ipaddr),GENESIS_PUBKEY);
                 }
             }
@@ -1171,7 +1171,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
                             if ( (fullnodes= jarray(&m,item,"supernet")) != 0 )
                             {
                                 incr = 1;
-                                if ( strcmp(coin->symbol,"NOTARY") == 0 )
+                                if ( strcmp(coin->symbol,"RELAY") == 0 )
                                 {
                                     for (j=0; j<m; j++)
                                         basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(jstri(fullnodes,j)),GENESIS_PUBKEY);

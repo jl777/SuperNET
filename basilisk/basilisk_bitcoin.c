@@ -445,7 +445,7 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
     struct basilisk_item *ptr; cJSON *infojson,*retjson; int32_t j,numsent,fanout,numrequired;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
-    if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"NOTARY") != 0 )
+    if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"RELAY") != 0 )
         return(0);
     if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
     {

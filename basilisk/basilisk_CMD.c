@@ -28,12 +28,12 @@ void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notar
 {
     char ipaddr[64];
     expand_ipbits(ipaddr,ipbits);
-#if ISNOTARYNODE
-    dpow_nanomsginit(myinfo,ipaddr);
-#else
+//#if ISNOTARYNODE
+    //dpow_nanomsginit(myinfo,ipaddr);
+//#else
     struct iguana_peer *addr; int32_t i;
     if ( notaries == 0 || ipbits == myinfo->myaddr.myipbits )
-        return(0);
+        return;
     if ( (addr= iguana_peerfindipbits(notaries,ipbits,0)) == 0 )
     {
         if ( (addr= iguana_peerslot(notaries,ipbits,0)) != 0 && addr->isrelay == 0 )
@@ -50,8 +50,7 @@ void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notar
             iguana_launch(notaries,"addrelay",iguana_startconnection,addr,IGUANA_CONNTHREAD);
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
-    return(addr);
-#endif
+//#endif
 }
 
 static int _increasing_ipbits(const void *a,const void *b)
@@ -79,7 +78,7 @@ void basilisk_relay_remap(struct supernet_info *myinfo,struct basilisk_relay *rp
 
 void basilisk_setmyid(struct supernet_info *myinfo)
 {
-    int32_t i; char ipaddr[64]; struct iguana_info *notaries = iguana_coinfind("NOTARY");
+    int32_t i; char ipaddr[64]; struct iguana_info *notaries = iguana_coinfind("RELAY");
     for (i=0; i<myinfo->NOTARY.NUMRELAYS; i++)
     {
         expand_ipbits(ipaddr,myinfo->NOTARY.RELAYS[i].ipbits);
@@ -114,7 +113,7 @@ char *basilisk_addrelay_info(struct supernet_info *myinfo,uint8_t *pubkey33,uint
     rp = &myinfo->NOTARY.RELAYS[i];
     rp->ipbits = ipbits;
     rp->relayid = myinfo->NOTARY.NUMRELAYS;
-    basilisk_ensurerelay(myinfo,iguana_coinfind("NOTARY"),rp->ipbits);
+    basilisk_ensurerelay(myinfo,iguana_coinfind("RELAY"),rp->ipbits);
     if ( myinfo->NOTARY.NUMRELAYS < sizeof(myinfo->NOTARY.RELAYS)/sizeof(*myinfo->NOTARY.RELAYS) )
         myinfo->NOTARY.NUMRELAYS++;
     qsort(myinfo->NOTARY.RELAYS,myinfo->NOTARY.NUMRELAYS,sizeof(myinfo->NOTARY.RELAYS[0]),_increasing_ipbits);
