@@ -220,8 +220,8 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     //    printf("%02x",key[i]);
     //printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     portable_mutex_unlock(&myinfo->messagemutex);
-    if ( myinfo->NOTARY.RELAYID >= 0 )
-        dpow_handler(myinfo,msg);
+    //if ( myinfo->NOTARY.RELAYID >= 0 )
+    //    dpow_handler(myinfo,msg);
     if ( sendping != 0 )
         queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));

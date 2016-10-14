@@ -42,6 +42,17 @@
 #define BTC2_DEFAULT_PORT 8222
 #define BTC2_DIFF_WINDOW 60
 
+#ifdef __APPLE__
+#define ISNOTARYNODE 1
+#include "nn.h"
+#include "bus.h"
+#else
+#if ISNOTARYNODE
+#include <nanomsg/nn.h>
+#include <nanomsg/bus.h>
+#endif
+#endif
+
 #define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
 #define DPOW_UTXOBTCCHANNEL (~DPOW_UTXOCHANNEL)
 #define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))

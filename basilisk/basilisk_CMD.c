@@ -24,10 +24,14 @@
     return(-1);
 }*/
 
-struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits)
+void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits)
 {
-    struct iguana_peer *addr; int32_t i; char ipaddr[64];
+    char ipaddr[64];
     expand_ipbits(ipaddr,ipbits);
+#if ISNOTARYNODE
+    dpow_nanomsginit(myinfo,ipaddr);
+#else
+    struct iguana_peer *addr; int32_t i;
     if ( notaries == 0 || ipbits == myinfo->myaddr.myipbits )
         return(0);
     if ( (addr= iguana_peerfindipbits(notaries,ipbits,0)) == 0 )
@@ -47,6 +51,7 @@ struct iguana_peer *basilisk_ensurerelay(struct supernet_info *myinfo,struct igu
         } else printf("error getting peerslot\n");
     } else addr->isrelay = 1;
     return(addr);
+#endif
 }
 
 static int _increasing_ipbits(const void *a,const void *b)
