@@ -21,7 +21,7 @@ struct dpow_nanomsghdr
     bits256 srchash,desthash;
     uint32_t channel,height,size,datalen,crc32;
     uint8_t packet[];
-};
+} PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
 {
@@ -81,7 +81,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
     {
         myinfo->DPOW.crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
-        np = malloc(size);
+        np = calloc(1,size);
+        printf("dpow_send.(%d) size.%d\n",datalen,size);
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
@@ -92,7 +93,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
         memcpy(np->packet,data,datalen);
         sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
         free(np);
-        printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
+        printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
     }
 }
 
