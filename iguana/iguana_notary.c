@@ -24,6 +24,9 @@
 
 #include "iguana777.h"
 #include "notaries.h"
+#if NOTARY
+#include <nn.h>
+#endif
 
 #define CHECKSIG 0xac
 
