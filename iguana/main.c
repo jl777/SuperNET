@@ -1359,6 +1359,7 @@ STRING_ARG(SuperNET,myipaddr,ipaddr)
         {
             strcpy(myinfo->ipaddr,ipaddr);
             myinfo->myaddr.myipbits = (uint32_t)calc_ipbits(ipaddr);
+            printf("SET MYIPADDR.(%s)\n",ipaddr);
             basilisk_setmyid(myinfo);
         }
     }
