@@ -26,12 +26,14 @@
 #include "iguana777.h"
 #include "notaries.h"
 
+void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
+
 #if ISNOTARYNODE
 
 struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
-    uint32_t channel,height,size,crc32;
+    uint32_t channel,height,size,datalen,crc32;
     uint8_t packet[];
 };
 
@@ -73,6 +75,7 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 sr
     size = (int32_t)(sizeof(*np) + datalen);
     np = malloc(size);
     np->size = size;
+    np->datalen = datalen;
     np->crc32 = calc_crc32(0,data,datalen);
     np->srchash = srchash;
     np->desthash = desthash;
@@ -81,6 +84,7 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 sr
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
     free(np);
+    printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
     return(sentbytes);
     //return(basilisk_channelsend(myinfo,srchash,desthash,channel,msgbits,data,datalen,120));
     //return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
@@ -88,12 +92,15 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 sr
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t size; struct dpow_nanomsghdr *np;
+    int32_t size; uint32_t crc32; struct dpow_nanomsghdr *np;
     while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
     {
         if ( size >= 0 )
         {
-            printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
+            crc32 = calc_crc32(0,np->packet,np->datalen);
+            printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(size - np->size));
+            if ( crc32 == np->crc32 && np->datalen == (size - np->size) )
+                dpow_datahandler(myinfo,0,np->channel,np->height,np->packet,size - np->size);
             if ( np != 0 )
                 nn_freemsg(np);
         }
