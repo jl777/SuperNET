@@ -1585,6 +1585,7 @@ void iguana_main(void *arg)
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
+    myinfo->DPOW.sock = -1;
 //myinfo->rpcport = IGUANA_NOTARYPORT;
 //myinfo->IAMNOTARY = 1;
     if ( arg != 0 )
