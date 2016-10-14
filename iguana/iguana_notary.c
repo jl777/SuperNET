@@ -705,6 +705,8 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                         printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
                     }
                 }
+                if ( i < n-1 )
+                    k++;
             }
             if ( k == bestk )
                 printf("extracted uxto for bestk.%d %llx\n",bestk,(long long)bestmask);
