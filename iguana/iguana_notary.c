@@ -44,6 +44,11 @@ char *nanomsg_tcpname(char *str,char *ipaddr)
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
     char str[512]; int32_t timeout,retval;
+    if ( myinfo->ipaddr[0] == 0 )
+    {
+        printf("need to set ipaddr before nanomsg\n");
+        return;
+    }
     if ( myinfo->DPOW.sock < 0 && (myinfo->DPOW.sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         if ( nn_bind(myinfo->DPOW.sock,nanomsg_tcpname(str,myinfo->ipaddr)) < 0 )
@@ -1494,6 +1499,7 @@ TWO_STRINGS(komodo,passthru,function,hex)
 
 STRING_ARG(iguana,addnotary,ipaddr)
 {
+    printf("addnotary (%s) -> (%s)\n",ipaddr,myinfo->ipaddr);
     dpow_nanomsginit(myinfo,ipaddr);
     return(clonestr("{\"result\":\"notary node added\"}"));
 }

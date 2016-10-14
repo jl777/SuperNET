@@ -159,7 +159,7 @@ the idea is to issue a curl command into a /tmp/file and then use jsoncmp to ver
 ##### ../agents/iguana notary
 0.Have iguana installed at http://wiki.supernet.org/wiki/How_To_Install_Iguana_on_Linux
 also install nanomsg: sudo apt-get install libnanomsg-dev
-ports 7774 and 7775 will be used
+ports 7775 will be used
 
 cd Supernet/iguana -->
 
