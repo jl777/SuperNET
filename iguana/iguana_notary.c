@@ -815,7 +815,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
     m = 0;
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
-        //printf("mask.%llx dpowsign.(%s)\n",(long long)mask,jsonstr);
+        printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,jsonstr);
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
@@ -829,7 +829,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                //printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",height,height%numnotaries,j,myind,jprint(item,0),j);
+                                printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
                                 ep->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                 decode_hex(ep->sigs[bestk],ep->siglens[bestk],sigstr);
                                 ep->masks[bestk] = bestmask;
