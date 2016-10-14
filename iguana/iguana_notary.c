@@ -13,8 +13,6 @@
  *                                                                            *
  ******************************************************************************/
 
-// bugs: construct finaltx, src vs dest messages, rotating myind position
-
 // Todo list:
 // a) updating latest notarized height based on the notarized tx data
 // b) prevent overwriting blocks below notarized height
@@ -896,8 +894,8 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        for (j=0; j<dsig.siglen; j++)
-                            printf("%02x",dsig.sig[j]);
+                        //for (j=0; j<dsig.siglen; j++)
+                        //    printf("%02x",dsig.sig[j]);
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         mask = dpow_maskmin(ep->recvmask,bp,&lastk);
                         if ( (mask & bp->recvmask) == mask )

@@ -292,11 +292,12 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 //    continue;
                 if ( serialized[len + m + siglen - 1] == SIGHASH_ALL )
                     memcpy(V->signers[i++].sig,&serialized[len + m],siglen);
+                if ( 0 )
                 {
                     int32_t j;
                     for (j=0; j<siglen; j++)
                         printf("%02x",serialized[len + m + j]);
-                    printf(" (%d)\n",siglen);
+                    printf(" (%d) parsedvin\n",siglen);
                 }
                 m += siglen;
                 i++;
