@@ -87,10 +87,9 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
                 ep->recvmask = E.recvmask;
                 dpow_sync(myinfo,bp,ep->recvmask,myind,srchash,channel);
                 flag = 1;
-                printf("<<<<<<<<<< %s from.%ld got ht.%d %s/v%d\n",bp->coin->symbol,((long)ep - (long)bp->notaries)/sizeof(*ep),height,bits256_str(str,E.prev_hash),E.prev_vout);
             }
         }
-        //if ( 0 && flag == 0 && bp != 0 )
+        if ( 0 && flag == 0 && bp != 0 )
             printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,E.prev_hash),E.prev_vout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -120,12 +119,12 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
                 } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",bp->coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",bp->coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
-        //if ( 0 && bp != 0 )
+        if ( 0 && bp != 0 )
             printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
-        printf("handle channel.%x\n",channel);
+        printf("handle txid channel.%x\n",channel);
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
             //printf("bp.%p datalen.%d\n",bp,datalen);
