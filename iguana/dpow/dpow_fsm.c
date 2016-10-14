@@ -171,7 +171,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         hash = srchash;
         hash.uints[0] = rand();
         if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind])) > 0 )
-            dpow_send(myinfo,bp,srchash,bp->hashmsg,utxochannel,bp->height,data,len,bp->utxocrcs);
+            dpow_send(myinfo,bp,hash,bp->hashmsg,utxochannel,bp->height,data,len,bp->utxocrcs);
     }
     if ( bp->state != 0xffffffff )
     {
