@@ -110,7 +110,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
                     printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
-                    dpow_datahandler(myinfo,0,np->channel,np->height,np->packet,size - np->size);
+                    dpow_datahandler(myinfo,np->channel,np->height,np->packet,size - np->size);
                 }
             }
             if ( np != 0 )
