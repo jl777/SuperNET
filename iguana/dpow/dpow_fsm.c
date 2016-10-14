@@ -61,7 +61,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
 
 void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,vout,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep,E;
+    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep,E;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
         memset(&E,0,sizeof(E));
@@ -125,8 +125,10 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
+        printf("handle channel.%x\n",channel);
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
+            printf("bp.%p datalen.%d\n",bp,datalen);
             for (i=0; i<32; i++)
                 srchash.bytes[i] = data[i];
             /*if ( srchash.ulongs[0] == 0 )
@@ -139,6 +141,7 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
             {
                 txid = bits256_doublesha256(0,&data[32],datalen-32);
                 init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
+                printf("signedtx.(%s)\n",bp->signedtx);
                 if ( bits256_cmp(txid,srchash) == 0 )
                 {
                     printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",bp->coin->symbol,height,bits256_str(str,txid));
