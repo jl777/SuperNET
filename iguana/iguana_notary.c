@@ -29,10 +29,10 @@
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
 
-#include "dpow_network.c"
-#include "dpow_rpc.c"
-#include "dpow_tx.c"
-#include "dpow_fsm.c"
+#include "dpow/dpow_network.c"
+#include "dpow/dpow_rpc.c"
+#include "dpow/dpow_tx.c"
+#include "dpow/dpow_fsm.c"
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
