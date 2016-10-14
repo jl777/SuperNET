@@ -19382,6 +19382,47 @@ len = 0;
              }
              }*/
             
+            /*if ( vins == 0 && bitweight(bestmask) == DPOW_M(bp) )
+             {
+             if ( (rawtx2= dpow_decoderawtransaction(myinfo,coin,rawtx)) != 0 )
+             {
+             if ( (txobj= cJSON_Parse(rawtx2)) != 0 )
+             {
+             vins = jduplicate(jobj(txobj,"vin"));
+             free_json(txobj);
+             //printf("generated vins.(%s)\n",jprint(vins,0));
+             }
+             free(rawtx2);
+             }
+             if ( vins != 0 )
+             {
+             flag = 1;
+             n = cJSON_GetArraySize(vins);
+             k = (bp->height % bp->numnotaries) % bp->numnotaries;
+             for (i=0; i<n; i++)
+             {
+             while ( ((1LL << k) & bestmask) == 0 )
+             if ( ++k >= bp->numnotaries )
+             k = 0;
+             item = jitem(vins,i);
+             //printf("(%s) i.%d of %d, (%d) k.%d bestmask.%llx\n",jprint(item,0),i,n,(bp->height % bp->numnotaries) % bp->numnotaries,k,(long long)bestmask);
+             if ( bits256_nonz(bp->notaries[k].prev_hash) == 0 )
+             {
+             bp->notaries[k].prev_hash = jbits256(item,"txid");
+             if ( bits256_nonz(bp->notaries[k].prev_hash) != 0 )
+             {
+             bp->notaries[k].prev_vout = jint(item,"vout");
+             bp->recvmask |= (1LL << k);
+             printf(">>>>>>>> rawtx utxo.%d %s/v%d %llx\n",k,bits256_str(str,bp->notaries[k].prev_hash),bp->notaries[k].prev_vout,(long long)bp->recvmask);
+             }
+             }
+             if ( i < n-1 )
+             k++;
+             }
+             if ( k != bestk )
+             printf("extracted uxto k.%d != bestk.%d %llx\n",k,bestk,(long long)bestmask);
+             }
+             }*/
 
             uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int32_t *lastkp)
             {

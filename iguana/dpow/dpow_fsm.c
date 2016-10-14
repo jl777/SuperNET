@@ -13,6 +13,20 @@
  *                                                                            *
  ******************************************************************************/
 
+struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t *senderindp,uint8_t *senderpub)
+{
+    int32_t i;
+    *senderindp = -1;
+    for (i=0; i<bp->numnotaries; i++)
+    {
+        if ( memcmp(bp->notaries[i].pubkey,senderpub,33) == 0 )
+        {
+            *senderindp = i;
+            return(&bp->notaries[i]);
+        }
+    }
+    return(0);
+}
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
@@ -79,7 +93,7 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
             {
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
-                if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 ) //bits256_cmp(ep->commit,commit) == 0 &&
+                if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
                 {
                     if ( ep->masks[dsig.lastk] == 0 )
                     {
@@ -87,8 +101,6 @@ void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_
                         ep->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(ep->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        //for (j=0; j<dsig.siglen; j++)
-                        //    printf("%02x",dsig.sig[j]);
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",bp->coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
                         mask = dpow_maskmin(ep->recvmask,bp,&lastk);
                         if ( (mask & bp->recvmask) == mask )
@@ -147,7 +159,6 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 {
     struct dpow_entry *ep;
     ep = &bp->notaries[myind];
-    //dpow_channelget(myinfo,bp,channel);
     if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
         if ( ep->masks[bp->bestk] == 0 )
@@ -155,10 +166,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
         
     }
-    //dpow_channelget(myinfo,bp,txidchannel);
     if ( bp->state != 0xffffffff )
     {
-        //dpow_channelget(myinfo,bp,sigchannel);
         if ( ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
@@ -168,7 +177,6 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind)
 {
-    // todo: add RBF support
     int32_t j,match,sigmatch,len,vout,incr,haveutxo = 0; cJSON *addresses; char *sendtx,*rawtx,*opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 txid,srchash,zero; uint8_t data[4096]; int8_t lastk; uint64_t sigsmask;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
