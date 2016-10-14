@@ -34,7 +34,7 @@ struct dpow_entry
     uint64_t masks[DPOW_MAXRELAYS],recvmask;
     int32_t prev_vout,height;
     int8_t bestk;
-    uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][0x100];
+    uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][76];
 };
 
 struct dpow_sigentry
@@ -42,7 +42,7 @@ struct dpow_sigentry
     bits256 beacon;
     uint64_t mask;
     int32_t refcount;
-    uint8_t senderind,lastk,siglen,sig[0x100],senderpub[33];
+    uint8_t senderind,lastk,siglen,sig[76],senderpub[33];
 };
 
 struct komodo_notaries

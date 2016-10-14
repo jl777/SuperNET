@@ -19344,6 +19344,45 @@ len = 0;
                 }
                 return(-1);
             }
+            
+            /*void dpow_handler(struct supernet_info *myinfo,struct basilisk_message *msg)
+             {
+             bits256 srchash,desthash; uint32_t channel,height;
+             basilisk_messagekeyread(msg->key,&channel,&height,&srchash,&desthash);
+             dpow_datahandler(myinfo,0,channel,height,msg->data,msg->datalen);
+             }
+             
+             void dpow_channelget(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel)
+             {
+             bits256 zero; cJSON *retarray,*item,*item2,*messages; char *datastr; int32_t i,n,j,m,datalen; uint8_t data[32768];
+             memset(zero.bytes,0,sizeof(zero));
+             if ( (retarray= basilisk_channelget(myinfo,zero,zero,channel,bp->height,1)) != 0 )
+             {
+             if ( (n= cJSON_GetArraySize(retarray)) > 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             item = jitem(retarray,i);
+             if ( (messages= jarray(&m,item,"messages")) != 0 )
+             {
+             for (j=0; j<m; j++)
+             {
+             item2 = jitem(messages,j);
+             if ( (datastr= jstr(item2,"data")) != 0 && (datalen= (int32_t)strlen(datastr)) < sizeof(data)*2 )
+             {
+             datalen >>= 1;
+             decode_hex(data,datalen,datastr);
+             dpow_datahandler(myinfo,bp,channel,bp->height,data,datalen);
+             }
+             }
+             }
+             }
+             }
+             free_json(retarray);
+             }
+             }*/
+            
+
             uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int32_t *lastkp)
             {
                 int32_t j,m,k; uint64_t mask = 0;
