@@ -69,29 +69,51 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     }
 }
 
+int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32)
+{
+    int32_t i,firstz = -1;
+    for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
+    {
+        if ( myinfo->DPOW.crcs[i] == crc32 )
+        {
+            printf("NANODUPLICATE.%08x\n",crc32);
+            return(-1);
+        }
+        else if ( myinfo->DPOW.crcs[i] == 0 )
+            firstz = i;
+    }
+    if ( firstz < 0 )
+        firstz = (rand() % (sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs)));
+    return(firstz);
+}
+
 uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    struct dpow_nanomsghdr *np; int32_t size,sentbytes;
-    size = (int32_t)(sizeof(*np) + datalen);
-    np = malloc(size);
-    np->size = size;
-    np->datalen = datalen;
-    np->crc32 = calc_crc32(0,data,datalen);
-    np->srchash = srchash;
-    np->desthash = desthash;
-    np->channel = channel;
-    np->height = msgbits;
-    memcpy(np->packet,data,datalen);
-    sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
-    free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
+    struct dpow_nanomsghdr *np; int32_t size,sentbytes = 0; uint32_t crc32;
+    crc32 = calc_crc32(0,data,datalen);
+    if ( (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
+    {
+        myinfo->DPOW.crcs[firstz] = crc32;
+        size = (int32_t)(sizeof(*np) + datalen);
+        np = malloc(size);
+        np->size = size;
+        np->datalen = datalen;
+        np->crc32 = crc32;
+        np->srchash = srchash;
+        np->desthash = desthash;
+        np->channel = channel;
+        np->height = msgbits;
+        memcpy(np->packet,data,datalen);
+        sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
+        free(np);
+        printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
+    }
     return(sentbytes);
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    static uint32_t crcs[1024];
-    int32_t i,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
+    int32_t size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
     while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
     {
         if ( size >= 0 )
@@ -99,21 +121,12 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
             crc32 = calc_crc32(0,np->packet,np->datalen);
             if ( crc32 == np->crc32 && np->datalen == (size - sizeof(*np)) )
             {
-                for (i=0; i<sizeof(crcs)/sizeof(*crcs); i++)
+                if ( (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
                 {
-                    if ( crcs[i] == crc32 )
-                    {
-                        printf("NANODUPLICATE.%08x\n",crc32);
-                        return;
-                    }
-                    else if ( crcs[i] == 0 )
-                        firstz = i;
+                    myinfo->DPOW.crcs[firstz] = crc32;
+                    printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
+                    dpow_datahandler(myinfo,0,np->channel,np->height,np->packet,size - np->size);
                 }
-                if ( firstz < 0 )
-                    firstz = (rand() % (sizeof(crcs)/sizeof(*crcs)));
-                crcs[firstz] = crc32;
-                printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
-                dpow_datahandler(myinfo,0,np->channel,np->height,np->packet,size - np->size);
             }
             if ( np != 0 )
                 nn_freemsg(np);
