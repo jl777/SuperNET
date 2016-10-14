@@ -128,7 +128,7 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
         printf("handle channel.%x\n",channel);
         if ( (bp= dpow_heightfind(myinfo,height,channel == DPOW_BTCTXIDCHANNEL)) != 0 )
         {
-            printf("bp.%p datalen.%d\n",bp,datalen);
+            //printf("bp.%p datalen.%d\n",bp,datalen);
             for (i=0; i<32; i++)
                 srchash.bytes[i] = data[i];
             /*if ( srchash.ulongs[0] == 0 )
