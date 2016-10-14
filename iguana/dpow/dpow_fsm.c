@@ -30,7 +30,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
 
 void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash,uint32_t channel)
 {
-    uint32_t i,j,r,len; uint8_t utxodata[sizeof(struct dpow_entry)];
+    uint32_t i,j,r; int32_t len; uint8_t utxodata[sizeof(struct dpow_entry)+2];
     if ( (bp->recvmask ^ recvmask) != 0 )
     {
         if ( ((1LL << myind) & recvmask) == 0 )
@@ -161,7 +161,7 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
 
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t utxochannel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
-    struct dpow_entry *ep; int32_t len; bits256 hash; uint8_t data[4096];
+    struct dpow_entry *ep; int32_t len; bits256 hash; uint8_t data[sizeof(struct dpow_entry)+2];
     ep = &bp->notaries[myind];
     if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
