@@ -458,7 +458,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
     char *retstr,*paramstr; cJSON *array;
-    if ( coin->FULLNODE < 0 )
+    if ( 0 )//coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);
@@ -467,7 +467,7 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
         //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
     }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    else if ( 1 )//coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         retstr = bitcoinrpc_decoderawtransaction(myinfo,coin,0,0,rawtx,1);
     }
@@ -879,7 +879,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
-    if ( (txobj= dpow_createtx(coin,&vins,bp,bestk,bestmask,0)) != 0 )
+    if ( (txobj= dpow_createtx(coin,&vins,bp,bestk,bestmask,1)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,opret_symbol);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
