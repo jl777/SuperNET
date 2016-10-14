@@ -34,7 +34,7 @@ struct dpow_entry
     uint64_t masks[DPOW_MAXRELAYS],recvmask;
     int32_t prev_vout,height;
     int8_t bestk;
-    uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][76];
+    uint8_t pubkey[33],siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][0x100];
 };
 
 struct dpow_sigentry
@@ -42,7 +42,7 @@ struct dpow_sigentry
     bits256 beacon;
     uint64_t mask;
     int32_t refcount;
-    uint8_t senderind,lastk,siglen,sig[80],senderpub[33];
+    uint8_t senderind,lastk,siglen,sig[0x100],senderpub[33];
 };
 
 struct komodo_notaries
@@ -64,7 +64,7 @@ struct dpow_block
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed;
     int8_t bestk;
-    char signedtx[32768],rawtx[32768];
+    char signedtx[32768];//,rawtx[32768];
 };
 
 struct dpow_info
@@ -74,6 +74,7 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit;
+    int32_t sock;
     struct dpow_block **srcblocks,**destblocks;
 };
 

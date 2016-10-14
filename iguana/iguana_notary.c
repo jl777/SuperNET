@@ -28,16 +28,79 @@
 
 #if ISNOTARYNODE
 
+struct dpow_nanomsghdr
+{
+    bits256 srchash,desthash;
+    uint32_t channel,height,size,crc32;
+    uint8_t packet[];
+};
+
+char *nanomsg_tcpname(char *str,char *ipaddr)
+{
+    sprintf(str,"tcp://%s:7774",ipaddr);
+    return(str);
+}
+
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    
+    char str[512]; int32_t timeout;
+    if ( myinfo->DPOW.sock < 0 && (myinfo->DPOW.sock= nn_socket(AF_SP,NN_BUS)) >= 0 )
+    {
+        if ( nn_bind(myinfo->DPOW.sock,nanomsg_tcpname(str,myinfo->ipaddr)) < 0 )
+        {
+            printf("error binding to (%s)\n",nanomsg_tcpname(str,myinfo->ipaddr));
+            nn_close(myinfo->DPOW.sock);
+            myinfo->DPOW.sock = -1;
+        }
+        timeout = 100;
+        nn_setsockopt(myinfo->DPOW.sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+    }
+    if ( myinfo->DPOW.sock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
+        nn_connect(myinfo->DPOW.sock,ipaddr);
 }
 
 uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    return(basilisk_channelsend(myinfo,srchash,desthash,channel,msgbits,data,datalen,120));
+    struct dpow_nanomsghdr *np; int32_t size,sentbytes;
+    size = (int32_t)(sizeof(*np) + datalen);
+    np = malloc(size);
+    np->size = size;
+    np->crc32 = calc_crc32(0,data,datalen);
+    np->srchash = srchash;
+    np->desthash = desthash;
+    np->channel = channel;
+    np->height = msgbits;
+    memcpy(np->packet,data,datalen);
+    sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
+    free(np);
+    return(sentbytes);
+    //return(basilisk_channelsend(myinfo,srchash,desthash,channel,msgbits,data,datalen,120));
     //return(basilisk_crcsend(myinfo,1,bp->sendbuf,sizeof(bp->sendbuf),srchash,desthash,channel,msgbits,data,datalen,crcs));
 }
+
+void dpow_nanomsg_update(struct supernet_info *myinfo)
+{
+    int32_t size; struct dpow_nanomsghdr *np;
+    while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
+    {
+        if ( size >= 0 )
+        {
+            printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x\n",np->height,np->channel,size,np->crc32);
+            if ( np != 0 )
+                nn_freemsg(np);
+        }
+    }
+}
+#else
+
+void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr) { }
+
+uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
+{
+    return(0);
+}
+
+void dpow_nanomsg_update(struct supernet_info *myinfo) { }
 
 #endif
 
@@ -1315,6 +1378,7 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo)
 {
     int32_t height; char str[65]; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest; struct dpow_info *dp = &myinfo->DPOW;
+    dpow_nanomsg_update(myinfo);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( src != 0 && dest != 0 )
