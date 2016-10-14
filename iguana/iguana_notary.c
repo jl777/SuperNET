@@ -62,7 +62,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     }
     if ( myinfo->DPOW.sock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
     {
-        retval = nn_connect(myinfo->DPOW.sock,ipaddr);
+        retval = nn_connect(myinfo->DPOW.sock,nanomsg_tcpname(str,ipaddr));
         printf("addnotary (%s) retval.%d\n",ipaddr,retval);
     }
 }
