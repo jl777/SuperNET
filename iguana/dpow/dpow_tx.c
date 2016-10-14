@@ -182,7 +182,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
     m = 0;
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
-        printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,jsonstr);
+        //printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,jsonstr);
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
