@@ -88,7 +88,10 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
             }
         }
         else if ( (error->type&0xff) != cJSON_NULL || (result->type&0xff) != cJSON_NULL )
-            printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
+        {
+            if ( strcmp(command,"signrawtransaction") != 0 )
+                printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
+        }
         free(rpcstr);
     } else retstr = rpcstr;
     free_json(json);
