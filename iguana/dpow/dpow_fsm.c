@@ -230,7 +230,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         }
     }
     if ( (rand() % 10) == 0 )
-        printf("%s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx\n",coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask);
+        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->btctxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask);
     if ( sigmatch == DPOW_M(bp) )
     {
         printf("sigmatch.%d\n",sigmatch);
@@ -243,6 +243,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             {
                 bp->notaries[myind].prev_hash = txid;
                 bp->notaries[myind].prev_vout = vout;
+                bp->recvmask |= (1LL << myind);
                 bp->state = 1;
             }
             if ( haveutxo < 10 && time(NULL) > dp->lastsplit+600 )

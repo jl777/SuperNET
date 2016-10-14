@@ -55,18 +55,21 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     }
 }
 
-int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32)
+int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
-    for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
+    //if ( channel != DPOW_UTXOBTCCHANNEL && channel != DPOW_UTXOCHANNEL )
     {
-        if ( myinfo->DPOW.crcs[i] == crc32 )
+        for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
         {
-            //printf("NANODUPLICATE.%08x\n",crc32);
-            return(-1);
+            if ( myinfo->DPOW.crcs[i] == crc32 )
+            {
+                //printf("NANODUPLICATE.%08x\n",crc32);
+                return(-1);
+            }
+            else if ( myinfo->DPOW.crcs[i] == 0 )
+                firstz = i;
         }
-        else if ( myinfo->DPOW.crcs[i] == 0 )
-            firstz = i;
     }
     if ( firstz < 0 )
         firstz = (rand() % (sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs)));
@@ -77,7 +80,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
 {
     struct dpow_nanomsghdr *np; int32_t size,firstz,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
-    if ( (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
+    if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
         myinfo->DPOW.crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
@@ -107,7 +110,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( np->datalen == (size - sizeof(*np)) )
             {
                 crc32 = calc_crc32(0,np->packet,np->datalen);
-                if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
+                if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
                     printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
