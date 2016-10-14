@@ -103,16 +103,16 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( size >= 0 )
         {
-            crc32 = calc_crc32(0,np->packet,np->datalen);
-            if ( crc32 == np->crc32 && np->datalen == (size - sizeof(*np)) )
+            if ( np->datalen == (size - sizeof(*np)) )
             {
-                if ( (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
+                crc32 = calc_crc32(0,np->packet,np->datalen);
+                if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
                     printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
                     dpow_datahandler(myinfo,np->channel,np->height,np->packet,size - np->size);
                 }
-            }
+            } else printf("np->datalen.%d (size %d - %ld)\n",np->datalen,size,sizeof(*np));
             if ( np != 0 )
                 nn_freemsg(np);
         }
