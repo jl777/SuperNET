@@ -22,9 +22,13 @@
 // f) reduce cost for splitting
 // g) RBF to reduce latency
 
+#ifdef __APPLE__
+#define NOTARY 1
+#endif
+
 #include "iguana777.h"
 #include "notaries.h"
-#if NOTARY
+#if ISNOTARYNODE
 #include <nn.h>
 #endif
 
