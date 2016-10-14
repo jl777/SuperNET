@@ -61,7 +61,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
 
 void dpow_datahandler(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; uint64_t mask; int8_t lastk; int32_t senderind,i,vout,len,myind = -1; char str[65],str2[65]; uint8_t utxodata[1024]; struct dpow_sigentry dsig; struct dpow_entry *ep,E;
+    bits256 hashmsg,txid,commit,srchash; uint32_t flag = 0; int32_t senderind,i,vout,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep,E;
     if ( channel == DPOW_UTXOCHANNEL || channel == DPOW_UTXOBTCCHANNEL )
     {
         memset(&E,0,sizeof(E));
