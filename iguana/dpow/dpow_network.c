@@ -118,6 +118,8 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( np != 0 )
                 nn_freemsg(np);
         }
+        if ( size == 0 )
+            break;
     }
     if ( n != 0 )
         printf("nanoupdates.%d\n",n);
