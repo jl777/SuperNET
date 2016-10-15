@@ -58,6 +58,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
+    return(0);
     for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
     {
         if ( myinfo->DPOW.crcs[i] == crc32 )
