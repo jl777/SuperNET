@@ -45,7 +45,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             nn_close(myinfo->DPOW.sock);
             myinfo->DPOW.sock = -1;
         }
-        timeout = 100;
+        timeout = 1000;
         nn_setsockopt(myinfo->DPOW.sock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
     }
     if ( myinfo->DPOW.sock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
@@ -99,9 +99,10 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
+    int32_t n-0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
     while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
     {
+        n++;
         if ( size >= 0 )
         {
             if ( np->datalen == (size - sizeof(*np)) )
@@ -118,6 +119,8 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 nn_freemsg(np);
         }
     }
+    if ( n != 0 )
+        printf("nanoupdates.%d\n",n);
 }
 #else
 
