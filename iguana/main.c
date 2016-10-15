@@ -1587,8 +1587,8 @@ void iguana_main(void *arg)
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->DPOW.sock = -1;
-myinfo->rpcport = IGUANA_NOTARYPORT;
-myinfo->IAMNOTARY = 1;
+//myinfo->rpcport = IGUANA_NOTARYPORT;
+//myinfo->IAMNOTARY = 1;
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
