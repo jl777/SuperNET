@@ -131,12 +131,10 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo)
 {
     int32_t height; char str[65]; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest; struct dpow_info *dp = &myinfo->DPOW;
-    fprintf(stderr,"nanomsg update\n");
     dpow_nanomsg_update(myinfo);
-    fprintf(stderr,"after nanomsg update\n");
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    printf("dPoWupdate (%s -> %s)\n",dp->symbol,dp->dest);
+    //printf("dPoWupdate (%s -> %s)\n",dp->symbol,dp->dest);
     if ( src != 0 && dest != 0 )
     {
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
@@ -149,7 +147,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
                 if ( height == dp->destchaintip.blockhash.height && bits256_cmp(blockhash,dp->destchaintip.blockhash.hash) != 0 )
                     printf("UNEXPECTED ILLEGAL BLOCK in dest chaintip\n");
             } else dpow_destupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
-        } else printf("error getchaintip for %s\n",dp->dest);
+        } // else printf("error getchaintip for %s\n",dp->dest);
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
@@ -163,7 +161,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
                         printf("UNEXPECTED ILLEGAL BLOCK in src chaintip\n");
                 } else dpow_srcupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
             } else dpow_srcupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
-        } else printf("error getchaintip for %s\n",dp->symbol);
+        } //else printf("error getchaintip for %s\n",dp->symbol);
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
 }
 
