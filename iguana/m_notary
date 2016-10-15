@@ -12,6 +12,7 @@ gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -
 myip=`cat myip.txt`
 sleep 4
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
+sleep 3
 tests/addnotarys_7776
 ./btc_7776
 ./kmd_7776
