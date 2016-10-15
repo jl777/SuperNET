@@ -120,7 +120,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( size == 0 || n++ > 100 )
             break;
     }
-    if ( n != 0 )
+    if ( 0 && n != 0 )
         printf("nanoupdates.%d\n",n);
 }
 #else
