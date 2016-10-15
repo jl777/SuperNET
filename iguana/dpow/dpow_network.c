@@ -99,7 +99,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t n-0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
+    int32_t n=0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
     while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
     {
         n++;
