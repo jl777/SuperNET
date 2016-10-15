@@ -58,7 +58,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
-    return(0);
+    //return(0);
     //if ( channel != DPOW_UTXOBTCCHANNEL && channel != DPOW_UTXOCHANNEL )
     {
         for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
@@ -81,9 +81,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
 {
     struct dpow_nanomsghdr *np; int32_t size,firstz,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
-    if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
+    //if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
-        myinfo->DPOW.crcs[firstz] = crc32;
+        //myinfo->DPOW.crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size);
         //printf("dpow_send.(%d) size.%d\n",datalen,size);

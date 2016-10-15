@@ -160,20 +160,34 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
 
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t utxochannel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
-    struct dpow_entry *ep; int32_t len; bits256 hash; uint8_t data[sizeof(struct dpow_entry)+2];
+    struct dpow_entry *ep; int32_t i,k,len,sendutxo = 1; bits256 hash; uint8_t data[sizeof(struct dpow_entry)+2];
     ep = &bp->notaries[myind];
     if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
     {
+        sendutxo = 0;
+        for (i=0; i<bp->numnotaries; i++)
+        {
+            k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
+            if ( ((1LL << k) & bp->bestmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
+            {
+                printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
+                sendutxo = 1;
+                break;
+            }
+        }
         if ( ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
-    if ( bp->state != 0xffffffff )
+    if ( sendutxo != 0 )
     {
         hash = srchash;
         hash.uints[0] = rand();
         if ( (len= dpow_rwutxobuf(1,data,&bp->hashmsg,&bp->notaries[myind])) > 0 )
             dpow_send(myinfo,bp,hash,bp->hashmsg,utxochannel,bp->height,data,len,bp->utxocrcs);
+    }
+    if ( bp->state != 0xffffffff )
+    {
         if ( ep->masks[bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,bp->coin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel);
         else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
