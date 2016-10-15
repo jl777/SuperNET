@@ -58,19 +58,15 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
-    //return(0);
-    //if ( channel != DPOW_UTXOBTCCHANNEL && channel != DPOW_UTXOCHANNEL )
+    for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
     {
-        for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
+        if ( myinfo->DPOW.crcs[i] == crc32 )
         {
-            if ( myinfo->DPOW.crcs[i] == crc32 )
-            {
-                //printf("NANODUPLICATE.%08x\n",crc32);
-                return(-1);
-            }
-            else if ( myinfo->DPOW.crcs[i] == 0 )
-                firstz = i;
+            printf("NANODUPLICATE.%08x\n",crc32);
+            return(-1);
         }
+        else if ( myinfo->DPOW.crcs[i] == 0 )
+            firstz = i;
     }
     if ( firstz < 0 )
         firstz = (rand() % (sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs)));
@@ -97,7 +93,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
         memcpy(np->packet,data,datalen);
         sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
         free(np);
-        //printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
+        printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
     }
 }
 
@@ -114,7 +110,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
-                    //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
+                    printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
                     dpow_datahandler(myinfo,np->channel,np->height,np->packet,np->datalen);
                 }
             } else printf("np->datalen.%d (size %d - %ld)\n",np->datalen,size,sizeof(*np));
@@ -260,7 +256,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
-    //printf("myind.%d bestk.%d %llx\n",myind,bestk,(long long)bestmask);
+    //printf("myind.%d bestk.%d %llx >>>>>> broadcast sig\n",myind,bestk,(long long)bestmask);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
