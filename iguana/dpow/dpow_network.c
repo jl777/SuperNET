@@ -62,7 +62,7 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t chan
     {
         if ( myinfo->DPOW.crcs[i] == crc32 )
         {
-            printf("NANODUPLICATE.%08x\n",crc32);
+            //printf("NANODUPLICATE.%08x\n",crc32);
             return(-1);
         }
         else if ( myinfo->DPOW.crcs[i] == 0 )
