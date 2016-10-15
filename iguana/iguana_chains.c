@@ -273,7 +273,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
                 sprintf(serverport,"127.0.0.1:%s",rpcport);
             free(rpcport);
         }
-        if ( Debuglevel > 1 )
+        if ( 0 && Debuglevel > 1 )
             printf("-> (%s):(%s) userpass.(%s) serverport.(%s)\n",rpcuser,rpcpassword,userpass,serverport);
         if ( rpcuser != 0 )
             free(rpcuser);
@@ -458,7 +458,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             }
         }
         sprintf(chain->messagemagic,"%s Signed Message:\n",chain->name);
-        printf("COIN.%s serverport.(%s) userpass.(%s) RPCport.%u P2P.%u magic.%08x\n",chain->symbol,chain->serverport,chain->userpass,chain->rpcport,chain->portp2p,*(uint32_t *)chain->netmagic);
+        printf("COIN.%s serverport.(%s) RPCport.%u P2P.%u magic.%08x\n",chain->symbol,chain->serverport,chain->rpcport,chain->portp2p,*(uint32_t *)chain->netmagic);
     }
 }
 
