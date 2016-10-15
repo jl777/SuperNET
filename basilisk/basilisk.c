@@ -874,11 +874,8 @@ void basilisks_loop(void *arg)
         if ( relay == 0 )
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
-        fprintf(stderr,"basilisk_issued_purge\n");
         basilisk_issued_purge(myinfo,600000);
-        fprintf(stderr,"basilisk_p2pQ_process\n");
         basilisk_p2pQ_process(myinfo,777);
-        fprintf(stderr,"if statement\n");
         if ( myinfo->NOTARY.RELAYID >= 0 )
         {
             if ( relay != 0 )
@@ -890,7 +887,7 @@ void basilisks_loop(void *arg)
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;
         else endmilli = startmilli + 2000;
-        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
