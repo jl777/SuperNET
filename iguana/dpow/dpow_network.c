@@ -102,8 +102,6 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     int32_t n=0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np;
     while ( (size= nn_recv(myinfo->DPOW.sock,&np,NN_MSG,0)) >= 0 )
     {
-        printf("nn_recv size.%d\n",size);
-        n++;
         if ( size >= 0 )
         {
             if ( np->datalen == (size - sizeof(*np)) )
@@ -114,12 +112,12 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                     myinfo->DPOW.crcs[firstz] = crc32;
                     printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
                     dpow_datahandler(myinfo,np->channel,np->height,np->packet,np->datalen);
-                } else printf("crc %08x mismatch %08x\n",crc32,np->crc32);
+                }
             } else printf("np->datalen.%d (size %d - %ld)\n",np->datalen,size,sizeof(*np));
             if ( np != 0 )
                 nn_freemsg(np);
         }
-        if ( size == 0 )
+        if ( size == 0 || n++ > 100 )
             break;
     }
     if ( n != 0 )
