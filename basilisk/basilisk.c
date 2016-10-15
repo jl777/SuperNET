@@ -887,7 +887,7 @@ void basilisks_loop(void *arg)
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;
         else endmilli = startmilli + 2000;
-        //printf("endmilli %f vs now %f\n",endmilli,OS_milliseconds());
+        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
         iter++;
