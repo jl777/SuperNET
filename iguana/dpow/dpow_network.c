@@ -20,7 +20,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     uint32_t channel,height,size,datalen,crc32;
-    uint8_t packet[];
+    uint8_t version0,version1,packet[];
 } PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
@@ -91,6 +91,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
         np->desthash = desthash;
         np->channel = channel;
         np->height = msgbits;
+        np->version0 = DPOW_VERSION & 0xff;
+        np->version1 = (DPOW_VERSION >> 8) & 0xff;
         memcpy(np->packet,data,datalen);
         sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
         free(np);
@@ -108,7 +110,9 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( np->datalen == (size - sizeof(*np)) )
             {
                 crc32 = calc_crc32(0,np->packet,np->datalen);
-                if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
+                if ( np->version0 != (DPOW_VERSION & 0xff) || np->version1 != ((DPOW_VERSION >> 8) & 0xff) )
+                    return;
+               if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
                     printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
@@ -188,13 +192,6 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
 int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,struct dpow_block *bp)
 {
     uint8_t numnotaries; uint64_t othermask; int32_t i,len = 0;
-    if ( rwflag != 0 )
-    {
-        data[0] = DPOW_VERSION & 0xff;
-        data[1] = (DPOW_VERSION >> 8) & 0xff;
-    }
-    else if ( (data[0]+((int32_t)data[1]<<8)) != DPOW_VERSION )
-        return(-1);
     if ( bits256_nonz(up->srchash) == 0 || bits256_nonz(up->desthash) == 0 )
         return(-1);
     len = 2;
