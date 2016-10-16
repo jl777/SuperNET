@@ -21,6 +21,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
     {
         if ( memcmp(bp->notaries[i].pubkey,senderpub,33) == 0 )
         {
+            printf("matches notary.%d\n",i);
             *senderindp = i;
             return(&bp->notaries[i]);
         }
@@ -124,6 +125,9 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
         }
+        for (i=0; i<33; i++)
+            printf("%02x",U.pubkey[i]);
+        printf(" <- pubkey\n");
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
         {
             dpow_utxo2entry(bp,ep,&U);
@@ -132,7 +136,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             flag = 1;
         }
         //if ( 0 && flag == 0 && bp != 0 )
-            printf("sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
+            printf("ep.%p sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",ep,senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
