@@ -280,11 +280,11 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         printf("[%d] %s ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk],(long long)(bp->destsigsmasks[bp->bestk] & bp->bestmask));
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
-        dpow_signedtxgen(myinfo,bp->destcoin,bp,bp->bestk,bp->bestmask,myind,"",DPOW_SIGBTCCHANNEL,1);
+        dpow_sigscheck(myinfo,bp,DPOW_SIGBTCCHANNEL,myind,1);
     }
     else if ( bp->state != 0xffffffff && bp->bestk >= 0 && (bp->srcsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
-        dpow_signedtxgen(myinfo,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->srccoin->symbol,DPOW_SIGCHANNEL,0);
+        dpow_sigscheck(myinfo,bp,DPOW_SIGCHANNEL,myind,0);
     }
     return(bp->state);
 }
