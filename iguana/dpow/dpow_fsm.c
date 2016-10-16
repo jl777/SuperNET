@@ -86,6 +86,8 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
         }
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[i]);
+        char str[65],str2[65];
+        printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
         if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
             dpow_send(myinfo,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len,bp->utxocrcs);
     }
@@ -108,12 +110,13 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
     {
         if ( (bp= dpow_heightfind(myinfo,height)) != 0 )
             break;
-        if ( time(NULL) > starttime+10 )
+        if ( time(NULL) > starttime+60 )
         {
             printf("dpow_datahandler: cant find ht.%d\n",height);
             return;
         }
         sleep(1);
+        fprintf(stderr,"wait for ht.%d\n",height);
     }
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
     if ( myind < 0 )
