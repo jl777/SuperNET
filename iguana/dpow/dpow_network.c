@@ -297,8 +297,16 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
     dsig.mask = bestmask;
     dsig.senderind = myind;
     dsig.beacon = bp->beacon;
-    dsig.siglen = ep->dest.siglens[bestk];
-    memcpy(dsig.sig,ep->dest.sigs[bestk],ep->dest.siglens[bestk]);
+    if ( sigchannel == DPOW_SIGBTCCHANNEL )
+    {
+        dsig.siglen = ep->dest.siglens[bestk];
+        memcpy(dsig.sig,ep->dest.sigs[bestk],ep->dest.siglens[bestk]);
+    }
+    else
+    {
+        dsig.siglen = ep->src.siglens[bestk];
+        memcpy(dsig.sig,ep->src.sigs[bestk],ep->src.siglens[bestk]);
+    }
     memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
     len = dpow_rwsigentry(1,data,&dsig);
     dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
