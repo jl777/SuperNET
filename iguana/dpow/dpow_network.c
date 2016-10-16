@@ -96,7 +96,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
         memcpy(np->packet,data,datalen);
         sentbytes = nn_send(myinfo->DPOW.sock,np,size,0);
         free(np);
-        printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
+        //printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
     }
 }
 
@@ -172,7 +172,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( src_or_dest == 0 )
     {
-        char str[65]; printf("src_or_dest.%d opreturn add %s\n",src_or_dest,bits256_str(str,bp->desttxid));
+        //char str[65]; printf("src_or_dest.%d opreturn add %s\n",src_or_dest,bits256_str(str,bp->desttxid));
         if ( bits256_nonz(bp->desttxid) == 0 )
             return(-1);
         opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(bp->desttxid),bp->desttxid.bytes);
