@@ -324,7 +324,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     bp->bestk = dpow_bestk(bp,&bp->bestmask);
-    if ( bp->state < 3 )
+    if ( bp->state < 7 )
     {
         dpow_utxosync(myinfo,bp,0,myind,srchash);
         bp->state++;

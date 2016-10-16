@@ -16,6 +16,7 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
+#define DPOW_CHECKPOINTFREQ 5
 #define DPOW_M(bp) (2)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_VERSION 0x0204
 #define DPOW_UTXOSIZE 10000
@@ -33,7 +34,6 @@
 #define DPOW_KOMODOCONFIRMS 1
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
-#define DPOW_CHECKPOINTFREQ 3
 
 struct dpow_coinentry
 {
