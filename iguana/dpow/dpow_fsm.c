@@ -162,8 +162,15 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                         memcpy(cp->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
                         if ( src_or_dest != 0 )
+                        {
                             bp->destsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
-                        else bp->srcsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+                            if ( bp->bestk >= 0 && bp->bestk == dsig.lastk && (bp->bestmask & bp->destsigsmasks[dsig.lastk]) == bp->bestmask )
+                                dpow_sigscheck(myinfo,bp,channel,myind,src_or_dest);
+                        }
+                        else
+                        {
+                            bp->srcsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+                        }
                         printf(" <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
                         dpow_sync(myinfo,bp,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
@@ -249,7 +256,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
 {
-    int32_t j,match,sigmatch,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint64_t sigsmask; struct dpow_coinentry *cp;
+    int32_t j,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -274,30 +281,9 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( bits256_nonz(bp->signedtxid) != 0 )
         bp->state = 0xffffffff;
-    sigsmask = match = sigmatch = 0;
-    if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
-    {
-        for (j=0; j<bp->numnotaries; j++)
-        {
-            if ( bp->notaries[j].masks[bp->bestk] == bp->bestmask )
-            {
-                match++;
-                cp = (src_or_dest != 0) ? &bp->notaries[j].dest : &bp->notaries[j].src;
-                if ( cp->siglens[bp->bestk] > 0 )
-                {
-                    sigmatch++;
-                    sigsmask |= (1LL << j);
-                }
-            }
-        }
-    }
+    bp->bestk = dpow_bestk(bp,&bp->bestmask);
     if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx/%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask,(long long)bp->destsigsmasks[bp->bestk]);
-    if ( sigmatch == DPOW_M(bp) )
-    {
-        printf("sigmatch.%d\n",sigmatch);
-        dpow_sigscheck(myinfo,bp,sigchannel,myind,src_or_dest);
-    }
+        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) sigsmask.%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk]);
     if ( bp->state < 3 )
     {
         dpow_utxosync(myinfo,bp,0,myind,srchash);
