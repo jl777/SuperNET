@@ -53,7 +53,7 @@ struct dpow_utxoentry
 struct dpow_entry
 {
     bits256 commit,beacon;
-    uint64_t masks[DPOW_MAXRELAYS],recvmask,othermask;
+    uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask;
     int32_t height;
     int8_t bestk;
     uint8_t pubkey[33];

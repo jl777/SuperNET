@@ -121,7 +121,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     serialized[len++] = CHECKSIG;
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src);
+    opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src,&bp->beacon);
     opretlen = dpow_opreturnscript(data,opret,opretlen);
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;
@@ -198,13 +198,13 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
+                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->srccoin->symbol : bp->destcoin->symbol,bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
                                 cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                 if ( src_or_dest != 0 )
                                     bp->destsigsmasks[bestk] |= (1LL << myind);
                                 else bp->srcsigsmasks[bestk] |= (1LL << myind);
                                 decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
-                                ep->masks[bestk] = bestmask;
+                                ep->masks[src_or_dest][bestk] = bestmask;
                                 ep->beacon = bp->beacon;
                                 dpow_sigsend(myinfo,bp,myind,bestk,bestmask,srchash,sigchannel);
                                 retval = 0;
@@ -260,7 +260,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     bits256 txid,srchash,zero; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768];
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
-    printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
+    //printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
     if ( bp->state != 0xffffffff && coin != 0 )
     {
         bp->signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,bp->opret_symbol,1,src_or_dest);
@@ -276,13 +276,19 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                     decode_hex(txid.bytes,sizeof(txid),retstr);
                     if ( bits256_cmp(txid,bp->signedtxid) == 0 )
                     {
+                        if ( src_or_dest != 0 )
+                        {
+                            bp->desttxid = txid;
+                            dpow_signedtxgen(myinfo,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->srccoin->symbol,DPOW_SIGCHANNEL,0);
+                        }
+                        else bp->srctxid = txid;
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
                         for (j=0; j<sizeof(srchash); j++)
                             txdata[j] = txid.bytes[j];
                         dpow_send(myinfo,bp,txid,bp->hashmsg,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
                         printf("complete statemachine.%s ht.%d\n",coin->symbol,bp->height);
-                        bp->state = 0xffffffff;
+                        bp->state = src_or_dest != 0 ? 1000 : 0xffffffff;
                     } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
                 }
                 free(retstr);

@@ -164,14 +164,14 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
     return(opretlen + offset);
 }
 
-int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *btctxid,char *src)
+int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *desttxid,char *src,bits256 *beaconp)
 {
     int32_t i,opretlen = 0;
     opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
-    if ( bits256_nonz(*btctxid) != 0 )
+    if ( bits256_nonz(*desttxid) != 0 )
     {
-        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*btctxid),btctxid->bytes);
+        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*desttxid),desttxid->bytes);
         if ( rwflag != 0 )
         {
             for (i=0; src[i]!=0; i++)
@@ -185,7 +185,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
             src[i] = 0;
             opretlen++;
         }
-    }
+    } else opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*beaconp),beaconp->bytes);
     return(opretlen);
 }
 
