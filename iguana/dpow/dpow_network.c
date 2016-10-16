@@ -75,7 +75,7 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t chan
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    struct dpow_nanomsghdr *np; int32_t size,firstz,sentbytes = 0; uint32_t crc32;
+    struct dpow_nanomsghdr *np; int32_t size,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
     //if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
@@ -113,8 +113,8 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                     crc32 = calc_crc32(0,np->packet,np->datalen);
                     if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
                     {
-                        printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
-                        if ( dpow_datahandler(myinfo,np->channel,np->height,np->packet,np->datalen,1) == 0 )
+                        printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
+                        if ( dpow_datahandler(myinfo,np->channel,np->height,np->packet,np->datalen,1) >= 0 )
                             myinfo->DPOW.crcs[firstz] = crc32;
                     }
                 } else printf("np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
