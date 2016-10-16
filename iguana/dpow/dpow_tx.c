@@ -246,9 +246,9 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
              txdata[j] = tmp.bytes[j];
              dpow_send(myinfo,bp,zero,bp->hashmsg,(bits256_nonz(bp->btctxid) == 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);*/
             dpow_rawtxsign(myinfo,coin,bp,rawtx,vins,bestk,bestmask,myind,sigchannel,src_or_dest);
-        }
+        } else printf("signedtxgen zero txid or null rawtx\n");
         free_json(vins);
-    }
+    } else printf("signedtxgen error generating vins\n");
     return(retval);
 }
 

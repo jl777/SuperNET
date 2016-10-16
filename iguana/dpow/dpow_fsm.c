@@ -74,7 +74,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
         if ( ((1LL << myind) & recvmask) == 0 )
         {
             i = myind;
-            //printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
+            printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
         }
         else
         {
@@ -85,7 +85,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
                     break;
             }
-            //printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
+            printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
         }
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[i]);
@@ -217,13 +217,13 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         sendutxo = 0;
         for (i=0; i<bp->numnotaries; i++)
         {
+            k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
             if ( k == myind )
                 continue;
-            k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
             if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
             {
-                printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
-                sendutxo = 1;
+                //printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
+                //sendutxo = 1;
                 break;
             }
         }
@@ -231,7 +231,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
             dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
-    if ( 0 && sendutxo != 0 )
+    if ( sendutxo != 0 )
     {
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[myind]);

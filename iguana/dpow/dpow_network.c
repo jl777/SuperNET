@@ -268,7 +268,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
-    //printf("myind.%d bestk.%d %llx >>>>>> broadcast sig\n",myind,bestk,(long long)bestmask);
+    printf("sigsend: myind.%d bestk.%d %llx >>>>>> broadcast\n",myind,bestk,(long long)bestmask);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
