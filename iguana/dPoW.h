@@ -20,6 +20,13 @@
 #define DPOW_VERSION 0x0204
 #define DPOW_UTXOSIZE 10000
 
+#define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
+#define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
+#define DPOW_SIGBTCCHANNEL (~DPOW_SIGCHANNEL)
+#define DPOW_TXIDCHANNEL ('t' | ('x' << 8) | ('i' << 16) | ('d' << 24))
+#define DPOW_BTCTXIDCHANNEL (~DPOW_TXIDCHANNEL)
+
+
 #define DPOW_FIFOSIZE 64
 #define DPOW_MAXTX 8192
 #define DPOW_THIRDPARTY_CONFIRMS 10

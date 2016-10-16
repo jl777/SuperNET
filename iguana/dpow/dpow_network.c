@@ -58,7 +58,6 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
-return(0);
     for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
     {
         if ( myinfo->DPOW.crcs[i] == crc32 )
@@ -209,9 +208,8 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,st
     {
         for (i=0; i<33; i++)
             data[len++] = up->pubkey[i];
-        numnotaries = (uint8_t)(sizeof(Notaries)/sizeof(*Notaries));
-        data[len++] = numnotaries;
-        for (i=0; i<numnotaries; i++)
+        data[len++] = bp->numnotaries;
+        for (i=0; i<bp->numnotaries; i++)
             len += iguana_rwnum(rwflag,&data[len],sizeof(*up->othermasks),(uint8_t *)&up->othermasks[(int32_t)i]);
     }
     else
@@ -219,7 +217,7 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,st
         for (i=0; i<33; i++)
             up->pubkey[i] = data[len++];
         numnotaries = data[len++];
-        if ( numnotaries == (uint8_t)(sizeof(Notaries)/sizeof(*Notaries)) )
+        if ( numnotaries == bp->numnotaries )
         {
             for (i=0; i<numnotaries; i++)
             {
