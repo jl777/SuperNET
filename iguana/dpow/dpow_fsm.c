@@ -102,25 +102,14 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
         dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,bp->opret_symbol,bits256_nonz(bp->desttxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
 }
 
-void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest)
+int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest)
 {
-    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t starttime,flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
-    starttime = (uint32_t)time(NULL);
-    while ( 1 )
-    {
-        if ( (bp= dpow_heightfind(myinfo,height)) != 0 )
-            break;
-        if ( time(NULL) > starttime+60 )
-        {
-            printf("dpow_datahandler: cant find ht.%d\n",height);
-            return;
-        }
-        sleep(1);
-        fprintf(stderr,"wait for ht.%d\n",height);
-    }
+    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
+        return(-1);
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
     if ( myind < 0 )
-        return;
+        return(-1);
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     if ( channel == DPOW_UTXOCHANNEL )
     {
@@ -128,12 +117,12 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
         if ( dpow_rwutxobuf(0,data,&U,bp) < 0 )
         {
             printf("error from rwutxobuf\n");
-            return;
+            return(0);
         }
         if ( bits256_cmp(hashmsg,bp->hashmsg) != 0 )
         {
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,hashmsg),bits256_str(str2,bp->hashmsg));
-            return;
+            return(0);
         }
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
         {
@@ -148,7 +137,7 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
-            return;
+            return(0);
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
@@ -204,6 +193,7 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
             }
         }
     } else printf("unhandled channel.%x\n",channel);
+    return(0);
 }
 
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t utxochannel,uint32_t sigchannel,uint32_t txidchannel,bits256 srchash,int32_t myind,int32_t src_or_dest)
@@ -297,9 +287,11 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     switch ( bp->state )
     {
         case 0:
+            dpow_utxosync(myinfo,bp,0,myind,srchash);
             bp->state = 1;
             break;
         case 1:
+            dpow_utxosync(myinfo,bp,0,myind,srchash);
             //dpow_lastk_mask(bp,&lastk);
             //memset(&U,0,sizeof(U));
             //dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
@@ -413,7 +405,7 @@ void dpow_statemachinestart(void *ptr)
     dpow_utxosync(myinfo,bp,0,myind,srchash);
     while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
-        sleep(1);
+        sleep(2);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
