@@ -121,7 +121,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     serialized[len++] = CHECKSIG;
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src,&bp->beacon);
+    opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src,bp);
     opretlen = dpow_opreturnscript(data,opret,opretlen);
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;

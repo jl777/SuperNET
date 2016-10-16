@@ -164,9 +164,9 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
     return(opretlen + offset);
 }
 
-int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *desttxid,char *src,bits256 *beaconp)
+int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *desttxid,char *src,struct dpow_block *bp)
 {
-    int32_t i,opretlen = 0;
+    int32_t i,opretlen = 0; bits256 beacon,beacons[DPOW_MAXRELAYS];
     opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( bits256_nonz(*desttxid) != 0 )
@@ -185,7 +185,18 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
             src[i] = 0;
             opretlen++;
         }
-    } else opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*beaconp),beaconp->bytes);
+    }
+    else
+    {
+        memset(beacons,0,sizeof(beacons));
+        for (i=0; i<bp->numnotaries; i++)
+        {
+            if ( ((1LL << i) & bp->bestmask) != 0 )
+                beacons[i] = bp->notaries[i].beacon;
+        }
+        vcalc_sha256(0,beacon.bytes,beacons[0].bytes,sizeof(*beacons) * bp->numnotaries);
+        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(beacon),beacon.bytes);
+    }
     return(opretlen);
 }
 
