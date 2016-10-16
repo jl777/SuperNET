@@ -173,7 +173,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
     if ( src_or_dest == 0 )
     {
         char str[65]; printf("src_or_dest.%d opreturn add %s\n",src_or_dest,bits256_str(str,bp->desttxid));
-        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(&bp->desttxid),bp->desttxid.bytes);
+        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(bp->desttxid),bp->desttxid.bytes);
         if ( rwflag != 0 )
         {
             if ( src != 0 )
