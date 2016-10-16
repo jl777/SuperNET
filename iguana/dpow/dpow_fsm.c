@@ -109,10 +109,16 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
 {
     bits256 txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
+    {
+        printf("couldnt find height.%d\n",height);
         return(-1);
+    }
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
     if ( myind < 0 )
+    {
+        printf("couldnt find myind height.%d\n",height);
         return(-1);
+    }
     for (i=0; i<32; i++)
         srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
     if ( channel == DPOW_UTXOCHANNEL )
@@ -149,7 +155,10 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
         src_or_dest = (channel == DPOW_SIGBTCCHANNEL);
         coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
+        {
+            printf("rwsigentry error\n");
             return(0);
+        }
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
