@@ -80,7 +80,7 @@ struct dpow_checkpoint { struct dpow_hashheight blockhash,approved; bits256 mine
 
 struct dpow_block
 {
-    bits256 hashmsg,desttxid,srctxid,signedtxid,beacon,commit;
+    bits256 hashmsg,desttxid,srctxid,beacon,commit;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask;

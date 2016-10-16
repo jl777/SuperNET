@@ -203,8 +203,17 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             if ( bits256_cmp(txid,srchash) == 0 )
             {
                 printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
-                bp->signedtxid = txid;
-                bp->state = src_or_dest != 0 ? 1000 : 0xffffffff;
+                if ( src_or_dest != 0 )
+                {
+                    bp->desttxid = txid;
+                    bp->state = 1000;
+                }
+                else
+                {
+                    bp->srctxid = txid;
+                    printf("set state COMPLETED\n");
+                    bp->state = 0xffffffff;
+                }
             }
             else
             {
@@ -300,7 +309,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     else
     {
         dpow_update(myinfo,bp,txidchannel,srchash,myind);
-        if ( bits256_nonz(bp->signedtxid) != 0 )
+        if ( bits256_nonz(bp->srctxid) != 0 )
             bp->state = 0xffffffff;
     }
     return(bp->state);

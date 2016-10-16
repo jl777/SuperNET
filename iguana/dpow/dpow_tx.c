@@ -257,16 +257,16 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
 
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t channel,int32_t myind,int32_t src_or_dest)
 {
-    bits256 txid,srchash,zero; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768];
+    bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768];
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     //printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
     if ( bp->state != 0xffffffff && coin != 0 )
     {
-        bp->signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,bp->opret_symbol,1,src_or_dest);
-        printf("%s numsigs.%d signedtx.(%s)\n",bits256_str(str,bp->signedtxid),numsigs,bp->signedtx);
+        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,bp->opret_symbol,1,src_or_dest);
+        printf("%s numsigs.%d signedtx.(%s)\n",bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
-        if ( bits256_nonz(bp->signedtxid) != 0 && numsigs == DPOW_M(bp) )
+        if ( bits256_nonz(signedtxid) != 0 && numsigs == DPOW_M(bp) )
         {
             if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
             {
@@ -274,7 +274,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                 if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
                 {
                     decode_hex(txid.bytes,sizeof(txid),retstr);
-                    if ( bits256_cmp(txid,bp->signedtxid) == 0 )
+                    if ( bits256_cmp(txid,signedtxid) == 0 )
                     {
                         if ( src_or_dest != 0 )
                         {
@@ -289,7 +289,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                         dpow_send(myinfo,bp,txid,bp->hashmsg,(channel == DPOW_SIGBTCCHANNEL) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32,bp->txidcrcs);
                         printf("complete statemachine.%s ht.%d\n",coin->symbol,bp->height);
                         bp->state = src_or_dest != 0 ? 1000 : 0xffffffff;
-                    } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,bp->signedtxid));
+                    } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
                 }
                 free(retstr);
                 retstr = 0;
