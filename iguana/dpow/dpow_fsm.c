@@ -129,9 +129,6 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
         }
-        for (i=0; i<33; i++)
-            printf("%02x",U.pubkey[i]);
-        printf(" <- pubkey\n");
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
         {
             dpow_utxo2entry(bp,ep,&U);
@@ -164,8 +161,10 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                         cp->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(cp->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        cp->sigsmask |= (1LL << dsig.senderind);
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)cp->sigsmask,dsig.siglen);
+                        if ( src_or_dest != 0 )
+                            bp->destsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+                        else bp->srcsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
                         dpow_sync(myinfo,bp,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
                     }
@@ -293,7 +292,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         }
     }
     if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx/%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask,(long long)bp->destsigsmask);
+        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx/%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask,(long long)bp->destsigsmasks[bp->bestk]);
     if ( sigmatch == DPOW_M(bp) )
     {
         printf("sigmatch.%d\n",sigmatch);
