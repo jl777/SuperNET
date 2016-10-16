@@ -155,7 +155,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
                 {
-                    if ( ep->masks[dsig.lastk] == 0 )
+                    //if ( ep->masks[dsig.lastk] == 0 )
                     {
                         ep->masks[src_or_dest][dsig.lastk] = dsig.mask;
                         cp->siglens[dsig.lastk] = dsig.siglen;
