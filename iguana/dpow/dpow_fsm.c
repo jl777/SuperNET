@@ -132,7 +132,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             flag = 1;
         }
         //if ( 0 && flag == 0 && bp != 0 )
-            printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout);
+            printf("sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
@@ -206,7 +206,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         for (i=0; i<bp->numnotaries; i++)
         {
             k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
-            if ( ((1LL << k) & bp->bestmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
+            if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
             {
                 printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
                 sendutxo = 1;
