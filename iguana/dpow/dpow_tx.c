@@ -260,6 +260,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     bits256 txid,srchash,zero; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768];
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
+    printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
     if ( bp->state != 0xffffffff && coin != 0 )
     {
         bp->signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,bp->opret_symbol,1,src_or_dest);

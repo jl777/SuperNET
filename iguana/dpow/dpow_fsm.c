@@ -151,7 +151,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
         {
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
             {
-                cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
+                cp = (src_or_dest != 0) ? &bp->notaries[dsig.senderind].dest : &bp->notaries[dsig.senderind].src;
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
                 {
@@ -165,13 +165,15 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                         {
                             bp->destsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
                             if ( bp->bestk >= 0 && bp->bestk == dsig.lastk && (bp->bestmask & bp->destsigsmasks[dsig.lastk]) == bp->bestmask )
+                            {
                                 dpow_sigscheck(myinfo,bp,channel,myind,src_or_dest);
+                            }
                         }
                         else
                         {
                             bp->srcsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
                         }
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
+                        printf(" (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
                         dpow_sync(myinfo,bp,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
                     }
