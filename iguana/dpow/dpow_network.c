@@ -235,8 +235,6 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     int32_t i,len = 0;
     if ( rwflag != 0 )
     {
-        data[len++] = DPOW_VERSION & 0xff;
-        data[len++] = (DPOW_VERSION >> 8) & 0xff;
         data[len++] = dsig->senderind;
         data[len++] = dsig->lastk;
         len += iguana_rwnum(rwflag,&data[len],sizeof(dsig->mask),(uint8_t *)&dsig->mask);
@@ -249,9 +247,6 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     }
     else
     {
-        if ( (data[0]+((int32_t)data[1]<<8)) != DPOW_VERSION )
-            return(-1);
-        len = 2;
         memset(dsig,0,sizeof(*dsig));
         dsig->senderind = data[len++];
         if ( dsig->senderind < 0 || dsig->senderind >= DPOW_MAXRELAYS )
