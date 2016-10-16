@@ -220,7 +220,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
             dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,sigchannel,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
-    if ( sendutxo != 0 )
+    if ( 0 && sendutxo != 0 )
     {
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
@@ -238,7 +238,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
 {
-    int32_t j,match,sigmatch,len,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; int8_t lastk; uint64_t sigsmask; struct dpow_utxoentry U; struct dpow_coinentry *cp;
+    int32_t j,match,sigmatch,len,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; uint64_t sigsmask; struct dpow_utxoentry U; struct dpow_coinentry *cp; //int8_t lastk;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -294,12 +294,12 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
             bp->state = 1;
             break;
         case 1:
-            dpow_lastk_mask(bp,&lastk);
-            memset(&U,0,sizeof(U));
-            dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
-            if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
-                dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
-            bp->recvmask |= (1LL << myind);
+            //dpow_lastk_mask(bp,&lastk);
+            //memset(&U,0,sizeof(U));
+            //dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
+            //if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
+            //    dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
+            //bp->recvmask |= (1LL << myind);
             bp->state = 2;
             break;
         default:
