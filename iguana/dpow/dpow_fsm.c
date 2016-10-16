@@ -169,7 +169,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                             bp->destsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
                             if ( bp->bestk >= 0 && bp->bestk == dsig.lastk && (bp->bestmask & bp->destsigsmasks[dsig.lastk]) == bp->bestmask )
                             {
-                                dpow_sigscheck(myinfo,bp,channel,myind,src_or_dest);
+                                dpow_sigscheck(myinfo,bp,DPOW_SIGCHANNEL,myind,0);
                             }
                         }
                         else
@@ -212,6 +212,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                 {
                     bp->desttxid = txid;
                     bp->state = 1000;
+                    dpow_sigscheck(myinfo,bp,DPOW_SIGCHANNEL,myind,0);
                 }
                 else
                 {
@@ -275,6 +276,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
             dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,DPOW_SIGCHANNEL,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
+    if ( (rand() % 10) == 0 )
+        printf("[%d] %s ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk]);
     return(bp->state);
 }
 
@@ -304,8 +307,6 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     bp->bestk = dpow_bestk(bp,&bp->bestmask);
-    if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) sigsmask.%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk]);
     if ( bp->state < 3 )
     {
         dpow_utxosync(myinfo,bp,0,myind,srchash);
