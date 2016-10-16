@@ -58,7 +58,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t channel)
 {
     int32_t i,firstz = -1;
-    return(0);
+return(0);
     for (i=0; i<sizeof(myinfo->DPOW.crcs)/sizeof(*myinfo->DPOW.crcs); i++)
     {
         if ( myinfo->DPOW.crcs[i] == crc32 )
@@ -78,9 +78,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchas
 {
     struct dpow_nanomsghdr *np; int32_t size,firstz,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
-    //if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
+    if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
-        //myinfo->DPOW.crcs[firstz] = crc32;
+        myinfo->DPOW.crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size);
         //printf("dpow_send.(%d) size.%d\n",datalen,size);
@@ -111,7 +111,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,crc32,np->channel)) >= 0 )
                 {
                     myinfo->DPOW.crcs[firstz] = crc32;
-                    //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
+                    printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)));
                     dpow_datahandler(myinfo,np->channel,np->height,np->packet,np->datalen);
                 }
             } else printf("np->datalen.%d (size %d - %ld)\n",np->datalen,size,sizeof(*np));
@@ -185,9 +185,9 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
     return(opretlen);
 }
 
-int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,struct dpow_entry *ep)
+int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,struct dpow_block *bp)
 {
-    int32_t i,len = 0;
+    uint8_t numnotaries; uint64_t othermask; int32_t i,len = 0;
     if ( rwflag != 0 )
     {
         data[0] = DPOW_VERSION & 0xff;
@@ -195,27 +195,41 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,bits256 *hashmsg,struct dpow
     }
     else if ( (data[0]+((int32_t)data[1]<<8)) != DPOW_VERSION )
         return(-1);
-    len = 2;
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(*hashmsg),hashmsg->bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->prev_hash),ep->prev_hash.bytes);
-    if ( bits256_nonz(ep->prev_hash) == 0 )
+    if ( bits256_nonz(up->srchash) == 0 || bits256_nonz(up->desthash) == 0 )
         return(-1);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->commit),ep->commit.bytes);
+    len = 2;
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->hashmsg),up->hashmsg.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->srchash),up->srchash.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->desthash),up->desthash.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->commit),up->commit.bytes);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(up->recvmask),(uint8_t *)&up->recvmask);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(up->height),(uint8_t *)&up->height);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(up->srcvout),&up->srcvout);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(up->destvout),&up->destvout);
+    len += iguana_rwnum(rwflag,&data[len],sizeof(up->bestk),&up->bestk);
     if ( rwflag != 0 )
     {
-        data[len++] = ep->prev_vout;
         for (i=0; i<33; i++)
-            data[len++] = ep->pubkey[i];
-        data[len++] = ep->bestk;
+            data[len++] = up->pubkey[i];
+        numnotaries = (uint8_t)(sizeof(Notaries)/sizeof(*Notaries));
+        data[len++] = numnotaries;
+        for (i=0; i<numnotaries; i++)
+            len += iguana_rwnum(rwflag,&data[len],sizeof(*up->othermasks),(uint8_t *)&up->othermasks[(int32_t)i]);
     }
     else
     {
-        ep->prev_vout = data[len++];
         for (i=0; i<33; i++)
-            ep->pubkey[i] = data[len++];
-        ep->bestk = data[len++];
+            up->pubkey[i] = data[len++];
+        numnotaries = data[len++];
+        if ( numnotaries == (uint8_t)(sizeof(Notaries)/sizeof(*Notaries)) )
+        {
+            for (i=0; i<numnotaries; i++)
+            {
+                len += iguana_rwnum(rwflag,&data[len],sizeof(othermask),(uint8_t *)&othermask);
+                bp->notaries[(int32_t)i].othermask |= othermask;
+            }
+        } else return(-1);
     }
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(ep->recvmask),(uint8_t *)&ep->recvmask);
     return(len);
 }
 
@@ -269,8 +283,8 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
     dsig.mask = bestmask;
     dsig.senderind = myind;
     dsig.beacon = bp->beacon;
-    dsig.siglen = ep->siglens[bestk];
-    memcpy(dsig.sig,ep->sigs[bestk],ep->siglens[bestk]);
+    dsig.siglen = ep->dest.siglens[bestk];
+    memcpy(dsig.sig,ep->dest.sigs[bestk],ep->dest.siglens[bestk]);
     memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
     len = dpow_rwsigentry(1,data,&dsig);
     dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);

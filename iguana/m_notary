@@ -9,7 +9,8 @@ gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -
 
 ../agents/iguana notary  > iguana.log 2> error.log  &
 
-myip=`cat myip.txt`
+myip=`curl -s4 checkip.amazonaws.com`
+
 sleep 4
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
 sleep 3
@@ -20,3 +21,4 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 ./dpow_7776
 sleep 3
 ./wp_7776
+

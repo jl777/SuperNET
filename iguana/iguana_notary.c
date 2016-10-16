@@ -27,7 +27,7 @@
 #include "iguana777.h"
 #include "notaries.h"
 
-void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
+void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest);
 
 #include "dpow/dpow_network.c"
 #include "dpow/dpow_rpc.c"
@@ -208,10 +208,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( myinfo->DPOW.srcconfirms > DPOW_FIFOSIZE )
         myinfo->DPOW.srcconfirms = DPOW_FIFOSIZE;
-    if ( myinfo->DPOW.srcblocks == 0 )
-        myinfo->DPOW.srcblocks = calloc(1000000,sizeof(*myinfo->DPOW.srcblocks));
-    if ( myinfo->DPOW.destblocks == 0 )
-        myinfo->DPOW.destblocks = calloc(1000000,sizeof(*myinfo->DPOW.destblocks));
+    if ( myinfo->DPOW.blocks == 0 )
+        myinfo->DPOW.blocks = calloc(1000000,sizeof(*myinfo->DPOW.blocks));
     return(clonestr("{\"result\":\"success\"}"));
 }
 

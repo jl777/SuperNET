@@ -19423,7 +19423,107 @@ len = 0;
              printf("extracted uxto k.%d != bestk.%d %llx\n",k,bestk,(long long)bestmask);
              }
              }*/
-
+            void dpow_oldstatemachinestart(void *ptr)
+            {
+                struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
+                int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],coinaddr[64]; bits256 zero; struct dpow_block *srcbp,*destbp,*bp; uint32_t starttime = (uint32_t)time(NULL);
+                memset(&zero,0,sizeof(zero));
+                myinfo = ptrs[0];
+                dp = ptrs[1];
+                dp->destupdated = 0; // prevent another state machine till next BTC block
+                memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
+                printf("statemachinestart %s->%s %s ht.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height);
+                src = iguana_coinfind(dp->symbol);
+                dest = iguana_coinfind(dp->dest);
+                if ( (destbp= dp->destblocks[checkpoint.blockhash.height]) == 0 )
+                {
+                    destbp = calloc(1,sizeof(*destbp));
+                    destbp->coin = iguana_coinfind(dp->dest);
+                    destbp->opret_symbol = dp->symbol;
+                    destbp->bestk = -1;
+                    dp->destblocks[checkpoint.blockhash.height] = destbp;
+                    destbp->beacon = rand256(0);
+                    vcalc_sha256(0,destbp->commit.bytes,destbp->beacon.bytes,sizeof(destbp->beacon));
+                    if ( (bp= dp->destblocks[checkpoint.blockhash.height - 100]) != 0 )
+                    {
+                        printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - 100);
+                        dp->destblocks[checkpoint.blockhash.height - 100] = 0;
+                        free(bp);
+                    }
+                }
+                if ( (srcbp= dp->srcblocks[checkpoint.blockhash.height]) == 0 )
+                {
+                    srcbp = calloc(1,sizeof(*srcbp));
+                    srcbp->coin = iguana_coinfind(dp->symbol);
+                    srcbp->opret_symbol = dp->symbol;
+                    srcbp->bestk = -1;
+                    dp->srcblocks[checkpoint.blockhash.height] = srcbp;
+                    srcbp->beacon = destbp->beacon;
+                    srcbp->commit = destbp->commit;
+                    printf("create srcbp[%d]\n",checkpoint.blockhash.height);
+                    if ( (bp= dp->srcblocks[checkpoint.blockhash.height - 1000]) != 0 )
+                    {
+                        printf("purge %s.%d\n",dp->symbol,checkpoint.blockhash.height - 1000);
+                        dp->srcblocks[checkpoint.blockhash.height - 1000] = 0;
+                        free(bp);
+                    }
+                }
+                n = (int32_t)(sizeof(Notaries)/sizeof(*Notaries));
+                srcbp->numnotaries = destbp->numnotaries = n;
+                for (i=0; i<n; i++)
+                {
+                    decode_hex(srcbp->notaries[i].pubkey,33,Notaries[i][1]);
+                    decode_hex(destbp->notaries[i].pubkey,33,Notaries[i][1]);
+                    if ( memcmp(destbp->notaries[i].pubkey,myinfo->DPOW.minerkey33,33) == 0 )
+                        myind = i;
+                }
+                bitcoin_address(coinaddr,src->chain->pubtype,myinfo->DPOW.minerkey33,33);
+                printf(" myaddr.%s\n",coinaddr);
+                if ( myind < 0 )
+                {
+                    printf("statemachinestart this node %s is not official notary\n",coinaddr);
+                    free(ptr);
+                    return;
+                }
+                dp->checkpoint = checkpoint;
+                srcbp->height = destbp->height = checkpoint.blockhash.height;
+                srcbp->timestamp = destbp->timestamp = checkpoint.timestamp;
+                srcbp->hashmsg = destbp->hashmsg = checkpoint.blockhash.hash;
+                printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
+                while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && (srcbp->state != 0xffffffff || destbp->state != 0xffffffff) )
+                {
+                    sleep(1);
+                    if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+                    {
+                        printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                        break;
+                    }
+                    if ( destbp->state != 0xffffffff )
+                    {
+                        //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
+                        destbp->state = dpow_statemachineiterate(myinfo,dp,dest,destbp,myind,1);
+                        if ( destbp->state == 0xffffffff )
+                        {
+                            srcbp->btctxid = destbp->signedtxid;
+                            printf("SET BTCTXID.(%s)\n",bits256_str(str,srcbp->btctxid));
+                        }
+                    }
+                    if ( destbp->state == 0xffffffff && bits256_nonz(srcbp->btctxid) != 0 )
+                    {
+                        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+                        {
+                            printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                            break;
+                        }
+                        if ( srcbp->state != 0xffffffff )
+                        {
+                            //printf("dp->ht.%d ht.%d SRC.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,srcbp->state,bits256_str(str,srcbp->btctxid));
+                            srcbp->state = dpow_statemachineiterate(myinfo,dp,src,srcbp,myind,0);
+                        }
+                    }
+                }
+                free(ptr);
+            }
             uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int32_t *lastkp)
             {
                 int32_t j,m,k; uint64_t mask = 0;
