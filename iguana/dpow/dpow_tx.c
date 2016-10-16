@@ -182,8 +182,6 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
     m = 0;
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
-    if ( src_or_dest == 0 )
-        printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,rawtx);
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
@@ -199,7 +197,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->srccoin->symbol : bp->destcoin->symbol,bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
+                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
                                 cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                 if ( src_or_dest != 0 )
                                     bp->destsigsmasks[bestk] |= (1LL << myind);
@@ -229,8 +227,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
-    if ( src_or_dest == 0 )
-        printf("signedtxgen KMD\n");
     bestmask = dpow_maskmin(bestmask,bp,&bestk);
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));

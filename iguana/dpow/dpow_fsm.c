@@ -102,7 +102,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
     mask = dpow_maskmin(refmask,bp,&lastk);
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
     if ( bp->notaries[myind].masks[lastk] == 0 )
-        dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,bp->opret_symbol,bits256_nonz(bp->desttxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
+        dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,bp->opret_symbol,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
 }
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest)
@@ -113,11 +113,12 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
     if ( myind < 0 )
         return(-1);
-    coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     for (i=0; i<32; i++)
         srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
     if ( channel == DPOW_UTXOCHANNEL )
     {
+        src_or_dest = 1;
+        coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
         memset(&U,0,sizeof(U));
         if ( dpow_rwutxobuf(0,data,&U,bp) < 0 )
         {
@@ -145,6 +146,8 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
+        src_or_dest = (channel == DPOW_SIGBTCCHANNEL);
+        coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
             return(0);
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
@@ -181,10 +184,12 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
         } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
         //if ( 0 && bp != 0 )
-            printf(" SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
+            printf("%s SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",coin->symbol,height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
+        src_or_dest = (channel == DPOW_BTCTXIDCHANNEL);
+        coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
         printf("handle txid channel.%x\n",channel);
         //printf("bp.%p datalen.%d\n",bp,datalen);
         for (i=0; i<32; i++)
