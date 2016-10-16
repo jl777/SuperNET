@@ -69,7 +69,10 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
     if ( (bp->recvmask ^ recvmask) != 0 )
     {
         if ( ((1LL << myind) & recvmask) == 0 )
+        {
             i = myind;
+            printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
+        }
         else
         {
             r = (rand() % bp->numnotaries);
@@ -79,6 +82,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
                     break;
             }
+            printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
         }
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[i]);
