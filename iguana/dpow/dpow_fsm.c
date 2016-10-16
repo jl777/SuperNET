@@ -168,6 +168,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             src_or_dest = 0;
             coin = bp->srccoin;
             cp = &bp->notaries[dsig.senderind].src;
+            printf("got %s channel.%x from %d\n",coin->symbol,channel,dsig.senderind);
         }
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
