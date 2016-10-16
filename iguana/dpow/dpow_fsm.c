@@ -21,7 +21,7 @@ struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_bloc
     {
         if ( memcmp(bp->notaries[i].pubkey,senderpub,33) == 0 )
         {
-            printf("matches notary.%d\n",i);
+            //printf("matches notary.%d\n",i);
             *senderindp = i;
             return(&bp->notaries[i]);
         }
@@ -74,7 +74,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
         if ( ((1LL << myind) & recvmask) == 0 )
         {
             i = myind;
-            printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
+            //printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
         }
         else
         {
@@ -85,12 +85,12 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
                     break;
             }
-            printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
+            //printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
         }
         memset(&U,0,sizeof(U));
         dpow_entry2utxo(&U,bp,&bp->notaries[i]);
-        char str[65],str2[65];
-        printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
+        //char str[65],str2[65];
+        //printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
         if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
             dpow_send(myinfo,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len,bp->utxocrcs);
     }
@@ -114,6 +114,8 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     if ( myind < 0 )
         return(-1);
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
+    for (i=0; i<32; i++)
+        srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
     if ( channel == DPOW_UTXOCHANNEL )
     {
         memset(&U,0,sizeof(U));
@@ -133,7 +135,11 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
         {
             dpow_utxo2entry(bp,ep,&U);
-            bp->recvmask |= (1LL << senderind);
+            if ( ((1LL << senderind) & bp->recvmask) == 0 )
+            {
+                dpow_utxosync(myinfo,bp,0,myind,srchash);
+                bp->recvmask |= (1LL << senderind);
+            }
             dpow_sync(myinfo,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
@@ -390,6 +396,7 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     bp->recvmask |= (1LL << myind);
+    bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
     bp->height = checkpoint.blockhash.height;
     bp->timestamp = checkpoint.timestamp;
@@ -412,6 +419,6 @@ void dpow_statemachinestart(void *ptr)
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
     }
-    printf("state machine ht.%d completed %s.%s %s.%s\n",bp->height,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid));
+    printf("state machine ht.%d completed state.%x %s.%s %s.%s\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid));
     free(ptr);
 }
