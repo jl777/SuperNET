@@ -121,7 +121,9 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     serialized[len++] = CHECKSIG;
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src,bp);
+    if ( src_or_dest != 0 )
+        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->desttxid,src,bp,src_or_dest);
+    else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,&bp->srctxid,src,bp,src_or_dest);
     opretlen = dpow_opreturnscript(data,opret,opretlen);
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;
@@ -180,7 +182,6 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
 {
     int32_t j,m=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
     m = 0;
-    printf("dpow_rawtxsign src_or_dest.%d %s\n",src_or_dest,coin->symbol);
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
