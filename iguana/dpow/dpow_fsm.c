@@ -360,7 +360,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_block *bp,struct
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
-        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->DPOW.minerkey33,DPOW_UTXOSIZE,10,&completed,&signedtxid,0,addresses)) != 0 )
+        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,myinfo->DPOW.minerkey33,DPOW_UTXOSIZE,strcmp(coin->symbol,"BTC") == 0 ? 50 : 10,&completed,&signedtxid,0,addresses)) != 0 )
         {
             if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
             {
