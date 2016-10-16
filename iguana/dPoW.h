@@ -18,7 +18,7 @@
 
 #define DPOW_CHECKPOINTFREQ 10
 #define DPOW_M(bp) (7)  // (((bp)->numnotaries >> 1) + 1)
-#define DPOW_VERSION 0x0204
+#define DPOW_VERSION 0x0205
 #define DPOW_UTXOSIZE 10000
 
 #define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
