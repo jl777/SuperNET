@@ -238,7 +238,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
 
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
 {
-    int32_t j,match,sigmatch,len,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint8_t data[4096]; uint64_t sigsmask; struct dpow_utxoentry U; struct dpow_coinentry *cp; //int8_t lastk;
+    int32_t j,match,sigmatch,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero; uint64_t sigsmask; struct dpow_coinentry *cp;
     if ( bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
@@ -338,7 +338,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_block *bp,struct
 void dpow_statemachinestart(void *ptr)
 {
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t starttime = (uint32_t)time(NULL);
+    int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t starttime = (uint32_t)time(NULL);
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
@@ -402,6 +402,9 @@ void dpow_statemachinestart(void *ptr)
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
+    for (i=0; i<sizeof(srchash); i++)
+        srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
+    dpow_utxosync(myinfo,bp,bp->recvmask,myind,srchash,DPOW_UTXOBTCCHANNEL);
     while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(1);
