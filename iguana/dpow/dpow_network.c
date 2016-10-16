@@ -107,7 +107,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( size >= 0 )
         {
-            if ( np->datalen == (size - sizeof(*np) - 2) )
+            if ( np->datalen == (size - sizeof(*np)) )
             {
                 crc32 = calc_crc32(0,np->packet,np->datalen);
                 if ( np->version0 != (DPOW_VERSION & 0xff) || np->version1 != ((DPOW_VERSION >> 8) & 0xff) )
