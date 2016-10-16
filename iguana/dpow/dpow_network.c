@@ -165,25 +165,31 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
     return(opretlen + offset);
 }
 
-int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,bits256 *desttxid,char *src,struct dpow_block *bp,int32_t src_or_dest)
+int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,char *src,struct dpow_block *bp,int32_t src_or_dest)
 {
     int32_t i,opretlen = 0; bits256 beacon,beacons[DPOW_MAXRELAYS];
     opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( src_or_dest == 0 )
     {
-        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*desttxid),desttxid->bytes);
+        opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(&bp->desttxid),bp->desttxid.bytes);
         if ( rwflag != 0 )
         {
-            for (i=0; src[i]!=0; i++)
-                opret[opretlen++] = src[i];
+            if ( src != 0 )
+            {
+                for (i=0; src[i]!=0; i++)
+                    opret[opretlen++] = src[i];
+            }
             opret[opretlen++] = 0;
         }
         else
         {
-            for (i=0; opret[opretlen]!=0; i++)
-                src[i] = opret[opretlen++];
-            src[i] = 0;
+            if ( src != 0 )
+            {
+                for (i=0; opret[opretlen]!=0; i++)
+                    src[i] = opret[opretlen++];
+                src[i] = 0;
+            }
             opretlen++;
         }
     }
