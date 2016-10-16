@@ -234,7 +234,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
 
 int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t txidchannel,bits256 srchash,int32_t myind)
 {
-    struct dpow_entry *ep; int32_t i,k,len,src_or_dest,sendutxo = 1; uint8_t data[sizeof(struct dpow_entry)+2]; struct dpow_utxoentry U;
+    struct dpow_entry *ep; int32_t i,k,len,src_or_dest,sendutxo = 0; uint8_t data[sizeof(struct dpow_entry)+2]; struct dpow_utxoentry U;
     ep = &bp->notaries[myind];
     if ( bp->state < 1000 )
     {
@@ -250,14 +250,14 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                 if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
                 {
                     //printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
-                    //sendutxo = 1;
+                    sendutxo = 1;
                     break;
                 }
             }
             if ( ep->masks[src_or_dest][bp->bestk] == 0 )
                 dpow_signedtxgen(myinfo,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->opret_symbol,DPOW_SIGBTCCHANNEL,src_or_dest);
             //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
-        }
+        } else sendutxo = 1;
         if ( sendutxo != 0 )
         {
             memset(&U,0,sizeof(U));
@@ -277,7 +277,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
     if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk]);
+        printf("[%d] %s ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk],(long long)(bp->destsigsmasks[bp->bestk] & bp->bestmask));
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
         dpow_signedtxgen(myinfo,bp->destcoin,bp,bp->bestk,bp->bestmask,myind,"",DPOW_SIGBTCCHANNEL,1);
