@@ -152,18 +152,27 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
-        src_or_dest = (channel == DPOW_SIGBTCCHANNEL);
-        coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
         {
             printf("rwsigentry error\n");
             return(0);
         }
+        if ( channel == DPOW_SIGBTCCHANNEL )
+        {
+            src_or_dest = 1;
+            coin = bp->destcoin;
+            cp = &bp->notaries[dsig.senderind].dest;
+        }
+        else
+        {
+            src_or_dest = 0;
+            coin = bp->srccoin;
+            cp = &bp->notaries[dsig.senderind].src;
+        }
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
             {
-                cp = (src_or_dest != 0) ? &bp->notaries[dsig.senderind].dest : &bp->notaries[dsig.senderind].src;
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
                 {
