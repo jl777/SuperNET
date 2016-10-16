@@ -65,7 +65,7 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t chan
             //printf("NANODUPLICATE.%08x\n",crc32);
             return(-1);
         }
-        else if ( myinfo->DPOW.crcs[i] == 0 )
+        else if ( firstz < 0 && myinfo->DPOW.crcs[i] == 0 )
             firstz = i;
     }
     if ( firstz < 0 )
@@ -186,7 +186,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
             opretlen++;
         }
     }
-    else
+    else if ( 0 )
     {
         memset(beacons,0,sizeof(beacons));
         for (i=0; i<bp->numnotaries; i++)
