@@ -217,6 +217,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
         sendutxo = 0;
         for (i=0; i<bp->numnotaries; i++)
         {
+            if ( k == myind )
+                continue;
             k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
             if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
             {
