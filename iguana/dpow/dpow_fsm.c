@@ -102,11 +102,18 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
 
 void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest)
 {
-    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
-    if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
+    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t starttime,flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    starttime = (uint32_t)time(NULL);
+    while ( 1 )
     {
-        printf("dpow_datahandler: cant find ht.%d\n",height);
-        return;
+        if ( (bp= dpow_heightfind(myinfo,height)) != 0 )
+            break;
+        if ( time(NULL) > starttime+10 )
+        {
+            printf("dpow_datahandler: cant find ht.%d\n",height);
+            return;
+        }
+        sleep(1);
     }
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
     if ( myind < 0 )
@@ -116,7 +123,10 @@ void dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t hei
     {
         memset(&U,0,sizeof(U));
         if ( dpow_rwutxobuf(0,data,&U,bp) < 0 )
+        {
+            printf("error from rwutxobuf\n");
             return;
+        }
         if ( bits256_cmp(hashmsg,bp->hashmsg) != 0 )
         {
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,hashmsg),bits256_str(str2,bp->hashmsg));
