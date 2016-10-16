@@ -377,7 +377,7 @@ void dpow_statemachinestart(void *ptr)
         free(ptr);
         return;
     }
-    bitcoin_address(srcaddr,dest->chain->pubtype,myinfo->DPOW.minerkey33,33);
+    bitcoin_address(srcaddr,src->chain->pubtype,myinfo->DPOW.minerkey33,33);
     bitcoin_address(destaddr,dest->chain->pubtype,myinfo->DPOW.minerkey33,33);
     printf(" myaddr.(%s %s)\n",srcaddr,destaddr);
     if ( dpow_checkutxo(myinfo,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
