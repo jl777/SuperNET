@@ -54,6 +54,8 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
     up->bestk = bp->bestk;
     for (i=0; i<bp->numnotaries; i++)
         up->othermasks[i] = bp->notaries[i].recvmask;
+    for (i=0; i<33; i++)
+        up->pubkey[i] = ep->pubkey[i];
     up->commit = ep->commit;
     up->height = ep->height;
     up->recvmask = ep->recvmask;
