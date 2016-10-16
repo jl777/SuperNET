@@ -200,6 +200,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                             {
                                 printf("height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
                                 cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
+                                cp->sigsmask |= (1LL << myind);
                                 decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
                                 ep->masks[bestk] = bestmask;
                                 ep->beacon = bp->beacon;

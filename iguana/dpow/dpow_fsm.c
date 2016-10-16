@@ -164,7 +164,8 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
                         cp->siglens[dsig.lastk] = dsig.siglen;
                         memcpy(cp->sigs[dsig.lastk],dsig.sig,dsig.siglen);
                         ep->beacon = dsig.beacon;
-                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen);
+                        cp->sigsmask |= (1LL << dsig.senderind);
+                        printf(" <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)cp->sigsmask,dsig.siglen);
                         dpow_sync(myinfo,bp,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
                     }
@@ -292,13 +293,13 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         }
     }
     if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask);
+        printf("[%d] %s ht.%d FSM.%d %s BTC.%d masks.%llx best.(%d %llx) match.(%d sigs.%d) sigsmask.%llx/%llx\n",myind,coin->symbol,bp->height,bp->state,coinaddr,bits256_nonz(bp->desttxid)==0,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,match,sigmatch,(long long)sigsmask,(long long)bp->destsigsmask);
     if ( sigmatch == DPOW_M(bp) )
     {
         printf("sigmatch.%d\n",sigmatch);
         dpow_sigscheck(myinfo,bp,sigchannel,myind,src_or_dest);
     }
-    if ( bp->state < 10 )
+    if ( bp->state < 3 )
     {
         dpow_utxosync(myinfo,bp,0,myind,srchash);
         bp->state++;
