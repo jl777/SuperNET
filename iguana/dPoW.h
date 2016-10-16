@@ -17,7 +17,7 @@
 #define INCLUDE_DPOW_H
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_M(bp) (5)  // (((bp)->numnotaries >> 1) + 1)
+#define DPOW_M(bp) (7)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_VERSION 0x0204
 #define DPOW_UTXOSIZE 10000
 
