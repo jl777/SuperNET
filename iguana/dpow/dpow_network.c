@@ -192,14 +192,14 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
 int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,struct dpow_block *bp)
 {
     uint8_t numnotaries; uint64_t othermask; int32_t i,len = 0;
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->hashmsg),up->hashmsg.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->srchash),up->srchash.bytes);
+    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->desthash),up->desthash.bytes);
     if ( bits256_nonz(up->srchash) == 0 || bits256_nonz(up->desthash) == 0 )
     {
         printf("dpow_rwutxobuf null src.%d or dest.%d\n",bits256_nonz(up->srchash),bits256_nonz(up->desthash));
         return(-1);
     }
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->hashmsg),up->hashmsg.bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->srchash),up->srchash.bytes);
-    len += iguana_rwbignum(rwflag,&data[len],sizeof(up->desthash),up->desthash.bytes);
     len += iguana_rwbignum(rwflag,&data[len],sizeof(up->commit),up->commit.bytes);
     len += iguana_rwnum(rwflag,&data[len],sizeof(up->recvmask),(uint8_t *)&up->recvmask);
     len += iguana_rwnum(rwflag,&data[len],sizeof(up->height),(uint8_t *)&up->height);
