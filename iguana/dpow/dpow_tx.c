@@ -182,9 +182,10 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
     m = 0;
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
+    if ( src_or_dest == 0 )
+        printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,rawtx);
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
-        //printf("bestk.%d mask.%llx dpowsign.(%s)\n",bestk,(long long)bestmask,jsonstr);
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
@@ -228,6 +229,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( bp->numnotaries < 8 )
         incr = 1;
     else incr = sqrt(bp->numnotaries) + 1;
+    if ( src_or_dest == 0 )
+        printf("signedtxgen KMD\n");
     bestmask = dpow_maskmin(bestmask,bp,&bestk);
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
@@ -264,7 +267,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     if ( bp->state != 0xffffffff && coin != 0 )
     {
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,bp->opret_symbol,1,src_or_dest);
-        printf("%s numsigs.%d signedtx.(%s)\n",bits256_str(str,signedtxid),numsigs,bp->signedtx);
+        printf("bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == DPOW_M(bp) )
         {
@@ -279,6 +282,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                         if ( src_or_dest != 0 )
                         {
                             bp->desttxid = txid;
+                            printf("send out KMD sig\n");
                             dpow_signedtxgen(myinfo,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->srccoin->symbol,DPOW_SIGCHANNEL,0);
                         }
                         else bp->srctxid = txid;
