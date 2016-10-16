@@ -104,7 +104,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t refma
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,int32_t src_or_dest)
 {
-    bits256 hashmsg,txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    bits256 txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
         return(-1);
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
@@ -119,9 +119,9 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             printf("error from rwutxobuf\n");
             return(0);
         }
-        if ( bits256_cmp(hashmsg,bp->hashmsg) != 0 )
+        if ( bits256_cmp(U.hashmsg,bp->hashmsg) != 0 )
         {
-            printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,hashmsg),bits256_str(str2,bp->hashmsg));
+            printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
         }
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
@@ -132,7 +132,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
             flag = 1;
         }
         //if ( 0 && flag == 0 && bp != 0 )
-            printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout);
+            printf("UTXO.%d hashmsg.(%s) txid.(%s) v%d\n",height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
