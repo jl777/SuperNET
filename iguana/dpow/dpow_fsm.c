@@ -284,28 +284,17 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         printf("sigmatch.%d\n",sigmatch);
         dpow_sigscheck(myinfo,bp,sigchannel,myind,src_or_dest);
     }
-    switch ( bp->state )
+    if ( bp->state < 10 )
     {
-        case 0:
-            dpow_utxosync(myinfo,bp,0,myind,srchash);
-            bp->state = 1;
-            break;
-        case 1:
-            dpow_utxosync(myinfo,bp,0,myind,srchash);
-            //dpow_lastk_mask(bp,&lastk);
-            //memset(&U,0,sizeof(U));
-            //dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
-            //if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
-            //    dpow_send(myinfo,bp,srchash,bp->hashmsg,channel,bp->height,data,len,bp->utxocrcs);
-            //bp->recvmask |= (1LL << myind);
-            bp->state = 2;
-            break;
-        default:
-            dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind,src_or_dest);
-            break;
+        dpow_utxosync(myinfo,bp,0,myind,srchash);
+        bp->state++;
     }
-    if ( bits256_nonz(bp->signedtxid) != 0 )
-        bp->state = 0xffffffff;
+    else
+    {
+        dpow_update(myinfo,bp,channel,sigchannel,txidchannel,srchash,myind,src_or_dest);
+        if ( bits256_nonz(bp->signedtxid) != 0 )
+            bp->state = 0xffffffff;
+    }
     return(bp->state);
 }
 
@@ -402,8 +391,6 @@ void dpow_statemachinestart(void *ptr)
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
-    dpow_utxosync(myinfo,bp,0,myind,srchash);
-    sleep(3);
     dpow_utxosync(myinfo,bp,0,myind,srchash);
     while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
