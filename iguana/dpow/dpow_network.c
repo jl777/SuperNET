@@ -76,10 +76,10 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32,uint32_t chan
 void dpow_send(struct supernet_info *myinfo,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
     struct dpow_nanomsghdr *np; int32_t size,firstz,sentbytes = 0; uint32_t crc32;
-    crc32 = calc_crc32(0,data,datalen);
-    if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
+    //crc32 = calc_crc32(0,data,datalen);
+    //if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
-        myinfo->DPOW.crcs[firstz] = crc32;
+        //myinfo->DPOW.crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size);
         //printf("dpow_send.(%d) size.%d\n",datalen,size);
