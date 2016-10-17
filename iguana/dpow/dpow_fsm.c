@@ -334,7 +334,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         opret_symbol = dp->symbol;
     }
     bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->DPOW.minerkey33,33);
-    if ( bits256_nonz(bp->hashmsg) == 0 )
+    if ( bits256_nonz(bp->hashmsg) == 0 && bp->height != 0 )
         return(0);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
@@ -385,8 +385,8 @@ void dpow_statemachinestart(void *ptr)
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
-    minsigs = (uint32_t)ptrs[2];
-    duration = (uint32_t)ptrs[3];
+    minsigs = (uint32_t)(long)ptrs[2];
+    duration = (uint32_t)(long)ptrs[3];
     jsonstr = ptrs[4];
     dp->destupdated = 0; // prevent another state machine till next BTC block
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
@@ -478,7 +478,7 @@ void dpow_statemachinestart(void *ptr)
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
-        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( checkpoint.blockhash.height != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             break;
@@ -489,7 +489,10 @@ void dpow_statemachinestart(void *ptr)
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
         if ( myinfo->DPOW.cancelratify != 0 && checkpoint.blockhash.height == 0 )
+        {
+            printf("abort pending ratify\n");
             break;
+        }
     }
     printf("state machine ht.%d completed state.%x %s.%s %s.%s\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid));
     free(ptr);
