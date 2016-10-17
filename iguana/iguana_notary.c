@@ -17,10 +17,9 @@
 // Todo list:
 // a) creation and detection of special transactions to update list of current notaries
 // b) updating latest notarized height based on the notarized tx data
-// c) prevent overwriting blocks below notarized height
-// d) award 5% APR for utxo older than a week when they are spent
-// e) round robin mining difficulty
-// f) reduce cost for splitting
+
+// c) award 5% APR for utxo older than a week when they are spent
+// d) round robin mining difficulty
 
 #define CHECKSIG 0xac
 
