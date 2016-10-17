@@ -401,6 +401,8 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->opret_symbol = dp->symbol;
+        if ( jsonstr != 0 )
+            printf("jsonstr.(%s)\n",jsonstr);
         if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( (ratified= jarray(&numratified,json,"ratified")) != 0 )
