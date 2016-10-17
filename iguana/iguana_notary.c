@@ -20,6 +20,7 @@
 
 // c) award 5% APR for utxo older than a week when they are spent
 // d) round robin mining difficulty
+// e) rebroadcast reorged local chain notary tx and scanning mempool
 
 #define CHECKSIG 0xac
 
