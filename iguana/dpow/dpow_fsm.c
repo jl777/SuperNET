@@ -381,7 +381,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,n,numratified,myind = -1; cJSON *ratified,*json,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime = (uint32_t)time(NULL);
+    int32_t i,n,numratified,myind = -1; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime = (uint32_t)time(NULL);
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
@@ -401,11 +401,9 @@ void dpow_statemachinestart(void *ptr)
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->opret_symbol = dp->symbol;
-        if ( jsonstr != 0 )
-            printf("jsonstr.(%s)\n",jsonstr);
-        if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
+        if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
-            if ( (ratified= jarray(&numratified,json,"ratified")) != 0 )
+            if ( (numratified= cJSON_GetArraySize(ratified)) > 0 )
             {
                 for (i=0; i<numratified; i++)
                 {
@@ -425,11 +423,15 @@ void dpow_statemachinestart(void *ptr)
                 if ( i == numratified )
                 {
                     bp->numratified = numratified;
-                    bp->ratified = jduplicate(ratified);
+                    bp->ratified = ratified;
                     printf("numratified.%d %s\n",numratified,jprint(ratified,0));
                 }
+                else
+                {
+                    printf("i.%d numratified.%d\n",i,numratified);
+                    free_json(ratified);
+                }
             }
-            free_json(json);
         }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
