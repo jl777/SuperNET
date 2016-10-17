@@ -17,9 +17,13 @@
 #define INCLUDE_DPOW_H
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_M(bp) (7)  // (((bp)->numnotaries >> 1) + 1)
+#define DPOW_MINSIGS 7
+#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_VERSION 0x0205
 #define DPOW_UTXOSIZE 10000
+#define DPOW_MINOUTPUT 6000
+#define DPOW_DURATION 300
+#define DPOW_RATIFYDURATION (3600 * 24)
 
 #define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
 #define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
@@ -76,7 +80,11 @@ struct komodo_notaries
 
 struct dpow_hashheight { bits256 hash; int32_t height; };
 
-struct dpow_checkpoint { struct dpow_hashheight blockhash,approved; bits256 miner; uint32_t blocktime,timestamp; };
+struct dpow_checkpoint
+{
+    struct dpow_hashheight blockhash,approved;
+    bits256 miner; uint32_t blocktime,timestamp;
+};
 
 struct dpow_block
 {
@@ -86,8 +94,10 @@ struct dpow_block
     uint64_t recvmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
-    int32_t height,numnotaries,completed;
+    int32_t height,numnotaries,completed,minsigs,duration,numratified;
     int8_t bestk;
+    cJSON *ratified;
+    uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768];//,rawtx[32768];
 };
 
@@ -97,7 +107,7 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,crcs[1024];
+    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[1024];
     int32_t sock;
     struct dpow_block **blocks;
 };

@@ -69,14 +69,70 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height)
     return(myinfo->DPOW.blocks!=0?myinfo->DPOW.blocks[height]:0);
 }
 
-bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest)
+int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t k,j,m,numsigs,locktime,numvouts,version,sequenceid = 0xffffffff;
-    uint64_t satoshis,satoshisB; bits256 zero; int32_t opretlen,siglen,len; uint8_t serialized[32768],opret[1024],data[4096]; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    uint64_t satoshis; uint32_t locktime = 0; uint32_t numvouts; int32_t i,len = 0;
+    numvouts = numratified + 1;
+    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
+    satoshis = DPOW_MINOUTPUT;
+    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+    serialized[len++] = 35;
+    serialized[len++] = 33;
+    decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
+    serialized[len++] = CHECKSIG;
+    for (i=0; i<numratified; i++)
+    {
+        len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+        serialized[len++] = 35;
+        serialized[len++] = 33;
+        memcpy(&serialized[len],pubkeys[i],33), len += 33;
+        serialized[len++] = CHECKSIG;
+    }
+    len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
+    return(len);
+}
+
+int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest)
+{
+    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t opretlen,len=0; uint8_t opret[1024],data[4096];
+    numvouts = 2;
+    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
+    satoshis = DPOW_UTXOSIZE * m * .76;
+    if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
+        satoshis = satoshisB;
+    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+    serialized[len++] = 35;
+    serialized[len++] = 33;
+    decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
+    serialized[len++] = CHECKSIG;
+    satoshis = 0;
+    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+    if ( src_or_dest != 0 )
+        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,0,bp,src_or_dest);
+    else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
+    if ( opretlen < 0 )
+        return(-1);
+    opretlen = dpow_opreturnscript(data,opret,opretlen);
+    if ( opretlen < 0xfd )
+        serialized[len++] = opretlen;
+    else
+    {
+        serialized[len++] = 0xfd;
+        serialized[len++] = opretlen & 0xff;
+        serialized[len++] = (opretlen >> 8) & 0xff;
+    }
+    memcpy(&serialized[len],data,opretlen), len += opretlen;
+    len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
+    return(len);
+}
+
+bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
+{
+    uint32_t k,j,m,numsigs,version,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768]; struct dpow_entry *ep; struct dpow_coinentry *cp;
     signedtx[0] = 0;
     *numsigsp = 0;
     memset(zero.bytes,0,sizeof(zero));
-    len = locktime = numsigs = 0;
+    len = numsigs = 0;
     version = 1;
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
     if ( isPoS != 0 )
@@ -112,34 +168,18 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 break;
         }
     }
-    numvouts = 2;
-    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
-    satoshis = DPOW_UTXOSIZE * m * .76;
-    if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
-        satoshis = satoshisB;
-    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    serialized[len++] = 35;
-    serialized[len++] = 33;
-    decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
-    serialized[len++] = CHECKSIG;
-    satoshis = 0;
-    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    if ( src_or_dest != 0 )
-        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,0,bp,src_or_dest);
-    else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
-    if ( opretlen < 0 )
-        return(zero);
-    opretlen = dpow_opreturnscript(data,opret,opretlen);
-    if ( opretlen < 0xfd )
-        serialized[len++] = opretlen;
+    if ( pubkeys != 0 && numratified > 0 )
+    {
+        if ( (n= dpow_voutratify(bp,&serialized[len],m,pubkeys,numratified)) < 0 )
+            return(zero);
+        len += n;
+    }
     else
     {
-        serialized[len++] = 0xfd;
-        serialized[len++] = opretlen & 0xff;
-        serialized[len++] = (opretlen >> 8) & 0xff;
+        if ( (n= dpow_voutstandard(bp,&serialized[len],m,src_or_dest)) < 0 )
+            return(zero);
+        len += n;
     }
-    memcpy(&serialized[len],data,opretlen), len += opretlen;
-    len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
     init_hexbytes_noT(signedtx,serialized,len);
     //printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
     *numsigsp = numsigs;
@@ -243,7 +283,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct iguana_info *coin,s
         srchash.bytes[j] = myinfo->DPOW.minerkey33[j+1];
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest)) != 0 )
     {
-        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest);
+        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             /*memset(&tmp,0,sizeof(tmp));
@@ -269,7 +309,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
     //printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
     if ( bp->state != 0xffffffff && coin != 0 )
     {
-        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest);
+        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
         printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == DPOW_M(bp) )
@@ -285,7 +325,6 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
                         if ( src_or_dest != 0 )
                         {
                             bp->desttxid = txid;
-                            printf("send out KMD sig\n");
                             dpow_signedtxgen(myinfo,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0);
                         }
                         else bp->srctxid = txid;

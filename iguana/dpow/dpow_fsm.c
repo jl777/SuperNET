@@ -356,7 +356,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
 int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
     int32_t haveutxo,completed; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= 10 && time(NULL) > myinfo->DPOW.lastsplit+300 )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= 10 && time(NULL) > myinfo->DPOW.lastsplit+bp->duration )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
@@ -379,22 +379,49 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_block *bp,struct
 
 void dpow_statemachinestart(void *ptr)
 {
-    struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint; void **ptrs = ptr;
-    int32_t i,n,myind = -1; struct iguana_info *src,*dest; char str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t starttime = (uint32_t)time(NULL);
+    void **ptrs = ptr;
+    struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
+    int32_t i,n,numratified,myind = -1; cJSON *ratified,*json,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime = (uint32_t)time(NULL);
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
+    minsigs = (uint32_t)ptrs[2];
+    duration = (uint32_t)ptrs[3];
+    jsonstr = ptrs[4];
     dp->destupdated = 0; // prevent another state machine till next BTC block
-    memcpy(&checkpoint,&ptrs[2],sizeof(checkpoint));
-    printf("statemachinestart %s->%s %s ht.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height);
+    memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
+    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
+        bp->minsigs = minsigs; //DPOW_MINSIGS;
+        bp->duration = duration; //DPOW_DURATION;
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->opret_symbol = dp->symbol;
+        if ( jsonstr != 0 && (json= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (ratified= jarray(&numratified,json,"ratified")) != 0 )
+            {
+                for (i=0; i<numratified; i++)
+                {
+                    item = jitem(ratified,i);
+                    if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 && (handle= jstr(item,"handle")) != 0 )
+                    {
+                        decode_hex(bp->ratified_pubkeys[i],33,hexstr);
+                        safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
+                    } else break;
+                }
+                if ( i == numratified )
+                {
+                    bp->numratified = numratified;
+                    bp->ratified = jduplicate(ratified);
+                }
+            }
+            free_json(json);
+        }
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
@@ -448,7 +475,7 @@ void dpow_statemachinestart(void *ptr)
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = myinfo->DPOW.minerkey33[i+1];
     dpow_utxosync(myinfo,bp,0,myind,srchash);
-    while ( time(NULL) < starttime+300 && src != 0 && dest != 0 && bp->state != 0xffffffff )
+    while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
@@ -461,6 +488,8 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
+        if ( myinfo->DPOW.cancelratify != 0 && checkpoint.blockhash.height == 0 )
+            break;
     }
     printf("state machine ht.%d completed state.%x %s.%s %s.%s\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid));
     free(ptr);

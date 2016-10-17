@@ -69,10 +69,13 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( dp->destupdated != 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % DPOW_CHECKPOINTFREQ) == 0 )
     {
-        ptrs = calloc(1,sizeof(void *)*2 + sizeof(struct dpow_checkpoint));
+        ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
-        memcpy(&ptrs[2],&checkpoint,sizeof(checkpoint));
+        ptrs[2] = (void *)DPOW_MINSIGS;
+        ptrs[3] = (void *)DPOW_DURATION;
+        ptrs[4] = 0;
+        memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
         if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
         {
         }
@@ -248,6 +251,32 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
+ZERO_ARGS(dpow,cancelratify)
+{
+    myinfo->DPOW.cancelratify = 1;
+    return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
+}
+
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
+{
+    void **ptrs; bits256 zero; struct dpow_checkpoint checkpoint;
+    if ( ratified == 0 )
+        return(clonestr("{\"error\":\"no ratified list for dpow ratify\"}"));
+    memset(zero.bytes,0,sizeof(zero));
+    dpow_checkpointset(myinfo,&checkpoint,0,zero,timestamp,timestamp);
+    ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
+    ptrs[0] = (void *)myinfo;
+    ptrs[1] = (void *)&myinfo->DPOW;
+    ptrs[2] = (void *)(long)minsigs;
+    ptrs[3] = (void *)DPOW_RATIFYDURATION;
+    ptrs[4] = (void *)jprint(ratified,0);
+    memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
+    myinfo->DPOW.cancelratify = 0;
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
+    {
+    }
+    return(clonestr("{\"result\":\"started ratification\"}"));
+}
 #include "../includes/iguana_apiundefs.h"
 
 

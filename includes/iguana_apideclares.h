@@ -14,6 +14,9 @@
  ******************************************************************************/
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey);
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
+ZERO_ARGS(dpow,cancelratify);
+
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
 
