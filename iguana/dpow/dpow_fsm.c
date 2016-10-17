@@ -408,16 +408,23 @@ void dpow_statemachinestart(void *ptr)
                 for (i=0; i<numratified; i++)
                 {
                     item = jitem(ratified,i);
+                    hexstr = handle = 0;
                     if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 && (handle= jstr(item,"handle")) != 0 )
                     {
                         decode_hex(bp->ratified_pubkeys[i],33,hexstr);
                         safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
-                    } else break;
+                    }
+                    else
+                    {
+                        printf("break loop hexstr.%p handle.%p\n",hexstr,handle);
+                        break;
+                    }
                 }
                 if ( i == numratified )
                 {
                     bp->numratified = numratified;
                     bp->ratified = jduplicate(ratified);
+                    printf("numratified.%d %s\n",numratified,jprint(ratified,0));
                 }
             }
             free_json(json);
