@@ -110,7 +110,8 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     bits256 txid,commit,srchash; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
     {
-        printf("couldnt find height.%d\n",height);
+        if ( (rand() % 100) == 0 )
+            printf("couldnt find height.%d\n",height);
         return(-1);
     }
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);
