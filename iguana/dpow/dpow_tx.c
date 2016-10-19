@@ -66,7 +66,9 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,int32_t height)
 {
-    return(myinfo->DPOW.blocks!=0?myinfo->DPOW.blocks[height]:0);
+    if ( height < DPOW_MAXBLOCKS )
+        return(myinfo->DPOW.blocks!=0?myinfo->DPOW.blocks[height]:0);
+    else return(0);
 }
 
 int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)

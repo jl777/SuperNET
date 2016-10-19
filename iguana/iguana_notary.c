@@ -68,7 +68,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     checkpoint = dp->srcfifo[dp->srcconfirms];
     printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( dp->destupdated != 0 && bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % DPOW_CHECKPOINTFREQ) == 0 )
+    if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % DPOW_CHECKPOINTFREQ) == 0 )
     {
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
@@ -225,7 +225,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     if ( myinfo->DPOW.srcconfirms > DPOW_FIFOSIZE )
         myinfo->DPOW.srcconfirms = DPOW_FIFOSIZE;
     if ( myinfo->DPOW.blocks == 0 )
-        myinfo->DPOW.blocks = calloc(1000000,sizeof(*myinfo->DPOW.blocks));
+        myinfo->DPOW.blocks = calloc(DPOW_MAXBLOCKS,sizeof(*myinfo->DPOW.blocks));
     return(clonestr("{\"result\":\"success\"}"));
 }
 
