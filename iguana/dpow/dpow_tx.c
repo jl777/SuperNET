@@ -19,7 +19,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
     *lastkp = -1;
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             bp->recvmask |= (1LL << k);
@@ -50,7 +50,7 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     int32_t j,m,k; uint64_t mask = 0;
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             mask |= (1LL << k);
@@ -142,7 +142,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( ((1LL << k) & bestmask) != 0 )
         {
             ep = &bp->notaries[k];
@@ -193,7 +193,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
     vins = cJSON_CreateArray();
     for (j=0; j<bp->numnotaries; j++)
     {
-        k = ((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( ((1LL << k) & bestmask) != 0 )
         {
             ep = &bp->notaries[k];
@@ -245,7 +245,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct iguana_info *coin,struct
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->height%bp->numnotaries,j,myind,jprint(item,0),j);
+                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
                                 cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                 if ( src_or_dest != 0 )
                                     bp->destsigsmasks[bestk] |= (1LL << myind);

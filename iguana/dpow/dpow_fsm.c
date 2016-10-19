@@ -81,7 +81,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
             r = (rand() % bp->numnotaries);
             for (j=0; j<DPOW_M(bp); j++)
             {
-                i = ((bp->height % bp->numnotaries) + j + r) % bp->numnotaries;
+                i = DPOW_MODIND(bp,j+r);//((bp->height % bp->numnotaries) + j + r) % bp->numnotaries;
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
                     break;
             }
@@ -268,7 +268,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_block *bp,uint32_t 
             sendutxo = 0;
             for (i=0; i<bp->numnotaries; i++)
             {
-                k = ((bp->height % bp->numnotaries) + i) % bp->numnotaries;
+                k = DPOW_MODIND(bp,i);//((bp->height % bp->numnotaries) + i) % bp->numnotaries;
                 if ( k == myind )
                     continue;
                 if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )

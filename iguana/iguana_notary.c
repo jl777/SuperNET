@@ -15,13 +15,13 @@
 
 
 // Todo list:
-// a) detection of special transactions to update list of current notaries
+// a) update list of current notaries
+// b) use HDD storage of data
 
-// b) award 5% APR for utxo older than a week when they are spent
-// c) round robin mining difficulty
-// d) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
+// c) award 5% APR for utxo older than a week when they are spent
+// d) round robin mining difficulty
 
-//>>>>>>>> decode_hex n.71 hex[0] (d) -> 13 hex.(d968f6be7b5f0ac7882728291deebb956198aecf126cc353c3b98507791a3203f0780000b23a68302f44979405dc281f2f659536c60ccf95b602ab9991a8f8c966d70e624b4d44?) [n*2+1: 0] [n*2: -64 ?] len.143
+// q) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
 
 #define CHECKSIG 0xac
 
@@ -169,6 +169,18 @@ void iguana_dPoWupdate(struct supernet_info *myinfo)
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
 }
 
+void dpow_addresses()
+{
+    int32_t i; char coinaddr[64]; uint8_t pubkey[33];
+    for (i=0; i<sizeof(Notaries)/sizeof(*Notaries); i++)
+    {
+        decode_hex(pubkey,33,Notaries[i][1]);
+        bitcoin_address(coinaddr,60,pubkey,33);
+        printf("%s ",coinaddr);
+    }
+    printf("Numnotaries.%d\n",i);
+}
+
 #include "../includes/iguana_apidefs.h"
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
@@ -247,6 +259,12 @@ TWO_STRINGS(komodo,passthru,function,hex)
 
 STRING_ARG(iguana,addnotary,ipaddr)
 {
+    static int32_t didinit;
+    if ( didinit == 0 )
+    {
+        dpow_addresses();
+        didinit = 1;
+    }
     printf("addnotary (%s) -> (%s)\n",ipaddr,myinfo->ipaddr);
     dpow_nanomsginit(myinfo,ipaddr);
     return(clonestr("{\"result\":\"notary node added\"}"));

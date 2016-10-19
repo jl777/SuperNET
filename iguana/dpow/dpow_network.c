@@ -240,7 +240,7 @@ int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,st
         for (i=0; i<33; i++)
             up->pubkey[i] = data[len++];
         numnotaries = data[len++];
-        if ( numnotaries == bp->numnotaries )
+        if ( numnotaries <= bp->numnotaries )
         {
             for (i=0; i<numnotaries; i++)
             {
