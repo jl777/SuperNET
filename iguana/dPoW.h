@@ -21,7 +21,7 @@
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODSTART(bp) (((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries)
 #define DPOW_VERSION 0x0206
-#define DPOW_UTXOSIZE 20000
+#define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
