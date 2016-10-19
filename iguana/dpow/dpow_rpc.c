@@ -291,7 +291,7 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                         vout = jint(item,"vout");
                         if ( bits256_nonz(txid) != 0 && vout >= 0 )
                         {
-                            if ( *voutp < 0 )
+                            if ( *voutp < 0 || (rand() % (n/2+1)) == 0 )
                             {
                                 *voutp = vout;
                                 *txidp = txid;
