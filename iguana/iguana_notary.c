@@ -15,12 +15,13 @@
 
 
 // Todo list:
-// a) creation and detection of special transactions to update list of current notaries
-// b) updating latest notarized height based on the notarized tx data
+// a) detection of special transactions to update list of current notaries
 
-// c) award 5% APR for utxo older than a week when they are spent
-// d) round robin mining difficulty
-// e) rebroadcast reorged local chain notary tx and scanning mempool
+// b) award 5% APR for utxo older than a week when they are spent
+// c) round robin mining difficulty
+// d) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
+
+//>>>>>>>> decode_hex n.71 hex[0] (d) -> 13 hex.(d968f6be7b5f0ac7882728291deebb956198aecf126cc353c3b98507791a3203f0780000b23a68302f44979405dc281f2f659536c60ccf95b602ab9991a8f8c966d70e624b4d44?) [n*2+1: 0] [n*2: -64 ?] len.143
 
 #define CHECKSIG 0xac
 
