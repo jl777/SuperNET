@@ -252,6 +252,22 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
+STRING_ARG(dpow,active,maskhex)
+{
+    uint8_t data[8]; int32_t i,len; cJSON *array = cJSON_CreateArray();
+    printf("dpow active (%s)\n",maskhex);
+    if ( (len= (int32_t)strlen(maskhex)) <= 16 )
+    {
+        len >>= 1;
+        memset(data,0,sizeof(data));
+        decode_hex(data,len,maskhex);
+        for (i=0; i<(len<<3); i++)
+            if ( GETBIT(data,i) != 0 )
+                jaddistr(array,Notaries[i][0]);
+        return(jprint(array,1));
+    } else return(clonestr("{\"error\":\"maskhex too long\"}"));
+}
+
 ZERO_ARGS(dpow,cancelratify)
 {
     myinfo->DPOW.cancelratify = 1;
