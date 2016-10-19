@@ -272,7 +272,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 STRING_ARG(dpow,active,maskhex)
 {
-    uint8_t data[8]; int32_t i,len; cJSON *array = cJSON_CreateArray();
+    uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *array = cJSON_CreateArray();
     if ( maskhex == 0 || maskhex[0] == 0 )
         return(clonestr("{\"error\":\"no maskhex\"}"));
     printf("dpow active (%s)\n",maskhex);
@@ -281,9 +281,19 @@ STRING_ARG(dpow,active,maskhex)
         len >>= 1;
         memset(data,0,sizeof(data));
         decode_hex(data,len,maskhex);
+        for (i=0; i<len; i++)
+            revdata[i] = data[len-1-i];
+        mask = 0;
+        memcpy(&mask,revdata,sizeof(revdata));
+        for (i=0; i<len; i++)
+            printf("%02x",data[i]);
+        printf(" <- hex mask.%llx\n",(long long)mask);
         for (i=0; i<(len<<3); i++)
-            if ( GETBIT(data,i) != 0 )
+            if ( ((1LL << i) & mask) != 0 )
+            {
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
                 jaddistr(array,Notaries[i][0]);
+            }
         return(jprint(array,1));
     } else return(clonestr("{\"error\":\"maskhex too long\"}"));
 }
