@@ -273,6 +273,8 @@ STRING_ARG(iguana,addnotary,ipaddr)
 STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8]; int32_t i,len; cJSON *array = cJSON_CreateArray();
+    if ( maskhex == 0 || maskhex[0] == 0 )
+        return(clonestr("{\"error\":\"no maskhex\"}"));
     printf("dpow active (%s)\n",maskhex);
     if ( (len= (int32_t)strlen(maskhex)) <= 16 )
     {
