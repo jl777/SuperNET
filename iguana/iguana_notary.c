@@ -15,11 +15,9 @@
 
 
 // Todo list:
-// a) update list of current notaries
-// b) use HDD storage of data
 
-// c) award 5% APR for utxo older than a week when they are spent
-// d) round robin mining difficulty
+// a) award 5% APR for utxo older than a week when they are spent
+// b) round robin mining difficulty
 
 // q) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
 
@@ -272,9 +270,23 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 STRING_ARG(dpow,active,maskhex)
 {
-    uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *array = cJSON_CreateArray();
+    uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
     if ( maskhex == 0 || maskhex[0] == 0 )
-        return(clonestr("{\"error\":\"no maskhex\"}"));
+    {
+        mask = myinfo->DPOW.lastrecvmask;
+        for (i=0; i<64; i++)
+        {
+            if ( ((1LL << i) & mask) != 0 )
+            {
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
+                jaddistr(array,Notaries[i][0]);
+            }
+        }
+        retjson = cJSON_CreateObject();
+        jadd64bits(retjson,"recvmask",mask);
+        jadd(retjson,"notaries",array);
+        return(jprint(retjson,1));
+    }
     printf("dpow active (%s)\n",maskhex);
     if ( (len= (int32_t)strlen(maskhex)) <= 16 )
     {

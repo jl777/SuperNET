@@ -516,6 +516,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("state machine ht.%d completed state.%x %s.%s %s.%s\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid));
+    printf("state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
+    myinfo->DPOW.lastrecvmask = bp->recvmask;
     free(ptr);
 }
