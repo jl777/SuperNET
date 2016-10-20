@@ -15,6 +15,7 @@
 
 
 // Todo list:
+// ht specific notarized ht
 
 // a) award 5% APR for utxo older than a week when they are spent
 
