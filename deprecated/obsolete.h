@@ -19569,3 +19569,52 @@ len = 0;
                 //printf("matches.%d num.%d k.%d %llx refht.%d\n",matches,num,refk,(long long)refmask,refheight);
                 return(matches);
             }
+            
+            /*int32_t komodo_blockindexcheck(CBlockIndex *pindex,uint32_t *nBitsp)
+             {
+             // 1 -> valid notary block, change nBits to KOMODO_MINDIFF_NBITS
+             // -1 -> invalid, ie, prior to notarized block
+             CBlock block; int32_t i,height; char *coinbasestr;
+             if ( pindex == 0 )
+             return(0);
+             if ( ReadBlockFromDisk(block,pindex,1) == 0 )
+             return(0);
+             if ( block.vtx.size() > 0 )
+             {
+             height = pindex->nHeight;
+             coinbasestr = (char *)block.vtx[0].vout[0].scriptPubKey.ToString().c_str();
+             for (i=0; i<64; i++)
+             {
+             if ( Notaries[i][0] == 0 || Notaries[i][1] == 0 || Notaries[i][0][0] == 0 || Notaries[i][1][0] == 0 )
+             break;
+             if ( strncmp(Notaries[i][1],coinbasestr,66) == 0 )
+             {
+             //printf("Notary.[%d] %s ht.%d (%s)\n",i,Notaries[i][0],height,coinbasestr);
+             //*nBitsp = KOMODO_MINDIFF_NBITS;
+             return(1);
+             }
+             }
+             }
+             // compare against elected notary pubkeys as of height
+             return(0);
+             }
+             
+             int32_t komodo_is_notaryblock(CBlockHeader& blockhdr)
+             {
+             //uint32_t nBits = 0;
+             //return(komodo_blockindexcheck(mapBlockIndex[blockhdr.GetHash()],&nBits));
+             return(0);
+             }
+             
+             int32_t komodo_blockhdrcheck(CBlockHeader& blockhdr,uint32_t *nBitsp)
+             {
+             int32_t retval;
+             if ( (retval= komodo_is_notaryblock(blockhdr)) > 0 )
+             *nBitsp = KOMODO_MINDIFF_NBITS;
+             return(retval);
+             }
+             
+             int32_t komodo_blockcheck(CBlock& block,uint32_t *nBitsp)
+             {
+             return(komodo_blockhdrcheck(block,nBitsp));
+             }*/

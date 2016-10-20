@@ -17,7 +17,6 @@
 // Todo list:
 
 // a) award 5% APR for utxo older than a week when they are spent
-// b) round robin mining difficulty
 
 // q) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
 
