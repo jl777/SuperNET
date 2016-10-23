@@ -1830,7 +1830,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         }
         PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
         timestamp = (uint32_t)time(NULL);
-        int32_t dispflag = (rand() % 10000);
+        int32_t dispflag = ((rand() % 100) == 0);
         for (i=0; i<MAX_CURRENCIES; i++)
         {
             splineval = PAX_splineval(&dp->splines[i],timestamp,0);
