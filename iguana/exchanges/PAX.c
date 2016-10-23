@@ -30,7 +30,7 @@
 #define FUNCS PAX ## _funcs
 #define BASERELS PAX ## _baserels
 
-#include "../peggy.h"
+#include "../PAX/peggy.h"
 
 char *peggy_bases[64] =
 {
