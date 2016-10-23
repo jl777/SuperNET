@@ -111,7 +111,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
     if ( (bp= dpow_heightfind(myinfo,height)) == 0 )
     {
         if ( (rand() % 100) == 0 )
-            printf("couldnt find height.%d\n",height);
+            printf("couldnt find height.%d | if you just started notary dapp this is normal\n",height);
         return(-1);
     }
     dpow_notaryfind(myinfo,bp,&myind,myinfo->DPOW.minerkey33);

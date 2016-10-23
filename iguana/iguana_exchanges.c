@@ -736,7 +736,7 @@ void exchanges777_loop(void *ptr)
     int32_t flag,retval,i; struct exchange_request *req; char *retstr;
     myinfo = SuperNET_MYINFO(0);
 #ifdef INCLUDE_PAX
-    struct peggy_info *PEGS=0; int32_t peggyflag = 0;
+    /*struct peggy_info *PEGS=0; int32_t peggyflag = 0;
     if ( strcmp(exchange->name,"PAX") == 0 )
     {
         if ( (PEGS= myinfo->PEGS) != 0 )
@@ -746,23 +746,12 @@ void exchanges777_loop(void *ptr)
             _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
             PEGS->lastupdate = (uint32_t)time(NULL);
         }
-    }
+    }*/
 #endif
     printf("exchanges loop.(%s)\n",exchange->name);
     while ( 1 )
     {
-#ifdef INCLUDE_PAX
-        if ( peggyflag != 0 && PEGS != 0 )
-        {
-            //printf("nonz peggy\n");
-            PAX_idle(PEGS,peggyflag,3);
-            if ( time(NULL) > PEGS->lastupdate+100 )
-            {
-                _crypto_update(PEGS,PEGS->cryptovols,&PEGS->data,1,peggyflag);
-                PEGS->lastupdate = (uint32_t)time(NULL);
-            }
-        }
-#endif
+        PAX_idle(myinfo);
         flag = retval = 0;
         retstr = 0;
         if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
@@ -1133,8 +1122,11 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
         for (i=0; i<sizeof(Exchange_funcs)/sizeof(*Exchange_funcs); i++)
             if ( (exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 )
             {
-                if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforx") == 0 )
+                if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforex") == 0 )
+                {
+                    exchange->pollgap = 10;
                     continue;
+                }
                 if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,0)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
                     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange;
             }

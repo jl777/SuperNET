@@ -99,7 +99,8 @@ struct supernet_info
     struct dpow_info DPOW;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
-    struct peggy_info *PEGS;
+    //struct peggy_info *PEGS;
+    void *PAXDATA;
     struct liquidity_info linfos[64];
     struct komodo_notaries NOTARY;
     // compatibility

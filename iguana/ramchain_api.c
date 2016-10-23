@@ -308,6 +308,12 @@ SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment)
     return(jprint(retjson,1));
 }
 
+ZERO_ARGS(pax,start)
+{
+    void PAX_init();
+    PAX_init();
+    return(clonestr("{\"result\":\"PAX_init called\"}"));
+}
 #undef IGUANA_ARGS
 #include "../includes/iguana_apiundefs.h"
 

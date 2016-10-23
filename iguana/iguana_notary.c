@@ -15,10 +15,6 @@
 
 
 // Todo list:
-// ht specific notarized ht
-
-// a) award 5% APR for utxo older than a week when they are spent
-
 // q) investigate if rebroadcast reorged local chain notary tx and scanning mempool is needed
 
 #define CHECKSIG 0xac
@@ -32,6 +28,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,uint32_t channel,uint32_t 
 #include "dpow/dpow_rpc.c"
 #include "dpow/dpow_tx.c"
 #include "dpow/dpow_fsm.c"
+#include "dpow/dpow_prices.c"
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {

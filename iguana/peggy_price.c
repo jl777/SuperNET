@@ -201,17 +201,17 @@ uint32_t peggy_mils(int32_t i)
             minmils = 10000;
         else if ( strncmp(peggy_bases[i],"NXT",3) == 0 || strncmp(peggy_bases[i],"BTS",3) == 0 )
             minmils = 1000000;
-        else if ( strncmp(peggy_bases[i],"STEEM",5) == 0 )
+        else if ( strncmp(peggy_bases[i],"KMD",5) == 0 )
             minmils = 1000;
         else minmils = 10000;
     }
     return(minmils);
 }
 
-int32_t peggy_prices(struct price_resolution prices[64],double btcusd,double btcdbtc,char *contracts[],int32_t num,double *cprices,double *basevals)
+int32_t peggy_prices(struct price_resolution prices[64],double btcusd,double kmdbtc,char *contracts[],int32_t num,double *cprices,double *basevals)
 {
-    double btcdusd,price_in_btcd,dprice,usdcny,usdrub,btccny,btcrub,xauusd,usdprice=0.,usdval,btcprice=0.; int32_t contractnum,base,nonz = 0;
-    if ( btcusd > SMALLVAL && btcdbtc > SMALLVAL && (usdval= basevals[0]) > SMALLVAL )
+    double kmdusd,price_in_kmd,dprice,usdcny,usdrub,btccny,btcrub,xauusd,usdprice=0.,usdval,btcprice=0.; int32_t contractnum,base,nonz = 0;
+    if ( btcusd > SMALLVAL && kmdbtc > SMALLVAL && (usdval= basevals[0]) > SMALLVAL )
     {
         xauusd = usdcny = usdrub = btccny = btcrub = 0.;
         for (contractnum=0; contractnum<num; contractnum++)
@@ -230,9 +230,9 @@ int32_t peggy_prices(struct price_resolution prices[64],double btcusd,double btc
             usdrub = (basevals[0] * peggy_mils(9)) / (basevals[9] * peggy_mils(0));
             btcrub = 1000 * btcusd * usdrub;
         }
-        btcdusd = (btcusd * btcdbtc);
-        printf("xauusd %f usdval %f %f %f usdcny %f usdrub %f btcusd %f btcdbtc %f btcdusd %f btccny %f btcrub %f\n",xauusd,usdval,basevals[8],basevals[9],usdcny,usdrub,btcusd,btcdbtc,btcdusd,btccny,btcrub);
-        prices[0].Pval = (PRICE_RESOLUTION * 100. * btcdbtc);
+        kmdusd = (btcusd * kmdbtc);
+        printf("xauusd %f usdval %f %f %f usdcny %f usdrub %f btcusd %f kmdbtc %f kmdusd %f btccny %f btcrub %f\n",xauusd,usdval,basevals[8],basevals[9],usdcny,usdrub,btcusd,kmdbtc,kmdusd,btccny,btcrub);
+        prices[0].Pval = (PRICE_RESOLUTION * 100. * kmdbtc);
         for (base=0,contractnum=1; base<32; base++,contractnum++)
         {
             if ( strcmp(contracts[contractnum],CURRENCIES[base]) == 0 )
@@ -241,17 +241,17 @@ int32_t peggy_prices(struct price_resolution prices[64],double btcusd,double btc
                 {
                     nonz++;
                     if ( base == 0 )
-                        usdprice = price_in_btcd = (1. / btcdusd);
-                    else price_in_btcd = (dprice / (btcdusd * usdval));
-                    prices[contractnum].Pval = (PRICE_RESOLUTION * price_in_btcd);
+                        usdprice = price_in_kmd = (1. / kmdusd);
+                    else price_in_kmd = (dprice / (kmdusd * usdval));
+                    prices[contractnum].Pval = (PRICE_RESOLUTION * price_in_kmd);
                 }
             } else printf("unexpected list entry %s vs %s at %d\n",contracts[contractnum],CURRENCIES[base],contractnum);
         }
         if ( strcmp(contracts[contractnum],"BTCUSD") != 0 )
             printf("unexpected contract (%s) at %d\n",contracts[contractnum],contractnum);
-        btcprice = (1. / btcdbtc);
-        prices[contractnum++].Pval = (PRICE_RESOLUTION / btcdbtc) / 1000.;
-        printf("btcprice %f = 1/%f %llu\n",btcprice,1./btcdbtc,(long long)prices[contractnum-1].Pval);
+        btcprice = (1. / kmdbtc);
+        prices[contractnum++].Pval = (PRICE_RESOLUTION / kmdbtc) / 1000.;
+        printf("btcprice %f = 1/%f %llu\n",btcprice,1./kmdbtc,(long long)prices[contractnum-1].Pval);
         for (; contractnum<64; contractnum++)
         {
             //dprice = 0;
@@ -628,7 +628,7 @@ int32_t PAX_calcmatrix(double matrix[32][32])
 
 int32_t PAX_getmatrix(double *basevals,struct peggy_info *PEGS,double Hmatrix[32][32],double *RTprices,char *contracts[],int32_t num,uint32_t timestamp)
 {
-    int32_t i,j,c; char name[16]; double btcusd,btcdbtc;
+    int32_t i,j,c; char name[16]; double btcusd,kmdbtc;
     memcpy(Hmatrix,PEGS->data.ecbmatrix,sizeof(PEGS->data.ecbmatrix));
     PAX_calcmatrix(Hmatrix);
     /*for (i=0; i<32; i++)
@@ -638,11 +638,11 @@ int32_t PAX_getmatrix(double *basevals,struct peggy_info *PEGS,double Hmatrix[32
      printf("%s\n",CURRENCIES[i]);
      }*/
     btcusd = PEGS->data.btcusd;
-    btcdbtc = PEGS->data.btcdbtc;
+    kmdbtc = PEGS->data.kmdbtc;
     if ( btcusd > SMALLVAL )
         dxblend(&PEGS->btcusd,btcusd,.9);
-    if ( btcdbtc > SMALLVAL )
-        dxblend(&PEGS->btcdbtc,btcdbtc,.9);
+    if ( kmdbtc > SMALLVAL )
+        dxblend(&PEGS->kmdbtc,kmdbtc,.9);
     // char *cryptostrs[8] = { "btc", "nxt", "unity", "eth", "ltc", "xmr", "bts", "xcp" };
     // "BTCUSD", "NXTBTC", "SuperNET", "ETHBTC", "LTCBTC", "XMRBTC", "BTSBTC", "XCPBTC",  // BTC priced
     for (i=0; i<num; i++)
@@ -705,7 +705,7 @@ int32_t PAX_getmatrix(double *basevals,struct peggy_info *PEGS,double Hmatrix[32
             }
         }
         //if ( Debuglevel > 2 )
-        printf("(%f %f) i.%d num.%d %s %f\n",PEGS->btcusd,PEGS->btcdbtc,i,num,contracts[i],RTprices[i]);
+        printf("(%f %f) i.%d num.%d %s %f\n",PEGS->btcusd,PEGS->kmdbtc,i,num,contracts[i],RTprices[i]);
         //printf("RT.(%s %f) ",contracts[i],RTprices[i]);
     }
     return(PEGS->data.ecbdatenum);
@@ -719,7 +719,7 @@ char *peggy_emitprices(int32_t *nonzp,struct peggy_info *PEGS,uint32_t blocktime
     printf("peggy_emitprices\n");
     if ( PAX_getmatrix(basevals,PEGS,matrix,cprices+1,peggy_bases+1,sizeof(peggy_bases)/sizeof(*peggy_bases)-1,blocktimestamp) > 0 )
     {
-        cprices[0] = PEGS->btcdbtc;
+        cprices[0] = PEGS->kmdbtc;
         for (i=0; i<32; i++)
             PEGS->data.RTmatrix[i][i] = basevals[i];
         /*for (i=0; i<32; i++)
@@ -732,7 +732,7 @@ char *peggy_emitprices(int32_t *nonzp,struct peggy_info *PEGS,uint32_t blocktime
         memset(prices,0,sizeof(prices));
         memset(matrix,0,sizeof(matrix));
         memset(RTmatrix,0,sizeof(RTmatrix));
-        peggy_prices(prices,PEGS->btcusd,PEGS->btcdbtc,peggy_bases,sizeof(peggy_bases)/sizeof(*peggy_bases),cprices,basevals);
+        peggy_prices(prices,PEGS->btcusd,PEGS->kmdbtc,peggy_bases,sizeof(peggy_bases)/sizeof(*peggy_bases),cprices,basevals);
         for (i=0; i<sizeof(peggy_bases)/sizeof(*peggy_bases); i++)
         {
             jaddinum(array,prices[i].Pval);
@@ -762,16 +762,16 @@ char *peggy_emitprices(int32_t *nonzp,struct peggy_info *PEGS,uint32_t blocktime
 
 double PAX_baseprice(struct peggy_info *PEGS,uint32_t timestamp,int32_t basenum)
 {
-    double btc,btcd,btcdusd,usdval;
+    double btc,kmd,kmdusd,usdval;
     btc = 1000. * _pairaved(PAX_splineval(&PEGS->splines[MAX_CURRENCIES+0],timestamp,0),PAX_splineval(&PEGS->splines[MAX_CURRENCIES+1],timestamp,0));
-    btcd = .01 * PAX_splineval(&PEGS->splines[MAX_CURRENCIES+2],timestamp,0);
-    if ( btc != 0. && btcd != 0. )
+    kmd = .01 * PAX_splineval(&PEGS->splines[MAX_CURRENCIES+2],timestamp,0);
+    if ( btc != 0. && kmd != 0. )
     {
-        btcdusd = (btc * btcd);
+        kmdusd = (btc * kmd);
         usdval = PAX_splineval(&PEGS->splines[USD],timestamp,0);
         if ( basenum == USD )
-            return(1. / btcdusd);
-        else return(PAX_splineval(&PEGS->splines[basenum],timestamp,0) / (btcdusd * usdval));
+            return(1. / kmdusd);
+        else return(PAX_splineval(&PEGS->splines[basenum],timestamp,0) / (kmdusd * usdval));
     }
     return(0.);
 }
@@ -848,7 +848,7 @@ struct peggy_info *PAX_init()
     tradebot_monitorall(0,0,0,0,"truefx",commission);
     tradebot_monitorall(0,0,0,0,"instaforex",commission);
     spread.Pval = PERCENTAGE(1);
-    PEGS = peggy_init(PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,100,10,spread,PEGGY_RATE_777,40,10,2,5,2,0,0);
+    PEGS = peggy_init(PEGGY_MAXLOCKDAYS,"KMD",SATOSHIDEN/100,100,10,spread,PEGGY_RATE_777,40,10,2,5,2,0,0);
     exchange_create("PAX",0);
     //peggy_priceinits(PEGS,(uint32_t)time(NULL),allprices);
     return(PEGS);

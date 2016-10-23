@@ -47,7 +47,7 @@ static char *Yahoo_metals[] = { YAHOO_METALS };
 char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
     "XAU", "XAG", "XPT", "XPD", // metals, gold must be first
-    "BTCD", "BTC", "NXT", "ETC", "ETH", "STEEM", "BTS", "MAID", "XCP",  "XMR" // cryptos
+    "BTCD", "BTC", "NXT", "ETC", "ETH", "KMD", "BTS", "MAID", "XCP",  "XMR" // cryptos
 };
 
 char CONTRACTS[][16] = {  "NZDUSD", "NZDCHF", "NZDCAD", "NZDJPY", "GBPNZD", "EURNZD", "AUDNZD", "CADJPY", "CADCHF", "USDCAD", "EURCAD", "GBPCAD", "AUDCAD", "USDCHF", "CHFJPY", "EURCHF", "GBPCHF", "AUDCHF", "EURUSD", "EURAUD", "EURJPY", "EURGBP", "GBPUSD", "GBPJPY", "GBPAUD", "USDJPY", "AUDJPY", "AUDUSD", "USDCNY", "USDHKD", "USDMXN", "USDZAR", "USDTRY", "EURTRY", "TRYJPY", "USDSGD", "EURNOK", "USDNOK","USDSEK","USDDKK","EURSEK","EURDKK","NOKJPY","SEKJPY","USDPLN","EURPLN","USDILS", // no more currencies
@@ -197,10 +197,10 @@ void PAX_btcprices(struct peggy_info *PEGS,int32_t enddatenum,int32_t numdates)
 {
     int32_t i,n,year,month,day,seconds,datenum; char url[1024],date[64],*dstr,*str;
     uint32_t timestamp,utc32[MAX_SPLINES]; struct tai t;
-    cJSON *coindesk,*quandl,*btcdhist,*bpi,*array,*item;
-    double btcddaily[MAX_SPLINES],cdaily[MAX_SPLINES],qdaily[MAX_SPLINES],ask,high,low,bid,close,vol,quotevol,open,price = 0.;
+    cJSON *coindesk,*quandl,*kmdhist,*bpi,*array,*item;
+    double kmddaily[MAX_SPLINES],cdaily[MAX_SPLINES],qdaily[MAX_SPLINES],ask,high,low,bid,close,vol,quotevol,open,price = 0.;
     coindesk = url_json("http://api.coindesk.com/v1/bpi/historical/close.json");
-    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-numdates*3600*24));
+    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-numdates*3600*24));
     if ( (bpi= jobj(coindesk,"bpi")) != 0 )
     {
         datenum = enddatenum;
@@ -248,11 +248,13 @@ void PAX_btcprices(struct peggy_info *PEGS,int32_t enddatenum,int32_t numdates)
         }
         PAX_genspline(&PEGS->splines[MAX_CURRENCIES+1],MAX_CURRENCIES+1,"quandl",utc32,qdaily,n<MAX_SPLINES?n:MAX_SPLINES,qdaily);
     }
-    btcdhist = url_json(url);
+    kmdhist = url_json(url);
     //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},
-    if ( (array= jarray(&n,btcdhist,0)) != 0 )
+    if ( (array= jarray(&n,kmdhist,0)) != 0 )
     {
-        memset(utc32,0,sizeof(utc32)), memset(btcddaily,0,sizeof(btcddaily));
+        memset(utc32,0,sizeof(utc32)), memset(kmddaily,0,sizeof(kmddaily));
+        for (i=0; i<MAX_SPLINES; i++)
+            kmddaily[i] = 0.0001 * 100.;
         //printf("GOT.(%s)\n",cJSON_Print(array));
         for (i=0; i<n; i++)
         {
@@ -262,13 +264,13 @@ void PAX_btcprices(struct peggy_info *PEGS,int32_t enddatenum,int32_t numdates)
             //printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
             if ( Debuglevel > 2 )
                 printf("[%u %d %f]",timestamp,OS_conv_unixtime(&t,&seconds,timestamp),price);
-            utc32[i] = timestamp - 12*3600, btcddaily[i] = price * 100.;
+            utc32[i] = timestamp - 12*3600, kmddaily[i] = price * 100.;
         }
         if ( Debuglevel > 2 )
             printf("poloniex.%d\n",n);
-        PAX_genspline(&PEGS->splines[MAX_CURRENCIES+2],MAX_CURRENCIES+2,"btcdhist",utc32,btcddaily,n<MAX_SPLINES?n:MAX_SPLINES,btcddaily);
+        PAX_genspline(&PEGS->splines[MAX_CURRENCIES+2],MAX_CURRENCIES+2,"kmdhist",utc32,kmddaily,n<MAX_SPLINES?n:MAX_SPLINES,kmddaily);
     }
-    // https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=1405699200&end=9999999999&period=86400
+    // https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=1405699200&end=9999999999&period=86400
 }
 
 int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
@@ -397,19 +399,19 @@ int32_t ecb_matrix(double matrix[32][32],char *date)
     return(datenum);
 }
 
-void PAX_update(struct peggy_info *PEGS,double *btcusdp,double *btcdbtcp)
+void PAX_update(struct peggy_info *PEGS,double *btcusdp,double *kmdbtcp)
 {
     int32_t i,n,seconds,datenum; uint32_t timestamp; char url[1024],*dstr,*str;
-    double btcddaily=0.,btcusd=0.,ask,high,low,bid,close,vol,quotevol,open,price = 0.;
-    //cJSON *btcdtrades,*btcdtrades2,*,*bitcoincharts,;
-    cJSON *quandl,*btcdhist,*array,*item,*bitcoinave,*blockchaininfo,*coindesk=0;
-    //btcdtrades = url_json("https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_BTCD");
-    //btcdtrades2 = url_json("https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-BTCD&count=50");
+    double kmddaily=0.,btcusd=0.,ask,high,low,bid,close,vol,quotevol,open,price = 0.;
+    //cJSON *kmdtrades,*kmdtrades2,*,*bitcoincharts,;
+    cJSON *quandl,*kmdhist,*array,*item,*bitcoinave,*blockchaininfo,*coindesk=0;
+    //kmdtrades = url_json("https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_kmd");
+    //kmdtrades2 = url_json("https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-KMD&count=50");
     bitcoinave = url_json("https://api.bitcoinaverage.com/ticker/USD/");
     //bitcoincharts = url_json("http://api.bitcoincharts.com/v1/weighted_prices.json");
     blockchaininfo = url_json("https://blockchain.info/ticker");
     coindesk = url_json("http://api.coindesk.com/v1/bpi/historical/close.json");
-    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-2*3600*24));
+    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-2*3600*24));
     quandl = url_json("https://www.quandl.com/api/v1/datasets/BAVERAGE/USD.json?rows=1");
     if ( quandl != 0 && (str= jstr(quandl,"updated_at")) != 0 && (datenum= conv_date(&seconds,str)) > 0 && (array= jarray(&n,quandl,"data")) != 0 )
     {
@@ -430,20 +432,20 @@ void PAX_update(struct peggy_info *PEGS,double *btcusdp,double *btcdbtcp)
     {
         double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[512];
         struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
-        aveask = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&askvol,"BTCD","BTC",1,argjson);
-        avebid = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&bidvol,"BTCD","BTC",-1,argjson);
+        aveask = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&askvol,"KMD","BTC",1,argjson);
+        avebid = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&bidvol,"KMD","BTC",-1,argjson);
         if ( avebid > SMALLVAL && aveask > SMALLVAL )
         {
             price = (avebid*bidvol + aveask*askvol) / (bidvol + askvol);
-            *btcdbtcp = price;
-            printf("set BTCD price %f\n",price);
-            PEGS->btcdbtc = price;
+            *kmdbtcp = price;
+            printf("set KMD price %f\n",price);
+            PEGS->kmdbtc = price;
         }
         else
         {
-            btcdhist = url_json(url);
+            kmdhist = url_json(url);
             //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},
-            if ( btcdhist != 0 && (array= jarray(&n,btcdhist,0)) != 0 )
+            if ( kmdhist != 0 && (array= jarray(&n,kmdhist,0)) != 0 )
             {
                 //printf("GOT.(%s)\n",cJSON_Print(array));
                 for (i=0; i<1; i++)
@@ -453,14 +455,14 @@ void PAX_update(struct peggy_info *PEGS,double *btcusdp,double *btcdbtcp)
                     close = jdouble(item,"close"), vol = jdouble(item,"volume"), quotevol = jdouble(item,"quoteVolume"), price = jdouble(item,"weightedAverage");
                     //printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
                     //printf("[%u %d %f]",timestamp,OS_conv_unixtime(&seconds,timestamp),price);
-                    btcddaily = price;
-                    if ( btcddaily != 0 )
-                        PEGS->btcdbtc = *btcdbtcp = btcddaily;
+                    kmddaily = price;
+                    if ( kmddaily != 0 )
+                        PEGS->kmdbtc = *kmdbtcp = kmddaily;
                 }
                 //printf("poloniex.%d\n",n);
             }
-            if ( btcdhist != 0 )
-                free_json(btcdhist);
+            if ( kmdhist != 0 )
+                free_json(kmdhist);
         }
     }
     if ( bitcoinave != 0 )
@@ -524,19 +526,19 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][9][2],struct PA
 {
     char *cryptonatorA = "https://www.cryptonator.com/api/full/%s-%s"; //unity-btc
     char *cryptocoinchartsB = "http://api.cryptocoincharts.info/tradingPair/%s_%s"; //bts_btc
-    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "steem", "xmr", "bts", "xcp", "etc" };
-    int32_t iter,i,j; double btcusd,btcdbtc,cnyusd,prices[9][2],volumes[9][2];
+    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "kmd", "xmr", "bts", "xcp", "etc" };
+    int32_t iter,i,j; double btcusd,kmdbtc,cnyusd,prices[9][2],volumes[9][2];
     char base[16],rel[16],url[512],*str; cJSON *jsonA,*jsonB;
     if ( peggyflag != 0 )
     {
         cnyusd = PEGS->cnyusd;
         btcusd = PEGS->btcusd;
-        btcdbtc = PEGS->btcdbtc;
-        //printf("update with btcusd %f btcd %f cnyusd %f cnybtc %f\n",btcusd,btcdbtc,cnyusd,cnyusd/btcusd);
-        if ( btcusd < SMALLVAL || btcdbtc < SMALLVAL )
+        kmdbtc = PEGS->kmdbtc;
+        //printf("update with btcusd %f kmd %f cnyusd %f cnybtc %f\n",btcusd,kmdbtc,cnyusd,cnyusd/btcusd);
+        if ( btcusd < SMALLVAL || kmdbtc < SMALLVAL )
         {
-            PAX_update(PEGS,&btcusd,&btcdbtc);
-            printf("PAX_update with btcusd %f btcd %f\n",btcusd,btcdbtc);
+            PAX_update(PEGS,&btcusd,&kmdbtc);
+            printf("PAX_update with btcusd %f kmd %f\n",btcusd,kmdbtc);
         }
         memset(prices,0,sizeof(prices));
         memset(volumes,0,sizeof(volumes));
@@ -553,7 +555,7 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][9][2],struct PA
             for (iter=0; iter<1; iter++)
             {
                 if ( i == 0 && iter == 0 )
-                    strcpy(base,"btcd"), strcpy(rel,"btc");
+                    strcpy(base,"kmd"), strcpy(rel,"btc");
                 else strcpy(base,str), strcpy(rel,iter==0?"btc":"cny");
                 //if ( selector == 0 )
                 {
@@ -587,10 +589,10 @@ void _crypto_update(struct peggy_info *PEGS,double cryptovols[2][9][2],struct PA
 
 void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTmetals[4],double *RTprices,struct PAX_data *dp)
 {
-    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "etc", "steem", "xmr", "bts", "xcp" };
-    int32_t iter,i,c,baserel,basenum,relnum; double cnyusd,btcusd,btcdbtc,bid,ask,price,vol,prices[8][2],volumes[8][2];
+    char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "etc", "kmd", "xmr", "bts", "xcp" };
+    int32_t iter,i,c,baserel,basenum,relnum; double cnyusd,btcusd,kmdbtc,bid,ask,price,vol,prices[8][2],volumes[8][2];
     char base[16],rel[16];
-    PAX_update(PEGS,&btcusd,&btcdbtc);
+    PAX_update(PEGS,&btcusd,&kmdbtc);
     memset(prices,0,sizeof(prices));
     memset(volumes,0,sizeof(volumes));
     for (i=0; i<sizeof(cryptostrs)/sizeof(*cryptostrs); i++)
@@ -600,10 +602,10 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTme
             volumes[i][iter] = cryptovols[1][i][iter];
         }
     if ( prices[0][0] > SMALLVAL )
-        dxblend(&btcdbtc,prices[0][0],.9);
-    dxblend(&dp->btcdbtc,btcdbtc,.995);
-    if ( PEGS->btcdbtc < SMALLVAL )
-        PEGS->btcdbtc = dp->btcdbtc;
+        dxblend(&kmdbtc,prices[0][0],.9);
+    dxblend(&dp->kmdbtc,kmdbtc,.995);
+    if ( PEGS->kmdbtc < SMALLVAL )
+        PEGS->kmdbtc = dp->kmdbtc;
     if ( (cnyusd= PEGS->cnyusd) > SMALLVAL )
     {
         if ( prices[0][1] > SMALLVAL )
@@ -633,15 +635,15 @@ void PAX_RTupdate(struct peggy_info *PEGS,double cryptovols[2][9][2],double RTme
         }
     }
     btcusd = PEGS->btcusd;
-    btcdbtc = PEGS->btcdbtc;
+    kmdbtc = PEGS->kmdbtc;
     if ( Debuglevel > 2 )
-        printf("    update with btcusd %f btcd %f\n",btcusd,btcdbtc);
-    if ( btcusd < SMALLVAL || btcdbtc < SMALLVAL )
+        printf("    update with btcusd %f kmd %f\n",btcusd,kmdbtc);
+    if ( btcusd < SMALLVAL || kmdbtc < SMALLVAL )
     {
-        PAX_update(PEGS,&btcusd,&btcdbtc);
+        PAX_update(PEGS,&btcusd,&kmdbtc);
         if ( Debuglevel > 2 )
-            printf("     price777_update with btcusd %f btcd %f\n",btcusd,btcdbtc);
-    } else PEGS->btcusd = btcusd, PEGS->btcdbtc = btcdbtc;
+            printf("     price777_update with btcusd %f kmd %f\n",btcusd,kmdbtc);
+    } else PEGS->btcusd = btcusd, PEGS->kmdbtc = kmdbtc;
     for (c=0; c<sizeof(CONTRACTS)/sizeof(*CONTRACTS); c++)
     {
         for (iter=0; iter<3; iter++)
@@ -708,7 +710,7 @@ struct exchange_info *PAX_bidasks(char *exchangestr,uint32_t *timestamps,double 
 int32_t PAX_idle(struct peggy_info *PEGS,int32_t peggyflag,int32_t idlegap)
 {
     static double lastupdate,lastdayupdate; static int32_t didinit; static portable_mutex_t mutex;
-    struct exchange_info *exchange; struct exchange_quote bidasks[2]; double btcdbtc,btcusd;
+    struct exchange_info *exchange; struct exchange_quote bidasks[2]; double kmdbtc,btcusd;
     int32_t i,datenum,contractnum,seconds; struct tai t; struct PAX_data *dp = &PEGS->tmp;
     *dp = PEGS->data;
     if ( didinit == 0 )
@@ -717,7 +719,7 @@ int32_t PAX_idle(struct peggy_info *PEGS,int32_t peggyflag,int32_t idlegap)
         //prices777_init(BUNDLE.jsonstr,peggyflag);
         didinit = 1;
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL));
-        expand_datenum(PEGS->data.edate,datenum);
+        expand_datenum(dp->edate,datenum);
         if ( peggyflag != 0 )
         {
             //int32_t opreturns_init(uint32_t blocknum,uint32_t blocktimestamp,char *path);
@@ -752,15 +754,15 @@ int32_t PAX_idle(struct peggy_info *PEGS,int32_t peggyflag,int32_t idlegap)
                 dp->itimestamps[contractnum] = bidasks[0].timestamp;
             }
         }
-        PAX_update(PEGS,&btcusd,&btcdbtc);
+        PAX_update(PEGS,&btcusd,&kmdbtc);
         if ( btcusd > SMALLVAL )
             dxblend(&dp->btcusd,btcusd,0.99);
-        if ( btcdbtc > SMALLVAL )
-            dxblend(&dp->btcdbtc,btcdbtc,0.99);
+        if ( kmdbtc > SMALLVAL )
+            dxblend(&dp->kmdbtc,kmdbtc,0.99);
         if ( dp->btcusd == 0 )
             dp->btcusd = dp->btcusd;
-        if ( dp->btcdbtc == 0 )
-            dp->btcdbtc = dp->btcdbtc;
+        if ( dp->kmdbtc == 0 )
+            dp->kmdbtc = dp->kmdbtc;
         if ( dp->ecbmatrix[USD][USD] > SMALLVAL && dp->ecbmatrix[CNY][CNY] > SMALLVAL )
             PEGS->cnyusd = (dp->ecbmatrix[CNY][CNY] / dp->ecbmatrix[USD][USD]);
         portable_mutex_lock(&mutex);

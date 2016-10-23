@@ -280,7 +280,7 @@ struct peggy *peggy_createpair(struct peggy_info *PEGS,int64_t quorum,int64_t de
     return(PEG);
 }
 
-struct peggy_info *peggy_init(int32_t maxdays,char *maincurrency,uint64_t maincurrencyunitsize,uint64_t quorum,uint64_t decisionthreshold,struct price_resolution spread,uint32_t dailyrate,int32_t interesttenths,int32_t posboost,int32_t negpenalty,int32_t feediv,int32_t feemult,uint32_t firsttimestamp,uint32_t BTCD_price0)
+struct peggy_info *peggy_init(int32_t maxdays,char *maincurrency,uint64_t maincurrencyunitsize,uint64_t quorum,uint64_t decisionthreshold,struct price_resolution spread,uint32_t dailyrate,int32_t interesttenths,int32_t posboost,int32_t negpenalty,int32_t feediv,int32_t feemult,uint32_t firsttimestamp,uint32_t KMD_price0)
 {
     //struct peggy_limits limits = { { PERCENTAGE(10), PERCENTAGE(25), PERCENTAGE(33), PERCENTAGE(50) }, SATOSHIDEN * 10000, SATOSHIDEN * 1000, { 0, 30, 90, 180 }, 4 };
     struct peggy_lock default_lockparms = { 7, 365, 7, 0, 180, 0, -1 };
@@ -297,8 +297,8 @@ struct peggy_info *peggy_init(int32_t maxdays,char *maincurrency,uint64_t maincu
     PEGS->interesttenths = interesttenths, PEGS->posboost = posboost, PEGS->negpenalty = negpenalty, PEGS->feediv = feediv, PEGS->feemult = feemult;
     mindenom.Pval = PRICE_RESOLUTION;
     PEGS->genesistime = firsttimestamp;
-    price.Pval = PEGS->BTCD_price0 = BTCD_price0;
-    printf("set genesistime.%u BTCD0.%u\n",firsttimestamp,BTCD_price0);
+    price.Pval = PEGS->KMD_price0 = KMD_price0;
+    printf("set genesistime.%u BTCD0.%u\n",firsttimestamp,KMD_price0);
     peggy_createpair(PEGS,0,0,"BTCD","BTCD",0,SATOSHIDEN*1000000,SATOSHIDEN*100000,0,SATOSHIDEN,PEGGY_RATE_777,firsttimestamp,&price,1,spread,0,mindenom,0,1,peggy_mils(0));
     //PEGS->accts = accts777_init(path,0);
     return(PEGS);
@@ -414,7 +414,7 @@ struct peggy_info *peggy_genesis(int32_t lookbacks[OPRETURNS_CONTEXTS],struct pe
                     if ( PEGS == 0 )
                     {
                         spread.Pval = PERCENTAGE(1);
-                        PEGS = peggy_init(PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,1,1,spread,PEGGY_RATE_777,40,10,2,5,2,Ptx.timestamp,Ptx.details.price.feed[0]);
+                        PEGS = peggy_init(PEGGY_MAXLOCKDAYS,"KMD",SATOSHIDEN/100,1,1,spread,PEGGY_RATE_777,40,10,2,5,2,Ptx.timestamp,Ptx.details.price.feed[0]);
                         //PEGS->accts = accts777_init(path,0);
                         PEGS->genesis = opreturnstr, opreturnstr = 0;
                     }
@@ -688,7 +688,7 @@ int32_t peggy_init_contexts(struct txinds777_info *opreturns,uint32_t RTblocknum
         PEGS = peggy_init(path,PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,100,10,spread,PEGGY_RATE_777,40,10,2,5,2,0,0);
     globals[0] = PEGS;
     sprintf(buf,"%s_PERM",path);
-    globals[1] = PEGS2 = peggy_init(buf,PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,1,1,spread,PEGGY_RATE_777,40,10,2,5,2,PEGS->genesistime,PEGS->BTCD_price0);
+    globals[1] = PEGS2 = peggy_init(buf,PEGGY_MAXLOCKDAYS,"BTCD",SATOSHIDEN/100,1,1,spread,PEGGY_RATE_777,40,10,2,5,2,PEGS->genesistime,PEGS->KMD_price0);
     startmilli = OS_milliseconds();
     peggy_clone(buf,PEGS2,PEGS);
     printf("cloned %d in %.3f millis per opreturn\n",PEGS->numopreturns,(OS_milliseconds() - startmilli)/PEGS->numopreturns); sleep(3);*/

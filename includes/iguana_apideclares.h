@@ -21,9 +21,7 @@ ZERO_ARGS(dpow,cancelratify);
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
 
-#ifdef INCLUDE_PAX
 ZERO_ARGS(pax,start);
-#endif
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
 ZERO_ARGS(tradebot,amlp);
 ZERO_ARGS(tradebot,notlp);
