@@ -221,6 +221,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         myinfo->DPOW.srcconfirms = DPOW_FIFOSIZE;
     if ( myinfo->DPOW.blocks == 0 )
         myinfo->DPOW.blocks = calloc(DPOW_MAXBLOCKS,sizeof(*myinfo->DPOW.blocks));
+    PAX_init();
     return(clonestr("{\"result\":\"success\"}"));
 }
 
