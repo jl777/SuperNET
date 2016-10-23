@@ -1764,11 +1764,9 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             userhome = "root";
         else
         {
-            if ( (c= userhome[strlen(userhome)-1]) == '\r' || c == '\n' || c == ' ' || c == '\t' )
+            while ( (c= userhome[strlen(userhome)-1]) == '\r' || c == '\n' || c == ' ' || c == '\t' )
             {
                 userhome[strlen(userhome)-1] = 0;
-                if ( (c= userhome[strlen(userhome)-1]) == '\r' || c == '\n' || c == ' ' || c == '\t'  )
-                    userhome[strlen(userhome)-1] = 0;
             }
         }
         myinfo->PAXDATA = calloc(1,sizeof(*dp));
