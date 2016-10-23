@@ -18,7 +18,7 @@
 
 #define PEGGY_GENESIS "6aef504158ec0014fee05dc20a0006048ed63e523f6d1062feb23622da928cf23ddcc3b53f23566bc6cab5ebd77cfbf8f0bccb34bff73c55d742dd232994bfbffe1cbab7119ab3d653a256b02d5b6f56c05b8817799f0d242f48c26d35c992ebfff14acdefbe253345d394e84d975334cd55f7d6cbad5a7bd9425b1d5db44944d40be5304b7b62ba0dbc20d3323d2b35f05f654bc95a5a2fdb5a30e46c6fd33b5ea078255f7cad9fd0dbd2fa5031ada4474cbba7b2ee64ef35df06bf3fd3eef6cd3f48339f3c0e080158a92862bbf20bc6702018effbaee525502eb463c74f7ca0dff4ae7cb55ee55ef7cb1c915e655649"
 
-#include "iguana777.h"
+#include "../iguana777.h"
 // CfB "the rule is simple = others can know the redemption day only AFTER the price for that day is set in stone."
 #define PEGGY_NUMCOEFFS 539
 #define ACCTS777_MAXRAMKVS 8
