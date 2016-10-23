@@ -1770,6 +1770,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL));
         expand_datenum(dp->edate,datenum);
     }
+
     dp = myinfo->PAXDATA;
     if ( 0 && time(NULL) > dp->lastupdate+10 )
     {
