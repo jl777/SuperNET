@@ -1718,9 +1718,9 @@ uint32_t PAX_val32(double val)
 void PAX_genecbsplines(struct PAX_data *dp)
 {
     int32_t i,j,datenum,seconds,numsamples; double prices[128][MAX_SPLINES],splineval,diff; uint32_t pvals[MAX_CURRENCIES],utc32[MAX_SPLINES],timestamp; struct tai t;
-    for (i=numsamples=0; i<30; i++)
+    for (i=numsamples=0; i<28; i++)
     {
-        datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(30-i+1)*24*3600);
+        datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
         expand_datenum(dp->edate,datenum);
         timestamp = OS_conv_datenum(datenum,12,0,0);
         printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
