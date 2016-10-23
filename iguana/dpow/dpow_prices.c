@@ -221,7 +221,7 @@ char *PAX_bases[64] =
     "BUND", "NAS100", "SPX500", "US30", "EUSTX50", "UK100", "JPN225", "GER30", "SUI30", "AUS200", "HKG33", "XAUUSD", "BTCRUB", "BTCCNY", "BTCUSD" // abstract
 };
 
-int32_t MINDENOMS[] = { 1000, 1000, 100000, 1000, 1000, 1000, 1000, 1000, // major currencies
+uint32_t MINDENOMS[] = { 1000, 1000, 100000, 1000, 1000, 1000, 1000, 1000, // major currencies
     10000, 100000, 10000, 1000, 100000, 10000, 1000, 10000, 1000, 10000, 10000, 10000, 10000, 100000, 1000, 1000000, 1000, 10000, 1000, 1000, 10000, 1000, 10000000, 10000, // end of currencies
     1, 100, 1, 1, // metals, gold must be first
     100, 1, 10000, 100, 100, 1000, 100000, 1000, 1000,  1000
@@ -1715,6 +1715,13 @@ uint32_t PAX_val32(double val)
     return(val32);
 }
 
+double PAX_val(uint32_t pval,int32_t baseid)
+{
+    if ( baseid >= 0 && baseid < MAX_CURRENCIES )
+        return(((double)pval / 1000000000.) / MINDENOMS[baseid]);
+    return(0.);
+}
+
 void PAX_genecbsplines(struct PAX_data *dp)
 {
     int32_t i,j,datenum,seconds,numsamples; double prices[128][MAX_SPLINES],splineval,diff; uint32_t pvals[MAX_CURRENCIES],utc32[MAX_SPLINES],timestamp; struct tai t;
@@ -1823,11 +1830,13 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         }
         PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
         timestamp = (uint32_t)time(NULL);
+        int32_t dispflag = (rand() % 10000);
         for (i=0; i<MAX_CURRENCIES; i++)
         {
             splineval = PAX_splineval(&dp->splines[i],timestamp,0);
             pvals[6+i] = PAX_val32(splineval);
-            printf("%d ",pvals[6+i]);
+            if ( dispflag != 0 )
+                printf("%d ",pvals[6+i]);
         }
         if ( pvals[6+CNY] != 0 && pvals[6+USD] != 0 )
             dp->CNYUSD = ((double)pvals[6 + CNY] / pvals[6 + USD]) * MINDENOMS[USD] / MINDENOMS[CNY];
@@ -1836,7 +1845,8 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         pvals[3] = PAX_val32(dp->kmdbtc * 1000);
         pvals[4] = PAX_val32(dp->btcusd * .001);
         pvals[5] = PAX_val32(dp->CNYUSD);
-        printf("KMD %f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
+        if ( dispflag != 0 )
+            printf("KMD %f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
         sprintf(fname,"/%s/.komodo/komodofeed",userhome);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
@@ -1848,9 +1858,12 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
                 printf("error writing pvals to (%s)\n",fname);
             fclose(fp);
         }
-        for (i=0; i<6; i++)
-            printf("%u ",pvals[i]);
-        printf("pvals -> %s\n",fname);
+        if ( dispflag != 0 )
+        {
+            for (i=0; i<6; i++)
+                printf("%u ",pvals[i]);
+            printf("pvals -> %s\n",fname);
+        }
     }
     return(0);
 }
