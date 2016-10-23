@@ -1771,7 +1771,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         expand_datenum(dp->edate,datenum);
     }
     dp = myinfo->PAXDATA;
-    if ( time(NULL) > dp->lastupdate+10 )
+    if ( 0 && time(NULL) > dp->lastupdate+10 )
     {
         _crypto_update(dp->cryptovols,dp,1);
         dp->lastupdate = (uint32_t)time(NULL);
