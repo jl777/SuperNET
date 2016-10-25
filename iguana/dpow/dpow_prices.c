@@ -1838,6 +1838,8 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
         if ( OS_milliseconds() > lastdayupdate + 60000*60 )
         {
             lastdayupdate = OS_milliseconds();
+            datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL));
+            expand_datenum(dp->edate,datenum);
             if ( (datenum= ecb_matrix(dp->basevals,dp->ecbmatrix,dp->edate)) > 0 && datenum != dp->ecbdatenum )
             {
                 dp->ecbdatenum = datenum;
