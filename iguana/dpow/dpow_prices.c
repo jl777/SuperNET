@@ -221,11 +221,52 @@ char *PAX_bases[64] =
     "BUND", "NAS100", "SPX500", "US30", "EUSTX50", "UK100", "JPN225", "GER30", "SUI30", "AUS200", "HKG33", "XAUUSD", "BTCRUB", "BTCCNY", "BTCUSD" // abstract
 };
 
-uint32_t MINDENOMS[] = { 1000, 1000, 100000, 1000, 1000, 1000, 1000, 1000, // major currencies
-    10000, 100000, 10000, 1000, 100000, 10000, 1000, 10000, 1000, 10000, 10000, 10000, 10000, 100000, 1000, 1000000, 1000, 10000, 1000, 1000, 10000, 1000, 10000000, 10000, // end of currencies
-    1, 100, 1, 1, // metals, gold must be first
-    100, 1, 10000, 100, 100, 1000, 100000, 1000, 1000,  1000
+uint64_t M1SUPPLY[] = { 3317900000000, 6991604000000, 667780000000000, 1616854000000, 331000000000, 861909000000, 584629000000, 46530000000, // major currencies
+    45434000000000, 16827000000000, 3473357229000, 306435000000, 27139000000000, 2150641000000, 347724099000, 1469583000000, 749543000000, 1826110000000, 2400434000000, 1123925000000, 3125276000000, 13975000000000, 317657000000, 759706000000000, 354902000000, 2797061000000, 162189000000, 163745000000, 1712000000000, 39093000000, 1135490000000000, 80317000000,
+    100000000 };
+
+#define MIND 1000
+uint32_t MINDENOMS[] = { MIND, MIND, 100*MIND, MIND, MIND, MIND, MIND, MIND, // major currencies
+    10*MIND, 100*MIND, 10*MIND, MIND, 100*MIND, 10*MIND, MIND, 10*MIND, MIND, 10*MIND, 10*MIND, 10*MIND, 10*MIND, 100*MIND, MIND, 1000*MIND, MIND, 10*MIND, MIND, MIND, 10*MIND, MIND, 10000*MIND, 10*MIND, // end of currencies
+    10*MIND,
 };
+
+uint64_t komodo_paxvol(uint64_t volume,uint64_t price)
+{
+    if ( volume < 10000000000 )
+        return((volume * price) / 1000000000);
+    else if ( volume < (uint64_t)10 * 10000000000 )
+        return((volume * (price / 10)) / 100000000);
+    else if ( volume < (uint64_t)100 * 10000000000 )
+        return(((volume / 10) * (price / 10)) / 10000000);
+    else if ( volume < (uint64_t)1000 * 10000000000 )
+        return(((volume / 10) * (price / 100)) / 1000000);
+    else if ( volume < (uint64_t)10000 * 10000000000 )
+        return(((volume / 100) * (price / 100)) / 100000);
+    else if ( volume < (uint64_t)100000 * 10000000000 )
+        return(((volume / 100) * (price / 1000)) / 10000);
+    else if ( volume < (uint64_t)1000000 * 10000000000 )
+        return(((volume / 1000) * (price / 1000)) / 1000);
+    else if ( volume < (uint64_t)10000000 * 10000000000 )
+        return(((volume / 1000) * (price / 10000)) / 100);
+    else return(((volume / 10000) * (price / 10000)) / 10);
+}
+
+void pax_rank(uint64_t *ranked,uint32_t *pvals)
+{
+    int32_t i; uint64_t vals[32],sum = 0;
+    for (i=0; i<32; i++)
+    {
+        vals[i] = komodo_paxvol(M1SUPPLY[i] / MINDENOMS[i],pvals[i]);
+        sum += vals[i];
+    }
+    for (i=0; i<32; i++)
+    {
+        ranked[i] = (vals[i] * 1000000000) / sum;
+        printf("%.6f ",(double)ranked[i]/1000000000.);
+    }
+};
+
 #define YAHOO_METALS "XAU", "XAG", "XPT", "XPD"
 static char *Yahoo_metals[] = { YAHOO_METALS };
 
