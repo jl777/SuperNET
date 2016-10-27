@@ -284,8 +284,8 @@ void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_
                 DL_DELETE(queue->list,item);
                 portable_mutex_unlock(&queue->mutex);
                 //printf("name.(%s) deleted item.%p list.%p\n",queue->name,item,queue->list);
-                if ( freeitem != 0 )
-                    myfree(item,copysize);
+                //if ( freeitem != 0 )
+                //    myfree(item,copysize);
                 return(item);
             }
         }

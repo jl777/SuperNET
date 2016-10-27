@@ -19618,3 +19618,21 @@ len = 0;
              {
              return(komodo_blockhdrcheck(block,nBitsp));
              }*/
+            if ( (retstr= komodo_issuemethod((char *)"listtransactions",0,7771)) != 0 )
+            {
+                //printf("LIST.(%s)\n",retstr);
+                if ( (listobj= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (array= jarray(&num,listobj,(char *)"result")) != 0 )
+                    {
+                        for (i=0; i<num; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( (coinaddr= jstr(item,(char *)"address")) != 0 && strcmp(coinaddr,(char *)CRYPTO777_KMDADDR) == 0 )
+                                printf("%s %d of %d.(%s)\n",symbol,i,num,jprint(item,0));
+                        }
+                    }
+                    free_json(listobj);
+                }
+                free(retstr);
+            }

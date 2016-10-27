@@ -1,32 +1,32 @@
-./assetchaind -ac_name=USD &
-./assetchaind -ac_name=EUR &
-./assetchaind -ac_name=JPY &
-./assetchaind -ac_name=GBP &
-./assetchaind -ac_name=AUD &
-./assetchaind -ac_name=CAD &
-./assetchaind -ac_name=CHF &
-./assetchaind -ac_name=NZD &
-./assetchaind -ac_name=CNY &
-./assetchaind -ac_name=RUB &
-./assetchaind -ac_name=MXN &
-./assetchaind -ac_name=RBL &
-./assetchaind -ac_name=INR &
-./assetchaind -ac_name=HKD &
-./assetchaind -ac_name=TRY &
-./assetchaind -ac_name=ZAR &
-./assetchaind -ac_name=PLN &
-./assetchaind -ac_name=NOK &
-./assetchaind -ac_name=SEK &
-./assetchaind -ac_name=DKK &
-./assetchaind -ac_name=CZK &
-./assetchaind -ac_name=HUF &
-./assetchaind -ac_name=ILS &
-./assetchaind -ac_name=KRW &
-./assetchaind -ac_name=MYR &
-./assetchaind -ac_name=PHP &
-./assetchaind -ac_name=RON &
-./assetchaind -ac_name=SGD &
-./assetchaind -ac_name=THB &
-./assetchaind -ac_name=BGN &
-./assetchaind -ac_name=IDR &
-./assetchaind -ac_name=HRK &
+./assetchaind -ac_name=USD -addnode=78.47.196.146 &
+./assetchaind -ac_name=EUR -addnode=78.47.196.146 &
+./assetchaind -ac_name=JPY -addnode=78.47.196.146 &
+./assetchaind -ac_name=GBP -addnode=78.47.196.146 &
+./assetchaind -ac_name=AUD -addnode=78.47.196.146 &
+./assetchaind -ac_name=CAD -addnode=78.47.196.146 &
+./assetchaind -ac_name=CHF -addnode=78.47.196.146 &
+./assetchaind -ac_name=NZD -addnode=78.47.196.146 &
+./assetchaind -ac_name=CNY -addnode=78.47.196.146 &
+./assetchaind -ac_name=RUB -addnode=78.47.196.146 &
+./assetchaind -ac_name=MXN -addnode=78.47.196.146 &
+./assetchaind -ac_name=RBL -addnode=78.47.196.146 &
+./assetchaind -ac_name=INR -addnode=78.47.196.146 &
+./assetchaind -ac_name=HKD -addnode=78.47.196.146 &
+./assetchaind -ac_name=TRY -addnode=78.47.196.146 &
+./assetchaind -ac_name=ZAR -addnode=78.47.196.146 &
+./assetchaind -ac_name=PLN -addnode=78.47.196.146 &
+./assetchaind -ac_name=NOK -addnode=78.47.196.146 &
+./assetchaind -ac_name=SEK -addnode=78.47.196.146 &
+./assetchaind -ac_name=DKK -addnode=78.47.196.146 &
+./assetchaind -ac_name=CZK -addnode=78.47.196.146 &
+./assetchaind -ac_name=HUF -addnode=78.47.196.146 &
+./assetchaind -ac_name=ILS -addnode=78.47.196.146 &
+./assetchaind -ac_name=KRW -addnode=78.47.196.146 &
+./assetchaind -ac_name=MYR -addnode=78.47.196.146 &
+./assetchaind -ac_name=PHP -addnode=78.47.196.146 &
+./assetchaind -ac_name=RON -addnode=78.47.196.146 &
+./assetchaind -ac_name=SGD -addnode=78.47.196.146 &
+./assetchaind -ac_name=THB -addnode=78.47.196.146 &
+./assetchaind -ac_name=BGN -addnode=78.47.196.146 &
+./assetchaind -ac_name=IDR -addnode=78.47.196.146 &
+./assetchaind -ac_name=HRK -addnode=78.47.196.146 &
