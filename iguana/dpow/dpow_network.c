@@ -285,14 +285,14 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
     return(len);
 }
 
-void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myind,int8_t bestk,uint64_t bestmask,bits256 srchash,uint32_t sigchannel)
+void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int8_t bestk,uint64_t bestmask,bits256 srchash,uint32_t sigchannel)
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
     printf("sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x\n",sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
-        dsig.senderpub[i] = myinfo->DPOW.minerkey33[i];
+        dsig.senderpub[i] = dp->minerkey33[i];
     dsig.lastk = bestk;
     dsig.mask = bestmask;
     dsig.senderind = myind;
@@ -307,7 +307,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_block *bp,int32_t myi
         dsig.siglen = ep->src.siglens[bestk];
         memcpy(dsig.sig,ep->src.sigs[bestk],ep->src.siglens[bestk]);
     }
-    memcpy(dsig.senderpub,myinfo->DPOW.minerkey33,33);
+    memcpy(dsig.senderpub,dp->minerkey33,33);
     len = dpow_rwsigentry(1,data,&dsig);
     dpow_send(myinfo,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
 }

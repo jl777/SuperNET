@@ -865,7 +865,7 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli;
+    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli; struct dpow_info *dp;
     iter = 0;
     relay = iguana_coinfind("RELAY");
     printf("start basilisk loop\n");
@@ -880,8 +880,14 @@ void basilisks_loop(void *arg)
         {
             if ( relay != 0 )
                 basilisk_ping_send(myinfo,relay);
-            if ( (counter++ % 10) == 0 && myinfo->DPOW.symbol[0] != 0 && myinfo->DPOW.dest[0] != 0 )
-                iguana_dPoWupdate(myinfo);
+            counter++;
+            if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
+                iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+            else if ( myinfo->numdpows > 1 )
+            {
+                dp = &myinfo->DPOWS[counter % myinfo->numdpows];
+                iguana_dPoWupdate(myinfo,dp);
+            }
             endmilli = startmilli + 500;
         }
         else if ( myinfo->IAMLP != 0 )

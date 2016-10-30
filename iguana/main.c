@@ -1572,7 +1572,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 void iguana_main(void *arg)
 {
-    int32_t usessl = 0, ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo;
+    int32_t i,usessl = 0,ismainnet = 1, do_OStests = 0; struct supernet_info *myinfo;
     if ( (IGUANA_BIGENDIAN= iguana_isbigendian()) > 0 )
         printf("BIGENDIAN\n");
     else if ( IGUANA_BIGENDIAN == 0 )
@@ -1586,7 +1586,8 @@ void iguana_main(void *arg)
     myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
-    myinfo->DPOW.sock = -1;
+    for (i=0; i<sizeof(myinfo->DPOWS)/sizeof(*myinfo->DPOWS); i++)
+        myinfo->DPOWS[i].sock = -1;
 //myinfo->rpcport = IGUANA_NOTARYPORT;
 //myinfo->IAMNOTARY = 1;
     if ( arg != 0 )

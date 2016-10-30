@@ -245,7 +245,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
     return(height);
 }
 
-int32_t dpow_vini_ismine(struct supernet_info *myinfo,cJSON *item)
+int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON *item)
 {
     cJSON *sobj; char *hexstr; int32_t len; uint8_t data[35];
     if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (hexstr= jstr(sobj,"hex")) != 0 )
@@ -254,7 +254,7 @@ int32_t dpow_vini_ismine(struct supernet_info *myinfo,cJSON *item)
         if ( len <= sizeof(data) )
         {
             decode_hex(data,len,hexstr);
-            if ( len == 35 && data[34] == CHECKSIG && data[0] == 33 && memcmp(data+1,myinfo->DPOW.minerkey33,33) == 0 )
+            if ( len == 35 && data[34] == CHECKSIG && data[0] == 33 && memcmp(data+1,dp->minerkey33,33) == 0 )
                 return(0);
         }
     }

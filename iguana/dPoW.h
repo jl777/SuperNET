@@ -16,7 +16,6 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
-#define DPOW_MAXBLOCKS 10000000
 #define DPOW_CHECKPOINTFREQ 10
 #define DPOW_MINSIGS 7
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
@@ -110,7 +109,7 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[1024];
-    int32_t sock;
+    int32_t sock,maxblocks;
     struct dpow_block **blocks;
 };
 
