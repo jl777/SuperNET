@@ -114,10 +114,10 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
+                    dp = &myinfo->DPOWS[0];
                     if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
                         //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
-                        dp = &myinfo->DPOWS[0];
                         /*for (i=0; i<myinfo->numdpows; i++)
                         {
                             if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
