@@ -326,8 +326,8 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             if ( chain->portp2p != 0 )
             {
                 if ( strcmp(chain->symbol,"BTC") == 0 )
-                    chain->rpcport = chain->portp2p+1;
-                else chain->rpcport = chain->portp2p-1;
+                    chain->rpcport = chain->portp2p-1;
+                else chain->rpcport = chain->portp2p+1;
             }
         }
         if ( chain->portp2p == 0 )
