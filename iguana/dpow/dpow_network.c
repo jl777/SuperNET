@@ -381,6 +381,7 @@ void komodo_assetcoins()
             }
             free_json(json);
             coin->FULLNODE = -1;
+            coin->chain->rpcport = port + 1;
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }

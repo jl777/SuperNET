@@ -26,7 +26,7 @@ struct iguana_thread
 {
     struct queueitem DL;
     pthread_t handle;
-    struct iguana_info *coin;
+    struct iguana_infof *coin;
     char name[16];
     uint8_t type;
     iguana_func funcp;
