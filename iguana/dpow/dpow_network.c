@@ -366,6 +366,13 @@ void komodo_assetcoins()
 {
     uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
     int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
+    if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
+        userhome = "root";
+    else
+    {
+        while ( userhome[strlen(userhome)-1] == '\r' || userhome[strlen(userhome)-1] == '\n' )
+            userhome[strlen(userhome)-1] = 0;
+    }
     for (i=0; i<MAX_CURRENCIES; i++)
     {
         port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
@@ -384,9 +391,7 @@ void komodo_assetcoins()
             coin->FULLNODE = -1;
             coin->chain->rpcport = port + 1;
             sprintf(confstr,"%s.conf",CURRENCIES[i]);
-            if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
-                userhome = "root";
-            sprintf(path,"/%s/%s",userhome,confstr);
+            sprintf(path,"%s",userhome);
             extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
             printf("userpass.(%s)\n",coin->chain->userpass);
         }
