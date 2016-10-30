@@ -197,6 +197,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         return(clonestr("{\"error\":\"need 33 byte pubkey\"}"));
     if ( symbol == 0 || symbol[0] == 0 )
         symbol = "KMD";
+    if ( myinfo->numdpows == 1 )
+        komodo_assetcoins();
     if ( iguana_coinfind(symbol) == 0 )
         return(clonestr("{\"error\":\"cant dPoW an inactive coin\"}"));
     if ( strcmp(symbol,"KMD") == 0 && iguana_coinfind("BTC") == 0 )

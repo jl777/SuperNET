@@ -324,3 +324,64 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_
     len = dpow_rwsigentry(1,data,&dsig);
     dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
 }
+
+uint32_t komodo_assetmagic(char *symbol,uint64_t supply)
+{
+    uint8_t buf[512]; int32_t len = 0;
+    len = iguana_rwnum(1,&buf[len],sizeof(supply),(void *)&supply);
+    strcpy((char *)&buf[len],symbol);
+    len += strlen(symbol);
+    return(calc_crc32(0,buf,len));
+}
+
+int32_t komodo_shortflag(char *symbol)
+{
+    int32_t i,shortflag = 0;
+    if ( symbol[0] == '-' )
+    {
+        shortflag = 1;
+        for (i=0; symbol[i+1]!=0; i++)
+            symbol[i] = symbol[i+1];
+        symbol[i] = 0;
+    }
+    return(shortflag);
+}
+
+uint16_t komodo_assetport(uint32_t magic,int32_t shortflag)
+{
+    return(8000 + shortflag*7777 + (magic % 7777));
+}
+
+uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp,int32_t *shortflagp)
+{
+    *magicp = komodo_assetmagic(symbol,supply);
+    *shortflagp = komodo_shortflag(symbol);
+    return(komodo_assetport(*magicp,*shortflagp));
+}
+
+#define MAX_CURRENCIES 32
+extern char CURRENCIES[][8];
+
+void komodo_assetcoins()
+{
+    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; char jsonstr[512],magicstr[9]; struct iguana_info *coin;
+    for (i=0; i<MAX_CURRENCIES; i++)
+    {
+        port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
+        for (j=0; j<4; j++)
+            sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);
+        magicstr[j*2] = 0;
+        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":%s}",CURRENCIES[i],port,port+1,magicstr);
+        if ( (json= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (coin= iguana_coinadd(CURRENCIES[i],CURRENCIES[i],json,0)) == 0 )
+            {
+                printf("Cant create (%s)\n",CURRENCIES[i]);
+                return;
+            }
+            free_json(json);
+        }
+        printf("(%s %u) ",CURRENCIES[i],port);
+    }
+    printf("ports\n");
+}

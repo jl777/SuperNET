@@ -79,7 +79,7 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             coin->symbolcrc = symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
             //portable_mutex_lock(&myinfo->allcoins_mutex);
             coin->coinid = myinfo->totalcoins++;
-                HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
+            HASH_ADD(hh,myinfo->allcoins,symbolcrc,sizeof(coin->symbolcrc),coin);
             //portable_mutex_unlock(&myinfo->allcoins_mutex);
             struct iguana_info *virt,*tmp;
             HASH_ITER(hh,myinfo->allcoins,virt,tmp)
