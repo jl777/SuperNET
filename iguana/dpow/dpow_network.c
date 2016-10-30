@@ -391,7 +391,7 @@ void komodo_assetcoins()
             coin->FULLNODE = -1;
             coin->chain->rpcport = port + 1;
             sprintf(confstr,"%s.conf",CURRENCIES[i]);
-            sprintf(path,"%s",userhome);
+            sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
             extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
             printf("userpass.(%s)\n",coin->chain->userpass);
         }
