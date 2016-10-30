@@ -380,6 +380,7 @@ void komodo_assetcoins()
                 return;
             }
             free_json(json);
+            coin->FULLNODE = -1;
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }
