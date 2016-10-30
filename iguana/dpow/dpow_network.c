@@ -364,7 +364,8 @@ extern char CURRENCIES[][8];
 
 void komodo_assetcoins()
 {
-    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; char jsonstr[512],magicstr[9]; struct iguana_info *coin;
+    uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
+    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
     for (i=0; i<MAX_CURRENCIES; i++)
     {
         port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
@@ -382,6 +383,12 @@ void komodo_assetcoins()
             free_json(json);
             coin->FULLNODE = -1;
             coin->chain->rpcport = port + 1;
+            sprintf(confstr,"%s.conf",CURRENCIES[i]);
+            if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
+                userhome = "root";
+            sprintf(path,"/%s/%s",userhome,confstr);
+            extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
+            printf("userpass.(%s)\n",coin->chain->userpass);
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }
