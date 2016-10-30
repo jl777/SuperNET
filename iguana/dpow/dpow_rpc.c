@@ -16,6 +16,8 @@
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
+    if ( strcmp(coin->symbol,"USD") == 0 )
+        printf("dpow_getbestblockhash %s FULLNODE.%d\n",coin->symbol,coin->FULLNODE);
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
