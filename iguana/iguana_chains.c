@@ -324,7 +324,7 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"RELAY") != 0 )
         {
             if ( chain->portp2p != 0 )
-                chain->rpcport = chain->portp2p-1;
+                chain->rpcport = chain->portp2p+1;
         }
         if ( chain->portp2p == 0 )
         {
