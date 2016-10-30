@@ -371,7 +371,7 @@ void komodo_assetcoins()
         for (j=0; j<4; j++)
             sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);
         magicstr[j*2] = 0;
-        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":%s}",CURRENCIES[i],port,port+1,magicstr);
+        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":\"%s\"}",CURRENCIES[i],port,port+1,magicstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( (coin= iguana_coinadd(CURRENCIES[i],CURRENCIES[i],json,0)) == 0 )
