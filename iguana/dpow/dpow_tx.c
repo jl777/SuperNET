@@ -236,6 +236,8 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
 void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,char *rawtx,cJSON *vins,int8_t bestk,uint64_t bestmask,int32_t myind,int32_t src_or_dest)
 {
     int32_t j,m=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    for (j=0; j<sizeof(srchash); j++)
+        srchash.bytes[j] = dp->minerkey33[j+1];
     m = 0;
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
