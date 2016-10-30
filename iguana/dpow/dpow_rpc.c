@@ -45,7 +45,8 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     {
         sprintf(buf,"\"%s\"",bits256_str(str,blockhash));
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
-        //printf("%s getblock.(%s)\n",coin->symbol,retstr);
+        if ( strcmp(coin->symbol,"USD") == 0 )
+            printf("%s getblock.(%s)\n",coin->symbol,retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
