@@ -16,14 +16,14 @@
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
-    if ( strcmp(coin->symbol,"USD") == 0 )
+    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
         printf("dpow_getbestblockhash %s FULLNODE.%d\n",coin->symbol,coin->FULLNODE);
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
-            if ( strcmp(coin->symbol,"USD") == 0 )
+            if ( 0 && strcmp(coin->symbol,"USD") == 0 )
                 printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
             if ( is_hexstr(retstr,0) == sizeof(blockhash)*2 )
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
@@ -48,7 +48,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     {
         sprintf(buf,"\"%s\"",bits256_str(str,blockhash));
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
-        if ( strcmp(coin->symbol,"USD") == 0 )
+        if ( 0 && strcmp(coin->symbol,"USD") == 0 )
             printf("%s getblock.(%s)\n",coin->symbol,retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
@@ -239,7 +239,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
-                    if ( strcmp(coin->symbol,"USD") == 0 )
+                    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
                         printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
                     *numtxp = n;
                 }
