@@ -20,7 +20,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     uint32_t channel,height,size,datalen,crc32;
-    char symbol[16];
+    //char symbol[16];
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -92,7 +92,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->desthash = desthash;
         np->channel = channel;
         np->height = msgbits;
-        strcpy(np->symbol,dp->symbol);
+        //strcpy(np->symbol,dp->symbol);
         np->version0 = DPOW_VERSION & 0xff;
         np->version1 = (DPOW_VERSION >> 8) & 0xff;
         memcpy(np->packet,data,datalen);
