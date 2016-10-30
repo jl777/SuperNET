@@ -96,7 +96,7 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     FILE *dexfp;
-    struct dpow_info DPOWS[64]; int32_t numdpows;
+    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     //struct peggy_info *PEGS;

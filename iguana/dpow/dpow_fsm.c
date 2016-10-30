@@ -66,7 +66,7 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
     up->destvout = ep->dest.prev_vout;
 }
 
-void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
+void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
 {
     uint32_t i,j,r; int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
     if ( (bp->recvmask ^ recvmask) != 0 )
@@ -92,7 +92,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_block *bp,uint64_t r
         //char str[65],str2[65];
         //printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
         if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
-            dpow_send(myinfo,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len,bp->utxocrcs);
+            dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len,bp->utxocrcs);
     }
 }
 
@@ -142,7 +142,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             dpow_utxo2entry(bp,ep,&U);
             if ( ((1LL << senderind) & bp->recvmask) == 0 )
             {
-                dpow_utxosync(myinfo,bp,0,myind,srchash);
+                dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
                 bp->recvmask |= (1LL << senderind);
             }
             dpow_sync(myinfo,dp,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
@@ -289,7 +289,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             memset(&U,0,sizeof(U));
             dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
             if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
-                dpow_send(myinfo,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,data,len,bp->utxocrcs);
+                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,data,len,bp->utxocrcs);
         }
         if ( ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
@@ -343,7 +343,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     bp->bestk = dpow_bestk(bp,&bp->bestmask);
     if ( bp->state < 7 )
     {
-        dpow_utxosync(myinfo,bp,0,myind,srchash);
+        dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
         bp->state++;
     }
     else
@@ -496,7 +496,7 @@ void dpow_statemachinestart(void *ptr)
     printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
-    dpow_utxosync(myinfo,bp,0,myind,srchash);
+    dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
