@@ -143,7 +143,7 @@ int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipb
 int32_t basilisk_ping_genMSG(struct supernet_info *myinfo,uint8_t *data,int32_t maxlen)
 {
     struct basilisk_message *msg; int32_t datalen = 0;
-    if ( maxlen > sizeof(msg->key) && (msg= queue_dequeue(&myinfo->msgQ,0)) != 0 ) // oneshot ping
+    if ( maxlen > sizeof(msg->key) && (msg= queue_dequeue(&myinfo->msgQ)) != 0 ) // oneshot ping
     {
         data[datalen++] = 1;
         data[datalen++] = msg->keylen;

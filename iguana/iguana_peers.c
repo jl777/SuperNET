@@ -562,7 +562,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
     memcpy(packet->serialized,serialized,datalen);
     if ( 0 && addr->supernet != 0 )
         printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
-    queue_enqueue("sendQ",&addr->sendQ,&packet->DL,0);
+    queue_enqueue("sendQ",&addr->sendQ,&packet->DL);
     return(datalen);
 }
 
@@ -895,7 +895,7 @@ void *iguana_iAddriterator(struct iguana_info *coin,struct iguana_iAddr *iA,stru
  
 uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
 {
-    char checkaddr[64],_ipaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA; struct iguana_peer *addr;
+    char checkaddr[64],_ipaddr[64]; uint64_t ipbits; uint32_t now = (uint32_t)time(NULL); int32_t i,n; struct iguana_iAddr *iA; struct iguana_peer *addr; struct stritem *sitem;
     if ( coin->virtualchain != 0 || coin->peers == 0 )
         return(0);
     if ( ipaddr != 0 && ipaddr[0] != 0 && coin->peers != 0 )
@@ -909,15 +909,15 @@ uint32_t iguana_possible_peer(struct iguana_info *coin,char *ipaddr)
                 return(0);
             }
         //printf("%s Q possible.(%s)\n",coin->symbol,ipaddr);
-        queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr),1);
+        queue_enqueue("possibleQ",&coin->possibleQ,queueitem(ipaddr));
         return((uint32_t)time(NULL));
     }
     else if ( iguana_pendingaccept(coin) != 0 )
         return((uint32_t)time(NULL));
-    else if ( (ipaddr= queue_dequeue(&coin->possibleQ,1)) == 0 )
+    else if ( (sitem= queue_dequeue(&coin->possibleQ)) == 0 )
         return((uint32_t)time(NULL));
-    safecopy(_ipaddr,ipaddr,sizeof(_ipaddr));
-    free_queueitem(ipaddr);
+    safecopy(_ipaddr,sitem->str,sizeof(_ipaddr));
+    free(sitem);
     ipaddr = _ipaddr;
 #ifdef IGUANA_DISABLEPEERS
     if ( strcmp(ipaddr,"127.0.0.1") != 0 )
@@ -985,7 +985,7 @@ void iguana_processmsg(void *ptr)
 int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
 {
     struct iguana_packet *packet;
-    if ( (packet= queue_dequeue(&addr->sendQ,0)) != 0 )
+    if ( (packet= queue_dequeue(&addr->sendQ)) != 0 )
     {
         if ( 0 && (addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0) )
             printf("%s: send.(%s).%d usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,packet->datalen,addr->usock,addr->dead,addr->ready,addr->supernet);
@@ -1003,7 +1003,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
         else
         {
             //printf("embargo.x %llu %f\n",(long long)packet->embargo.x,tai_diff(packet->embargo,tai_now()));
-            queue_enqueue("embargo",&addr->sendQ,&packet->DL,0);
+            queue_enqueue("embargo",&addr->sendQ,&packet->DL);
         }
     }
     return(0);
@@ -1226,7 +1226,7 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
     run = 0;
     while ( addr->usock >= 0 && addr->dead == 0 && coin->peers->shuttingdown == 0 )
     {
-        if ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        if ( (req= queue_dequeue(&coin->cacheQ)) != 0 )
         {
             if ( req->datalen != 0 )
             {

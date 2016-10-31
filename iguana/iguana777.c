@@ -266,7 +266,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
     ptr->type = 'E';
     ptr->starttime = (uint32_t)time(NULL);
     //printf("%s EMIT.%d[%d] emitfinish.%u\n",coin->symbol,ptr->hdrsi,bp->n,bp->emitfinish);
-    queue_enqueue("emitQ",&emitQ,&ptr->DL,0);
+    queue_enqueue("emitQ",&emitQ,&ptr->DL);
 }
 
 void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
@@ -293,7 +293,7 @@ void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct
         ptr->timelimit = timelimit;
         coin->numbundlesQ++;
         // printf("%s.%d %p bundle.%d[%d] ht.%d emitfinish.%u\n",coin->symbol,n,bp,ptr->hdrsi,bp->n,bp->bundleheight,bp->emitfinish);
-        queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL,0);
+        queue_enqueue("bundlesQ",&bundlesQ,&ptr->DL);
     }
     else
     {
@@ -766,7 +766,7 @@ void iguana_helper(void *arg)
         n = queue_size(&bundlesQ);
         for (iter=0; iter<n; iter++)
         {
-            if ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+            if ( (ptr= queue_dequeue(&bundlesQ)) != 0 )
             {
                 idle = 0;
                 coin = ptr->coin;

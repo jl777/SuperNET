@@ -17,12 +17,13 @@
 
 void iguana_initQ(queue_t *Q,char *name)
 {
-    char *tst,*str = "need to init each Q when single threaded";
+    struct queueitem *item,*ptr;
+    item = calloc(1,sizeof(*item));
     memset(Q,0,sizeof(*Q));
     strcpy(Q->name,name);
-    queue_enqueue(name,Q,queueitem(str),1);
-    if ( (tst= queue_dequeue(Q,1)) != 0 )
-        free_queueitem(tst);
+    queue_enqueue(name,Q,item);
+    if ( (ptr= queue_dequeue(Q)) != 0 )
+        free(ptr);
 }
 
 void iguana_initQs(struct iguana_info *coin)
@@ -470,7 +471,7 @@ void iguana_blockspurge(struct iguana_info *coin)
 
 void iguana_coinpurge(struct iguana_info *coin)
 {
-    int32_t i,saved; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
+    int32_t i,saved; struct iguana_bundle *bp; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr; struct stritem *hashitem;
     saved = coin->active, coin->active = 0;
     coin->started = 0;
     while ( coin->idletime == 0 && coin->emitbusy > 0 )
@@ -479,19 +480,19 @@ void iguana_coinpurge(struct iguana_info *coin)
         sleep(1);
     }
     coin->RTgenesis = 0;
-    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+    while ( (ptr= queue_dequeue(&bundlesQ)) != 0 )
         myfree(ptr,ptr->allocsize);
     if ( 1 )
     {
-        while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
-            free_queueitem(hashstr);
-        while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+        while ( (hashitem= queue_dequeue(&coin->hdrsQ)) != 0 )
+            free(hashitem);
+        while ( (breq= queue_dequeue(&coin->blocksQ)) != 0 )
             myfree(breq,sizeof(*breq));
-        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+        while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
             myfree(breq,sizeof(*breq));
-        while ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        while ( (req= queue_dequeue(&coin->cacheQ)) != 0 )
             myfree(req,req->allocsize);
-        while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+        while ( (req= queue_dequeue(&coin->recvQ)) != 0 )
         {
             if ( req->blocks != 0 )
                 myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;
