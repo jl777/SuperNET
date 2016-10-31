@@ -383,17 +383,22 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,n,numratified,myind = -1; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
+    int32_t i,numratified,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
     minsigs = (uint32_t)(long)ptrs[2];
     duration = (uint32_t)(long)ptrs[3];
     jsonstr = ptrs[4];
+    kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
+    if ( strcmp(src->symbol,"KMD") == 0 )
+        kmdheight = checkpoint.blockhash.height;
+    else if ( strcmp(dest->symbol,"KMD") == 0 )
+        kmdheight = dest->longestchain;
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
@@ -445,20 +450,28 @@ void dpow_statemachinestart(void *ptr)
             dp->blocks[checkpoint.blockhash.height - 1000] = 0;
         }
     }
-    n = (int32_t)(sizeof(Notaries)/sizeof(*Notaries));
-    bp->numnotaries = n;
-    for (i=0; i<n; i++)
+    if ( kmdheight >= 0 )
     {
-        decode_hex(bp->notaries[i].pubkey,33,Notaries[i][1]);
-        if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
+        bp->numnotaries = komodo_notaries(pubkeys,kmdheight);
+        for (i=0; i<bp->numnotaries; i++)
         {
-            myind = i;
-            ep = &bp->notaries[myind];
+            memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
+            if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
+            {
+                myind = i;
+                ep = &bp->notaries[myind];
+            }
+        }
+        if ( myind < 0 || ep == 0 )
+        {
+            printf("statemachinestart this node %s %s is not official notary\n",srcaddr,destaddr);
+            free(ptr);
+            return;
         }
     }
-    if ( myind < 0 || ep == 0 )
+    else
     {
-        printf("statemachinestart this node %s %s is not official notary\n",srcaddr,destaddr);
+        printf("statemachinestart no kmdheight.%d\n",kmdheight);
         free(ptr);
         return;
     }

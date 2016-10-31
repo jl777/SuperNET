@@ -167,14 +167,17 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 
 void dpow_addresses()
 {
-    int32_t i; char coinaddr[64]; uint8_t pubkey[33];
-    for (i=0; i<sizeof(Notaries)/sizeof(*Notaries); i++)
+    int32_t i,numnotaries,kmdheight; struct iguana_info *coin; char coinaddr[64]; uint8_t pubkeys[64][33];
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+        kmdheight = coin->longestchain;
+    else kmdheight = 0;
+    numnotaries = komodo_notaries(pubkeys,kmdheight);
+    for (i=0; i<numnotaries; i++)
     {
-        decode_hex(pubkey,33,Notaries[i][1]);
-        bitcoin_address(coinaddr,60,pubkey,33);
+        bitcoin_address(coinaddr,60,pubkeys[i],33);
         printf("%s ",coinaddr);
     }
-    printf("Numnotaries.%d\n",i);
+    printf("Numnotaries.%d height.%d\n",i,kmdheight);
 }
 
 #include "../includes/iguana_apidefs.h"
@@ -283,16 +286,21 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 STRING_ARG(dpow,active,maskhex)
 {
-    uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
+    int32_t i,numnotaries,kmdheight,len; char pubkeystr[67]; uint8_t pubkeys[64][33],data[8],revdata[8]; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+        kmdheight = coin->longestchain;
+    else kmdheight = 0;
+    numnotaries = komodo_notaries(pubkeys,kmdheight);
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;
-        for (i=0; i<64; i++)
+        for (i=0; i<numnotaries; i++)
         {
             if ( ((1LL << i) & mask) != 0 )
             {
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
-                jaddistr(array,Notaries[i][0]);
+                init_hexbytes_noT(pubkeystr,pubkeys[i],33);
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                jaddistr(array,pubkeystr);
             }
         }
         retjson = cJSON_CreateObject();
@@ -316,8 +324,9 @@ STRING_ARG(dpow,active,maskhex)
         for (i=0; i<(len<<3); i++)
             if ( ((1LL << i) & mask) != 0 )
             {
-                printf("(%d %llx %s) ",i,(long long)(1LL << i),Notaries[i][0]);
-                jaddistr(array,Notaries[i][0]);
+                init_hexbytes_noT(pubkeystr,pubkeys[i],33);
+                printf("(%d %llx %s) ",i,(long long)(1LL << i),pubkeystr);
+                jaddistr(array,pubkeystr);//Notaries[i][0]);
             }
         return(jprint(array,1));
     } else return(clonestr("{\"error\":\"maskhex too long\"}"));

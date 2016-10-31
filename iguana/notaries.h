@@ -16,7 +16,7 @@
 #ifndef INCLUDE_NOTARIES_H
 #define INCLUDE_NOTARIES_H
 
-char *Notaries[][2] =
+char *Notaries_genesis[][2] =
 {
     { "jl777_testA", "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828" },
     { "jl777_testB", "02ebfc784a4ba768aad88d44d1045d240d47b26e248cafaf1c5169a42d7a61d344" },

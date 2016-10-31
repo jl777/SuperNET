@@ -390,6 +390,9 @@ void komodo_assetcoins()
             free_json(json);
             coin->FULLNODE = -1;
             coin->chain->rpcport = port + 1;
+            coin->chain->pubtype = 60;
+            coin->chain->p2shtype = 85;
+            coin->chain->wiftype = 188;
             sprintf(confstr,"%s.conf",CURRENCIES[i]);
             sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
             extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);

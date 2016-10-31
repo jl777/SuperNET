@@ -13,6 +13,42 @@
  *                                                                            *
  ******************************************************************************/
 
+int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
+{
+    int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*result,*array;
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( coin->FULLNODE < 0 )
+        {
+            sprintf(params,"[%d]",kmdheight);
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    printf("%s\n",retstr);
+                    if ( (result= jobj(retjson,"result")) != 0 && (array= jarray(&num,result,"notaries")) != 0 )
+                    {
+                        if ( num > 64 )
+                        {
+                            printf("warning: numnotaries.%d? > 64?\n",num);
+                            num = 64;
+                        }
+                        for (i=0; i<num; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 66 )
+                                decode_hex(pubkeys[i],33,pubkeystr);
+                        }
+                    }
+                    free_json(retjson);
+                }
+                free(retstr);
+            }
+        }
+    }
+    return(num);
+}
+
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
@@ -235,6 +271,8 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
         {
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
+                if ( height > coin->longestchain )
+                    coin->longestchain = height;
                 if ( (array= jarray(&n,json,"tx")) != 0 )
                 {
                     for (i=0; i<n&&i<maxtx; i++)
