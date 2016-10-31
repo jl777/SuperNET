@@ -450,6 +450,8 @@ void dpow_statemachinestart(void *ptr)
             dp->blocks[checkpoint.blockhash.height - 1000] = 0;
         }
     }
+    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
+    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
         bp->numnotaries = komodo_notaries(pubkeys,kmdheight);
@@ -475,8 +477,6 @@ void dpow_statemachinestart(void *ptr)
         free(ptr);
         return;
     }
-    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     printf(" myaddr.(%s %s)\n",srcaddr,destaddr);
     if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
     {
