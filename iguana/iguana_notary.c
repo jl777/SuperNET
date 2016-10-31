@@ -256,6 +256,7 @@ char *dpow_passthru(struct iguana_info *coin,char *function,char *hex)
         else len = 0;
     }
     params[len] = 0;
+    printf("passthru.(%s) %s\n",function,params);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,function,params));
 }
 
