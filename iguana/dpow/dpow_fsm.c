@@ -466,7 +466,9 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( myind < 0 || ep == 0 )
         {
-            printf("statemachinestart this node %s %s is not official notary\n",srcaddr,destaddr);
+            for (i=0; i<33; i++)
+                printf("%02x",dp->minerkey33[i]);
+            printf(" statemachinestart this node %s %s is not official notary\n",srcaddr,destaddr);
             free(ptr);
             return;
         }
