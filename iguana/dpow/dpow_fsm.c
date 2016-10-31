@@ -383,7 +383,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,j,numratified,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
+    int32_t i,numratified,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
     memset(&zero,0,sizeof(zero));
     myinfo = ptrs[0];
     dp = ptrs[1];
@@ -457,9 +457,9 @@ void dpow_statemachinestart(void *ptr)
         bp->numnotaries = komodo_notaries(pubkeys,kmdheight);
         for (i=0; i<bp->numnotaries; i++)
         {
-            for (j=0; j<33; j++)
-                printf("%02x",pubkeys[i][j]);
-            printf(" <= pubkey[%d]\n",i);
+            //for (j=0; j<33; j++)
+            //    printf("%02x",pubkeys[i][j]);
+            //printf(" <= pubkey[%d]\n",i);
             memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
             if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
             {
@@ -483,7 +483,7 @@ void dpow_statemachinestart(void *ptr)
         free(ptr);
         return;
     }
-    printf(" myaddr.(%s %s)\n",srcaddr,destaddr);
+    printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
     {
         printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
