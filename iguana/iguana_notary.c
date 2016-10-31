@@ -69,7 +69,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
-        ptrs[2] = (void *)DPOW_MINSIGS;
+        if ( strcmp(dp->symbol,"KMD") != 0 )
+            ptrs[2] = (void *)2;
+        else ptrs[2] = (void *)DPOW_MINSIGS;
         ptrs[3] = (void *)DPOW_DURATION;
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));

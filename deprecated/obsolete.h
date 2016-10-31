@@ -19597,6 +19597,7 @@ len = 0;
              }
              // compare against elected notary pubkeys as of height
              return(0);
+             
              }
              
              int32_t komodo_is_notaryblock(CBlockHeader& blockhdr)
@@ -19636,3 +19637,70 @@ len = 0;
                 }
                 free(retstr);
             }
+            
+            /*int32_t komodo_gateway_depositremove(uint256 txid,uint16_t vout) // assetchain context
+             {
+             int32_t iter,i,n=0; queue_t *Q; struct pax_transaction *ptr; struct queueitem *item;
+             for (iter=0; iter<2; iter++)
+             {
+             Q = (iter == 0) ? &DepositsQ : &PendingsQ;
+             portable_mutex_lock(&Q->mutex);
+             if ( Q->list != 0 )
+             {
+             item = &ptr->DL;
+             DL_FOREACH(Q->list,item)
+             {
+             ptr = (struct pax_transaction *)item;
+             if ( memcmp(&ptr->txid,&txid,sizeof(txid)) == 0 && ptr->vout == vout )
+             {
+             if ( KOMODO_DEPOSIT >= ptr->fiatoshis )
+             KOMODO_DEPOSIT -= ptr->fiatoshis;
+             else KOMODO_DEPOSIT = 0;
+             for (i=0; i<32; i++)
+             printf("%02x",((uint8_t *)&txid)[i]);
+             printf(" v%d DELETE %.8f DEPOSIT %s %.8f\n",vout,dstr(ptr->komodoshis),ptr->symbol,dstr(ptr->fiatoshis));
+             DL_DELETE(Q->list,&ptr->DL);
+             n++;
+             free(ptr);
+             break;
+             }
+             }
+             }
+             portable_mutex_unlock(&Q->mutex);
+             }
+             if ( queue_size(&DepositsQ) == 0 && queue_size(&PendingsQ) == 0 )
+             KOMODO_DEPOSIT = PENDING_KOMODO_TX = 0;
+             return(n);
+             }*/
+            for (iter=0; iter<2; iter++)
+            {
+                Q = (iter == 0) ? &DepositsQ : &PendingsQ;
+                portable_mutex_lock(&Q->mutex);
+                ptr = 0;
+                if ( Q->list != 0 )
+                {
+                    item = &ptr->DL;
+                    matchflag = 0;
+                    DL_FOREACH(Q->list,item)
+                    {
+                        ptr = (struct pax_transaction *)item;
+                        if ( memcmp(&ptr->txid,&txids[i-1],sizeof(txids[i-1])) == 0 && ptr->vout == vouts[i-1] )
+                        {
+                            if ( ptr->fiatoshis == block.vtx[0].vout[i].nValue )
+                            {
+                                /*for (j=0; j<32; j++)
+                                 printf("%02x",((uint8_t *)&ptr->txid)[j]);
+                                 printf(" v%d matched %.8f vout.%d ",ptr->vout,dstr(ptr->fiatoshis),i);
+                                 hash = block.GetHash();
+                                 for (j=0; j<32; j++)
+                                 printf("%02x",((uint8_t *)&hash)[j]);
+                                 printf(".blockhash\n");*/
+                                matchflag = 1;
+                            } else printf("error finding %.8f vout.%d\n",dstr(ptr->fiatoshis),i);
+                            break;
+                        }
+                    }
+                }
+                portable_mutex_unlock(&Q->mutex);
+            }
+            
