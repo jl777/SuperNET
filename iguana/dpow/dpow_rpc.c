@@ -25,7 +25,7 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    printf("%s\n",retstr);
+                    //printf("%s\n",retstr);
                     if ( (result= jobj(retjson,"result")) != 0 && (array= jarray(&num,result,"notaries")) != 0 )
                     {
                         if ( num > 64 )
@@ -38,6 +38,7 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
                             item = jitem(array,i);
                             if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 66 )
                                 decode_hex(pubkeys[i],33,pubkeystr);
+                            else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
                         }
                     }
                     free_json(retjson);
