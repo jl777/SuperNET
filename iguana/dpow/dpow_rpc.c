@@ -15,7 +15,7 @@
 
 int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
 {
-    int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*result,*array;
+    int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
         if ( coin->FULLNODE < 0 )
@@ -26,7 +26,7 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     //printf("%s\n",retstr);
-                    if ( (result= jobj(retjson,"result")) != 0 && (array= jarray(&num,result,"notaries")) != 0 )
+                    if ( (array= jarray(&num,retjson,"notaries")) != 0 )
                     {
                         if ( num > 64 )
                         {

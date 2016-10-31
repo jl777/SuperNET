@@ -58,10 +58,10 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; int32_t freq; struct dpow_checkpoint checkpoint;
+    void **ptrs; int32_t freq; struct dpow_checkpoint checkpoint; char str[65];
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
-    //printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
+    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     freq = strcmp(dp->symbol,"KMD") == 0 ? DPOW_CHECKPOINTFREQ : 1;
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
@@ -115,7 +115,7 @@ void dpow_destconfirm(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    printf("%s destupdate ht.%d\n",dp->dest,height);
+    //printf("%s destupdate ht.%d\n",dp->dest,height);
     dp->destupdated = timestamp;
     dpow_checkpointset(myinfo,&dp->destchaintip,height,hash,timestamp,blocktime);
     dpow_approvedset(myinfo,dp,&dp->destchaintip,dp->desttx,dp->numdesttx);
