@@ -32,20 +32,20 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; char str[65];
+    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; //char str[65];
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
+        if ( 0 && bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
             printf("(%d != %d) ",(tip.blockhash.height - fifo[i-1].blockhash.height),i);
         if ( (ind= (tip.blockhash.height - fifo[i-1].blockhash.height)) >= 0 && ind < DPOW_FIFOSIZE )
             newfifo[ind] = fifo[i-1];
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
-    for (i=0; i<DPOW_FIFOSIZE; i++)
-        printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
-    printf(" <- fifo %s\n",bits256_str(str,tip.blockhash.hash));
+    //for (i=0; i<DPOW_FIFOSIZE; i++)
+    //    printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
+    //printf(" <- fifo %s\n",bits256_str(str,tip.blockhash.hash));
 }
 
 void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *checkpoint,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -58,10 +58,10 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; int32_t freq; struct dpow_checkpoint checkpoint;
+    void **ptrs; int32_t freq; struct dpow_checkpoint checkpoint;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
-    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
+    //printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     freq = strcmp(dp->symbol,"KMD") == 0 ? DPOW_CHECKPOINTFREQ : 1;
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
