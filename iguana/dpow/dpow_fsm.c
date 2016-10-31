@@ -512,7 +512,7 @@ void dpow_statemachinestart(void *ptr)
         sleep(1);
     }
     starttime = (uint32_t)time(NULL);
-    printf("DPOW statemachine checkpoint.%d %s\n",checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
+    printf("DPOW.%s statemachine checkpoint.%d %s\n",ASSETCHAINS_SYMBOL,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
