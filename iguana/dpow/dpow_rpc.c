@@ -20,7 +20,7 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
     {
         if ( coin->FULLNODE < 0 )
         {
-            sprintf(params,"[%d]",kmdheight);
+            sprintf(params,"[\"%d\"]",kmdheight);
             if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
