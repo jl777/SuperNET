@@ -443,7 +443,7 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        if ( dp->blocks[checkpoint.blockhash.height - 1000] != 0 )
+        if ( checkpoint.blockhash.height > 0 && dp->blocks[checkpoint.blockhash.height - 1000] != 0 )
         {
             printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - 1000);
             free(dp->blocks[checkpoint.blockhash.height - 1000]);
