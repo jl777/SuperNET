@@ -114,19 +114,19 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
-                    if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
+                    dp = 0;
+                    for (i=0; i<myinfo->numdpows; i++)
+                    {
+                        if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
+                        {
+                            dp = &myinfo->DPOWS[i];
+                            break;
+                        }
+                    }
+                    if ( dp != 0 && crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
                         //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
-                        dp = 0;
-                        for (i=0; i<myinfo->numdpows; i++)
-                        {
-                            if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
-                            {
-                                dp = &myinfo->DPOWS[i];
-                                break;
-                            }
-                        }
-                        if ( i == myinfo->numdpows )
+                         if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
                         else if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
                             dp->crcs[firstz] = crc32;
