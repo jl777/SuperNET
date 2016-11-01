@@ -499,6 +499,7 @@ void dpow_statemachinestart(void *ptr)
         ep->dest.prev_vout = destprevvout0;
         ep->src.prev_hash = srcprevtxid0;
         ep->src.prev_vout = srcprevvout0;
+        printf("Use override utxo %s/v%d %s/v%d\n",bits256_str(str,destprevtxid0),destprevvout0,bits256_str(str2,srcprevtxid0),srcprevvout0);
     }
     else
     {
