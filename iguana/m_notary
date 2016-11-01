@@ -22,3 +22,7 @@ curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"ad
 sleep 3
 ./wp_7776
 
+source pubkey.txt
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"USD\",\"pubkey\":\"$pubkey\",\"timeout\":60000}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EUR\",\"pubkey\":\"$pubkey\",\"timeout\":60000}"
+
