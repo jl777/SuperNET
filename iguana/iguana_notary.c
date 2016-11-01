@@ -287,6 +287,19 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
+INT_AND_ARRAY(dpow,addnotaries,flag,notaries)
+{
+    int32_t i,n;
+    if ( notaries != 0 && (n= cJSON_GetArraySize(notaries)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            dpow_nanomsginit(myinfo,jstri(notaries,i));
+        }
+    }
+    return(clonestr("{\"result\":\"notary nodes added\"}"));
+}
+
 STRING_ARG(dpow,active,maskhex)
 {
     int32_t i,numnotaries,kmdheight,len; char pubkeystr[67]; uint8_t pubkeys[64][33],data[8],revdata[8]; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
