@@ -1331,6 +1331,8 @@ DOUBLE_ARG(bitcoinrpc,settxfee,amount)
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
     coin->txfee_perkb = amount * SATOSHIDEN;
+    coin->txfee = coin->txfee_perkb / 3;
+    coin->chain->txfee = coin->txfee;
     retjson = cJSON_CreateObject();
     jadd(retjson,"result",jtrue());
     return(jprint(retjson,1));
