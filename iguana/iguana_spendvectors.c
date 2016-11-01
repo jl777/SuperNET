@@ -243,7 +243,6 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; struct iguana_spendvector *ptr;
     struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65];
     struct iguana_spend *S,*s; //void *fastfind = 0;
-    //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p txbits.%p\n",bp->hdrsi,bp->bundleheight,rdata,ramchain->txbits);
     if ( ramchain->H.data == 0 )
     {
         printf("AUTO volatilesalloc [%d]\n",bp->hdrsi);
@@ -254,6 +253,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
         printf("iguana_spendvectors.[%d]: no rdata.%p %d\n",bp->hdrsi,rdata,n);
         return(0);
     }
+    //printf("iguana_spendvectors.[%d] gen.%d ramchain data.%p txbits.%p\n",bp->hdrsi,bp->bundleheight,rdata,ramchain->txbits);
     B = RAMCHAIN_PTR(rdata,Boffset);
     S = RAMCHAIN_PTR(rdata,Soffset);
     T = RAMCHAIN_PTR(rdata,Toffset);
@@ -261,11 +261,12 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     {
         bp->tmpspends = ramchain->Xspendinds;
         bp->numtmpspends = ramchain->numXspends;
-        bp->utxofinish = (uint32_t)time(NULL);
+        bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
         //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
+    bp->startutxo = (uint32_t)time(NULL);
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
@@ -1133,7 +1134,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
         if ( counter++ < 3 )
             printf("need to process joinsplits before can validate.%s\n",coin->symbol);
         bp->validated = (uint32_t)time(NULL);
-        return(bp->n);
+        //return(bp->n);
     }
     if ( (coin->MAXPEERS > 1 && coin->VALIDATENODE == 0 && coin->FULLNODE == 0) || bp->ramchain.from_ro != 0 )//|| bp == coin->current )
     {

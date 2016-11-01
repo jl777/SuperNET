@@ -747,7 +747,7 @@ void iguana_helper(void *arg)
                                             {
                                                 if ( retval > 0 )
                                                 {
-                                                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                                                    printf("  GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
                                                     bp->utxofinish = (uint32_t)time(NULL);
                                                 }
                                             }
