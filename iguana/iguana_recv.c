@@ -1358,7 +1358,6 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
         memset(prevhash2.bytes,0,sizeof(prevhash2));
         for (i=match=0; i<n&&i<coin->chain->bundlesize; i++)
         {
-            //fprintf(stderr,"i.%d of %d bundleset\n",i,n);
             if ( bits256_cmp(zblocks[i].RO.prev_block,coin->blocks.hwmchain.RO.hash2) == 0 )
             {
                 bp = 0, bundlei = -2;
@@ -1397,7 +1396,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 if ( bp->issued[bundlei] == 0 )//&& coin->RTheight > 0 )
                 {
                     bp->issued[bundlei] = 1;
-                    iguana_blockQ("recvhdr",coin,bp,bundlei,block->RO.hash2,0);
+                    iguana_blockQ("recvhdr",coin,bp,bundlei,zblocks[i].RO.hash2,0);
                 }
             }
             prevhash2 = zblocks[i].RO.hash2;
