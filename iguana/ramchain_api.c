@@ -81,6 +81,7 @@ STRING_ARG(iguana,removecoin,activecoin)
     {
         coin->active = 0;
         coin->started = 0;
+        coin->removedtime = (uint32_t)time(NULL);
         if ( 0 )
         {
             for (i=0; i<IGUANA_MAXPEERS; i++)

@@ -137,6 +137,8 @@ void SuperNET_MYINFOadd(struct supernet_info *myinfo)
 char *iguana_JSON(void *_myinfo,void *_coin,char *jsonstr,uint16_t port)
 {
     char *retstr=0; cJSON *json; struct supernet_info *myinfo = _myinfo; struct iguana_info *coin = _coin;
+    if ( coin != 0 && coin->removedtime != 0 )
+        return(clonestr("{\"error\":\"coin is removed\"}"));
     if ( (json= cJSON_Parse(jsonstr)) != 0 )
     {
         if ( myinfo == 0 )

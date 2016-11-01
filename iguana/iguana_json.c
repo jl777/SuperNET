@@ -909,6 +909,8 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
         coinstr = myinfo->rpcsymbol;
     if ( coinstr != 0 && coinstr[0] != 0 )
         coin = iguana_coinfind(coinstr);
+    if ( coin != 0 && coin->removedtime != 0 )
+        return(clonestr("{\"error\":\"coin is removed\"}"));
     if ( strcmp(agentstr,"bitcoinrpc") == 0 && coin == 0 )
         return(clonestr("{\"error\":\"bitcoinrpc needs coin that is active\"}"));
 #define IGUANA_ARGS myinfo,coin,json,remoteaddr
