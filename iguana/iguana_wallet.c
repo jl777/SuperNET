@@ -330,6 +330,8 @@ cJSON *iguana_getaddressesbyaccount(struct supernet_info *myinfo,struct iguana_i
         bitcoin_address(refaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
         HASH_ITER(hh,myinfo->wallet,subset,tmp)
         {
+            if ( strcmp(subset->account,account) != 0 )
+                continue;
             HASH_ITER(hh,subset->waddr,waddr,tmp2)
             {
                 bitcoin_address(coinaddr,coin->chain->pubtype,waddr->rmd160,20);
