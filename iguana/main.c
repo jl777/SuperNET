@@ -1514,7 +1514,13 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
                     free_json(argjson);
                     return(clonestr("{\"error\":\"cant find passphrase in decrypted json\"}"));
                 }
-            } else free_json(argjson);
+            }
+            else
+            {
+                free_json(argjson);
+                if ( json == 0 )
+                    return(clonestr("{\"error\":\"invalid passphrase\"}"));
+            }
         }
         else
         {
@@ -1522,10 +1528,15 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             return(clonestr("{\"error\":\"cant parse decrypted json\"}"));
         }
     }
-    else if ( myinfo->decryptstr != 0 )
+    else
     {
-        free(myinfo->decryptstr);
-        myinfo->decryptstr = 0;
+        if ( myinfo->decryptstr != 0 )
+        {
+            free(myinfo->decryptstr);
+            myinfo->decryptstr = 0;
+        }
+        if ( json == 0 )
+            return(clonestr("{\"error\":\"invalid passphrase\"}"));
     }
     if ( passphrase != 0 && passphrase[0] != 0 )
     {

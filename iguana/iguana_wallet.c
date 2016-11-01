@@ -1234,6 +1234,7 @@ STRING_ARG(bitcoinrpc,getnewaddress,account)
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     myinfo->expiration++;
+    json = 0;
     if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
     {
         free(retstr);
@@ -1275,6 +1276,7 @@ struct iguana_waddress *iguana_getaccountaddress(struct supernet_info *myinfo,st
         portable_mutex_unlock(&myinfo->bu_mutex);
         if ( flag != 0 || (waddr= wacct->current) == 0 )
         {
+            json = 0;
             if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
             {
                 free(retstr);
@@ -1340,6 +1342,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
         strcpy(myinfo->permanentfile,permanentfile);
+    json = 0;
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     myinfo->expiration = (uint32_t)time(NULL) + timeout;
     iguana_walletinitcheck(myinfo,coin);
@@ -1365,6 +1368,8 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
         strcpy(myinfo->permanentfile,permanentfile);
+    if ( json == 0 )
+        json = (cJSON *)cJSON_Parse("{}");
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     //myinfo->expiration = (uint32_t)time(NULL) + 3600*24;
     struct iguana_waddress waddr; struct iguana_waccount *wacct;
@@ -1409,6 +1414,7 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
     char destfname[1024],*tmpstr,*loginstr,*passphrase,*retstr = 0; cJSON *tmpjson,*loginjson;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    json = 0;
     if ( (tmpstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,oldpassword,oldpermanentfile,oldpassword)) != 0 )
     {
         free(tmpstr);
@@ -1483,6 +1489,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
             return(clonestr("{\"result\":\"privkey already in wallet\"}"));
         } else waddr = &addr;
         myinfo->expiration++;
+        json = 0;
         if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             free(retstr);
@@ -1547,6 +1554,7 @@ STRING_ARG(bitcoinrpc,dumpwallet,filename)
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
+        json = 0;
         if ( (retstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -1581,6 +1589,7 @@ STRING_ARG(bitcoinrpc,backupwallet,filename)
     if ( myinfo->expiration != 0 )
     {
         myinfo->expiration++;
+        json = 0;
         if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
         {
             retstr = clonestr("{\"error\":\"couldnt backup wallet\"}");
@@ -1616,6 +1625,7 @@ STRING_ARG(bitcoinrpc,importwallet,filename)
         {
             if ( (importjson= cJSON_Parse(importstr)) != 0 )
             {
+                json = 0;
                 if ( (loginstr= SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password)) != 0 )
                 {
                     free(loginstr);
