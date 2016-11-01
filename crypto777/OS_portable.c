@@ -183,7 +183,8 @@ void *OS_portable_mapfile(char *fname,long *filesizep,int32_t enablewrite)
 	close(fd);
     if ( ptr == 0 || ptr == MAP_FAILED )
 	{
-		printf("map_file.write%d: mapping %s failed? mp %p\n",enablewrite,fname,ptr);
+		printf("map_file.write%d: mapping %s failed? mp %p, usually due to ulimit -n exceeded\n",enablewrite,fname,ptr);
+        exit(-1);
 		return(0);
 	}
 	*filesizep = filesize;
