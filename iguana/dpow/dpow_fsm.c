@@ -383,8 +383,10 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,numratified,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
+    int32_t i,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
     memset(&zero,0,sizeof(zero));
+    srcprevtxid0 = destprevtxid0 = zero;
+    srcprevvout0 = destprevvout0 = -1;
     myinfo = ptrs[0];
     dp = ptrs[1];
     minsigs = (uint32_t)(long)ptrs[2];
@@ -419,6 +421,13 @@ void dpow_statemachinestart(void *ptr)
                     {
                         decode_hex(bp->ratified_pubkeys[i],33,hexstr);
                         safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
+                        if ( i == 0 )
+                        {
+                            destprevtxid0 = jbits256(item,"destprevtxid0");
+                            destprevvout0 = jint(item,"destprevvout0");
+                            srcprevtxid0 = jbits256(item,"srcprevtxid0");
+                            srcprevvout0 = jint(item,"srcprevvout0");
+                        }
                     }
                     else
                     {
@@ -484,17 +493,27 @@ void dpow_statemachinestart(void *ptr)
         return;
     }
     printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
-    if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
+    if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
     {
-        printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
-        free(ptr);
-        return;
+        ep->dest.prev_hash = destprevtxid0;
+        ep->dest.prev_vout = destprevvout0;
+        ep->src.prev_hash = srcprevtxid0;
+        ep->src.prev_vout = srcprevvout0;
     }
-    if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
+    else
     {
-        printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
-        free(ptr);
-        return;
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&ep->dest.prev_hash,&ep->dest.prev_vout,destaddr) < 0 )
+        {
+            printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
+            free(ptr);
+            return;
+        }
+        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
+        {
+            printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
+            free(ptr);
+            return;
+        }
     }
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
