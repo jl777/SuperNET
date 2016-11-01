@@ -44,7 +44,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
     {
         fprintf(stderr,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FATAL ERROR OKCOIN.(%s) only supports USD\n",url);
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FATAL ERROR OKCOIN.(%s) only supports USD\n",url);
-        exit(-1);
+        //exit(-1);
         return(0);
     }
     return(exchanges777_standardprices(exchange,commission,base,rel,url,quotes,0,0,maxdepth,0,invert));
