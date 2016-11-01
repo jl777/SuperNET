@@ -559,3 +559,4 @@ void dpow_statemachinestart(void *ptr)
     dp->lastrecvmask = bp->recvmask;
     free(ptr);
 }
+
