@@ -16,6 +16,8 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
+#define DPOW_FIRSTRATIFY 1000
+
 #define DPOW_CHECKPOINTFREQ 10
 #define DPOW_MINSIGS 7
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
@@ -95,7 +97,7 @@ struct dpow_block
     uint64_t recvmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
-    int32_t height,numnotaries,completed,minsigs,duration,numratified;
+    int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify;
     int8_t bestk;
     cJSON *ratified;
     uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
