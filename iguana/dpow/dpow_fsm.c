@@ -394,7 +394,7 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
-    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration);
+    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( strcmp(src->symbol,"KMD") == 0 )
@@ -531,8 +531,9 @@ void dpow_statemachinestart(void *ptr)
         }
         sleep(1);
     }
-    starttime = (uint32_t)time(NULL);
-    printf("DPOW.%s statemachine checkpoint.%d %s\n",src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash));
+    if ( (starttime= checkpoint.timestamp) == 0 )
+        starttime = (uint32_t)time(NULL);
+    printf("DPOW.%s statemachine checkpoint.%d %s start.%u\n",src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
