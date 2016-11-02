@@ -699,11 +699,11 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                         //fprintf(stderr,"balancehash add [%d]\n",bp->hdrsi);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr) * numunspents);
-                        vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->bundlehash2) * bp->n);
+                        vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hash2,sizeof(bp->bundlehash2) * bp->n);
                     }
                     crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
                     crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
-                    crc = calc_crc32(crc,(void *)bp->hashes,(int32_t)(sizeof(bp->bundlehash2) * bp->n));
+                    crc = calc_crc32(crc,(void *)bp->hash2,(int32_t)(sizeof(bp->bundlehash2) * bp->n));
                 } //else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
             }
         } else crc = filecrc;
@@ -756,7 +756,7 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         if ( block->height > coin->blocks.hwmchain.height )
         {
             char str[65];
-            printf("set hwmchain.%d <- %s %p\n",block->height,bits256_str(str,bp->hashes[bp->n-1]),block);
+            printf("set hwmchain.%d <- %s %p\n",block->height,bits256_str(str,bp->hash2[bp->n-1]),block);
             iguana_blockzcopy(coin->chain->zcash,(void *)&coin->blocks.hwmchain,block);
         }
     }
@@ -878,7 +878,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
-                    vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->bundlehash2)*bp->n);
+                    vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hash2,sizeof(bp->bundlehash2)*bp->n);
                 }
                 else if ( iter == 1 )
                 {
@@ -1169,8 +1169,8 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
             {
                 char str[65]; 
                 if ( coin->chain->fixit != 0 )
-                    printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hashes[i]));
-                if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
+                    printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hash2[i]));
+                if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hash2[i],1)) < 0 )
                 {
                     errs++;
                     //fprintf(stderr,"-%s.[%d:%d] ",coin->symbol,bp->hdrsi,i);
@@ -1180,7 +1180,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
                 }
                 else
                 {
-                    vupdate_sha256(validatehash.bytes,&vstate,bp->hashes[i].bytes,sizeof(bp->hashes[i]));
+                    vupdate_sha256(validatehash.bytes,&vstate,bp->hash2[i].bytes,sizeof(bp->hash2[i]));
                     total += len, totalvalidated++;
                 }
             }

@@ -170,7 +170,7 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                 shastr[0] = 0;
                 if ( bits256_nonz(bp->allhash) == 0 )
                 {
-                    vcalc_sha256(shastr,sha256all.bytes,bp->hashes[0].bytes,sizeof(*bp->hashes) * coin->chain->bundlesize);
+                    vcalc_sha256(shastr,sha256all.bytes,bp->hash2[0].bytes,sizeof(*bp->hash2) * coin->chain->bundlesize);
                     bp->allhash = sha256all;
                 }
                 else
@@ -178,9 +178,9 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                     sha256all = bp->allhash;
                     bits256_str(shastr,bp->allhash);
                 }
-                fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hashes[1]));
+                fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hash2[1]));
                 if ( fp2 != 0 )
-                    fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hashes[1]));
+                    fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hash2[1]));
             }
             else
             {
@@ -439,7 +439,8 @@ void iguana_bundlepurge(struct iguana_info *coin,struct iguana_bundle *bp)
     }
     bp->numspec = 0;
     bp->speculative = 0;
-    memset(bp->hashes,0,sizeof(bp->hashes));
+    printf("purge bundle\n");
+    memset(bp->hash2,0,sizeof(bp->hash2));
     memset(bp->issued,0,sizeof(bp->issued));
     bp->prevbundlehash2 = bp->nextbundlehash2 = bp->allhash = zero;
 }

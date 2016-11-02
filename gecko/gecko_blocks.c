@@ -58,7 +58,7 @@ struct iguana_bundle *gecko_bundleset(struct iguana_info *virt,struct iguana_blo
     else
     {
         bp->blocks[bundlei] = block;
-        bp->hashes[bundlei] = block->RO.hash2;
+        bp->hash2[bundlei] = block->RO.hash2;
         //char str[65]; printf("[%d:%d] <- %s %p\n",hdrsi,bundlei,bits256_str(str,block->RO.hash2),block);
         iguana_hash2set(virt,"ensure",bp,bundlei,block->RO.hash2);
     }

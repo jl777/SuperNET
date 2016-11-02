@@ -650,8 +650,8 @@ void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight)
             height = 0;
         hdrsi = (height / coin->chain->bundlesize);
         bundlei = (height % coin->chain->bundlesize);
-        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
-            iguana_RTrawdata(coin,bp->hashes[bundlei],0,&recvlen,&numtx,0); // delete file
+        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_nonz(bp->hash2[bundlei]) != 0 )
+            iguana_RTrawdata(coin,bp->hash2[bundlei],0,&recvlen,&numtx,0); // delete file
     }
     printf("end %s RTpurge.%d\n",coin->symbol,lastheight);
 }
@@ -674,7 +674,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
             {
                 bp->issued[block->bundlei] = 0;
                 bp->blocks[block->bundlei] = block;
-                bp->hashes[block->bundlei] = block->RO.hash2;
+                bp->hash2[block->bundlei] = block->RO.hash2;
                 block->height = coin->firstRTheight+offset;
                 if ( coin->peers != 0 )
                 {
