@@ -522,9 +522,9 @@ void dpow_statemachinestart(void *ptr)
     bp->height = checkpoint.blockhash.height;
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
-    while ( dp->destupdated == 0 )
+    while ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->destupdated == 0 )
     {
-        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             return;
