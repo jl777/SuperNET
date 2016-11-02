@@ -282,19 +282,25 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,data,len,bp->utxocrcs);
         }
-        if ( ep->masks[src_or_dest][bp->bestk] == 0 )
+        if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
     else if ( bp->state != 0xffffffff )
     {
         src_or_dest = 0;
-        if ( ep->masks[src_or_dest][bp->bestk] == 0 )
+        if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
     if ( (rand() % 10) == 0 || bp->isratify != 0 )
-        printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk],(long long)(bp->destsigsmasks[bp->bestk] & bp->bestmask),(long long)bp->srcsigsmasks[bp->bestk]);
+    {
+        uint64_t sigsmask,srcmask;
+        if ( bp->bestk < 0 )
+            sigsmask = srcmask = 0;
+        else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
+        printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
+    }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
         dpow_sigscheck(myinfo,dp,bp,DPOW_SIGBTCCHANNEL,myind,1);
