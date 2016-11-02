@@ -81,7 +81,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
             r = (rand() % bp->numnotaries);
             for (j=0; j<DPOW_M(bp); j++)
             {
-                i = DPOW_MODIND(bp,j+r);//((bp->height % bp->numnotaries) + j + r) % bp->numnotaries;
+                i = DPOW_MODIND(bp,j+r);
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
                     break;
             }
@@ -148,7 +148,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             dpow_sync(myinfo,dp,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
-        //if ( 0 && flag == 0 && bp != 0 )
+        if ( 0 && flag == 0 && bp != 0 )
             printf("ep.%p sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",ep,senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
@@ -218,41 +218,32 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         //printf("bp.%p datalen.%d\n",bp,datalen);
         for (i=0; i<32; i++)
             srchash.bytes[i] = data[i];
-        /*if ( srchash.ulongs[0] == 0 )
-         {
-         init_hexbytes_noT(bp->rawtx,&data[32],datalen-32);
-         //printf("got bestk.%d %llx rawtx.(%s) set utxo\n",srchash.bytes[31],(long long)srchash.ulongs[1],bp->rawtx);
-         dpow_rawtxsign(myinfo,bp->coin,bp,bp->rawtx,0,srchash.bytes[31],srchash.ulongs[1],myind,bits256_nonz(bp->desttxid) == 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
-         }
-         else*/
+        txid = bits256_doublesha256(0,&data[32],datalen-32);
+        init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
+        printf("signedtx.(%s)\n",bp->signedtx);
+        if ( bits256_cmp(txid,srchash) == 0 )
         {
-            txid = bits256_doublesha256(0,&data[32],datalen-32);
-            init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
-            printf("signedtx.(%s)\n",bp->signedtx);
-            if ( bits256_cmp(txid,srchash) == 0 )
+            printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
+            if ( src_or_dest != 0 )
             {
-                printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
-                if ( src_or_dest != 0 )
-                {
-                    bp->desttxid = txid;
-                    bp->state = 1000;
-                    dp->destupdated = 0;
-                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0);
-                    //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
-                }
-                else
-                {
-                    bp->srctxid = txid;
-                    printf("set state COMPLETED\n");
-                    bp->state = 0xffffffff;
-                }
+                bp->desttxid = txid;
+                bp->state = 1000;
+                dp->destupdated = 0;
+                dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0);
+                //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
             }
             else
             {
-                init_hexbytes_noT(bp->signedtx,data,datalen);
-                printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
-                bp->signedtx[0] = 0;
+                bp->srctxid = txid;
+                printf("set state COMPLETED\n");
+                bp->state = 0xffffffff;
             }
+        }
+        else
+        {
+            init_hexbytes_noT(bp->signedtx,data,datalen);
+            printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
+            bp->signedtx[0] = 0;
         }
     } else printf("unhandled channel.%x\n",channel);
     return(0);
@@ -270,7 +261,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             sendutxo = 0;
             for (i=0; i<bp->numnotaries; i++)
             {
-                k = DPOW_MODIND(bp,i);//((bp->height % bp->numnotaries) + i) % bp->numnotaries;
+                k = DPOW_MODIND(bp,i);
                 if ( k == myind )
                     continue;
                 if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
@@ -302,8 +293,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,src_or_dest);
         //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
     }
-    if ( (rand() % 10) == 0 )
-        printf("[%d] %s ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk],(long long)(bp->destsigsmasks[bp->bestk] & bp->bestmask),(long long)bp->srcsigsmasks[bp->bestk]);
+    if ( (rand() % 10) == 0 || bp->isratify != 0 )
+        printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)bp->destsigsmasks[bp->bestk],(long long)(bp->destsigsmasks[bp->bestk] & bp->bestmask),(long long)bp->srcsigsmasks[bp->bestk]);
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
         dpow_sigscheck(myinfo,dp,bp,DPOW_SIGBTCCHANNEL,myind,1);
@@ -318,7 +309,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
 uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
 {
     int32_t j,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
-    if ( bp->numnotaries > 8 )
+    if ( 0 && bp->numnotaries > 8 )
         incr = sqrt(bp->numnotaries) + 1;
     else incr = 1;
     memset(zero.bytes,0,sizeof(zero));
@@ -336,7 +327,7 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
         opret_symbol = dp->symbol;
     }
     bitcoin_address(coinaddr,coin->chain->pubtype,dp->minerkey33,33);
-    if ( bits256_nonz(bp->hashmsg) == 0 && bp->height != 0 )
+    if ( bits256_nonz(bp->hashmsg) == 0 && bp->height >= DPOW_FIRSTRATIFY )
         return(0);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
@@ -404,8 +395,9 @@ void dpow_statemachinestart(void *ptr)
     if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
-        bp->minsigs = minsigs; //DPOW_MINSIGS;
-        bp->duration = duration; //DPOW_DURATION;
+        bp->minsigs = minsigs;
+        if ( (bp->duration= duration) == DPOW_RATIFYDURATION )
+            bp->isratify = 1;
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->opret_symbol = dp->symbol;
@@ -522,7 +514,7 @@ void dpow_statemachinestart(void *ptr)
     bp->height = checkpoint.blockhash.height;
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
-    while ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->destupdated == 0 )
+    while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
@@ -533,14 +525,14 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( (starttime= checkpoint.timestamp) == 0 )
         starttime = (uint32_t)time(NULL);
-    printf("DPOW.%s statemachine checkpoint.%d %s start.%u\n",src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
+    printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
-        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( bp->isratify == 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             break;
@@ -550,7 +542,7 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
-        if ( dp->cancelratify != 0 && checkpoint.blockhash.height < DPOW_FIRSTRATIFY )
+        if ( dp->cancelratify != 0 && bp->isratify != 0 )
         {
             printf("abort pending ratify\n");
             break;

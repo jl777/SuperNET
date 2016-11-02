@@ -26,7 +26,7 @@
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
-#define DPOW_RATIFYDURATION (3600 * 24)
+#define DPOW_RATIFYDURATION (3600 * 12)
 
 #define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
 #define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
@@ -97,7 +97,7 @@ struct dpow_block
     uint64_t recvmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
-    int32_t height,numnotaries,completed,minsigs,duration,numratified;
+    int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify;
     int8_t bestk;
     cJSON *ratified;
     uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
