@@ -633,9 +633,9 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                 {
                     if ( hdrsi < coin->bundlescount )
                     {
-                        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_cmp(block->RO.hash2,bp->hashes[0]) != 0 )
+                        if ( (bp= coin->bundles[hdrsi]) != 0 && bits256_cmp(block->RO.hash2,bp->bundlehash2) != 0 )
                         {
-                            printf(">>>>>>>>>>>>>> interloper bundle.[%d] ht.%d %s != %s\n",hdrsi,block->height,bits256_str(str,bp->hashes[0]),bits256_str(str2,block->RO.hash2));
+                            printf(">>>>>>>>>>>>>> interloper bundle.[%d] ht.%d %s != %s\n",hdrsi,block->height,bits256_str(str,bp->bundlehash2),bits256_str(str2,block->RO.hash2));
                             coin->bundles[hdrsi] = 0;
                         }
                     }

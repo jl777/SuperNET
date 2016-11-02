@@ -115,7 +115,9 @@ int32_t iguana_peerfname(struct iguana_info *coin,int32_t *hdrsip,char *dirname,
             return(-2);
         } else bundlei++;
     }
-    hash2 = bp->hashes[0], *hdrsip = bp->hdrsi;
+    if ( bits256_cmp(bp->hashes[0],bp->bundlehash2) != 0 )
+        bp->hashes[0] = bp->bundlehash2;
+    hash2 = bp->bundlehash2, *hdrsip = bp->hdrsi;
     subdir = bp->bundleheight / IGUANA_SUBDIRDIVISOR;
     if ( numblocks == 1 )
     {
@@ -1289,7 +1291,7 @@ int32_t iguana_bundleremove(struct iguana_info *coin,int32_t hdrsi,int32_t tmpfi
             for (i=0; i<bp->n; i++)
                 iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
         }
-        sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight), OS_removefile(fname,0);
+        sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->bundlehash2),bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/accounts/debits.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
         sprintf(fname,"%s/%s/validated/%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight), OS_removefile(fname,0);
@@ -1323,7 +1325,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
     int32_t iter; bits256 sha256; char str[65],fname[1024]; void *ptr; long filesize;
     for (iter=0; iter<2; iter++)
     {
-        sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
+        sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->bundlehash2),bp->bundleheight);
         if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
         {
             ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
@@ -2283,9 +2285,9 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
     if ( bp->emitfinish > 1 )
         return(ramchain);
     memset(ramchain,0,sizeof(*ramchain));
-    if ( (mapchain= iguana_ramchain_map(myinfo,coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1)) != 0 )
+    if ( (mapchain= iguana_ramchain_map(myinfo,coin,fname,bp,bp->n,ramchain,0,0,bp->bundlehash2,zero,0,0,extraflag,1)) != 0 )
     {
-        iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
+        iguana_ramchain_link(mapchain,bp->bundlehash2,bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
         //char str[65]; printf("%s bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",coin->symbol,bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         firsttxidind = 1;
@@ -2668,13 +2670,13 @@ int32_t iguana_bundlemergeHT(struct supernet_info *myinfo,char *fname,struct igu
     iguana_meminit(&HASHMEMB,"hashmemB",0,iguana_hashmemsize(nextbp->ramchain.H.txidind,nextbp->ramchain.H.unspentind,nextbp->ramchain.H.spendind,nextbp->ramchain.pkind,nextbp->ramchain.externalind,nextbp->ramchain.H.data->scriptspace) + IGUANA_MAXSCRIPTSIZE,0);
     memset(&_Achain,0,sizeof(_Achain)); A = &_Achain;
     memset(&_Bchain,0,sizeof(_Bchain)); B = &_Bchain;
-    if ( (A= iguana_ramchain_map(myinfo,coin,fnameA,bp,bp->ramchain.numblocks,A,&HASHMEMA,0,bp->hashes[0],zero,0,0,1,1)) != 0 )
+    if ( (A= iguana_ramchain_map(myinfo,coin,fnameA,bp,bp->ramchain.numblocks,A,&HASHMEMA,0,bp->bundlehash2,zero,0,0,1,1)) != 0 )
     {
-        iguana_ramchain_link(A,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->ramchain.numblocks,firsti,1);
+        iguana_ramchain_link(A,bp->bundlehash2,bp->hdrsi,bp->bundleheight,0,bp->ramchain.numblocks,firsti,1);
     }
-    if ( (B= iguana_ramchain_map(myinfo,coin,fnameB,bp,nextbp->ramchain.numblocks,B,&HASHMEMB,0,nextbp->hashes[0],zero,0,0,1,1)) != 0 )
+    if ( (B= iguana_ramchain_map(myinfo,coin,fnameB,bp,nextbp->ramchain.numblocks,B,&HASHMEMB,0,nextbp->bundlehash2,zero,0,0,1,1)) != 0 )
     {
-        iguana_ramchain_link(B,bp->hashes[0],nextbp->hdrsi,nextbp->bundleheight,0,nextbp->ramchain.numblocks,firsti,1);
+        iguana_ramchain_link(B,bp->bundlehash2,nextbp->hdrsi,nextbp->bundleheight,0,nextbp->ramchain.numblocks,firsti,1);
     }
     if ( A == 0 || B == 0 || A->H.data == 0 || B->H.data == 0 || (A->H.data->allocsize + B->H.data->allocsize) > IGUANA_MAXRAMCHAINSIZE )
     {

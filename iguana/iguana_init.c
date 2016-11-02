@@ -178,17 +178,17 @@ int32_t iguana_savehdrs(struct iguana_info *coin)
                     sha256all = bp->allhash;
                     bits256_str(shastr,bp->allhash);
                 }
-                fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
+                fprintf(fp,"%d %s %s %s\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hashes[1]));
                 if ( fp2 != 0 )
-                    fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),shastr,bits256_str(str2,bp->hashes[1]));
+                    fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),shastr,bits256_str(str2,bp->hashes[1]));
             }
             else
             {
-                if ( bp != 0 && bits256_nonz(bp->hashes[0]) != 0 )
+                if ( bp != 0 && bits256_nonz(bp->bundlehash2) != 0 )
                 {
-                    fprintf(fp,"%d %s\n",bp->bundleheight,bits256_str(str,bp->hashes[0]));
+                    fprintf(fp,"%d %s\n",bp->bundleheight,bits256_str(str,bp->bundlehash2));
                     if ( fp2 != 0 )
-                        fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->hashes[0]),"","");
+                        fprintf(fp2,"{ \"%d\", \"%s\", \"%s\", \"%s\"},\n",bp->bundleheight,bits256_str(str,bp->bundlehash2),"","");
                 }
                 break;
             }
@@ -327,7 +327,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         {
             lastheight = height = -1;
             if ( coin->bundlescount > 0 && (bp= coin->bundles[coin->bundlescount - 1]) != 0 )
-                lastheight = bp->bundleheight, lastbundle = bp->hashes[0];
+                lastheight = bp->bundleheight, lastbundle = bp->bundlehash2;
             for (k=height=0; k<j-1; k++)
             {
                 if ( (c= line[k]) == ' ' )
@@ -345,6 +345,8 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
                 {
                     if ( (bp= iguana_bundlecreate(coin,&bundlei,height,hash2,zero,0)) != 0 )
                     {
+                        if ( bits256_cmp(hash2,bp->bundlehash2) != 0 )
+                            printf("error setting hashes[0] for ht.%d\n",height);
                         //printf("created bundle.%d\n",bp->hdrsi);
                         memset(hash1.bytes,0,sizeof(hash1));
                         iguana_bundleinitmap(myinfo,coin,bp,height,hash2,hash1);
@@ -515,7 +517,7 @@ void iguana_coinpurge(struct iguana_info *coin)
 
 struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol; int32_t j,iter; long fpos; bits256 lastbundle;
+    FILE *fp; char fname[512],*symbol; int32_t j,iter; long fpos; bits256 lastbundle,genesishash2;
     /*if ( coin->peers == 0 )
     {
         printf("cant start privatechain directly\n");
@@ -564,13 +566,15 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
         }
     }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
-    iguana_genesis(myinfo,coin,coin->chain);
+    genesishash2 = iguana_genesis(myinfo,coin,coin->chain);
     int32_t bundlei = -2;
     static const bits256 zero;
-    iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
+    //iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1);
+    coin->bundles[0] = iguana_bundlecreate(coin,&bundlei,0,genesishash2,zero,1);
     if ( coin->virtualchain == 0 )
     {
-        _iguana_chainlink(myinfo,coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
+        //_iguana_chainlink(myinfo,coin,iguana_blockfind("genesis",coin,*(bits256 *)coin->chain->genesis_hashdata));
+        _iguana_chainlink(myinfo,coin,iguana_blockfind("genesis",coin,genesishash2));
         if ( coin->blocks.hwmchain.height != 0 || memcmp(coin->blocks.hwmchain.RO.hash2.bytes,coin->chain->genesis_hashdata,sizeof(coin->chain->genesis_hashdata)) != 0 )
         {
             char str[65]; printf("%s genesis values mismatch hwmheight.%d %.15f %.15f %s\n",coin->name,coin->blocks.hwmchain.height,coin->blocks.hwmchain.PoW,coin->blocks.hwmchain.PoW,bits256_str(str,coin->blocks.hwmchain.RO.hash2));

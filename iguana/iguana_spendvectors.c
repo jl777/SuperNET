@@ -66,7 +66,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
             printf("iguana_spendvectorconv error [%d] at %d of %d/%d\n",bp->hdrsi,i,emit,n);
             return(-1);
         }
-    sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
+    sprintf(fname,"%s/%s/spends/%s.%d",GLOBAL_DBDIR,coin->symbol,bits256_str(str,bp->bundlehash2),bp->bundleheight);
     vcalc_sha256(0,sha256.bytes,(void *)ptr,(int32_t)(sizeof(*ptr) * emit));
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
@@ -699,11 +699,11 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
                         //fprintf(stderr,"balancehash add [%d]\n",bp->hdrsi);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr) * numpkinds);
                         vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr) * numunspents);
-                        vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->hashes[0]) * bp->n);
+                        vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->bundlehash2) * bp->n);
                     }
                     crc = calc_crc32(crc,(void *)Aptr,(int32_t)(sizeof(*Aptr) * numpkinds));
                     crc = calc_crc32(crc,(void *)Uptr,(int32_t)(sizeof(*Uptr) * numunspents));
-                    crc = calc_crc32(crc,(void *)bp->hashes,(int32_t)(sizeof(bp->hashes[0]) * bp->n));
+                    crc = calc_crc32(crc,(void *)bp->hashes,(int32_t)(sizeof(bp->bundlehash2) * bp->n));
                 } //else printf("missing hdrs.[%d] data.%p num.(%u %d) %p %p\n",i,bp->ramchain.H.data,numpkinds,numunspents,Aptr,Uptr);
             }
         } else crc = filecrc;
@@ -878,7 +878,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
                 {
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Aptr,sizeof(*Aptr)*numpkinds);
                     vupdate_sha256(balancehash.bytes,&vstate,(void *)Uptr,sizeof(*Uptr)*numunspents);
-                    vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->hashes[0])*bp->n);
+                    vupdate_sha256(allbundles.bytes,&bstate,(void *)bp->hashes,sizeof(bp->bundlehash2)*bp->n);
                 }
                 else if ( iter == 1 )
                 {
