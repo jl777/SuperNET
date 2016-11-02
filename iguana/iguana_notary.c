@@ -367,7 +367,7 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     ptrs[2] = (void *)(long)minsigs;
     ptrs[3] = (void *)DPOW_RATIFYDURATION;
     ptrs[4] = (void *)jprint(ratified,0);
-    checkpoint.blockhash.height = (timestamp % DPOW_FIRSTRATIFY) * 10;
+    checkpoint.blockhash.height = ((timestamp / 10) % (DPOW_FIRSTRATIFY-1)) + 10;
     memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
     myinfo->DPOWS[0].cancelratify = 0;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
