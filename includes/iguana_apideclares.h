@@ -15,7 +15,7 @@
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(dpow,active,maskhex);
-TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,start,ratified);
 ZERO_ARGS(dpow,cancelratify);
 INT_AND_ARRAY(dpow,addnotaries,flag,notaries);
 
