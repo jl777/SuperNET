@@ -354,20 +354,20 @@ ZERO_ARGS(dpow,cancelratify)
     return(clonestr("{\"result\":\"queued dpow cancel ratify\"}"));
 }
 
-TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,starttime,ratified)
 {
     void **ptrs; bits256 zero; struct dpow_checkpoint checkpoint; cJSON *retjson;
     if ( ratified == 0 )
         return(clonestr("{\"error\":\"no ratified list for dpow ratify\"}"));
     memset(zero.bytes,0,sizeof(zero));
-    dpow_checkpointset(myinfo,&checkpoint,0,zero,timestamp,timestamp);
+    dpow_checkpointset(myinfo,&checkpoint,0,zero,starttime,starttime);
     ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
     ptrs[0] = (void *)myinfo;
     ptrs[1] = (void *)&myinfo->DPOWS[0];
     ptrs[2] = (void *)(long)minsigs;
     ptrs[3] = (void *)DPOW_RATIFYDURATION;
     ptrs[4] = (void *)jprint(ratified,0);
-    checkpoint.blockhash.height = ((timestamp / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
+    checkpoint.blockhash.height = ((starttime / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
     
     memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
     myinfo->DPOWS[0].cancelratify = 0;
@@ -376,7 +376,7 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     }
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","started ratification");
-    jaddnum(retjson,"timestamp",timestamp);
+    jaddnum(retjson,"starttime",starttime);
     jaddnum(retjson,"height",checkpoint.blockhash.height);
     return(jprint(retjson,1));
 }
