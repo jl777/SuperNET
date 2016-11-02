@@ -598,9 +598,9 @@ int32_t iguana_recv(char *ipaddr,int32_t usock,uint8_t *recvbuf,int32_t len)
 void iguana_peer_meminit(struct iguana_info *coin,struct iguana_peer *addr)
 {
     if ( addr->RAWMEM.ptr == 0 )
-        iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 2,0);
+        iguana_meminit(&addr->RAWMEM,addr->ipaddr,0,IGUANA_MAXPACKETSIZE * 3,0);
     if ( addr->TXDATA.ptr == 0 )
-        iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE * 2,0);
+        iguana_meminit(&addr->TXDATA,"txdata",0,IGUANA_MAXPACKETSIZE * 3,0);
     if ( addr->HASHMEM.ptr == 0 )
         iguana_meminit(&addr->HASHMEM,"HASHPTRS",0,256,0);//IGUANA_MAXPACKETSIZE*16,0);
     //printf("Init %s memory %p %p %p\n",addr->ipaddr,addr->RAWMEM.ptr,addr->TXDATA.ptr,addr->HASHMEM.ptr);
