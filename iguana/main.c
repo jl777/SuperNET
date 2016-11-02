@@ -190,10 +190,10 @@ int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         printf("COMMANDLINE_ARGFILE.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
-        queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
+        queue_enqueue("finishedQ",finishedQ,&ptr->DL);
         return(1);
     }
-    if ( (ptr= queue_dequeue(finishedQ,0)) != 0 )
+    if ( (ptr= queue_dequeue(finishedQ)) != 0 )
     {
         if ( ptr->expired != 0 )
         {
@@ -204,14 +204,14 @@ int32_t iguana_jsonQ(struct supernet_info *myinfo,struct iguana_info *coin)
             }
             printf("garbage collection: expired.(%s)\n",ptr->jsonstr);
             myfree(ptr,ptr->allocsize);
-        } else queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
+        } else queue_enqueue("finishedQ",finishedQ,&ptr->DL);
     }
-    if ( (ptr= queue_dequeue(jsonQ,0)) != 0 )
+    if ( (ptr= queue_dequeue(jsonQ)) != 0 )
     {
         if ( (ptr->retjsonstr= SuperNET_jsonstr(ptr->myinfo,ptr->jsonstr,ptr->remoteaddr,ptr->port)) == 0 )
             ptr->retjsonstr = clonestr("{\"error\":\"null return from iguana_jsonstr\"}");
         //printf("finished.(%s) -> (%s) %.0f\n",ptr->jsonstr,ptr->retjsonstr!=0?ptr->retjsonstr:"null return",OS_milliseconds());
-        queue_enqueue("finishedQ",finishedQ,&ptr->DL,0);
+        queue_enqueue("finishedQ",finishedQ,&ptr->DL);
         return(1);
     }
     return(0);
@@ -234,7 +234,7 @@ char *iguana_blockingjsonstr(struct supernet_info *myinfo,struct iguana_info *co
     if ( coin == 0 || coin->FULLNODE < 0 || (coin->FULLNODE == 0 && coin->VALIDATENODE == 0) )
         Q = &JSON_Q;
     else Q = &coin->jsonQ;
-    queue_enqueue("jsonQ",Q,&ptr->DL,0);
+    queue_enqueue("jsonQ",Q,&ptr->DL);
     while ( OS_milliseconds() < expiration )
     {
         usleep(100);

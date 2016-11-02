@@ -772,7 +772,7 @@ void iguana_initfinal(struct supernet_info *myinfo,struct iguana_info *coin,bits
     if ( bits256_nonz(lastbundle) > 0 )
     {
         init_hexbytes_noT(hashstr,lastbundle.bytes,sizeof(bits256));
-        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr),1);
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(hashstr));
     }
     for (i=0; i<coin->bundlescount-1; i++)
     {

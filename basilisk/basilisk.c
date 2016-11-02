@@ -773,7 +773,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
 int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
 {
     struct basilisk_p2pitem *ptr; char senderip[64]; uint32_t n=0,basilisktag,len;
-    while ( n < maxiters && (ptr= queue_dequeue(&myinfo->p2pQ,0)) != 0 )
+    while ( n < maxiters && (ptr= queue_dequeue(&myinfo->p2pQ)) != 0 )
     {
         len = 0;
         expand_ipbits(senderip,ptr->ipbits);
@@ -835,7 +835,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = myinfo->myaddr.myipbits;
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
-    queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
+    queue_enqueue("p2pQ",&myinfo->p2pQ,ptr);
 }
 
 int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)

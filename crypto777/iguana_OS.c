@@ -41,7 +41,7 @@ void OS_randombytes(unsigned char *x,long xlen)
 {
     OS_portable_randombytes(x,xlen);
 }
-           
+
 static double _kb(double n) { return(n / 1024.); }
 static double _mb(double n) { return(n / (1024.*1024.)); }
 static double _gb(double n) { return(n / (1024.*1024.*1024.)); }
@@ -94,6 +94,7 @@ long myallocated(uint8_t type,long change)
 
 void *mycalloc(uint8_t type,int32_t n,long itemsize)
 {
+#ifdef USE_MYCALLOC
     //static portable_mutex_t MEMmutex;
     struct allocitem *item; int64_t allocsize = ((uint64_t)n * itemsize);
     if ( type == 0 && n == 0 && itemsize == 0 )
@@ -115,30 +116,39 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     item->type = type;
     //portable_mutex_unlock(&MEMmutex);
     return((void *)((long)item + sizeof(*item)));
+#else
+    return(calloc(n,itemsize));
+#endif
 }
 
-void *queueitem(char *str)
+struct queueitem *queueitem(char *str)
 {
-    struct queueitem *item; int32_t n,allocsize; char *data; uint8_t type = 'y';
-    //portable_mutex_lock(&MEMmutex);
-    n = (uint32_t)strlen(str) + 1;
-    allocsize = (uint32_t)(sizeof(struct queueitem) + n);
-    myallocated(type,allocsize);
-    while ( (item= calloc(1,allocsize)) == 0 )
-    {
-        char str[65];
-        printf("queueitem: need to wait for memory.(%d,%ld) %s to be available\n",n,(long)sizeof(*item),mbstr(str,allocsize));
-        sleep(1);
-    }
-    item->allocsize = (uint32_t)allocsize;
-    item->type = type;
-    data = (void *)(long)((long)item + sizeof(*item));
-    memcpy(data,str,n);
-    //printf("(%c) queueitem.%p itemdata.%p n.%d allocsize.%d\n",type,item,data,n,allocsize);
-    //portable_mutex_unlock(&MEMmutex);
-    return(data);
+    /*struct queueitem *item; int32_t n,allocsize; char *data; uint8_t type = 'y';
+     //portable_mutex_lock(&MEMmutex);
+     n = (uint32_t)strlen(str) + 1;
+     allocsize = (uint32_t)(sizeof(struct queueitem) + n);
+     myallocated(type,allocsize);
+     while ( (item= calloc(1,allocsize)) == 0 )
+     {
+     char str[65];
+     printf("queueitem: need to wait for memory.(%d,%ld) %s to be available\n",n,(long)sizeof(*item),mbstr(str,allocsize));
+     sleep(1);
+     }
+     item->allocsize = (uint32_t)allocsize;
+     item->type = type;
+     data = (void *)(long)((long)item + sizeof(*item));
+     memcpy(data,str,n);
+     //printf("(%c) queueitem.%p itemdata.%p n.%d allocsize.%d\n",type,item,data,n,allocsize);
+     //portable_mutex_unlock(&MEMmutex);
+     return(data);*/
+    struct stritem *sitem; int32_t len;
+    len = (int32_t)strlen(str);
+    sitem = calloc(1,sizeof(*sitem) + len + 1);
+    memcpy(sitem->str,str,len);
+    return(&sitem->DL);
 }
 
+#ifdef USE_MYCALLOC
 void _myfree(uint8_t type,int32_t origallocsize,void *origptr,int32_t allocsize)
 {
     //portable_mutex_lock(&MEMmutex);
@@ -171,12 +181,12 @@ void myfree(void *_ptr,long allocsize)
     _myfree(item->type,item->allocsize,item,(uint32_t)allocsize);
 }
 
-void free_queueitem(void *itemdata)
-{
-    struct queueitem *item = (void *)((long)itemdata - sizeof(struct queueitem));
-    //printf("freeq item.%p itemdata.%p size.%d\n",item,itemdata,item->allocsize);
-    _myfree(item->type,item->allocsize,item,item->allocsize);
-}
+/*void free_queueitem(void *itemdata)
+ {
+ struct queueitem *item = (void *)((long)itemdata - sizeof(struct queueitem));
+ //printf("freeq item.%p itemdata.%p size.%d\n",item,itemdata,item->allocsize);
+ _myfree(item->type,item->allocsize,item,item->allocsize);
+ }*/
 
 void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
 {
@@ -190,6 +200,17 @@ void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
     }
     return(newptr);
 }
+#else
+void myfree(void *_ptr,long allocsize)
+{
+    free(_ptr);
+}
+
+void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize)
+{
+    return(realloc(oldptr,newsize));
+}
+#endif
 
 static uint64_t _align16(uint64_t ptrval) { if ( (ptrval & 15) != 0 ) ptrval += 16 - (ptrval & 15); return(ptrval); }
 
@@ -235,25 +256,20 @@ void lock_queue(queue_t *queue)
 	portable_mutex_lock(&queue->mutex);
 }
 
-void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t offsetflag)
+void queue_enqueue(char *name,queue_t *queue,struct queueitem *item)//,int32_t offsetflag)
 {
-    struct queueitem *item;
+    //struct queueitem *item;
     if ( queue->name[0] == 0 && name != 0 && name[0] != 0 )
         strcpy(queue->name,name);//,sizeof(queue->name));
-    if ( origitem == 0 )
-    {
-        printf("FATAL type error: queueing empty value\n");//, getchar();
-        return;
-    }
     //fprintf(stderr,"enqueue.(%s) %p offset.%d\n",queue->name,origitem,offsetflag);
     lock_queue(queue);
-    item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
+    //item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
     portable_mutex_unlock(&queue->mutex);
     //printf("queue_enqueue name.(%s) origitem.%p append.%p list.%p\n",name,origitem,item,queue->list);
 }
 
-void *queue_dequeue(queue_t *queue,int32_t offsetflag)
+void *queue_dequeue(queue_t *queue)//,int32_t offsetflag)
 {
     struct queueitem *item = 0;
     lock_queue(queue);
@@ -264,9 +280,10 @@ void *queue_dequeue(queue_t *queue,int32_t offsetflag)
         DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);
-    if ( item != 0 && offsetflag != 0 )
-        return((void *)((long)item + sizeof(struct queueitem)));
-    else return(item);
+    //if ( item != 0 && offsetflag != 0 )
+    //    return((void *)((long)item + sizeof(struct queueitem)));
+    //else
+    return(item);
 }
 
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem)
@@ -321,7 +338,7 @@ void *queue_clone(queue_t *clone,queue_t *queue,int32_t size)
         {
             ptr = mycalloc('c',1,sizeof(*ptr));
             memcpy(ptr,item,size);
-            queue_enqueue(queue->name,clone,ptr,0);
+            queue_enqueue(queue->name,clone,ptr);
         }
         //printf("name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
     }
@@ -543,8 +560,8 @@ void OS_remove_directory(char *dirname)
         OS_removefile(buf,0);
         fclose(fp);
     }
-//printf("skip rmdir.(%s)\n",dirname);
-return;
+    //printf("skip rmdir.(%s)\n",dirname);
+    return;
     sprintf(buf,"rmdir %s",dirname);
     if ( system(buf) != 0 )
     {
@@ -876,14 +893,14 @@ void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite) // win and pna
 }
 
 /*int32_t OS_syncmap(struct OS_mappedptr *mp,long len) // pnacl doesnt implement sync
-{
-    return(OS_portable_syncmap(mp,len));
-}
-
-void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize) // no syncmap no tmpalloc
-{
-    return(OS_portable_tmpalloc(dirname,name,mem,origsize));
-}*/
+ {
+ return(OS_portable_syncmap(mp,len));
+ }
+ 
+ void *OS_tmpalloc(char *dirname,char *name,struct OS_memspace *mem,long origsize) // no syncmap no tmpalloc
+ {
+ return(OS_portable_tmpalloc(dirname,name,mem,origsize));
+ }*/
 
 void OS_init()
 {
@@ -934,19 +951,19 @@ int32_t OS_getline(int32_t waitflag,char *line,int32_t max,char *dispstr)
 
 //////////// test suite for:
 /*
-int64_t OS_filesize(char *fname);
-void OS_ensure_directory(char *dirname);
-long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
-int32_t OS_truncate(char *fname,long filesize);
-int32_t OS_renamefile(char *fname,char *newfname);
-int32_t OS_removefile(char *fname,int32_t scrubflag);
-
-void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
-int32_t OS_releasemap(void *ptr,uint64_t filesize);
-
-double OS_milliseconds();
-void OS_randombytes(uint8_t *x,long xlen);
-*/
+ int64_t OS_filesize(char *fname);
+ void OS_ensure_directory(char *dirname);
+ long OS_ensurefilesize(char *fname,long filesize,int32_t truncateflag);
+ int32_t OS_truncate(char *fname,long filesize);
+ int32_t OS_renamefile(char *fname,char *newfname);
+ int32_t OS_removefile(char *fname,int32_t scrubflag);
+ 
+ void *OS_mapfile(char *fname,long *filesizep,int32_t enablewrite);
+ int32_t OS_releasemap(void *ptr,uint64_t filesize);
+ 
+ double OS_milliseconds();
+ void OS_randombytes(uint8_t *x,long xlen);
+ */
 
 int32_t iguana_OStests()
 {

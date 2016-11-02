@@ -685,7 +685,7 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     req->bp = bp;
                     req->height = bp->bundleheight + i;
                     req->bundlei = i;
-                    queue_enqueue("missing",&coin->priorityQ,&req->DL,0);
+                    queue_enqueue("missing",&coin->priorityQ,&req->DL);
                     bp->issued[i] = 1;
                     n++;
                     if ( 0 && bp == coin->current )
@@ -749,7 +749,7 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
                             req->bp = bp;
                             req->height = bp->bundleheight + i;
                             req->bundlei = i;
-                            queue_enqueue("blast",&coin->priorityQ,&req->DL,0);
+                            queue_enqueue("blast",&coin->priorityQ,&req->DL);
                         }
                     }
                 if ( n > m )
@@ -881,7 +881,7 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
     if ( time(NULL) > bp->hdrtime+dist && (bp == coin->current || bp->hdrsi >= coin->bundlescount-2 || (strcmp("BTC",coin->symbol) != 0 && bp->numhashes < bp->n && (bp->speculative == 0 || bp->hdrsi >= coin->longestchain/bp->n))) )
     {
         bp->hdrtime = (uint32_t)time(NULL);
-        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+        queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])));
     }
     if ( time(NULL) > bp->hdrtime+dist && strcmp("BTC",coin->symbol) != 0 && (bp == coin->current || bp->hdrsi == coin->bundlescount-1) && bits256_nonz(bp->nextbundlehash2) == 0 )
     {
@@ -892,7 +892,7 @@ int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,s
                 if ( GETBIT(bp->haveblock,i) == 0 )
                     bp->issued[i] = 0;
             bp->hdrtime = (uint32_t)time(NULL);
-            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])),1);
+            queue_enqueue("hdrsQ",&coin->hdrsQ,queueitem(bits256_str(str,bp->hashes[0])));
         }
         iguana_bundleissuemissing(myinfo,coin,bp,3,3.);
         /*if ( bp == coin->current )
@@ -1041,7 +1041,7 @@ int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *c
         printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %u:%02u\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,queue_size(&coin->priorityQ),(uint32_t)(time(NULL)-coin->startutc)/60,(uint32_t)(time(NULL)-coin->startutc)%60);
         if ( queue_size(&coin->priorityQ) > 10000 )
         {
-            while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+            while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
                 myfree(breq,sizeof(*breq));
             //printf("cleared priorityQ\n");
         }
@@ -1486,9 +1486,9 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                 coin->stuckiters = (int32_t)(lag/coin->MAXSTUCKTIME);
                 if ( coin->stuckiters > 2 )
                 {
-                    while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+                    while ( (breq= queue_dequeue(&coin->blocksQ)) != 0 )
                         myfree(breq,sizeof(*breq));
-                    while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+                    while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
                         myfree(breq,sizeof(*breq));
                     for (i=0; i<bp->n; i++)
                     {
@@ -1562,7 +1562,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     coin->estsize = estsize;
     if ( queue_size(&coin->priorityQ) > 10000 )
     {
-        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+        while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
             myfree(breq,sizeof(*breq));
         //printf("cleared priorityQ\n");
     }
