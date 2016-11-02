@@ -356,7 +356,7 @@ ZERO_ARGS(dpow,cancelratify)
 
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
 {
-    void **ptrs; bits256 zero; struct dpow_checkpoint checkpoint;
+    void **ptrs; bits256 zero; struct dpow_checkpoint checkpoint; cJSON *retjson;
     if ( ratified == 0 )
         return(clonestr("{\"error\":\"no ratified list for dpow ratify\"}"));
     memset(zero.bytes,0,sizeof(zero));
@@ -367,13 +367,18 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     ptrs[2] = (void *)(long)minsigs;
     ptrs[3] = (void *)DPOW_RATIFYDURATION;
     ptrs[4] = (void *)jprint(ratified,0);
-    checkpoint.blockhash.height = ((timestamp / 10) % (DPOW_FIRSTRATIFY-1)) + 10;
+    checkpoint.blockhash.height = ((timestamp / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
+    
     memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
     myinfo->DPOWS[0].cancelratify = 0;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_statemachinestart,(void *)ptrs) != 0 )
     {
     }
-    return(clonestr("{\"result\":\"started ratification\"}"));
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","started ratification");
+    jaddnum(retjson,"timestamp",timestamp);
+    jaddnum(retjson,"height",checkpoint.blockhash.height);
+    return(jprint(retjson,1));
 }
 #include "../includes/iguana_apiundefs.h"
 
