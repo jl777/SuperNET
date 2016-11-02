@@ -262,14 +262,14 @@ char *dpow_passthru(struct iguana_info *coin,char *function,char *hex)
 
 TWO_STRINGS(zcash,passthru,function,hex)
 {
-    if ( (coin= iguana_coinfind("ZEC")) != 0 || coin->chain->serverport[0] == 0 )
+    if ( (coin= iguana_coinfind("ZEC")) != 0 && coin->chain->serverport[0] != 0 )
         return(dpow_passthru(coin,function,hex));
     else return(clonestr("{\"error\":\"ZEC not active, start in bitcoind mode\"}"));
 }
 
 TWO_STRINGS(komodo,passthru,function,hex)
 {
-    if ( (coin= iguana_coinfind("KMD")) != 0 || coin->chain->serverport[0] == 0 )
+    if ( (coin= iguana_coinfind("KMD")) != 0 && coin->chain->serverport[0] != 0 )
         return(dpow_passthru(coin,function,hex));
     else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
 }
