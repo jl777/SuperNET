@@ -1,1 +1,1 @@
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"komodo\",\"method\":\"passthru\",\"function\":\"getinfo\",\"hex\":\"\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"komodo\",\"method\":\"passthru\",\"function\":\"getinfo\",\"hex\":\"5b5d\"}"
