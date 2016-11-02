@@ -116,6 +116,8 @@ void iguana_blockcopy(uint8_t zcash,uint8_t auxpow,struct iguana_info *coin,stru
         block->RO.recvlen = origblock->RO.recvlen;
     if ( origblock->RO.allocsize > block->RO.allocsize )
         block->RO.allocsize = origblock->RO.allocsize;
+    if ( block->txvalid == 0 )
+        block->txvalid = origblock->txvalid;
     if ( zcash == 0 )
     {
         if ( block->RO.nonce == 0 )

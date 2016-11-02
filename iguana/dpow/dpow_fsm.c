@@ -538,10 +538,20 @@ void dpow_statemachinestart(void *ptr)
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
-        if ( bp->isratify == 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
-            printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
-            break;
+            if ( bp->isratify == 0 )
+            {
+                printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                break;
+            }
+            else
+            {
+                bp->bestk = -1;
+                bp->bestmask = 0;
+                bp->height = dp->checkpoint.blockhash.height;
+                printf("new rotation ht.%d\n",bp->height);
+            }
         }
         if ( bp->state != 0xffffffff )
         {

@@ -851,20 +851,8 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL);
-        if ( block != 0 )
-        {
-            block->bundlei = bundlei;
-            block->hdrsi = bp->hdrsi;
-        }
-        if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
-            printf("[%d:%d] [%d:%d].s%d %s Q.(%s) %s\n",block->hdrsi,block->bundlei,bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         if ( numsaved < coin->chain->bundlesize )
         {
-            for (i=numsaved=0; i<coin->chain->bundlesize; i++)
-            {
-                if ( (block= bp->blocks[i]) != 0 && block->fpipbits != 0 && block->fpos >= 0 && block->txvalid != 0 )
-                    numsaved++;
-            }
             if ( numsaved < coin->chain->bundlesize && bp->startutxo == 0 )
             {
                 if ( (incr= coin->peers->numranked) == 0 )
