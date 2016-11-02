@@ -117,7 +117,7 @@ void *mycalloc(uint8_t type,int32_t n,long itemsize)
     //portable_mutex_unlock(&MEMmutex);
     return((void *)((long)item + sizeof(*item)));
 #else
-    return(calloc(1,n*itemsize + 64));
+    return(calloc(n,itemsize));
 #endif
 }
 

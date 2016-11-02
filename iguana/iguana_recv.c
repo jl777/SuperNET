@@ -25,7 +25,7 @@ struct iguana_bundlereq *iguana_bundlereq(struct iguana_info *coin,struct iguana
     struct iguana_bundlereq *req; int32_t allocsize;
     if ( data == 0 )
         datalen = 0;
-    allocsize = (uint32_t)sizeof(*req) + datalen;
+    allocsize = (uint32_t)sizeof(*req) + datalen + 64;
     req = mycalloc(type,1,allocsize);
     req->allocsize = allocsize;
     req->datalen = datalen;
