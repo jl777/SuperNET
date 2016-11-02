@@ -143,7 +143,7 @@ struct queueitem *queueitem(char *str)
      return(data);*/
     struct stritem *sitem; int32_t len;
     len = (int32_t)strlen(str);
-    sitem = calloc(1,sizeof(*sitem) + len + 1);
+    sitem = calloc(1,sizeof(*sitem) + len + 16);
     memcpy(sitem->str,str,len);
     return(&sitem->DL);
 }
