@@ -20,7 +20,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     uint32_t channel,height,size,datalen,crc32;
-    //char symbol[16];
+    char symbol[16];
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -92,7 +92,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->desthash = desthash;
         np->channel = channel;
         np->height = msgbits;
-        //strcpy(np->symbol,dp->symbol);
+        strcpy(np->symbol,dp->symbol);
         np->version0 = DPOW_VERSION & 0xff;
         np->version1 = (DPOW_VERSION >> 8) & 0xff;
         memcpy(np->packet,data,datalen);
@@ -114,21 +114,21 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
-                    dp = &myinfo->DPOWS[0];
-                    if ( crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
+                    dp = 0;
+                    for (i=0; i<myinfo->numdpows; i++)
+                    {
+                        if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
+                        {
+                            dp = &myinfo->DPOWS[i];
+                            break;
+                        }
+                    }
+                    if ( dp != 0 && crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
                         //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
-                        /*for (i=0; i<myinfo->numdpows; i++)
-                        {
-                            if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
-                            {
-                                dp = &myinfo->DPOWS[i];
-                                break;
-                            }
-                        }
-                        if ( i == myinfo->numdpows )
+                         if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
-                        else*/ if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
+                        else if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
                             dp->crcs[firstz] = crc32;
                     }
                 } else printf("np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
@@ -364,7 +364,15 @@ extern char CURRENCIES[][8];
 
 void komodo_assetcoins()
 {
-    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; char jsonstr[512],magicstr[9]; struct iguana_info *coin;
+    uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
+    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
+    if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
+        userhome = "root";
+    else
+    {
+        while ( userhome[strlen(userhome)-1] == '\r' || userhome[strlen(userhome)-1] == '\n' )
+            userhome[strlen(userhome)-1] = 0;
+    }
     for (i=0; i<MAX_CURRENCIES; i++)
     {
         port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
@@ -380,6 +388,14 @@ void komodo_assetcoins()
                 return;
             }
             free_json(json);
+            coin->FULLNODE = -1;
+            coin->chain->rpcport = port + 1;
+            coin->chain->pubtype = 60;
+            coin->chain->p2shtype = 85;
+            coin->chain->wiftype = 188;
+            sprintf(confstr,"%s.conf",CURRENCIES[i]);
+            sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
+            extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }

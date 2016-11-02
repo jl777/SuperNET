@@ -13,15 +13,55 @@
  *                                                                            *
  ******************************************************************************/
 
+int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
+{
+    int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( coin->FULLNODE < 0 )
+        {
+            sprintf(params,"[\"%d\"]",kmdheight);
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    //printf("%s\n",retstr);
+                    if ( (array= jarray(&num,retjson,"notaries")) != 0 )
+                    {
+                        if ( num > 64 )
+                        {
+                            printf("warning: numnotaries.%d? > 64?\n",num);
+                            num = 64;
+                        }
+                        for (i=0; i<num; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 66 )
+                                decode_hex(pubkeys[i],33,pubkeystr);
+                            else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
+                        }
+                    }
+                    free_json(retjson);
+                }
+                free(retstr);
+            }
+        }
+    }
+    return(num);
+}
+
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
+    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+        printf("dpow_getbestblockhash %s FULLNODE.%d\n",coin->symbol,coin->FULLNODE);
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
-            //printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
+            if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+                printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
             if ( is_hexstr(retstr,0) == sizeof(blockhash)*2 )
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
             free(retstr);
@@ -45,7 +85,8 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     {
         sprintf(buf,"\"%s\"",bits256_str(str,blockhash));
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblock",buf);
-        //printf("%s getblock.(%s)\n",coin->symbol,retstr);
+        if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+            printf("%s getblock.(%s)\n",coin->symbol,retstr);
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
@@ -231,11 +272,14 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
         {
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
+                if ( height > coin->longestchain )
+                    coin->longestchain = height;
                 if ( (array= jarray(&n,json,"tx")) != 0 )
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
-                    //printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
+                    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+                        printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
                     *numtxp = n;
                 }
             } else height = -1;
