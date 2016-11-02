@@ -549,7 +549,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 bp->bestk = -1;
                 bp->bestmask = 0;
-                bp->height = dp->checkpoint.blockhash.height;
+                bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
                 printf("new rotation ht.%d\n",bp->height);
             }
         }
