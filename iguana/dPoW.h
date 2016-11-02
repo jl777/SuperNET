@@ -16,6 +16,8 @@
 #ifndef INCLUDE_DPOW_H
 #define INCLUDE_DPOW_H
 
+#define DPOW_FIRSTRATIFY 1000
+
 #define DPOW_CHECKPOINTFREQ 10
 #define DPOW_MINSIGS 7
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)

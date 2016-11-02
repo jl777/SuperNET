@@ -452,11 +452,11 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        if ( checkpoint.blockhash.height > 0 && dp->blocks[checkpoint.blockhash.height - 1000] != 0 )
+        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
         {
-            printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - 1000);
-            free(dp->blocks[checkpoint.blockhash.height - 1000]);
-            dp->blocks[checkpoint.blockhash.height - 1000] = 0;
+            printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - DPOW_FIRSTRATIFY);
+            free(dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY]);
+            dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
         }
     }
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
@@ -524,7 +524,7 @@ void dpow_statemachinestart(void *ptr)
     bp->hashmsg = checkpoint.blockhash.hash;
     while ( dp->destupdated == 0 )
     {
-        if ( checkpoint.blockhash.height != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             return;
@@ -539,7 +539,7 @@ void dpow_statemachinestart(void *ptr)
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(2);
-        if ( checkpoint.blockhash.height != 0 && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
+        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             break;
@@ -549,7 +549,7 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
-        if ( dp->cancelratify != 0 && checkpoint.blockhash.height == 0 )
+        if ( dp->cancelratify != 0 && checkpoint.blockhash.height < DPOW_FIRSTRATIFY )
         {
             printf("abort pending ratify\n");
             break;
