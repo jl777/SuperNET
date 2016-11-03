@@ -1960,13 +1960,42 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                //tmp = *ramchain->H.data;
-                //iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,rdata,1,zcash);
                 if ( fwrite(rdata,1,sizeof(*rdata),fp) != sizeof(*rdata) )
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
-                } //else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,1,ramchain->H.scriptoffset,zcash);
+                }
+                uint64_t offset = sizeof(struct iguana_ramchaindata);
+                void *destptr = (void *)(long)((long)rdata + offset);
+                fpos = (int32_t)ftell(fp);
+                //printf("bROsize.%d\n",bROsize);
+                B = iguana_ramchain_offset(fname,rdata,0,fp,fpos,B,&offset,(iguana_blockROsize(zcash) * 1),rdata->allocsize);
+                T = iguana_ramchain_offset(fname,rdata,0,fp,fpos,T,&offset,(sizeof(struct iguana_txid) * rdata->numtxids),rdata->allocsize);
+                Ux = destptr, Sx = destptr, P = destptr, A = destptr, X = destptr, TXbits = destptr, PKbits = destptr, Kspace = destptr;
+                U = iguana_ramchain_offset(fname,rdata,0,fp,fpos,U,&offset,(sizeof(struct iguana_unspent20) * rdata->numunspents),rdata->allocsize);
+                S = iguana_ramchain_offset(fname,rdata,0,fp,fpos,S,&offset,(sizeof(struct iguana_spend256) * rdata->numspends),rdata->allocsize);
+                //iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,1,ramchain->H.scriptoffset,zcash);
+                if ( rdata != 0 )
+                {
+                    rdata->allocsize = offset;
+                    rdata->Boffset = (uint64_t)((long)B - (long)destptr);
+                    rdata->Toffset = (uint64_t)((long)T - (long)destptr);
+                    rdata->Uoffset = (uint64_t)((long)U - (long)destptr);
+                    rdata->Soffset = (uint64_t)((long)S - (long)destptr);
+                    rdata->Koffset = (uint64_t)((long)Kspace - (long)destptr);
+                    rdata->scriptspace = (uint32_t)(offset - rdata->Koffset);
+                    rdata->Poffset = (uint64_t)((long)P - (long)destptr);
+                    rdata->Aoffset = (uint64_t)((long)A - (long)destptr);
+                    rdata->Xoffset = (uint64_t)((long)X - (long)destptr);
+                    rdata->TXoffset = (uint64_t)((long)TXbits - (long)destptr);
+                    rdata->PKoffset = (uint64_t)((long)PKbits - (long)destptr);
+                    rewind(fp);
+                    if ( fwrite(rdata,1,sizeof(*rdata),fp) != sizeof(*rdata) )
+                    {
+                        printf("ramchain_save error writing header.%s\n",fname);
+                        fpos = -1;
+                    }
+                }
                 fclose(fp);
                 origtxdata->datalen = (int32_t)rdata->allocsize;
                 ramchain->H.ROflag = 0;
