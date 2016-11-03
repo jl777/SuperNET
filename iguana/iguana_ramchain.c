@@ -1968,14 +1968,14 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 uint64_t offset = sizeof(struct iguana_ramchaindata);
                 void *destptr = (void *)(long)((long)rdata + offset);
                 fpos = (int32_t)ftell(fp);
-                //printf("bROsize.%d\n",bROsize);
-                //B = iguana_ramchain_offset(fname,rdata,0,fp,fpos,B,&offset,(iguana_blockROsize(zcash) * 1),rdata->allocsize);
-                //T = iguana_ramchain_offset(fname,rdata,0,fp,fpos,T,&offset,(sizeof(struct iguana_txid) * rdata->numtxids),rdata->allocsize);
+                B = iguana_ramchain_offset(fname,rdata,0,fp,fpos,B,&offset,(iguana_blockROsize(zcash) * 1),rdata->allocsize);
+                T = iguana_ramchain_offset(fname,rdata,0,fp,fpos,T,&offset,(sizeof(struct iguana_txid) * rdata->numtxids),rdata->allocsize);
                 Ux = destptr, Sx = destptr, P = destptr, A = destptr, X = destptr, TXbits = destptr, PKbits = destptr, Kspace = destptr;
                 U = iguana_ramchain_offset(fname,rdata,0,fp,fpos,U,&offset,(sizeof(struct iguana_unspent20) * rdata->numunspents),rdata->allocsize);
-                //S = iguana_ramchain_offset(fname,rdata,0,fp,fpos,S,&offset,(sizeof(struct iguana_spend256) * rdata->numspends),rdata->allocsize);
+                S = iguana_ramchain_offset(fname,rdata,0,fp,fpos,S,&offset,(sizeof(struct iguana_spend256) * rdata->numspends),rdata->allocsize);
                 //iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,1,ramchain->H.scriptoffset,zcash);
                 fclose(fp);
+                printf("offset.%d vs allocsize.%d\n",(int32_t)offset,(int32_t)rdata->allocsize);
                 origtxdata->datalen = (int32_t)rdata->allocsize;
                 ramchain->H.ROflag = 0;
                 flag = 1;
