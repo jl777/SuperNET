@@ -435,6 +435,8 @@ int32_t iguana_helperB(struct iguana_info *coin,int32_t helperid,struct iguana_b
     return(0);
 }
 
+int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,int32_t convertflag);
+
 void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
