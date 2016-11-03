@@ -261,7 +261,7 @@ void queue_enqueue(char *name,queue_t *queue,struct queueitem *item)//,int32_t o
     //struct queueitem *item;
     if ( queue->name[0] == 0 && name != 0 && name[0] != 0 )
         strcpy(queue->name,name);//,sizeof(queue->name));
-    fprintf(stderr,"enqueue.(%s) %p\n",queue->name,item);
+    //fprintf(stderr,"enqueue.(%s) %p\n",queue->name,item);
     lock_queue(queue);
     //item = (struct queueitem *)((long)origitem - offsetflag*sizeof(struct queueitem));
     DL_APPEND(queue->list,item);
@@ -276,7 +276,7 @@ void *queue_dequeue(queue_t *queue)//,int32_t offsetflag)
     if ( queue->list != 0 )
     {
         item = queue->list;
-        printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
+        //printf("queue_dequeue name.(%s) dequeue.%p list.%p\n",queue->name,item,queue->list);
         DL_DELETE(queue->list,item);
     }
 	portable_mutex_unlock(&queue->mutex);

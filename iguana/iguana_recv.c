@@ -2134,7 +2134,6 @@ int32_t iguana_blockQ(char *argstr,struct iguana_info *coin,struct iguana_bundle
                 //block->numrequests++;
                 block->issued = now;
             }
-            printf("%s.%p\n",str,req);
             queue_enqueue(str,Q,&req->DL);
             return(1);
         } else printf("null Q\n");

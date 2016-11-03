@@ -685,7 +685,6 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     req->bp = bp;
                     req->height = bp->bundleheight + i;
                     req->bundlei = i;
-                    printf("priority.%p\n",req);
                     queue_enqueue("missing",&coin->priorityQ,&req->DL);
                     bp->issued[i] = 1;
                     n++;
@@ -750,7 +749,6 @@ int32_t iguana_blast(struct iguana_info *coin,struct iguana_peer *addr)
                             req->bp = bp;
                             req->height = bp->bundleheight + i;
                             req->bundlei = i;
-                            printf("priority.%p\n",req);
                             queue_enqueue("blast",&coin->priorityQ,&req->DL);
                         }
                     }
