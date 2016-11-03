@@ -1817,9 +1817,9 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
     return(0);
 }
 
-long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen,struct iguana_bundle *bp,struct iguana_block *block)
+long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen,struct iguana_bundle *bp,struct iguana_block *block,uint8_t zcash)
 {
-    int32_t zcash=0,verifyflag = 0;
+    int32_t verifyflag = 0;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,sigsize,hdrsi,subdir,firsti=1,err,flag,bundlei; uint32_t scriptspace,stackspace; struct iguana_blockRO RO;
     if ( block == 0 || bp == 0 || addr == 0 || (block != 0 && (bundlei= block->bundlei) < 0) )
     {
@@ -2012,7 +2012,7 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
 
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
-    void *ptr; int32_t recvlen,height = -1;
+    void *ptr; int32_t recvlen,height = -1; uint8_t zcash = 0;
     if ( 0 && bp != 0 )
         printf("UNMARK.[%d:%d]\n",bp->hdrsi,i);
     if ( block != 0 )
@@ -2045,7 +2045,7 @@ void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,stru
     {
         printf("reduce %s HWM height from %d to %d\n",coin->symbol,coin->blocks.hwmchain.height,height);
         if ( (block= iguana_blockfind("unmark",coin,iguana_blockhash(coin,height))) != 0 )
-            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
+            iguana_blockcopy(zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
     }
 }
 

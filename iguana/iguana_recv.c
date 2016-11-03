@@ -493,7 +493,7 @@ void iguana_oldgotblockM(struct supernet_info *myinfo,struct iguana_info *coin,s
             addr->recvblocks += 1.;
             addr->recvtotal += recvlen;
         }
-        if ( speculative == 0 && iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
+        if ( speculative == 0 && iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,0) >= 0 )
         {
             txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
             txdata->zblock.RO.recvlen = recvlen;
@@ -718,7 +718,7 @@ int32_t iguana_txmerkle(struct iguana_info *coin,bits256 *tree,int32_t treesize,
     return(-1);
 }
 
-void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen,int32_t fromcache)
+void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,struct iguana_msghdr *H,uint8_t *data,int32_t recvlen,int32_t fromcache,uint8_t zcash)
 {
     static uint64_t totalrecv;
     struct iguana_bundlereq *req; struct iguana_txblock *txdata = 0; int32_t incr,i,numsaved,valid,speculative=0,bundlei,copyflag,numtx; struct iguana_bundle *bp; struct iguana_block *block; char str[65];
@@ -843,7 +843,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
     }
     txdata = origtxdata;
-    if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
+    if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,zcash) >= 0 )
     {
         txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
         txdata->zblock.RO.recvlen = recvlen;
