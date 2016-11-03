@@ -2191,6 +2191,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             } else printf("datalen.%d from gethdrs\n",datalen);
             free(hashitem);
             hashstr = 0;
+            hashitem = 0;
         }
     }
     //if ( netBLOCKS > coin->MAXPEERS*coin->MAXPENDING )
@@ -2230,6 +2231,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             if ( bp->emitfinish != 0 )
             {
                 //printf("skip emitting bundle [%d:%d]\n",bp->hdrsi,req->bundlei);
+                free(req);
                 return(0);
             }
             block = bp->blocks[req->bundlei];
@@ -2246,7 +2248,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
             iguana_sendblockreqPT(coin,addr,bp,req->bundlei,hash2,0);
         }
         flag++;
-        myfree(req,sizeof(*req));
+        free(req);
     }
     return(flag);
 }
