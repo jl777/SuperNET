@@ -1915,7 +1915,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 block->RO.recvlen = 0;
             }
         }
-        else if ( 1 )//coin->chain->zcash == 0 )
+        else
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
@@ -1950,36 +1950,6 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
             {
                 printf("ramchain verification error.%d hdrsi.%d bundlei.%d n.%d\n",err,bp->hdrsi,bundlei,bp->n);
                 fpos = -1;
-            }
-        }
-        else
-        {
-            FILE *fp;
-            if ( (fp= fopen(fname,"wb")) != 0 )
-            {
-                *B = RO;
-                rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
-                rdata->stackspace = ramchain->H.stacksize = stackspace;
-                /*if ( fwrite(rdata,1,sizeof(*rdata),fp) != sizeof(*rdata) )
-                {
-                    printf("ramchain_save error writing header.%s\n",fname);
-                    fpos = -1;
-                }
-                fpos = (int32_t)ftell(fp);
-                fwrite(B,1,sizeof(*B),fp);
-                fwrite(T,rdata->numtxids,sizeof(*T),fp);
-                fwrite(U,rdata->numunspents,sizeof(*U),fp);
-                fwrite(S,rdata->numspends,sizeof(*S),fp);*/
-                fclose(fp);
-                //printf("offset.%d vs allocsize.%d\n",(int32_t)offset,(int32_t)rdata->allocsize);
-                origtxdata->datalen = (int32_t)rdata->allocsize;
-                ramchain->H.ROflag = 0;
-                flag = 1;
-                bp->numtxids += rdata->numtxids;
-                bp->numunspents += rdata->numunspents;
-                bp->numspends += rdata->numspends;
-                if ( block != 0 && fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
             }
         }
     }
