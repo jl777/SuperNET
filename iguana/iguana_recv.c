@@ -843,13 +843,13 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
     }
     txdata = origtxdata;
-    static portable_mutex_t mutex; static int32_t didinit;
+    /*static portable_mutex_t mutex; static int32_t didinit;
     if ( didinit == 0 )
     {
         portable_mutex_init(&mutex);
         didinit = 1;
     }
-    portable_mutex_lock(&mutex);
+    portable_mutex_lock(&mutex);*/
     if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,zcash) >= 0 )
     {
         txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
@@ -885,7 +885,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             }
             else if ( bp->queued == 0 && bp->startutxo == 0 )
             {
-                //iguana_bundleQ(myinfo,coin,bp,0);
+                iguana_bundleQ(myinfo,coin,bp,0);
                 //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
         }
@@ -895,7 +895,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         req = iguana_recv_bundlereq(coin,addr,0,H,data,recvlen,0,-1,origtxdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL);
     }
-    portable_mutex_unlock(&mutex);
+    //portable_mutex_unlock(&mutex);
 }
 
 void iguana_gottxidsM(struct iguana_info *coin,struct iguana_peer *addr,bits256 *txids,int32_t n)
