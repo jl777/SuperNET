@@ -828,6 +828,7 @@ int64_t _iguana_rdata_action(char *fname,FILE *fp,bits256 lhashes[IGUANA_NUMLHAS
             S = iguana_ramchain_offset(fname,rdata,RAMCHAIN_LARG(IGUANA_LHASH_SPENDS),fparg,fpos,S,&offset,(sizeof(struct iguana_spend256) * numspends),srcsize);
         }
         Kspace = iguana_ramchain_offset(fname,rdata,RAMCHAIN_LARG(IGUANA_LHASH_KSPACE),fparg,fpos,Kspace,&offset,scriptspace,srcsize); // at the end so it can be truncated
+        printf("offset.%d vs alloc.%d\n",(int32_t)offset,(int32_t)srcsize);
         if ( (fparg= fp) == 0 )
             break;
         lhashes = 0;
@@ -1915,7 +1916,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 block->RO.recvlen = 0;
             }
         }
-        else if ( coin->chain->zcash == 0 )
+        else if ( 1 )//coin->chain->zcash == 0 )
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
