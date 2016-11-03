@@ -1054,7 +1054,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         {
             printf("ramchain_save error writing header.%s\n",fname);
             fpos = -1;
-        } else if ( 0 ) iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,zcash);
+        } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,zcash);
         *rdata = tmp;
         fflush(fp);
         fclose(fp);
@@ -1915,7 +1915,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 block->RO.recvlen = 0;
             }
         }
-        else //if ( coin->chain->zcash == 0 )
+        else if ( coin->chain->zcash == 0 )
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
@@ -1928,13 +1928,6 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
                     ramchain->H.ROflag = 0;
                     flag = 1;
-                    if ( addr != 0 )
-                    {
-                        if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
-                            fflush(addr->voutsfp);
-                        if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
-                            fflush(addr->vinsfp);
-                    }
                     memset(&R,0,sizeof(R));
                     if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(myinfo,coin,fname,0,1,&R,&addr->HASHMEM,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,fpos,0,0,zcash)) == 0 )
                     {
@@ -1959,21 +1952,39 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 fpos = -1;
             }
         }
-        /*else
+        else
         {
             FILE *fp; struct iguana_ramchaindata tmp;
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
+                *B = RO;
+                rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
+                rdata->stackspace = ramchain->H.stacksize = stackspace;
                 tmp = *ramchain->H.data;
-                iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,ramchain->H.data,1,zcash);
+                iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,rdata,1,zcash);
                 if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
                 } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,&tmp,1,ramchain->H.scriptoffset,zcash);
                 fclose(fp);
+                origtxdata->datalen = (int32_t)rdata->allocsize;
+                ramchain->H.ROflag = 0;
+                flag = 1;
+                bp->numtxids += rdata->numtxids;
+                bp->numunspents += rdata->numunspents;
+                bp->numspends += rdata->numspends;
+                if ( block != 0 && fpos >= 0 )
+                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
             }
-        }*/
+        }
+    }
+    if ( addr != 0 )
+    {
+        if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
+            fflush(addr->voutsfp);
+        if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
+            fflush(addr->vinsfp);
     }
     if ( fpos < 0 && block != 0 )
         iguana_blockunmark(coin,block,bp,bundlei,1);
