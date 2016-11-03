@@ -421,7 +421,7 @@ void iguana_oldgotblockM(struct supernet_info *myinfo,struct iguana_info *coin,s
                 else
                 {
                     iguana_bundletime(coin,bp,bundlei,block,1);
-                    iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,&origtxdata->zblock.RO,0);
+                    iguana_blockzcopyRO(0*coin->chain->zcash,&block->RO,0,&origtxdata->zblock.RO,0);
                     block->txvalid = 1;
                 }
                 //if ( block->mainchain != 0 )
@@ -602,7 +602,7 @@ int32_t iguana_bundlestats_update(struct iguana_info *coin,struct iguana_block *
                 else
                 {
                     iguana_bundletime(coin,bp,bundlei,block,1);
-                    iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,&origtxdata->zblock.RO,0);
+                    iguana_blockzcopyRO(0*coin->chain->zcash,&block->RO,0,&origtxdata->zblock.RO,0);
                     return(0);
                 }
             }
@@ -1158,7 +1158,7 @@ void iguana_hwmchain_set(struct iguana_info *coin,struct iguana_block *block,int
     {
         if ( block->height == height )
         {
-            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
+            iguana_blockcopy(0*coin->chain->zcash,coin->chain->auxpow,coin,(struct iguana_block *)&coin->blocks.hwmchain,block);
             char str[65]; printf("SET %s HWM.%s ht.%d\n",coin->symbol,bits256_str(str,block->RO.hash2),height);
         } else printf("iguana_hwmchain_set: mismatched ht.%d vs %d\n",block->height,height);
     }
@@ -1233,7 +1233,7 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
         prevhash2 = origblock->RO.prev_block;
         if ( block != origblock )
         {
-            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,origblock);
+            iguana_blockcopy(0*coin->chain->zcash,coin->chain->auxpow,coin,block,origblock);
             //fprintf(stderr,"bundleset block.%p vs origblock.%p prev.%d bits.%x fpos.%d\n",block,origblock,bits256_nonz(prevhash2),block->fpipbits,block->fpos);
         }
         *blockp = block;
@@ -1635,7 +1635,7 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
 {
     struct iguana_bundle *bp=0,*prev; int32_t n,bundlei = -2; struct iguana_block *block,*next,*prevblock; char str[65]; bits256 hash2;
     if ( (block= iguana_blockfind("recv",coin,origblock->RO.hash2)) != 0 )
-        iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
+        iguana_blockcopy(0*coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
     else if ( (block= iguana_blockhashset("recvblock",coin,-1,origblock->RO.hash2,1)) == 0 )
     {
         printf("error adding %s\n",bits256_str(str,origblock->RO.hash2));
@@ -1732,7 +1732,7 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
     if ( (block= iguana_blockhashset("recvblock",coin,-1,origblock->RO.hash2,1)) != 0 )
     {
         if ( block != (struct iguana_block *)origblock )
-            iguana_blockcopy(coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
+            iguana_blockcopy(0*coin->chain->zcash,coin->chain->auxpow,coin,block,(struct iguana_block *)origblock);
         if ( block->lag != 0 && block->issued != 0 )
             block->lag = (uint32_t)time(NULL) - block->issued;
         //printf("datalen.%d ipbits.%x\n",datalen,req->ipbits);
@@ -1788,7 +1788,7 @@ int32_t iguana_reqblocks(struct supernet_info *myinfo,struct iguana_info *coin)
         {
             if ( (block= iguana_blockfind("hwmcheckb",coin,coin->blocks.hwmchain.RO.prev_block)) != 0 )
             {
-                iguana_blockzcopy(coin->chain->zcash,(struct iguana_block *)&coin->blocks.hwmchain,block);
+                iguana_blockzcopy(0*coin->chain->zcash,(struct iguana_block *)&coin->blocks.hwmchain,block);
                 return(0);
             }
         }
