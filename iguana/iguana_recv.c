@@ -1381,7 +1381,7 @@ struct iguana_bundlereq *iguana_recvblockhdrs(struct supernet_info *myinfo,struc
                 //char str[65]; printf("HWM in hdr's prev[%d] bp.%p bundlei.%d block.%p %s\n",i,bp,bundlei,block,bp!=0?bits256_str(str,bp->hashes[bundlei]):"()");
             }
             bp = 0, bundlei = -2;
-            if ( 0 && (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) == 0 )
+            if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)&zblocks[i])) == 0 )
             {
                 bp = 0, bundlei = -2;
                 if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,zblocks[i].RO.prev_block)) != 0 )
