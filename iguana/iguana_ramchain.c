@@ -1038,7 +1038,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
     else if ( coin->peers != 0 )
         coin->peers->numfiles++;
-    if ( 0 && fp != 0 )
+    if ( fp != 0 )
     {
         fpos = ftell(fp);
         if ( ramchain->expanded != 0 )
@@ -1051,7 +1051,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         {
             printf("ramchain_save error writing header.%s\n",fname);
             fpos = -1;
-        } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,0*zcash);
+        } else if ( 0 ) iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,bp!=0?bp->n:1,ramchain->H.scriptoffset,0*zcash);
         *rdata = tmp;
         fflush(fp);
         fclose(fp);
