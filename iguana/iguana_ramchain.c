@@ -1914,9 +1914,9 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 block->RO.recvlen = 0;
             }
         }
-        else
+        else if ( coin->chain->zcash == 0 )
         {
-            /*if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
@@ -1956,7 +1956,20 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
             {
                 printf("ramchain verification error.%d hdrsi.%d bundlei.%d n.%d\n",err,bp->hdrsi,bundlei,bp->n);
                 fpos = -1;
-            }*/
+            }
+        }
+        else
+        {
+            FILE *fp;
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                if ( fwrite(ramchain->H.data,1,sizeof(*ramchain->H.data),fp) != sizeof(*ramchain->H.data) )
+                {
+                    printf("ramchain_save error writing header.%s\n",fname);
+                    fpos = -1;
+                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,ramchain->H.data,1,ramchain->H.scriptoffset,zcash);
+                fclose(fp);
+            }
         }
     }
     if ( fpos < 0 && block != 0 )
