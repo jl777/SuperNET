@@ -266,6 +266,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
         //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
+    bp->startutxo = (uint32_t)time(NULL);
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
