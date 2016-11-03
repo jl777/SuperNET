@@ -1819,7 +1819,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
 
 long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen,struct iguana_bundle *bp,struct iguana_block *block)
 {
-    int32_t zcash=0,verifyflag = 1;
+    int32_t zcash=0,verifyflag = 0;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,sigsize,hdrsi,subdir,firsti=1,err,flag,bundlei; uint32_t scriptspace,stackspace; struct iguana_blockRO RO;
     if ( block == 0 || bp == 0 || addr == 0 || (block != 0 && (bundlei= block->bundlei) < 0) )
     {
@@ -1916,7 +1916,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         else
         {
-            if ( 1 || (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
