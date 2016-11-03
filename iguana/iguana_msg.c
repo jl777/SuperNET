@@ -1061,7 +1061,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                             free(coinbase_branch);
                         if ( blockchain_branch != 0 )
                             free(blockchain_branch);
-                       // if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
+                        if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
                             myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
                         if ( len == recvlen && addr != 0 )
                             addr->msgcounts.headers++;
