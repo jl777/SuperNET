@@ -851,7 +851,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL);
-        if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
+        /*if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
             printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         if ( numsaved < coin->chain->bundlesize )
         {
@@ -881,7 +881,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
                 iguana_bundleQ(myinfo,coin,bp,0);
                 //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
-        }
+        }*/
     }
     else
     {
