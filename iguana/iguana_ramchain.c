@@ -1960,14 +1960,16 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         else
         {
-            FILE *fp;
+            FILE *fp; struct iguana_ramchaindata tmp;
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
-                if ( fwrite(ramchain->H.data,1,sizeof(*ramchain->H.data),fp) != sizeof(*ramchain->H.data) )
+                tmp = *ramchain->H.data;
+                iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,ramchain->H.data,1,zcash);
+                if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
-                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,ramchain->H.data,1,ramchain->H.scriptoffset,zcash);
+                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,&tmp,1,ramchain->H.scriptoffset,zcash);
                 fclose(fp);
             }
         }
