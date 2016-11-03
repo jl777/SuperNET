@@ -1965,12 +1965,11 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
                 }
-                uint64_t offset = sizeof(struct iguana_ramchaindata);
                 fpos = (int32_t)ftell(fp);
-                fwrite(B,1,sizeof(*B),fp);
+                /*fwrite(B,1,sizeof(*B),fp);
                 fwrite(T,rdata->numtxids,sizeof(*T),fp);
                 fwrite(U,rdata->numunspents,sizeof(*U),fp);
-                fwrite(S,rdata->numspends,sizeof(*S),fp);
+                fwrite(S,rdata->numspends,sizeof(*S),fp);*/
                 fclose(fp);
                 //printf("offset.%d vs allocsize.%d\n",(int32_t)offset,(int32_t)rdata->allocsize);
                 origtxdata->datalen = (int32_t)rdata->allocsize;
