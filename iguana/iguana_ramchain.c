@@ -1925,10 +1925,8 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
             printf("6b ramchain data.(%s)\n",fname);
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
-                printf("6c ramchain data.(%s)\n",fname);
-                if ( zcash == 0 )
-                    iguana_blockzcopyRO(zcash,B,0,&RO,0);
-                else iguana_blockzcopyRO(zcash,(struct iguana_blockRO *)&zRO,0,&RO,0);
+                printf("6c ramchain data.(%s) zcash.%d\n",fname,zcash);
+                *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
                 printf("7 ramchain data.(%s)\n",fname);
