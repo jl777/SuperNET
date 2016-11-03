@@ -1921,21 +1921,23 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                if ( 1 || (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,zcash)) >= 0 )
+                if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,zcash)) >= 0 )
                 {
-fpos = 0;
                     origtxdata->datalen = (int32_t)rdata->allocsize;
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
                     ramchain->H.ROflag = 0;
                     flag = 1;
-                    if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
-                        fflush(addr->voutsfp);
-                    if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
-                        fflush(addr->vinsfp);
+                    if ( addr != 0 )
+                    {
+                        if ( addr->dirty[0] != 0 && addr->voutsfp != 0 )
+                            fflush(addr->voutsfp);
+                        if ( addr->dirty[1] != 0 && addr->vinsfp != 0 )
+                            fflush(addr->vinsfp);
+                    }
                     memset(&R,0,sizeof(R));
                     //iguana_ramchain_map(struct supernet_info *myinfo,struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
-                    printf("myinfo.%p coin.%p addr.%p (%s) fpos.%d\n",myinfo,coin,addr,fname,(uint32_t)fpos);
-                    if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(myinfo,coin,fname,0,1,&R,&addr->HASHMEM,(uint32_t)1234,RO.hash2,RO.prev_block,bundlei,fpos,0,0,zcash)) == 0 )
+                    char str[65]; printf("myinfo.%p coin.%p addr.%p (%s) fpos.%d\n",myinfo,coin,addr,bits256_str(str,RO.hash2),(uint32_t)fpos);
+                    if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(myinfo,coin,fname,0,1,&R,&addr->HASHMEM,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,fpos,0,0,zcash)) == 0 )
                     {
                         printf("delete unverified [%d:%d]\n",bp->hdrsi,bundlei);
                         iguana_ramchain_free(coin,&R,1);
