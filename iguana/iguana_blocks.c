@@ -203,7 +203,7 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
     struct iguana_block *block,*prev; int32_t size;
-    usleep(100);
+    usleep(1);
     portable_mutex_lock(&coin->blocks_mutex);
     //printf("blocks.hash %p\n",coin->blocks.hash);
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
