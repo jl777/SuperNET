@@ -138,7 +138,7 @@ int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struc
             return(-1);
         }
         len += iguana_rwzsolution(rwflag,&serialized[len],zH.solution,tmp);
-        if ( 0 && rwflag == 0 )
+        if ( rwflag == 0 )
             zmsg->zH = zH;
     }
     return(len);
