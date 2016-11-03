@@ -795,11 +795,11 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         //printf("negative speculative return %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
-    if ( bp == coin->current )
+    if ( 0 && bp == coin->current )
     {
         if ( block == 0 )
             block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
-        if ( block->hdrsi != bp->hdrsi || block->bundlei != bundlei )
+        if ( block != 0 && (block->hdrsi != bp->hdrsi || block->bundlei != bundlei) )
         {
             block->hdrsi = bp->hdrsi;
             block->bundlei = bundlei;
