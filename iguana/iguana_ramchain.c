@@ -1819,7 +1819,7 @@ int32_t iguana_ramchain_iterate(struct supernet_info *myinfo,struct iguana_info 
 
 long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr,struct iguana_txblock *origtxdata,struct iguana_msgtx *txarray,int32_t txn_count,uint8_t *data,int32_t recvlen,struct iguana_bundle *bp,struct iguana_block *block)
 {
-    int32_t verifyflag = 0;
+    int32_t zcash=0,verifyflag = 0;
     RAMCHAIN_DECLARE; struct iguana_ramchain R,*mapchain,*ramchain = &addr->ramchain; struct iguana_msgtx *tx; char fname[1024]; uint8_t rmd160[20]; struct iguana_ramchaindata *rdata; int32_t i,j,fpos,pubkeysize,sigsize,subdir,firsti=1,err,flag,bundlei; uint32_t scriptspace,stackspace; struct iguana_blockRO RO; struct iguana_zblockRO zRO;
     if ( block == 0 || bp == 0 || addr == 0 || (block != 0 && (bundlei= block->bundlei) < 0) )
     {
@@ -1833,7 +1833,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
     scriptspace = 1;//iguana_scriptspaceraw(coin,&scriptsize,&sigsize,&pubkeysize,txarray,txn_count);
     for (i=0; i<sizeof(addr->dirty)/sizeof(*addr->dirty); i++)
         addr->dirty[i] = 0;
-    if ( iguana_ramchain_init(fname,ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,(scriptspace+sigsize+pubkeysize)*1.1,0,1,coin->chain->zcash) == 0 )
+    if ( iguana_ramchain_init(fname,ramchain,&addr->TXDATA,&addr->HASHMEM,1,txn_count,origtxdata->numunspents,origtxdata->numspends,0,0,(scriptspace+sigsize+pubkeysize)*1.1,0,1,zcash) == 0 )
     {
         if ( block != 0 && block->fpipbits == 0 )
             block->issued = block->RO.recvlen = 0, block->fpos = -1;
@@ -1901,7 +1901,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         rdata->prevhash2 = origtxdata->zblock.RO.prev_block;
         rdata->scriptspace = scriptspace = ramchain->H.scriptoffset;
         rdata->stackspace = stackspace = ramchain->H.stacksize;
-        iguana_ramchain_setsize(fname,ramchain,rdata,1,coin->chain->zcash);
+        iguana_ramchain_setsize(fname,ramchain,rdata,1,zcash);
         flag = 0;
         if ( ramchain->H.txidind != rdata->numtxids || ramchain->H.unspentind != rdata->numunspents || ramchain->H.spendind != rdata->numspends )
         {
@@ -1917,12 +1917,12 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
-                if ( coin->chain->zcash == 0 )
-                    iguana_blockzcopyRO(coin->chain->zcash,B,0,&RO,0);
-                else iguana_blockzcopyRO(coin->chain->zcash,(struct iguana_blockRO *)&zRO,0,&RO,0);
+                if ( zcash == 0 )
+                    iguana_blockzcopyRO(zcash,B,0,&RO,0);
+                else iguana_blockzcopyRO(zcash,(struct iguana_blockRO *)&zRO,0,&RO,0);
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
+                if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,zcash)) >= 0 )
                 {
                     origtxdata->datalen = (int32_t)rdata->allocsize;
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
