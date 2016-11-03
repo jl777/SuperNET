@@ -273,7 +273,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             }
             if ( ep->masks[src_or_dest][bp->bestk] == 0 )
                 dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
-            //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
+            else if ( (rand() % 100) == 0 )
+                dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
         } else sendutxo = 1;
         if ( sendutxo != 0 )
         {
@@ -284,7 +285,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         }
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
-        //else dpow_sigsend(myinfo,bp,myind,bp->bestk,bp->bestmask,srchash,sigchannel);
+        else if ( (rand() % 100) == 0 )
+            dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
     }
     else if ( bp->state != 0xffffffff )
     {
