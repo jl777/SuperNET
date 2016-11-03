@@ -211,7 +211,7 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
         //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
         //printf("%d\n",1/(1 - depth/depth));
     }*/
-    usleep(1);
+    usleep(100);
     portable_mutex_lock(&coin->blocks_mutex);
     coin->blockdepth++;
     HASH_FIND(hh,coin->blocks.hash,&hash2,sizeof(hash2),block);
