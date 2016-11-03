@@ -203,16 +203,8 @@ void _iguana_blocklink(struct iguana_info *coin,struct iguana_block *prev,struct
 struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin,int32_t height,bits256 hash2,int32_t createflag)
 {
     struct iguana_block *block,*prev; int32_t size;
-    /*while ( coin->blockdepth > 0 )
-    {
-        usleep(100000);
-        if ( coin->blockdepth > 0 )
-            printf("A %s >>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
-        //fprintf(stderr,">>>>>>>>>> OK only if rare %s blockhashset.%d depth.%d\n",debugstr,height,depth);
-        //printf("%d\n",1/(1 - depth/depth));
-    }*/
 #ifndef __APPLE__
-    //usleep(100);
+    usleep(1000);
 #endif
     portable_mutex_lock(&coin->blocks_mutex);
     coin->blockdepth++;
@@ -221,20 +213,11 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
     {
         if ( coin->blockdepth > 0 )
             coin->blockdepth--;
-        /*while ( coin->blockdepth > 0 )
-        {
-            usleep(100000);
-            if ( coin->blockdepth > 0 )
-                printf("B %s >>>>>>>>>> OK only if rare %s match blockhashset.%d depth.%d\n",coin->symbol,debugstr,height,coin->blockdepth);
-            //fprintf(stderr,">>>>>>>>>> OK only if rare%s match blockhashset.%d depth.%d\n",debugstr,height,depth);
-            //printf("%d\n",1/(1 - depth/depth));
-        }*/
         portable_mutex_unlock(&coin->blocks_mutex);
         return(block);
     }
     if ( createflag > 0 )
     {
-        //portable_mutex_lock(&coin->blocks_mutex);
         size = (int32_t)((coin->chain->zcash != 0) ? sizeof(struct iguana_zblock) : sizeof(struct iguana_block));
         block = calloc(1,size);
         block->RO.hash2 = hash2;
@@ -260,7 +243,6 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
             if ( tmp != block )
                 printf("%s height.%d search error %p != %p\n",str,height,block,tmp);
         }
-        //portable_mutex_unlock(&coin->blocks_mutex);
     }
     if ( coin->blockdepth > 0 )
         coin->blockdepth--;
