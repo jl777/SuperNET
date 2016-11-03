@@ -776,6 +776,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             } //else printf("getblockM autoextended.[%d]\n",bp->hdrsi);
         }
     }
+    return;
     if ( bp == 0 )
     {
         printf("gotblockM no bp %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
