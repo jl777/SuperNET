@@ -1030,10 +1030,13 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         return(-1);
     }
     OS_compatible_path(fname);
-#ifdef __PNACL__
-    //static portable_mutex_t mutex;
-    //portable_mutex_lock(&mutex);
-#endif
+    static portable_mutex_t mutex; static int didinit;
+    if ( didinit == 0 )
+    {
+        portable_mutex_init(&mutex);
+        didinit = 1;
+    }
+    portable_mutex_lock(&mutex);
     if ( (fp= fopen(fname,"wb")) == 0 )
         printf("iguana_ramchain_save: couldnt create.(%s) errno.%d\n",fname,errno);
     else if ( coin->peers != 0 )
@@ -1057,9 +1060,7 @@ long iguana_ramchain_save(struct iguana_info *coin,RAMCHAIN_FUNC,uint32_t ipbits
         fclose(fp);
         //sleep(3);
     }
-#ifdef __PNACL__
-    //portable_mutex_unlock(&mutex);
-#endif
+    portable_mutex_unlock(&mutex);
     return(fpos);
 }
 
@@ -1914,7 +1915,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 block->RO.recvlen = 0;
             }
         }
-        else if ( coin->chain->zcash == 0 )
+        else //if ( coin->chain->zcash == 0 )
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
@@ -1958,7 +1959,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 fpos = -1;
             }
         }
-        else
+        /*else
         {
             FILE *fp; struct iguana_ramchaindata tmp;
             if ( (fp= fopen(fname,"wb")) != 0 )
@@ -1972,7 +1973,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,&tmp,1,ramchain->H.scriptoffset,zcash);
                 fclose(fp);
             }
-        }
+        }*/
     }
     if ( fpos < 0 && block != 0 )
         iguana_blockunmark(coin,block,bp,bundlei,1);
