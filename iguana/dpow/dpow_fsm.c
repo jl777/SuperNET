@@ -273,7 +273,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             }
             if ( ep->masks[src_or_dest][bp->bestk] == 0 )
                 dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
-            else if ( (rand() % 100) == 0 )
+            else if ( 0 && (rand() % 100) == 0 )
                 dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
         } else sendutxo = 1;
         if ( sendutxo != 0 )
@@ -285,7 +285,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         }
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
-        else if ( (rand() % 100) == 0 )
+        else if ( 0 && (rand() % 100) == 0 )
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
     }
     else if ( bp->state != 0xffffffff )
@@ -553,6 +553,7 @@ void dpow_statemachinestart(void *ptr)
                 bp->bestmask = 0;
                 bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
                 printf("new rotation ht.%d\n",bp->height);
+                checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
             }
         }
         if ( bp->state != 0xffffffff )
