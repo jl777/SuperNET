@@ -845,13 +845,13 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     txdata = origtxdata;
     if ( 1 || iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
     {
-        txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
+        /*txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
         txdata->zblock.RO.recvlen = recvlen;
         txdata->zblock.fpos = 0;
         copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
         req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
         queue_enqueue("recvQ",&coin->recvQ,&req->DL);
-        /*if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
+        if ( 0 && bp->hdrsi == 0 && strcmp("SYS",coin->symbol) == 0 )
             printf("[%d:%d].s%d %s Q.(%s) %s\n",bp->hdrsi,bundlei,numsaved,coin->symbol,bits256_str(str,origtxdata->zblock.RO.hash2),addr->ipaddr);
         if ( numsaved < coin->chain->bundlesize )
         {
