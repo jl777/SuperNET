@@ -1916,7 +1916,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         else
         {
-            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            /*if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
@@ -1956,7 +1956,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
             {
                 printf("ramchain verification error.%d hdrsi.%d bundlei.%d n.%d\n",err,bp->hdrsi,bundlei,bp->n);
                 fpos = -1;
-            }
+            }*/
         }
     }
     if ( fpos < 0 && block != 0 )

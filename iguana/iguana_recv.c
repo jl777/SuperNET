@@ -843,10 +843,6 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         }
     }
     txdata = origtxdata;
-copyflag = (coin->enableCACHE != 0) && (strcmp(coin->symbol,"BTC") != 0);
-req = iguana_recv_bundlereq(coin,addr,copyflag,H,data,recvlen,bp,bundlei,txdata);
-queue_enqueue("recvQ",&coin->recvQ,&req->DL);
-return;
     if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,zcash) >= 0 )
     {
         txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
