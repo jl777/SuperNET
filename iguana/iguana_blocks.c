@@ -204,7 +204,6 @@ struct iguana_block *iguana_blockhashset(char *debugstr,struct iguana_info *coin
 {
     struct iguana_block *block,*prev; int32_t size;
 #ifndef __APPLE__
-    printf("blocks.hash.%p\n",coin->blocks.hash);
 #endif
     portable_mutex_lock(&coin->blocks_mutex);
     coin->blockdepth++;
