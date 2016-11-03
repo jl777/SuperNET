@@ -287,6 +287,20 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
         else if ( 0 && (rand() % 100) == 0 )
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+/*#3  0x00007ffff7153bbc in __GI___fortify_fail (msg=<optimized out>, msg@entry=0x7ffff71c80aa "buffer overflow detected")
+        at fortify_fail.c:38
+#4  0x00007ffff7152a90 in __GI___chk_fail () at chk_fail.c:28
+#5  0x000000000047a4f0 in memcpy (__len=<optimized out>, __src=0x7fff94005334, __dest=0x7fffaaff831f)
+        at /usr/include/x86_64-linux-gnu/bits/string3.h:51
+#6  dpow_sigsend (myinfo=myinfo@entry=0x816540 <MYINFO>, dp=dp@entry=0x8f9e28 <MYINFO+932072>, bp=bp@entry=0x7fff94000b30,
+        myind=myind@entry=1, bestk=-1 '\377', bestmask=0, srchash=..., sigchannel=2358810252) at dpow/dpow_network.c:316
+#7  0x000000000047e7ae in dpow_update (myinfo=myinfo@entry=0x816540 <MYINFO>, dp=dp@entry=0x8f9e28 <MYINFO+932072>,
+        bp=bp@entry=0x7fff94000b30, txidchannel=txidchannel@entry=2610333579, srchash=..., myind=myind@entry=1)
+        at dpow/dpow_fsm.c:289
+#8  0x000000000047eacd in dpow_statemachineiterate (myinfo=myinfo@entry=0x816540 <MYINFO>,
+        dp=dp@entry=0x8f9e28 <MYINFO+932072>, coin=coin@entry=0x7fffc3c17010, bp=bp@entry=0x7fff94000b30, myind=myind@entry=1,
+        src_or_dest=src_or_dest@entry=1) at dpow/dpow_fsm.c:350
+        */
     }
     else if ( bp->state != 0xffffffff )
     {
