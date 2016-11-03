@@ -1966,7 +1966,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
-                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,1,ramchain->H.scriptoffset,zcash);
+                } //else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,rdata,1,ramchain->H.scriptoffset,zcash);
                 fclose(fp);
                 origtxdata->datalen = (int32_t)rdata->allocsize;
                 ramchain->H.ROflag = 0;
