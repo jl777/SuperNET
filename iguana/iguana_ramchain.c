@@ -1839,6 +1839,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
             block->issued = block->RO.recvlen = 0, block->fpos = -1;
         return(-1);
     }
+    printf("ramchain data.(%s)\n",fname);
     if ( block != 0 )
     {
         RO = block->RO;
