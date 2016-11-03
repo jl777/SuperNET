@@ -2615,7 +2615,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
     memset(&newchain,0,sizeof(newchain));
     if ( bundlei == endi+1 && iguana_ramchain_expandedsave(myinfo,coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
-        char str[65]; printf("d.%d ht.%d %s saved\n",depth,dest->height,mbstr(str,dest->H.data->allocsize));
+        //char str[65]; printf("d.%d ht.%d %s saved\n",depth,dest->height,mbstr(str,dest->H.data->allocsize));
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);
