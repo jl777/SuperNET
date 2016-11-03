@@ -56,7 +56,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     int32_t i,retval = -1; FILE *fp; char fname[1024],str[65]; long fsize; bits256 zero,sha256;
     if ( ptr == 0 || (bp->hdrsi != 0 && ptr == bp->ramchain.Xspendinds) )
     {
-        printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
+        //printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
         return(0);
     }
     memset(zero.bytes,0,sizeof(zero));
@@ -84,7 +84,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
                 printf("error mapping Xspendmap.(%s)\n",fname);
             else
             {
-                printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
+                //printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
                 retval = 0;
             }
         }
@@ -263,7 +263,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
         bp->numtmpspends = ramchain->numXspends;
         bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
-        printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
+        //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
     bp->startutxo = (uint32_t)time(NULL);
@@ -474,10 +474,10 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
         numXspends = bp->numtmpspends;
         if ( (Xspendinds= bp->tmpspends) == 0 )
         {
-            printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,numXspends);
+            //printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,numXspends);
             numXspends = iguana_Xspendmap(coin,ramchain,bp);
             numXspends = ramchain->numXspends;
-            printf("Xspendinds.%p[%d]\n",Xspendinds,numXspends);
+            //printf("Xspendinds.%p[%d]\n",Xspendinds,numXspends);
             //return(-1);
         }
     }
@@ -486,7 +486,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     spendind = B[starti].firstvin;
     unspentind = B[starti].firstvout;
     emit = startemit;
-    //if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
+    if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {

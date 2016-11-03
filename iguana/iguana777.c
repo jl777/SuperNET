@@ -386,7 +386,7 @@ int32_t iguana_validated(struct iguana_info *coin)
 
 int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int32_t helperid,struct iguana_bundle *bp,int32_t convertflag)
 {
-    int32_t retval,num = 0;
+    int32_t retval,numXspends,num = 0;
     if ( bp == 0 )
     {
         printf("iguana_helperA unexpected null bp\n");
@@ -400,7 +400,8 @@ int32_t iguana_helperA(struct supernet_info *myinfo,struct iguana_info *coin,int
         {
             if ( retval > 0 )
             {
-                printf("GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                numXspends = iguana_Xspendmap(coin,&bp->ramchain,bp);
+                printf("GENERATED UTXO.%d for ht.%d duration %d seconds numXspends.%d\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo,numXspends);
                 num++;
             }
             bp->utxofinish = (uint32_t)time(NULL);
@@ -439,7 +440,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
 
 void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    int32_t i,hdrsi,max; struct iguana_bundle *bp; char fname[1024];
+    int32_t i,hdrsi,max,retval,numXspends,convertflag = 1; struct iguana_bundle *bp; char fname[1024];
     if ( coin->RTheight > 0 )
     {
         printf("Need to restart iguana to generate new balances files\n");
@@ -449,9 +450,27 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
     max = coin->bundlescount;
     if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->utxofinish <= 1) )
         max--;
-    coin->spendvectorsaved = 0;
-    iguana_utxogen(myinfo,coin,0,1);
-
+    if ( coin->chain->zcash != 0 )
+    {
+        coin->spendvectorsaved = 0;
+        for (i=0; i<coin->bundlescount-1; i++)
+        {
+            if ( (bp= coin->bundles[i]) == 0 )
+                continue;
+            if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,convertflag,0)) >= 0 ) //bp->utxofinish > 1 || 
+            {
+                if ( retval > 0 )
+                {
+                    numXspends = iguana_Xspendmap(coin,&bp->ramchain,bp);
+                    printf("GENERATED UTXO.%d for ht.%d duration %d seconds numX.%d\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo,numXspends);
+                }
+                bp->utxofinish = (uint32_t)time(NULL);
+            }
+        }
+    }
+    coin->spendvectorsaved = (uint32_t)time(NULL);
+    //if ( coin->chain->zcash != 0 )
+    //    iguana_utxogen(myinfo,coin,0,1);
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 ) //
     {
         if ( coin->origbalanceswritten <= 1 )
@@ -516,7 +535,7 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     max = coin->bundlescount;
     if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->utxofinish <= 1) )
         max--;
-    printf("helperid.%d start %s utxogen bundlescount.%d max.%d\n",helperid,coin->symbol,coin->bundlescount,max);
+    //printf("helperid.%d start %s utxogen bundlescount.%d max.%d\n",helperid,coin->symbol,coin->bundlescount,max);
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
@@ -716,7 +735,7 @@ void iguana_helper(void *arg)
         {
             if ( coin->firstRTheight == 0 )
             {
-                if ( coin->spendvectorsaved == 1 )
+                if ( coin->spendvectorsaved == 1 && coin->chain->zcash == 0 )
                     iguana_utxogen(myinfo,coin,helperid,1);
                 else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
                 {
@@ -745,7 +764,7 @@ void iguana_helper(void *arg)
                                     if ( i == j )
                                     {
                                         iguana_bundlevalidate(myinfo,coin,bp,0);
-                                        if ( bp->validated > 1 )
+                                        if ( bp->validated > 1 && coin->chain->zcash == 0 )
                                         {
                                             for (i=0; i<j; i++)
                                                 if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
