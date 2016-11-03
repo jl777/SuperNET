@@ -1936,6 +1936,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                         fflush(addr->vinsfp);
                     memset(&R,0,sizeof(R));
                     //iguana_ramchain_map(struct supernet_info *myinfo,struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
+                    iguana_peerfname(coin,&hdrsi,GLOBAL_TMPDIR,fname,0,origtxdata->zblock.RO.hash2,origtxdata->zblock.RO.prev_block,1,0);
                     printf("myinfo.%p coin.%p (%s) fpos.%d\n",myinfo,coin,fname,(uint32_t)fpos);
                     if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(myinfo,coin,fname,0,1,&R,&addr->HASHMEM,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,fpos,0,0)) == 0 )
                     {
