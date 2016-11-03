@@ -1960,22 +1960,22 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                tmp = *ramchain->H.data;
+                /*tmp = *ramchain->H.data;
                 iguana_ramchain_compact(fname,RAMCHAIN_ARG,&tmp,rdata,1,zcash);
                 if ( fwrite(&tmp,1,sizeof(tmp),fp) != sizeof(tmp) )
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
-                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,&tmp,1,ramchain->H.scriptoffset,zcash);
+                } else iguana_ramchain_saveaction(fname,RAMCHAIN_ARG,fp,&tmp,1,ramchain->H.scriptoffset,zcash);*/
                 fclose(fp);
-                /*origtxdata->datalen = (int32_t)rdata->allocsize;
+                origtxdata->datalen = (int32_t)rdata->allocsize;
                 ramchain->H.ROflag = 0;
                 flag = 1;
                 bp->numtxids += rdata->numtxids;
                 bp->numunspents += rdata->numunspents;
                 bp->numspends += rdata->numspends;
                 if ( block != 0 && fpos >= 0 )
-                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;*/
+                    block->fpos = fpos, block->fpipbits = (uint32_t)addr->ipbits;
             }
         }
     }
