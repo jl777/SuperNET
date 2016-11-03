@@ -1936,8 +1936,6 @@ fpos = 0;
                             fflush(addr->vinsfp);
                     }
                     memset(&R,0,sizeof(R));
-                    //iguana_ramchain_map(struct supernet_info *myinfo,struct iguana_info *coin,char *fname,struct iguana_bundle *bp,int32_t numblocks,struct iguana_ramchain *ramchain,struct OS_memspace *hashmem,uint32_t ipbits,bits256 hash2,bits256 prevhash2,int32_t bundlei,long fpos,int32_t allocextras,int32_t expanded)
-                    char str[65]; printf("myinfo.%p coin.%p addr.%p (%s) fpos.%d\n",myinfo,coin,addr,bits256_str(str,RO.hash2),(uint32_t)fpos);
                     if ( verifyflag != 0 && (mapchain= iguana_ramchain_map(myinfo,coin,fname,0,1,&R,&addr->HASHMEM,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,fpos,0,0,zcash)) == 0 )
                     {
                         printf("delete unverified [%d:%d]\n",bp->hdrsi,bundlei);
