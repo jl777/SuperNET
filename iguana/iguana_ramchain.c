@@ -2014,7 +2014,7 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
     void *ptr; int32_t recvlen,height = -1; uint8_t zcash = 0;
-    if ( 0 && bp != 0 )
+    if ( bp != 0 )
         printf("UNMARK.[%d:%d]\n",bp->hdrsi,i);
     if ( block != 0 )
     {

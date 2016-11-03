@@ -337,7 +337,7 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
     bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
-    if ( coin->chain->debug != 0 )
+    if ( coin->chain->debug != 0 || coin->chain->zcash != 0 )
     {
         *validp = 1;
         return(0);
