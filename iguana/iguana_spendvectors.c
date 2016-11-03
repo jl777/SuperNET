@@ -56,7 +56,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
     int32_t i,retval = -1; FILE *fp; char fname[1024],str[65]; long fsize; bits256 zero,sha256;
     if ( ptr == 0 || (bp->hdrsi != 0 && ptr == bp->ramchain.Xspendinds) )
     {
-        //printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
+        printf("iguana_spendvectorsave.[%d] ptr.%p Xspendinds\n",bp->hdrsi,ptr);
         return(0);
     }
     memset(zero.bytes,0,sizeof(zero));
@@ -84,7 +84,7 @@ int32_t iguana_spendvectorsave(struct iguana_info *coin,struct iguana_bundle *bp
                 printf("error mapping Xspendmap.(%s)\n",fname);
             else
             {
-                //printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
+                printf("created.(%s) %p[%d]\n",fname,bp->ramchain.Xspendinds,bp->ramchain.numXspends);
                 retval = 0;
             }
         }
@@ -263,7 +263,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
         bp->numtmpspends = ramchain->numXspends;
         bp->utxofinish = (uint32_t)time(NULL);
         bp->balancefinish = 0;
-        //printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
+        printf("iguana_spendvectors.[%d]: already have Xspendinds[%d]\n",bp->hdrsi,ramchain->numXspends);
         return(0);
     }
     bp->startutxo = (uint32_t)time(NULL);
@@ -474,7 +474,10 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
         numXspends = bp->numtmpspends;
         if ( (Xspendinds= bp->tmpspends) == 0 )
         {
-            //printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,numXspends);
+            printf("iguana_balancegen.%d: no Xspendinds[%d]\n",bp->hdrsi,numXspends);
+            numXspends = iguana_Xspendmap(coin,ramchain,bp);
+            numXspends = ramchain->numXspends;
+            printf("Xspendinds.%p[%d]\n",Xspendinds,numXspends);
             //return(-1);
         }
     }
@@ -483,7 +486,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     spendind = B[starti].firstvin;
     unspentind = B[starti].firstvout;
     emit = startemit;
-    if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
+    //if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
@@ -572,7 +575,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 else //if ( Xspendinds != 0 )
                 {
                     errs++;
-                    printf("iguana_balancegen: spendind.%u external.%d error spentbp.%p with unspentind.%d pkind.%u [%d] (%d %d %d)\n",spendind,s->external,spentbp,spent_unspentind,spent_pkind,spent_hdrsi,i,j,k);
+                    printf("iguana_balancegen: X%p[%d] spendind.%u external.%d error spentbp.%p with unspentind.%d pkind.%u [%d] (%d %d %d)\n",Xspendinds,numXspends,spendind,s->external,spentbp,spent_unspentind,spent_pkind,spent_hdrsi,i,j,k);
                 }
             }
         }
@@ -1005,7 +1008,7 @@ int32_t iguana_spendvectorsaves(struct iguana_info *coin)
         return(0);
     coin->spendvectorsaved = 1;
     n = coin->bundlescount - 1;
-    //printf("SAVE SPEND VECTORS %d of %d\n",n,coin->bundlescount);
+    printf("SAVE SPEND VECTORS %d of %d\n",n,coin->bundlescount);
     for (iter=0; iter<2; iter++)
     {
         for (i=0; i<n; i++)
@@ -1134,6 +1137,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
         if ( counter++ < 3 )
             printf("need to process joinsplits before can validate.%s\n",coin->symbol);
         bp->validated = (uint32_t)time(NULL);
+        forceflag = 1;
         //return(bp->n);
     }
     if ( (coin->MAXPEERS > 1 && coin->VALIDATENODE == 0 && coin->FULLNODE == 0) || bp->ramchain.from_ro != 0 )//|| bp == coin->current )
@@ -1161,31 +1165,34 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
         }
         if ( forceflag != 0 || bp->validated <= 1 )
         {
-            max = coin->blockspacesize;
-            blockspace = calloc(1,max);
-            iguana_volatilespurge(coin,&bp->ramchain);
-            iguana_volatilesmap(myinfo,coin,&bp->ramchain);
-            for (i=0; i<bp->n; i++)
+            if ( coin->chain->zcash == 0 )
             {
-                char str[65]; 
-                if ( coin->chain->fixit != 0 )
-                    printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hashes[i]));
-                if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
+                max = coin->blockspacesize;
+                blockspace = calloc(1,max);
+                iguana_volatilespurge(coin,&bp->ramchain);
+                iguana_volatilesmap(myinfo,coin,&bp->ramchain);
+                for (i=0; i<bp->n; i++)
                 {
-                    errs++;
-                    //fprintf(stderr,"-%s.[%d:%d] ",coin->symbol,bp->hdrsi,i);
-                    //printf("bundlevalidate: %s delete [%d:%d]\n",coin->symbol,bp->hdrsi,i);
-                    iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
-                    totalerrs++;
+                    char str[65];
+                    if ( coin->chain->fixit != 0 )
+                        printf("validate %s.[%d:%d] %s\n",coin->symbol,bp->hdrsi,i,bits256_str(str,bp->hashes[i]));
+                    if ( (len= iguana_peerblockrequest(myinfo,coin,blockspace,max,0,bp->hashes[i],1)) < 0 )
+                    {
+                        errs++;
+                        //fprintf(stderr,"-%s.[%d:%d] ",coin->symbol,bp->hdrsi,i);
+                        //printf("bundlevalidate: %s delete [%d:%d]\n",coin->symbol,bp->hdrsi,i);
+                        iguana_blockunmark(coin,bp->blocks[i],bp,i,1);
+                        totalerrs++;
+                    }
+                    else
+                    {
+                        vupdate_sha256(validatehash.bytes,&vstate,bp->hashes[i].bytes,sizeof(bp->hashes[i]));
+                        total += len, totalvalidated++;
+                    }
                 }
-                else
-                {
-                    vupdate_sha256(validatehash.bytes,&vstate,bp->hashes[i].bytes,sizeof(bp->hashes[i]));
-                    total += len, totalvalidated++;
-                }
+                free(blockspace);
+                printf("%s %s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,errs!=0?"NOT":"",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             }
-            free(blockspace);
-            printf("%s %s VALIDATED.[%d] ht.%d duration.%d errs.%d total.%lld %u | total errs.%d validated.%d %llx\n",coin->symbol,errs!=0?"NOT":"",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - now,errs,(long long)total,bp->validated,totalerrs,totalvalidated,(long long)validatehash.txid);
             if ( errs == 0 )
                 bp->validated = (uint32_t)time(NULL);
             else bp->validated = bp->startutxo = bp->utxofinish = 0;

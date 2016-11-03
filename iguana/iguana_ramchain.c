@@ -1322,6 +1322,8 @@ int32_t iguana_ramchain_extras(struct supernet_info *myinfo,struct iguana_info *
 int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramchain,struct iguana_bundle *bp)
 {
     int32_t iter; bits256 sha256; char str[65],fname[1024]; void *ptr; long filesize;
+    if ( ramchain->Xspendinds != 0 )
+        return(ramchain->numXspends);
     for (iter=0; iter<2; iter++)
     {
         sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
@@ -1342,10 +1344,10 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                         printf("[%d] filesize %ld Xspendptr.%p %p num.%d\n",bp->hdrsi,filesize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
                     bp->Xvalid = 1;
                 }
+                printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
                 return(ramchain->numXspends);
                 //int32_t i; for (i=0; i<ramchain->numXspends; i++)
                 //    printf("(%d u%d) ",ramchain->Xspendinds[i].hdrsi,ramchain->Xspendinds[i].ind);
-                //printf("mapped utxo vector[%d] from (%s)\n",ramchain->numXspends,fname);
             }
             else
             {
@@ -2014,7 +2016,7 @@ void iguana_blockdelete(struct iguana_info *coin,bits256 hash2,int32_t i)
 void iguana_blockunmark(struct iguana_info *coin,struct iguana_block *block,struct iguana_bundle *bp,int32_t i,int32_t deletefile)
 {
     void *ptr; int32_t recvlen,height = -1; uint8_t zcash = 0;
-    if ( bp != 0 )
+    if ( 0 && bp != 0 )
         printf("UNMARK.[%d:%d]\n",bp->hdrsi,i);
     if ( block != 0 )
     {
@@ -2291,7 +2293,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
     if ( (mapchain= iguana_ramchain_map(myinfo,coin,fname,bp,bp->n,ramchain,0,0,bp->hashes[0],zero,0,0,extraflag,1,zcash)) != 0 )
     {
         iguana_ramchain_link(mapchain,bp->hashes[0],bp->hdrsi,bp->bundleheight,0,bp->n,firsti,1);
-        //char str[65]; printf("%s bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",coin->symbol,bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
+        char str[65]; printf("%s bp.%d: T.%d U.%d S.%d P%d X.%d MAPPED %s %p\n",coin->symbol,bp->hdrsi,mapchain->H.data->numtxids,mapchain->H.data->numunspents,mapchain->H.data->numspends,mapchain->H.data->numpkinds,mapchain->H.data->numexternaltxids,mbstr(str,mapchain->H.data->allocsize),mapchain->H.data);
         //ramcoder_test(mapchain->H.data,mapchain->H.data->allocsize);
         firsttxidind = 1;
         if ( (rdata= ramchain->H.data) != 0 )
@@ -2583,7 +2585,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
             //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
             iguana_blockzcopyRO(zcash,destB,bundlei,&block->RO,0);
             //destB[bundlei] = block->RO;
-            //fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
+            //fprintf(stderr,"T.(%d %d u%d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,R[bundlei].H.data->numunspents,bundlei);
             if ( (err= iguana_ramchain_iterate(myinfo,coin,dest,&R[bundlei],bp,bundlei)) != 0 )
             {
                 if ( (block= bp->blocks[bundlei]) != 0 )
@@ -2613,7 +2615,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
     memset(&newchain,0,sizeof(newchain));
     if ( bundlei == endi+1 && iguana_ramchain_expandedsave(myinfo,coin,RAMCHAIN_DESTARG,&newchain,&HASHMEM,0,bp) == 0 )
     {
-        //char str[65]; printf("d.%d ht.%d %s saved lag.%d elapsed.%ld\n",depth,dest->height,mbstr(str,dest->H.data->allocsize),now-starttime,time(NULL)-now);
+        char str[65]; printf("d.%d ht.%d %s saved\n",depth,dest->height,mbstr(str,dest->H.data->allocsize));
         retval = 0;
     } else bp->generrs++;
     iguana_bundlemapfree(coin,mem,&HASHMEM,ipbits,ptrs,filesizes,num,R,starti,endi);

@@ -447,7 +447,9 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
     max = coin->bundlescount;
     if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->utxofinish <= 1) )
         max--;
-    //coin->spendvectorsaved = 0;
+    coin->spendvectorsaved = 0;
+    iguana_utxogen(myinfo,coin,0,1);
+
     if ( iguana_balancefinished(coin) < max && iguana_spendvectorsaves(coin) == 0 ) //
     {
         if ( coin->origbalanceswritten <= 1 )
@@ -462,6 +464,7 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
                 sprintf(fname,"%s/%s/accounts/lastspends.%d",GLOBAL_DBDIR,coin->symbol,bp->bundleheight);
                 OS_removefile(fname,0);
                 iguana_volatilesalloc(coin,&bp->ramchain,0);//i < hdrsi);
+                //iguana_Xspendmap(coin,&bp->ramchain,bp);
             }
         printf("accounts files purged\n");
         sleep(3);
@@ -515,7 +518,10 @@ int32_t iguana_utxogen(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( helperid < incr )
     {
         for (hdrsi=helperid; hdrsi<max; hdrsi+=incr)
+        {
+            coin->bundles[hdrsi]->utxofinish = 1;
             num += iguana_helperA(myinfo,coin,helperid,coin->bundles[hdrsi],convertflag);
+        }
     }
     while ( (n= iguana_utxofinished(coin)) < max )
     {
