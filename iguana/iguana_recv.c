@@ -795,7 +795,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         //printf("negative speculative return %s\n",bits256_str(str,origtxdata->zblock.RO.hash2));
         return;
     }
-    if ( 0 && bp == coin->current )
+    if ( bp == coin->current )
     {
         if ( block == 0 )
             block = iguana_blockhashset("noblock",coin,bp->bundleheight+bundlei,origtxdata->zblock.RO.hash2,1);
@@ -808,7 +808,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     }
     if ( (block= bp->blocks[bundlei]) == 0 || bits256_nonz(bp->hashes[bundlei]) == 0 )
     {
-        //printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
+        printf("SET [%d:%d]\n",bp->hdrsi,bundlei);
         //iguana_hash2set(coin,"noblock",bp,bundlei,origtxdata->zblock.RO.hash2);
         bp->hashes[bundlei] = origtxdata->zblock.RO.hash2;
         if ( bp->speculative != 0 )
@@ -819,8 +819,9 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
     iguana_RTgotblock(coin,origtxdata->zblock.RO.hash2,data,&recvlen,&numtx);
     if ( block != 0 )
     {
-        if ( block->height < 0 )
-            block->bundlei = -1;
+        block->hdrsi = bp->hdrsi;
+        block->bundlei = bundlei;
+        block->height = bp->hdrsi*coin->chain->bundlesize + bundlei;
         block->txvalid = 1;
         block->RO.txn_count = origtxdata->zblock.RO.txn_count;
         if ( block->fpipbits != 0 && block->fpos >= 0 )
@@ -1649,7 +1650,8 @@ struct iguana_bundlereq *iguana_recvblock(struct supernet_info *myinfo,struct ig
                 coin->longestchain = prevblock->height+1;
         } else iguana_blockQ("prev",coin,0,-1,origblock->RO.prev_block,1);
     }
-    //printf("%s received.(%s) %s\n",coin->symbol,bits256_str(str,origblock->RO.hash2),addr->ipaddr);
+    if ( 0 && block != 0 )
+        printf("%s received.(%s) [%d:%d]\n",coin->symbol,bits256_str(str,origblock->RO.hash2),block->hdrsi,block->bundlei);
     if ( (bp= iguana_bundleset(myinfo,coin,&block,&bundlei,(struct iguana_block *)origblock)) != 0 && bp == coin->current && block != 0 && bp->speculative != 0 && bundlei >= 0 )
     {
         if ( 0 && strcmp("BTCD",coin->symbol) == 0 )
