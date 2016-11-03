@@ -1916,7 +1916,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         else
         {
-            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            if ( 1 || (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
