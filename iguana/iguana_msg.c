@@ -959,9 +959,9 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         {
             if ( addr != 0 && rawmem->ptr != 0 )
             {
-                struct iguana_txblock txdata;
+                struct iguana_txblock txdata[2];
                 iguana_memreset(rawmem), iguana_memreset(txmem);
-                memset(&txdata,0,sizeof(txdata));
+                memset(&txdata[0],0,sizeof(txdata[0]));
                 if ( ishost == 0 )
                 {
                     if ( coin->chain->debug != 0 )
@@ -973,16 +973,16 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                         printf(" block.[%d]\n",max);
                     }
                     addr->msgcounts.block++;
-                    if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )
+                    if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata[0],&len,data,recvlen)) == recvlen || n == recvlen-1 )
                     {
                         len = n;
-                        iguana_gotblockM(myinfo,coin,addr,&txdata,rawmem->ptr,H,data,recvlen,fromcache,0);
+                        iguana_gotblockM(myinfo,coin,addr,&txdata[0],rawmem->ptr,H,data,recvlen,fromcache,0);
                     }
                     else
                     {
                         //for (i=0; i<recvlen; i++)
                         //    printf("%02x",data[i]);
-                        printf(" parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata.zblock.RO.txn_count,n,len,recvlen,addr->ipaddr);
+                        printf(" parse error block txn_count.%d, n.%d len.%d vs recvlen.%d from.(%s)\n",txdata[0].zblock.RO.txn_count,n,len,recvlen,addr->ipaddr);
                     }
                 }
                 else
