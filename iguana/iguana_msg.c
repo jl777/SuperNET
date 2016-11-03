@@ -1012,7 +1012,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         }
         else if ( (ishost= (strcmp(H->command,"getheaders") == 0)) || strcmp(H->command,"headers") == 0 )
         {
-            struct iguana_msgzblock zmsg[2]; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
+            struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
             if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("RELAY",coin->symbol) != 0 )
             {
@@ -1051,17 +1051,17 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                                 len += iguana_rwvarint32(0,&data[len],&tmp);
                                 char str[65],str2[65];
                                 if ( 0 && coin->chain->auxpow != 0 )
-                                    printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,zmsg[0].zH.prev_block),zmsg[0].zH.version,tmp,bits256_cmp(prevhash2,zmsg[0].zH.prev_block));
+                                    printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,zmsg.zH.prev_block),zmsg.zH.version,tmp,bits256_cmp(prevhash2,zmsg.zH.prev_block));
                             }
-                            else len += iguana_rwblock(myinfo,coin->chain->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,&data[len],(void *)&zmsg[0],recvlen);
-                            iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(void *)&zblocks[i],&zmsg[0],hash2,-1);
+                            else len += iguana_rwblock(myinfo,coin->chain->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,&data[len],(void *)&zmsg,recvlen);
+                            iguana_blockconv(coin->chain->zcash,coin->chain->auxpow,(void *)&zblocks[i],&zmsg,hash2,-1);
                             prevhash2 = hash2;
                         }
                         if ( coinbase_branch != 0 )
                             free(coinbase_branch);
                         if ( blockchain_branch != 0 )
                             free(blockchain_branch);
-                        if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
+                       // if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
                             myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
                         if ( len == recvlen && addr != 0 )
                             addr->msgcounts.headers++;
