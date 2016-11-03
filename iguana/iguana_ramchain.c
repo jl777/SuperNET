@@ -1960,13 +1960,13 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
                 *B = RO;
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                if ( fwrite(rdata,1,sizeof(*rdata),fp) != sizeof(*rdata) )
+                /*if ( fwrite(rdata,1,sizeof(*rdata),fp) != sizeof(*rdata) )
                 {
                     printf("ramchain_save error writing header.%s\n",fname);
                     fpos = -1;
                 }
                 fpos = (int32_t)ftell(fp);
-                /*fwrite(B,1,sizeof(*B),fp);
+                fwrite(B,1,sizeof(*B),fp);
                 fwrite(T,rdata->numtxids,sizeof(*T),fp);
                 fwrite(U,rdata->numunspents,sizeof(*U),fp);
                 fwrite(S,rdata->numspends,sizeof(*S),fp);*/
