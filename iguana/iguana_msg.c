@@ -953,7 +953,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         retval = 0;
         if ( (ishost= (strcmp(H->command,"getblocks") == 0)) || strcmp(H->command,"block") == 0 )
         {
-            if ( addr != 0 && rawmem->ptr != 0 )
+            if ( 0 && addr != 0 && rawmem->ptr != 0 )
             {
                 struct iguana_txblock txdata;
                 iguana_memreset(rawmem), iguana_memreset(txmem);
@@ -1010,7 +1010,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
         {
             struct iguana_msgzblock zmsg; struct iguana_msgblock *msg = (void *)&zmsg; struct iguana_zblock *zblocks; uint32_t tmp,n=0;
             len = 0;
-            if ( 0 && addr != 0 && recvlen >= sizeof(bits256) && strcmp("RELAY",coin->symbol) != 0 )
+            if ( addr != 0 && recvlen >= sizeof(bits256) && strcmp("RELAY",coin->symbol) != 0 )
             {
                 if ( ishost == 0 )
                 {
