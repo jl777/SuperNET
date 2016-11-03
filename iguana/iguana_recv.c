@@ -2206,7 +2206,7 @@ int32_t iguana_pollQsPT(struct iguana_info *coin,struct iguana_peer *addr)
     }
     priority = 1;
     pend = 0;
-    req = queue_dequeue(&coin->priorityQ);
+    req = 0;//queue_dequeue(&coin->priorityQ);
     if ( flag == 0 && req == 0 && addr->pendblocks < limit )
     {
         priority = 0;
