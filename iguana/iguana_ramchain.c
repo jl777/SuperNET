@@ -1915,12 +1915,12 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         }
         else
         {
-            if ( 0 && (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
+            if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
                 iguana_blockzcopyRO(0*coin->chain->zcash,B,0,&RO,0);
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
-                if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,0*coin->chain->zcash)) >= 0 )
+                if ( 0 && (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,0*coin->chain->zcash)) >= 0 )
                 {
                     origtxdata->datalen = (int32_t)rdata->allocsize;
                     //char str[65]; printf("saved.%s [%d:%d] fpos.%d datalen.%d\n",bits256_str(str,block->RO.hash2),bp->hdrsi,bundlei,fpos,origtxdata->datalen);
