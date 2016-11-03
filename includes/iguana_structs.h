@@ -248,7 +248,7 @@ struct iguana_counts
     uint32_t firsttxidind,firstunspentind,firstspendind,firstpkind;
     uint64_t credits,debits;
     struct iguana_block block;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 struct iguana_blocks
 {
@@ -263,7 +263,7 @@ struct iguana_ledger
 {
     struct iguana_counts snapshot;
     //struct iguana_account accounts[];
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 // ramchain temp file structures
 struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,fileid; uint8_t rmd160[20]; }PACKEDSTRUCT;

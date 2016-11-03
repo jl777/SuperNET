@@ -1019,9 +1019,9 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     {
                         bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle *coinbase_branch=0,*blockchain_branch=0; struct iguana_msgblock parentblock;
                         if ( rawmem->totalsize == 0 )
-                            iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 4,0);
+                            iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 3,0);
                         memset(prevhash2.bytes,0,sizeof(prevhash2));
-                        zblocks = mycalloc('z',2,(int32_t)(sizeof(struct iguana_zblock) * n));
+                        zblocks = mycalloc('z',1,(int32_t)(sizeof(struct iguana_zblock) * n));
                         //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
                         for (i=0; i<n; i++)
                         {
@@ -1057,7 +1057,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                             free(coinbase_branch);
                         if ( blockchain_branch != 0 )
                             free(blockchain_branch);
-                        if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
+                        if ( 1 || iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
                             myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
  //myfree(blocks,sizeof(*blocks) * n);
                         if ( len == recvlen && addr != 0 )
