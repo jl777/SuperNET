@@ -139,20 +139,21 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
             for (i=0; i<n; i++)
             {
-                if ( bits256_nonz(ptr->prev_hash) != 0 )
-                {
-                    if ( bits256_nonz(refptr->prev_hash) == 0 )
-                    {
-                        printf(">>>>>>>>>  got utxo.[%d] indirectly <<<<<<<<<<<\n",i);
-                        refptr->prev_hash = ptr->prev_hash;
-                        refptr->prev_vout = ptr->prev_vout;
-                        bp->recvmask |= (1LL << i);
-                    }
-                }
                 for (iter=0; iter<2; iter++)
                 {
                     ptr = iter != 0 ? &notaries[i].dest : &notaries[i].src;
                     refptr = iter != 0 ? &bp->notaries[i].dest : &bp->notaries[i].src;
+                    if ( bits256_nonz(ptr->prev_hash) != 0 )
+                    {
+                        if ( bits256_nonz(refptr->prev_hash) == 0 )
+                        {
+                            printf(">>>>>>>>>  got utxo.[%d] indirectly <<<<<<<<<<<\n",i);
+                            refptr->prev_hash = ptr->prev_hash;
+                            refptr->prev_vout = ptr->prev_vout;
+                            if ( iter == 1 && bits256_nonz(notaries[i].src.prev_hash) != 0 )
+                                bp->recvmask |= (1LL << i);
+                        }
+                    }
                     if ( (bestk= notaries[i].bestk) >= 0 )
                     {
                         if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
