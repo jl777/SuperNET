@@ -129,14 +129,14 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        //printf("got ENTRIES src_or_dest.%d bestk.%d numnotaries.%d\n",src_or_dest,bestk,n);
+        printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
             for (i=0; i<64; i++)
                 notaries[i].bestk = -1;
             rlen += dpow_rwcoinentrys(0,&data[rlen],notaries,n,bestk);
-            //printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
+            printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
             for (i=0; i<n; i++)
             {
                 if ( bits256_nonz(ptr->prev_hash) != 0 )
