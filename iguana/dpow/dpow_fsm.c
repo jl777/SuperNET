@@ -130,14 +130,14 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        printf("got ENTRIES src_or_dest.%d bestk.%d numnotaries.%d\n",src_or_dest,bestk,n);
+        //printf("got ENTRIES src_or_dest.%d bestk.%d numnotaries.%d\n",src_or_dest,bestk,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
             for (i=0; i<64; i++)
                 notaries[i].bestk = -1;
             rlen += dpow_rwcoinentrys(0,&data[rlen],src_or_dest,notaries,n,bestk);
-            printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
+            //printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
             for (i=0; i<n; i++)
             {
                 ptr = src_or_dest != 0 ? &notaries[i].dest : &notaries[i].src;
@@ -146,7 +146,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                 {
                     if ( bits256_nonz(refptr->prev_hash) == 0 )
                     {
-                        printf("got utxo.[%d] indirectly\n",i);
+                        printf(">>>>>>>>>  got utxo.[%d] indirectly <<<<<<<<<<<\n",i);
                         refptr->prev_hash = ptr->prev_hash;
                         refptr->prev_vout = ptr->prev_vout;
                         bp->recvmask |= (1LL << i);
@@ -156,7 +156,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                 {
                     if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
                     {
-                        printf("got siglen.%d for [%d] indirectly\n",ptr->siglens[bestk],i);
+                        printf(">>>>>>>>>> got siglen.%d for [%d] indirectly <<<<<<<<<<\n",ptr->siglens[bestk],i);
                         memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
                         refptr->siglens[bestk] = ptr->siglens[bestk];
                         if ( src_or_dest != 0 )
@@ -301,7 +301,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     if ( bp->state < 1000 )
     {
         src_or_dest = 1;
-        if ( (bp->bestk= dpow_bestk(bp,&bp->bestmask)) >= 0 )
+        bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+        if ( bp->bestk >= 0 )
         {
             sendutxo = 0;
             for (i=0; i<bp->numnotaries; i++)
