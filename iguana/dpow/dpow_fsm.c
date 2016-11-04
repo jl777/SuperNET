@@ -129,14 +129,14 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
+        //printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
             for (i=0; i<64; i++)
                 notaries[i].bestk = -1;
             rlen += dpow_rwcoinentrys(0,&data[rlen],notaries,n,bestk);
-            printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
+            //printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
             for (i=0; i<n; i++)
             {
                 for (iter=0; iter<2; iter++)
@@ -147,7 +147,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                     {
                         if ( bits256_nonz(refptr->prev_hash) == 0 )
                         {
-                            printf(">>>>>>>>>  got utxo.[%d] indirectly <<<<<<<<<<<\n",i);
+                            printf(">>>>>>>>> %s got utxo.[%d] indirectly <<<<<<<<<<<\n",iter!=0?"dest":"src",i);
                             refptr->prev_hash = ptr->prev_hash;
                             refptr->prev_vout = ptr->prev_vout;
                             if ( iter == 1 && bits256_nonz(notaries[i].src.prev_hash) != 0 )
@@ -158,7 +158,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                     {
                         if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
                         {
-                            printf(">>>>>>>>>> got siglen.%d for [%d] indirectly <<<<<<<<<<\n",ptr->siglens[bestk],i);
+                            printf(">>>>>>>>>> got %s siglen.%d for [%d] indirectly <<<<<<<<<<\n",iter!=0?"dest":"src",ptr->siglens[bestk],i);
                             memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
                             refptr->siglens[bestk] = ptr->siglens[bestk];
                             if ( iter != 0 )
