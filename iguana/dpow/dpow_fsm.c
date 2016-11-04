@@ -359,7 +359,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         {
             dpow_sendcoinentrys(myinfo,dp,bp);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-            printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
+            //printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
         }
     }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
