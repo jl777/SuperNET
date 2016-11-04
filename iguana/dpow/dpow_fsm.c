@@ -201,6 +201,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
+        printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx)\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask);
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
         {
             printf("rwsigentry error\n");
