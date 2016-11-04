@@ -634,7 +634,7 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
-        if ( dp->cancelratify != 0 && bp->isratify != 0 )
+        if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
             printf("abort pending ratify\n");
             break;
