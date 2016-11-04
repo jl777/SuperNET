@@ -47,21 +47,23 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k; uint64_t mask = 0;
+    int32_t j,m,k; uint64_t bestmask,mask;
+    bestmask = mask = 0;
     for (j=m=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             mask |= (1LL << k);
-            if ( ++m >= DPOW_M(bp) )
+            if ( ++m == DPOW_M(bp) )
             {
                 *lastkp = k;
-                break;
+                bestmask = mask;
             }
         }
     }
-    return(mask);
+    bp->recvmask = mask;
+    return(bestmask);
 }
 
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height)

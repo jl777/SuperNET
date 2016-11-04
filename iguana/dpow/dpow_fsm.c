@@ -357,9 +357,10 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         }
         if ( bp->isratify != 0 || (rand() % 10) == 0 )
         {
-            dpow_sendcoinentrys(myinfo,dp,bp);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-            dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
+            dpow_sendcoinentrys(myinfo,dp,bp);
+            if ( bp->bestk >= 0 )
+                dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
             printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
         }
     }
