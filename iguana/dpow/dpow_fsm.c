@@ -107,7 +107,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 txid,commit,srchash,hashmsg; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    bits256 txid,commit,srchash,hashmsg; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     if ( (bp= dpow_heightfind(myinfo,dp,height)) == 0 )
     {
         if ( (rand() % 100) == 0 && height > 0 )
@@ -122,10 +122,9 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
     }
     for (i=0; i<32; i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
-    if ( channel == DPOW_ENTRIESCHANNEL || channel == DPOW_BTCENTRIESCHANNEL )
+    if ( channel == DPOW_ENTRIESCHANNEL )
     {
         struct dpow_entry notaries[DPOW_MAXRELAYS]; uint8_t n; int8_t bestk; struct dpow_coinentry *ptr,*refptr;
-        src_or_dest = (channel == DPOW_BTCENTRIESCHANNEL);
         rlen = 0;
         bestk = data[rlen++];
         n = data[rlen++];
@@ -136,12 +135,10 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             memset(notaries,0,sizeof(notaries));
             for (i=0; i<64; i++)
                 notaries[i].bestk = -1;
-            rlen += dpow_rwcoinentrys(0,&data[rlen],src_or_dest,notaries,n,bestk);
+            rlen += dpow_rwcoinentrys(0,&data[rlen],notaries,n,bestk);
             //printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
             for (i=0; i<n; i++)
             {
-                ptr = src_or_dest != 0 ? &notaries[i].dest : &notaries[i].src;
-                refptr = src_or_dest != 0 ? &bp->notaries[i].dest : &bp->notaries[i].src;
                 if ( bits256_nonz(ptr->prev_hash) != 0 )
                 {
                     if ( bits256_nonz(refptr->prev_hash) == 0 )
@@ -152,16 +149,21 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                         bp->recvmask |= (1LL << i);
                     }
                 }
-                if ( (bestk= notaries[i].bestk) >= 0 )
+                for (iter=0; iter<2; iter++)
                 {
-                    if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
+                    ptr = iter != 0 ? &notaries[i].dest : &notaries[i].src;
+                    refptr = iter != 0 ? &bp->notaries[i].dest : &bp->notaries[i].src;
+                    if ( (bestk= notaries[i].bestk) >= 0 )
                     {
-                        printf(">>>>>>>>>> got siglen.%d for [%d] indirectly <<<<<<<<<<\n",ptr->siglens[bestk],i);
-                        memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
-                        refptr->siglens[bestk] = ptr->siglens[bestk];
-                        if ( src_or_dest != 0 )
-                            bp->destsigsmasks[bestk] |= (1LL << i);
-                        else bp->srcsigsmasks[bestk] |= (1LL << i);
+                        if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
+                        {
+                            printf(">>>>>>>>>> got siglen.%d for [%d] indirectly <<<<<<<<<<\n",ptr->siglens[bestk],i);
+                            memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
+                            refptr->siglens[bestk] = ptr->siglens[bestk];
+                            if ( iter != 0 )
+                                bp->destsigsmasks[bestk] |= (1LL << i);
+                            else bp->srcsigsmasks[bestk] |= (1LL << i);
+                        }
                     }
                 }
             }
@@ -354,7 +356,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         }
         if ( bp->isratify != 0 || (rand() % 10) == 0 )
         {
-            dpow_sendcoinentrys(myinfo,dp,bp,bp->state < 1000);
+            dpow_sendcoinentrys(myinfo,dp,bp);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
             printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
         }

@@ -155,35 +155,41 @@ void dpow_nanomsg_update(struct supernet_info *myinfo) { }
 
 #endif
 
-int32_t dpow_rwcoinentry(int32_t rwflag,uint8_t *serialized,struct dpow_coinentry *ptr,int8_t *bestkp)
+int32_t dpow_rwcoinentry(int32_t rwflag,uint8_t *serialized,struct dpow_coinentry *src,struct dpow_coinentry *dest,int8_t *bestkp)
 {
-    int8_t bestk; int32_t siglen,len = 0;
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(ptr->prev_hash),ptr->prev_hash.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(ptr->prev_vout),(uint32_t *)&ptr->prev_vout);
+    int8_t bestk; struct dpow_coinentry *ptr; int32_t siglen,iter,len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(src->prev_hash),src->prev_hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(src->prev_vout),(uint32_t *)&src->prev_vout);
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dest->prev_hash),dest->prev_hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dest->prev_vout),(uint32_t *)&dest->prev_vout);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(*bestkp),(uint32_t *)bestkp);
     if ( (bestk= *bestkp) >= 0 )
     {
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(ptr->siglens[bestk]),(uint32_t *)&ptr->siglens[bestk]);
-        if ( (siglen= ptr->siglens[bestk]) > 0 )
+        for (iter=0; iter<2; iter++)
         {
-            if ( rwflag != 0 )
-                memcpy(&serialized[len],ptr->sigs[bestk],siglen);
-            else memcpy(ptr->sigs[bestk],&serialized[len],siglen);
-            len += siglen;
+            ptr = (iter == 0) ? src : dest;
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(ptr->siglens[bestk]),(uint32_t *)&ptr->siglens[bestk]);
+            if ( (siglen= ptr->siglens[bestk]) > 0 )
+            {
+                if ( rwflag != 0 )
+                    memcpy(&serialized[len],ptr->sigs[bestk],siglen);
+                else memcpy(ptr->sigs[bestk],&serialized[len],siglen);
+                len += siglen;
+            }
         }
     }
     return(len);
 }
 
-int32_t dpow_rwcoinentrys(int32_t rwflag,uint8_t *serialized,int32_t src_or_dest,struct dpow_entry notaries[DPOW_MAXRELAYS],uint8_t numnotaries,int8_t bestk)
+int32_t dpow_rwcoinentrys(int32_t rwflag,uint8_t *serialized,struct dpow_entry notaries[DPOW_MAXRELAYS],uint8_t numnotaries,int8_t bestk)
 {
     int32_t i,len = 0;
     for (i=0; i<numnotaries; i++)
-        len += dpow_rwcoinentry(rwflag,&serialized[len],src_or_dest != 0 ? &notaries[i].dest : &notaries[i].src,&notaries[i].bestk);
+        len += dpow_rwcoinentry(rwflag,&serialized[len],&notaries[i].src,&notaries[i].dest,&notaries[i].bestk);
     return(len);
 }
 
-int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t src_or_dest)
+int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
 {
     uint8_t data[sizeof(struct dpow_coinentry)*64 + 4096]; bits256 zero; int32_t len = 0;
     memset(zero.bytes,0,sizeof(zero));
@@ -191,8 +197,8 @@ int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,st
     data[len++] = bp->bestk;
     data[len++] = bp->numnotaries;
     len += iguana_rwbignum(1,&data[len],sizeof(bp->hashmsg),bp->hashmsg.bytes);
-    len += dpow_rwcoinentrys(1,&data[len],src_or_dest,bp->notaries,bp->numnotaries,bp->bestk);
-    dpow_send(myinfo,dp,bp,zero,bp->hashmsg,src_or_dest != 0 ? DPOW_BTCENTRIESCHANNEL : DPOW_ENTRIESCHANNEL,bp->height,data,len);
+    len += dpow_rwcoinentrys(1,&data[len],bp->notaries,bp->numnotaries,bp->bestk);
+    dpow_send(myinfo,dp,bp,zero,bp->hashmsg,DPOW_ENTRIESCHANNEL,bp->height,data,len);
     return(len);
 }
 
