@@ -50,7 +50,7 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     int32_t j,m,k; uint64_t mask = 0;
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             mask |= (1LL << k);
