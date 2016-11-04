@@ -266,7 +266,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                printf("%s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
+                                printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
                                 cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
                                 if ( src_or_dest != 0 )
                                     bp->destsigsmasks[bestk] |= (1LL << myind);
