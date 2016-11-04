@@ -263,11 +263,11 @@ int32_t iguana_numthreads(struct iguana_info *coin,int32_t mask)
 
 void iguana_launcher(void *ptr)
 {
-    struct iguana_thread *t = ptr; struct iguana_info *coin;
-    coin = t->coin;
+    struct iguana_thread *t = ptr; //struct iguana_info *coin;
+    //coin = t->coin;
     t->funcp(t->arg);
-    if ( coin != 0 )
-        coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
+    //if ( coin != 0 )
+    //    coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
     queue_enqueue("TerminateQ",&TerminateQ,&t->DL);
 }
 
