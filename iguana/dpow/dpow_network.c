@@ -187,6 +187,7 @@ int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,st
 {
     uint8_t data[sizeof(struct dpow_coinentry)*64 + 4096]; bits256 zero; int32_t len = 0;
     memset(zero.bytes,0,sizeof(zero));
+    printf(">>>>>>>>>>>>> dpow_sendcoinentrys\n");
     data[len++] = bp->bestk;
     data[len++] = bp->numnotaries;
     len += iguana_rwbignum(1,&data[len],sizeof(bp->hashmsg),bp->hashmsg.bytes);
@@ -341,7 +342,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
-    printf("sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x\n",sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel);
+    printf("ht.%d sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x\n",bp->height,sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = dp->minerkey33[i];

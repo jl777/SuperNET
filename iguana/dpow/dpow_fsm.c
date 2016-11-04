@@ -345,13 +345,13 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         if ( bp->isratify != 0 )
         {
-        uint64_t sigsmask,srcmask;
-        if ( bp->bestk < 0 )
-            sigsmask = srcmask = 0;
-        else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
-        printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
+            uint64_t sigsmask,srcmask;
+            if ( bp->bestk < 0 )
+                sigsmask = srcmask = 0;
+            else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
+            printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
         }
-        if ( (rand() % 10) == 0 )
+        if ( bp->isratify != 0 || (rand() % 10) == 0 )
             dpow_sendcoinentrys(myinfo,dp,bp,bp->state < 1000);
     }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
