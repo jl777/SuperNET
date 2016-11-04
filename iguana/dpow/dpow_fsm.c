@@ -554,7 +554,13 @@ void dpow_statemachinestart(void *ptr)
                 bp->bestmask = bp->recvmask = 0;
                 bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
                 printf("new rotation ht.%d\n",bp->height);
+                dp->blocks[checkpoint.blockhash.height] = 0;
                 checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
+                dp->blocks[checkpoint.blockhash.height] = bp;
+                for (i=0; i<64; i++)
+                    bp->notaries[i].recvmask = 0;
+                memset(bp->destsigsmasks,0,sizeof(bp->destsigsmasks));
+                memset(bp->notaries[myind].masks,0,sizeof(bp->notaries[myind].masks));
             }
         }
         if ( bp->state != 0xffffffff )
