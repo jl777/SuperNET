@@ -211,13 +211,13 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             src_or_dest = 1;
             coin = bp->destcoin;
             cp = &bp->notaries[dsig.senderind].dest;
+            printf("gotsig %s channel.%x from %d bestk.%d %llx\n",coin->symbol,channel,dsig.senderind,dsig.lastk,(long long)dsig.mask);
         }
         else
         {
             src_or_dest = 0;
             coin = bp->srccoin;
             cp = &bp->notaries[dsig.senderind].src;
-            printf("got %s channel.%x from %d\n",coin->symbol,channel,dsig.senderind);
         }
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
@@ -362,6 +362,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             if ( bp->bestk >= 0 )
                 dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
             printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
+            if ( bp->height < DPOW_FIRSTRATIFY )
+                dp->blocks[bp->height] = bp;
         }
     }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
@@ -513,12 +515,12 @@ void dpow_statemachinestart(void *ptr)
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
         vcalc_sha256(0,bp->commit.bytes,bp->beacon.bytes,sizeof(bp->beacon));
-        if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
+        /*if ( checkpoint.blockhash.height >= DPOW_FIRSTRATIFY && dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] != 0 )
         {
             printf("purge %s.%d\n",dp->dest,checkpoint.blockhash.height - DPOW_FIRSTRATIFY);
             free(dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY]);
             dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
-        }
+        }*/
     }
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
