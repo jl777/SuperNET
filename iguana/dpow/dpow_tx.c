@@ -292,10 +292,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel,int32_t src_or_dest)
 {
-    int32_t j,incr,numsigs,retval=-1; char rawtx[32768]; cJSON *vins; bits256 txid,srchash,zero; struct dpow_entry *ep;
-    if ( bp->numnotaries < 8 )
-        incr = 1;
-    else incr = sqrt(bp->numnotaries) + 1;
+    int32_t j,numsigs,retval=-1; char rawtx[32768]; cJSON *vins; bits256 txid,srchash,zero; struct dpow_entry *ep;
     bestmask = dpow_maskmin(bestmask,bp,&bestk);
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));

@@ -248,7 +248,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                                 dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
                             }
                         }
-                        printf(" (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
+                        printf(" ht.%d (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->height,bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
                         dpow_sync(myinfo,dp,bp,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
                     }
@@ -360,7 +360,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             dpow_sendcoinentrys(myinfo,dp,bp);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
             dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
-            //printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
+            printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk);
         }
     }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
