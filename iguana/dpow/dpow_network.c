@@ -352,7 +352,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
-    printf("ht.%d sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x\n",bp->height,sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel);
+    printf("ht.%d sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x best.(%d %llx) recv.%llx\n",bp->height,sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel,bp->bestk,(long long)(bp->bestk>=0?bp->bestmask:0),(long long)bp->recvmask);
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = dp->minerkey33[i];
