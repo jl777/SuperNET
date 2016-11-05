@@ -400,7 +400,10 @@ uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info 
     }
     bitcoin_address(coinaddr,coin->chain->pubtype,dp->minerkey33,33);
     if ( bits256_nonz(bp->hashmsg) == 0 && bp->height >= DPOW_FIRSTRATIFY )
+    {
+        printf("null hashmsg\n");
         return(0);
+    }
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
     bp->bestk = dpow_bestk(bp,&bp->bestmask);
@@ -631,7 +634,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
+            printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
