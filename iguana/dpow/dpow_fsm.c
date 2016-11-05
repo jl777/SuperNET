@@ -129,7 +129,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
+        printf("got ENTRIES bestk.%d (%d %llx) recv.%llx numnotaries.%d\n",bestk,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
