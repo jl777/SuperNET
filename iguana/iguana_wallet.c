@@ -1359,6 +1359,10 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         password = passphrase;
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = password;
+    if ( passphrase == 0 )
+        passphrase = "";
+    if ( password == 0 )
+        password = "";
     strcpy(myinfo->secret,passphrase);
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
