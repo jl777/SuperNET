@@ -129,7 +129,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        //printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
+        printf("got ENTRIES bestk.%d numnotaries.%d\n",bestk,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
@@ -182,7 +182,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         }
         if ( bits256_cmp(U.hashmsg,bp->hashmsg) != 0 )
         {
-            //printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
+            printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
         }
         if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
@@ -196,12 +196,12 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             dpow_sync(myinfo,dp,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
-        if ( 0 && flag == 0 && bp != 0 )
+        //if ( 0 && flag == 0 && bp != 0 )
             printf("ep.%p sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",ep,senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
     }
     else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
     {
-        //printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx)\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask);
+        printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx)\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask);
         if ( dpow_rwsigentry(0,data,&dsig) < 0 )
         {
             printf("rwsigentry error\n");
@@ -598,7 +598,7 @@ void dpow_statemachinestart(void *ptr)
         }
         sleep(1);
     }
-    if ( (starttime= checkpoint.timestamp) == 0 )
+    if ( bp->isratify == 0 || (starttime= checkpoint.timestamp) == 0 )
         starttime = (uint32_t)time(NULL);
     printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
