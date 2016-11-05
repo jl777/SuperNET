@@ -10,6 +10,7 @@ gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -
 ../agents/iguana notary  & #> iguana.log 2> error.log  &
 
 myip=`curl -s4 checkip.amazonaws.com`
+source pubkey.txt
 
 sleep 4
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
@@ -18,7 +19,9 @@ tests/addnotarys_7776
 ./btc_7776
 ./kmd_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
-./dpow_7776
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
+#./dpow_7776
 sleep 3
 ./wp_7776
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EUR\",\"pubkey\":\"$pubkey\"}"
 
