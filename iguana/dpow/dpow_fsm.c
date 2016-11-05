@@ -634,7 +634,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,deststate,bits256_str(str,srchash.hash));
+            printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
