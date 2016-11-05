@@ -409,7 +409,7 @@ int32_t dpow_issuer_tx(struct iguana_info *coin,int32_t height,int32_t txi,char 
     {
         if ( (json= cJSON_Parse(retstr)) != 0 )
         {
-            printf("TX.(%s)\n",retstr);
+            //printf("TX.(%s)\n",retstr);
             if ( (result= jobj(json,(char *)"result")) != 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
             {
                 retval = 0;
@@ -491,7 +491,7 @@ int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t KMDHEIGHT,uint32_
         {
             if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<1000 && KMDHEIGHT<kmdheight; i++,KMDHEIGHT++)
+                for (i=0; i<1000 && KMDHEIGHT<=kmdheight; i++,KMDHEIGHT++)
                 {
                     fprintf(stderr,"%s.%d ",coin->symbol,KMDHEIGHT);
                     /*if ( (KMDHEIGHT % 10) == 0 )
@@ -513,7 +513,7 @@ int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t KMDHEIGHT,uint32_
             }
             free_json(infoobj);
         }
-        printf("GETINFO.(%s)\n",retstr);
+        //printf("GETINFO.(%s)\n",retstr);
         free(retstr);
     }
     else
