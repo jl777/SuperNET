@@ -196,7 +196,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             dpow_sync(myinfo,dp,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
-        printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
+        //printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
         if ( 0 && flag == 0 && bp != 0 )
             printf("ep.%p sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",ep,senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
     }
@@ -604,9 +604,9 @@ void dpow_statemachinestart(void *ptr)
     printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
-    printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
+    //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
-    printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
+    //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
         sleep(1);
@@ -637,7 +637,7 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
+            //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
             bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
