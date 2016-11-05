@@ -609,8 +609,6 @@ void dpow_statemachinestart(void *ptr)
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
-        if ( strcmp(dp->dest,"BTC") != 0 )
-            dp->KMDHEIGHT = dpow_issuer_iteration(bp->srccoin,dp->KMDHEIGHT,&dp->KMDREALTIME);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
