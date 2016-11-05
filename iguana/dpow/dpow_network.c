@@ -197,7 +197,7 @@ int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,st
 {
     uint8_t data[sizeof(struct dpow_coinentry)*64 + 4096]; bits256 zero; int32_t len = 0;
     memset(zero.bytes,0,sizeof(zero));
-    printf("ht.%d >>>>>>>>>>>>> dpow_sendcoinentrys (%d %llx) <- %llx\n",bp->height,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
+    //printf("ht.%d >>>>>>>>>>>>> dpow_sendcoinentrys (%d %llx) <- %llx\n",bp->height,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
     data[len++] = bp->bestk;
     data[len++] = bp->numnotaries;
     len += iguana_rwbignum(1,&data[len],sizeof(bp->hashmsg),bp->hashmsg.bytes);

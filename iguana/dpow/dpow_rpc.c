@@ -397,6 +397,7 @@ void dpow_issuer_voutupdate(char *symbol,int32_t isspecial,int32_t height,int32_
         {
             // if valid add to pricefeed for issue
             printf("WITHDRAW ht.%d txi.%d vout.%d %.8f\n",height,txi,vout,dstr(value));
+            // PAX_fiat verify
         }
     }
 }
@@ -479,37 +480,37 @@ int32_t dpow_issuer_block(struct iguana_info *coin,int32_t height,uint16_t port)
     return(retval);
 }
 
-int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t KMDHEIGHT,uint32_t *KOMODO_REALTIMEp)
+int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t height,uint32_t *isrealtimep)
 {
     char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
-    if ( KMDHEIGHT <= 0 )
-        KMDHEIGHT = 1;
-    *KOMODO_REALTIMEp = 0;
+    if ( height <= 0 )
+        height = 1;
+    *isrealtimep = 0;
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getinfo",0,port)) != 0 )
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
         {
             if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<1000 && KMDHEIGHT<=kmdheight; i++,KMDHEIGHT++)
+                for (i=0; i<1000 && height<=kmdheight; i++,height++)
                 {
-                    fprintf(stderr,"%s.%d ",coin->symbol,KMDHEIGHT);
-                    /*if ( (KMDHEIGHT % 10) == 0 )
+                    /*fprintf(stderr,"%s.%d ",coin->symbol,height);
+                    if ( (height % 10) == 0 )
                     {
-                        if ( (KMDHEIGHT % 100) == 0 )
-                            fprintf(stderr,"%s.%d ",coin->symbol,KMDHEIGHT);
+                        if ( (height % 100) == 0 )
+                            fprintf(stderr,"%s.%d ",coin->symbol,height);
                         memset(&zero,0,sizeof(zero));
-                        komodo_stateupdate(KMDHEIGHT,0,0,0,zero,0,0,0,0,KMDHEIGHT,0,0,0,0);
+                        komodo_stateupdate(height,0,0,0,zero,0,0,0,0,height,0,0,0,0);
                     }*/
-                    if ( dpow_issuer_block(coin,KMDHEIGHT,port) < 0 )
+                    if ( dpow_issuer_block(coin,height,port) < 0 )
                     {
-                        printf("error KMDHEIGHT %d\n",KMDHEIGHT);
+                        printf("error height %d\n",height);
                         break;
                     }
                     usleep(10000);
                 }
-                if ( KMDHEIGHT >= kmdheight )
-                    *KOMODO_REALTIMEp = (uint32_t)time(NULL);
+                if ( height >= kmdheight )
+                    *isrealtimep = (uint32_t)time(NULL);
             }
             free_json(infoobj);
         }
@@ -522,6 +523,6 @@ int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t KMDHEIGHT,uint32_
         sleep(3);
     }
     //KOMODO_DEPOSIT = komodo_paxtotal();
-    return(KMDHEIGHT);
+    return(height);
 }
 
