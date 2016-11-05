@@ -112,8 +112,8 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
-    int32_t maxblocks;
+    uint32_t KMDREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
+    int32_t maxblocks,KMDHEIGHT;
     struct dpow_block **blocks;
 };
 

@@ -354,3 +354,172 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
         printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
+
+char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
+{
+    char url[512],*retstr=0,*retstr2=0,postdata[8192];
+    if ( params == 0 || params[0] == 0 )
+        params = (char *)"[]";
+    if ( strlen(params) < sizeof(postdata)-128 )
+    {
+        sprintf(url,(char *)"http://127.0.0.1:%u",port);
+        sprintf(postdata,"{\"method\":\"%s\",\"params\":%s}",method,params);
+        //printf("postdata.(%s) USERPASS.(%s)\n",postdata,KMDUSERPASS);
+        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params);
+    }
+    return(retstr2);
+}
+
+int32_t dpow_scriptitemlen(int32_t *opretlenp,uint8_t *script)
+{
+    int32_t opretlen,len = 0;
+    if ( (opretlen= script[len++]) >= 0x4c )
+    {
+        if ( opretlen == 0x4c )
+            opretlen = script[len++];
+        else if ( opretlen == 0x4d )
+        {
+            opretlen = script[len++];
+            opretlen = (opretlen << 8) | script[len++];
+        }
+    }
+    *opretlenp = opretlen;
+    return(len);
+}
+
+void dpow_issuer_voutupdate(char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
+{
+    int32_t opretlen,offset = 0;
+    if ( script[offset++] == 0x6a )
+    {
+        offset += dpow_scriptitemlen(&opretlen,&script[offset]);
+        if ( script[offset] == 'W' )
+        {
+            // if valid add to pricefeed for issue
+            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f\n",height,txi,vout,dstr(value));
+        }
+    }
+}
+
+int32_t dpow_issuer_tx(struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
+{
+    char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *json,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
+    sprintf(params,"[\"%s\", 1]",txidstr);
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getrawtransaction",params,port)) != 0 )
+    {
+        if ( (json= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (result= jobj(json,(char *)"result")) != 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
+            {
+                retval = 0;
+                isspecial = 0;
+                txid = jbits256(result,(char *)"txid");
+                for (vout=0; vout<n; vout++)
+                {
+                    item = jitem(vouts,vout);
+                    value = SATOSHIDEN * jdouble(item,(char *)"value");
+                    if ( (sobj= jobj(item,(char *)"scriptPubKey")) != 0 )
+                    {
+                        if ( (hexstr= jstr(sobj,(char *)"hex")) != 0 )
+                        {
+                            len = (int32_t)strlen(hexstr) >> 1;
+                            if ( vout == 0 && ((memcmp(&hexstr[2],CRYPTO777_PUBSECPSTR,66) == 0 && len == 35) || (memcmp(&hexstr[6],CRYPTO777_RMD160STR,40) == 0 && len == 25)) )
+                                isspecial = 1;
+                            else if ( len <= sizeof(script) )
+                            {
+                                decode_hex(script,len,hexstr);
+                                dpow_issuer_voutupdate(coin->symbol,isspecial,height,txi,txid,vout,n,value,script,len);
+                            }
+                        }
+                    }
+                }
+            } else printf("error getting txids.(%s)\n",retstr);
+            free_json(json);
+        }
+        free(retstr);
+    }
+    return(retval);
+}
+
+int32_t dpow_issuer_block(struct iguana_info *coin,int32_t height,uint16_t port)
+{
+    char *retstr,*retstr2,params[128],*txidstr; int32_t i,n,retval = -1; cJSON *json,*tx=0,*result=0,*result2;
+    sprintf(params,"[%d]",height);
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getblockhash",params,port)) != 0 )
+    {
+        if ( (result= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (txidstr= jstr(result,(char *)"result")) != 0 && strlen(txidstr) == 64 )
+            {
+                sprintf(params,"[\"%s\"]",txidstr);
+                if ( (retstr2= dpow_issuemethod(coin->chain->userpass,(char *)"getblock",params,port)) != 0 )
+                {
+                    //printf("getblock.(%s)\n",retstr2);
+                    if ( (json= cJSON_Parse(retstr2)) != 0 )
+                    {
+                        if ( (result2= jobj(json,(char *)"result")) != 0 && (tx= jarray(&n,result2,(char *)"tx")) != 0 )
+                        {
+                            for (i=0; i<n; i++)
+                                if ( dpow_issuer_tx(coin,height,i,jstri(tx,i),port) < 0 )
+                                    break;
+                            if ( i == n )
+                                retval = 0;
+                            else printf("dpow_issuer_block ht.%d error i.%d vs n.%d\n",height,i,n);
+                        } else printf("cant get result.%p or tx.%p\n",result,tx);
+                        free_json(json);
+                    } else printf("cant parse2.(%s)\n",retstr2);
+                    free(retstr2);
+                } else printf("error getblock %s\n",params);
+            } else printf("strlen.%ld (%s)\n",strlen(txidstr),txidstr);
+            free_json(result);
+        } else printf("couldnt parse.(%s)\n",retstr);
+        free(retstr);
+    } else printf("error from getblockhash %d\n",height);
+    return(retval);
+}
+
+int32_t dpow_issuer_iteration(struct iguana_info *coin,int32_t KMDHEIGHT,uint32_t *KOMODO_REALTIMEp)
+{
+    char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
+    if ( KMDHEIGHT <= 0 )
+        KMDHEIGHT = 1;
+    *KOMODO_REALTIMEp = 0;
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getinfo",0,port)) != 0 )
+    {
+        if ( (infoobj= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
+            {
+                for (i=0; i<1000 && KMDHEIGHT<kmdheight; i++,KMDHEIGHT++)
+                {
+                    fprintf(stderr,"%s.%d ",coin->symbol,KMDHEIGHT);
+                    /*if ( (KMDHEIGHT % 10) == 0 )
+                    {
+                        if ( (KMDHEIGHT % 100) == 0 )
+                            fprintf(stderr,"%s.%d ",coin->symbol,KMDHEIGHT);
+                        memset(&zero,0,sizeof(zero));
+                        komodo_stateupdate(KMDHEIGHT,0,0,0,zero,0,0,0,0,KMDHEIGHT,0,0,0,0);
+                    }*/
+                    if ( dpow_issuer_block(coin,KMDHEIGHT,port) < 0 )
+                    {
+                        printf("error KMDHEIGHT %d\n",KMDHEIGHT);
+                        break;
+                    }
+                    usleep(10000);
+                }
+                if ( KMDHEIGHT >= kmdheight )
+                    *KOMODO_REALTIMEp = (uint32_t)time(NULL);
+            }
+            free_json(infoobj);
+        }
+        free(retstr);
+    }
+    else
+    {
+        printf("error from %s\n",coin->symbol);
+        sleep(3);
+    }
+    //KOMODO_DEPOSIT = komodo_paxtotal();
+    return(KMDHEIGHT);
+}
+
