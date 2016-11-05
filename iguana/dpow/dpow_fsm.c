@@ -110,7 +110,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
     bits256 txid,commit,srchash,hashmsg; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     if ( (bp= dpow_heightfind(myinfo,dp,height)) == 0 )
     {
-        if ( (rand() % 100) == 0 && height > 0 )
+        if ( 0 && (rand() % 100) == 0 && height > 0 )
             printf("couldnt find height.%d | if you just started notary dapp this is normal\n",height);
         return(-1);
     }
