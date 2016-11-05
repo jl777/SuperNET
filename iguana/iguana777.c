@@ -735,7 +735,7 @@ void iguana_helper(void *arg)
         {
             if ( coin->firstRTheight == 0 )
             {
-                if ( coin->spendvectorsaved == 1 && coin->chain->zcash == 0 )
+                if ( coin->spendvectorsaved == 1 )//&& coin->chain->zcash == 0 )
                     iguana_utxogen(myinfo,coin,helperid,1);
                 else if ( coin->spendvectorsaved > 1 && (coin->spendvalidated & (1 << helperid)) == 0 )
                 {
@@ -764,7 +764,7 @@ void iguana_helper(void *arg)
                                     if ( i == j )
                                     {
                                         iguana_bundlevalidate(myinfo,coin,bp,0);
-                                        if ( bp->validated > 1 && coin->chain->zcash == 0 )
+                                        if ( bp->validated > 1 )//&& coin->chain->zcash == 0 )
                                         {
                                             for (i=0; i<j; i++)
                                                 if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )

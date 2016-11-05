@@ -32,7 +32,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
 
 void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,struct dpow_checkpoint tip)
 {
-    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; char str[65];
+    int32_t i,ind; struct dpow_checkpoint newfifo[DPOW_FIFOSIZE]; 
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
@@ -43,9 +43,9 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     }
     newfifo[0] = tip;
     memcpy(fifo,newfifo,sizeof(newfifo));
-    for (i=0; i<DPOW_FIFOSIZE; i++)
-        printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
-    printf(" <- fifo %s\n",bits256_str(str,tip.blockhash.hash));
+    //for (i=0; i<DPOW_FIFOSIZE; i++)
+    //    printf("%d ",bits256_nonz(fifo[i].blockhash.hash));
+    //printf(" <- fifo %s\n",bits256_str(str,tip.blockhash.hash));
 }
 
 void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *checkpoint,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
@@ -58,17 +58,27 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs;
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
-    printf("%s srcupdate ht.%d destupdated.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
+    if ( strcmp("BTC",dp->dest) == 0 )
+    {
+        freq = DPOW_CHECKPOINTFREQ;
+        minsigs = DPOW_MINSIGS;
+    }
+    else
+    {
+        freq = 1;
+        minsigs = 2;
+    }
+    printf("%s src ht.%d dest.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
-    if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % DPOW_CHECKPOINTFREQ) == 0 )
+    if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
-        ptrs[2] = (void *)DPOW_MINSIGS;
+        ptrs[2] = (void *)(uint64_t)minsigs;
         ptrs[3] = (void *)DPOW_DURATION;
         ptrs[4] = 0;
         memcpy(&ptrs[5],&checkpoint,sizeof(checkpoint));
@@ -121,10 +131,7 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
     dpow_fifoupdate(myinfo,dp->destfifo,dp->destchaintip);
     if ( strcmp(dp->dest,"BTC") == 0 )
         dpow_destconfirm(myinfo,dp,&dp->destfifo[DPOW_BTCCONFIRMS]);
-    else
-    {
-        dpow_destconfirm(myinfo,dp,&dp->destfifo[DPOW_KOMODOCONFIRMS * 2]); // todo: change to notarized KMD depth
-    }
+    else dpow_destconfirm(myinfo,dp,&dp->destfifo[DPOW_KOMODOCONFIRMS]); // todo: change to notarized KMD depth
 }
 
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
