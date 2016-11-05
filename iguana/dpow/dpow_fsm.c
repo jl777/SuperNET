@@ -640,7 +640,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
+    printf("src.%p dest.%p %u vs %u state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",src,dest,(uint32_t)time(NULL),starttime+bp->duration,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
     dp->lastrecvmask = bp->recvmask;
     free(ptr);
 }
