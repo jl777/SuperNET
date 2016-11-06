@@ -547,7 +547,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         {
             // if valid add to pricefeed for issue
             printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(value),opretlen);
-            if ( opretlen == 37 ) // any KMD tx
+            if ( opretlen == 38 ) // any KMD tx
             {
                 memset(base,0,sizeof(base));
                 offset++;
