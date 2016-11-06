@@ -562,8 +562,9 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     pax->vout = vout;
     if ( addflag != 0 )
     {
-        printf("addflag\n");
         HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
+        HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
+        printf("addflag pax.%p (%s)\n",pax,jprint(dpow_withdraws_pending(dp),1));
     }
     pthread_mutex_unlock(&dp->mutex);
 }
