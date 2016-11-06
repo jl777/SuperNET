@@ -277,6 +277,24 @@ TWO_STRINGS(komodo,passthru,function,hex)
     else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
 }
 
+STRING_ARG(dpow,pending,fiat)
+{
+    struct dpow_info *dp; char base[64]; int32_t i;
+    if ( fiat != 0 && fiat[0] != 0 )
+    {
+        for (i=0; fiat[i]!=0; i++)
+            base[i] = toupper(fiat[i]);
+        base[i] = 0;
+        for (i=0; i<myinfo->numdpows; i++)
+        {
+            dp = &myinfo->DPOWS[i];
+            if ( strcmp(dp->symbol,fiat) == 0  )
+                return(jprint(dpow_withdraws_pending(dp),1));
+        }
+    }
+    return(clonestr("[]"));
+}
+
 STRING_ARG(iguana,addnotary,ipaddr)
 {
     static int32_t didinit;

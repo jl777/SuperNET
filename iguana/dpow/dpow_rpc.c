@@ -461,6 +461,20 @@ struct pax_transaction
     char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
 } *PAX;
 
+cJSON *dpow_paxjson(struct pax_transaction *pax)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddbits256(item,"prev_hash",pax->txid);
+    jaddnum(item,"prev_vout",pax->vout);
+    if ( pax->shortflag != 0 )
+        jaddnum(item,"short",pax->shortflag);
+    jaddnum(item,pax->symbol,dstr(pax->fiatoshis));
+    jaddstr(item,"fiat",pax->symbol);
+    jaddnum(item,"height",pax->height);
+    jaddnum(item,"KMD",dstr(pax->komodoshis));
+    jaddstr(item,"address",pax->coinaddr);
+    return(item);
+}
 uint64_t dpow_paxtotal()
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
@@ -507,13 +521,29 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
     return(pax);
 }
 
+cJSON *dpow_withdraws_pending(struct dpow_info *dp)
+{
+    struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
+    pthread_mutex_lock(&dp->mutex);
+    HASH_ITER(hh,PAX,pax,tmp);
+    {
+        if ( pax->marked == 0 )
+            jaddi(retjson,dpow_paxjson(pax));
+    }
+    pthread_mutex_unlock(&dp->mutex);
+    return(retjson);
+}
+
 void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
 {
-    struct pax_transaction *pax;
+    struct pax_transaction *pax; int32_t addflag = 0;
     pthread_mutex_lock(&dp->mutex);
     HASH_FIND(hh,PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
+    {
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
+        addflag = 1;
+    }
     if ( coinaddr != 0 )
     {
         strcpy(pax->coinaddr,coinaddr);
@@ -534,7 +564,8 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     }
     pax->txid = txid;
     pax->vout = vout;
-    HASH_ADD_KEYPTR(hh,PAX,&pax->txid,sizeof(pax->txid),pax);
+    if ( addflag != 0 )
+        HASH_ADD_KEYPTR(hh,PAX,&pax->txid,sizeof(pax->txid),pax);
     pthread_mutex_unlock(&dp->mutex);
 }
 
