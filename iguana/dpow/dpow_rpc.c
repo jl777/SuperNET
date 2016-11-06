@@ -507,7 +507,7 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
     return(pax);
 }
 
-void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int32_t shortflag,char *symbol,uint64_t fiatoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
+void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
 {
     struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
@@ -517,15 +517,15 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int
     if ( coinaddr != 0 )
     {
         strcpy(pax->coinaddr,coinaddr);
-        pax->komodoshis = value;
+        pax->komodoshis = komodoshis;
         pax->shortflag = shortflag;
         strcpy(pax->symbol,symbol);
-        pax->fiatoshis = fiatoshis;
+        pax->fiatoshis = value;
         memcpy(pax->rmd160,rmd160,20);
         pax->height = height;
         if ( pax->marked == 0 )
-            printf("ADD %.8f WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),symbol,dstr(fiatoshis),coinaddr,height);
-        else printf("%.8f MARKED.%d WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),pax->marked,symbol,dstr(fiatoshis),coinaddr,height);
+            printf("ADD %.8f WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),symbol,dstr(pax->fiatoshis),coinaddr,height);
+        else printf("%.8f MARKED.%d WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),pax->marked,symbol,dstr(pax->fiatoshis),coinaddr,height);
     }
     else
     {
@@ -558,7 +558,6 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                     fiatoshis = -fiatoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
                 checktoshis = PAX_fiatdest(1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
-                printf("kmdheight.%d\n",kmdheight);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
@@ -569,10 +568,10 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         for (i=0; i<33; i++)
                             printf("%02x",pubkey33[i]);
                         printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(checktoshis),dstr(value),destaddr,height);
-                        if ( value < checktoshis )
+                        if ( value <= fiatoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,kmdheight);
+                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,checktoshis,rmd160,txid,vout,kmdheight);
                         }
                     }
                     else // short
@@ -580,7 +579,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         for (i=0; i<opretlen; i++)
                             printf("%02x",script[i]);
                         printf(" opret[%c] value %.8f vs check %.8f\n",script[0],dstr(value),dstr(checktoshis));
-                        if ( value > checktoshis )
+                        if ( value >= fiatoshis )
                         {
                             
                         }
