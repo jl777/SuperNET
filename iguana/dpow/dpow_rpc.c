@@ -532,14 +532,17 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 
 void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
 {
-    struct pax_transaction *pax; int32_t addflag = 0;
+    struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
-        addflag = 1;
+        pax->txid = txid;
+        pax->vout = vout;
+        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
     }
+    pthread_mutex_unlock(&dp->mutex);
     if ( coinaddr != 0 )
     {
         strcpy(pax->coinaddr,coinaddr);
@@ -558,15 +561,8 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         pax->marked = height;
         printf("MARK WITHDRAW ht.%d\n",height);
     }
-    pax->txid = txid;
-    pax->vout = vout;
-    if ( addflag != 0 )
-    {
-        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
-        HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
-        printf("addflag pax.%p (%s)\n",pax,jprint(dpow_withdraws_pending(dp),1));
-    }
-    pthread_mutex_unlock(&dp->mutex);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
+    printf("addflag pax.%p (%s)\n",pax,jprint(dpow_withdraws_pending(dp),1));
 }
 
 void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
