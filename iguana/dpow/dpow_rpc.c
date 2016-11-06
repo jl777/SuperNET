@@ -451,16 +451,6 @@ int32_t dpow_scriptitemlen(int32_t *opretlenp,uint8_t *script)
     return(len);
 }
 
-struct pax_transaction
-{
-    UT_hash_handle hh;
-    bits256 txid;
-    uint64_t komodoshis,fiatoshis;
-    int32_t marked,height;
-    uint16_t vout;
-    char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
-} *PAX;
-
 cJSON *dpow_paxjson(struct pax_transaction *pax)
 {
     cJSON *item = cJSON_CreateObject();
@@ -478,10 +468,11 @@ cJSON *dpow_paxjson(struct pax_transaction *pax)
     }
     return(item);
 }
-uint64_t dpow_paxtotal()
+
+uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
-    HASH_ITER(hh,PAX,pax,tmp)
+    HASH_ITER(hh,dp->PAX,pax,tmp)
     {
         if ( pax->marked == 0 )
             total += pax->fiatoshis;
@@ -493,7 +484,7 @@ struct pax_transaction *dpow_paxfind(struct dpow_info *dp,struct pax_transaction
 {
     struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
-    HASH_FIND(hh,PAX,&txid,sizeof(txid),pax);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax != 0 )
         memcpy(space,pax,sizeof(*pax));
     pthread_mutex_unlock(&dp->mutex);
@@ -504,13 +495,13 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
 {
     struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
-    HASH_FIND(hh,PAX,&txid,sizeof(txid),pax);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
         pax->txid = txid;
         pax->vout = vout;
-        HASH_ADD_KEYPTR(hh,PAX,&pax->txid,sizeof(pax->txid),pax);
+        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
     }
     if ( pax != 0 )
     {
@@ -528,7 +519,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
     pthread_mutex_lock(&dp->mutex);
-    HASH_ITER(hh,PAX,pax,tmp);
+    HASH_ITER(hh,dp->PAX,pax,tmp);
     {
         printf("iter pax.%p\n",pax);
         if ( pax != 0 && pax->marked == 0 )
@@ -543,7 +534,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
 {
     struct pax_transaction *pax; int32_t addflag = 0;
     pthread_mutex_lock(&dp->mutex);
-    HASH_FIND(hh,PAX,&txid,sizeof(txid),pax);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
@@ -572,7 +563,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     if ( addflag != 0 )
     {
         printf("addflag\n");
-        HASH_ADD_KEYPTR(hh,PAX,&pax->txid,sizeof(pax->txid),pax);
+        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
     }
     pthread_mutex_unlock(&dp->mutex);
 }

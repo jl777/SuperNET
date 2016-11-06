@@ -106,6 +106,16 @@ struct dpow_block
     char signedtx[32768];//,rawtx[32768];
 };
 
+struct pax_transaction
+{
+    UT_hash_handle hh;
+    bits256 txid;
+    uint64_t komodoshis,fiatoshis;
+    int32_t marked,height;
+    uint16_t vout;
+    char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
+};
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; uint64_t lastrecvmask;
@@ -114,6 +124,7 @@ struct dpow_info
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t KMDREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
     int32_t maxblocks,KMDHEIGHT,SHORTFLAG;
+    struct pax_transaction *PAX;
     portable_mutex_t mutex;
     struct dpow_block **blocks;
 };
