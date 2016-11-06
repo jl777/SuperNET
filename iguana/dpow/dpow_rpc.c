@@ -537,11 +537,6 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
-        if ( dp->PAX == 0 )
-        {
-            pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
-            HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
-        }
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
         pax->txid = txid;
         pax->vout = vout;
@@ -568,8 +563,8 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         printf("MARK WITHDRAW ht.%d\n",height);
     }
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
-    printf("hashfind.%p PAX.(%p %p)\n",pax,dp->PAX->hh.next,dp->PAX->hh.next);
-    HASH_ITER(hh,dp->PAX,pax,tmp);
+    printf("hashfind.%p PAX.(%p %p)\n",pax,dp->PAX->hh.next,dp->PAX->hh.prev);
+    HASH_ITER(hh,(dp->PAX),pax,tmp);
     {
         printf("iter PAX.%p pax.%p\n",dp->PAX,pax);
     }
