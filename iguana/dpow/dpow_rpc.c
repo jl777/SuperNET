@@ -525,14 +525,12 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
     tmp = 0;
     while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
     {
-        printf("iter pax.%p (%p %p)\n",pax,pax->hh.next,pax->hh.prev);
         if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
         tmp = pax;
         pax = pax->hh.next;
     }
     pthread_mutex_unlock(&dp->mutex);
-    printf("pending.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
