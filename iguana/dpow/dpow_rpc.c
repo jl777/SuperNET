@@ -540,6 +540,8 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
         pax->txid = txid;
         pax->vout = vout;
+        if ( dp->PAX == 0 )
+            HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
         HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
         printf("ADD PAX.%p (%p %p) pax.%p\n",dp->PAX,dp->PAX->hh.next,dp->PAX->hh.prev,pax);
     }
