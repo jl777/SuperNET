@@ -541,7 +541,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         pax->txid = txid;
         pax->vout = vout;
         HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
-        printf("ADD PAX.%p (%p %p) pax.%p\n",dp->PAX,dp->PAX->hh.hh_prev,dp->PAX->hh.hh_next,pax);
+        printf("ADD PAX.%p (%p %p) pax.%p\n",dp->PAX,dp->PAX->hh.next,dp->PAX->hh.prev,pax);
     }
     pthread_mutex_unlock(&dp->mutex);
     if ( coinaddr != 0 )
@@ -563,7 +563,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         printf("MARK WITHDRAW ht.%d\n",height);
     }
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
-    printf("hashfind.%p\n",pax);
+    printf("hashfind.%p PAX.(%p %p)\n",pax,dp->PAX->hh.next,dp->PAX->hh.next);
     HASH_ITER(hh,dp->PAX,pax,tmp);
     {
         printf("iter PAX.%p pax.%p\n",dp->PAX,pax);
