@@ -372,14 +372,15 @@ char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
 
 uint64_t dpow_paxprice(int32_t height,char *base,char *rel,uint64_t basevolume)
 {
-    char params[512],*retstr; uint64_t satoshis = 0; cJSON *retjson; struct iguana_info *kmdcoin;
+    char params[512],*retstr; uint64_t satoshis = 0; cJSON *retjson,*result; struct iguana_info *kmdcoin;
     kmdcoin = iguana_coinfind("KMD");
     sprintf(params,"[\"%s\", \"%s\", \"%d\", \"%.8f\"]",base,rel,height,(double)basevolume/SATOSHIDEN);
     if ( kmdcoin != 0 && (retstr= dpow_issuemethod(kmdcoin->chain->userpass,"paxprice",params,kmdcoin->chain->rpcport)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
-            satoshis = jdouble(retjson,"price") * SATOSHIDEN;
+            if ( (result= jobj(retjson,"result")) != 0 )
+                satoshis = jdouble(result,"price") * SATOSHIDEN;
             free_json(retjson);
         }
         printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
