@@ -523,8 +523,8 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int
         memcpy(pax->rmd160,rmd160,20);
         pax->height = height;
         if ( pax->marked == 0 )
-            printf("ADD WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",symbol,dstr(fiatoshis),coinaddr,height);
-        else printf("MARKED.%d WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",pax->marked,symbol,dstr(fiatoshis),coinaddr,height);
+            printf("ADD %.8f WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),symbol,dstr(fiatoshis),coinaddr,height);
+        else printf("%.8f MARKED.%d WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),pax->marked,symbol,dstr(fiatoshis),coinaddr,height);
     }
     else
     {
@@ -571,7 +571,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         if ( value < checktoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,height);
+                                dpow_issuer_withdraw(dp,coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,kmdheight);
                         }
                     }
                     else // short
