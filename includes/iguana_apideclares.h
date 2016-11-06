@@ -13,6 +13,7 @@
  *                                                                            *
  ******************************************************************************/
 
+STRING_ARG(dpow,pending,fiat);
 TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
