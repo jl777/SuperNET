@@ -539,7 +539,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int
 
 void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
 {
-    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,fiatoshis; struct pax_transaction space; int32_t i,opretlen,offset = 0;
+    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,fiatoshis; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
     if ( script[offset++] == 0x6a )
     {
         offset += dpow_scriptitemlen(&opretlen,&script[offset]);
@@ -547,14 +547,17 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         {
             // if valid add to pricefeed for issue
             printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(value),opretlen);
-            if ( opretlen == 34 ) // any KMD tx
+            if ( opretlen == 37 ) // any KMD tx
             {
                 memset(base,0,sizeof(base));
-                PAX_pubkey(0,&script[offset+1],&addrtype,rmd160,base,&shortflag,&fiatoshis);
+                offset++;
+                offset += PAX_pubkey(0,&script[offset],&addrtype,rmd160,base,&shortflag,&fiatoshis);
+                iguana_rwnum(0,&script[offset],sizeof(kmdheight),&kmdheight);
                 if ( fiatoshis < 0 )
                     fiatoshis = -fiatoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
                 checktoshis = PAX_fiatdest(1,destaddr,pubkey33,coinaddr,height,base,fiatoshis);
+                printf("kmdheight.%d\n",kmdheight);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
