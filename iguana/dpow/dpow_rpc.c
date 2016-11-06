@@ -472,10 +472,13 @@ cJSON *dpow_paxjson(struct pax_transaction *pax)
 uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
-    HASH_ITER(hh,dp->PAX,pax,tmp)
+    tmp = 0;
+    while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
     {
         if ( pax->marked == 0 )
             total += pax->fiatoshis;
+        tmp = pax;
+        pax = pax->hh.next;
     }
     return(total);
 }
@@ -519,11 +522,14 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
     pthread_mutex_lock(&dp->mutex);
-    HASH_ITER(hh,dp->PAX,pax,tmp);
+    tmp = 0;
+    while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
     {
-        printf("iter pax.%p\n",pax);
-        if ( pax != 0 && pax->marked == 0 )
+        printf("iter pax.%p (%p %p)\n",pax,pax->hh.next,pax->hh.prev);
+        if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
+        tmp = pax;
+        pax = pax->hh.next;
     }
     pthread_mutex_unlock(&dp->mutex);
     printf("pending.(%s)\n",jprint(retjson,0));
@@ -532,7 +538,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 
 void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
 {
-    struct pax_transaction *pax,*tmp;
+    struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
@@ -561,15 +567,6 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     {
         pax->marked = height;
         printf("MARK WITHDRAW ht.%d\n",height);
-    }
-    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
-    printf("hashfind.%p PAX.(%p %p)\n",pax,dp->PAX->hh.next,dp->PAX->hh.prev);
-    tmp = 0;
-    while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
-    {
-        printf("iter pax.%p (%p %p)\n",pax,pax->hh.next,pax->hh.prev);
-        tmp = pax;
-        pax = pax->hh.next;
     }
 }
 
