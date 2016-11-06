@@ -507,7 +507,7 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
     return(pax);
 }
 
-void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
+void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t height) // assetchain context
 {
     struct pax_transaction *pax;
     pthread_mutex_lock(&dp->mutex);
@@ -520,12 +520,12 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t value,int
         pax->komodoshis = komodoshis;
         pax->shortflag = shortflag;
         strcpy(pax->symbol,symbol);
-        pax->fiatoshis = value;
+        pax->fiatoshis = fiatoshis;
         memcpy(pax->rmd160,rmd160,20);
         pax->height = height;
         if ( pax->marked == 0 )
-            printf("ADD %.8f WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),symbol,dstr(pax->fiatoshis),coinaddr,height);
-        else printf("%.8f MARKED.%d WITHDRAW %s %.8f -> %s TO PAX ht.%d\n",dstr(value),pax->marked,symbol,dstr(pax->fiatoshis),coinaddr,height);
+            printf("ADD WITHDRAW %s %.8f -> %s %.8f TO PAX ht.%d\n",symbol,dstr(pax->fiatoshis),coinaddr,dstr(pax->komodoshis),height);
+        else printf("MARKED WITHDRAW %s %.8f -> %s %.8f TO PAX ht.%d\n",symbol,dstr(pax->fiatoshis),coinaddr,dstr(pax->komodoshis),height);
     }
     else
     {
@@ -567,11 +567,11 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         printf(" <- txid.v%u ",vout);
                         for (i=0; i<33; i++)
                             printf("%02x",pubkey33[i]);
-                        printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(checktoshis),dstr(value),destaddr,height);
+                        printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(fiatoshis),dstr(value),destaddr,height);
                         if ( value <= fiatoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,checktoshis,rmd160,txid,vout,kmdheight);
+                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,value,rmd160,txid,vout,kmdheight);
                         }
                     }
                     else // short
