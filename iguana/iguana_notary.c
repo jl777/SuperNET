@@ -144,7 +144,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
     if ( src != 0 && dest != 0 )
     {
         if ( strcmp(dp->dest,"BTC") != 0 )
-            dp->KMDHEIGHT = dpow_issuer_iteration(src,dp->KMDHEIGHT,&dp->KMDREALTIME);
+            dp->KMDHEIGHT = dpow_issuer_iteration(dp,src,dp->KMDHEIGHT,&dp->KMDREALTIME);
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
@@ -245,6 +245,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     myinfo->numdpows++;
     PAX_init();
+    portable_mutex_init(&dp->mutex);
     return(clonestr("{\"result\":\"success\"}"));
 }
 

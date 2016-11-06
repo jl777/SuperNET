@@ -609,7 +609,7 @@ void dpow_statemachinestart(void *ptr)
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
-        sleep(3);
+        sleep(2);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
@@ -646,7 +646,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("bestk.%d %llx %u vs %u state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",bp->bestk,(long long)bp->bestmask,(uint32_t)time(NULL),starttime+bp->duration,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
+    printf("bestk.%d %llx sigs.%llx state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
     dp->lastrecvmask = bp->recvmask;
     free(ptr);
 }

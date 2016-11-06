@@ -113,7 +113,8 @@ struct dpow_info
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
     uint32_t KMDREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
-    int32_t maxblocks,KMDHEIGHT;
+    int32_t maxblocks,KMDHEIGHT,SHORTFLAG;
+    portable_mutex_t mutex;
     struct dpow_block **blocks;
 };
 
