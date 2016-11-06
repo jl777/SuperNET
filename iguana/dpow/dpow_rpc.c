@@ -531,7 +531,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
     HASH_ITER(hh,PAX,pax,tmp);
     {
         printf("iter pax.%p\n",pax);
-        if ( pax->marked == 0 )
+        if ( pax != 0 && pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
     }
     pthread_mutex_unlock(&dp->mutex);
@@ -570,7 +570,10 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     pax->txid = txid;
     pax->vout = vout;
     if ( addflag != 0 )
+    {
+        printf("addflag\n");
         HASH_ADD_KEYPTR(hh,PAX,&pax->txid,sizeof(pax->txid),pax);
+    }
     pthread_mutex_unlock(&dp->mutex);
 }
 
