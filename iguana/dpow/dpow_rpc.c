@@ -530,6 +530,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
     pthread_mutex_lock(&dp->mutex);
     HASH_ITER(hh,PAX,pax,tmp);
     {
+        printf("iter pax.%p\n",pax);
         if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
     }

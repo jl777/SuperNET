@@ -289,6 +289,7 @@ STRING_ARG(dpow,pending,fiat)
         for (i=0; i<myinfo->numdpows; i++)
         {
             dp = &myinfo->DPOWS[i];
+            printf("i.%d (%s)\n",i,dp->symbol);
             if ( strcmp(dp->symbol,base) == 0  )
                 return(jprint(dpow_withdraws_pending(dp),1));
             else printf("mismatched i.%d %s\n",i,dp->symbol);
