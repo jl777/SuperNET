@@ -464,15 +464,18 @@ struct pax_transaction
 cJSON *dpow_paxjson(struct pax_transaction *pax)
 {
     cJSON *item = cJSON_CreateObject();
-    jaddbits256(item,"prev_hash",pax->txid);
-    jaddnum(item,"prev_vout",pax->vout);
-    if ( pax->shortflag != 0 )
-        jaddnum(item,"short",pax->shortflag);
-    jaddnum(item,pax->symbol,dstr(pax->fiatoshis));
-    jaddstr(item,"fiat",pax->symbol);
-    jaddnum(item,"height",pax->height);
-    jaddnum(item,"KMD",dstr(pax->komodoshis));
-    jaddstr(item,"address",pax->coinaddr);
+    if ( pax != 0 )
+    {
+        jaddbits256(item,"prev_hash",pax->txid);
+        jaddnum(item,"prev_vout",pax->vout);
+        if ( pax->shortflag != 0 )
+            jaddnum(item,"short",pax->shortflag);
+        jaddnum(item,pax->symbol,dstr(pax->fiatoshis));
+        jaddstr(item,"fiat",pax->symbol);
+        jaddnum(item,"height",pax->height);
+        jaddnum(item,"KMD",dstr(pax->komodoshis));
+        jaddstr(item,"address",pax->coinaddr);
+    }
     return(item);
 }
 uint64_t dpow_paxtotal()
@@ -531,6 +534,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
             jaddi(retjson,dpow_paxjson(pax));
     }
     pthread_mutex_unlock(&dp->mutex);
+    printf("pending.(%s)\n",jprint(retjson,0));
     return(retjson);
 }
 
