@@ -564,11 +564,11 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     }
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     printf("hashfind.%p PAX.(%p %p)\n",pax,dp->PAX->hh.next,dp->PAX->hh.prev);
-    HASH_ITER(hh,(dp->PAX),pax,tmp);
+    while ( (pax= dp->PAX->hh.next) != 0 )
     {
-        printf("iter PAX.%p pax.%p\n",dp->PAX,pax);
+        printf("iter pax.%p\n",pax);
+        pax = pax->hh.next;
     }
-    printf("pax.%p dp.%p\n",pax,dp);
 }
 
 void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
