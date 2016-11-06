@@ -556,7 +556,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 if ( fiatoshis < 0 )
                     fiatoshis = -fiatoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
-                checktoshis = PAX_fiatdest(1,destaddr,pubkey33,coinaddr,height,base,fiatoshis);
+                checktoshis = PAX_fiatdest(1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
                 printf("kmdheight.%d\n",kmdheight);
                 if ( shortflag == dp->SHORTFLAG )
                 {
