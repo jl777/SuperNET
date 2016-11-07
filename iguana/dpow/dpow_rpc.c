@@ -372,17 +372,21 @@ char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
     return(retstr2);
 }
 
-uint64_t dpow_paxprice(int32_t height,char *base,char *rel,uint64_t basevolume)
+uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint64_t basevolume)
 {
     char params[512],*retstr; uint64_t satoshis = 0; cJSON *retjson,*result; struct iguana_info *kmdcoin;
     kmdcoin = iguana_coinfind("KMD");
+    *seedp = 0;
     sprintf(params,"[\"%s\", \"%s\", \"%d\", \"%.8f\"]",base,rel,height,(double)basevolume/SATOSHIDEN);
     if ( kmdcoin != 0 && (retstr= dpow_issuemethod(kmdcoin->chain->userpass,"paxprice",params,kmdcoin->chain->rpcport)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (result= jobj(retjson,"result")) != 0 )
+            {
                 satoshis = jdouble(result,"price") * SATOSHIDEN;
+                *seedp = jdouble(result,"seed");
+            }
             free_json(retjson);
         }
         printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
@@ -417,7 +421,7 @@ int32_t PAX_pubkey(int32_t rwflag,uint8_t *pubkey33,uint8_t *addrtypep,uint8_t r
     return(33);
 }
 
-uint64_t PAX_fiatdest(int32_t tokomodo,char *destaddr,uint8_t pubkey33[33],char *coinaddr,int32_t height,char *origbase,int64_t fiatoshis)
+uint64_t PAX_fiatdest(uint64_t *seedp,int32_t tokomodo,char *destaddr,uint8_t pubkey33[33],char *coinaddr,int32_t height,char *origbase,int64_t fiatoshis)
 {
     uint8_t shortflag=0; char base[4]; int32_t i; uint8_t addrtype,rmd160[20]; int64_t komodoshis=0;
     for (i=0; i<3; i++)
@@ -427,7 +431,7 @@ uint64_t PAX_fiatdest(int32_t tokomodo,char *destaddr,uint8_t pubkey33[33],char 
         return(0);
     if ( fiatoshis < 0 )
         shortflag = 1, fiatoshis = -fiatoshis;
-    komodoshis = dpow_paxprice(height,base,(char *)"KMD",(uint64_t)fiatoshis);
+    komodoshis = dpow_paxprice(seedp,height,base,(char *)"KMD",(uint64_t)fiatoshis);
     if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) == 20 )
     {
         PAX_pubkey(1,pubkey33,&addrtype,rmd160,base,&shortflag,tokomodo != 0 ? &komodoshis : &fiatoshis);
@@ -571,7 +575,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
 
 void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
 {
-    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,fiatoshis; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
+    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,fiatoshis; uint64_t seed; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
     if ( script[offset++] == 0x6a )
     {
         offset += dpow_scriptitemlen(&opretlen,&script[offset]);
@@ -588,7 +592,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 if ( fiatoshis < 0 )
                     fiatoshis = -fiatoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
-                checktoshis = PAX_fiatdest(1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
+                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
@@ -599,7 +603,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         for (i=0; i<33; i++)
                             printf("%02x",pubkey33[i]);
                         printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(fiatoshis),dstr(value),destaddr,height);
-                        if ( value <= fiatoshis )
+                        if ( seed == 0 || value <= fiatoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
                                 dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,value,rmd160,txid,vout,kmdheight);
@@ -610,7 +614,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                         for (i=0; i<opretlen; i++)
                             printf("%02x",script[i]);
                         printf(" opret[%c] value %.8f vs check %.8f\n",script[0],dstr(value),dstr(checktoshis));
-                        if ( value >= fiatoshis )
+                        if ( seed == 0 || value >= fiatoshis )
                         {
                             
                         }
