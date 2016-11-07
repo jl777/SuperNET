@@ -1144,6 +1144,7 @@ int32_t iguana_vinsfname(struct iguana_info *coin,int32_t roflag,char *fname,int
     if ( roflag != 0 )
         sprintf(fname,"%s/ro/%s/purgeable/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
     else sprintf(fname,"%s/%s/%04d.vins",coin->VALIDATEDIR,coin->symbol,slotid);
+    OS_compatible_path(fname);
     return((int32_t)strlen(fname));
 }
 

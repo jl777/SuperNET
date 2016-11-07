@@ -751,7 +751,6 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         printf("error from %s\n",coin->symbol);
         sleep(3);
     }
-    //KOMODO_DEPOSIT = komodo_paxtotal();
     return(height);
 }
 
