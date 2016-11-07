@@ -475,7 +475,7 @@ uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
     tmp = 0;
-    while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
+    while ( dp->PAX != 0 && (pax= dp->PAX->hh.next) != 0 && pax != tmp )
     {
         if ( pax->marked == 0 )
             total += pax->fiatoshis;
@@ -525,7 +525,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
     pthread_mutex_lock(&dp->mutex);
     tmp = 0;
-    while ( (pax= dp->PAX->hh.next) != 0 && pax != tmp )
+    while ( dp->PAX != 0 && (pax= dp->PAX->hh.next) != 0 && pax != tmp )
     {
         if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
