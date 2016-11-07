@@ -637,8 +637,8 @@ int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t hei
             //printf("TX.(%s)\n",retstr);
             if ( (result= jobj(json,(char *)"result")) != 0 )
             {
-                vpub_old = j64bits(result,(char *)"vpub_old");
-                vpub_new = j64bits(result,(char *)"vpub_new");
+                vpub_old = jdouble(result,(char *)"vpub_old") * SATOSHIDEN;
+                vpub_new = jdouble(result,(char *)"vpub_new") * SATOSHIDEN;
                 retval = 0;
                 if ( vpub_old == 0 && vpub_new == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
                 {
