@@ -628,7 +628,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
 
 int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
 {
-    char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *json,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value,vpub_new,vpub_old; bits256 txid;
+    char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
     sprintf(params,"[\"%s\", 1]",txidstr);
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getrawtransaction",params,port)) != 0 )
     {
@@ -637,10 +637,10 @@ int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t hei
             //printf("TX.(%s)\n",retstr);
             if ( (result= jobj(json,(char *)"result")) != 0 )
             {
-                vpub_old = jdouble(result,(char *)"vpub_old") * SATOSHIDEN;
-                vpub_new = jdouble(result,(char *)"vpub_new") * SATOSHIDEN;
+                oldpub = jobj(result,(char *)"vpub_old");
+                newpub = jobj(result,(char *)"vpub_new");
                 retval = 0;
-                if ( vpub_old == 0 && vpub_new == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
+                if ( oldpub == 0 && newpub == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
                 {
                     isspecial = 0;
                     txid = jbits256(result,(char *)"txid");
