@@ -290,7 +290,6 @@ STRING_ARG(dpow,pending,fiat)
             dp = &myinfo->DPOWS[i];
             if ( strcmp(dp->symbol,base) == 0  )
                 return(jprint(dpow_withdraws_pending(dp),1));
-            else printf("mismatched i.%d %s\n",i,dp->symbol);
         }
     }
     return(clonestr("[]"));
