@@ -485,7 +485,7 @@ uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
     pthread_mutex_lock(&dp->mutex);
-    if ( dp->PAX != 0 )
+    /*if ( dp->PAX != 0 )
     {
         tmp = 0;
         pax= dp->PAX->hh.next;
@@ -496,6 +496,11 @@ uint64_t dpow_paxtotal(struct dpow_info *dp)
             tmp = pax;
             pax = pax->hh.next;
         }
+    }*/
+    HASH_ITER(hh,dp->PAX,pax,tmp)
+    {
+        if ( pax->marked == 0 )
+            total += pax->komodoshis;
     }
     pthread_mutex_unlock(&dp->mutex);
     return(total);
@@ -540,7 +545,7 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
     pthread_mutex_lock(&dp->mutex);
-    if ( dp->PAX != 0 )
+    /*if ( dp->PAX != 0 )
     {
         tmp = 0;
         pax = dp->PAX->hh.next;
@@ -551,8 +556,13 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
             tmp = pax;
             pax = pax->hh.next;
         }
-        pthread_mutex_unlock(&dp->mutex);
+    }*/
+    HASH_ITER(hh,dp->PAX,pax,tmp)
+    {
+        if ( pax->marked == 0 )
+            jaddi(retjson,dpow_paxjson(pax));
     }
+    pthread_mutex_unlock(&dp->mutex);
     return(retjson);
 }
 
