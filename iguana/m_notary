@@ -20,7 +20,6 @@ tests/addnotarys_7776
 ./kmd_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
-#./dpow_7776
 sleep 3
 ./wp_7776
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"EUR\",\"pubkey\":\"$pubkey\"}"
