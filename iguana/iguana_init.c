@@ -305,11 +305,11 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         {
             if ( m < coin->MAXPEERS/2 )
             {
-                if ( 0 && m == 0 )
+                if ( m == 0 && coin->seedipaddr[0] != 0 )
                 {
                     addr = &coin->peers->active[m++];
-                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits("127.0.0.1"));
-                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
+                    printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS

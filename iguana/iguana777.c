@@ -1061,7 +1061,7 @@ void iguana_nameset(char name[64],char *symbol,cJSON *json)
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
-    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64]; cJSON *peers;
+    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64],*seedip; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     iguana_nameset(name,symbol,json);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
@@ -1084,6 +1084,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         else coin->PREFETCHLAG = -1;
         if ( (coin->MAXSTUCKTIME= juint(json,"maxstuck")) == 0 )
             coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
+        if ( (seedip= jstr(json,"seedipaddr")) != 0 )
+            safecopy(coin->seedipaddr,seedip,sizeof(coin->seedipaddr));
         if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         {
             if ( strcmp("BTCD",coin->symbol) == 0 )
