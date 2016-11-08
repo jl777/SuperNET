@@ -590,9 +590,9 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
     }
 }
 
-void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
+void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,int64_t fiatoshis,uint8_t *script,int32_t len)
 {
-    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,fiatoshis; uint64_t seed; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
+    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,komodoshis; uint64_t seed; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
     if ( script[offset++] == 0x6a )
     {
         memset(base,0,sizeof(base));
@@ -600,38 +600,38 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         if ( script[offset] == 'W' && strcmp(dp->symbol,"KMD") != 0 )
         {
             // if valid add to pricefeed for issue
-            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(value),opretlen);
+            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(fiatoshis),opretlen);
             if ( opretlen == 38 ) // any KMD tx
             {
                 offset++;
-                offset += PAX_pubkey(0,&script[offset],&addrtype,rmd160,base,&shortflag,&fiatoshis);
+                offset += PAX_pubkey(0,&script[offset],&addrtype,rmd160,base,&shortflag,&komodoshis);
                 iguana_rwnum(0,&script[offset],sizeof(kmdheight),&kmdheight);
-                if ( fiatoshis < 0 )
-                    fiatoshis = -fiatoshis;
+                if ( komodoshis < 0 )
+                    komodoshis = -komodoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
-                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
+                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,komodoshis);
                 for (i=0; i<32; i++)
                     printf("%02x",((uint8_t *)&txid)[i]);
                 printf(" <- txid.v%u ",vout);
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
-                printf(" checkpubkey check %.8f v %.8f dest.(%s) kmdheight.%d seed.%llx\n",dstr(fiatoshis),dstr(value),destaddr,kmdheight,(long long)seed);
+                printf(" checkpubkey fiat %.8f check %.8f v %.8f dest.(%s) kmdheight.%d seed.%llu\n",dstr(komodoshis),dstr(checktoshis),dstr(fiatoshis),destaddr,kmdheight,(long long)seed);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
                     {
-                        if ( seed == 0 || value <= fiatoshis )
+                        if ( seed == 0 || fiatoshis >= checktoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,value,rmd160,txid,vout,kmdheight,height);
+                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,fiatoshis,rmd160,txid,vout,kmdheight,height);
                         }
                     }
                     else // short
                     {
                         for (i=0; i<opretlen; i++)
                             printf("%02x",script[i]);
-                        printf(" opret[%c] value %.8f vs check %.8f\n",script[0],dstr(value),dstr(checktoshis));
-                        if ( seed == 0 || value >= fiatoshis )
+                        printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
+                        if ( seed == 0 || fiatoshis < checktoshis )
                         {
                             
                         }
@@ -641,7 +641,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
         }
         else if ( script[offset] == 'X' && strcmp(dp->symbol,"KMD") == 0 )
         {
-            printf("WITHDRAW issued ht.%d txi.%d vout.%d %.8f\n",height,txi,vout,dstr(value));
+            printf("WITHDRAW issued ht.%d txi.%d vout.%d %.8f\n",height,txi,vout,dstr(fiatoshis));
             if ( opretlen == 46 ) // any KMD tx
             {
                 offset++;
@@ -657,10 +657,10 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 printf(" <- txid.v%u ",vout);
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
-                printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(fiatoshis),dstr(value),destaddr,height);
+                printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(checktoshis),dstr(fiatoshis),destaddr,height);
                 if ( shortflag == 0 )
                 {
-                    if ( seed == 0 || value > fiatoshis )
+                    if ( seed == 0 || checktoshis > fiatoshis )
                     {
                         dpow_paxmark(dp,&space,txid,vout,height);
                     }
