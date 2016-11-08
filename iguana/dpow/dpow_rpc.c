@@ -385,7 +385,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
             if ( (result= jobj(retjson,"result")) != 0 )
             {
                 satoshis = jdouble(result,"price") * SATOSHIDEN;
-                *seedp = jdouble(result,"seed");
+                *seedp = j64bits(result,"seed");
             }
             free_json(retjson);
         }
@@ -609,13 +609,13 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 if ( komodoshis < 0 )
                     komodoshis = -komodoshis;
                 bitcoin_address(coinaddr,addrtype,rmd160,20);
-                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,komodoshis);
+                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
                 for (i=0; i<32; i++)
                     printf("%02x",((uint8_t *)&txid)[i]);
                 printf(" <- txid.v%u ",vout);
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
-                printf(" checkpubkey fiat %.8f check %.8f v %.8f dest.(%s) kmdheight.%d seed.%llu\n",dstr(komodoshis),dstr(checktoshis),dstr(fiatoshis),destaddr,kmdheight,(long long)seed);
+                printf(" checkpubkey fiat %.8f check %.8f v %.8f dest.(%s) kmdheight.%d seed.%llu\n",dstr(fiatoshis),dstr(komodoshis),dstr(checktoshis),destaddr,kmdheight,(long long)seed);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
