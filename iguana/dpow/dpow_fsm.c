@@ -129,7 +129,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
         bestk = data[rlen++];
         n = data[rlen++];
         rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
-        printf("got ENTRIES bestk.%d (%d %llx) recv.%llx numnotaries.%d\n",bestk,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,n);
+        //printf("got ENTRIES bestk.%d (%d %llx) recv.%llx numnotaries.%d\n",bestk,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,n);
         if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
         {
             memset(notaries,0,sizeof(notaries));
@@ -207,7 +207,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             printf("rwsigentry error\n");
             return(0);
         }
-        printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx) sigs.%llx\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)(dsig.lastk>=0?bp->destsigsmasks[dsig.lastk]:0));
+        //printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx) sigs.%llx\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)(dsig.lastk>=0?bp->destsigsmasks[dsig.lastk]:0));
         if ( channel == DPOW_SIGBTCCHANNEL )
         {
             src_or_dest = 1;
