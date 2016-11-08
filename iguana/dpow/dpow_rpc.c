@@ -384,7 +384,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
         {
             if ( (result= jobj(retjson,"result")) != 0 )
             {
-                satoshis = jdouble(result,"price") * SATOSHIDEN;
+                satoshis = jdouble(result,"relvolume") * SATOSHIDEN;
                 *seedp = j64bits(result,"seed");
             }
             free_json(retjson);
