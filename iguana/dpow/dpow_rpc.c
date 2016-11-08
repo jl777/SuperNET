@@ -615,7 +615,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 printf(" <- txid.v%u ",vout);
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
-                printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(fiatoshis),dstr(value),destaddr,height);
+                printf(" checkpubkey check %.8f v %.8f dest.(%s) kmdheight.%d seed.%llx\n",dstr(fiatoshis),dstr(value),destaddr,kmdheight,(long long)seed);
                 if ( shortflag == dp->SHORTFLAG )
                 {
                     if ( shortflag == 0 )
