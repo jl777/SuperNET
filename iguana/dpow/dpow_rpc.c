@@ -620,10 +620,10 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 {
                     if ( shortflag == 0 )
                     {
-                        if ( seed == 0 || fiatoshis >= checktoshis )
+                        if ( seed == 0 || checktoshis >= komodoshis )
                         {
                             if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,fiatoshis,rmd160,txid,vout,kmdheight,height);
+                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,komodoshis,rmd160,txid,vout,kmdheight,height);
                         }
                     }
                     else // short
