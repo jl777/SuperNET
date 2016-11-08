@@ -180,7 +180,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
             printf("error from rwutxobuf\n");
             return(0);
         }
-        if ( bits256_cmp(U.hashmsg,bp->hashmsg) != 0 )
+        if ( bits256_cmp(U.hashmsg,bp->hashmsg) != 0 && bits256_nonz(bp->hashmsg) != 0 )
         {
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
