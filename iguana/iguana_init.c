@@ -305,7 +305,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         {
             if ( m < coin->MAXPEERS/2 )
             {
-                if ( m == 0 && coin->seedipaddr[0] != 0 )
+                if ( 0 && m == 0 && coin->seedipaddr[0] != 0 )
                 {
                     addr = &coin->peers->active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));

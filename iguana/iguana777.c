@@ -839,7 +839,7 @@ void iguana_helper(void *arg)
 
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_bundle *bp; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
+    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
     //    printf("%02x",((uint8_t *)coin->chain)[i]);
@@ -869,6 +869,10 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    addr = &coin->peers->active[IGUANA_MAXPEERS-2];
+    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
+    printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
+    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
 
 void iguana_coinloop(void *arg)
@@ -1061,7 +1065,8 @@ void iguana_nameset(char name[64],char *symbol,cJSON *json)
 struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,int64_t maxrecvcache,uint64_t services,int32_t initialheight,int32_t maphash,int32_t minconfirms,int32_t maxrequests,int32_t maxbundles,cJSON *json,int32_t virtcoin)
 {
     struct iguana_chain *iguana_createchain(cJSON *json);
-    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64],*seedip; cJSON *peers;
+    struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    struct iguana_info *coin; int32_t j,m,mult,maxval,mapflags; char name[64]; cJSON *peers;
     mapflags = IGUANA_MAPRECVDATA | maphash*IGUANA_MAPTXIDITEMS | maphash*IGUANA_MAPPKITEMS | maphash*IGUANA_MAPBLOCKITEMS | maphash*IGUANA_MAPPEERITEMS;
     iguana_nameset(name,symbol,json);
     if ( (coin= iguana_coinfind(symbol)) == 0 )
@@ -1084,8 +1089,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         else coin->PREFETCHLAG = -1;
         if ( (coin->MAXSTUCKTIME= juint(json,"maxstuck")) == 0 )
             coin->MAXSTUCKTIME = _IGUANA_MAXSTUCKTIME;
-        if ( (seedip= jstr(json,"seedipaddr")) != 0 )
-            safecopy(coin->seedipaddr,seedip,sizeof(coin->seedipaddr));
+        if ( myinfo != 0 && myinfo->seedipaddr[0] != 0 )
+            safecopy(coin->seedipaddr,myinfo->seedipaddr,sizeof(coin->seedipaddr));
         if ( (coin->startPEND= juint(json,"startpend")) == 0 )
         {
             if ( strcmp("BTCD",coin->symbol) == 0 )
