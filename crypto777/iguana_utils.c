@@ -364,8 +364,8 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
         memset(bytes,0,n);
         return(n);
     }
-    //if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
-    //    hex[--n] = 0;
+    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
+        hex[--n] = 0;
     if ( n == 0 || (hex[n*2+1] == 0 && hex[n*2] != 0) )
     {
         if ( n > 0 )
