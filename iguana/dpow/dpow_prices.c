@@ -1918,8 +1918,8 @@ void PAX_init()
     {
         init_Currencymasks();
         //calc_smooth_code(127,7);
-        tradebot_monitorall(0,0,0,0,"fxcm",commission);
-        tradebot_monitorall(0,0,0,0,"truefx",commission);
+        //tradebot_monitorall(0,0,0,0,"fxcm",commission);
+        //tradebot_monitorall(0,0,0,0,"truefx",commission);
         //tradebot_monitorall(0,0,0,0,"instaforex",commission);
         exchange_create("PAX",0);
         didinit = 1;
