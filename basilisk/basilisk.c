@@ -906,7 +906,7 @@ void komodo_iteration(char *symbol)
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t i,iter; double startmilli,endmilli; struct dpow_info *dp;
+    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli; struct dpow_info *dp;
     iter = 0;
     relay = iguana_coinfind("RELAY");
     printf("start basilisk loop\n");
@@ -923,17 +923,16 @@ void basilisks_loop(void *arg)
                 basilisk_ping_send(myinfo,relay);
             counter++;
             if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
+            {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                endmilli = startmilli + 500;
+            }
             else if ( myinfo->numdpows > 1 )
             {
-                for (i=0; i<myinfo->numdpows; i++)
-                {
-                    dp = &myinfo->DPOWS[i];//counter % myinfo->numdpows];
-                    iguana_dPoWupdate(myinfo,dp);
-                }
+                dp = &myinfo->DPOWS[counter % myinfo->numdpows];
+                iguana_dPoWupdate(myinfo,dp);
+                endmilli = startmilli + 200;
             }
-            endmilli = startmilli + 200;
-            continue;
         }
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;

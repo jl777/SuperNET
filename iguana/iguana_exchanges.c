@@ -1124,7 +1124,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             {
                 if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforex") == 0 )
                 {
-                    exchange->pollgap = 10;
+                    exchange->pollgap = 60;
                     continue;
                 }
                 if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,0)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )
