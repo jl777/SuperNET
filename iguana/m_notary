@@ -1,3 +1,4 @@
+#!/bin/bash
 pkill iguana
 rm -f ../agents/iguana *.o
 git pull

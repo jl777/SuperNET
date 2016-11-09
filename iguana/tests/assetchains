@@ -1,3 +1,4 @@
+#!/bin/bash
 ./assetchaind -ac_name=USD -addnode=78.47.196.146 &
 ./assetchaind -ac_name=EUR -addnode=78.47.196.146 &
 ./assetchaind -ac_name=JPY -addnode=78.47.196.146 &
