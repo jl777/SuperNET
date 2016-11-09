@@ -11,7 +11,6 @@ gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -
 
 myip=`curl -s4 checkip.amazonaws.com`
 source pubkey.txt
-echo make sure pubkey is ($pubkey)
 
 sleep 4
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
