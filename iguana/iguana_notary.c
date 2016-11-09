@@ -225,6 +225,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
     }
     decode_hex(dp->minerkey33,33,pubkey);
+    printf("DPOW with pubkey.(%s)\n",pubkey);
     if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
         return(clonestr("{\"error\":\"illegal pubkey\"}"));
     strcpy(dp->symbol,symbol);
