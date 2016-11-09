@@ -164,7 +164,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                     {
                         if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
                         {
-                            printf(">>>>>>>>>> got %s siglen.%d for [%d] indirectly <<<<<<<<<<\n",iter!=0?"dest":"src",ptr->siglens[bestk],i);
+                            printf(">>>>>>>>>> got %s siglen.%d for [%d] indirectly bestk.%d <<<<<<<<<<\n",iter!=0?"dest":"src",ptr->siglens[bestk],i,bestk);
                             memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
                             refptr->siglens[bestk] = ptr->siglens[bestk];
                             if ( iter != 0 )
