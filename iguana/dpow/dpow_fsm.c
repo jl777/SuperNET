@@ -631,13 +631,13 @@ void dpow_statemachinestart(void *ptr)
                 dp->blocks[checkpoint.blockhash.height] = 0;
                 checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
                 dp->blocks[checkpoint.blockhash.height] = bp;
-                for (i=0; i<64; i++)
+                /*for (i=0; i<64; i++)
                 {
                     bp->notaries[i].recvmask = 0;
                     bp->notaries[i].bestk = -1;
                 }
                 memset(bp->destsigsmasks,0,sizeof(bp->destsigsmasks));
-                memset(bp->notaries[myind].masks,0,sizeof(bp->notaries[myind].masks));
+                memset(bp->notaries[myind].masks,0,sizeof(bp->notaries[myind].masks));*/
             }
         }
         if ( bp->state != 0xffffffff )
