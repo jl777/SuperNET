@@ -142,7 +142,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
     dpow_nanomsg_update(myinfo);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    //printf("dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
+    printf("dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     if ( src != 0 && dest != 0 )
     {
         if ( strcmp(dp->dest,"KMD") == 0 )
