@@ -36,7 +36,7 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
+        if ( 0 && bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
             printf("(%d != %d) ",(tip.blockhash.height - fifo[i-1].blockhash.height),i);
         if ( (ind= (tip.blockhash.height - fifo[i-1].blockhash.height)) >= 0 && ind < DPOW_FIFOSIZE )
             newfifo[ind] = fifo[i-1];
