@@ -357,7 +357,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
             printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
         }
-        if ( bp->isratify != 0 || (rand() % 10) == 0 )
+        if ( 0 && (bp->isratify != 0 || (rand() % 10) == 0) )
         {
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
             dpow_sendcoinentrys(myinfo,dp,bp);
