@@ -62,7 +62,7 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
             }
         }
     }
-    bp->recvmask = mask;
+    bp->recvmask |= mask;
     if ( *lastkp >= 0 )
     {
         for (mask=j=0; j<bp->numnotaries; j++)
@@ -70,13 +70,13 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
             if ( bp->notaries[j].src.siglens[*lastkp] > 0 )
                 mask |= (1LL << j);
         }
-        bp->srcsigsmasks[*lastkp] = mask;
+        bp->srcsigsmasks[*lastkp] |= mask;
         for (mask=j=0; j<bp->numnotaries; j++)
         {
             if ( bp->notaries[j].dest.siglens[*lastkp] > 0 )
                 mask |= (1LL << j);
         }
-        bp->destsigsmasks[*lastkp] = mask;
+        bp->destsigsmasks[*lastkp] |= mask;
    }
     return(bestmask);
 }
