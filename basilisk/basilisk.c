@@ -933,6 +933,7 @@ void basilisks_loop(void *arg)
                 }
             }
             endmilli = startmilli + 200;
+            continue;
         }
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;
