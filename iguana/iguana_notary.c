@@ -148,8 +148,6 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
-            if ( strcmp(dp->dest,"KMD") == 0 )
-                dp->KMDHEIGHT = dpow_issuer_iteration(dp,dest,dp->KMDHEIGHT,&dp->KMDREALTIME);
             printf("%s %s height.%d vs last.%d\n",dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
@@ -161,6 +159,8 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
+            if ( strcmp(dp->dest,"KMD") == 0 )
+                dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
             printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( height < dp->last.blockhash.height )
             {
