@@ -340,8 +340,8 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         {
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
             for (i=0; i<bp->numnotaries; i++)
-                if ( bp->notaries[i].bestk >= 0 && bp->notaries[i].bestk != bp->bestk )
-                    dpow_sigsend(myinfo,dp,bp,myind,bp->notaries[i].bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+                if ( bp->notaries[i].bestk >= 0 && bp->notaries[i].bestk != bp->bestk && bitweight(bp->notaries[i].recvmask & bp->recvmask) >= 7 )
+                    dpow_sigsend(myinfo,dp,bp,myind,bp->notaries[i].bestk,bp->recvmask,srchash,DPOW_SIGBTCCHANNEL);
         }
     }
     else if ( bp->state != 0xffffffff )
