@@ -333,7 +333,9 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
             dpow_rawtxsign(myinfo,dp,coin,bp,rawtx,vins,bestk,bestmask,myind,src_or_dest);
         } else printf("signedtxgen zero txid or null rawtx\n");
         free_json(vins);
-    } else printf("signedtxgen error generating vins\n");
+    }
+    else if ( (bestmask & bp->recvmask) != bestmask )
+        printf("signedtxgen error generating vins bestk.%d %llx recv.%llx\n",bestk,(long long)bestmask,(long long)recvmask);
     return(retval);
 }
 
