@@ -107,7 +107,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         mask = refmask;
     }
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
-    if ( bp->notaries[myind].masks[lastk] == 0 )
+    //if ( bp->notaries[myind].masks[lastk] == 0 )
         dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
 }
 
