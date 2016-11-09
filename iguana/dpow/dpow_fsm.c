@@ -96,12 +96,18 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
     }
 }
 
-void dpow_sync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t refmask,int32_t myind,bits256 srchash,uint32_t channel,int32_t src_or_dest)
+void dpow_sync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int8_t bestk,uint64_t refmask,int32_t myind,bits256 srchash,uint32_t channel,int32_t src_or_dest)
 {
     int8_t lastk; uint64_t mask;
-    mask = dpow_maskmin(refmask,bp,&lastk);
+    if ( bestk < 0 )
+        mask = dpow_maskmin(refmask,bp,&lastk);
+    else
+    {
+        lastk = bestk;
+        mask = refmask;
+    }
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
-    //if ( bp->notaries[myind].masks[lastk] == 0 )
+    if ( bp->notaries[myind].masks[lastk] == 0 )
         dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
 }
 
@@ -193,7 +199,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                 dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
                 bp->recvmask |= (1LL << senderind);
             }
-            dpow_sync(myinfo,dp,bp,ep->recvmask,myind,srchash,channel,src_or_dest);
+            dpow_sync(myinfo,dp,bp,-1,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
         //printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
@@ -251,7 +257,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                             }
                         }
                         //printf(" ht.%d (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->height,bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
-                        dpow_sync(myinfo,dp,bp,dsig.mask,myind,srchash,channel,src_or_dest);
+                        dpow_sync(myinfo,dp,bp,dsig.lastk,dsig.mask,myind,srchash,channel,src_or_dest);
                         flag = 1;
                     }
                 } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
