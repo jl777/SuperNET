@@ -101,7 +101,7 @@ void dpow_sync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     int8_t lastk; uint64_t mask;
     mask = dpow_maskmin(refmask,bp,&lastk);
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
-    if ( bp->notaries[myind].masks[lastk] == 0 )
+    //if ( bp->notaries[myind].masks[lastk] == 0 )
         dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
 }
 
@@ -337,7 +337,12 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
+        {
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+            for (i=0; i<bp->numnotaries; i++)
+                if ( bp->notaries[i].bestk >= 0 && bp->notaries[i].bestk != bp->bestk )
+                    dpow_sigsend(myinfo,dp,bp,myind,bp->notaries[i].bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+        }
     }
     else if ( bp->state != 0xffffffff )
     {
