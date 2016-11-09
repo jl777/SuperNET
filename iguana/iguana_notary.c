@@ -277,6 +277,13 @@ TWO_STRINGS(komodo,passthru,function,hex)
     else return(clonestr("{\"error\":\"KMD not active, start in bitcoind mode\"}"));
 }
 
+THREE_STRINGS(iguana,passthru,asset,function,hex)
+{
+    if ( asset != 0 && (coin= iguana_coinfind(asset)) != 0 )
+        return(dpow_passthru(coin,function,hex));
+    else return(clonestr("{\"error\":\"assetchain not active, start in bitcoind mode\"}"));
+}
+
 STRING_ARG(dpow,pending,fiat)
 {
     struct dpow_info *dp; char base[64]; int32_t i;
