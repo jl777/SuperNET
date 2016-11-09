@@ -335,7 +335,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         free_json(vins);
     }
     else if ( (bestmask & bp->recvmask) != bestmask )
-        printf("signedtxgen error generating vins bestk.%d %llx recv.%llx\n",bestk,(long long)bestmask,(long long)bp->recvmask);
+        printf("signedtxgen error generating vins bestk.%d %llx recv.%llx need to recv %llx\n",bestk,(long long)bestmask,(long long)bp->recvmask,(long long)(bestmask & ~bp->recvmask));
     return(retval);
 }
 
