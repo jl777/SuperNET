@@ -55,11 +55,11 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
-    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
-        printf("dpow_getbestblockhash %s FULLNODE.%d\n",coin->symbol,coin->FULLNODE);
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
+        if ( coin->lastbesthashtime+20 < time(NULL) && bits256_nonz(coin->lastbesthash) != 0 )
+            return(coin->lastbesthash);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
             if ( 0 && strcmp(coin->symbol,"USD") == 0 )
@@ -76,6 +76,11 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     else
     {
         
+    }
+    if ( bits256_nonz(blockhash) != 0 )
+    {
+        coin->lastbesthash = blockhash;
+        coin->lastbesthashtime = (uint32_t)time(NULL);
     }
     return(blockhash);
 }
@@ -265,15 +270,17 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
 {
-    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash; cJSON *array,*json;
+    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash,oldhash; cJSON *array,*json;
     *numtxp = *blocktimep = 0;
+    oldhash = coin->lastbesthash;
     *blockhashp = besthash = dpow_getbestblockhash(myinfo,coin);
-    if ( bits256_nonz(besthash) != 0 )
+    if ( bits256_nonz(besthash) != 0 && bits256_cmp(oldhash,besthash) != 0 )
     {
         if ( (json= dpow_getblock(myinfo,coin,besthash)) != 0 )
         {
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
+                coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
                 if ( (array= jarray(&n,json,"tx")) != 0 )
@@ -288,7 +295,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
             free_json(json);
         }
     }
-    return(height);
+    return(coin->lastbestheight);
 }
 
 int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON *item)

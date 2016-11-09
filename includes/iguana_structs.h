@@ -509,6 +509,7 @@ struct iguana_info
     FILE *utxofp;
     bits256 markedunspents[1024];
     char seedipaddr[64];
+    uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
 };
