@@ -199,7 +199,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint3
                 dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
                 bp->recvmask |= (1LL << senderind);
             }
-            dpow_sync(myinfo,0,dp,bp,-1,ep->recvmask,myind,srchash,channel,src_or_dest);
+            dpow_sync(myinfo,1,dp,bp,-1,ep->recvmask,myind,srchash,channel,src_or_dest);
             flag = 1;
         }
         //printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
