@@ -48,7 +48,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
     char str[512]; uint32_t ipbits; int32_t i,n,retval = -1;
     if ( myinfo->dpowsock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
     {
-        portable_mutex_lock(myinfo->dpowmutex);
+        portable_mutex_lock(&myinfo->dpowmutex);
         n = myinfo->numdpowipbits;
         ipbits = (uint32_t)calc_ipbits(ipaddr);
         for (i=0; i<n; i++)
@@ -62,7 +62,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
             printf("addnotary.[%d] (%s) retval.%d\n",n,ipaddr,retval);
             myinfo->numdpowipbits++;
         }
-        portable_mutex_unlock(myinfo->dpowmutex);
+        portable_mutex_unlock(&myinfo->dpowmutex);
     }
     return(retval);
 }
