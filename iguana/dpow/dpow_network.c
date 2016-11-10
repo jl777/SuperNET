@@ -61,7 +61,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
             for (i=0; i<=n; i++)
                 printf("%08x ",myinfo->dpowipbits[i]);
             printf("->\n");
-            qsort(myinfo->dpowipbits,n+1,sizeof(myinfo->dpowipbits),_increasing_ipbits);
+            qsort(myinfo->dpowipbits,n+1,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
             for (i=0; i<=n; i++)
                 printf("%08x ",myinfo->dpowipbits[i]);
             printf("addnotary.[%d] (%s) retval.%d (%d %d)\n",n,ipaddr,retval,myinfo->numdpowipbits,n);
