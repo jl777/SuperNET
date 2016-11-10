@@ -302,12 +302,12 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
     m = 0;
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
-    if ( cp->siglens[bestk] > 0 )
+    /*if ( cp->siglens[bestk] > 0 )
     {
         dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
         return;
-    }
-    printf("rawtxsign\n");
+    }*/
+    //printf("rawtxsign\n");
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
