@@ -366,7 +366,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             if ( bp->bestk < 0 )
                 sigsmask = srcmask = 0;
             else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
-            printf("[%d] %s isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
+            printf("notary[%d] %s numips.%d isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,myinfo->numdpowipbits,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
         }
         if ( bp->isratify != 0 )
         {
