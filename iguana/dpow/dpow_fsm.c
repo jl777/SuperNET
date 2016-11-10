@@ -728,7 +728,7 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
             if ( bp->isratify == 0 )
                 bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
-            else dpow_sync(myinfo,1,dp,bp,-1,bp->recvmask,myind,srchash,bp->state < 1000);
+            else dpow_utxosync(myinfo,dp,bp,-1,myind,srchash);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
