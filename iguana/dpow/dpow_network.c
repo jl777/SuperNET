@@ -58,8 +58,13 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
         {
             myinfo->dpowipbits[n] = ipbits;
             retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
-            qsort(myinfo->dpowipbits,n,sizeof(myinfo->dpowipbits),_increasing_ipbits);
-            printf("addnotary.[%d] (%s) retval.%d\n",n,ipaddr,retval);
+            for (i=0; i<=n; i++)
+                printf("%08x ",myinfo->dpowipbits[i]);
+            printf("->\n");
+            qsort(myinfo->dpowipbits,n+1,sizeof(myinfo->dpowipbits),_increasing_ipbits);
+            for (i=0; i<=n; i++)
+                printf("%08x ",myinfo->dpowipbits[i]);
+            printf("addnotary.[%d] (%s) retval.%d (%d %d)\n",n,ipaddr,retval,myinfo->numdpowipbits,n);
             myinfo->numdpowipbits++;
         }
         portable_mutex_unlock(&myinfo->dpowmutex);
