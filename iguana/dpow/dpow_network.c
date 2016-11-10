@@ -62,8 +62,8 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
             //    printf("%08x ",myinfo->dpowipbits[i]);
             //printf("->\n");
             qsort(myinfo->dpowipbits,n+1,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
-            //for (i=0; i<=n; i++)
-            //    printf("%08x ",myinfo->dpowipbits[i]);
+            for (i=0; i<=n; i++)
+                printf("%08x ",myinfo->dpowipbits[i]);
             printf("addnotary.[%d] (%s) retval.%d (%d %d)\n",n,ipaddr,retval,myinfo->numdpowipbits,n);
             myinfo->numdpowipbits++;
         }
@@ -125,7 +125,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np = calloc(1,size); // endian dependent!
         np->numipbits = myinfo->numdpowipbits;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
-        //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
+        printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
@@ -162,7 +162,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
         if ( j == n )
             missing++;
     }
-    //printf("recv numipbits.%d numdpowipbits.%d matched.%d missing.%d\n",numipbits,n,matched,missing);
+    printf("recv numipbits.%d numdpowipbits.%d matched.%d missing.%d\n",numipbits,n,matched,missing);
     if ( (numipbits == 1 || missing < matched) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
