@@ -164,6 +164,8 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
             //if ( addwaddr->wifstr[0] != 0 )
                 strcpy(waddr->wifstr,addwaddr->wifstr);
             memcpy(waddr->rmd160,rmd160,sizeof(waddr->rmd160));
+            if ( addwaddr->pubkey[0] == 0 )
+                bitcoin_pubkey33(myinfo->ctx,addwaddr->pubkey,addwaddr->privkey);
             calc_rmd160_sha256(rmd160,addwaddr->pubkey,bitcoin_pubkeylen(addwaddr->pubkey));
             if ( memcmp(rmd160,waddr->rmd160,sizeof(waddr->rmd160)) == 0 )
                 memcpy(waddr->pubkey,addwaddr->pubkey,sizeof(waddr->pubkey));
@@ -669,6 +671,8 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
                     memset(&waddr->privkey,0,sizeof(waddr->privkey));
                 }
             }
+            if ( waddr->pubkey[0] == 0 )
+                bitcoin_pubkey33(myinfo->ctx,waddr->pubkey,waddr->privkey);
             if ( bitcoin_pubkeylen(waddr->pubkey) > 0 )
             {
                 errors[1]++;
@@ -708,6 +712,8 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
                     }
                 }
             }
+            if ( waddr->pubkey[0] == 0 )
+                bitcoin_pubkey33(myinfo->ctx,waddr->pubkey,waddr->privkey);
             if ( (plen= bitcoin_pubkeylen(waddr->pubkey)) > 0 )
             {
                 calc_rmd160_sha256(rmd160,waddr->pubkey,plen);
@@ -977,7 +983,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
         {
             if ( (waddr= iguana_waddresssearch(myinfo,&wacct,&addresses[i * 64])) != 0 )
             {
-                printf("%s ",waddr->wifstr);
+                //printf("%s ",waddr->wifstr);
                 jaddistr(privkeys,waddr->wifstr);
             }
             else printf("cant find waddr for %s\n",&addresses[i*64]);
