@@ -102,7 +102,7 @@ struct dpow_block
     int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t bestk;
     cJSON *ratified;
-    uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
+    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768];//,rawtx[32768];
 };
 

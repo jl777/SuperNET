@@ -603,6 +603,7 @@ void dpow_statemachinestart(void *ptr)
     bp->height = checkpoint.blockhash.height;
     bp->timestamp = checkpoint.timestamp;
     bp->hashmsg = checkpoint.blockhash.hash;
+    bp->myind = myind;
     while ( bp->isratify == 0 && dp->destupdated == 0 )
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
