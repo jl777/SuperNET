@@ -1611,6 +1611,7 @@ void iguana_main(void *arg)
     }
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
+    portable_mutex_init(&myinfo->dpowmutex);
     if ( myinfo->IAMNOTARY == 0 )
     {
 #if LIQUIDITY_PROVIDER
