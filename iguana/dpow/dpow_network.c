@@ -163,7 +163,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
             missing++;
     }
     //printf("recv numipbits.%d numdpowipbits.%d matched.%d missing.%d\n",numipbits,n,matched,missing);
-    if ( (numipbits == 1 || missing < matched || matched > (myinfo->numipbits>>1)) && missing > 0 )
+    if ( (numipbits == 1 || missing < matched || matched > (myinfo->numdpowipbits>>1)) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
             if ( ipbits[i] != 0 )
