@@ -1,3 +1,4 @@
+#!/bin/bash
 myip=`cat myip.txt`
 pkill iguana
 ../agents/iguana notary &

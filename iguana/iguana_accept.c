@@ -134,7 +134,7 @@ void iguana_acceptloop(void *args)
             ptr->sock = sock;
             ptr->port = cli_addr.sin_port;
             printf("queue PENDING ACCEPTS\n");
-            queue_enqueue("acceptQ",&coin->acceptQ,&ptr->DL,0);
+            queue_enqueue("acceptQ",&coin->acceptQ,&ptr->DL);
         }
         else
         {
@@ -152,7 +152,7 @@ void iguana_acceptloop(void *args)
 int32_t iguana_pendingaccept(struct iguana_info *coin)
 {
     struct iguana_accept *ptr; char ipaddr[64]; struct iguana_peer *addr;
-    if ( (ptr= queue_dequeue(&coin->acceptQ,0)) != 0 )
+    if ( (ptr= queue_dequeue(&coin->acceptQ)) != 0 )
     {
         if ( (addr= iguana_peerslot(coin,ptr->ipbits,0)) != 0 )
         {
@@ -163,7 +163,7 @@ int32_t iguana_pendingaccept(struct iguana_info *coin)
             iguana_launch(coin,"accept",iguana_dedicatedglue,addr,IGUANA_CONNTHREAD);
             myfree(ptr,sizeof(*ptr));
             return(1);
-        } else queue_enqueue("requeue_acceptQ",&coin->acceptQ,&ptr->DL,0);
+        } else queue_enqueue("requeue_acceptQ",&coin->acceptQ,&ptr->DL);
     }
     return(0);
 }
@@ -185,13 +185,13 @@ void iguana_msgrequestQ(struct iguana_info *coin,struct iguana_peer *addr,int32_
     msg->addr = addr;
     msg->hash2 = hash2;
     msg->type = type;
-    queue_enqueue("msgrequest",&coin->msgrequestQ,&msg->DL,0);
+    queue_enqueue("msgrequest",&coin->msgrequestQ,&msg->DL);
 }
 
 int32_t iguana_process_msgrequestQ(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct iguana_peermsgrequest *msg; int32_t height,len,flag = 0; bits256 checktxid; struct iguana_txid *tx,T; struct iguana_peer *addr;
-    if ( (msg= queue_dequeue(&coin->msgrequestQ,0)) != 0 )
+    if ( (msg= queue_dequeue(&coin->msgrequestQ)) != 0 )
     {
         flag = 1;
         if ( msg->addr != 0 )

@@ -263,12 +263,12 @@ int32_t iguana_numthreads(struct iguana_info *coin,int32_t mask)
 
 void iguana_launcher(void *ptr)
 {
-    struct iguana_thread *t = ptr; struct iguana_info *coin;
-    coin = t->coin;
+    struct iguana_thread *t = ptr; //struct iguana_info *coin;
+    //coin = t->coin;
     t->funcp(t->arg);
-    if ( coin != 0 )
-        coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
-    queue_enqueue("TerminateQ",&TerminateQ,&t->DL,0);
+    //if ( coin != 0 )
+    //    coin->Terminated[t->type % (sizeof(coin->Terminated)/sizeof(*coin->Terminated))]++;
+    queue_enqueue("TerminateQ",&TerminateQ,&t->DL);
 }
 
 void iguana_terminate(struct iguana_thread *t)
@@ -296,7 +296,7 @@ struct iguana_thread *iguana_launch(struct iguana_info *coin,char *name,iguana_f
     retval = OS_thread_create(&t->handle,NULL,(void *)iguana_launcher,(void *)t);
     if ( retval != 0 )
         printf("error launching %s\n",t->name);
-    while ( (t= queue_dequeue(&TerminateQ,0)) != 0 )
+    while ( (t= queue_dequeue(&TerminateQ)) != 0 )
     {
         if ( (rand() % 100000) == 0 && coin != 0 )
             printf("terminated.%d launched.%d terminate.%p\n",coin->Terminated[t->type],coin->Launched[t->type],t);
@@ -359,11 +359,13 @@ int32_t decode_hex(unsigned char *bytes,int32_t n,char *hex)
 {
     int32_t adjust,i = 0;
     //printf("decode.(%s)\n",hex);
-    if ( is_hexstr(hex,n) == 0 )
+    if ( is_hexstr(hex,n) <= 0 )
     {
         memset(bytes,0,n);
         return(n);
     }
+    if ( hex[n-1] == '\n' || hex[n-1] == '\r' )
+        hex[--n] = 0;
     if ( n == 0 || (hex[n*2+1] == 0 && hex[n*2] != 0) )
     {
         if ( n > 0 )

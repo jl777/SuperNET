@@ -248,7 +248,7 @@ struct iguana_counts
     uint32_t firsttxidind,firstunspentind,firstspendind,firstpkind;
     uint64_t credits,debits;
     struct iguana_block block;
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 struct iguana_blocks
 {
@@ -263,7 +263,7 @@ struct iguana_ledger
 {
     struct iguana_counts snapshot;
     //struct iguana_account accounts[];
-}PACKEDSTRUCT;
+} PACKEDSTRUCT;
 
 // ramchain temp file structures
 struct iguana_unspent20 { uint64_t value; uint32_t scriptpos,txidind:28,type:4; uint16_t scriptlen,fileid; uint8_t rmd160[20]; }PACKEDSTRUCT;
@@ -508,6 +508,8 @@ struct iguana_info
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     FILE *utxofp;
     bits256 markedunspents[1024];
+    char seedipaddr[64];
+    uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
 };

@@ -101,7 +101,7 @@ int32_t iguana_rwzsolution(int32_t rwflag,uint8_t *serialized,uint8_t *solution,
 
 int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struct iguana_msgzblock *zmsg)
 {
-    uint32_t tmp; struct iguana_msgblock *msg = (void *)zmsg; int32_t len = 0;
+    struct iguana_msgzblockhdr zH; uint32_t tmp; struct iguana_msgblock *msg = (void *)zmsg; int32_t len = 0;
     if ( zcash == 0 )
     {
         len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->H.version),&msg->H.version);
@@ -113,29 +113,33 @@ int32_t iguana_rwblockhdr(int32_t rwflag,uint8_t zcash,uint8_t *serialized,struc
     }
     else
     {
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.version),&zmsg->zH.version);
-        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.prev_block),zmsg->zH.prev_block.bytes);
-        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.merkle_root),zmsg->zH.merkle_root.bytes);
-        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.reserved),zmsg->zH.reserved.bytes);
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.timestamp),&zmsg->zH.timestamp);
-        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zmsg->zH.bits),&zmsg->zH.bits);
-        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zmsg->zH.bignonce),zmsg->zH.bignonce.bytes);
+        if ( rwflag != 0 )
+            zH = zmsg->zH;
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zH.version),&zH.version);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zH.prev_block),zH.prev_block.bytes);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zH.merkle_root),zH.merkle_root.bytes);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zH.reserved),zH.reserved.bytes);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zH.timestamp),&zH.timestamp);
+        len += iguana_rwnum(rwflag,&serialized[len],sizeof(zH.bits),&zH.bits);
+        len += iguana_rwbignum(rwflag,&serialized[len],sizeof(zH.bignonce),zH.bignonce.bytes);
         //char str[65]; printf("prev.(%s) len.%d [%d %d %d]\n",bits256_str(str,msg->H.prev_block),len,serialized[len],serialized[len+1],serialized[len+2]);
         if ( rwflag != 0 )
-            memcpy(&serialized[len],zmsg->zH.var_numelements,sizeof(zmsg->zH.var_numelements));
-        else memcpy(zmsg->zH.var_numelements,&serialized[len],sizeof(zmsg->zH.var_numelements));
+            memcpy(&serialized[len],zH.var_numelements,sizeof(zH.var_numelements));
+        else memcpy(zH.var_numelements,&serialized[len],sizeof(zH.var_numelements));
         //printf("numelements: (%02x %02x %02x)\n",serialized[len],serialized[len+1],serialized[len+2]);
-        len += sizeof(zmsg->zH.var_numelements);
-        if ( iguana_rwvarint32(0,zmsg->zH.var_numelements,(uint32_t *)&tmp) != sizeof(zmsg->zH.var_numelements) )
-            printf("rw.%d unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2]);
+        len += sizeof(zH.var_numelements);
+        if ( iguana_rwvarint32(0,zH.var_numelements,(uint32_t *)&tmp) != sizeof(zH.var_numelements) )
+            printf("rw.%d unexpected varint size for zmsg.zH.numelements <- %d %d %d\n",rwflag,zH.var_numelements[0],zH.var_numelements[1],zH.var_numelements[2]);
         if ( tmp != ZCASH_SOLUTION_ELEMENTS )
         {
             int32_t i; for (i=0; i<157; i++)
                 printf("%02x",serialized[i]);
-            printf(" rw.%d unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",rwflag,zmsg->zH.var_numelements[0],zmsg->zH.var_numelements[1],zmsg->zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
+            printf(" rw.%d unexpected ZCASH_SOLUTION_ELEMENTS, (%02x %02x %02x) expected %d tmp.%d len.%d\n",rwflag,zH.var_numelements[0],zH.var_numelements[1],zH.var_numelements[2],ZCASH_SOLUTION_ELEMENTS,tmp,len);
             return(-1);
         }
-        len += iguana_rwzsolution(rwflag,&serialized[len],zmsg->zH.solution,tmp);
+        len += iguana_rwzsolution(rwflag,&serialized[len],zH.solution,tmp);
+        if ( rwflag == 0 )
+            zmsg->zH = zH;
     }
     return(len);
 }
@@ -972,7 +976,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     if ( (n= iguana_gentxarray(myinfo,coin,rawmem,&txdata,&len,data,recvlen)) == recvlen || n == recvlen-1 )
                     {
                         len = n;
-                        iguana_gotblockM(myinfo,coin,addr,&txdata,rawmem->ptr,H,data,recvlen,fromcache);
+                        iguana_gotblockM(myinfo,coin,addr,&txdata,rawmem->ptr,H,data,recvlen,fromcache,0*coin->chain->zcash);
                     }
                     else
                     {
@@ -1019,7 +1023,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     {
                         bits256 auxhash2,prevhash2; struct iguana_msgtx *tx; struct iguana_msgmerkle *coinbase_branch=0,*blockchain_branch=0; struct iguana_msgblock parentblock;
                         if ( rawmem->totalsize == 0 )
-                            iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 2,0);
+                            iguana_meminit(rawmem,"bighdrs",0,IGUANA_MAXPACKETSIZE * 3,0);
                         memset(prevhash2.bytes,0,sizeof(prevhash2));
                         zblocks = mycalloc('z',1,(int32_t)(sizeof(struct iguana_zblock) * n));
                         //printf("%s got %d headers len.%d\n",coin->symbol,n,recvlen);
@@ -1059,7 +1063,6 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                             free(blockchain_branch);
                         if ( iguana_gotheadersM(coin,addr,zblocks,n) < 0 )
                             myfree(zblocks,(int32_t)(sizeof(struct iguana_zblock) * n));
- //myfree(blocks,sizeof(*blocks) * n);
                         if ( len == recvlen && addr != 0 )
                             addr->msgcounts.headers++;
                     } else printf("got unexpected n.%d for headers\n",n);

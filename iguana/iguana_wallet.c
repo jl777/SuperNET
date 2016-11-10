@@ -1359,6 +1359,10 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         password = passphrase;
     if ( passphrase == 0 || passphrase[0] == 0 )
         passphrase = password;
+    if ( passphrase == 0 )
+        passphrase = "";
+    if ( password == 0 )
+        password = "";
     strcpy(myinfo->secret,passphrase);
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
@@ -1801,8 +1805,8 @@ THREE_INTS(bitcoinrpc,listreceivedbyaddress,minconf,includeempty,flag)
     cJSON *retjson,*item,*array,*txids,*vouts; struct iguana_waccount *wacct,*tmp; struct iguana_waddress *waddr,*tmp2; uint8_t addrtype; char coinaddr[64];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    //if ( myinfo->expiration == 0 )
+    //    return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     array = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->wallet,wacct,tmp)
     {

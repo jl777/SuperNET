@@ -754,7 +754,7 @@ void exchanges777_loop(void *ptr)
         PAX_idle(myinfo);
         flag = retval = 0;
         retstr = 0;
-        if ( (req= queue_dequeue(&exchange->requestQ,0)) != 0 )
+        if ( (req= queue_dequeue(&exchange->requestQ)) != 0 )
         {
             //printf("dequeued %s.%c\n",exchange->name,req->func);
             if ( req->dead == 0 )
@@ -782,7 +782,7 @@ void exchanges777_loop(void *ptr)
                     //    queue_enqueue("Xpending",&exchange->pendingQ,&req->DL,0), flag++;
                     //else
                     if ( retval == EXCHANGE777_REQUEUE )
-                        queue_enqueue("requeue",&exchange->requestQ,&req->DL,0);
+                        queue_enqueue("requeue",&exchange->requestQ,&req->DL);
                     else
                     {
                         printf("exchanges777_process: illegal retval.%d\n",retval);
@@ -805,7 +805,7 @@ void exchanges777_loop(void *ptr)
                 iguana_statemachineupdate(myinfo,exchange);
                 //printf("InstantDEX call update\n");
             }*/
-            if ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 )
+            if ( (req= queue_dequeue(&exchange->pricesQ)) != 0 )
             {
                 //printf("check %s pricesQ (%s %s)\n",exchange->name,req->base,req->rel);
                 if ( req->dead == 0 )
@@ -824,7 +824,7 @@ void exchanges777_loop(void *ptr)
                         //printf("%-10s %s/%s numbids.%d numasks.%d\n",exchange->name,req->base,req->rel,req->numbids,req->numasks);
                         prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
                     }
-                    queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+                    queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL);
                 }
                 else
                 {
@@ -843,12 +843,12 @@ struct exchange_request *exchanges777_baserelfind(struct exchange_info *exchange
 {
     struct exchange_request PAD,*req,*retreq=0;
     memset(&PAD,0,sizeof(PAD));
-    queue_enqueue("pricesQ",&exchange->pricesQ,&PAD.DL,0);
-    while ( (req= queue_dequeue(&exchange->pricesQ,0)) != 0 && req != &PAD )
+    queue_enqueue("pricesQ",&exchange->pricesQ,&PAD.DL);
+    while ( (req= queue_dequeue(&exchange->pricesQ)) != 0 && req != &PAD )
     {
         if ( ((req->invert == 0 && strcmp(base,req->base) == 0 && strcmp(rel,req->rel) == 0) || (req->invert != 0 && strcmp(rel,req->base) == 0 && strcmp(base,req->rel) == 0)) && (func < 0 || req->func == func) )
             retreq = req;
-        queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+        queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL);
     }
     return(retreq);
 }
@@ -875,7 +875,7 @@ char *exchanges777_submit(struct exchange_info *exchange,struct exchange_request
         maxseconds = EXCHANGES777_DEFAULT_TIMEOUT;
     retstrp = req->retstrp;
     //printf("submit to %p\n",&exchange->requestQ);
-    queue_enqueue("exchangeQ",&exchange->requestQ,&req->DL,0);
+    queue_enqueue("exchangeQ",&exchange->requestQ,&req->DL);
     for (i=0; i<maxseconds; i++)
     {
         if ( retstrp != 0 && (retstr= *retstrp) != 0 )
@@ -947,7 +947,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     {
         req->func = 'M';
         //printf("Monitor.%s (%s %s) invert.%d\n",exchange->name,base,rel,req->invert);
-        queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL,0);
+        queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL);
         return(clonestr("{\"result\":\"start monitoring\"}"));
     }
 }
@@ -1009,7 +1009,7 @@ void iguana_gotquotesM(struct iguana_info *coin,struct iguana_peer *addr,bits256
     //printf("got %d quotes from %s\n",n,addr->ipaddr);
     req = iguana_bundlereq(coin,addr,'Q',0,0);
     req->hashes = quotes, req->n = n;
-    queue_enqueue("recvQ",&exchange->recvQ,&req->DL,0);
+    queue_enqueue("recvQ",&exchange->recvQ,&req->DL);
 }
 
 struct exchange_info *exchange_create(char *exchangestr,cJSON *argjson)
@@ -1124,7 +1124,7 @@ void exchanges777_init(struct supernet_info *myinfo,cJSON *exchanges,int32_t sle
             {
                 if ( strcmp(Exchange_funcs[i]->name,"PAX") == 0 || strcmp(Exchange_funcs[i]->name,"truefx") == 0 || strcmp(Exchange_funcs[i]->name,"fxcm") == 0 || strcmp(Exchange_funcs[i]->name,"instaforex") == 0 )
                 {
-                    exchange->pollgap = 10;
+                    exchange->pollgap = 60;
                     continue;
                 }
                 if ( ((exchange= exchanges777_find(Exchange_funcs[i]->name)) == 0 && (exchange= exchange_create(Exchange_funcs[i]->name,0)) != 0) || (exchange= exchanges777_info(Exchange_funcs[i]->name,sleepflag,argjson,0)) != 0 )

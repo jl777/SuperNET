@@ -773,7 +773,7 @@ void basilisk_msgprocess(struct supernet_info *myinfo,void *_addr,uint32_t sende
 int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
 {
     struct basilisk_p2pitem *ptr; char senderip[64]; uint32_t n=0,basilisktag,len;
-    while ( n < maxiters && (ptr= queue_dequeue(&myinfo->p2pQ,0)) != 0 )
+    while ( n < maxiters && (ptr= queue_dequeue(&myinfo->p2pQ)) != 0 )
     {
         len = 0;
         expand_ipbits(senderip,ptr->ipbits);
@@ -835,7 +835,7 @@ void basilisk_p2p(struct supernet_info *myinfo,struct iguana_info *coin,struct i
         ipbits = (uint32_t)calc_ipbits(senderip);
     else ipbits = myinfo->myaddr.myipbits;
     ptr = basilisk_p2pitem_create(coin,addr,type,ipbits,data,datalen);
-    queue_enqueue("p2pQ",&myinfo->p2pQ,ptr,0);
+    queue_enqueue("p2pQ",&myinfo->p2pQ,ptr);
 }
 
 int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
@@ -862,6 +862,47 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
     return(n);
 }
 
+/*#define issue_curl2(cmdstr) bitcoind_RPC(0,(char *)"curl",(char *)"http://127.0.0.1:7778",0,0,(char *)(cmdstr))
+
+void komodo_iteration(char *symbol)
+{
+    char *retstr,*base,*coinaddr,*txidstr,cmd[512]; uint64_t value,fiatoshis; cJSON *array,*item; int32_t i,n,vout,shortflag,height,fiatheight; bits256 txid; uint8_t rmd160[20],addrtype;
+    //if ( ASSETCHAINS_SYMBOL[0] == 0 )
+    {
+        sprintf(cmd,"{\"agent\":\"dpow\",\"method\":\"pending\",\"fiat\":\"%s\"}",symbol);
+        if ( (retstr= issue_curl2(cmd)) != 0 )
+        {
+            if ( (array= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                    {
+                        item = jitem(array,i);
+                        coinaddr = jstr(item,(char *)"address");
+                        value = jdouble(item,(char *)"KMD") * SATOSHIDEN;
+                        base = jstr(item,(char *)"fiat");
+                        shortflag = juint(item,(char *)"short");
+                        vout = jint(item,(char *)"prev_vout");
+                        height = jint(item,(char *)"kmdheight");
+                        fiatheight = jint(item,(char *)"height");
+                        txidstr = jstr(item,(char *)"prev_hash");
+                        if ( coinaddr != 0 && base != 0 && value > 0 && height > 0 )
+                        {
+                            fiatoshis = jdouble(item,base) * SATOSHIDEN;
+                            decode_hex((uint8_t *)&txid,sizeof(txid),txidstr);
+                            bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+                            //komodo_gateway_deposit(coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,height,fiatheight);
+                        }
+                    }
+                }
+            }
+            printf("retstr.(%s)\n",retstr);
+            free(retstr);
+        }
+    }
+}*/
+
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
@@ -882,13 +923,18 @@ void basilisks_loop(void *arg)
                 basilisk_ping_send(myinfo,relay);
             counter++;
             if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
+            {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                endmilli = startmilli + 500;
+            }
             else if ( myinfo->numdpows > 1 )
             {
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
+                if ( (counter % myinfo->numdpows) != 0 )
+                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                endmilli = startmilli + 200;
             }
-            endmilli = startmilli + 500;
         }
         else if ( myinfo->IAMLP != 0 )
             endmilli = startmilli + 1000;

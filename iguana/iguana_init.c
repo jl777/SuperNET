@@ -17,12 +17,14 @@
 
 void iguana_initQ(queue_t *Q,char *name)
 {
-    char *tst,*str = "need to init each Q when single threaded";
+    struct stritem *tst,*item;
     memset(Q,0,sizeof(*Q));
+    item = calloc(1,sizeof(*item)+100);
+    strcpy(item->str,"hello, world");
     strcpy(Q->name,name);
-    queue_enqueue(name,Q,queueitem(str),1);
-    if ( (tst= queue_dequeue(Q,1)) != 0 )
-        free_queueitem(tst);
+    queue_enqueue(name,Q,&item->DL);
+    if ( (tst= queue_dequeue(Q)) != 0 )
+        free(tst);
 }
 
 void iguana_initQs(struct iguana_info *coin)
@@ -151,7 +153,7 @@ bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,str
 int32_t iguana_savehdrs(struct iguana_info *coin)
 {
     char fname[512],shastr[65],tmpfname[512],tmpfname2[512],str2[65],str[65],oldfname[512];
-    bits256 sha256all; FILE *fp,*fp2; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
+    bits256 sha256all; FILE *fp=0,*fp2=0; struct iguana_bundle *bp; int32_t hdrsi,n,retval = 0;
     n = coin->blocks.hwmchain.height + 1;
     sprintf(tmpfname,"%s/%s/hdrs.txt",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
     sprintf(tmpfname2,"%s/%s/hdrs.h",GLOBAL_TMPDIR,coin->symbol), OS_compatible_path(tmpfname);
@@ -303,11 +305,11 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         {
             if ( m < coin->MAXPEERS/2 )
             {
-                if ( 0 && m == 0 )
+                if ( 0 && m == 0 && coin->seedipaddr[0] != 0 )
                 {
                     addr = &coin->peers->active[m++];
-                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits("127.0.0.1"));
-                    //printf("call initpeer.(%s)\n",addr->ipaddr);
+                    iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
+                    printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
                     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
                 }
 #ifndef IGUANA_DISABLEPEERS
@@ -470,7 +472,7 @@ void iguana_blockspurge(struct iguana_info *coin)
 
 void iguana_coinpurge(struct iguana_info *coin)
 {
-    int32_t i,saved; struct iguana_bundle *bp; char *hashstr; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr;
+    int32_t i,saved; struct iguana_bundle *bp; struct iguana_bundlereq *req; struct iguana_blockreq *breq; struct iguana_helper *ptr; struct stritem *hashitem;
     saved = coin->active, coin->active = 0;
     coin->started = 0;
     while ( coin->idletime == 0 && coin->emitbusy > 0 )
@@ -479,19 +481,19 @@ void iguana_coinpurge(struct iguana_info *coin)
         sleep(1);
     }
     coin->RTgenesis = 0;
-    while ( (ptr= queue_dequeue(&bundlesQ,0)) != 0 )
+    while ( (ptr= queue_dequeue(&bundlesQ)) != 0 )
         myfree(ptr,ptr->allocsize);
     if ( 1 )
     {
-        while ( (hashstr= queue_dequeue(&coin->hdrsQ,1)) != 0 )
-            free_queueitem(hashstr);
-        while ( (breq= queue_dequeue(&coin->blocksQ,0)) != 0 )
+        while ( (hashitem= queue_dequeue(&coin->hdrsQ)) != 0 )
+            free(hashitem);
+        while ( (breq= queue_dequeue(&coin->blocksQ)) != 0 )
             myfree(breq,sizeof(*breq));
-        while ( (breq= queue_dequeue(&coin->priorityQ,0)) != 0 )
+        while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
             myfree(breq,sizeof(*breq));
-        while ( (req= queue_dequeue(&coin->cacheQ,0)) != 0 )
+        while ( (req= queue_dequeue(&coin->cacheQ)) != 0 )
             myfree(req,req->allocsize);
-        while ( (req= queue_dequeue(&coin->recvQ,0)) != 0 )
+        while ( (req= queue_dequeue(&coin->recvQ)) != 0 )
         {
             if ( req->blocks != 0 )
                 myfree(req->blocks,sizeof(*req->blocks) * req->n), req->blocks = 0;

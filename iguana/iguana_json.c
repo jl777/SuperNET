@@ -594,12 +594,14 @@ ZERO_ARGS(bitcoinrpc,getdifficulty)
 
 STRING_ARG(iguana,addcoin,newcoin)
 {
-    char *symbol; int32_t retval;
+    char *symbol,*seedip; int32_t retval;
     if ( (symbol= newcoin) == 0 && coin != 0 )
         symbol = coin->symbol;
     if ( symbol != 0 )
     {
-        printf(">> addcoin.%s\n",symbol);
+        if ( (seedip= jstr(json,"seedipaddr")) != 0 )
+            safecopy(myinfo->seedipaddr,seedip,sizeof(myinfo->seedipaddr));
+        printf(">> addcoin.%s seedipaddr.%s\n",symbol,myinfo->seedipaddr);
 #ifdef __PNACL__
 //        if ( strcmp(symbol,"BTC") == 0 )
 //            return(clonestr("{\"result\":\"BTC for chrome app is not yet\"}"));

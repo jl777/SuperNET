@@ -1,3 +1,4 @@
+#!/bin/bash
 ../agents/iguana coins/genbtcd.json &
 sleep 5
 ../agents/iguana coins/genbtc.json &

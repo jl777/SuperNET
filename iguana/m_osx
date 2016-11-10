@@ -1,3 +1,4 @@
+#!/bin/bash
 #./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 rm ../agents/iguana *.o
 git pull

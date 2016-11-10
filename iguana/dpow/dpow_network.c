@@ -75,7 +75,7 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,struct dpow_info *dp,uint32_
     return(firstz);
 }
 
-void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
+void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
     struct dpow_nanomsghdr *np; int32_t size,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
@@ -125,7 +125,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                     }
                     if ( dp != 0 && crc32 == np->crc32 && (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
-                        //printf("NANORECV ht.%d channel.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
+                        //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
                         else if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
@@ -146,7 +146,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr) { }
 
-uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
+uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
     return(0);
 }
@@ -155,6 +155,56 @@ void dpow_nanomsg_update(struct supernet_info *myinfo) { }
 
 #endif
 
+int32_t dpow_rwcoinentry(int32_t rwflag,uint8_t *serialized,struct dpow_coinentry *src,struct dpow_coinentry *dest,int8_t *bestkp)
+{
+    int8_t bestk; struct dpow_coinentry *ptr; int32_t siglen,iter,len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(src->prev_hash),src->prev_hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(src->prev_vout),(uint32_t *)&src->prev_vout);
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dest->prev_hash),dest->prev_hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dest->prev_vout),(uint32_t *)&dest->prev_vout);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(*bestkp),(uint32_t *)bestkp);
+    if ( (bestk= *bestkp) >= 0 )
+    {
+        for (iter=0; iter<2; iter++)
+        {
+            ptr = (iter == 0) ? src : dest;
+            len += iguana_rwnum(rwflag,&serialized[len],sizeof(ptr->siglens[bestk]),(uint32_t *)&ptr->siglens[bestk]);
+            if ( (siglen= ptr->siglens[bestk]) > 0 )
+            {
+                if ( rwflag != 0 )
+                    memcpy(&serialized[len],ptr->sigs[bestk],siglen);
+                else memcpy(ptr->sigs[bestk],&serialized[len],siglen);
+                len += siglen;
+            }
+        }
+    }
+    return(len);
+}
+
+int32_t dpow_rwcoinentrys(int32_t rwflag,uint8_t *serialized,struct dpow_entry notaries[DPOW_MAXRELAYS],uint8_t numnotaries,int8_t bestk)
+{
+    int32_t i,len = 0;
+    for (i=0; i<numnotaries; i++)
+    {
+        if ( rwflag != 0 )
+            notaries[i].bestk = bestk;
+        len += dpow_rwcoinentry(rwflag,&serialized[len],&notaries[i].src,&notaries[i].dest,&notaries[i].bestk);
+    }
+    return(len);
+}
+
+int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
+{
+    uint8_t data[sizeof(struct dpow_coinentry)*64 + 4096]; bits256 zero; int32_t len = 0;
+    memset(zero.bytes,0,sizeof(zero));
+    //printf("ht.%d >>>>>>>>>>>>> dpow_sendcoinentrys (%d %llx) <- %llx\n",bp->height,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
+    data[len++] = bp->bestk;
+    data[len++] = bp->numnotaries;
+    len += iguana_rwbignum(1,&data[len],sizeof(bp->hashmsg),bp->hashmsg.bytes);
+    len += dpow_rwcoinentrys(1,&data[len],bp->notaries,bp->numnotaries,bp->bestk);
+    dpow_send(myinfo,dp,bp,zero,bp->hashmsg,DPOW_ENTRIESCHANNEL,bp->height,data,len);
+    return(len);
+}
 
 int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 {
@@ -301,8 +351,16 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
 void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int8_t bestk,uint64_t bestmask,bits256 srchash,uint32_t sigchannel)
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
+    if ( ((1LL << myind) & bestmask) == 0 )
+        return;
     ep = &bp->notaries[myind];
-    printf("sigsend.%s: myind.%d bestk.%d %llx >>>>>> broadcast channel.%x\n",sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,sigchannel);
+    if ( bestk >= 0 )
+    {
+        if ( sigchannel == DPOW_SIGCHANNEL )
+            bp->srcsigsmasks[bestk] |= (1LL << myind);
+        else bp->destsigsmasks[bestk] |= (1LL << myind);
+    }
+    //printf("ht.%d sigsend.%s: myind.%d bestk.%d %llx >>>>>> best.(%d %llx) recv.%llx sigs.%llx\n",bp->height,sigchannel == DPOW_SIGCHANNEL ? bp->srccoin->symbol : bp->destcoin->symbol,myind,bestk,(long long)bestmask,bestk,(long long)(bestk>=0?bestmask:0),(long long)bp->recvmask,(long long)(bestk>=0?bp->destsigsmasks[bestk]:0));
     memset(&dsig,0,sizeof(dsig));
     for (i=0; i<33; i++)
         dsig.senderpub[i] = dp->minerkey33[i];
@@ -322,7 +380,7 @@ void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_
     }
     memcpy(dsig.senderpub,dp->minerkey33,33);
     len = dpow_rwsigentry(1,data,&dsig);
-    dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len,bp->sigcrcs);
+    dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,sigchannel,bp->height,data,len);
 }
 
 uint32_t komodo_assetmagic(char *symbol,uint64_t supply)

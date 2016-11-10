@@ -321,7 +321,12 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");
-        if ( (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"RELAY") != 0 )
+        if ( jstr(argjson,"rpchost") != 0 )
+            safecopy(chain->serverport,jstr(argjson,"rpchost"),sizeof(chain->serverport));
+       if ( jstr(argjson,"userpass") != 0 )
+            safecopy(chain->userpass,jstr(argjson,"userpass"),sizeof(chain->userpass));
+        chain->rpcport = juint(argjson,"rpcport");
+        if ( chain->rpcport == 0 && (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"RELAY") != 0 )
         {
             if ( chain->portp2p != 0 )
                 chain->rpcport = chain->portp2p-1;
@@ -340,6 +345,8 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->rpcport = 14632;
         }
+        if ( chain->serverport[0] == 0 && (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
+            chain->rpcport = port;
         chain->zcash = juint(argjson,"zcash");
         chain->debug = juint(argjson,"debug");
         chain->fixit = juint(argjson,"fixit");
@@ -359,8 +366,6 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             chain->targetspacing = NTARGETSPACING;
         if ( (chain->targettimespan= jint(argjson,"targettimespan")) == 0 )
             chain->targettimespan = NTARGETSPACING * 60;
-        if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
-            chain->rpcport = port;
         if ( jobj(argjson,"halving") != 0 )
             chain->halvingduration = juint(argjson,"halving");
         else chain->halvingduration = 210000;
@@ -500,7 +505,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
         chain->bundlesize = _IGUANA_BLOCKHASHES;
     }
     if ( chain->zcash != 0 )
-        chain->bundlesize = 1000;
+        chain->bundlesize = 160;
     if ( strcmp(chain->symbol,"BTC") == 0 )
         chain->bundlesize = 100;
     decode_hex((uint8_t *)chain->genesis_hashdata,32,(char *)chain->genesis_hash);

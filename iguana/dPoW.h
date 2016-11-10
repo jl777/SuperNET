@@ -22,12 +22,14 @@
 #define DPOW_MINSIGS 7
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0303
+#define DPOW_VERSION 0x0404
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
 
+#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
+#define DPOW_BTCENTRIESCHANNEL (~DPOW_ENTRIESCHANNEL)
 #define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
 #define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
 #define DPOW_SIGBTCCHANNEL (~DPOW_SIGCHANNEL)
@@ -37,7 +39,7 @@
 
 #define DPOW_FIFOSIZE 64
 #define DPOW_MAXTX 8192
-#define DPOW_THIRDPARTY_CONFIRMS 10
+#define DPOW_THIRDPARTY_CONFIRMS 0
 #define DPOW_KOMODOCONFIRMS 3
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
@@ -104,14 +106,26 @@ struct dpow_block
     char signedtx[32768];//,rawtx[32768];
 };
 
+struct pax_transaction
+{
+    UT_hash_handle hh;
+    bits256 txid;
+    uint64_t komodoshis,fiatoshis;
+    int32_t marked,height,kmdheight;
+    uint16_t vout;
+    char symbol[16],coinaddr[64]; uint8_t rmd160[20],shortflag;
+};
+
 struct dpow_info
 {
     char symbol[16],dest[16]; uint8_t minerkey33[33],minerid; uint64_t lastrecvmask;
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[1024];
-    int32_t maxblocks;
+    uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
+    int32_t maxblocks,SRCHEIGHT,SHORTFLAG;
+    struct pax_transaction *PAX;
+    portable_mutex_t mutex;
     struct dpow_block **blocks;
 };
 

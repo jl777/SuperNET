@@ -198,7 +198,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
                 //printf("overwrite update of msg.[%d] <- datalen.%d\n",msg->datalen,datalen);
                 memcpy(msg->data,data,datalen);
                 if ( sendping != 0 )
-                    queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+                    queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL);
             }
             portable_mutex_unlock(&myinfo->messagemutex);
             return(clonestr("{\"result\":\"message updated\"}"));
@@ -223,7 +223,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
     if ( sendping != 0 )
-        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL,0);
+        queue_enqueue("basilisk_message",&myinfo->msgQ,&msg->DL);
     return(clonestr("{\"result\":\"message added to hashtable\"}"));
 }
 

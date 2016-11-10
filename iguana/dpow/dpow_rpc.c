@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
+
 int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
 {
     int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
@@ -53,14 +55,14 @@ int32_t komodo_notaries(uint8_t pubkeys[64][33],int32_t kmdheight)
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; bits256 blockhash;
-    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
-        printf("dpow_getbestblockhash %s FULLNODE.%d\n",coin->symbol,coin->FULLNODE);
     memset(blockhash.bytes,0,sizeof(blockhash));
     if ( coin->FULLNODE < 0 )
     {
+        if ( coin->lastbesthashtime+20 > time(NULL) && bits256_nonz(coin->lastbesthash) != 0 )
+            return(coin->lastbesthash);
         if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbestblockhash","")) != 0 )
         {
-            if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+            if ( strcmp(coin->symbol,"USD") == 0 )
                 printf("%s getbestblockhash.(%s)\n",coin->symbol,retstr);
             if ( is_hexstr(retstr,0) == sizeof(blockhash)*2 )
                 decode_hex(blockhash.bytes,sizeof(blockhash),retstr);
@@ -74,6 +76,11 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     else
     {
         
+    }
+    if ( bits256_nonz(blockhash) != 0 )
+    {
+        coin->lastbesthash = blockhash;
+        coin->lastbesthashtime = (uint32_t)time(NULL);
     }
     return(blockhash);
 }
@@ -263,22 +270,24 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
 {
-    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash; cJSON *array,*json;
+    int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash,oldhash; cJSON *array,*json;
     *numtxp = *blocktimep = 0;
+    oldhash = coin->lastbesthash;
     *blockhashp = besthash = dpow_getbestblockhash(myinfo,coin);
-    if ( bits256_nonz(besthash) != 0 )
+    if ( bits256_nonz(besthash) != 0 && bits256_cmp(oldhash,besthash) != 0 )
     {
         if ( (json= dpow_getblock(myinfo,coin,besthash)) != 0 )
         {
             if ( (height= juint(json,"height")) != 0 && (*blocktimep= juint(json,"time")) != 0 )
             {
+                coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
                 if ( (array= jarray(&n,json,"tx")) != 0 )
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
-                    if ( 0 && strcmp(coin->symbol,"USD") == 0 )
+                    //if ( 0 && strcmp(coin->symbol,"USD") == 0 )
                         printf("dpow_getchaintip %s ht.%d time.%u numtx.%d\n",coin->symbol,height,*blocktimep,n);
                     *numtxp = n;
                 }
@@ -286,7 +295,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
             free_json(json);
         }
     }
-    return(height);
+    return(coin->lastbestheight);
 }
 
 int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON *item)
@@ -354,3 +363,459 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
         printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
+
+char *dpow_issuemethod(char *userpass,char *method,char *params,uint16_t port)
+{
+    char url[512],*retstr=0,*retstr2=0,postdata[8192];
+    if ( params == 0 || params[0] == 0 )
+        params = (char *)"[]";
+    if ( strlen(params) < sizeof(postdata)-128 )
+    {
+        sprintf(url,(char *)"http://127.0.0.1:%u",port);
+        sprintf(postdata,"{\"method\":\"%s\",\"params\":%s}",method,params);
+        //printf("postdata.(%s) USERPASS.(%s)\n",postdata,KMDUSERPASS);
+        retstr2 = bitcoind_RPC(&retstr,(char *)"debug",url,userpass,method,params);
+    }
+    return(retstr2);
+}
+
+uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint64_t basevolume)
+{
+    char params[512],*retstr; uint64_t satoshis = 0; cJSON *retjson,*result; struct iguana_info *kmdcoin;
+    kmdcoin = iguana_coinfind("KMD");
+    *seedp = 0;
+    sprintf(params,"[\"%s\", \"%s\", \"%d\", \"%.8f\"]",base,rel,height,(double)basevolume/SATOSHIDEN);
+    if ( kmdcoin != 0 && (retstr= dpow_issuemethod(kmdcoin->chain->userpass,"paxprice",params,kmdcoin->chain->rpcport)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (result= jobj(retjson,"result")) != 0 )
+            {
+                satoshis = jdouble(result,"relvolume") * SATOSHIDEN;
+                *seedp = j64bits(result,"seed");
+            }
+            free_json(retjson);
+        }
+        printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
+    }
+    return(satoshis);
+}
+
+#define KOMODO_PUBTYPE 60
+
+int32_t PAX_pubkey(int32_t rwflag,uint8_t *pubkey33,uint8_t *addrtypep,uint8_t rmd160[20],char fiat[4],uint8_t *shortflagp,int64_t *fiatoshisp)
+{
+    if ( rwflag != 0 )
+    {
+        memset(pubkey33,0,33);
+        pubkey33[0] = 0x02 | (*shortflagp != 0);
+        memcpy(&pubkey33[1],fiat,3);
+        iguana_rwnum(rwflag,&pubkey33[4],sizeof(*fiatoshisp),(void *)fiatoshisp);
+        pubkey33[12] = *addrtypep;
+        memcpy(&pubkey33[13],rmd160,20);
+    }
+    else
+    {
+        *shortflagp = (pubkey33[0] == 0x03);
+        memcpy(fiat,&pubkey33[1],3);
+        fiat[3] = 0;
+        iguana_rwnum(rwflag,&pubkey33[4],sizeof(*fiatoshisp),(void *)fiatoshisp);
+        if ( *shortflagp != 0 )
+            *fiatoshisp = -(*fiatoshisp);
+        *addrtypep = pubkey33[12];
+        memcpy(rmd160,&pubkey33[13],20);
+    }
+    return(33);
+}
+
+uint64_t PAX_fiatdest(uint64_t *seedp,int32_t tokomodo,char *destaddr,uint8_t pubkey33[33],char *coinaddr,int32_t kmdheight,char *origbase,int64_t fiatoshis)
+{
+    uint8_t shortflag=0; char base[4]; int32_t i; uint8_t addrtype,rmd160[20]; int64_t komodoshis=0;
+    for (i=0; i<3; i++)
+        base[i] = toupper(origbase[i]);
+    base[i] = 0;
+    if ( strcmp(base,"KMD") == 0 )
+        return(0);
+    if ( fiatoshis < 0 )
+        shortflag = 1, fiatoshis = -fiatoshis;
+    komodoshis = dpow_paxprice(seedp,kmdheight,base,(char *)"KMD",(uint64_t)fiatoshis);
+    if ( bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr) == 20 )
+    {
+        PAX_pubkey(1,pubkey33,&addrtype,rmd160,base,&shortflag,tokomodo != 0 ? &komodoshis : &fiatoshis);
+        bitcoin_address(destaddr,KOMODO_PUBTYPE,pubkey33,33);
+    }
+    return(komodoshis);
+}
+
+int32_t dpow_scriptitemlen(int32_t *opretlenp,uint8_t *script)
+{
+    int32_t opretlen,len = 0;
+    if ( (opretlen= script[len++]) >= 0x4c )
+    {
+        if ( opretlen == 0x4c )
+            opretlen = script[len++];
+        else if ( opretlen == 0x4d )
+        {
+            opretlen = script[len++];
+            opretlen = (opretlen << 8) | script[len++];
+        }
+    }
+    *opretlenp = opretlen;
+    return(len);
+}
+
+cJSON *dpow_paxjson(struct pax_transaction *pax)
+{
+    uint8_t addrtype,rmd160[20]; int32_t i; char rmdstr[41]; cJSON *item = cJSON_CreateObject();
+    if ( pax != 0 )
+    {
+        jaddbits256(item,"prev_hash",pax->txid);
+        jaddnum(item,"prev_vout",pax->vout);
+        if ( pax->shortflag != 0 )
+            jaddnum(item,"short",pax->shortflag);
+        jaddnum(item,pax->symbol,dstr(pax->fiatoshis));
+        jaddstr(item,"fiat",pax->symbol);
+        jaddnum(item,"kmdheight",pax->kmdheight);
+        jaddnum(item,"height",pax->height);
+        jaddnum(item,"KMD",dstr(pax->komodoshis));
+        jaddstr(item,"address",pax->coinaddr);
+        bitcoin_addr2rmd160(&addrtype,rmd160,pax->coinaddr);
+        for (i=0; i<20; i++)
+            sprintf(&rmdstr[i<<1],"%02x",rmd160[i]);
+        rmdstr[40] = 0;
+        jaddstr(item,"rmd160",rmdstr);
+    }
+    return(item);
+}
+
+uint64_t dpow_paxtotal(struct dpow_info *dp)
+{
+    struct pax_transaction *pax,*tmp; uint64_t total = 0;
+    pthread_mutex_lock(&dp->mutex);
+    /*if ( dp->PAX != 0 )
+    {
+        tmp = 0;
+        pax= dp->PAX->hh.next;
+        while ( pax != 0 && pax != tmp )
+        {
+            if ( pax->marked == 0 )
+                total += pax->komodoshis;
+            tmp = pax;
+            pax = pax->hh.next;
+        }
+    }*/
+    HASH_ITER(hh,dp->PAX,pax,tmp)
+    {
+        if ( pax->marked == 0 )
+            total += pax->komodoshis;
+    }
+    pthread_mutex_unlock(&dp->mutex);
+    return(total);
+}
+
+struct pax_transaction *dpow_paxfind(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout)
+{
+    struct pax_transaction *pax;
+    pthread_mutex_lock(&dp->mutex);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
+    if ( pax != 0 )
+        memcpy(space,pax,sizeof(*pax));
+    pthread_mutex_unlock(&dp->mutex);
+    return(pax);
+}
+
+struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout,int32_t mark)
+{
+    struct pax_transaction *pax;
+    pthread_mutex_lock(&dp->mutex);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
+    if ( pax == 0 )
+    {
+        pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
+        pax->txid = txid;
+        pax->vout = vout;
+        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
+    }
+    if ( pax != 0 )
+    {
+        pax->marked = mark;
+        int32_t i; for (i=0; i<32; i++)
+            printf("%02x",((uint8_t *)&txid)[i]);
+        printf(" paxmark.ht %d vout%d\n",mark,vout);
+        memcpy(space,pax,sizeof(*pax));
+    }
+    pthread_mutex_unlock(&dp->mutex);
+    return(pax);
+}
+
+cJSON *dpow_withdraws_pending(struct dpow_info *dp)
+{
+    struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
+    pthread_mutex_lock(&dp->mutex);
+    /*if ( dp->PAX != 0 )
+    {
+        tmp = 0;
+        pax = dp->PAX->hh.next;
+        while ( pax != 0 && pax != tmp )
+        {
+            if ( pax->marked == 0 )
+                jaddi(retjson,dpow_paxjson(pax));
+            tmp = pax;
+            pax = pax->hh.next;
+        }
+    }*/
+    HASH_ITER(hh,dp->PAX,pax,tmp)
+    {
+        if ( pax->marked == 0 )
+            jaddi(retjson,dpow_paxjson(pax));
+    }
+    pthread_mutex_unlock(&dp->mutex);
+    return(retjson);
+}
+
+void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t kmdheight,int32_t height) // assetchain context
+{
+    struct pax_transaction *pax;
+    pthread_mutex_lock(&dp->mutex);
+    HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
+    if ( pax == 0 )
+    {
+        pax = (struct pax_transaction *)calloc(1,sizeof(*pax));
+        pax->txid = txid;
+        pax->vout = vout;
+        HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
+    }
+    pthread_mutex_unlock(&dp->mutex);
+    if ( coinaddr != 0 )
+    {
+        strcpy(pax->coinaddr,coinaddr);
+        pax->komodoshis = komodoshis;
+        pax->shortflag = shortflag;
+        strcpy(pax->symbol,symbol);
+        pax->fiatoshis = fiatoshis;
+        memcpy(pax->rmd160,rmd160,20);
+        pax->kmdheight = kmdheight;
+        pax->height = height;
+        if ( pax->marked == 0 )
+            printf("ADD WITHDRAW %s %.8f -> %s %.8f TO PAX kht.%d ht.%d\n",symbol,dstr(pax->fiatoshis),coinaddr,dstr(pax->komodoshis),kmdheight,height);
+        else printf("MARKED WITHDRAW %s %.8f -> %s %.8f TO PAX kht.%d ht.%d\n",symbol,dstr(pax->fiatoshis),coinaddr,dstr(pax->komodoshis),kmdheight,height);
+    }
+    else
+    {
+        pax->marked = height;
+        printf("MARK WITHDRAW ht.%d\n",height);
+    }
+}
+
+void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,int64_t fiatoshis,uint8_t *script,int32_t len)
+{
+    char base[16],destaddr[64],coinaddr[64]; uint8_t addrtype,shortflag,rmd160[20],pubkey33[33]; int64_t checktoshis,komodoshis; uint64_t seed; struct pax_transaction space; int32_t i,kmdheight,opretlen,offset = 0;
+    if ( script[offset++] == 0x6a )
+    {
+        memset(base,0,sizeof(base));
+        offset += dpow_scriptitemlen(&opretlen,&script[offset]);
+        if ( script[offset] == 'W' && strcmp(dp->symbol,"KMD") != 0 )
+        {
+            // if valid add to pricefeed for issue
+            printf("WITHDRAW ht.%d txi.%d vout.%d %.8f opretlen.%d\n",height,txi,vout,dstr(fiatoshis),opretlen);
+            if ( opretlen == 38 ) // any KMD tx
+            {
+                offset++;
+                offset += PAX_pubkey(0,&script[offset],&addrtype,rmd160,base,&shortflag,&komodoshis);
+                iguana_rwnum(0,&script[offset],sizeof(kmdheight),&kmdheight);
+                if ( komodoshis < 0 )
+                    komodoshis = -komodoshis;
+                bitcoin_address(coinaddr,addrtype,rmd160,20);
+                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
+                for (i=0; i<32; i++)
+                    printf("%02x",((uint8_t *)&txid)[i]);
+                printf(" <- txid.v%u ",vout);
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey33[i]);
+                printf(" checkpubkey fiat %.8f check %.8f vs komodoshis %.8f dest.(%s) kmdheight.%d ht.%d seed.%llu\n",dstr(fiatoshis),dstr(checktoshis),dstr(komodoshis),destaddr,kmdheight,height,(long long)seed);
+                if ( shortflag == dp->SHORTFLAG )
+                {
+                    if ( shortflag == 0 )
+                    {
+                        if ( seed == 0 || checktoshis >= komodoshis )
+                        {
+                            if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
+                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,komodoshis,rmd160,txid,vout,kmdheight,height);
+                        }
+                    }
+                    else // short
+                    {
+                        for (i=0; i<opretlen; i++)
+                            printf("%02x",script[i]);
+                        printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
+                        if ( seed == 0 || fiatoshis < checktoshis )
+                        {
+                            
+                        }
+                    }
+                }
+            }
+        }
+        else if ( script[offset] == 'X' && strcmp(dp->symbol,"KMD") == 0 )
+        {
+            printf("WITHDRAW issued ht.%d txi.%d vout.%d %.8f\n",height,txi,vout,dstr(fiatoshis));
+            if ( opretlen == 46 ) // any KMD tx
+            {
+                offset++;
+                offset += PAX_pubkey(0,&script[offset],&addrtype,rmd160,base,&shortflag,&fiatoshis);
+                iguana_rwnum(0,&script[offset],sizeof(kmdheight),&kmdheight);
+                iguana_rwnum(0,&script[offset],sizeof(height),&height);
+                if ( fiatoshis < 0 )
+                    fiatoshis = -fiatoshis;
+                bitcoin_address(coinaddr,addrtype,rmd160,20);
+                checktoshis = PAX_fiatdest(&seed,1,destaddr,pubkey33,coinaddr,kmdheight,base,fiatoshis);
+                for (i=0; i<32; i++)
+                    printf("%02x",((uint8_t *)&txid)[i]);
+                printf(" <- txid.v%u ",vout);
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey33[i]);
+                printf(" checkpubkey check %.8f v %.8f dest.(%s) height.%d\n",dstr(checktoshis),dstr(fiatoshis),destaddr,height);
+                if ( shortflag == 0 )
+                {
+                    if ( seed == 0 || checktoshis > fiatoshis )
+                    {
+                        dpow_paxmark(dp,&space,txid,vout,height);
+                    }
+                }
+                else
+                {
+                    
+                }
+            }
+        }
+    }
+}
+
+int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
+{
+    char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
+    sprintf(params,"[\"%s\", 1]",txidstr);
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getrawtransaction",params,port)) != 0 )
+    {
+        if ( (json= cJSON_Parse(retstr)) != 0 )
+        {
+            //printf("TX.(%s)\n",retstr);
+            if ( (result= jobj(json,(char *)"result")) != 0 )
+            {
+                oldpub = jobj(result,(char *)"vpub_old");
+                newpub = jobj(result,(char *)"vpub_new");
+                retval = 0;
+                if ( oldpub == 0 && newpub == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
+                {
+                    isspecial = 0;
+                    txid = jbits256(result,(char *)"txid");
+                    for (vout=0; vout<n; vout++)
+                    {
+                        item = jitem(vouts,vout);
+                        value = SATOSHIDEN * jdouble(item,(char *)"value");
+                        if ( (sobj= jobj(item,(char *)"scriptPubKey")) != 0 )
+                        {
+                            if ( (hexstr= jstr(sobj,(char *)"hex")) != 0 )
+                            {
+                                len = (int32_t)strlen(hexstr) >> 1;
+                                if ( vout == 0 && ((memcmp(&hexstr[2],CRYPTO777_PUBSECPSTR,66) == 0 && len == 35) || (memcmp(&hexstr[6],CRYPTO777_RMD160STR,40) == 0 && len == 25)) )
+                                    isspecial = 1;
+                                else if ( len <= sizeof(script) )
+                                {
+                                    decode_hex(script,len,hexstr);
+                                    dpow_issuer_voutupdate(dp,coin->symbol,isspecial,height,txi,txid,vout,n,value,script,len);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else printf("error getting txids.(%s)\n",retstr);
+            free_json(json);
+        }
+        free(retstr);
+    }
+    return(retval);
+}
+
+int32_t dpow_issuer_block(struct dpow_info *dp,struct iguana_info *coin,int32_t height,uint16_t port)
+{
+    char *retstr,*retstr2,params[128],*txidstr; int32_t i,n,retval = -1; cJSON *json,*tx=0,*result=0,*result2;
+    sprintf(params,"[%d]",height);
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getblockhash",params,port)) != 0 )
+    {
+        if ( (result= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (txidstr= jstr(result,(char *)"result")) != 0 && strlen(txidstr) == 64 )
+            {
+                sprintf(params,"[\"%s\"]",txidstr);
+                if ( (retstr2= dpow_issuemethod(coin->chain->userpass,(char *)"getblock",params,port)) != 0 )
+                {
+                    //printf("getblock.(%s)\n",retstr2);
+                    if ( (json= cJSON_Parse(retstr2)) != 0 )
+                    {
+                        if ( (result2= jobj(json,(char *)"result")) != 0 && (tx= jarray(&n,result2,(char *)"tx")) != 0 )
+                        {
+                            for (i=0; i<n; i++)
+                                if ( dpow_issuer_tx(dp,coin,height,i,jstri(tx,i),port) < 0 )
+                                    break;
+                            if ( i == n )
+                                retval = 0;
+                            else printf("dpow_issuer_block ht.%d error i.%d vs n.%d\n",height,i,n);
+                        } else printf("cant get result.%p or tx.%p\n",result,tx);
+                        free_json(json);
+                    } else printf("cant parse2.(%s)\n",retstr2);
+                    free(retstr2);
+                } else printf("error getblock %s\n",params);
+            } else printf("strlen.%ld (%s)\n",strlen(txidstr),txidstr);
+            free_json(result);
+        } else printf("couldnt parse.(%s)\n",retstr);
+        free(retstr);
+    } else printf("error from getblockhash %d\n",height);
+    return(retval);
+}
+
+int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int32_t height,uint32_t *isrealtimep)
+{
+    char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
+    if ( height <= 0 )
+        height = 1;
+    *isrealtimep = 0;
+    if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getinfo",0,port)) != 0 )
+    {
+        if ( (infoobj= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
+            {
+                for (i=0; i<1000 && height<=kmdheight; i++,height++)
+                {
+                    /*fprintf(stderr,"%s.%d ",coin->symbol,height);
+                    if ( (height % 10) == 0 )
+                    {
+                        if ( (height % 100) == 0 )
+                            fprintf(stderr,"%s.%d ",coin->symbol,height);
+                        memset(&zero,0,sizeof(zero));
+                        komodo_stateupdate(height,0,0,0,zero,0,0,0,0,height,0,0,0,0);
+                    }*/
+                    if ( dpow_issuer_block(dp,coin,height,port) < 0 )
+                    {
+                        printf("error height %d\n",height);
+                        break;
+                    }
+                    usleep(10000);
+                }
+                if ( height >= kmdheight )
+                    *isrealtimep = (uint32_t)time(NULL);
+            }
+            free_json(infoobj);
+        }
+        //printf("GETINFO.(%s)\n",retstr);
+        free(retstr);
+    }
+    else
+    {
+        printf("error from %s\n",coin->symbol);
+        sleep(3);
+    }
+    return(height);
+}
+

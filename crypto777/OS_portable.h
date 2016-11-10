@@ -133,6 +133,8 @@ int32_t hseek(HUFF *hp,int32_t offset,int32_t mode);
 
 struct allocitem { uint32_t allocsize,type; } PACKED;
 struct queueitem { struct queueitem *next,*prev; uint32_t allocsize,type;  } PACKED;
+struct stritem { struct queueitem DL; char str[]; };
+
 typedef struct queue
 {
 	struct queueitem *list;
@@ -249,14 +251,14 @@ void OS_randombytes(uint8_t *x,long xlen);
 long myallocated(uint8_t type,long change);
 void *mycalloc(uint8_t type,int32_t n,long itemsize);
 void myfree(void *_ptr,long allocsize);
-void free_queueitem(void *itemdata);
+//void free_queueitem(void *itemdata);
 void *myrealloc(uint8_t type,void *oldptr,long oldsize,long newsize);
 void *myaligned_alloc(uint64_t allocsize);
 int32_t myaligned_free(void *ptr,long size);
 
-void *queueitem(char *str);
-void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem,int32_t offsetflag);
-void *queue_dequeue(queue_t *queue,int32_t offsetflag);
+struct queueitem *queueitem(char *str);
+void queue_enqueue(char *name,queue_t *queue,struct queueitem *origitem);//,int32_t offsetflag);
+void *queue_dequeue(queue_t *queue);//,int32_t offsetflag);
 void *queue_delete(queue_t *queue,struct queueitem *copy,int32_t copysize,int32_t freeitem);
 void *queue_free(queue_t *queue);
 void *queue_clone(queue_t *clone,queue_t *queue,int32_t size);

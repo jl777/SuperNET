@@ -13,10 +13,12 @@
  *                                                                            *
  ******************************************************************************/
 
+STRING_ARG(dpow,pending,fiat);
 TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
+THREE_STRINGS(iguana,passthru,asset,function,hex);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
