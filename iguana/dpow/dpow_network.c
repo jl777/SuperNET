@@ -45,19 +45,21 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; uint32_t ipbits; int32_t i,retval = -1;
+    char str[512]; uint32_t ipbits; int32_t i,n,retval = -1;
     if ( myinfo->dpowsock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
     {
+        n = myinfo->numdpowipbits;
         ipbits = (uint32_t)calc_ipbits(ipaddr);
-        for (i=0; i<myinfo->numdpowipbits; i++)
+        for (i=0; i<n; i++)
             if ( ipbits == myinfo->dpowipbits[i] )
                 break;
-        if ( i == myinfo->numdpowipbits && myinfo->numdpowipbits < sizeof(myinfo->dpowipbits)/sizeof(*myinfo->dpowipbits) )
+        if ( i == n && n < sizeof(myinfo->dpowipbits)/sizeof(*myinfo->dpowipbits) )
         {
-            myinfo->dpowipbits[myinfo->numdpowipbits++] = ipbits;
+            myinfo->dpowipbits[n] = ipbits;
             retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
-            qsort(myinfo->dpowipbits,myinfo->numdpowipbits,sizeof(myinfo->dpowipbits),_increasing_ipbits);
-            printf("addnotary.[%d] (%s) retval.%d\n",myinfo->numdpowipbits,ipaddr,retval);
+            qsort(myinfo->dpowipbits,n,sizeof(myinfo->dpowipbits),_increasing_ipbits);
+            printf("addnotary.[%d] (%s) retval.%d\n",n,ipaddr,retval);
+            myinfo->numdpowipbits++;
         }
     }
     return(retval);
@@ -136,21 +138,22 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipbits)
 {
-    int32_t i,j,matched,missing; char ipaddr[64];
+    int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits < 1 )
         return;
-    printf("recv numipbits.%d\n",numipbits);
+    n = myinfo->numdpowipbits;
+    printf("recv numipbits.%d numdpowipbits.%d\n",numipbits,n);
     matched = missing = 0;
     for (i=0; i<numipbits; i++)
     {
-        for (j=0; j<myinfo->numdpowipbits; j++)
+        for (j=0; j<n; j++)
             if ( ipbits[i] == myinfo->dpowipbits[j] )
             {
                 matched++;
                 ipbits[i] = 0;
                 break;
             }
-        if ( j == myinfo->numdpowipbits )
+        if ( j == n )
             missing++;
     }
     if ( (numipbits == 1 || missing < matched) && missing > 0 )
