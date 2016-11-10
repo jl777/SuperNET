@@ -334,7 +334,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             }
             if ( ep->masks[src_or_dest][bp->bestk] == 0 )
             {
-                printf("dpow update signedtxgen\n");
+                //printf("dpow update signedtxgen\n");
                 dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
             }
             if ( bp->bestk >= 0 && (rand() % 10) == 0 )
@@ -349,7 +349,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         }
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
         {
-            printf("dpow update2 signedtxgen\n");
+            //printf("dpow update2 signedtxgen\n");
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
         }
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
@@ -365,7 +365,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         src_or_dest = 0;
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
         {
-            printf("dpow update src signedtxgen\n");
+            //printf("dpow update src signedtxgen\n");
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,src_or_dest);
         }
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
@@ -387,7 +387,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             dpow_sendcoinentrys(myinfo,dp,bp);
             if ( bp->bestk >= 0 )
             {
-                printf("dpow update ratify signedtxgen\n");
+                //printf("dpow update ratify signedtxgen\n");
                 dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
             }
             printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d sigsmask.%llx missing.%llx\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk,bp->bestk>=0?(long long)bp->destsigsmasks[bp->bestk]:0,bp->bestk>=0?(long long)(bp->bestmask & ~bp->destsigsmasks[bp->bestk]):0);
