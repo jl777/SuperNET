@@ -307,7 +307,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
         dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
         return;
     }
-    //printf("rawtxsign\n");
+    printf("rawtxsign\n");
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
