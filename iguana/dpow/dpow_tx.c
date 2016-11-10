@@ -79,6 +79,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t j,m,k; uint64_t bestmask,mask = bp->require0;
     bestmask = 0;
+    *lastkp = -1;
     m = bp->require0;
     for (j=0; j<bp->numnotaries; j++)
     {
@@ -100,6 +101,7 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t j,m,k; uint64_t bestmask,mask = bp->require0;
     bestmask = 0;
+    *lastkp = -1;
     m = bp->require0;
     for (j=0; j<bp->numnotaries; j++)
     {

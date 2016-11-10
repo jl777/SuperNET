@@ -44,7 +44,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
             for (i=0; i<bp->numnotaries; i++)
             {
-                if ( bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
+                if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
                 {
                     matches++;
                     if ( ((1LL << i) & bp->ratifybestmask) != 0 )
@@ -62,7 +62,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGCHANNEL,0,1);
                 }
             }
-            printf("RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigs[1],(long long)bp->ratifysigs[0]);
+            printf("RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
         }
     }
 }
