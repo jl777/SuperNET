@@ -380,6 +380,11 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 free(retstr);
                 retstr = 0;
             }
+            else
+            {
+                printf("NULL return from sendrawtransaction. abort\n");
+                bp->state = 0xffffffff;
+            }
         }
     }
 }
