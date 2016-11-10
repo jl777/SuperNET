@@ -108,7 +108,10 @@ void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *
     }
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
     if ( forceflag || bp->notaries[myind].masks[lastk] == 0 )
+    {
+        printf("dpow sync update signedtxgen\n");
         dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
+    }
 }
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
@@ -330,7 +333,10 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 }
             }
             if ( ep->masks[src_or_dest][bp->bestk] == 0 )
+            {
+                printf("dpow update signedtxgen\n");
                 dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
+            }
             if ( bp->bestk >= 0 && (rand() % 10) == 0 )
                 dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
         } else sendutxo = 1;
@@ -342,7 +348,10 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,data,len);
         }
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
+        {
+            printf("dpow update2 signedtxgen\n");
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest);
+        }
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
         {
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
@@ -355,7 +364,10 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     {
         src_or_dest = 0;
         if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
+        {
+            printf("dpow update src signedtxgen\n");
             dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,src_or_dest);
+        }
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGCHANNEL);
     }
@@ -374,7 +386,10 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
             dpow_sendcoinentrys(myinfo,dp,bp);
             if ( bp->bestk >= 0 )
+            {
+                printf("dpow update ratify signedtxgen\n");
                 dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000);
+            }
             printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d sigsmask.%llx missing.%llx\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk,bp->bestk>=0?(long long)bp->destsigsmasks[bp->bestk]:0,bp->bestk>=0?(long long)(bp->bestmask & ~bp->destsigsmasks[bp->bestk]):0);
             if ( bp->height < DPOW_FIRSTRATIFY )
                 dp->blocks[bp->height] = bp;
