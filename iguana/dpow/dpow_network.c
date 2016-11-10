@@ -19,9 +19,11 @@
 struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
+    uint64_t bestmask;
     uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
     char symbol[16];
-    uint8_t version0,version1,packet[];
+    int8_t bestk;
+    uint8_t senderind,version0,version1,packet[];
 } PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
@@ -124,6 +126,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size); // endian dependent!
         np->numipbits = myinfo->numdpowipbits;
+        np->bestk = bp->bestk;
+        np->bestmask = bp->bestmask;
+        np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
         //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
         np->size = size;
@@ -201,10 +206,10 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
-                        else if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
+                        else if ( dpow_datahandler(myinfo,dp,np->senderind,np->bestk,np->bestmask,np->channel,np->height,np->packet,np->datalen) >= 0 )
                             dp->crcs[firstz] = crc32;
                     }
-                } else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
+                } //else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
             }
             if ( np != 0 )
                 nn_freemsg(np);

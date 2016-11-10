@@ -13,6 +13,26 @@
  *                                                                            *
  ******************************************************************************/
 
+void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask)
+{
+    if ( nn_senderind < 0 || nn_senderind >= bp->numnotaries )
+        return;
+    bp->notaries[nn_senderind].bestk = nn_bestk;
+    bp->notaries[nn_senderind].bestmask = nn_bestmask;
+    if ( bp->bestk >= 0 )
+    {
+        if ( nn_bestk < 0 )
+            bp->scores[nn_senderind] -= 10;
+        else if ( nn_bestk != bp->bestk )
+            bp->scores[nn_senderind]--;
+        else if ( nn_bestmask != bp->bestmask )
+            bp->scores[nn_senderind]--;
+        else if ( bp->scores[nn_senderind] < 1 )
+            bp->scores[nn_senderind] = 1;
+        else bp->scores[nn_senderind]++;
+    }
+}
+
 uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t j,m,k; uint64_t mask = bp->require0;
@@ -20,7 +40,9 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
     m = bp->require0;
     for (j=0; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
+        k = DPOW_MODIND(bp,j);
+        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -100 )
+            continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             bp->recvmask |= (1LL << k);
@@ -54,6 +76,8 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
+        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -100 )
+            continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             mask |= (1LL << k);

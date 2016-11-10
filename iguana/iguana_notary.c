@@ -22,7 +22,7 @@
 #include "iguana777.h"
 #include "notaries.h"
 
-int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
+int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8_t nn_senderind,int8_t bestk,uint64_t bestmask,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen);
 
 #include "dpow/dpow_network.c"
 #include "dpow/dpow_rpc.c"
