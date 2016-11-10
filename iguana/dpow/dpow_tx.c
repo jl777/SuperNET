@@ -15,10 +15,12 @@
 
 void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask)
 {
+    int32_t startscore;
     if ( nn_senderind < 0 || nn_senderind >= bp->numnotaries )
         return;
     bp->notaries[nn_senderind].bestk = nn_bestk;
     bp->notaries[nn_senderind].bestmask = nn_bestmask;
+    startscore = bp->scores[nn_senderind];
     if ( bp->bestk >= 0 )
     {
         if ( nn_bestk < 0 )
@@ -30,6 +32,8 @@ void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         else if ( bp->scores[nn_senderind] < 1 )
             bp->scores[nn_senderind] = 1;
         else bp->scores[nn_senderind]++;
+        if ( startscore > -100 && bp->scores[nn_senderind] <= -100 )
+            printf(">>>>>>>>>>>>> nn_senderind.%d %llx MIA, skip this node for now\n",nn_senderind,(long long)(1LL << nn_senderind));
     }
 }
 
