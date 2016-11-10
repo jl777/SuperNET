@@ -99,7 +99,7 @@ struct dpow_block
     uint64_t recvmask,bestmask;
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
-    int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify;
+    int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify,require0;
     int8_t bestk;
     cJSON *ratified;
     uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];

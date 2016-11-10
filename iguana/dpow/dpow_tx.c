@@ -15,9 +15,10 @@
 
 uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k; uint64_t mask = 0;
+    int32_t j,m,k; uint64_t mask = bp->require0;
     *lastkp = -1;
-    for (j=m=0; j<bp->numnotaries; j++)
+    m = bp->require0;
+    for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);//((bp->height % bp->numnotaries) + j) % bp->numnotaries;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
@@ -47,9 +48,10 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k; uint64_t bestmask,mask;
-    bestmask = mask = 0;
-    for (j=m=0; j<bp->numnotaries; j++)
+    int32_t j,m,k; uint64_t bestmask,mask = bp->require0;
+    bestmask = 0;
+    m = bp->require0;
+    for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
