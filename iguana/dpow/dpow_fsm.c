@@ -150,7 +150,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
     }
 }
 
-void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *dp,struct dpow_block *bp,int8_t bestk,uint64_t refmask,int32_t myind,bits256 srchash,uint32_t channel,int32_t src_or_dest)
+void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *dp,struct dpow_block *bp,int8_t bestk,uint64_t refmask,int32_t myind,bits256 srchash,int32_t src_or_dest)
 {
     int8_t lastk; uint64_t mask;
     if ( bestk < 0 )
@@ -258,7 +258,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8
                 dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
                 bp->recvmask |= (1LL << senderind);
             }
-            dpow_sync(myinfo,0,dp,bp,-1,ep->recvmask,myind,srchash,channel,src_or_dest);
+            dpow_sync(myinfo,0,dp,bp,-1,ep->recvmask,myind,srchash,src_or_dest);
             flag = 1;
         }
         //printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
@@ -316,7 +316,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8
                             }
                         }
                         //printf(" ht.%d (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->height,bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
-                        dpow_sync(myinfo,1,dp,bp,dsig.lastk,dsig.mask,myind,srchash,channel,src_or_dest);
+                        dpow_sync(myinfo,1,dp,bp,dsig.lastk,dsig.mask,myind,srchash,src_or_dest);
                         flag = 1;
                     }
                 } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
@@ -728,6 +728,7 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
             if ( bp->isratify == 0 )
                 bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
+            else dpow_sync(myinfo,0,dp,bp,-1,bp->recvmask,myind,srchash,bp->state < 1000);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
