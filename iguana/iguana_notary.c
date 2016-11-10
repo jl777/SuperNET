@@ -23,6 +23,7 @@
 #include "notaries.h"
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8_t nn_senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,bits256 nn_destutxo,uint16_t nn_destvout,bits256 nn_srcutxo,uint16_t nn_srcvout,uint8_t nn_siglens[2],uint8_t nn_sigs[2][76]);
+uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 
 #include "dpow/dpow_network.c"
 #include "dpow/dpow_rpc.c"

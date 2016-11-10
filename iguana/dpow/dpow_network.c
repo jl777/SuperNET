@@ -19,7 +19,7 @@
 struct dpow_nanomsghdr
 {
     bits256 srchash,desthash,srcutxo,destutxo;
-    uint64_t bestmask,recvbits;
+    uint64_t bestmask,recvmask;
     uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
     uint16_t srcvout,destvout;
     char symbol[16];
@@ -131,10 +131,10 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
         //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
-        np->srcutxo = bp->ratifysrcutxos[bp->myind];
-        np->srcvout = bp->ratifysrcvouts[bp->myind];
-        np->destutxo = bp->ratifydestutxos[bp->myind];
-        np->destvout = bp->ratifydestvouts[bp->myind];
+        np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
+        np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
+        np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
+        np->destvout = bp->notaries[bp->myind].ratifydestvout;
         for (i=0; i<2; i++)
         {
             np->ratifysiglens[i] = bp->ratifysiglens[i];
