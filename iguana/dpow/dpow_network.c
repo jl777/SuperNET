@@ -18,12 +18,13 @@
 
 struct dpow_nanomsghdr
 {
-    bits256 srchash,desthash;
-    uint64_t bestmask;
+    bits256 srchash,desthash,srcutxo,destutxo;
+    uint64_t bestmask,recvbits;
     uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
+    uint16_t srcvout,destvout;
     char symbol[16];
     int8_t bestk;
-    uint8_t senderind,version0,version1,packet[];
+    uint8_t senderind,ratifysiglens[2],ratifysigs[2][76],version0,version1,packet[];
 } PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
@@ -118,7 +119,7 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,struct dpow_info *dp,uint32_
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    struct dpow_nanomsghdr *np; int32_t size,sentbytes = 0; uint32_t crc32;
+    struct dpow_nanomsghdr *np; int32_t i,size,sentbytes = 0; uint32_t crc32;
     crc32 = calc_crc32(0,data,datalen);
     //if ( (firstz= dpow_crc32find(myinfo,crc32,channel)) >= 0 )
     {
@@ -126,11 +127,19 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size); // endian dependent!
         np->numipbits = myinfo->numdpowipbits;
-        np->bestk = bp->bestk;
-        np->bestmask = bp->bestmask;
+        np->bestmask = dpow_maskmin(bp->recvmask,bp,&np->bestk);
         np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
         //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
+        np->srcutxo = bp->ratifysrcutxos[bp->myind];
+        np->srcvout = bp->ratifysrcvouts[bp->myind];
+        np->destutxo = bp->ratifydestutxos[bp->myind];
+        np->destvout = bp->ratifydestvouts[bp->myind];
+        for (i=0; i<2; i++)
+        {
+            np->ratifysiglens[i] = bp->ratifysiglens[i];
+            memcpy(np->ratifysigs[i],bp->ratifysigs[i],np->ratifysiglens[i]);
+        }
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
@@ -206,7 +215,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
-                        else if ( dpow_datahandler(myinfo,dp,np->senderind,np->bestk,np->bestmask,np->channel,np->height,np->packet,np->datalen) >= 0 )
+                        else if ( dpow_datahandler(myinfo,dp,np->senderind,np->bestk,np->bestmask,np->recvmask,np->channel,np->height,np->packet,np->datalen,np->destutxo,np->destvout,np->srcutxo,np->srcvout,np->ratifysiglens,np->ratifysigs) >= 0 )
                             dp->crcs[firstz] = crc32;
                     }
                 } //else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));

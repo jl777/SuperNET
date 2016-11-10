@@ -15,13 +15,14 @@
 
 #define DPOW_BLACKLIST -100000
 
-void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask)
+void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask,uint64_t nn_recvmask)
 {
     int32_t startscore;
     if ( nn_senderind < 0 || nn_senderind >= bp->numnotaries )
         return;
     bp->notaries[nn_senderind].bestk = nn_bestk;
     bp->notaries[nn_senderind].bestmask = nn_bestmask;
+    bp->notaries[nn_senderind].recvmask = nn_recvmask;
     startscore = bp->scores[nn_senderind];
     if ( bp->bestk >= 0 )
     {
@@ -72,6 +73,27 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
         return(-1);
     *maskp = mask;
     return(lastk);
+}
+
+uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
+{
+    int32_t j,m,k; uint64_t bestmask,mask = bp->require0;
+    bestmask = 0;
+    m = bp->require0;
+    for (j=0; j<bp->numnotaries; j++)
+    {
+        k = DPOW_MODIND(bp,j);
+        if ( (bp->require0 != 0 && k == 0) || (bits256_nonz(bp->notaries[k].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[k].ratifydestutxo) != 0) )
+        {
+            mask |= (1LL << k);
+            if ( ++m == DPOW_M(bp) )
+            {
+                *lastkp = k;
+                bestmask = mask;
+            }
+        }
+    }
+    return(bestmask);
 }
 
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
@@ -197,7 +219,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
 
 bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t k,j,m,numsigs,version,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768]; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    uint32_t k,j,m,numsigs,version,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768],*sig; struct dpow_entry *ep; struct dpow_coinentry *cp;
     signedtx[0] = 0;
     *numsigsp = 0;
     memset(zero.bytes,0,sizeof(zero));
@@ -213,19 +235,36 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
         k = DPOW_MODIND(bp,j);
         if ( ((1LL << k) & bestmask) != 0 )
         {
-            ep = &bp->notaries[k];
-            cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
-            if ( bits256_nonz(cp->prev_hash) == 0 )
-                return(cp->prev_hash);
-            len += iguana_rwbignum(1,&serialized[len],sizeof(cp->prev_hash),cp->prev_hash.bytes);
-            len += iguana_rwnum(1,&serialized[len],sizeof(cp->prev_vout),&cp->prev_vout);
-            siglen = cp->siglens[bestk];
+            if ( pubkeys != 0 && numratified > 0 )
+            {
+                if ( src_or_dest != 0 )
+                {
+                    len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestutxo),bp->notaries[k].ratifydestutxo.bytes);
+                    len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestvout),&bp->notaries[k].ratifydestvout);
+                }
+                else
+                {
+                    len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcutxo),bp->notaries[k].ratifysrcutxo.bytes);
+                    len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcvout),&bp->notaries[k].ratifysrcvout);
+                }
+            }
+            else
+            {
+                ep = &bp->notaries[k];
+                cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
+                if ( bits256_nonz(cp->prev_hash) == 0 )
+                    return(cp->prev_hash);
+                len += iguana_rwbignum(1,&serialized[len],sizeof(cp->prev_hash),cp->prev_hash.bytes);
+                len += iguana_rwnum(1,&serialized[len],sizeof(cp->prev_vout),&cp->prev_vout);
+                siglen = cp->siglens[bestk];
+                sig = cp->sigs[bestk];
+            }
             if ( usesigs != 0 )
             {
                 len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&siglen);
                 if ( siglen > 0 && siglen <= sizeof(cp->sigs[bestk]) )
                 {
-                    memcpy(&serialized[len],cp->sigs[bestk],siglen);
+                    memcpy(&serialized[len],sig,siglen);
                     len += siglen;
                     numsigs++;
                 }
@@ -255,9 +294,9 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     return(bits256_doublesha256(0,serialized,len));
 }
 
-cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest)
+cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,int32_t useratified)
 {
-    int32_t k,j,m=0; uint8_t script[35]; char scriptstr[256]; cJSON *vins=0,*item; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    int32_t k,j,m=0; bits256 txid; uint16_t vout; uint8_t script[35]; char scriptstr[256]; cJSON *vins=0,*item; struct dpow_entry *ep; struct dpow_coinentry *cp;
     vins = cJSON_CreateArray();
     for (j=0; j<bp->numnotaries; j++)
     {
@@ -265,12 +304,30 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
         if ( ((1LL << k) & bestmask) != 0 )
         {
             ep = &bp->notaries[k];
-            cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
+            if ( useratified != 0 )
+            {
+                if ( src_or_dest != 0 )
+                {
+                    txid = bp->notaries[k].ratifydestutxo;
+                    vout = bp->notaries[k].ratifydestvout;
+                }
+                else
+                {
+                    txid = bp->notaries[k].ratifysrcutxo;
+                    vout = bp->notaries[k].ratifysrcvout;
+                }
+            }
+            else
+            {
+                cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
+                txid = cp->prev_hash;
+                vout = cp->prev_vout;
+            }
             if ( bits256_nonz(cp->prev_hash) != 0 )
             {
                 item = cJSON_CreateObject();
-                jaddbits256(item,"txid",cp->prev_hash);
-                jaddnum(item,"vout",cp->prev_vout);
+                jaddbits256(item,"txid",txid);
+                jaddnum(item,"vout",vout);
                 script[0] = 33;
                 memcpy(script+1,ep->pubkey,33);
                 script[34] = CHECKSIG;
@@ -302,12 +359,6 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
     m = 0;
     ep = &bp->notaries[myind];
     cp = (src_or_dest != 0) ? &bp->notaries[myind].dest : &bp->notaries[myind].src;
-    /*if ( cp->siglens[bestk] > 0 )
-    {
-        dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
-        return;
-    }*/
-    //printf("rawtxsign\n");
     if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
     {
         if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
@@ -347,30 +398,47 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
     }
 }
 
-int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel,int32_t src_or_dest)
+int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel,int32_t src_or_dest,int32_t useratified)
 {
-    int32_t j,numsigs,retval=-1; char rawtx[32768]; cJSON *vins; bits256 txid,srchash,zero; struct dpow_entry *ep;
-    //bestmask = dpow_maskmin(bestmask,bp,&bestk);
+    int32_t j,m,numsigs,retval=-1; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
     if ( bestk < 0 )
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
-    if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest)) != 0 )
+    if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,bp->numratified)) != 0 )
     {
-        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
+        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
-            /*memset(&tmp,0,sizeof(tmp));
-             tmp.ulongs[1] = bestmask;
-             tmp.bytes[31] = bestk;
-             len = (int32_t)strlen(rawtx) >> 1;
-             decode_hex(txdata+32,len,rawtx);
-             for (j=0; j<sizeof(srchash); j++)
-             txdata[j] = tmp.bytes[j];
-             dpow_send(myinfo,bp,zero,bp->hashmsg,(bits256_nonz(bp->btctxid) == 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32);*/
-            dpow_rawtxsign(myinfo,dp,coin,bp,rawtx,vins,bestk,bestmask,myind,src_or_dest);
+            if ( useratified != 0 )
+            {
+                if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
+                {
+                    if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
+                    {
+                        if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
+                        {
+                            if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
+                            {
+                                if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
+                                {
+                                    for (j=0; j<m; j++)
+                                    {
+                                        item = jitem(vin,j);
+                                        if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
+                                        {
+                                            bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
+                                            decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else dpow_rawtxsign(myinfo,dp,coin,bp,rawtx,vins,bestk,bestmask,myind,src_or_dest);
         } else printf("signedtxgen zero txid or null rawtx\n");
         free_json(vins);
     }
@@ -403,7 +471,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         if ( src_or_dest != 0 )
                         {
                             bp->desttxid = txid;
-                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0);
+                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,0);
                         }
                         else bp->srctxid = txid;
                         len = (int32_t)strlen(bp->signedtx) >> 1;

@@ -22,7 +22,7 @@
 #define DPOW_MINSIGS 7
 #define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0567
+#define DPOW_VERSION 0x0701
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
@@ -61,11 +61,12 @@ struct dpow_utxoentry
 
 struct dpow_entry
 {
-    bits256 commit,beacon;
-    uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask;
+    bits256 commit,beacon,ratifysrcutxo,ratifydestutxo;
+    uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask,ratifyrecvmask,ratifybestmask;
     int32_t height;
-    int8_t bestk;
-    uint8_t pubkey[33];
+    uint16_t ratifysrcvout,ratifydestvout;
+    int8_t bestk,ratifybestk;
+    uint8_t pubkey[33],ratifysigs[2][76],ratifysiglens[2];
     struct dpow_coinentry src,dest;
 };
 
@@ -96,13 +97,14 @@ struct dpow_block
     bits256 hashmsg,desttxid,srctxid,beacon,commit;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
-    uint64_t recvmask,bestmask;
+    uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,ratifysigmasks[2];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
-    int8_t bestk;
+    int8_t bestk,ratifybestk,pendingbestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33]; char handles[DPOW_MAXRELAYS][32];
+    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][76],ratifysiglens[2];
+    char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768];//,rawtx[32768];
 };
 
