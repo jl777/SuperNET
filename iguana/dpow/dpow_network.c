@@ -163,7 +163,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
             missing++;
     }
     //printf("recv numipbits.%d numdpowipbits.%d matched.%d missing.%d\n",numipbits,n,matched,missing);
-    if ( (numipbits == 1 || missing < matched) && missing > 0 )
+    if ( (numipbits == 1 || missing < matched || matched > (myinfo->numipbits>>1)) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
             if ( ipbits[i] != 0 )
@@ -204,7 +204,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         else if ( dpow_datahandler(myinfo,dp,np->channel,np->height,np->packet,np->datalen) >= 0 )
                             dp->crcs[firstz] = crc32;
                     }
-                } else printf("np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
+                } else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
             }
             if ( np != 0 )
                 nn_freemsg(np);
