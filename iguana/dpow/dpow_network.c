@@ -19,9 +19,9 @@
 struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
-    uint32_t channel,height,size,datalen,crc32,ipbits[128];
+    uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
     char symbol[16];
-    uint8_t version0,version1,numipbits,packet[];
+    uint8_t version0,version1,packet[];
 } PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
@@ -58,12 +58,12 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
         {
             myinfo->dpowipbits[n] = ipbits;
             retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
-            for (i=0; i<=n; i++)
-                printf("%08x ",myinfo->dpowipbits[i]);
-            printf("->\n");
+            //for (i=0; i<=n; i++)
+            //    printf("%08x ",myinfo->dpowipbits[i]);
+            //printf("->\n");
             qsort(myinfo->dpowipbits,n+1,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
-            for (i=0; i<=n; i++)
-                printf("%08x ",myinfo->dpowipbits[i]);
+            //for (i=0; i<=n; i++)
+            //    printf("%08x ",myinfo->dpowipbits[i]);
             printf("addnotary.[%d] (%s) retval.%d (%d %d)\n",n,ipaddr,retval,myinfo->numdpowipbits,n);
             myinfo->numdpowipbits++;
         }
