@@ -146,7 +146,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipbits)
 {
     int32_t i,j,matched,missing,n; char ipaddr[64];
-    if ( numipbits < 1 )
+    if ( numipbits < 1 || numipbits >= 64 )
         return;
     n = myinfo->numdpowipbits;
     matched = missing = 0;
