@@ -728,7 +728,14 @@ void dpow_statemachinestart(void *ptr)
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
             if ( bp->isratify == 0 )
                 bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
-            else dpow_utxosync(myinfo,dp,bp,-1,myind,srchash);
+            else
+            {
+                int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
+                memset(&U,0,sizeof(U));
+                dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
+                if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
+                    dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
+            }
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
