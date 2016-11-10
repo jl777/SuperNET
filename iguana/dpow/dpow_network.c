@@ -73,7 +73,6 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
     }
     return(retval);
 }
-"balance" : 1133.99276868,
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
