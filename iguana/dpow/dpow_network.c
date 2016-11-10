@@ -84,7 +84,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
         myinfo->numdpowipbits = 1;
     }
-    return(dpow_addnotary(myinfo,ipaddr));
+    dpow_addnotary(myinfo,ipaddr);
 }
 
 int32_t dpow_crc32find(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t crc32,uint32_t channel)
