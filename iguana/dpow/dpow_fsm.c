@@ -109,7 +109,7 @@ void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *
     //dpow_utxosync(myinfo,bp,mask,myind,srchash);
     if ( forceflag || bp->notaries[myind].masks[lastk] == 0 )
     {
-        printf("dpow sync update signedtxgen\n");
+        //printf("dpow sync update signedtxgen\n");
         dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest);
     }
 }
