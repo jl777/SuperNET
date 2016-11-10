@@ -116,7 +116,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np = calloc(1,size); // endian dependent!
         np->numipbits = myinfo->numdpowipbits;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
-        //printf("dpow_send.(%d) size.%d\n",datalen,size);
+        printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
@@ -139,6 +139,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
     int32_t i,j,matched,missing; char ipaddr[64];
     if ( numipbits < 1 )
         return;
+    printf("recv numipbits.%d\n",numipbits);
     matched = missing = 0;
     for (i=0; i<numipbits; i++)
     {
