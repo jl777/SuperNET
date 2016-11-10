@@ -359,7 +359,7 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         if ( bp->bestk >= 0 && (rand() % 10) == 0 )
             dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGCHANNEL);
     }
-    if ( (rand() % 10) == 0 )
+    if ( (rand() % 20) == 0 )
     {
         if ( bp->isratify != 0 )
         {

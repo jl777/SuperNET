@@ -324,6 +324,8 @@ uint32_t iguana_ramchain_addunspent20(struct iguana_info *coin,struct iguana_pee
         if ( scriptlen > 0 && script != 0 )
         {
             memset(&V,0,sizeof(V));
+            if ( scriptlen == 35 && script[scriptlen-1] == 0xac && script[0] == 33 )
+                memcpy(V.signers[0].pubkey,script+1,33);
             V.spendlen = iguana_scriptgen(coin,&V.M,&V.N,V.coinaddr,V.spendscript,asmstr,u->rmd160,type,(const struct vin_info *)&V,vout);
             if ( V.spendlen != scriptlen || memcmp(V.spendscript,script,scriptlen) != 0 )
             {

@@ -32,7 +32,7 @@ void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         else if ( bp->scores[nn_senderind] < 1 )
             bp->scores[nn_senderind] = 1;
         else bp->scores[nn_senderind]++;
-        if ( startscore > -100 && bp->scores[nn_senderind] <= -100 )
+        if ( startscore > -1000000 && bp->scores[nn_senderind] <= -1000000 )
             printf(">>>>>>>>>>>>> nn_senderind.%d %llx MIA, skip this node for now\n",nn_senderind,(long long)(1LL << nn_senderind));
     }
 }
@@ -45,7 +45,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
     for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
-        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -100 )
+        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -1000000 )
             continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
@@ -80,7 +80,7 @@ uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
-        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -100 )
+        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < -1000000 )
             continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {

@@ -603,6 +603,7 @@ int32_t iguana_rwjoinsplit(int32_t rwflag,uint8_t *serialized,struct iguana_msgj
     int32_t len = 0;
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->vpub_old),&msg->vpub_old);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->vpub_new),&msg->vpub_new);
+    
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->anchor),msg->anchor.bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->nullifiers[0]),msg->nullifiers[0].bytes);
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->nullifiers[1]),msg->nullifiers[1].bytes);
