@@ -557,15 +557,15 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,coin->txfee + duplicates*coin->txfee/5,addresses,0,0,0,0,"127.0.0.1",0,1);
-        printf("duplicatesTX.(%s)\n",rawtx);
+        //printf("duplicatesTX.(%s)\n",rawtx);
         if ( signedtxidp != 0 )
         {
             if ( (signedtx= iguana_signrawtx(myinfo,coin,0,signedtxidp,completedp,vins,rawtx,0,0)) != 0 )
             {
                 free(rawtx);
-                printf("signedtx.(%s)\n",signedtx);
                 if ( *completedp != 0 && sendflag != 0 )
                 {
+                    printf("splitfunds signedtx.(%s)\n",signedtx);
                     iguana_sendrawtransaction(myinfo,coin,signedtx);
                 }
                 rawtx = signedtx;

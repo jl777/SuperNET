@@ -69,7 +69,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     }
 }
 
-struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t *senderindp,uint8_t *senderpub)
+struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t height,int32_t *senderindp,uint8_t *senderpub)
 {
     int32_t i;
     *senderindp = -1;
@@ -179,7 +179,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8
             printf("couldnt find height.%d | if you just started notary dapp this is normal\n",height);
         return(-1);
     }
-    dpow_notaryfind(myinfo,bp,&myind,dp->minerkey33);
+    dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
         printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
@@ -252,7 +252,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8
             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
             return(0);
         }
-        if ( (ep= dpow_notaryfind(myinfo,bp,&senderind,U.pubkey)) != 0 )
+        if ( (ep= dpow_notaryfind(myinfo,bp,height,&senderind,U.pubkey)) != 0 )
         {
             dpow_utxo2entry(bp,ep,&U);
             if ( ((1LL << senderind) & bp->recvmask) == 0 )
@@ -290,7 +290,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8
         }
         if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
         {
-            if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,&senderind,dsig.senderpub)) != 0 )
+            if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,height,&senderind,dsig.senderpub)) != 0 )
             {
                 vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
                 if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
@@ -619,9 +619,9 @@ void dpow_statemachinestart(void *ptr)
         bp->numnotaries = komodo_notaries(pubkeys,kmdheight);
         for (i=0; i<bp->numnotaries; i++)
         {
-            //for (j=0; j<33; j++)
-            //    printf("%02x",pubkeys[i][j]);
-            //printf(" <= pubkey[%d]\n",i);
+            int32_t j; for (j=0; j<33; j++)
+                printf("%02x",pubkeys[i][j]);
+            printf(" <= pubkey[%d]\n",i);
             memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
             if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
             {
