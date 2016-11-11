@@ -24,7 +24,8 @@ struct dpow_nanomsghdr
     uint16_t srcvout,destvout;
     char symbol[16];
     int8_t bestk;
-    uint8_t senderind,ratifysiglens[2],ratifysigs[2][76],version0,version1,packet[];
+    uint8_t ratifysiglens[2],ratifysigs[2][76];
+    uint8_t senderind,version0,version1,packet[];
 } PACKED;
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
@@ -195,9 +196,9 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( size >= 0 )
         {
-            printf("v.%02x %02x datalen.%d size.%d\n",np->version0,np->version1,np->datalen,size);
             if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
             {
+                printf("v.%02x %02x datalen.%d size.%d\n",np->version0,np->version1,np->datalen,size);
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
