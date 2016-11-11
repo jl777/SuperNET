@@ -345,8 +345,9 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->rpcport = 14632;
         }
-        if ( chain->serverport[0] == 0 && (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
+        if ( chain->userpass[0] == 0 && (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
             chain->rpcport = port;
+        else printf("use command line serverport and userpass for %s\n",chain->symbol);
         chain->zcash = juint(argjson,"zcash");
         chain->debug = juint(argjson,"debug");
         chain->fixit = juint(argjson,"fixit");
