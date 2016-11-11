@@ -865,7 +865,7 @@ int32_t PAX_genspline(struct PAX_spline *spline,int32_t splineid,char *name,uint
             spline->pricevals[i] = output[i * 24];
         }
     }
-    printf("spline.%s num.%d\n",name,spline->num);
+    //printf("spline.%s num.%d\n",name,spline->num);
     return(spline->num);
 }
 
