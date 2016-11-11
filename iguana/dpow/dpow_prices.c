@@ -1269,12 +1269,11 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
     char *jsonstr,*relstr,*basestr,name[16]; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
-        //if ( Debuglevel > 2 )
+        if ( Debuglevel > 2 )
             printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
-            printf("tmpdate.(%s)\n",date);
             if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
             {
                 while ( item != 0 )
@@ -1771,7 +1770,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
         expand_datenum(dp->edate,datenum);
         timestamp = OS_conv_datenum(datenum,12,0,0);
-        printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
+        //printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
         if ( (datenum= ecb_matrix(dp->basevals,dp->ecbmatrix,dp->edate)) > 0 )
         {
             utc32[numsamples] = timestamp;
