@@ -37,7 +37,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 else bp->ratifysigmasks[i] &= ~(1LL << senderind);
             }
         }
-        bp->ratifyrecvmask |= (1LL << senderind);
+        bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
         bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
         if ( bp->ratifybestk >= 0 )
         {
