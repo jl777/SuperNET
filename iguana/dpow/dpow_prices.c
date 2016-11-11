@@ -1363,7 +1363,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
             loaded = 1;
         else printf("fread error\n");
         fclose(fp);
-    } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
+    } //else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
     if ( loaded == 0 )
@@ -1409,7 +1409,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     //"2000-01-03"
     if ( (datenum= conv_date(&seconds,date)) < 0 )
         return(-1);
-    printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
+    //printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
     return(datenum);
 }
 

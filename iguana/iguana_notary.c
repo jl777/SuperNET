@@ -373,14 +373,22 @@ ZERO_ARGS(dpow,cancelratify)
 
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
 {
-    void **ptrs; bits256 zero; struct dpow_checkpoint checkpoint;
+    void **ptrs; bits256 zero; int32_t i; char *source; struct dpow_checkpoint checkpoint;
     if ( ratified == 0 )
         return(clonestr("{\"error\":\"no ratified list for dpow ratify\"}"));
     memset(zero.bytes,0,sizeof(zero));
     dpow_checkpointset(myinfo,&checkpoint,0,zero,timestamp,timestamp);
     ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
     ptrs[0] = (void *)myinfo;
+    if ( (source= jstr(json,"source")) == 0 )
+        source = "KMD";
     ptrs[1] = (void *)&myinfo->DPOWS[0];
+    for (i=0; i<myinfo->numdpows; i++)
+        if ( strcmp(myinfo->DPOWS[0].symbol,source) == 0 )
+        {
+            ptrs[1] = (void *)&myinfo->DPOWS[i];
+            break;
+        }
     ptrs[2] = (void *)(long)minsigs;
     ptrs[3] = (void *)DPOW_RATIFYDURATION;
     ptrs[4] = (void *)jprint(ratified,0);
