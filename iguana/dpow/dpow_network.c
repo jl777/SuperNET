@@ -195,6 +195,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( size >= 0 )
         {
+            printf("v.%02x %02x datalen.%d size.%d\n",np->version0,np->version1,np->datalen,size);
             if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
             {
                 if ( np->datalen == (size - sizeof(*np)) )
