@@ -670,6 +670,13 @@ void dpow_statemachinestart(void *ptr)
             free(ptr);
             return;
         }
+        if ( bp->isratify != 0 )
+        {
+            bp->notaries[myind].ratifysrcutxo = ep->src.prev_hash;
+            bp->notaries[myind].ratifysrcvout = ep->src.prev_vout;
+            bp->notaries[myind].ratifydestutxo = ep->dest.prev_hash;
+            bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
+        }
     }
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);

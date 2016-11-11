@@ -198,7 +198,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
             {
-                printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
+                //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
@@ -214,7 +214,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                     }
                     if ( dp != 0 && crc32 == np->crc32 )//&& (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
-                        char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
+                        //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
                         else if ( dpow_datahandler(myinfo,dp,np->senderind,np->bestk,np->bestmask,np->recvmask,np->channel,np->height,np->packet,np->datalen,np->destutxo,np->destvout,np->srcutxo,np->srcvout,np->ratifysiglens,np->ratifysigs) >= 0 )
