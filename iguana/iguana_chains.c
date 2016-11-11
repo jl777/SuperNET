@@ -273,7 +273,7 @@ uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *us
                 sprintf(serverport,"127.0.0.1:%s",rpcport);
             free(rpcport);
         }
-        //if ( 0 && Debuglevel > 1 )
+        if ( 0 && Debuglevel > 1 )
             printf("-> (%s):(%s) userpass.(%s) serverport.(%s)\n",rpcuser,rpcpassword,userpass,serverport);
         if ( rpcuser != 0 )
             free(rpcuser);
