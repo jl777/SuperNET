@@ -318,12 +318,14 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( chain->txfee == 0 )
             chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
         chain->use_addmultisig = juint(argjson,"useaddmultisig");
+        if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
+            chain->rpcport = port;
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");
         if ( jstr(argjson,"rpchost") != 0 )
             safecopy(chain->serverport,jstr(argjson,"rpchost"),sizeof(chain->serverport));
-       if ( jstr(argjson,"userpass") != 0 )
+        if ( jstr(argjson,"userpass") != 0 )
             safecopy(chain->userpass,jstr(argjson,"userpass"),sizeof(chain->userpass));
         chain->rpcport = juint(argjson,"rpcport");
         if ( chain->rpcport == 0 && (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"RELAY") != 0 )
@@ -345,9 +347,6 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->rpcport = 14632;
         }
-        if ( chain->userpass[0] == 0 && (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
-            chain->rpcport = port;
-        else printf("use command line serverport and userpass for %s\n",chain->symbol);
         chain->zcash = juint(argjson,"zcash");
         chain->debug = juint(argjson,"debug");
         chain->fixit = juint(argjson,"fixit");
