@@ -39,7 +39,7 @@ int32_t bitcoin_pubkeylen(const uint8_t *pubkey)
         return(65);
     else
     {
-        printf("illegal pubkey.[%02x] %llx\n",pubkey[0],*(long long *)pubkey);
+        //printf("illegal pubkey.[%02x] %llx\n",pubkey[0],*(long long *)pubkey);
         return(-1);
     }
 }
