@@ -131,7 +131,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->bestmask = dpow_maskmin(bp->recvmask,bp,&np->bestk);
         np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
-        printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
+        //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
         np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
