@@ -723,7 +723,7 @@ double PAX_calcspline(struct PAX_spline *spline,double *outputs,double *slopes,i
 		if ( (f[n]= splinevals[i]) != 0. && utc32[i] != 0 )
 		{
 			//printf("i%d.(%u %f) ",i,utc32[i],splinevals[i]);
-            printf("%f ",splinevals[i]);
+            //printf("%f ",splinevals[i]);
 			if ( n > 0 )
 			{
 				if ( (gaps[n-1]= utc32[i] - lastxval) < 0 )
@@ -1329,7 +1329,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
                 count += PAX_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
                 if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
                 {
-                    printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
+                    //printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
                     return(-1);
                 }
             }
@@ -1378,7 +1378,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
                     loaded = 1;
                 fclose(fp);
             }
-        } else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
+        } //else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
     }
     else
     {
@@ -1795,7 +1795,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         prices[j][numsamples+1] = prices[j][numsamples-1] + diff;
         diff += prices[j][numsamples-1] - PAX_splineval(&dp->splines[j],utc32[numsamples-1] - 16*3600,1);
         prices[j][numsamples+2] = prices[j][numsamples-1] + diff;
-        printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
+        //printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
         PAX_genspline(&dp->splines[j],j,CURRENCIES[j],utc32,prices[j],numsamples+3,prices[j]);
     }
 }
