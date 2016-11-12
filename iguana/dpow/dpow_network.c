@@ -300,7 +300,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np = calloc(1,size); // endian dependent!
         if ( (np->numipbits= dp->numipbits) == 0 )
         {
-            dp->ipbits[0] = myinfo->myipbits;
+            dp->ipbits[0] = myinfo->myaddr.myipbits;
             np->numipbits = dp->numipbits = 1;
         }
         np->senderind = bp->myind;
