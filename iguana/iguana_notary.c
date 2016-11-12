@@ -59,7 +59,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs;
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; uint8_t pubkeys[64][33];
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -70,9 +70,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         freq = 1;
-        minsigs = 2;
+        minsigs = (komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
     }
-    printf("%s src ht.%d dest.%u nonz.%d %s\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash));
+    printf("%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {

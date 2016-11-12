@@ -556,13 +556,13 @@ void dpow_statemachinestart(void *ptr)
     {
         bp = calloc(1,sizeof(*bp));
         bp->minsigs = minsigs;
-        if ( (bp->duration= duration) == DPOW_RATIFYDURATION )
-            bp->isratify = 1;
+        bp->duration = duration;
         bp->srccoin = src;
         bp->destcoin = dest;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
+            bp->isratify = 1;
             if ( (numratified= cJSON_GetArraySize(ratified)) > 0 )
             {
                 for (i=0; i<numratified; i++)
@@ -619,9 +619,9 @@ void dpow_statemachinestart(void *ptr)
         bp->numnotaries = komodo_notaries(src->symbol,pubkeys,strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height);
         for (i=0; i<bp->numnotaries; i++)
         {
-            int32_t j; for (j=0; j<33; j++)
-                printf("%02x",pubkeys[i][j]);
-            printf(" <= pubkey[%d]\n",i);
+            //int32_t j; for (j=0; j<33; j++)
+            //    printf("%02x",pubkeys[i][j]);
+            //printf(" <= pubkey[%d]\n",i);
             memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
             if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
             {

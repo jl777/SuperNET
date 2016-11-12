@@ -201,7 +201,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     if ( src_or_dest != 0 )
-        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,0,bp,src_or_dest);
+        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
     else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
     if ( opretlen < 0 )
         return(-1);
