@@ -370,7 +370,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
         if ( j == n )
             missing++;
     }
-    if ( (numipbits == 1 || missing < matched || matched > (dp->numipbits>>1)) && missing > 0 )
+    if ( (numipbits == 1 || missing < matched || matched > 0) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
             if ( ipbits[i] != 0 )
