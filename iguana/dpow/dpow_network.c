@@ -180,7 +180,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,j,bestmatches = 0,matches = 0;
+    int32_t i,bestmatches = 0,matches = 0;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -209,9 +209,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
             bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
             bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
-            for (j=0; j<bp->numnotaries; j++)
+            for (i=0; i<bp->numnotaries; i++)
             {
-                i = DPOW_MODIND(bp,j);
                 if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
                 {
                     matches++;
@@ -237,7 +236,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,j,bestmatches = 0,matches = 0;
+    int32_t i,bestmatches = 0,matches = 0;
     if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         bp->notaries[senderind].src.prev_hash = srcutxo;
@@ -267,16 +266,14 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         if ( bp->bestk >= 0 )
         {
-            for (j=0; j<bp->numnotaries; j++)
+            for (i=0; i<bp->numnotaries; i++)
             {
-                i = DPOW_MODIND(bp,j);
                 if ( bp->bestk >= 0 && bp->notaries[i].bestk == bp->bestk && bp->notaries[i].bestmask == bp->bestmask )
                 {
                     matches++;
                     if ( ((1LL << i) & bp->bestmask) != 0 )
                         bestmatches++;
-                    else printf("mismatch.%d ",i);
-                }
+                } else printf("mismatch.%d (%d %llx) ",i,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
             }
             if ( bestmatches >= bp->minsigs )
             {
