@@ -420,7 +420,6 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
 {
     static const bits256 zero;
     int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
-    usleep(1000);
     portable_mutex_lock(&coin->special_mutex);
     if ( (rptr= bp->ramchain.H.data) != 0 )
     {

@@ -116,7 +116,8 @@ void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 txid,commit,srchash,hashmsg; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    //bits256 txid,commit,srchash,hashmsg; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
+    int32_t i,src_or_dest,myind = -1; bits256 txid,srchash; struct iguana_info *coin; char str[65],str2[65];
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
@@ -125,7 +126,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     }
     for (i=0; i<32; i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
-    if ( channel == DPOW_ENTRIESCHANNEL )
+    /*if ( channel == DPOW_ENTRIESCHANNEL )
     {
         struct dpow_entry notaries[DPOW_MAXRELAYS]; uint8_t n; int8_t bestk; struct dpow_coinentry *ptr,*refptr;
         rlen = 0;
@@ -263,7 +264,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
         //if ( 0 && bp != 0 )
         //    printf("%s SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",coin->symbol,height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
     }
-    else if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
+    else*/ if ( channel == DPOW_TXIDCHANNEL || channel == DPOW_BTCTXIDCHANNEL )
     {
         src_or_dest = (channel == DPOW_BTCTXIDCHANNEL);
         coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
