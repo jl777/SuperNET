@@ -756,7 +756,7 @@ void iguana_helper(void *arg)
                                 iguana_bundlefinalize(myinfo,coin,bp,&MEM,MEMB);
                             if ( bp->emitfinish != 0 && time(NULL) > bp->emitfinish+60 )
                             {
-                                if ( 0 && bp->validated == 0 )
+                                if ( bp->validated == 0 )
                                 {
                                     for (i=0; i<j; i++)
                                         if ( coin->bundles[i] == 0 || coin->bundles[i]->validated <= 1 )
