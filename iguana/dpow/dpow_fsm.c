@@ -616,7 +616,7 @@ void dpow_statemachinestart(void *ptr)
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
-        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,kmdheight);
+        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height);
         for (i=0; i<bp->numnotaries; i++)
         {
             int32_t j; for (j=0; j<33; j++)
