@@ -16,15 +16,20 @@
 
 #if ISNOTARYNODE
 
+struct dpow_nanoutxo
+{
+    bits256 srcutxo,destutxo;
+    uint64_t bestmask,recvmask;
+    uint16_t srcvout,destvout;
+    uint8_t sigs[2][76],siglens[2],bestk,pad;
+} PACKED;
+
 struct dpow_nanomsghdr
 {
-    bits256 srchash,desthash,srcutxo,destutxo;
-    uint64_t bestmask,recvmask;
+    bits256 srchash,desthash;
+    struct dpow_nanopair ratify,notarize;
     uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
-    uint16_t srcvout,destvout;
     char symbol[16];
-    int8_t bestk;
-    uint8_t ratifysiglens[2],ratifysigs[2][76];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
 
@@ -118,6 +123,98 @@ int32_t dpow_crc32find(struct supernet_info *myinfo,struct dpow_info *dp,uint32_
     return(firstz);
 }
 
+void dpow_sendutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
+{
+    int32_t i;
+    if ( isratify != 0 )
+    {
+        np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
+        np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
+        np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
+        np->destvout = bp->notaries[bp->myind].ratifydestvout;
+        np->bestmask = bp->ratifybestmask;
+        np->recvmask = bp->ratifyrecvmask;
+        np->bestk = bp->ratifybestk;
+        for (i=0; i<2; i++)
+        {
+            if ( (np->siglens[i]= bp->ratifysiglens[i]) > 0 )
+                memcpy(np->sigs[i],bp->ratifysigs[i],np->siglens[i]);
+        }
+    }
+    else
+    {
+        np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
+        np->srcvout = bp->notaries[bp->myind].src.prev_vout;
+        np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
+        np->destvout = bp->notaries[bp->myind].dest.prev_vout;
+        np->bestmask = bp->bestmask;
+        np->recvmask = bp->recvmask;
+        if ( (np->bestk= bp->bestk) >= 0 )
+        {
+            if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
+                memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
+            if ( (np->siglens[1]= bp->notaries[bp->myind].dest.siglens[bp->bestk]) > 0 )
+                memcpy(np->sigs[1],bp->notaries[bp->myind].dest.sigs[bp->bestk],np->siglens[1]);
+        }
+    }
+}
+
+void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
+{
+    int32_t i,bestmatches = 0,matches = 0;
+    //char str[65],str2[65];
+    //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
+    if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
+    {
+        bp->notaries[senderind].ratifysrcutxo = srcutxo;
+        bp->notaries[senderind].ratifysrcvout = srcvout;
+        bp->notaries[senderind].ratifydestutxo = destutxo;
+        bp->notaries[senderind].ratifydestvout = destvout;
+        bp->notaries[senderind].ratifybestmask = bestmask;
+        bp->notaries[senderind].ratifyrecvmask = recvmask;
+        bp->notaries[senderind].ratifybestk = bestk;
+        for (i=0; i<2; i++)
+        {
+            if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
+            {
+                memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
+                if ( bestk == bp->pendingbestk && bestmask == bp->pendingbestmask )
+                    bp->ratifysigmasks[i] |= (1LL << senderind);
+                else bp->ratifysigmasks[i] &= ~(1LL << senderind);
+            }
+        }
+        bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
+        bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
+        if ( bp->ratifybestk >= 0 )
+        {
+            bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
+            bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
+            bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
+            for (i=0; i<bp->numnotaries; i++)
+            {
+                if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
+                {
+                    matches++;
+                    if ( ((1LL << i) & bp->ratifybestmask) != 0 )
+                        bestmatches++;
+                }
+            }
+            if ( bestmatches >= bp->minsigs )
+            {
+                if ( bp->pendingbestk != bp->ratifybestk || bp->pendingbestmask != bp->ratifybestmask )
+                {
+                    printf("new PENDING BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
+                    bp->pendingbestk = bp->ratifybestk;
+                    bp->pendingbestmask = bp->ratifybestmask;
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGCHANNEL,0,1);
+                }
+            }
+        }
+        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
+    }
+}
+
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
     struct dpow_nanomsghdr *np; int32_t i,size,sentbytes = 0; uint32_t crc32;
@@ -128,19 +225,11 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size); // endian dependent!
         np->numipbits = myinfo->numdpowipbits;
-        np->bestmask = dpow_maskmin(bp->recvmask,bp,&np->bestk);
         np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
         //printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
-        np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
-        np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
-        np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
-        np->destvout = bp->notaries[bp->myind].ratifydestvout;
-        for (i=0; i<2; i++)
-        {
-            np->ratifysiglens[i] = bp->ratifysiglens[i];
-            memcpy(np->ratifysigs[i],bp->ratifysigs[i],np->ratifysiglens[i]);
-        }
+        dpow_sendutxoset(&np->notarize,bp,0);
+        dpow_sendutxoset(&np->ratify,bp,1);
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
@@ -217,8 +306,16 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
-                        else if ( dpow_datahandler(myinfo,dp,np->senderind,np->bestk,np->bestmask,np->recvmask,np->channel,np->height,np->packet,np->datalen,np->destutxo,np->destvout,np->srcutxo,np->srcvout,np->ratifysiglens,np->ratifysigs) >= 0 )
-                            dp->crcs[firstz] = crc32;
+                        else
+                        {
+                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 )
+                            {
+                                dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
+                                dpow_ratify_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask,nn_srcutxo,nn_srcvout,nn_destutxo,nn_destvout,nn_siglens,nn_sigs);
+                                dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                            }
+                            //dp->crcs[firstz] = crc32;
+                        }
                     }
                 } //else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
             }

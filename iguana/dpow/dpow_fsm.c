@@ -13,62 +13,6 @@
  *                                                                            *
  ******************************************************************************/
 
-void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
-{
-    int32_t i,bestmatches = 0,matches = 0;
-    //char str[65],str2[65];
-    //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
-    if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
-    {
-        bp->notaries[senderind].ratifysrcutxo = srcutxo;
-        bp->notaries[senderind].ratifysrcvout = srcvout;
-        bp->notaries[senderind].ratifydestutxo = destutxo;
-        bp->notaries[senderind].ratifydestvout = destvout;
-        bp->notaries[senderind].ratifybestmask = bestmask;
-        bp->notaries[senderind].ratifyrecvmask = recvmask;
-        bp->notaries[senderind].ratifybestk = bestk;
-        for (i=0; i<2; i++)
-        {
-            if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
-            {
-                memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
-                if ( bestk == bp->pendingbestk && bestmask == bp->pendingbestmask )
-                    bp->ratifysigmasks[i] |= (1LL << senderind);
-                else bp->ratifysigmasks[i] &= ~(1LL << senderind);
-            }
-        }
-        bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
-        bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
-        if ( bp->ratifybestk >= 0 )
-        {
-            bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
-            bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
-            bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
-            for (i=0; i<bp->numnotaries; i++)
-            {
-                if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
-                {
-                    matches++;
-                    if ( ((1LL << i) & bp->ratifybestmask) != 0 )
-                        bestmatches++;
-                }
-            }
-            if ( bestmatches >= bp->minsigs )
-            {
-                if ( bp->pendingbestk != bp->ratifybestk || bp->pendingbestmask != bp->ratifybestmask )
-                {
-                    printf("new PENDING BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
-                    bp->pendingbestk = bp->ratifybestk;
-                    bp->pendingbestmask = bp->ratifybestmask;
-                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
-                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->pendingbestk,bp->pendingbestmask,bp->myind,DPOW_SIGCHANNEL,0,1);
-                }
-            }
-        }
-        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
-    }
-}
-
 struct dpow_entry *dpow_notaryfind(struct supernet_info *myinfo,struct dpow_block *bp,int32_t height,int32_t *senderindp,uint8_t *senderpub)
 {
     int32_t i;
@@ -170,23 +114,15 @@ void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *
     }
 }
 
-int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,uint8_t nn_senderind,int8_t nn_bestk,uint64_t nn_bestmask,uint64_t nn_recvmask,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen,bits256 nn_destutxo,uint16_t nn_destvout,bits256 nn_srcutxo,uint16_t nn_srcvout,uint8_t nn_siglens[2],uint8_t nn_sigs[2][76])
+int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
-    bits256 txid,commit,srchash,hashmsg; struct dpow_block *bp = 0; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
-    if ( (bp= dpow_heightfind(myinfo,dp,height)) == 0 )
-    {
-        if ( 0 && (rand() % 100) == 0 && height > 0 )
-            printf("couldnt find height.%d | if you just started notary dapp this is normal\n",height);
-        return(-1);
-    }
+    bits256 txid,commit,srchash,hashmsg; uint32_t flag = 0; int32_t src_or_dest,senderind,i,iter,rlen,myind = -1; char str[65],str2[65]; struct dpow_sigentry dsig; struct dpow_entry *ep; struct dpow_coinentry *cp; struct dpow_utxoentry U; struct iguana_info *coin;
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
         printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
         return(-1);
     }
-    dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
-    dpow_ratify_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask,nn_srcutxo,nn_srcvout,nn_destutxo,nn_destvout,nn_siglens,nn_sigs);
     for (i=0; i<32; i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     if ( channel == DPOW_ENTRIESCHANNEL )
