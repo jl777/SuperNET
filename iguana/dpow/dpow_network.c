@@ -56,29 +56,42 @@ static int _increasing_ipbits(const void *a,const void *b)
 #undef uint32_b
 }
 
-int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
+int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
-    char str[512]; uint32_t ipbits; int32_t i,n,retval = -1;
+    char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
     if ( myinfo->dpowsock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
     {
         portable_mutex_lock(&myinfo->dpowmutex);
-        n = myinfo->numdpowipbits;
         ipbits = (uint32_t)calc_ipbits(ipaddr);
-        for (i=0; i<n; i++)
-            if ( ipbits == myinfo->dpowipbits[i] )
-                break;
-        if ( i == n && n < sizeof(myinfo->dpowipbits)/sizeof(*myinfo->dpowipbits) )
+        for (iter=0; iter<2; iter++)
         {
-            myinfo->dpowipbits[n] = ipbits;
-            retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
-            for (i=0; i<=n; i++)
-                printf("%08x ",myinfo->dpowipbits[i]);
-            printf("->\n");
-            myinfo->numdpowipbits++;
-            qsort(myinfo->dpowipbits,myinfo->numdpowipbits,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
-            for (i=0; i<myinfo->numdpowipbits; i++)
-                printf("%08x ",myinfo->dpowipbits[i]);
-            printf("addnotary.[%d] (%s) retval.%d (total %d)\n",n,ipaddr,retval,myinfo->numdpowipbits);
+            if ( iter == 0 )
+            {
+                n = myinfo->numdpowipbits;
+                ptr = myinfo->dpowipbits;
+            }
+            else
+            {
+                n = dp->numipbits;
+                ptr = dp->ipbits;
+            }
+            for (i=0; i<n; i++)
+                if ( ipbits == ptr[i] )
+                    break;
+            if ( i == n && n < 64 )
+            {
+                ptr[n] = ipbits;
+                if ( iter == 0 )
+                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
+                n++;
+                qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
+                if ( iter == 0 )
+                    myinfo->numdpowipbits = n;
+                else dp->numipbits = n;
+                for (i=0; i<n; i++)
+                    printf("%08x ",ptr[i]);
+                printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp->numipbits,iter);
+            }
         }
         portable_mutex_unlock(&myinfo->dpowmutex);
     }
@@ -356,7 +369,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
             {
                 expand_ipbits(ipaddr,ipbits[i]);
                 printf("ADD NOTARY.(%s)\n",ipaddr);
-                dpow_addnotary(myinfo,ipaddr);
+                dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 ) printf("ignore\n");
 }
