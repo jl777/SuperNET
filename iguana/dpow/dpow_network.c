@@ -365,7 +365,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( np->datalen == (size - sizeof(*np)) )
                 {
                     crc32 = calc_crc32(0,np->packet,np->datalen);
-                    dpow_ipbitsadd(myinfo,np->ipbits,np->numipbits);
+                    dpow_ipbitsadd(myinfo,np->ipbits,np->numipbits,np->senderind);
                     dp = 0;
                     for (i=0; i<myinfo->numdpows; i++)
                     {
