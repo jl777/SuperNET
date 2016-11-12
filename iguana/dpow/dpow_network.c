@@ -92,6 +92,8 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                     printf("%08x ",ptr[i]);
                 printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp->numipbits,iter);
             }
+            if ( dp == 0 )
+                break;
         }
         portable_mutex_unlock(&myinfo->dpowmutex);
     }
@@ -119,7 +121,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
         myinfo->numdpowipbits = 1;
     }
-    dpow_addnotary(myinfo,ipaddr);
+    dpow_addnotary(myinfo,0,ipaddr);
 }
 
 int32_t dpow_crc32find(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t crc32,uint32_t channel)
