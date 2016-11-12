@@ -59,7 +59,7 @@ static int _increasing_ipbits(const void *a,const void *b)
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
-    if ( myinfo->dpowsock >= 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
+    if ( myinfo->dpowsock >= 0 )
     {
         portable_mutex_lock(&myinfo->dpowmutex);
         ipbits = (uint32_t)calc_ipbits(ipaddr);
@@ -81,7 +81,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
             if ( i == n && n < 64 )
             {
                 ptr[n] = ipbits;
-                if ( iter == 0 )
+                if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                     retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
                 n++;
                 qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
@@ -374,7 +374,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
             if ( ipbits[i] != 0 )
             {
                 expand_ipbits(ipaddr,ipbits[i]);
-                printf("ADD NOTARY.(%s)\n",ipaddr);
+                printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 ) printf("ignore\n");
