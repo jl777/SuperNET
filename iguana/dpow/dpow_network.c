@@ -236,15 +236,15 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 memcpy(bp->notaries[senderind].src.sigs[bestk],sigs[0],siglens[0]);
                 if ( bestk == bp->bestk && bestmask == bp->bestmask )
-                    bp->srcsigmasks[bestk] |= (1LL << senderind);
-                else bp->srcsigmasks[bestk] &= ~(1LL << senderind);
+                    bp->srcsigsmasks[bestk] |= (1LL << senderind);
+                else bp->srcsigsmasks[bestk] &= ~(1LL << senderind);
             }
             if ( (bp->notaries[senderind].dest.siglens[bestk]= siglens[1]) != 0 )
             {
                 memcpy(bp->notaries[senderind].dest.sigs[bestk],sigs[1],siglens[1]);
                 if ( bestk == bp->bestk && bestmask == bp->bestmask )
-                    bp->destsigmasks[bestk] |= (1LL << senderind);
-                else bp->destsigmasks[bestk] &= ~(1LL << senderind);
+                    bp->destsigsmasks[bestk] |= (1LL << senderind);
+                else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
             }
         }
         bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
@@ -272,7 +272,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
             }
         }
-        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigmasks[bp->bestk]:0));
+        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0));
     }
 }
 
@@ -354,7 +354,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t i,n=0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np; struct dpow_info *dp;
+    int32_t i,n=0,size,firstz = -1; uint32_t crc32; struct dpow_nanomsghdr *np; struct dpow_info *dp; struct dpow_block *bp;
     while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         if ( size >= 0 )
