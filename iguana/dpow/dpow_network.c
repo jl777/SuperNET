@@ -215,7 +215,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
         }
-        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
+        printf("numips.%d RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",dp->numipbits,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
     }
 }
 
@@ -272,7 +272,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
             }
         }
-        printf("numips.%d NOTARIZE.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d\n",myinfo->numdpowipbits,bp->minsigs,matches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind);
+        printf("numips.%d NOTARIZE.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d\n",dp->numipbits,bp->minsigs,matches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind);
     }
 }
 
@@ -298,9 +298,13 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         //dp->crcs[firstz] = crc32;
         size = (int32_t)(sizeof(*np) + datalen);
         np = calloc(1,size); // endian dependent!
-        np->numipbits = myinfo->numdpowipbits;
+        if ( (np->numipbits= dp->numipbits) == 0 )
+        {
+            dp->ipbits[0] = myinfo->myipbits;
+            np->numipbits = dp->numipbits = 1;
+        }
         np->senderind = bp->myind;
-        memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
+        memcpy(np->ipbits,dp->ipbits,dp->numipbits * sizeof(*dp->ipbits));
         for (i=0; i<np->numipbits; i++)
             printf("%08x ",np->ipbits[i]);
         printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
@@ -323,19 +327,19 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     }
 }
 
-void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipbits,int32_t fromid)
+void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid)
 {
     int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits < 1 || numipbits >= 64 )
         return;
-    n = myinfo->numdpowipbits;
+    n = dp->numipbits;
     matched = missing = 0;
     for (i=0; i<numipbits; i++)
         printf("%08x ",ipbits[i]);
     for (i=0; i<numipbits; i++)
     {
         for (j=0; j<n; j++)
-            if ( ipbits[i] == myinfo->dpowipbits[j] )
+            if ( ipbits[i] == dp->ipbits[j] )
             {
                 matched++;
                 ipbits[i] = 0;
@@ -344,13 +348,14 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
         if ( j == n )
             missing++;
     }
-    printf("from.%d RECV numips.%d numdpowipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
-    if ( (numipbits == 1 || missing < matched || matched > (myinfo->numdpowipbits>>1)) && missing > 0 )
+    printf("from.%d RECV numips.%d numipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
+    if ( (numipbits == 1 || missing < matched || matched > (dp->numipbits>>1)) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
             if ( ipbits[i] != 0 )
             {
                 expand_ipbits(ipaddr,ipbits[i]);
+                printf("ADD NOTARY.(%s)\n",ipaddr);
                 dpow_addnotary(myinfo,ipaddr);
             }
     } else if ( missing > 0 ) printf("ignore\n");
@@ -380,12 +385,12 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                     }
                     if ( dp != 0 && crc32 == np->crc32 )//&& (firstz= dpow_crc32find(myinfo,dp,crc32,np->channel)) >= 0 )
                     {
-                        dpow_ipbitsadd(myinfo,np->ipbits,np->numipbits,np->senderind);
                         //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz);
                          if ( i == myinfo->numdpows )
                             printf("received nnpacket for (%s)\n",np->symbol);
                         else
                         {
+                            dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 )
                             {
                                 if ( np->senderind >= 0 && np->senderind < bp->numnotaries )

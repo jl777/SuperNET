@@ -128,6 +128,7 @@ struct dpow_info
     int32_t maxblocks,SRCHEIGHT,SHORTFLAG;
     struct pax_transaction *PAX;
     portable_mutex_t mutex;
+    uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
 
