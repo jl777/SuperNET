@@ -28,7 +28,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
@@ -332,6 +332,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->desthash = desthash;
         np->channel = channel;
         np->height = msgbits;
+        np->myipbits = myinfo->myaddr.myipbits;
         strcpy(np->symbol,dp->symbol);
         np->version0 = DPOW_VERSION & 0xff;
         np->version1 = (DPOW_VERSION >> 8) & 0xff;
@@ -342,11 +343,14 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     }
 }
 
-void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid)
+void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
 {
     int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits < 1 || numipbits >= 64 )
+    {
+        printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
         return;
+    }
     n = dp->numipbits;
     matched = missing = 0;
     for (i=0; i<numipbits; i++)
@@ -374,6 +378,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
     } else if ( missing > 0 ) printf("ignore\n");
+    expand_ipbits(ipaddr,senderipbits);
+    dpow_addnotary(myinfo,dp,ipaddr);
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
@@ -405,7 +411,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             printf("received nnpacket for (%s)\n",np->symbol);
                         else
                         {
-                            dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind);
+                            dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 )
                             {
                                 if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
