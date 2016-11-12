@@ -329,6 +329,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
     n = myinfo->numdpowipbits;
     matched = missing = 0;
     for (i=0; i<numipbits; i++)
+        printf("%08x ",ipbits[i]);
+    for (i=0; i<numipbits; i++)
     {
         for (j=0; j<n; j++)
             if ( ipbits[i] == myinfo->dpowipbits[j] )
@@ -349,7 +351,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,uint32_t *ipbits,int32_t numipb
                 expand_ipbits(ipaddr,ipbits[i]);
                 dpow_addnotary(myinfo,ipaddr);
             }
-    } else printf("ignore\n");
+    } else if ( missing > 0 ) printf("ignore\n");
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)

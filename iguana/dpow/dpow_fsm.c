@@ -299,7 +299,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
             printf("txidchannel txid %s mismatch %s (%s)\n",bits256_str(str,txid),bits256_str(str2,srchash),bp->signedtx);
             bp->signedtx[0] = 0;
         }
-    } else printf("unhandled channel.%x\n",channel);
+    } //else printf("unhandled channel.%x\n",channel);
     return(0);
 }
 
