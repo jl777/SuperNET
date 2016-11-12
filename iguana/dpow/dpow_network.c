@@ -90,7 +90,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 else dp->numipbits = n;
                 for (i=0; i<n; i++)
                     printf("%08x ",ptr[i]);
-                printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp->numipbits,iter);
+                printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp!=0?dp->numipbits:-1,iter);
             }
             if ( dp == 0 )
                 break;
