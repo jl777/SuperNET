@@ -264,6 +264,9 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         }
         bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
         bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+        bp->notaries[bp->myind].bestk = bp->bestk;
+        bp->notaries[bp->myind].bestmask = bp->bestmask;
+        bp->notaries[bp->myind].recvmask = bp->recvmask;
         if ( bp->bestk >= 0 )
         {
             for (i=0; i<bp->numnotaries; i++)
@@ -367,7 +370,6 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
         if ( j == n )
             missing++;
     }
-    //printf("from.%d RECV numips.%d numipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
     if ( (numipbits == 1 || missing < matched || matched > (dp->numipbits>>1)) && missing > 0 )
     {
         for (i=0; i<numipbits; i++)
@@ -377,7 +379,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
                 //printf("ADD NOTARY.(%s) %08x\n",ipaddr,ipbits[i]);
                 dpow_addnotary(myinfo,dp,ipaddr);
             }
-    } else if ( missing > 0 ) printf("ignore\n");
+    } else if ( missing > 0 )
+        printf("IGNORE from.%d RECV numips.%d numipbits.%d matched.%d missing.%d\n",fromid,numipbits,n,matched,missing);
     expand_ipbits(ipaddr,senderipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
     expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
