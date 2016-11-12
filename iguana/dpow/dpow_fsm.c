@@ -672,9 +672,9 @@ void dpow_statemachinestart(void *ptr)
         if ( bp->state != 0xffffffff )
         {
             //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
-            if ( bp->isratify == 0 )
-                bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
-            else
+            //if ( bp->isratify == 0 )
+            //    bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
+            //else
             {
                 int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
                 memset(&U,0,sizeof(U));
