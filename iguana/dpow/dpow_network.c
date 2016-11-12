@@ -27,7 +27,7 @@ struct dpow_nanoutxo
 struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
-    struct dpow_nanopair ratify,notarize;
+    struct dpow_nanoutxo ratify,notarize;
     uint32_t channel,height,size,datalen,crc32,numipbits,ipbits[64];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
@@ -205,7 +205,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
             if ( bestmatches >= bp->minsigs )
             {
-                if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingreatifybestmask != bp->ratifybestmask )
+                if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {
                     printf("new PENDING BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
                     bp->pendingratifybestk = bp->ratifybestk;
