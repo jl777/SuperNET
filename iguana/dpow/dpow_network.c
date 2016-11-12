@@ -380,6 +380,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     } else if ( missing > 0 ) printf("ignore\n");
     expand_ipbits(ipaddr,senderipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
+    expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
+    dpow_addnotary(myinfo,dp,ipaddr);
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
