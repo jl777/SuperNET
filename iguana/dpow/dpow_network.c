@@ -45,8 +45,8 @@ char *nanomsg_tcpname(char *str,char *ipaddr)
 
 static int _increasing_ipbits(const void *a,const void *b)
 {
-#define uint32_a (*(struct basilisk_relay *)a).ipbits
-#define uint32_b (*(struct basilisk_relay *)b).ipbits
+#define uint32_a (*(uint32_t *)a)
+#define uint32_b (*(uint32_t *)b)
 	if ( uint32_b > uint32_a )
 		return(-1);
 	else if ( uint32_b < uint32_a )
@@ -303,7 +303,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
         for (i=0; i<np->numipbits; i++)
             printf("%08x ",np->ipbits[i]);
-        printf(" dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
+        printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
         dpow_nanoutxoset(&np->notarize,bp,0);
         dpow_nanoutxoset(&np->ratify,bp,1);
         np->size = size;
