@@ -71,14 +71,14 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,char *ipaddr)
         {
             myinfo->dpowipbits[n] = ipbits;
             retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr));
-            //for (i=0; i<=n; i++)
-            //    printf("%08x ",myinfo->dpowipbits[i]);
-            //printf("->\n");
-            qsort(myinfo->dpowipbits,n+1,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
             for (i=0; i<=n; i++)
                 printf("%08x ",myinfo->dpowipbits[i]);
-            printf("addnotary.[%d] (%s) retval.%d (%d %d)\n",n,ipaddr,retval,myinfo->numdpowipbits,n);
+            printf("->\n");
             myinfo->numdpowipbits++;
+            qsort(myinfo->dpowipbits,myinfo->numdpowipbits,sizeof(*myinfo->dpowipbits),_increasing_ipbits);
+            for (i=0; i<myinfo->numdpowipbits; i++)
+                printf("%08x ",myinfo->dpowipbits[i]);
+            printf("addnotary.[%d] (%s) retval.%d (total %d)\n",n,ipaddr,retval,myinfo->numdpowipbits);
         }
         portable_mutex_unlock(&myinfo->dpowmutex);
     }
@@ -301,7 +301,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->numipbits = myinfo->numdpowipbits;
         np->senderind = bp->myind;
         memcpy(np->ipbits,myinfo->dpowipbits,myinfo->numdpowipbits * sizeof(*myinfo->dpowipbits));
-        printf("dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
+        for (i=0; i<np->numipbits; i++)
+            printf("%08x ",np->ipbits[i]);
+        printf(" dpow_send.(%d) size.%d numipbits.%d\n",datalen,size,np->numipbits);
         dpow_nanoutxoset(&np->notarize,bp,0);
         dpow_nanoutxoset(&np->ratify,bp,1);
         np->size = size;
