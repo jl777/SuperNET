@@ -255,7 +255,10 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 ep = &bp->notaries[k];
                 cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
                 if ( bits256_nonz(cp->prev_hash) == 0 )
-                    return(cp->prev_hash);
+                {
+                    printf("null prevhash k.%d j.%d src_or_dest.%d\n",k,j,src_or_dest);
+                    return(zero);
+                }
                 len += iguana_rwbignum(1,&serialized[len],sizeof(cp->prev_hash),cp->prev_hash.bytes);
                 len += iguana_rwnum(1,&serialized[len],sizeof(cp->prev_vout),&cp->prev_vout);
                 siglen = cp->siglens[bestk];
@@ -287,7 +290,10 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     else
     {
         if ( (n= dpow_voutstandard(bp,&serialized[len],m,src_or_dest)) < 0 )
+        {
+            printf("error dpow_voutstandard\n");
             return(zero);
+        }
         len += n;
     }
     init_hexbytes_noT(signedtx,serialized,len);
