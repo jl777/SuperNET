@@ -1652,6 +1652,25 @@ void iguana_main(void *arg)
             }
         } else printf("couldnt parse.(%s)\n",jsonstr);
     }
+    if ( 0 )
+    {
+        int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
+        char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
+            "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+            "REVS" };
+        uint8_t pubkeys[64][33]; char coinaddr[64]; int32_t i,j; double val = 0.01;
+        //n = komodo_notaries("KMD",pubkeys,0);
+#include "notaries.h"
+        for (i=0; i<=32; i++)
+        {
+            for (j=0; j<sizeof(Notaries)/sizeof(*Notaries); j++)
+            {
+                decode_hex(pubkeys[j],33,Notaries[j][1]);
+                bitcoin_address(coinaddr,60,pubkeys[j],33);
+                printf("./komodo-cli -ac_name=%s sendtoaddress %s %f\n",CURRENCIES[i],coinaddr,val);
+            }
+        }
+    }
     iguana_launchdaemons(myinfo);
 }
 
