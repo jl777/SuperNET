@@ -296,9 +296,12 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                         }
                         if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                         {
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
-                            bp->state = 0xffffffff;
-                        }
+                            if ( bp->state != 0xffffffff )
+                            {
+                                dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
+                                bp->state = 0xffffffff;
+                            }
+                        } else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
                     } else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
                 }
             }

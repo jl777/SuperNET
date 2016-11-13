@@ -268,29 +268,33 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     {
         src_or_dest = (channel == DPOW_BTCTXIDCHANNEL);
         coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
-        printf("handle txid channel.%x\n",channel);
         //printf("bp.%p datalen.%d\n",bp,datalen);
         for (i=0; i<32; i++)
             srchash.bytes[i] = data[i];
         txid = bits256_doublesha256(0,&data[32],datalen-32);
         init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
-        printf("signedtx.(%s)\n",bp->signedtx);
         if ( bits256_cmp(txid,srchash) == 0 )
         {
             printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
             if ( src_or_dest != 0 )
             {
-                bp->desttxid = txid;
-                bp->state = 1000;
-                dp->destupdated = 0;
-                dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,0);
-                //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
+                if ( bp->state < 1000 )
+                {
+                    bp->desttxid = txid;
+                    bp->state = 1000;
+                    dp->destupdated = 0;
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,0);
+                    //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
+                }
             }
             else
             {
-                bp->srctxid = txid;
-                printf("set state COMPLETED\n");
-                bp->state = 0xffffffff;
+                if ( bp->state != 0xffffffff )
+                {
+                    bp->srctxid = txid;
+                    printf("set state COMPLETED\n");
+                    bp->state = 0xffffffff;
+                }
             }
         }
         else
