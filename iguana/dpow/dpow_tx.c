@@ -492,8 +492,8 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         for (j=0; j<sizeof(srchash); j++)
                             txdata[j] = txid.bytes[j];
                         dpow_send(myinfo,dp,bp,txid,bp->hashmsg,(src_or_dest != 0) ? DPOW_BTCTXIDCHANNEL : DPOW_TXIDCHANNEL,bp->height,txdata,len+32);
-                        printf("complete statemachine.%s ht.%d\n",coin->symbol,bp->height);
                         bp->state = src_or_dest != 0 ? 1000 : 0xffffffff;
+                        printf("complete statemachine.%s ht.%d state.%d\n",coin->symbol,bp->height,bp->state);
                     } else printf("sendtxid mismatch got %s instead of %s\n",bits256_str(str,txid),bits256_str(str2,signedtxid));
                 }
                 free(retstr);
