@@ -192,15 +192,17 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[senderind].ratifydestvout = destvout;
         bp->notaries[senderind].ratifybestmask = bestmask;
         bp->notaries[senderind].ratifyrecvmask = recvmask;
-        bp->notaries[senderind].ratifybestk = bestk;
-        for (i=0; i<2; i++)
+        if ( (bp->notaries[senderind].ratifybestk= bestk) >= 0 )
         {
-            if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
+            for (i=0; i<2; i++)
             {
-                memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
-                if ( bestk == bp->pendingbestk && bestmask == bp->pendingbestmask )
-                    bp->ratifysigmasks[i] |= (1LL << senderind);
-                else bp->ratifysigmasks[i] &= ~(1LL << senderind);
+                if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
+                {
+                    memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
+                    if ( bestk == bp->pendingbestk && bestmask == bp->pendingbestmask )
+                        bp->ratifysigmasks[i] |= (1LL << senderind);
+                    else bp->ratifysigmasks[i] &= ~(1LL << senderind);
+                }
             }
         }
         bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
@@ -210,9 +212,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
         if ( bp->ratifybestk >= 0 )
         {
-            bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
-            bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
-            bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
             for (i=0; i<bp->numnotaries; i++)
             {
                 if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
