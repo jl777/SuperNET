@@ -154,11 +154,13 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
         np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
-        np->bestk = bp->ratifybestk;
-        for (i=0; i<2; i++)
+        if ( (np->bestk= bp->ratifybestk) >= 0 )
         {
-            if ( (np->siglens[i]= bp->ratifysiglens[i]) > 0 )
-                memcpy(np->sigs[i],bp->ratifysigs[i],np->siglens[i]);
+            for (i=0; i<2; i++)
+            {
+                if ( (np->siglens[i]= bp->ratifysiglens[i]) > 0 )
+                    memcpy(np->sigs[i],bp->ratifysigs[i],np->siglens[i]);
+            }
         }
     }
     else
@@ -206,7 +208,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
         }
         bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
-        bp->ratifybestmask = dpow_maskmin(bp->ratifyrecvmask,bp,&bp->ratifybestk);
+        bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
         bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
