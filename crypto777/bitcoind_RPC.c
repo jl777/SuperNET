@@ -204,7 +204,7 @@ try_again:
         }
         else if ( numretries >= 2 )
         {
-            printf("Maximum number of retries exceeded!\n");
+            //printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
             return(0);
         }

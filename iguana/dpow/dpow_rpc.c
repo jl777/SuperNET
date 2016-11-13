@@ -818,7 +818,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     }
     else
     {
-        printf("error from %s\n",coin->symbol);
+        //printf("error from %s\n",coin->symbol);
         sleep(3);
     }
     return(height);
