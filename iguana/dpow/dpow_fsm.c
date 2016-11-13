@@ -135,7 +135,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 if ( bp->state != 0xffffffff )
                 {
                     bp->srctxid = txid;
-                    printf("set state COMPLETED %s.(%s) %s.(%s)\n",dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
+                    printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
                     bp->state = 0xffffffff;
                 }
             }
@@ -341,7 +341,7 @@ void dpow_statemachinestart(void *ptr)
         sleep(1);
     }
     if ( bp->isratify == 0 || (starttime= checkpoint.timestamp) == 0 )
-        starttime = (uint32_t)time(NULL);
+        bp->starttime = starttime = (uint32_t)time(NULL);
     printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
