@@ -204,7 +204,10 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
     else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
     if ( opretlen < 0 )
+    {
+        printf("negative opretlen src_or_dest.%d\n",src_or_dest);
         return(-1);
+    }
     opretlen = dpow_opreturnscript(data,opret,opretlen);
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;
@@ -291,7 +294,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     {
         if ( (n= dpow_voutstandard(bp,&serialized[len],m,src_or_dest)) < 0 )
         {
-            printf("error dpow_voutstandard\n");
+            printf("error dpow_voutstandard m.%d src_or_dest.%d\n",m,src_or_dest);
             return(zero);
         }
         len += n;
@@ -406,7 +409,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
     }
 }
 
-int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel,int32_t src_or_dest,int32_t useratified)
+int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified)
 {
     int32_t j,m,numsigs,retval=-1; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
@@ -415,6 +418,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
+    printf("signedtxgen src_or_dest.%d (%d %llx)\n",src_or_dest,bestk,(long long)bestmask);
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,bp->numratified)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);

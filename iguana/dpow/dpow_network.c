@@ -538,27 +538,8 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
         if ( bits256_nonz(bp->desttxid) == 0 )
             return(-1);
         opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(bp->desttxid),bp->desttxid.bytes);
-        if ( rwflag != 0 )
-        {
-            if ( src != 0 )
-            {
-                for (i=0; src[i]!=0; i++)
-                    opret[opretlen++] = src[i];
-            }
-            opret[opretlen++] = 0;
-        }
-        else
-        {
-            if ( src != 0 )
-            {
-                for (i=0; opret[opretlen]!=0; i++)
-                    src[i] = opret[opretlen++];
-                src[i] = 0;
-            }
-            opretlen++;
-        }
     }
-    else if ( 0 )
+    /*else if ( 0 )
     {
         memset(beacons,0,sizeof(beacons));
         for (i=0; i<bp->numnotaries; i++)
@@ -568,6 +549,25 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
         }
         vcalc_sha256(0,beacon.bytes,beacons[0].bytes,sizeof(*beacons) * bp->numnotaries);
         opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(beacon),beacon.bytes);
+    }*/
+    if ( rwflag != 0 )
+    {
+        if ( src != 0 )
+        {
+            for (i=0; src[i]!=0; i++)
+                opret[opretlen++] = src[i];
+        }
+        opret[opretlen++] = 0;
+    }
+    else
+    {
+        if ( src != 0 )
+        {
+            for (i=0; opret[opretlen]!=0; i++)
+                src[i] = opret[opretlen++];
+            src[i] = 0;
+        }
+        opretlen++;
     }
     return(opretlen);
 }
