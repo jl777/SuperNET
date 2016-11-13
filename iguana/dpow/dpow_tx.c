@@ -465,7 +465,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     channel = (src_or_dest != 0) ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL;
-    //printf("sigscheck myind.%d src_dest.%d state.%x\n",myind,src_or_dest,bp->state);
+    printf("sigscheck myind.%d src_dest.%d state.%x coin.%p\n",myind,src_or_dest,bp->state,coin);
     if ( bp->state != 0xffffffff && coin != 0 )
     {
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
