@@ -165,6 +165,8 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             if ( strcmp(dp->dest,"KMD") == 0 )
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
             char str[65]; printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+            if ( dp->lastheight == 0 )
+                dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
             {
                 printf("iguana_dPoWupdate src.%s reorg detected %d vs %d approved.%d notarized.%d\n",dp->symbol,height,dp->last.blockhash.height,dp->approved[0].height,dp->notarized[0].height);
@@ -172,8 +174,18 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
                 {
                     if ( bits256_cmp(blockhash,dp->last.blockhash.hash) != 0 )
                         printf("UNEXPECTED ILLEGAL BLOCK in src chaintip\n");
-                } else dpow_srcupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
-            } else dpow_srcupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
+                }
+                else
+                {
+                    while ( dp->lastheight <= height )
+                        dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
+                }
+            }
+            else
+            {
+                while ( dp->lastheight <= height )
+                    dpow_srcupdate(myinfo,dp,dp->lastheight++,blockhash,(uint32_t)time(NULL),blocktime);
+            }
         } //else printf("error getchaintip for %s\n",dp->symbol);
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
 }
