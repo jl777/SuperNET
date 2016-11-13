@@ -275,7 +275,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
         init_hexbytes_noT(bp->signedtx,&data[32],datalen-32);
         if ( bits256_cmp(txid,srchash) == 0 )
         {
-            printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
+            //printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
             if ( src_or_dest != 0 )
             {
                 if ( bp->state < 1000 )
