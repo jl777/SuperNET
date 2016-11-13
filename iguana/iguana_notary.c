@@ -74,7 +74,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         if ( minsigs > DPOW_MINSIGS )
             minsigs = DPOW_MINSIGS;
     }
-    printf("%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
+    printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
