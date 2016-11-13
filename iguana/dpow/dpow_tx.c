@@ -54,7 +54,7 @@ uint64_t dpow_lastk_mask(struct dpow_block *bp,int8_t *lastkp)
         {
             bp->recvmask |= (1LL << k);
             mask |= (1LL << k);
-            if ( ++m >= DPOW_M(bp) )
+            if ( ++m >= bp->minsigs )
             {
                 *lastkp = k;
                 break;
@@ -77,14 +77,14 @@ int32_t dpow_bestk(struct dpow_block *bp,uint64_t *maskp)
 
 uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t m,k; uint64_t bestmask,mask = bp->require0;
+    int32_t m,j,k; uint64_t bestmask,mask = bp->require0;
     bestmask = 0;
     *lastkp = -1;
     if ( (m= bp->require0) != 0 )
         mask = 1;
-    for (k=m; k<bp->numnotaries; k++)
+    for (j=m; j<bp->numnotaries; j++)
     {
-        //k = DPOW_MODIND(bp,j);
+        k = DPOW_MODIND(bp,j);
         if ( bits256_nonz(bp->notaries[k].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[k].ratifydestutxo) != 0 )
         {
             mask |= (1LL << k);
@@ -100,15 +100,15 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
-    int32_t j,m,k; uint64_t bestmask,mask = bp->require0;
+    int32_t j,m,k; uint64_t bestmask,mask = 0;//bp->require0;
     bestmask = 0;
     *lastkp = -1;
-    m = bp->require0;
+    m = 0;//bp->require0;
     for (j=0; j<bp->numnotaries; j++)
     {
         k = DPOW_MODIND(bp,j);
-        if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < DPOW_BLACKLIST )
-            continue;
+        //if ( (bp->require0 == 0 || k != 0) && bp->scores[k] < DPOW_BLACKLIST )
+        //    continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
         {
             mask |= (1LL << k);
@@ -234,17 +234,18 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
     if ( isPoS != 0 )
         len += iguana_rwnum(1,&serialized[len],sizeof(bp->timestamp),&bp->timestamp);
-    m = DPOW_M(bp);
+    m = bp->minsigs;
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j);
+        k = j;//DPOW_MODIND(bp,j);
         if ( ((1LL << k) & bestmask) != 0 )
         {
             if ( pubkeys != 0 && numratified > 0 )
             {
                 if ( src_or_dest != 0 )
                 {
+                    char str[65]; printf("k.%d DEST.%s\n",k,bits256_str(str,bp->notaries[k].ratifydestutxo));
                     len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestutxo),bp->notaries[k].ratifydestutxo.bytes);
                     len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestvout),&bp->notaries[k].ratifydestvout);
                 }
@@ -281,7 +282,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
             //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
             m++;
-            if ( m == DPOW_M(bp) && k == bestk )
+            if ( m == bp->minsigs && k == bestk )
                 break;
         }
     }
@@ -348,7 +349,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
                 jaddi(vins,item);
                 //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
-                if ( m == DPOW_M(bp) && k == bestk )
+                if ( m == bp->minsigs && k == bestk )
                     break;
             }
             else
@@ -473,7 +474,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
         printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
-        if ( bits256_nonz(signedtxid) != 0 && numsigs == DPOW_M(bp) )
+        if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
             if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
             {

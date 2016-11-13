@@ -240,8 +240,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
-                    } else printf("ratify srcmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[0],(long long)bp->bestmask);
-                } else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
+                    } //else printf("ratify srcmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[0],(long long)bp->bestmask);
+                } //else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
             }
         }
         if ( (rand() % 100) == 0 )

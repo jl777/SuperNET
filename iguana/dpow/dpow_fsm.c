@@ -79,7 +79,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
         else
         {
             r = (rand() % bp->numnotaries);
-            for (j=0; j<DPOW_M(bp); j++)
+            for (j=0; j<bp->numnotaries; j++)
             {
                 i = DPOW_MODIND(bp,j+r);
                 if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
