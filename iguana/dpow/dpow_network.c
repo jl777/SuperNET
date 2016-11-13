@@ -529,14 +529,17 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
 
 int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,char *src,struct dpow_block *bp,int32_t src_or_dest)
 {
-    int32_t i,opretlen = 0; bits256 beacon,beacons[DPOW_MAXRELAYS];
+    int32_t i,opretlen = 0; //bits256 beacon,beacons[DPOW_MAXRELAYS];
     opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
     opretlen += iguana_rwnum(rwflag,&opret[opretlen],sizeof(*heightmsgp),(uint32_t *)heightmsgp);
     if ( src_or_dest == 0 )
     {
         //char str[65]; printf("src_or_dest.%d opreturn add %s\n",src_or_dest,bits256_str(str,bp->desttxid));
         if ( bits256_nonz(bp->desttxid) == 0 )
+        {
+            printf("no desttxid\n");
             return(-1);
+        }
         opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(bp->desttxid),bp->desttxid.bytes);
     }
     /*else if ( 0 )

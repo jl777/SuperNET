@@ -1133,6 +1133,7 @@ cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
             jadd(retjson,"supernet",array);
             jaddnum(retjson,"connections",coin->peers->numranked);
         }
+        jaddnum(retjson,"RELAY",coin->FULLNODE);
         jaddnum(retjson,"difficulty",coin->blocks.hwmchain.PoW);
         jaddstr(retjson,"status",coin->statusstr);
         jaddstr(retjson,"coin",coin->symbol);
