@@ -135,7 +135,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 if ( bp->state != 0xffffffff )
                 {
                     bp->srctxid = txid;
-                    printf("set state COMPLETED\n");
+                    printf("set state COMPLETED %s.(%s) %s.(%s)\n",dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
                     bp->state = 0xffffffff;
                 }
             }
