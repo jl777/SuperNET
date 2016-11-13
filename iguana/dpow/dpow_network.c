@@ -237,7 +237,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
     int32_t i,bestmatches = 0,matches = 0;
-    if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
+    if ( bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         bp->notaries[senderind].src.prev_hash = srcutxo;
         bp->notaries[senderind].src.prev_vout = srcvout;
@@ -286,7 +286,16 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
-                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGCHANNEL,0,0);
+                    if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                    {
+                        if ( bp->state < 1000 )
+                        {
+                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGCHANNEL,0,0);
+                            bp->state = 1000;
+                        }
+                        if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                            bp->state = 0xffffffff;
+                    }
                 }
             }
         }
