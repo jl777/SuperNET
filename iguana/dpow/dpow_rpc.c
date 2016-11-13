@@ -321,7 +321,7 @@ int32_t dpow_vini_ismine(struct supernet_info *myinfo,struct dpow_info *dp,cJSON
 
 int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
-    int32_t i,n,vout,haveutxo = 0; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
+    int32_t i,j,n,vout,haveutxo = 0; uint32_t r; bits256 txid; cJSON *unspents,*item; uint64_t satoshis; char *str,*address; uint8_t script[35];
     memset(txidp,0,sizeof(*txidp));
     *voutp = -1;
     if ( (unspents= dpow_listunspent(myinfo,coin,coinaddr)) != 0 )
@@ -337,8 +337,12 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
              "confirmations" : 4282,
              "spendable" : true
              },*/
-            for (i=0; i<n; i++)
+            r = 0;
+            memcpy(&r,coin->symbol,3);
+            r = calc_crc32(0,(void *)&r,sizeof(r));
+            for (j=0; j<n; j++)
             {
+                i = (r + j) % n;
                 item = jitem(unspents,i);
                 satoshis = SATOSHIDEN * jdouble(item,"amount");
                 if ( satoshis == DPOW_UTXOSIZE && (address= jstr(item,"address")) != 0 && strcmp(address,coinaddr) == 0 )

@@ -152,12 +152,22 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
 
 int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr)
 {
-    int32_t haveutxo,completed; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= 9 && time(NULL) > dp->lastsplit+bp->duration )
+    int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
+    if ( strcmp("BTC",coin->symbol) == 0 )
+    {
+        minutxo = 9;
+        n = 50;
+    }
+    else
+    {
+        minutxo = 49;
+        n = 10;
+    }
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
-        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,strcmp(coin->symbol,"BTC") == 0 ? 50 : 10,&completed,&signedtxid,0,addresses)) != 0 )
+        if ( (rawtx= iguana_utxoduplicates(myinfo,coin,dp->minerkey33,DPOW_UTXOSIZE,n,&completed,&signedtxid,0,addresses)) != 0 )
         {
             if ( (sendtx= dpow_sendrawtransaction(myinfo,coin,rawtx)) != 0 )
             {
