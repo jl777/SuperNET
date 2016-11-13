@@ -94,6 +94,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
             }
         }
     }
+    printf("req.%d m.%d best.(%d %llx) ",bp->require0,m,*lastkp,(long long)bestmask);
     return(bestmask);
 }
 

@@ -860,7 +860,7 @@ int32_t PAX_genspline(struct PAX_spline *spline,int32_t splineid,char *name,uint
     {
         if ( i < spline->num )
         {
-            if ( refvals[i] != 0 && output[i * 24] != refvals[i] )
+            if ( 0 && refvals[i] != 0 && output[i * 24] != refvals[i] )
                 printf("{%.8f != %.8f}.%d ",output[i * 24],refvals[i],i);
             spline->pricevals[i] = output[i * 24];
         }

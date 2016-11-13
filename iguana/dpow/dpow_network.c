@@ -230,11 +230,11 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     bp->pendingratifybestmask = bp->ratifybestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
-                if ( bp->ratifysigmasks[0] == bp->bestmask ) // have all sigs
+                if ( bp->ratifysigmasks[1] == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1);
-                    if ( bp->ratifysigmasks[1] == bp->bestmask ) // have all sigs
+                    if ( bp->ratifysigmasks[0] == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
