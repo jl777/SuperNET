@@ -276,7 +276,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     matches++;
                     if ( ((1LL << i) & bp->bestmask) != 0 )
                         bestmatches++;
-                } else printf("mismatch.%d (%d %llx) ",i,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
+                } // else printf("mismatch.%d (%d %llx) ",i,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
             }
             if ( bestmatches >= bp->minsigs )
             {
@@ -290,11 +290,14 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     {
                         if ( bp->state < 1000 )
                         {
-                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGCHANNEL,0,0);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,1);
                             bp->state = 1000;
                         }
                         if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                        {
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
                             bp->state = 0xffffffff;
+                        }
                     }
                 }
             }

@@ -391,11 +391,11 @@ int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     }
     if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
-        dpow_sigscheck(myinfo,dp,bp,DPOW_SIGBTCCHANNEL,myind,1);
+        dpow_sigscheck(myinfo,dp,bp,myind,1);
     }
     else if ( bp->state != 0xffffffff && bp->bestk >= 0 && (bp->srcsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
     {
-        dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
+        dpow_sigscheck(myinfo,dp,bp,myind,0);
     }
     return(bp->state);
 }
