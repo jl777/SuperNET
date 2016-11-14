@@ -190,7 +190,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
     uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
-    numvouts = 2;
+    numvouts = 2 + (pubkeys != 0) * numratified;
     len += iguana_rwvarint32(1,&serialized[len],&numvouts);
     satoshis = DPOW_UTXOSIZE * m * .76;
     if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
@@ -200,7 +200,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     serialized[len++] = 33;
     decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
     serialized[len++] = CHECKSIG;
-    if ( numratified != 0 )
+    if ( pubkeys != 0 && numratified != 0 )
     {
         satoshis = DPOW_MINOUTPUT;
         for (i=0; i<numratified; i++)
@@ -432,8 +432,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
         printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
-        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);
-        printf("got notarytx (%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified*bp->numratified);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
@@ -442,7 +441,6 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 {
                     if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                     {
-                        printf("signobj.(%s)\n",jsonstr);
                         if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                         {
                             if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
@@ -483,7 +481,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     if ( bp->bestk >= 0 && bp->state != 0xffffffff && coin != 0 )
     {
         printf("dpow_sigscheck (%d %llx) myind.%d src_dest.%d state.%x coin.%s\n",bp->bestk,(long long)bp->bestmask,myind,src_or_dest,bp->state,coin->symbol);
-        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->numratified);
+        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->isratified*bp->numratified);
         printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
