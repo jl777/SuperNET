@@ -238,7 +238,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = j;//DPOW_MODIND(bp,j);
+        k = DPOW_MODIND(bp,j);
         if ( ((1LL << k) & bestmask) != 0 )
         {
             if ( pubkeys != 0 && numratified > 0 )
@@ -339,7 +339,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
                 txid = cp->prev_hash;
                 vout = cp->prev_vout;
             }
-            if ( bits256_nonz(cp->prev_hash) != 0 )
+            if ( bits256_nonz(txid) != 0 )
             {
                 item = cJSON_CreateObject();
                 jaddbits256(item,"txid",txid);
