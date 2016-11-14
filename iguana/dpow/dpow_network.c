@@ -188,7 +188,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,matchbestk,ratifybestk,bestmatches = 0,matches = 0; uint64_t ratifybestmask,matchbestmask;
+    int32_t i,matchbestk,ratifybestk,best,bestmatches = 0,matches = 0; uint64_t ratifybestmask,matchbestmask;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -238,14 +238,15 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                         bestmatches++;
                 }
             }
+            best = bestmatches;
             if ( matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
             {
                 printf("bestmatches.%d (%d %llx) switch to matchmask (%d %llx)\n",bestmatches,ratifybestk,(long long)ratifybestmask,matchbestk,(long long)matchbestmask);
                 ratifybestk = matchbestk;
                 ratifybestmask = matchbestmask;
-                bestmatches = matches;
+                best = matches;
             }
-            if ( bestmatches >= bp->minsigs )
+            if ( best >= bp->minsigs )
             {
                 if ( bp->pendingratifybestk != ratifybestk || bp->pendingratifybestmask != ratifybestmask )
                 {
@@ -269,7 +270,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
         }
         if ( (rand() % 100) == 0 )
-            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)(bestk>=0?bp->ratifysigmasks[1][bestk]:0),(long long)(bestk>=0?bp->ratifysigmasks[0][bestk]:0));
+            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d -> %d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,best,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)(bestk>=0?bp->ratifysigmasks[1][bestk]:0),(long long)(bestk>=0?bp->ratifysigmasks[0][bestk]:0));
     }
 }
 
