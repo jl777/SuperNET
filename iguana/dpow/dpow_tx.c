@@ -408,8 +408,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         srchash.bytes[j] = dp->minerkey33[j+1];
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
-        //printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified*bp->numratified);
+        char str[65]; printf("signedtxgen %s src_or_dest.%d (%d %llx) useratified.%d raw.(%s)\n",bits256_str(str,txid),src_or_dest,bestk,(long long)bestmask,useratified,rawtx);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
@@ -418,12 +418,15 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 {
                     if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                     {
+                        printf("signobj\n");
                         if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                         {
+                            printf("rawtx2\n");
                             if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )
                             {
                                 if ( (vin= jarray(&m,txobj2,"vin")) != 0 )
                                 {
+                                    printf("vin[%d]\n",m);
                                     for (j=0; j<m; j++)
                                     {
                                         item = jitem(vin,j);
