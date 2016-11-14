@@ -162,7 +162,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     return(bp);
 }
 
-int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
+/*int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
 {
     uint64_t satoshis; uint32_t locktime = 0; uint32_t numvouts; int32_t i,len = 0;
     numvouts = numratified + 1;
@@ -183,12 +183,13 @@ int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint
         serialized[len++] = CHECKSIG;
     }
     len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
+    printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     return(len);
-}
+}*/
 
-int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest)
+int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t opretlen,len=0; uint8_t opret[1024],data[4096];
+    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
     numvouts = 2;
     len += iguana_rwvarint32(1,&serialized[len],&numvouts);
     satoshis = DPOW_UTXOSIZE * m * .76;
@@ -199,6 +200,19 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     serialized[len++] = 33;
     decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
     serialized[len++] = CHECKSIG;
+    if ( numratified != 0 )
+    {
+        satoshis = DPOW_MINOUTPUT;
+        for (i=0; i<numratified; i++)
+        {
+            len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+            serialized[len++] = 35;
+            serialized[len++] = 33;
+            memcpy(&serialized[len],pubkeys[i],33), len += 33;
+            serialized[len++] = CHECKSIG;
+        }
+        printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
+    }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     if ( src_or_dest != 0 )
@@ -290,22 +304,12 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 break;
         }
     }
-    if ( pubkeys != 0 && numratified > 0 )
+    if ( (n= dpow_voutstandard(bp,&serialized[len],m,src_or_dest,pubkeys,numratified)) < 0 )
     {
-        printf("VOUTRATIFY\n");
-        if ( (n= dpow_voutratify(bp,&serialized[len],m,pubkeys,numratified)) < 0 )
-            return(zero);
-        len += n;
+        printf("error dpow_voutstandard m.%d src_or_dest.%d\n",m,src_or_dest);
+        return(zero);
     }
-    else
-    {
-        if ( (n= dpow_voutstandard(bp,&serialized[len],m,src_or_dest)) < 0 )
-        {
-            printf("error dpow_voutstandard m.%d src_or_dest.%d\n",m,src_or_dest);
-            return(zero);
-        }
-        len += n;
-    }
+    len += n;
     init_hexbytes_noT(signedtx,serialized,len);
     //printf("notarytx.(%s) opretlen.%d\n",signedtx,opretlen);
     *numsigsp = numsigs;
