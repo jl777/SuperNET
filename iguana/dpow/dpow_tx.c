@@ -245,7 +245,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
             {
                 if ( src_or_dest != 0 )
                 {
-                    char str[65]; printf("k.%d DEST.%s\n",k,bits256_str(str,bp->notaries[k].ratifydestutxo));
+                    char str[65]; printf("k.%d RATIFY DEST.%s\n",k,bits256_str(str,bp->notaries[k].ratifydestutxo));
                     len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestutxo),bp->notaries[k].ratifydestutxo.bytes);
                     len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestvout),&bp->notaries[k].ratifydestvout);
                 }
@@ -254,6 +254,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                     len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcutxo),bp->notaries[k].ratifysrcutxo.bytes);
                     len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcvout),&bp->notaries[k].ratifysrcvout);
                 }
+                siglen = bp->notaries[k].ratifysiglens[src_or_dest];
+                sig = bp->notaries[k].ratifysigs[src_or_dest];
             }
             else
             {
