@@ -162,31 +162,6 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
     return(bp);
 }
 
-/*int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
-{
-    uint64_t satoshis; uint32_t locktime = 0; uint32_t numvouts; int32_t i,len = 0;
-    numvouts = numratified + 1;
-    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
-    satoshis = DPOW_UTXOSIZE;
-    len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    serialized[len++] = 35;
-    serialized[len++] = 33;
-    decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
-    serialized[len++] = CHECKSIG;
-    satoshis = DPOW_MINOUTPUT;
-    for (i=0; i<numratified; i++)
-    {
-        len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-        serialized[len++] = 35;
-        serialized[len++] = 33;
-        memcpy(&serialized[len],pubkeys[i],33), len += 33;
-        serialized[len++] = CHECKSIG;
-    }
-    len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
-    printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
-    return(len);
-}*/
-
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
     uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
@@ -269,7 +244,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 }
                 siglen = bp->notaries[k].ratifysiglens[src_or_dest];
                 sig = bp->notaries[k].ratifysigs[src_or_dest];
-                char str[65]; printf("j.%d k.%d m.%d vin.(%s) v%d siglen.%d\n",j,k,m,bits256_str(str,txid),vout,siglen);
+                //char str[65]; printf("j.%d k.%d m.%d vin.(%s) v%d siglen.%d\n",j,k,m,bits256_str(str,txid),vout,siglen);
             }
             else
             {
@@ -480,9 +455,9 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
     channel = (src_or_dest != 0) ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL;
     if ( bp->bestk >= 0 && bp->state != 0xffffffff && coin != 0 )
     {
-        printf("dpow_sigscheck (%d %llx) myind.%d src_dest.%d state.%x coin.%s\n",bp->bestk,(long long)bp->bestmask,myind,src_or_dest,bp->state,coin->symbol);
+        //printf("dpow_sigscheck (%d %llx) myind.%d src_dest.%d state.%x coin.%s\n",bp->bestk,(long long)bp->bestmask,myind,src_or_dest,bp->state,coin->symbol);
         signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->isratify*bp->numratified);
-        printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
+        //printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {

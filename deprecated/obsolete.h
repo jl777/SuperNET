@@ -19952,5 +19952,30 @@ len = 0;
                 }
                 return(bp->state);
             }
+            /*int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
+             {
+             uint64_t satoshis; uint32_t locktime = 0; uint32_t numvouts; int32_t i,len = 0;
+             numvouts = numratified + 1;
+             len += iguana_rwvarint32(1,&serialized[len],&numvouts);
+             satoshis = DPOW_UTXOSIZE;
+             len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+             serialized[len++] = 35;
+             serialized[len++] = 33;
+             decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
+             serialized[len++] = CHECKSIG;
+             satoshis = DPOW_MINOUTPUT;
+             for (i=0; i<numratified; i++)
+             {
+             len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+             serialized[len++] = 35;
+             serialized[len++] = 33;
+             memcpy(&serialized[len],pubkeys[i],33), len += 33;
+             serialized[len++] = CHECKSIG;
+             }
+             len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
+             printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
+             return(len);
+             }*/
+            
 
 
