@@ -423,8 +423,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
-    printf("signedtxgen src_or_dest.%d (%d %llx)\n",src_or_dest,bestk,(long long)bestmask);
-    if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,bp->numratified)) != 0 )
+    printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
+    if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
@@ -449,6 +449,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                             bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
                                             decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
                                             bp->ratifysigmasks[src_or_dest] |= (1LL << bp->myind);
+                                            printf("RATIFYSIG[%d] <- set notaryid.%d\n",src_or_dest,bp->myind);
                                         }
                                     }
                                 }

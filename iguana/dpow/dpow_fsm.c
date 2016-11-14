@@ -255,6 +255,8 @@ void dpow_statemachinestart(void *ptr)
                 }
             }
         }
+        if ( bp->isratify == 0 )
+            return;
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
@@ -377,28 +379,15 @@ void dpow_statemachinestart(void *ptr)
                 dp->blocks[checkpoint.blockhash.height] = 0;
                 checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
                 dp->blocks[checkpoint.blockhash.height] = bp;
-                /*for (i=0; i<64; i++)
-                {
-                    bp->notaries[i].recvmask = 0;
-                    bp->notaries[i].bestk = -1;
-                }
-                memset(bp->destsigsmasks,0,sizeof(bp->destsigsmasks));
-                memset(bp->notaries[myind].masks,0,sizeof(bp->notaries[myind].masks));*/
             }
         }
         if ( bp->state != 0xffffffff )
         {
-            //printf("dp->ht.%d ht.%d DEST.%08x %s\n",dp->checkpoint.blockhash.height,checkpoint.blockhash.height,bp->state,bits256_str(str,srchash));
-            //if ( bp->isratify == 0 )
-            //    bp->state = dpow_statemachineiterate(myinfo,dp,dest,bp,myind,1);
-            //else
-            {
-                int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
-                memset(&U,0,sizeof(U));
-                dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
-                if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
-                    dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
-            }
+            int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
+            memset(&U,0,sizeof(U));
+            dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
+            if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
+                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
