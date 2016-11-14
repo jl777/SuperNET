@@ -28,9 +28,9 @@
 #define DPOW_DURATION 300
 #define DPOW_RATIFYDURATION (3600 * 24)
 
-#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
-#define DPOW_BTCENTRIESCHANNEL (~DPOW_ENTRIESCHANNEL)
-#define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
+//#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
+//#define DPOW_BTCENTRIESCHANNEL (~DPOW_ENTRIESCHANNEL)
+//#define DPOW_UTXOCHANNEL ('d' | ('P' << 8) | ('o' << 16) | ('W' << 24))
 #define DPOW_SIGCHANNEL ('s' | ('i' << 8) | ('g' << 16) | ('s' << 24))
 #define DPOW_SIGBTCCHANNEL (~DPOW_SIGCHANNEL)
 #define DPOW_TXIDCHANNEL ('t' | ('x' << 8) | ('i' << 16) | ('d' << 24))

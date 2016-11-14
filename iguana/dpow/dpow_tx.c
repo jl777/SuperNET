@@ -430,7 +430,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                             bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
                                             decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
                                             bp->ratifysigmasks[src_or_dest] |= (1LL << bp->myind);
-                                            printf("RATIFYSIG[%d] <- set notaryid.%d\n",src_or_dest,bp->myind);
+                                            printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest]);
                                         }
                                     }
                                 }

@@ -399,15 +399,14 @@ void dpow_statemachinestart(void *ptr)
         }
         if ( bp->state != 0xffffffff )
         {
-            int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
+            /*int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
             memset(&U,0,sizeof(U));
             dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
             if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
-            else
+            else*/
             {
-                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,utxodata,0);
-                printf("error sending utxobuf\n");
+                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             }
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
