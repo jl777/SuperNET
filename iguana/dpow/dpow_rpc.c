@@ -192,7 +192,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
     cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    if ( coin->FULLNODE < 0 )
+    if ( 0 && coin->FULLNODE < 0 )
     {
         array = cJSON_CreateArray();
         jaddistr(array,rawtx);

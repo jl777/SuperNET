@@ -448,7 +448,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                             }
                         }
                     }
-                } else printf("signrawtransaction error vins.(%s) rawtx.(%s)\n",jprint(vins,0),rawtx);
+                }
+                else
+                {
+                    printf("signrawtransaction error vins.(%s) rawtx.(%s)\n",jprint(vins,0),rawtx);
+                }
             } else dpow_rawtxsign(myinfo,dp,coin,bp,rawtx,vins,bestk,bestmask,myind,src_or_dest);
         } else printf("signedtxgen zero txid or null rawtx\n");
         free_json(vins);
