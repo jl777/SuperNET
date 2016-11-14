@@ -393,6 +393,11 @@ void dpow_statemachinestart(void *ptr)
             dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
             if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
+            else
+            {
+                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,utxodata,0);
+                printf("error sending utxobuf\n");
+            }
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {
