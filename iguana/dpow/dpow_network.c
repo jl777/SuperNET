@@ -186,7 +186,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     int32_t i,bestmatches = 0,matches = 0;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
-    if ( senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
+    if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         bp->notaries[senderind].ratifysrcutxo = srcutxo;
         bp->notaries[senderind].ratifysrcvout = srcvout;
@@ -252,7 +252,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
     int32_t i,bestmatches = 0,matches = 0;
-    if ( bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
+    if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         bp->notaries[senderind].src.prev_hash = srcutxo;
         bp->notaries[senderind].src.prev_vout = srcvout;

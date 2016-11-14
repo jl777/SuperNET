@@ -66,7 +66,7 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
     up->destvout = ep->dest.prev_vout;
 }
 
-void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
+/*void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
 {
     uint32_t i,j,r; int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
     if ( (bp->recvmask ^ recvmask) != 0 )
@@ -94,7 +94,7 @@ void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
         if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
     }
-}
+}*/
 
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
@@ -358,7 +358,7 @@ void dpow_statemachinestart(void *ptr)
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
-    dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
+    //dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
