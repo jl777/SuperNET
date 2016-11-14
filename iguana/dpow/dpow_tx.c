@@ -426,7 +426,9 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
+        printf("call notarytx\n");
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);
+        printf("got notarytx (%s)\n",rawtx);
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
@@ -435,6 +437,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 {
                     if ( (signobj= cJSON_Parse(jsonstr)) != 0 )
                     {
+                        printf("signobj.(%s)\n",jsonstr);
                         if ( ((signedtx= jstr(signobj,"hex")) != 0 || (signedtx= jstr(signobj,"result")) != 0) && (rawtx2= dpow_decoderawtransaction(myinfo,coin,signedtx)) != 0 )
                         {
                             if ( (txobj2= cJSON_Parse(rawtx2)) != 0 )

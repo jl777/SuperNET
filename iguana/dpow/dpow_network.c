@@ -348,9 +348,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         }
         np->senderind = bp->myind;
         memcpy(np->ipbits,dp->ipbits,dp->numipbits * sizeof(*dp->ipbits));
-        for (i=0; i<np->numipbits; i++)
-            printf("%08x ",np->ipbits[i]);
-        printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
+        //for (i=0; i<np->numipbits; i++)
+        //    printf("%08x ",np->ipbits[i]);
+        //printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
         if ( bp->isratify == 0 )
             dpow_nanoutxoset(&np->notarize,bp,0);
         else dpow_nanoutxoset(&np->ratify,bp,1);
@@ -382,8 +382,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     }
     n = dp->numipbits;
     matched = missing = 0;
-    for (i=0; i<numipbits; i++)
-        printf("%08x ",ipbits[i]);
+    //for (i=0; i<numipbits; i++)
+    //    printf("%08x ",ipbits[i]);
     for (i=0; i<numipbits; i++)
     {
         for (j=0; j<n; j++)
@@ -411,7 +411,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     dpow_addnotary(myinfo,dp,ipaddr);
     expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
-    printf("recv numips.(%d %d)\n",myinfo->numdpowipbits,dp->numipbits);
+    //printf("recv numips.(%d %d)\n",myinfo->numdpowipbits,dp->numipbits);
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)

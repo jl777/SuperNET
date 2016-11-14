@@ -202,6 +202,11 @@ void dpow_statemachinestart(void *ptr)
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
+    if ( src == 0 || dest == 0 )
+    {
+        printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
+        return;
+    }
     if ( strcmp(src->symbol,"KMD") == 0 )
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
