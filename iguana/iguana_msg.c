@@ -659,10 +659,13 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
             return(-1);
         }
     }
+    for (i=-3; i<7; i++)
+        printf("%02x",serialized[len+i]);
+    printf(" prev 3 bytes before tx_out\n");
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( len + msg->tx_out*8 > maxsize )
     {
-        printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+        printf("invalidA tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
         return(-1);
     }
  //printf("numvouts.%d ",msg->tx_out);
@@ -674,7 +677,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
             len += n;
         if ( n <= 0 || len > maxsize )
         {
-            printf("invalid tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
+            printf("invalidB tx_out.%d len.%d vs maxsize.%d\n",msg->tx_out,len,maxsize);
             return(-1);
         }
     }

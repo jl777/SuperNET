@@ -165,14 +165,19 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
     uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
-    numvouts = 2 + (pubkeys != 0) * numratified;
-    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
+    numvouts = 2;
     if ( pubkeys == 0 || numratified <= 0 )
     {
         satoshis = DPOW_UTXOSIZE * m * .76;
         if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
             satoshis = satoshisB;
-    } else satoshis = DPOW_MINOUTPUT;
+    }
+    else
+    {
+        satoshis = DPOW_MINOUTPUT;
+        numvouts += numratified;
+    }
+    len += iguana_rwvarint32(1,&serialized[len],&numvouts);
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     serialized[len++] = 35;
     serialized[len++] = 33;
@@ -226,6 +231,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     len += iguana_rwnum(1,&serialized[len],sizeof(version),&version);
     if ( isPoS != 0 )
         len += iguana_rwnum(1,&serialized[len],sizeof(bp->timestamp),&bp->timestamp);
+    m = bp->minsigs;
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
@@ -444,7 +450,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                             }
                         }
                     }
-                }
+                } else printf("signrawtransaction error\n");
             } else dpow_rawtxsign(myinfo,dp,coin,bp,rawtx,vins,bestk,bestmask,myind,src_or_dest);
         } else printf("signedtxgen zero txid or null rawtx\n");
         free_json(vins);
