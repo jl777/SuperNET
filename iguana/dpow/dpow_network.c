@@ -152,15 +152,19 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
-        np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
+        if ( (np->bestmask= bp->pendingratifybestmask) == 0 )
+        {
+            np->bestmask = bp->ratifybestmask;
+            np->bestk = bp->ratifybestk;
+        } else np->bestk = bp->pendingratifybestk;
         //printf("send ratify best.(%d %llx) siglens.(%d %d)\n", bp->ratifybestk,(long long)bp->ratifybestmask,bp->ratifysiglens[0],bp->ratifysiglens[1]);
-        if ( (np->bestk= bp->ratifybestk) >= 0 )
+        if ( np->bestk >= 0 )
         {
             for (i=0; i<2; i++)
             {
-                if ( (np->siglens[i]= bp->ratifysiglens[i][bp->ratifybestk]) > 0 )
-                    memcpy(np->sigs[i],bp->ratifysigs[i][bp->ratifybestk],np->siglens[i]);
+                if ( (np->siglens[i]= bp->ratifysiglens[i][np->bestk]) > 0 )
+                    memcpy(np->sigs[i],bp->ratifysigs[i][np->bestk],np->siglens[i]);
             }
         }
     }
@@ -184,7 +188,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,bestmatches = 0,matches = 0;
+    int32_t i,matchbestk,ratifybestk,bestmatches = 0,matches = 0; uint64_t ratifymask,matchbestmask;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -216,31 +220,47 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
         if ( bp->ratifybestk >= 0 )
         {
+            ratifybestk = bp->ratifybestk;
+            matchbestk = -1;
+            ratifybestmask = bp->ratifybestmask;
+            matchbestmask = 0;
             for (i=0; i<bp->numnotaries; i++)
             {
                 if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
                 {
-                    matches++;
+                    if ( matches++ < bp->minsigs )
+                    {
+                        matchbestmask = (1LL << i);
+                        if ( matches == bp->minsigs )
+                            matchbestk = i;
+                    }
                     if ( ((1LL << i) & bp->ratifybestmask) != 0 )
                         bestmatches++;
                 }
             }
+            if ( matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
+            {
+                printf("bestmatches.%d (%d %llx) switch to matchmask (%d %llx)\n",bestmatches,ratifybestk,(long long)ratifybestmask,matchbestk,(long long)matchbestmask);
+                ratifybestk = matchbestk;
+                ratifybestmask = matchbestmask;
+                bestmatches = matches;
+            }
             if ( bestmatches >= bp->minsigs )
             {
-                if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
+                if ( bp->pendingratifybestk != ratifybestk || bp->pendingratifybestmask != ratifybestmask )
                 {
-                    printf("new PENDING RATIFY BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
-                    bp->pendingratifybestk = bp->ratifybestk;
-                    bp->pendingratifybestmask = bp->ratifybestmask;
-                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
+                    printf("new PENDING RATIFY BESTK (%d %llx)\n",ratifybestk,(long long)ratifybestmask);
+                    bp->pendingratifybestk = ratifybestk;
+                    bp->pendingratifybestmask = ratifybestmask;
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,ratifybestk,ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
-                if ( bp->ratifysigmasks[1][bestk] == bp->pendingratifybestmask ) // have all sigs
+                if ( (bp->ratifysigmasks[1][bp->pendingratifybestk] & bp->pendingratifybestmask) == bp->pendingratifybestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                     {
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     }
-                    if ( bp->ratifysigmasks[0][bestk] == bp->pendingratifybestmask ) // have all sigs
+                    if ( (bp->ratifysigmasks[0][bp->pendingratifybestk] & bp->pendingratifybestmask) == bp->pendingratifybestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
@@ -306,11 +326,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                 }
-                if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                if ( (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->bestk,bp->bestmask,0,0);
-                    if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
+                    if ( (bp->srcsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
