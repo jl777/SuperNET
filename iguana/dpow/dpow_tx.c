@@ -225,7 +225,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
 
 bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t k,j,m,numsigs,version,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768],*sig; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    uint32_t k,j,m,numsigs,version,vout,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768],*sig; bits256 txid; struct dpow_entry *ep; struct dpow_coinentry *cp;
     signedtx[0] = 0;
     *numsigsp = 0;
     memset(zero.bytes,0,sizeof(zero));
@@ -245,17 +245,17 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
             {
                 if ( src_or_dest != 0 )
                 {
-                    char str[65]; printf("k.%d RATIFY DEST.%s\n",k,bits256_str(str,bp->notaries[k].ratifydestutxo));
-                    len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestutxo),bp->notaries[k].ratifydestutxo.bytes);
-                    len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifydestvout),&bp->notaries[k].ratifydestvout);
+                    txid = bp->notaries[k].ratifydestutxo;
+                    vout = bp->notaries[k].ratifydestvout;
                 }
                 else
                 {
-                    len += iguana_rwbignum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcutxo),bp->notaries[k].ratifysrcutxo.bytes);
-                    len += iguana_rwnum(1,&serialized[len],sizeof(bp->notaries[k].ratifysrcvout),&bp->notaries[k].ratifysrcvout);
+                    txid = bp->notaries[k].ratifysrcutxo;
+                    vout = bp->notaries[k].ratifysrcvout;
                 }
                 siglen = bp->notaries[k].ratifysiglens[src_or_dest];
                 sig = bp->notaries[k].ratifysigs[src_or_dest];
+                char str[65]; printf("j.%d k.%d m.%d vin.(%s) v%d siglen.%d\n",j,k,m,bits256_str(str,txid),vout,siglen);
             }
             else
             {
@@ -266,11 +266,13 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                     printf("null prevhash k.%d j.%d src_or_dest.%d\n",k,j,src_or_dest);
                     return(zero);
                 }
-                len += iguana_rwbignum(1,&serialized[len],sizeof(cp->prev_hash),cp->prev_hash.bytes);
-                len += iguana_rwnum(1,&serialized[len],sizeof(cp->prev_vout),&cp->prev_vout);
+                txid = cp->prev_hash;
+                vout = cp->prev_vout;
                 siglen = cp->siglens[bestk];
                 sig = cp->sigs[bestk];
             }
+            len += iguana_rwbignum(1,&serialized[len],sizeof(txid),txid.bytes);
+            len += iguana_rwnum(1,&serialized[len],sizeof(vout),&vout);
             if ( usesigs != 0 )
             {
                 len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&siglen);
@@ -423,12 +425,11 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
         return(-1);
     for (j=0; j<sizeof(srchash); j++)
         srchash.bytes[j] = dp->minerkey33[j+1];
-    printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
     if ( (vins= dpow_vins(coin,bp,bestk,bestmask,1,src_or_dest,useratified)) != 0 )
     {
-        printf("call notarytx\n");
+        printf("signedtxgen src_or_dest.%d (%d %llx) useratified.%d\n",src_or_dest,bestk,(long long)bestmask,useratified);
         txid = dpow_notarytx(rawtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,0,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,useratified);
-        printf("got notarytx (%s)\n",rawtx);
+        printf("got notarytx (%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( bits256_nonz(txid) != 0 && rawtx[0] != 0 ) // send tx to share utxo set
         {
             if ( useratified != 0 )
