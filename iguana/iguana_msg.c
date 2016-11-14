@@ -659,9 +659,9 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
             return(-1);
         }
     }
-    for (i=-3; i<7; i++)
-        printf("%02x",serialized[len+i]);
-    printf(" prev 3 bytes before tx_out\n");
+    //for (i=-3; i<7; i++)
+    //    printf("%02x",serialized[len+i]);
+    //printf(" prev 3 bytes before tx_out\n");
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( len + msg->tx_out*8 > maxsize )
     {

@@ -618,9 +618,9 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             return(-1);
         }
     }
-    for (i=-3; i<7; i++)
-        printf("%02x",serialized[len+i]);
-    printf(" prev 3 bytes before tx_out rw.%d\n",rwflag);
+    //for (i=-3; i<7; i++)
+    //    printf("%02x",serialized[len+i]);
+    //printf(" prev 3 bytes before tx_out rw.%d\n",rwflag);
     len += iguana_rwvarint32(rwflag,&serialized[len],&msg->tx_out);
     if ( rwflag == 0 )
     {
