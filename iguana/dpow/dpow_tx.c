@@ -167,9 +167,12 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
     numvouts = 2 + (pubkeys != 0) * numratified;
     len += iguana_rwvarint32(1,&serialized[len],&numvouts);
-    satoshis = DPOW_UTXOSIZE * m * .76;
-    if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
-        satoshis = satoshisB;
+    if ( pubkeys == 0 || numratified <= 0 )
+    {
+        satoshis = DPOW_UTXOSIZE * m * .76;
+        if ( (satoshisB= DPOW_UTXOSIZE * m - 10000) < satoshis )
+            satoshis = satoshisB;
+    } else satoshis = DPOW_MINOUTPUT;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     serialized[len++] = 35;
     serialized[len++] = 33;

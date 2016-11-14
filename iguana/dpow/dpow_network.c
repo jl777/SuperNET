@@ -236,7 +236,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
                 if ( bp->ratifysigmasks[1] == bp->ratifybestmask ) // have all sigs
                 {
-                    printf("ready to sign state.%d\n",bp->state);
                     if ( bp->state < 1000 )
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->ratifybestk,bp->ratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     if ( bp->ratifysigmasks[0] == bp->ratifybestmask ) // have all sigs
