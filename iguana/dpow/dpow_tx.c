@@ -290,6 +290,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     }
     if ( pubkeys != 0 && numratified > 0 )
     {
+        printf("VOUTRATIFY\n");
         if ( (n= dpow_voutratify(bp,&serialized[len],m,pubkeys,numratified)) < 0 )
             return(zero);
         len += n;
@@ -489,7 +490,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         if ( src_or_dest != 0 )
                         {
                             bp->desttxid = txid;
-                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,0);
+                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
                         } else bp->srctxid = txid;
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);

@@ -126,7 +126,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
                     bp->desttxid = txid;
                     bp->state = 1000;
                     dp->destupdated = 0;
-                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,0);
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
                     //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
                 }
             }
