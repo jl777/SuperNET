@@ -23,7 +23,7 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
     int32_t p2shlen,len = 0; uint32_t tmp;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(msg->prev_hash),msg->prev_hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->prev_vout),&msg->prev_vout);
-    char str[65]; printf("prev_hash.(%s) v%d\n",bits256_str(str,msg->prev_hash),msg->prev_vout);
+    //char str[65]; printf("prev_hash.(%s) v%d\n",bits256_str(str,msg->prev_hash),msg->prev_vout);
     if ( rwflag == 1 )
     {
         tmp = msg->scriptlen + msg->userdatalen + msg->p2shlen;
@@ -37,7 +37,6 @@ int32_t iguana_vinparse(struct iguana_info *coin,int32_t rwflag,uint8_t *seriali
         }
     }
     len += iguana_rwvarint32(rwflag,&serialized[len],&tmp);
-    printf("tmp %x %d\n",tmp,tmp);
     if ( rwflag == 0 )
     {
         /*if ( msg->p2shlen != 0 )
