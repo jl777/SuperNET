@@ -227,7 +227,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
     for (j=m=0; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j);
+        k = j;//DPOW_MODIND(bp,j);
         if ( ((1LL << k) & bestmask) != 0 )
         {
             if ( pubkeys != 0 && numratified > 0 )
@@ -270,12 +270,12 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                     memcpy(&serialized[len],sig,siglen);
                     len += siglen;
                     numsigs++;
-                }
+                } else printf("Missing sig from k.%d\n",k);
             } else serialized[len++] = 0;
             len += iguana_rwnum(1,&serialized[len],sizeof(sequenceid),&sequenceid);
             //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
             m++;
-            if ( m == bp->minsigs && k == bestk )
+            if ( m == bp->minsigs )//&& k == bestk )
                 break;
         }
     }
@@ -429,6 +429,8 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         {
                                             bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
                                             decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
+                                            bp->notaries[bp->myind].ratifysiglens[src_or_dest] = bp->ratifysiglens[src_or_dest];
+                                            memcpy(bp->notaries[bp->myind].ratifysigs[src_or_dest],bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest]);
                                             bp->ratifysigmasks[src_or_dest] |= (1LL << bp->myind);
                                             printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest]);
                                         }
