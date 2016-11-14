@@ -236,6 +236,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
     for (j=m=0; j<bp->numnotaries; j++)
     {
         k = j;//DPOW_MODIND(bp,j);
+        siglen = 0;
+        sig = 0;
         if ( ((1LL << k) & bestmask) != 0 )
         {
             if ( pubkeys != 0 && numratified > 0 )
@@ -250,8 +252,11 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                     txid = bp->notaries[k].ratifysrcutxo;
                     vout = bp->notaries[k].ratifysrcvout;
                 }
-                siglen = bp->notaries[k].ratifysiglens[src_or_dest];
-                sig = bp->notaries[k].ratifysigs[src_or_dest];
+                if ( bestk >= 0 )
+                {
+                    siglen = bp->notaries[k].ratifysiglens[src_or_dest][bestk];
+                    sig = bp->notaries[k].ratifysigs[src_or_dest][bestk];
+                }
                 //char str[65]; printf("j.%d k.%d m.%d vin.(%s) v%d siglen.%d\n",j,k,m,bits256_str(str,txid),vout,siglen);
             }
             else
@@ -265,12 +270,15 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 }
                 txid = cp->prev_hash;
                 vout = cp->prev_vout;
-                siglen = cp->siglens[bestk];
-                sig = cp->sigs[bestk];
+                if ( bestk >= 0 )
+                {
+                    siglen = cp->siglens[bestk];
+                    sig = cp->sigs[bestk];
+                }
             }
             len += iguana_rwbignum(1,&serialized[len],sizeof(txid),txid.bytes);
             len += iguana_rwnum(1,&serialized[len],sizeof(vout),&vout);
-            if ( usesigs != 0 )
+            if ( usesigs != 0 && bestk >= 0 )
             {
                 len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&siglen);
                 if ( siglen > 0 && siglen <= sizeof(cp->sigs[bestk]) )
@@ -435,12 +443,12 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         item = jitem(vin,j);
                                         if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                         {
-                                            bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
-                                            decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
-                                            bp->notaries[bp->myind].ratifysiglens[src_or_dest] = bp->ratifysiglens[src_or_dest];
-                                            memcpy(bp->notaries[bp->myind].ratifysigs[src_or_dest],bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest]);
-                                            bp->ratifysigmasks[src_or_dest] |= (1LL << bp->myind);
-                                            printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest]);
+                                            bp->ratifysiglens[src_or_dest][bestk] = (int32_t)strlen(sigstr) >> 1;
+                                            decode_hex(bp->ratifysigs[src_or_dest][bestk],bp->ratifysiglens[src_or_dest][bestk],sigstr);
+                                            bp->notaries[bp->myind].ratifysiglens[src_or_dest][bestk] = bp->ratifysiglens[src_or_dest][bestk];
+                                            memcpy(bp->notaries[bp->myind].ratifysigs[src_or_dest][bestk],bp->ratifysigs[src_or_dest][bestk],bp->ratifysiglens[src_or_dest][bestk]);
+                                            bp->ratifysigmasks[src_or_dest][bestk] |= (1LL << bp->myind);
+                                            printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest][bestk]);
                                             break;
                                         }
                                     }

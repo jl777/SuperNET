@@ -66,7 +66,7 @@ struct dpow_entry
     int32_t height;
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
-    uint8_t pubkey[33],ratifysigs[2][76],ratifysiglens[2];
+    uint8_t pubkey[33],ratifysigs[2][DPOW_MAXRELAYS][76],ratifysiglens[2][DPOW_MAXRELAYS];
     struct dpow_coinentry src,dest;
 };
 
@@ -97,13 +97,13 @@ struct dpow_block
     bits256 hashmsg,desttxid,srctxid,beacon,commit;
     struct iguana_info *srccoin,*destcoin; char *opret_symbol;
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
-    uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
+    uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2][DPOW_MAXRELAYS];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2];
     int32_t height,numnotaries,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][76],ratifysiglens[2];
+    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXRELAYS][76],ratifysiglens[2][DPOW_MAXRELAYS];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768];//,rawtx[32768];
 };
