@@ -205,7 +205,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         usleep(10000);
         return(retstr);
     }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    else if ( 1 ) //coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
         privkeys = cJSON_CreateArray();
         if ( (n= cJSON_GetArraySize(vins)) > 0 )
