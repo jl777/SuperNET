@@ -223,10 +223,11 @@ void dpow_statemachinestart(void *ptr)
                 {
                     item = jitem(ratified,i);
                     hexstr = handle = 0;
-                    if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 && (handle= jstr(item,"handle")) != 0 )
+                    if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 )
                     {
                         decode_hex(bp->ratified_pubkeys[i],33,hexstr);
-                        safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
+                        if ( (handle= jstr(item,"handle")) != 0 )
+                            safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
                         if ( i == 0 )
                         {
                             destprevtxid0 = jbits256(item,"destprevtxid0");
@@ -303,7 +304,12 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
-        printf("cant change notary0\n");
+        for (i=0; i<33; i++)
+            printf("%02x",bp->notaries[0].pubkey[i]);
+        printf(" current vs ");
+        for (i=0; i<33; i++)
+            printf("%02x",bp->ratified_pubkeys[0][i]);
+        printf(" new, cant change notary0\n");
         return;
     }
     printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
