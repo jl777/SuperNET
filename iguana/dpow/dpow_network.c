@@ -35,8 +35,8 @@ struct dpow_nanomsghdr
 
 uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height);
-int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t sigchannel,int32_t src_or_dest,int32_t useratified);
-void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest);
+int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
+void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
 
 char *nanomsg_tcpname(char *str,char *ipaddr)
 {
@@ -236,12 +236,13 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
                 if ( bp->ratifysigmasks[1] == bp->ratifybestmask ) // have all sigs
                 {
+                    printf("ready to sign state.%d\n",bp->state);
                     if ( bp->state < 1000 )
-                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1);
+                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->ratifybestk,bp->ratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     if ( bp->ratifysigmasks[0] == bp->ratifybestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->ratifybestk,bp->ratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     } //else printf("ratify srcmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[0],(long long)bp->bestmask);
                 } //else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
             }
@@ -307,11 +308,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
-                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1);
+                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->bestk,bp->bestmask,0,0);
                     if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
                     } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
                 } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
             }

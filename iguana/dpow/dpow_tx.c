@@ -447,17 +447,16 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
     return(retval);
 }
 
-void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
+void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified)
 {
     bits256 txid,srchash,zero,signedtxid; struct iguana_info *coin; int32_t j,len,numsigs; char *retstr=0,str[65],str2[65]; uint8_t txdata[32768]; uint32_t channel;
     coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
     memset(zero.bytes,0,sizeof(zero));
     channel = (src_or_dest != 0) ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL;
-    if ( bp->bestk >= 0 && bp->state != 0xffffffff && coin != 0 )
+    if ( bestk >= 0 && bp->state != 0xffffffff && coin != 0 )
     {
-        //printf("dpow_sigscheck (%d %llx) myind.%d src_dest.%d state.%x coin.%s\n",bp->bestk,(long long)bp->bestmask,myind,src_or_dest,bp->state,coin->symbol);
-        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bp->bestk,bp->bestmask,1,src_or_dest,bp->numratified!=0?bp->ratified_pubkeys:0,bp->isratify*bp->numratified);
-        //printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bp->bestk,(long long)bp->bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
+        signedtxid = dpow_notarytx(bp->signedtx,&numsigs,coin->chain->isPoS,bp,bestk,bestmask,1,src_or_dest,pubkeys,numratified);
+        printf("src_or_dest.%d bestk.%d %llx %s numsigs.%d signedtx.(%s)\n",src_or_dest,bestk,(long long)bestmask,bits256_str(str,signedtxid),numsigs,bp->signedtx);
         bp->state = 1;
         if ( bits256_nonz(signedtxid) != 0 && numsigs == bp->minsigs )
         {
@@ -472,7 +471,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
                         if ( src_or_dest != 0 )
                         {
                             bp->desttxid = txid;
-                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
+                            dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bestk,bestmask,myind,DPOW_SIGCHANNEL,0,numratified != 0);
                         } else bp->srctxid = txid;
                         len = (int32_t)strlen(bp->signedtx) >> 1;
                         decode_hex(txdata+32,len,bp->signedtx);
