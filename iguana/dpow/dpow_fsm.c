@@ -261,8 +261,6 @@ void dpow_statemachinestart(void *ptr)
                 }
             }
         }
-        if ( bp->isratify == 0 )
-            return;
         bp->bestk = -1;
         dp->blocks[checkpoint.blockhash.height] = bp;
         bp->beacon = rand256(0);
