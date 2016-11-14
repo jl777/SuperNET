@@ -195,7 +195,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[senderind].ratifydestvout = destvout;
         bp->notaries[senderind].ratifybestmask = bestmask;
         bp->notaries[senderind].ratifyrecvmask = recvmask;
-        printf("RECV from %d best.(%d %llx) sigs.(%d %d)\n",senderind,bestk,(long long)bestmask,siglens[0],siglens[1]);
         if ( (bp->notaries[senderind].ratifybestk= bestk) >= 0 )
         {
             for (i=0; i<2; i++)
@@ -203,12 +202,13 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
                 {
                     memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
-                    if ( bestk == bp->pendingbestk && bestmask == bp->pendingbestmask )
+                    if ( bestk == bp->pendingratifybestk && bestmask == bp->pendingratifybestmask )
                         bp->ratifysigmasks[i] |= (1LL << senderind);
                     else bp->ratifysigmasks[i] &= ~(1LL << senderind);
                 }
             }
         }
+        printf("RECV from %d best.(%d %llx) sigs.(%d %d) %llx %llx\n",senderind,bestk,(long long)bestmask,siglens[0],siglens[1],(long long)bp->ratifysigmasks[0],(long long)bp->ratifysigmasks[1]);
         bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
         bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
