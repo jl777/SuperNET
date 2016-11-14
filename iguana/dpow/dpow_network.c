@@ -159,8 +159,8 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         {
             for (i=0; i<2; i++)
             {
-                if ( (np->siglens[i]= bp->ratifysiglens[i]) > 0 )
-                    memcpy(np->sigs[i],bp->ratifysigs[i],np->siglens[i]);
+                if ( (np->siglens[i]= bp->ratifysiglens[i][bp->ratifybestk]) > 0 )
+                    memcpy(np->sigs[i],bp->ratifysigs[i][bp->ratifybestk],np->siglens[i]);
             }
         }
     }
@@ -234,13 +234,13 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     bp->pendingratifybestmask = bp->ratifybestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
-                if ( bp->ratifysigmasks[1] == bp->pendingratifybestmask ) // have all sigs
+                if ( bp->ratifysigmasks[1][bestk] == bp->pendingratifybestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                     {
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     }
-                    if ( bp->ratifysigmasks[0] == bp->pendingratifybestmask ) // have all sigs
+                    if ( bp->ratifysigmasks[0][best] == bp->pendingratifybestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
@@ -249,7 +249,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
         }
         if ( (rand() % 100) == 0 )
-            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
+            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)(bestk>=0?bp->ratifysigmasks[1][bestk]:0),(long long)(bestk>=0?bp->ratifysigmasks[0][bestk]:0));
     }
 }
 
