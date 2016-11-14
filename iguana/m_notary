@@ -19,11 +19,11 @@ sleep 3
 tests/addnotarys_7776
 coins/btc_7776
 coins/kmd_7776
-coins/revs_7776
+#coins/revs_7776
 
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
-curl --url "http://127.0.0.1:7776" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"REVS\",\"pubkey\":\"$pubkey\"}"
+#curl --url "http://127.0.0.1:7776" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"REVS\",\"pubkey\":\"$pubkey\"}"
 
 sleep 7
 ./wp_7776
