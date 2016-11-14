@@ -301,6 +301,11 @@ void dpow_statemachinestart(void *ptr)
         free(ptr);
         return;
     }
+    if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
+    {
+        printf("cant change notary0\n");
+        return;
+    }
     printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
     {
