@@ -384,7 +384,7 @@ void dpow_statemachinestart(void *ptr)
                 printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
-            else if ( strcmp(dp->symbol,"KMD") == 0 )
+            /*else if ( strcmp(dp->symbol,"KMD") == 0 )
             {
                 bp->bestk = -1;
                 bp->bestmask = 0;
@@ -393,7 +393,7 @@ void dpow_statemachinestart(void *ptr)
                 dp->blocks[checkpoint.blockhash.height] = 0;
                 checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
                 dp->blocks[checkpoint.blockhash.height] = bp;
-            }
+            }*/
         }
         if ( bp->state != 0xffffffff )
         {
