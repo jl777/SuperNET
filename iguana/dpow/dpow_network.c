@@ -239,7 +239,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             best = bestmatches;
-            if ( matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
+            if ( 0 && matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
             {
                 printf("bestmatches.%d (%d %llx) switch to matchmask (%d %llx)\n",bestmatches,ratifybestk,(long long)ratifybestmask,matchbestk,(long long)matchbestmask);
                 ratifybestk = matchbestk;
@@ -680,6 +680,17 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp,int32_t *shor
 
 #define MAX_CURRENCIES 32
 extern char CURRENCIES[][8];
+
+void komodo_fiatports()
+{
+    int32_t i,shortflag; uint16_t port; uint32_t magic;
+    for (i=0; i<MAX_CURRENCIES; i++)
+    {
+        port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
+        printf("(%s %d) ",CURRENCIES[i],port);
+    }
+    printf("fiat ports\n");
+}
 
 void komodo_assetcoins()
 {
