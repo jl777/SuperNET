@@ -206,9 +206,9 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 if ( (bp->notaries[senderind].ratifysiglens[i][bestk]= siglens[i]) != 0 )
                 {
                     memcpy(bp->notaries[senderind].ratifysigs[i][bestk],sigs[i],siglens[i]);
-                    //if ( bestk == bp->pendingratifybestk && bestmask == bp->pendingratifybestmask )
+                    if ( bp->notaries[senderind].bestmask == bestmask )
                         bp->ratifysigmasks[i][bestk] |= (1LL << senderind);
-                    //else bp->ratifysigmasks[i][bestk] &= ~(1LL << senderind);
+                    else bp->ratifysigmasks[i][bestk] &= ~(1LL << senderind);
                 }
             }
         }
