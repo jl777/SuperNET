@@ -152,19 +152,15 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
+        np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
-        if ( (np->bestmask= bp->pendingratifybestmask) == 0 )
-        {
-            np->bestmask = bp->ratifybestmask;
-            np->bestk = bp->ratifybestk;
-        } else np->bestk = bp->pendingratifybestk;
         //printf("send ratify best.(%d %llx) siglens.(%d %d)\n", bp->ratifybestk,(long long)bp->ratifybestmask,bp->ratifysiglens[0],bp->ratifysiglens[1]);
-        if ( np->bestk >= 0 )
+        if ( (np->bestk= bp->ratifybestk) >= 0 )
         {
             for (i=0; i<2; i++)
             {
-                if ( (np->siglens[i]= bp->ratifysiglens[i][np->bestk]) > 0 )
-                    memcpy(np->sigs[i],bp->ratifysigs[i][np->bestk],np->siglens[i]);
+                if ( (np->siglens[i]= bp->ratifysiglens[i]) > 0 )
+                    memcpy(np->sigs[i],bp->ratifysigs[i],np->siglens[i]);
             }
         }
     }
@@ -188,7 +184,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,matchbestk,ratifybestk,best,bestmatches = 0,matches = 0; uint64_t ratifybestmask,matchbestmask;
+    int32_t i,bestmatches = 0,matches = 0;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -203,12 +199,12 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         {
             for (i=0; i<2; i++)
             {
-                if ( (bp->notaries[senderind].ratifysiglens[i][bestk]= siglens[i]) != 0 )
+                if ( (bp->notaries[senderind].ratifysiglens[i]= siglens[i]) != 0 )
                 {
-                    memcpy(bp->notaries[senderind].ratifysigs[i][bestk],sigs[i],siglens[i]);
-                    if ( bp->notaries[senderind].bestmask == bestmask )
-                        bp->ratifysigmasks[i][bestk] |= (1LL << senderind);
-                    else bp->ratifysigmasks[i][bestk] &= ~(1LL << senderind);
+                    memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
+                    if ( bestk == bp->pendingratifybestk && bestmask == bp->pendingratifybestmask )
+                        bp->ratifysigmasks[i] |= (1LL << senderind);
+                    else bp->ratifysigmasks[i] &= ~(1LL << senderind);
                 }
             }
         }
@@ -218,60 +214,42 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
         bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
-        best = 0;
-        ratifybestk = bp->ratifybestk;
-        ratifybestmask = bp->ratifybestmask;
         if ( bp->ratifybestk >= 0 )
         {
-            matchbestk = -1;
-            matchbestmask = 0;
             for (i=0; i<bp->numnotaries; i++)
             {
                 if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
                 {
-                    if ( matches++ < bp->minsigs )
-                    {
-                        matchbestmask = (1LL << i);
-                        if ( matches == bp->minsigs )
-                            matchbestk = i;
-                    }
+                    matches++;
                     if ( ((1LL << i) & bp->ratifybestmask) != 0 )
                         bestmatches++;
                 }
             }
-            best = bestmatches;
-            if ( (bp->require0 == 0 || (bestmatches & 1) != 0) && matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
+            if ( bestmatches >= bp->minsigs )
             {
-                printf("bestmatches.%d (%d %llx) switch to matchmask (%d %llx)\n",bestmatches,ratifybestk,(long long)ratifybestmask,matchbestk,(long long)matchbestmask);
-                ratifybestk = matchbestk;
-                ratifybestmask = matchbestmask;
-                best = matches;
-            }
-            if ( best >= bp->minsigs )
-            {
-                if ( bp->pendingratifybestk != ratifybestk || bp->pendingratifybestmask != ratifybestmask )
+                if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {
-                    printf("new PENDING RATIFY BESTK (%d %llx)\n",ratifybestk,(long long)ratifybestmask);
-                    bp->pendingratifybestk = ratifybestk;
-                    bp->pendingratifybestmask = ratifybestmask;
-                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,ratifybestk,ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
+                    printf("new PENDING RATIFY BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
+                    bp->pendingratifybestk = bp->ratifybestk;
+                    bp->pendingratifybestmask = bp->ratifybestmask;
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
-                if ( (bp->ratifysigmasks[1][ratifybestk] & ratifybestmask) == ratifybestmask ) // have all sigs
+                if ( bp->ratifysigmasks[1] == bp->pendingratifybestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                     {
-                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,ratifybestk,ratifybestmask,bp->ratified_pubkeys,bp->numratified);
+                        dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     }
-                    if ( (bp->ratifysigmasks[0][ratifybestk] & ratifybestmask) == ratifybestmask ) // have all sigs
+                    if ( bp->ratifysigmasks[0] == bp->pendingratifybestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
-                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,ratifybestk,ratifybestmask,bp->ratified_pubkeys,bp->numratified);
+                            dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     } //else printf("ratify srcmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[0],(long long)bp->bestmask);
                 } //else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
             }
         }
         if ( (rand() % 100) == 0 )
-            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d -> %d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,best,ratifybestk,(long long)ratifybestmask,(long long)bp->ratifyrecvmask,(long long)(bestk>=0?bp->ratifysigmasks[1][bestk]:0),(long long)(bestk>=0?bp->ratifysigmasks[0][bestk]:0));
+            printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx)\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0]);
     }
 }
 
@@ -328,11 +306,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
                 }
-                if ( (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask ) // have all sigs
+                if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                 {
                     if ( bp->state < 1000 )
                         dpow_sigscheck(myinfo,dp,bp,bp->myind,1,bp->bestk,bp->bestmask,0,0);
-                    if ( (bp->srcsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask ) // have all sigs
+                    if ( bp->srcsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                     {
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
@@ -681,17 +659,6 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp,int32_t *shor
 
 #define MAX_CURRENCIES 32
 extern char CURRENCIES[][8];
-
-void komodo_fiatports()
-{
-    int32_t i,shortflag; uint16_t port; uint32_t magic;
-    for (i=0; i<MAX_CURRENCIES; i++)
-    {
-        port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
-        printf("(%s %d) ",CURRENCIES[i],port);
-    }
-    printf("fiat ports\n");
-}
 
 void komodo_assetcoins()
 {

@@ -1671,8 +1671,6 @@ void iguana_main(void *arg)
             }
         }
     }
-    void komodo_fiatports();
-    komodo_fiatports();
     iguana_launchdaemons(myinfo);
 }
 

@@ -320,6 +320,7 @@ void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct 
 
 int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout)
 {
+    return(0);
     if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
     {
         crypto777_payment += value;
