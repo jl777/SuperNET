@@ -84,7 +84,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
         mask = 1;
     for (j=m; j<bp->numnotaries; j++)
     {
-        k = DPOW_MODIND(bp,j);
+        k = (uint32_t)time(NULL) / 100;//DPOW_MODIND(bp,j);
         if ( bits256_nonz(bp->notaries[k].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[k].ratifydestutxo) != 0 )
         {
             mask |= (1LL << k);
