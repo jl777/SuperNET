@@ -239,7 +239,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             best = bestmatches;
-            if ( matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
+            if ( 0 && matchbestk >= i && bestmatches < bp->minsigs && matches >= bp->minsigs )
             {
                 printf("bestmatches.%d (%d %llx) switch to matchmask (%d %llx)\n",bestmatches,ratifybestk,(long long)ratifybestmask,matchbestk,(long long)matchbestmask);
                 ratifybestk = matchbestk;
