@@ -66,36 +66,6 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
     up->destvout = ep->dest.prev_vout;
 }
 
-/*void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
-{
-    uint32_t i,j,r; int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
-    if ( (bp->recvmask ^ recvmask) != 0 )
-    {
-        if ( ((1LL << myind) & recvmask) == 0 )
-        {
-            i = myind;
-            //printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
-        }
-        else
-        {
-            r = (rand() % bp->numnotaries);
-            for (j=0; j<bp->numnotaries; j++)
-            {
-                i = DPOW_MODIND(bp,j+r);
-                if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
-                    break;
-            }
-            //printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
-        }
-        memset(&U,0,sizeof(U));
-        dpow_entry2utxo(&U,bp,&bp->notaries[i]);
-        //char str[65],str2[65];
-        //printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
-        if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
-            dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
-    }
-}*/
-
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
     int32_t i,src_or_dest,myind = -1; bits256 txid,srchash; struct iguana_info *coin; char str[65],str2[65];
@@ -384,28 +354,10 @@ void dpow_statemachinestart(void *ptr)
                 printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
-            /*else if ( strcmp(dp->symbol,"KMD") == 0 )
-            {
-                bp->bestk = -1;
-                bp->bestmask = 0;
-                bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
-                printf("new rotation ht.%d\n",bp->height);
-                dp->blocks[checkpoint.blockhash.height] = 0;
-                checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
-                dp->blocks[checkpoint.blockhash.height] = bp;
-            }*/
         }
         if ( bp->state != 0xffffffff )
         {
-            /*int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
-            memset(&U,0,sizeof(U));
-            dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
-            if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
-                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
-            else*/
-            {
-                dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
-            }
+            dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
         }
         if ( 0 && dp->cancelratify != 0 && bp->isratify != 0 )
         {

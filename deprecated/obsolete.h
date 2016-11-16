@@ -20069,5 +20069,45 @@ len = 0;
                 }
                 return(len);
             }
+            /*void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
+             {
+             uint32_t i,j,r; int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
+             if ( (bp->recvmask ^ recvmask) != 0 )
+             {
+             if ( ((1LL << myind) & recvmask) == 0 )
+             {
+             i = myind;
+             //printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
+             }
+             else
+             {
+             r = (rand() % bp->numnotaries);
+             for (j=0; j<bp->numnotaries; j++)
+             {
+             i = DPOW_MODIND(bp,j+r);
+             if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
+             break;
+             }
+             //printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
+             }
+             memset(&U,0,sizeof(U));
+             dpow_entry2utxo(&U,bp,&bp->notaries[i]);
+             //char str[65],str2[65];
+             //printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
+             if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
+             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
+             }
+             }*/
+
+            /*else if ( strcmp(dp->symbol,"KMD") == 0 )
+             {
+             bp->bestk = -1;
+             bp->bestmask = 0;
+             bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
+             printf("new rotation ht.%d\n",bp->height);
+             dp->blocks[checkpoint.blockhash.height] = 0;
+             checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
+             dp->blocks[checkpoint.blockhash.height] = bp;
+             }*/
 
 

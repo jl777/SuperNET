@@ -421,7 +421,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
-        np->srchash = srchash;
+        for (i=0; i<32; i++)
+            np->srchash.bytes[i] = myinfo->minerkey33[i+1];
+        //np->srchash = srchash;
         np->desthash = desthash;
         np->channel = channel;
         np->height = msgbits;
@@ -510,7 +512,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 )
                             {
-                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
+                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 )
                                 {
                                     if ( bp->isratify == 0 )
                                         dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
