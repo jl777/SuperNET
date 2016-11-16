@@ -513,9 +513,10 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             else
             {
                 printf("NULL return from sendrawtransaction. abort\n");
+                bp->desttxid = bp->hashmsg;
                 if ( bp->numerrors++ < 0 )
                     sleep(10);
-                else bp->state = 0xffffffff;
+                else bp->state = (bp->state >= 1000) ? 0xffffffff : 1000;
             }
         } else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
