@@ -63,7 +63,7 @@ struct dpow_entry
 {
     bits256 commit,beacon,ratifysrcutxo,ratifydestutxo;
     uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask,ratifyrecvmask,ratifybestmask;
-    int32_t height;
+    int32_t height; uint32_t pendingcrcs[2];
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
     uint8_t pubkey[33],ratifysigs[2][76],ratifysiglens[2];
@@ -100,12 +100,12 @@ struct dpow_block
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch;
-    int32_t height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
+    int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
     uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][76],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
-    char signedtx[32768];//,rawtx[32768];
+    char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
 };
 
 struct pax_transaction

@@ -28,7 +28,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64],pendingcrcs[2];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
@@ -184,7 +184,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64];
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask; uint32_t crcval;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -192,6 +192,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         memset(masks,0,sizeof(masks));
         memset(bestks,0xff,sizeof(bestks));
         memset(counts,0,sizeof(counts));
+        for (i=0; i<2; i++)
+            bp->notaries[senderind].pendingcrcs[i] = np->pendingcrcs[i];
         bp->notaries[senderind].ratifysrcutxo = srcutxo;
         bp->notaries[senderind].ratifysrcvout = srcvout;
         bp->notaries[senderind].ratifydestutxo = destutxo;
@@ -277,15 +279,31 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
         if ( bp->ratifybestk >= 0 )
         {
-            for (i=0; i<bp->numnotaries; i++)
+            for (matchesmask=i=0; i<bp->numnotaries; i++)
             {
                 if ( bp->ratifybestk >= 0 && bp->notaries[i].ratifybestk == bp->ratifybestk && bp->notaries[i].ratifybestmask == bp->ratifybestmask )
                 {
                     matches++;
                     if ( ((1LL << i) & bp->ratifybestmask) != 0 )
+                    {
+                        matchesmask |= (1LL << i);
                         bestmatches++;
+                    }
                 }
             }
+            crcval = 0;
+            numcrcs = 0;
+            for (i=0; i<bp->numnotaries; i++)
+            {
+                if ( ((1LL << i) & matchesmask) != 0 )
+                {
+                    if ( numcrcs == 0 )
+                        numcrcs++, crcval = bp->notaries[i].pendingcrcs[bp->state < 1000];
+                    else if ( numcrcs > 0 && crcval == bp->notaries[i].pendingcrcs[bp->state < 1000] )
+                        numcrcs++;
+                }
+            }
+            printf("crcval.%x numcrcs.%d bestmatches.%d matchesmask.%llx\n",crcval,numcrcs,bestmatches,(long long)matchesmask);
             if ( bestmatches >= bp->minsigs )
             {
                 if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
@@ -435,6 +453,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->size = size;
         np->datalen = datalen;
         np->crc32 = crc32;
+        for (i=0; i<2; i++)
+            np->pendingcrcs[i] = bp->pendingcrcs[i];
         for (i=0; i<32; i++)
             np->srchash.bytes[i] = dp->minerkey33[i+1];
         //np->srchash = srchash;
