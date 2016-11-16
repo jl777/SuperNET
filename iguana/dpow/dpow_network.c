@@ -232,6 +232,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     printf("new PENDING RATIFY BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
                     bp->pendingratifybestk = bp->ratifybestk;
                     bp->pendingratifybestmask = bp->ratifybestmask;
+                    memset(bp->ratifysigmasks,0,sizeof(bp->ratifysigmasks));
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
                 if ( bp->ratifysigmasks[1] == bp->pendingratifybestmask ) // have all sigs
