@@ -245,7 +245,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify != 0 && dp->ratifying != 0 )
     {
-        printf("new ratification starting\n");
+        printf("new ratification starting dp->ratifying.%d\n",dp->ratifying);
         dp->ratifying++;
         while ( dp->ratifying > 1 )
             sleep(3);
@@ -253,7 +253,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
-        printf("skip notarization when ratifying\n");
+        printf("skip notarization ht.%d when ratifying\n",bp->height);
         free(ptr);
         return;
     }
