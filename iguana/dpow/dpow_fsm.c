@@ -192,7 +192,6 @@ void dpow_statemachinestart(void *ptr)
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
             bp->isratify = 1;
-            dp->ratifying++;
             if ( (numratified= cJSON_GetArraySize(ratified)) > 0 )
             {
                 for (i=0; i<numratified; i++)
@@ -257,6 +256,7 @@ void dpow_statemachinestart(void *ptr)
         free(ptr);
         return;
     }
+    dp->ratifying += bp->isratify;
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
