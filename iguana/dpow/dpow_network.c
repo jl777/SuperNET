@@ -237,7 +237,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         besti = -1, best = 0;
         for (i=0; i<numdiff; i++)
         {
-            printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
+            //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
             if ( counts[i] > best )
             {
                 best = counts[i];
@@ -246,7 +246,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         }
         if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->ratifyrecvmask & masks[besti]) == masks[besti] )
             bp->ratifybestmask = masks[besti], bp->ratifybestk = bestks[besti];
-        printf("numdiff.%d besti.%d numbest.%d (%d %llx) vs (%d %llx)\n",numdiff,besti,best,besti>=0?bestks[besti]:-1,(long long)(besti>=0?masks[besti]:0),bestk,(long long)bestmask);
+        //printf("numdiff.%d besti.%d numbest.%d (%d %llx) vs (%d %llx)\n",numdiff,besti,best,besti>=0?bestks[besti]:-1,(long long)(besti>=0?masks[besti]:0),bestk,(long long)bestmask);
         if ( bp->ratifybestmask == 0 )
             bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
