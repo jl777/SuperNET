@@ -251,8 +251,12 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->ratifyrecvmask & masks[besti]) == masks[besti] )
             bp->ratifybestmask = masks[besti], bp->ratifybestk = bestks[besti];
         //printf("numdiff.%d besti.%d numbest.%d (%d %llx) vs (%d %llx)\n",numdiff,besti,best,besti>=0?bestks[besti]:-1,(long long)(besti>=0?masks[besti]:0),bestk,(long long)bestmask);
-        if ( bp->ratifybestmask == 0 )
+        if ( bp->ratifybestmask == 0 || (time(NULL) / 100) != bp->lastepoch )
+        {
             bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
+            bp->lastepoch = (uint32_t)(time(NULL) / 100);
+            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
+        }
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
         bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
