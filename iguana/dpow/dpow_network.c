@@ -455,7 +455,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->datalen = datalen;
         np->crc32 = crc32;
         for (i=0; i<2; i++)
-            np->pendingcrcs[i] = bp->pendingcrcs[i];
+            np->ratify.pendingcrcs[i] = bp->pendingcrcs[i];
         for (i=0; i<32; i++)
             np->srchash.bytes[i] = dp->minerkey33[i+1];
         //np->srchash = srchash;
