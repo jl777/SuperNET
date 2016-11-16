@@ -152,10 +152,10 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
-        np->bestmask = bp->pendingratifybestmask;
+        np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
         //printf("send ratify best.(%d %llx) siglens.(%d %d)\n", bp->ratifybestk,(long long)bp->ratifybestmask,bp->ratifysiglens[0],bp->ratifysiglens[1]);
-        if ( (np->bestk= bp->pendingratifybestk) >= 0 )
+        if ( (np->bestk= bp->ratifybestk) >= 0 )
         {
             for (i=0; i<2; i++)
             {
@@ -184,11 +184,14 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int32_t i,bestmatches = 0,matches = 0;
+    int8_t bestks[64]; int32_t counts[64],i,j,best_bestk,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64];
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
+        memset(masks,0,sizeof(masks));
+        memset(bestks,0xff,sizeof(bestks));
+        memset(counts,0,sizeof(counts));
         bp->notaries[senderind].ratifysrcutxo = srcutxo;
         bp->notaries[senderind].ratifysrcvout = srcvout;
         bp->notaries[senderind].ratifydestutxo = destutxo;
@@ -209,8 +212,42 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
         }
         //printf("RECV from %d best.(%d %llx) sigs.(%d %d) %llx %llx\n",senderind,bestk,(long long)bestmask,siglens[0],siglens[1],(long long)bp->ratifysigmasks[0],(long long)bp->ratifysigmasks[1]);
-        bp->ratifyrecvmask |= (1LL << senderind) | (1LL << bp->myind);
-        bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
+        bp->ratifyrecvmask = 0;//|= (1LL << senderind) | (1LL << bp->myind);
+        bp->ratifybestmask = 0;
+        bp->ratifybestk = -1;
+        for (numdiff=i=0; i<bp->numnotaries; i++)
+        {
+            if ( bits256_nonz(bp->notaries[senderind].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[senderind].ratifydestutxo) != 0 )
+                bp->ratifyrecvmask |= (1LL << i);
+            for (j=0; j<numdiff; j++)
+                if ( bestmask == bp->notaries[i].ratifybestmask )
+                {
+                    counts[j]++;
+                    break;
+                }
+            if ( j == numdiff )
+            {
+                masks[counts[numdiff]] = bestmask;
+                bestks[counts[numdiff]] = bestk;
+                counts[numdiff]++;
+                numdiff++;
+            }
+        }
+        besti = best_bestk = -1, best = 0;
+        for (i=0; i<numdiff; i++)
+        {
+            printf("(%llx %d) ",(long long)masks[i],counts[i]);
+            if ( counts[i] > best )
+            {
+                best = counts[i];
+                besti = i;
+            }
+        }
+        if ( besti >= 0 && (bp->ratifyrecvmask & masks[besti]) == masks[besti] )
+            bp->ratifybestmask = masks[besti], bp->ratifybestk = best_bestk;
+        printf("numdiff.%d besti.%d numbest.%d (%d %llx) vs (%d %llx)\n",numdiff,besti,best,besti>=0?bestks[besti]:-1,(long long)(besti>=0?masks[besti]:0),bestk,(long long)bestmask);
+        if ( bp->ratifybestmask == 0 )
+            bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
         bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
         bp->notaries[bp->myind].ratifyrecvmask = bp->ratifyrecvmask;
