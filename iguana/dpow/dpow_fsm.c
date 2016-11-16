@@ -169,14 +169,6 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
-    if ( dp->ratifying != 0 )
-    {
-        printf("new ratification starting\n");
-        dp->ratifying++;
-        while ( dp->ratifying > 1 )
-            sleep(3);
-        printf("other ratifications stopped\n");
-    }
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
@@ -251,7 +243,15 @@ void dpow_statemachinestart(void *ptr)
             dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
         }*/
     }
-    if ( dp->ratifying != 0 && bp->isratify != 0 )
+    if ( bp->isratify != 0 && dp->ratifying != 0 )
+    {
+        printf("new ratification starting\n");
+        dp->ratifying++;
+        while ( dp->ratifying > 1 )
+            sleep(3);
+        printf("other ratifications stopped\n");
+    }
+    if ( dp->ratifying != 0 && bp->isratify == 0 )
     {
         printf("skip notarization when ratifying\n");
         free(ptr);
