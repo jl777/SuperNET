@@ -152,10 +152,10 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
-        np->bestmask = bp->ratifybestmask;
+        np->bestmask = bp->pendingratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
         //printf("send ratify best.(%d %llx) siglens.(%d %d)\n", bp->ratifybestk,(long long)bp->ratifybestmask,bp->ratifysiglens[0],bp->ratifysiglens[1]);
-        if ( (np->bestk= bp->ratifybestk) >= 0 )
+        if ( (np->bestk= bp->pendingratifybestk) >= 0 )
         {
             for (i=0; i<2; i++)
             {
@@ -232,6 +232,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     printf("new PENDING RATIFY BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
                     bp->pendingratifybestk = bp->ratifybestk;
                     bp->pendingratifybestmask = bp->ratifybestmask;
+                    memset(bp->notaries[bp->myind].ratifysigs,0,sizeof(bp->notaries[bp->myind].ratifysigs));
+                    memset(bp->notaries[bp->myind].ratifysiglens,0,sizeof(bp->notaries[bp->myind].ratifysiglens));
                     memset(bp->ratifysigmasks,0,sizeof(bp->ratifysigmasks));
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
                 }
