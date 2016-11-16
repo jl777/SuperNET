@@ -234,7 +234,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 numdiff++;
             }
         }
-        besti = best_bestk = -1, best = 0;
+        besti = -1, best = 0;
         for (i=0; i<numdiff; i++)
         {
             printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
