@@ -184,7 +184,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76])
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,best_bestk,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64];
+    int8_t bestks[64]; int32_t counts[64],i,j,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64];
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
@@ -220,17 +220,17 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             if ( bits256_nonz(bp->notaries[i].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[i].ratifydestutxo) != 0 )
                 bp->ratifyrecvmask |= (1LL << i);
             for (j=0; j<numdiff; j++)
-                if ( masks[j] == bp->notaries[i].ratifybestmask )
+                if ( bp->notaries[i].ratifybestk >= 0 && masks[j] == bp->notaries[i].ratifybestmask )
                 {
                     counts[j]++;
                     break;
                 }
-            if ( j == numdiff )
+            if ( j == numdiff && bp->notaries[i].ratifybestk >= 0 && bp->notaries[i].ratifybestmask != 0 )
             {
                 masks[numdiff] = bp->notaries[i].ratifybestmask;
                 bestks[numdiff] = bp->notaries[i].ratifybestk;
                 counts[numdiff]++;
-                printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].ratifybestk,(long long)bp->notaries[i].ratifybestmask,counts[numdiff]);
+                //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].ratifybestk,(long long)bp->notaries[i].ratifybestmask,counts[numdiff]);
                 numdiff++;
             }
         }
@@ -244,8 +244,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 besti = i;
             }
         }
-        if ( besti >= 0 && (bp->ratifyrecvmask & masks[besti]) == masks[besti] )
-            bp->ratifybestmask = masks[besti], bp->ratifybestk = best_bestk;
+        if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->ratifyrecvmask & masks[besti]) == masks[besti] )
+            bp->ratifybestmask = masks[besti], bp->ratifybestk = bestks[besti];
         printf("numdiff.%d besti.%d numbest.%d (%d %llx) vs (%d %llx)\n",numdiff,besti,best,besti>=0?bestks[besti]:-1,(long long)(besti>=0?masks[besti]:0),bestk,(long long)bestmask);
         if ( bp->ratifybestmask == 0 )
             bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
