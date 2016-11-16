@@ -20,6 +20,7 @@ struct dpow_nanoutxo
 {
     bits256 srcutxo,destutxo;
     uint64_t bestmask,recvmask;
+    uint32_t pendingcrcs[2];
     uint16_t srcvout,destvout;
     uint8_t sigs[2][76],siglens[2],bestk,pad;
 } PACKED;
@@ -28,7 +29,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64],pendingcrcs[2];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
