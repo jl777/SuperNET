@@ -169,6 +169,14 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
+    if ( dp->ratifying != 0 )
+    {
+        printf("new ratification starting\n");
+        dp->ratifying++;
+        while ( dp->ratifying > 1 )
+            sleep(3);
+        printf("other ratifications stopped\n");
+    }
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
@@ -192,6 +200,7 @@ void dpow_statemachinestart(void *ptr)
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
             bp->isratify = 1;
+            dp->ratifying++;
             if ( (numratified= cJSON_GetArraySize(ratified)) > 0 )
             {
                 for (i=0; i<numratified; i++)
@@ -242,6 +251,12 @@ void dpow_statemachinestart(void *ptr)
             dp->blocks[checkpoint.blockhash.height - DPOW_FIRSTRATIFY] = 0;
         }*/
     }
+    if ( dp->ratifying != 0 && bp->isratify != 0 )
+    {
+        printf("skip notarization when ratifying\n");
+        free(ptr);
+        return;
+    }
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
@@ -266,6 +281,7 @@ void dpow_statemachinestart(void *ptr)
                 printf("%02x",dp->minerkey33[i]);
             printf(" statemachinestart this node %s %s is not official notary numnotaries.%d\n",srcaddr,destaddr,bp->numnotaries);
             free(ptr);
+            dp->ratifying -= bp->isratify;
             return;
         }
     }
@@ -273,6 +289,7 @@ void dpow_statemachinestart(void *ptr)
     {
         printf("statemachinestart no kmdheight.%d\n",kmdheight);
         free(ptr);
+        dp->ratifying -= bp->isratify;
         return;
     }
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
@@ -283,6 +300,7 @@ void dpow_statemachinestart(void *ptr)
         for (i=0; i<33; i++)
             printf("%02x",bp->ratified_pubkeys[0][i]);
         printf(" new, cant change notary0\n");
+        dp->ratifying -= bp->isratify;
         return;
     }
     printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
@@ -304,12 +322,14 @@ void dpow_statemachinestart(void *ptr)
         {
             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
             free(ptr);
+            dp->ratifying -= bp->isratify;
             return;
         }
         if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&ep->src.prev_hash,&ep->src.prev_vout,srcaddr) < 0 )
         {
             printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
             free(ptr);
+            dp->ratifying -= bp->isratify;
             return;
         }
         if ( bp->isratify != 0 )
@@ -332,6 +352,7 @@ void dpow_statemachinestart(void *ptr)
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            dp->ratifying -= bp->isratify;
             return;
         }
         sleep(1);
@@ -355,6 +376,11 @@ void dpow_statemachinestart(void *ptr)
                 break;
             }
         }
+        if ( dp->ratifying > 1 )
+        {
+            printf("new ratification started. abort ht.%d\n",bp->height);
+            break;
+        }
         if ( bp->state != 0xffffffff )
         {
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
@@ -367,6 +393,7 @@ void dpow_statemachinestart(void *ptr)
     }
     printf("isratify.%d bestk.%d %llx sigs.%llx state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx\n",bp->isratify,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask);
     dp->lastrecvmask = bp->recvmask;
+    dp->ratifying -= bp->isratify;
     free(ptr);
 }
 

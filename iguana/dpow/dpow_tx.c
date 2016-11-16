@@ -513,7 +513,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             else
             {
                 printf("NULL return from sendrawtransaction. abort\n");
-                if ( bp->numerrors++ < 10 )
+                if ( bp->numerrors++ < 0 )
                     sleep(10);
                 else bp->state = 0xffffffff;
             }
