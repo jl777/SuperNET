@@ -217,19 +217,20 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         bp->ratifybestk = -1;
         for (numdiff=i=0; i<bp->numnotaries; i++)
         {
-            if ( bits256_nonz(bp->notaries[senderind].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[senderind].ratifydestutxo) != 0 )
+            if ( bits256_nonz(bp->notaries[i].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[i].ratifydestutxo) != 0 )
                 bp->ratifyrecvmask |= (1LL << i);
             for (j=0; j<numdiff; j++)
-                if ( bestmask == bp->notaries[i].ratifybestmask )
+                if ( masks[j] == bp->notaries[i].ratifybestmask )
                 {
                     counts[j]++;
                     break;
                 }
             if ( j == numdiff )
             {
-                masks[numdiff] = bestmask;
-                bestks[numdiff] = bestk;
+                masks[numdiff] = bp->notaries[i].ratifybestmask;
+                bestks[numdiff] = bp->notaries[i].ratifybestk;
                 counts[numdiff]++;
+                printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].ratifybestk,(long long)bp->notaries[i].ratifybestmask,counts[numdiff]);
                 numdiff++;
             }
         }
