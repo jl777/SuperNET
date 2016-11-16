@@ -206,8 +206,10 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 {
                     memcpy(bp->notaries[senderind].ratifysigs[i],sigs[i],siglens[i]);
                     if ( bestk == bp->pendingratifybestk && bestmask == bp->pendingratifybestmask )
-                        bp->ratifysigmasks[i] |= (1LL << senderind);
-                    else bp->ratifysigmasks[i] &= ~(1LL << senderind);
+                    {
+                        if ( ((1LL << senderind) & bestmask) != 0 )
+                            bp->ratifysigmasks[i] |= (1LL << senderind);
+                    } else bp->ratifysigmasks[i] &= ~(1LL << senderind);
                 }
             }
         }
@@ -298,7 +300,12 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                         if ( bp->state != 0xffffffff )
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->pendingratifybestk,bp->pendingratifybestmask,bp->ratified_pubkeys,bp->numratified);
                     } //else printf("ratify srcmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[0],(long long)bp->bestmask);
-                } //else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
+                }
+                else
+                {
+                    dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
+                }
+                //else printf("ratify destmask.%llx != bestmask.%llx\n",(long long)bp->ratifysigmasks[1],(long long)bp->bestmask);
             }
         }
         if ( (rand() % 100) == 0 )
