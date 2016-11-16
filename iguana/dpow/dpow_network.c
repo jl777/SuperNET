@@ -263,9 +263,12 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 sleep(2 + (rand() % 7));
                 for (i=0; i<bp->numnotaries; i++)
                 {
-                    memset(&bp->notaries[i].ratifysrcutxo,0,sizeof(bp->notaries[i].ratifysrcutxo));
-                    memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
-                    bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
+                    if ( i != bp->myind )
+                    {
+                        memset(&bp->notaries[i].ratifysrcutxo,0,sizeof(bp->notaries[i].ratifysrcutxo));
+                        memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
+                        bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
+                    }
                 }
             }
         }
