@@ -343,12 +343,28 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
                 item = cJSON_CreateObject();
                 jaddbits256(item,"txid",txid);
                 jaddnum(item,"vout",vout);
-                script[0] = 33;
-                memcpy(script+1,ep->pubkey,33);
-                script[34] = CHECKSIG;
-                init_hexbytes_noT(scriptstr,script,35);
-                jaddstr(item,"scriptPubKey",scriptstr);
-                jaddi(vins,item);
+                if ( k == 0 && bp->require0 != 0 )
+                {
+                    script[0] = 0x76;
+                    script[1] = 0xa9;
+                    script[2] = 0x14;
+                    calc_rmd160_sha256(&script[3],ep->pubkey,33); // 8ee61a3161993f4f7b7081259bf5f3322d65d3f8
+                    script[23] = 0x88;
+                    script[24] = 0xac;
+                    int32_t z;
+                    for (z=0; z<25; z++)
+                        printf("%02x",script[z]);
+                    printf(" <- script0\n");
+                }
+                else
+                {
+                    script[0] = 33;
+                    memcpy(script+1,ep->pubkey,33);
+                    script[34] = CHECKSIG;
+                    init_hexbytes_noT(scriptstr,script,35);
+                    jaddstr(item,"scriptPubKey",scriptstr);
+                    jaddi(vins,item);
+                }
                 //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
                 if ( m == bp->minsigs )//&& k == bestk )
