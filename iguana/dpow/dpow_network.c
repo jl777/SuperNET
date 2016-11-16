@@ -262,7 +262,11 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
                 sleep(2 + (rand() % 7));
                 for (i=0; i<bp->numnotaries; i++)
-                    memset(&bp->notaries[i],0,sizeof(bp->notaries[i]));
+                {
+                    memset(&bp->notaries[i].ratifysrcutxo,0,sizeof(bp->notaries[i].ratifysrcutxo));
+                    memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
+                    bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
+                }
             }
         }
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
