@@ -256,6 +256,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             bp->ratifybestmask = dpow_ratifybest(bp->ratifyrecvmask,bp,&bp->ratifybestk);
             bp->lastepoch = (uint32_t)(time(NULL) / 100);
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
+            sleep(1);
         }
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
         bp->notaries[bp->myind].ratifybestmask = bp->ratifybestmask;
