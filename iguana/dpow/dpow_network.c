@@ -258,7 +258,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             {
                 bp->lastepoch = (uint32_t)(time(NULL) / 100);
                 printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
-                sleep(1);
+                sleep(3);
             }
         }
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
