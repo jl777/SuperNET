@@ -185,7 +185,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
 
 void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][76],uint32_t pendingcrcs[2])
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask; uint32_t crcval;
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask; uint32_t crcval=0;
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
