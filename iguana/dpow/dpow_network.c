@@ -272,7 +272,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                         memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
                         bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
                     }
-                    else
+                    else if ( bp->require0 == 0 )
                     {
                         bitcoin_address(srcaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
                         bitcoin_address(destaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);

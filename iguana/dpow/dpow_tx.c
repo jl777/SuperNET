@@ -430,7 +430,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified)
 {
-    int32_t j,m,numsigs,len,siglen,retval=-1; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
+    int32_t j,m,numsigs,len,siglen,retval=-1; uint32_t crcval; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
     if ( bestk < 0 )
@@ -449,7 +449,12 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                 if ( len <= sizeof(bp->ratifyrawtx[0]) )
                 {
                     decode_hex(bp->ratifyrawtx[src_or_dest],len,rawtx), bp->rawratifiedlens[src_or_dest] = len;
-                    bp->pendingcrcs[src_or_dest] = calc_crc32(0,bp->ratifyrawtx[src_or_dest],bp->rawratifiedlens[src_or_dest]);
+                    crcval = calc_crc32(0,bp->ratifyrawtx[src_or_dest],bp->rawratifiedlens[src_or_dest]);
+                    if ( crcval != bp->pendingcrcs[src_or_dest] )
+                    {
+                        printf("new crcval.[%d] %x != %x\n",src_or_dest,crcval,bp->pendingcrcs[src_or_dest]);
+                        bp->pendingcrcs[src_or_dest] = crcval;
+                    }
                     bp->notaries[bp->myind].pendingcrcs[src_or_dest] = bp->pendingcrcs[src_or_dest];
                 }
                 if ( (jsonstr= dpow_signrawtransaction(myinfo,coin,rawtx,vins)) != 0 )
