@@ -264,28 +264,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 bp->lastepoch = (uint32_t)(time(NULL) / 100);
                 printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
                 sleep(2 + (rand() % 7));
-                for (i=0; i<bp->numnotaries; i++)
-                {
-                    if ( i != bp->myind )
-                    {
-                        memset(&bp->notaries[i].ratifysrcutxo,0,sizeof(bp->notaries[i].ratifysrcutxo));
-                        memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
-                        bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
-                    }
-                    else if ( bp->require0 == 0 )
-                    {
-                        bitcoin_address(srcaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
-                        bitcoin_address(destaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
-                        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr) < 0 )
-                        {
-                            printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
-                        }
-                        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&bp->notaries[i].src.prev_hash,&bp->notaries[i].src.prev_vout,srcaddr) < 0 )
-                        {
-                            printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
-                        }
-                    }
-                }
             }
         }
         bp->notaries[bp->myind].ratifybestk = bp->ratifybestk;
@@ -329,6 +307,28 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     memset(bp->notaries[bp->myind].ratifysiglens,0,sizeof(bp->notaries[bp->myind].ratifysiglens));
                     memset(bp->ratifysigmasks,0,sizeof(bp->ratifysigmasks));
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->ratifybestk,bp->ratifybestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,1);
+                    for (i=0; i<bp->numnotaries; i++)
+                    {
+                        if ( i != bp->myind )
+                        {
+                            memset(&bp->notaries[i].ratifysrcutxo,0,sizeof(bp->notaries[i].ratifysrcutxo));
+                            memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
+                            bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
+                        }
+                        else if ( bp->require0 == 0 )
+                        {
+                            bitcoin_address(srcaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
+                            bitcoin_address(destaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
+                            if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr) < 0 )
+                            {
+                                printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
+                            }
+                            if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&bp->notaries[i].src.prev_hash,&bp->notaries[i].src.prev_vout,srcaddr) < 0 )
+                            {
+                                printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
+                            }
+                        }
+                    }
                 }
                 if ( bp->ratifysigmasks[1] == bp->pendingratifybestmask ) // have all sigs
                 {
