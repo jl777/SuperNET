@@ -43,11 +43,12 @@
 #define DPOW_KOMODOCONFIRMS 3
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
+#define DPOW_MAXSIGLEN 128
 
 struct dpow_coinentry
 {
     bits256 prev_hash;
-    uint8_t siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][76];
+    uint8_t siglens[DPOW_MAXRELAYS],sigs[DPOW_MAXRELAYS][DPOW_MAXSIGLEN];
     int32_t prev_vout;
 };
 
@@ -66,7 +67,7 @@ struct dpow_entry
     int32_t height; uint32_t pendingcrcs[2];
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
-    uint8_t pubkey[33],ratifysigs[2][76],ratifysiglens[2];
+    uint8_t pubkey[33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     struct dpow_coinentry src,dest;
 };
 
@@ -75,7 +76,7 @@ struct dpow_sigentry
     bits256 beacon;
     uint64_t mask;
     int32_t refcount;
-    uint8_t senderind,lastk,siglen,sig[76],senderpub[33];
+    uint8_t senderind,lastk,siglen,sig[DPOW_MAXSIGLEN],senderpub[33];
 };
 
 struct komodo_notaries
@@ -103,7 +104,7 @@ struct dpow_block
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][76],ratifysiglens[2];
+    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
 };
