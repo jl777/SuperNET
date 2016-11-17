@@ -430,7 +430,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
 
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified)
 {
-    int32_t j,m,numsigs,len,retval=-1; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
+    int32_t j,m,numsigs,len,siglen,retval=-1; char rawtx[32768],*jsonstr,*rawtx2,*signedtx,*sigstr; cJSON *item,*sobj,*vins,*vin,*txobj2,*signobj; bits256 txid,srchash,zero; struct dpow_entry *ep;
     ep = &bp->notaries[myind];
     memset(&zero,0,sizeof(zero));
     if ( bestk < 0 )
@@ -467,12 +467,13 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
                                         item = jitem(vin,j);
                                         if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                                         {
-                                            bp->ratifysiglens[src_or_dest] = (int32_t)strlen(sigstr) >> 1;
-                                            decode_hex(bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest],sigstr);
-                                            bp->notaries[bp->myind].ratifysiglens[src_or_dest] = bp->ratifysiglens[src_or_dest];
-                                            memcpy(bp->notaries[bp->myind].ratifysigs[src_or_dest],bp->ratifysigs[src_or_dest],bp->ratifysiglens[src_or_dest]);
+                                            siglen = (int32_t)strlen(sigstr) >> 1;
+                                            bp->ratifysiglens[src_or_dest] = siglen;
+                                            decode_hex(bp->ratifysigs[src_or_dest],siglen,sigstr);
+                                            bp->notaries[bp->myind].ratifysiglens[src_or_dest] = siglen;
+                                            memcpy(bp->notaries[bp->myind].ratifysigs[src_or_dest],bp->ratifysigs[src_or_dest],siglen);
                                             bp->ratifysigmasks[src_or_dest] |= (1LL << bp->myind);
-                                            printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d (%s)\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest],sigstr);
+                                            printf("RATIFYSIG[%d] <- set notaryid.%d siglen.%d (%s).%d\n",src_or_dest,bp->myind,bp->ratifysiglens[src_or_dest],sigstr,siglen);
                                             break;
                                         }
                                     }
