@@ -209,7 +209,8 @@ void dpow_statemachinestart(void *ptr)
                             destprevvout0 = jint(item,"destprevvout0");
                             srcprevtxid0 = jbits256(item,"srcprevtxid0");
                             srcprevvout0 = jint(item,"srcprevvout0");
-                            bp->require0 = 1;
+                            if ( bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 )
+                                bp->require0 = 1;
                         }
                     }
                     else
