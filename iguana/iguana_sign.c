@@ -1415,7 +1415,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
             //if ( vins != 0 )
-            //    printf("vins.(%s)\n",jprint(vins,0));
+                printf("txobj.(%s)\n",jprint(txobj,0));
             if ( jobj(txobj,"error") != 0 )
             {
                 printf("txobj.(%s)\n",jprint(txobj,0));
@@ -1433,7 +1433,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 }
                 free(checkstr);
             }
-        }
+        } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             memset(msgtx,0,sizeof(*msgtx));
@@ -1473,7 +1473,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     } else printf("%s signed\n",bits256_str(str,*signedtxidp));
                 }
             }
-        }
+        } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
         free(serialized), free(serialized2), free(serialized3), free(serialized4);
     } else return(-1);
