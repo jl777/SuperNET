@@ -272,6 +272,17 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                         memset(&bp->notaries[i].ratifydestutxo,0,sizeof(bp->notaries[i].ratifydestutxo));
                         bp->notaries[i].ratifybestmask = bp->notaries[i].ratifyrecvmask = 0;
                     }
+                    else
+                    {
+                        if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr) < 0 )
+                        {
+                            printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
+                        }
+                        if ( dpow_checkutxo(myinfo,dp,bp,bp->srccoin,&bp->notaries[i].src.prev_hash,&bp->notaries[i].src.prev_vout,srcaddr) < 0 )
+                        {
+                            printf("dont have %s %s utxo, please send funds\n",dp->symbol,srcaddr);
+                        }
+                    }
                 }
             }
         }

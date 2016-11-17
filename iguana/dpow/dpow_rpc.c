@@ -112,6 +112,32 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
+cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
+{
+    char buf[128],str[65],*retstr=0; cJSON *json = 0;
+    sprintf(buf,"\"%s\", %d",bits256_str(str,txid),vout);
+    if ( coin->FULLNODE < 0 )
+    {
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"gettxout",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        printf("need to test following call\n");
+        retstr = bitcoinrpc_gettxout(myinfo,coin,0,buf,txid,1,0); // untested
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(json);
+}
+
 char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
 {
     char *retstr,*paramstr; cJSON *array;
