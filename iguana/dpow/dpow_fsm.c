@@ -196,7 +196,7 @@ void dpow_statemachinestart(void *ptr)
             {
                 if ( numratified > 64 )
                 {
-                    fprintf(stderr,"cant ratify more than 64 notaries\n");
+                    fprintf(stderr,"cant ratify more than 64 notaries ratified has %d\n",numratified);
                     return;
                 }
                 for (i=0; i<numratified; i++)
