@@ -194,6 +194,11 @@ void dpow_statemachinestart(void *ptr)
             bp->isratify = 1;
             if ( (numratified= cJSON_GetArraySize(ratified)) > 0 )
             {
+                if ( numratified > 64 )
+                {
+                    fprintf(stderr,"cant ratify more than 64 notaries\n");
+                    return;
+                }
                 for (i=0; i<numratified; i++)
                 {
                     item = jitem(ratified,i);
