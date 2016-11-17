@@ -274,8 +274,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                     }
                     else
                     {
-                        bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-                        bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+                        bitcoin_address(srcaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
+                        bitcoin_address(destaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
                         if ( dpow_checkutxo(myinfo,dp,bp,bp->destcoin,&bp->notaries[i].dest.prev_hash,&bp->notaries[i].dest.prev_vout,destaddr) < 0 )
                         {
                             printf("dont have %s %s utxo, please send funds\n",dp->dest,destaddr);
