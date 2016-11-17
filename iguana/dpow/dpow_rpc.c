@@ -200,7 +200,7 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         paramstr = jprint(array,1);
         //printf("signrawtransaction\n");
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"signrawtransaction",paramstr);
-        printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+        //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
         free(paramstr);
         usleep(10000);
         return(retstr);
