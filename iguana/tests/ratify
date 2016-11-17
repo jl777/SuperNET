@@ -1,3 +1,2 @@
 #!/bin/bash
-#curl -s "https://github.com/jl777/SuperNET/blob/dPoW/iguana/tests/ratifyX.json" | curl "http://127.0.0.1:7776" -d @-
-curl -s "file://tests/ratifyX.json" | curl "http://127.0.0.1:7776" -d @-
+curl -s "http://komodonotary.com/notary.json" | curl "http://127.0.0.1:7776" -d @-
