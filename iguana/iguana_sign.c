@@ -1414,7 +1414,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         decode_hex(serialized,len,rawtx);
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
-            //if ( vins != 0 )
+            if ( 0 && vins != 0 )
                 printf("txobj.(%s)\n",jprint(txobj,0));
             if ( jobj(txobj,"error") != 0 )
             {

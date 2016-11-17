@@ -224,7 +224,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
 
 bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t k,j,m,numsigs,version,vout,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768],*sig; bits256 txid; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    uint32_t k,m,numsigs,version,vout,sequenceid = 0xffffffff; bits256 zero; int32_t n,siglen,len; uint8_t serialized[32768],*sig; bits256 txid; struct dpow_entry *ep; struct dpow_coinentry *cp;
     signedtx[0] = 0;
     *numsigsp = 0;
     memset(zero.bytes,0,sizeof(zero));
@@ -235,9 +235,8 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
         len += iguana_rwnum(1,&serialized[len],sizeof(bp->timestamp),&bp->timestamp);
     m = bp->minsigs;
     len += iguana_rwvarint32(1,&serialized[len],(uint32_t *)&m);
-    for (j=m=0; j<bp->numnotaries; j++)
+    for (k=m=0; k<bp->numnotaries; k++)
     {
-        k = j;//DPOW_MODIND(bp,j);
         siglen = 0;
         sig = 0;
         if ( ((1LL << k) & bestmask) != 0 )
@@ -267,7 +266,7 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
                 cp = (src_or_dest != 0) ? &bp->notaries[k].dest : &bp->notaries[k].src;
                 if ( bits256_nonz(cp->prev_hash) == 0 )
                 {
-                    printf("null prevhash k.%d j.%d src_or_dest.%d\n",k,j,src_or_dest);
+                    printf("null prevhash k.%d m.%d src_or_dest.%d\n",k,m,src_or_dest);
                     return(zero);
                 }
                 txid = cp->prev_hash;
@@ -311,11 +310,10 @@ bits256 dpow_notarytx(char *signedtx,int32_t *numsigsp,int32_t isPoS,struct dpow
 
 cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t usesigs,int32_t src_or_dest,int32_t useratified)
 {
-    int32_t k,j,m=0; bits256 txid; uint16_t vout; uint8_t script[35]; char scriptstr[256]; cJSON *vins=0,*item; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    int32_t k,m; bits256 txid; uint16_t vout; uint8_t script[35]; char scriptstr[256]; cJSON *vins=0,*item; struct dpow_entry *ep; struct dpow_coinentry *cp;
     vins = cJSON_CreateArray();
-    for (j=0; j<bp->numnotaries; j++)
+    for (m=k=0; k<bp->numnotaries; k++)
     {
-        k = j;//DPOW_MODIND(bp,j);
         if ( ((1LL << k) & bestmask) != 0 )
         {
             ep = &bp->notaries[k];
@@ -351,20 +349,20 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
                     calc_rmd160_sha256(&script[3],ep->pubkey,33); // 8ee61a3161993f4f7b7081259bf5f3322d65d3f8
                     script[23] = 0x88;
                     script[24] = 0xac;
-                    int32_t z;
+                    /*int32_t z;
                     for (z=0; z<25; z++)
                         printf("%02x",script[z]);
-                    printf(" <- script0\n");
+                    printf(" <- script0\n");*/
                 }
                 else
                 {
                     script[0] = 33;
                     memcpy(script+1,ep->pubkey,33);
                     script[34] = CHECKSIG;
-                    init_hexbytes_noT(scriptstr,script,35);
-                    jaddstr(item,"scriptPubKey",scriptstr);
-                    jaddi(vins,item);
                 }
+                init_hexbytes_noT(scriptstr,script,35);
+                jaddstr(item,"scriptPubKey",scriptstr);
+                jaddi(vins,item);
                 //printf("height.%d mod.%d VINI.%d <- i.%d j.%d\n",height,height % numnotaries,m,i,j);
                 m++;
                 if ( m == bp->minsigs )//&& k == bestk )
@@ -372,6 +370,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
             }
             else
             {
+                printf("null txid slot k.%d m.%d minsigs.%d\n",k,m,bp->minsigs);
                 free_json(vins);
                 return(0);
             }
@@ -536,10 +535,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
             else
             {
                 printf("NULL return from sendrawtransaction. abort\n");
-                bp->desttxid = bp->hashmsg;
-                if ( bp->numerrors++ < 0 )
-                    sleep(10);
-                else bp->state = (bp->state >= 1000) ? 0xffffffff : 1000;
+                bp->state = 0xffffffff;
             }
         } else printf("numsigs.%d vs required.%d\n",numsigs,bp->minsigs);
     }
