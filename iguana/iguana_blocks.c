@@ -355,7 +355,7 @@ int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *co
         {
             static uint32_t counter;
             if ( (counter++ % 10000) == 9999 )
-            printf("iguana_blockvalidate: %s miscompare.%d (%s) vs (%s)\n",coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+                printf("iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
             //getchar();
         }
         return(-1);

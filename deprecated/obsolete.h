@@ -20110,4 +20110,91 @@ len = 0;
              dp->blocks[checkpoint.blockhash.height] = bp;
              }*/
 
+            /*if ( Minerids[height] >= -1 )
+             {
+             printf("cached[%d] -> %d\n",height,Minerids[height]);
+             return(Minerids[height]);
+             }
+             if ( depth < 1 )
+             {
+             if ( (pindex= chainActive[height]) != 0 )
+             {
+             depth++;
+             komodo_index2pubkey33(pubkey33,pindex,height);
+             komodo_chosennotary(&notaryid,height,pubkey33);
+             if ( notaryid >= -1 )
+             {
+             Minerids[height] = notaryid;
+             if ( Minerfp != 0 )
+             {
+             fseek(Minerfp,height,SEEK_SET);
+             fputc(Minerids[height],Minerfp);
+             fflush(Minerfp);
+             }
+             }
+             depth--;
+             return(notaryid);
+             }
+             }
+             return(-2);*/
+            if ( Minerids[height-i] == -2 )
+            {
+                Minerids[height-i] = komodo_minerid(height-i);
+                if ( Minerids[height - i] == -2 )
+                {
+                    fprintf(stderr,"second -2 for Minerids[%d] current.%d\n",height-i,height);
+                    return(-2);
+                }
+            }
+            if ( Minerids[height-i] == notaryid )
+                return(-1);
+            /*if ( i == 0 && j == 0 && komodo_chosennotary(&nid,height,scriptbuf + 1) >= 0 )
+             {
+             if ( height < sizeof(Minerids)/sizeof(*Minerids) )
+             {
+             if ( (Minerids[height]= nid) >= -1 )
+             {
+             if ( Minerfp != 0 )
+             {
+             fseek(Minerfp,height,SEEK_SET);
+             fputc(Minerids[height],Minerfp);
+             fflush(Minerfp);
+             }
+             }
+             }
+             }*/
+            uint8_t pubkeys[64][33];
+            if ( pindex->nHeight > 73673 && komodo_notaries(pubkeys,76000) == 35 )
+            {
+                static int32_t didinit;
+                if ( didinit == 0 )
+                {
+                    if ( (pindex= chainActive[73673]) != 0 )
+                    {
+                        komodo_connectpindex(pindex);
+                    }
+                    didinit = 73673;
+                }
+            }
+            if ( i != 0 && notaryid >= 0 && notaryid < 64 && voutmask != 0 )
+            {
+                //komodo_stateupdate(height,0,0,notaryid,txhash,voutmask,numvouts,0,0,0,0,0,0,0);
+            }
+
+            /*if ( (k= komodo_nutxofind(height,block.vtx[i].vin[j].prevout.hash,block.vtx[i].vin[j].prevout.n)) >= 0 )
+             signedmask |= (1LL << k);
+             else if ( signedmask != 0 )
+             printf("signedmask.%llx but ht.%d i.%d j.%d not found (%s %d)\n",(long long)signedmask,height,i,j,block.vtx[i].vin[j].prevout.hash.ToString().c_str(),block.vtx[i].vin[j].prevout.n);*/
+            /*memset(Minerids,0xfe,sizeof(Minerids));
+             if ( (Minerfp= fopen(fname2,"rb+")) == 0 )
+             {
+             if ( (Minerfp= fopen(fname2,"wb")) != 0 )
+             {
+             fwrite(Minerids,1,sizeof(Minerids),Minerfp);
+             fclose(Minerfp);
+             }
+             Minerfp = fopen(fname2,"rb+");
+             }
+             if ( Minerfp != 0 && fread(Minerids,1,sizeof(Minerids),Minerfp) != sizeof(Minerids) )
+             printf("read error Minerids\n");*/
 

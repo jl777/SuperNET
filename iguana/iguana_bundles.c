@@ -421,7 +421,7 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
     static const bits256 zero;
     int32_t hdrsi,iter; struct iguana_txid *T; int64_t Toffset; char fname[1024]; FILE *fp; struct iguana_ramchaindata rdata,*rptr;
     portable_mutex_lock(&coin->special_mutex);
-    if ( (rptr= bp->ramchain.H.data) != 0 )
+    if ( (rptr= bp->ramchain.H.data) != 0 )//|| (bp == coin->current && (rptr= coin->RTramchain.H.data) != 0) )
     {
         T = RAMCHAIN_PTR(rptr,Toffset);
         *tx = T[txidind];
@@ -1035,16 +1035,16 @@ int64_t iguana_bundlecalcs(struct supernet_info *myinfo,struct iguana_info *coin
 
 int32_t iguana_bundlefinalize(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct OS_memspace *mem,struct OS_memspace *memB)
 {
-    int32_t i; struct iguana_bundle *tmpbp; //struct iguana_blockreq *breq;
+    int32_t i; struct iguana_bundle *tmpbp; struct iguana_blockreq *breq;
     if ( coin->firstRTheight == 0 && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
     {
         printf(">>>>>>>>>>>>>> EMIT.[%3d] %s | 1st.%-3d h.%-3d c.%-3d s.[%3d] maxB.%d NET.(h%d b%d) %u:%02u\n",bp->hdrsi,coin->symbol,coin->current!=0?coin->current->hdrsi:-1,coin->current!=0?coin->current->numhashes:-1,coin->current!=0?coin->current->numcached:-1,coin->current!=0?coin->current->numsaved:-1,coin->MAXBUNDLES,HDRnet,queue_size(&coin->priorityQ),(uint32_t)(time(NULL)-coin->startutc)/60,(uint32_t)(time(NULL)-coin->startutc)%60);
-        /*if ( queue_size(&coin->priorityQ) > 10000 )
+        if ( queue_size(&coin->priorityQ) > 10000 )
         {
             while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
                 myfree(breq,sizeof(*breq));
             //printf("cleared priorityQ\n");
-        }*/
+        }
         if ( bp->emitfinish != 0 )
         {
             printf("already EMIT for bundle.%d\n",bp->hdrsi);
@@ -1560,11 +1560,11 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
     iguana_setmaxbundles(coin);
     strcpy(coin->statusstr,str);
     coin->estsize = estsize;
-    /*if ( queue_size(&coin->priorityQ) > 10000 )
+    if ( queue_size(&coin->priorityQ) > 10000 )
     {
         while ( (breq= queue_dequeue(&coin->priorityQ)) != 0 )
             myfree(breq,sizeof(*breq));
         //printf("cleared priorityQ\n");
-    }*/
+    }
 }
 
