@@ -1134,7 +1134,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     if ( coin->chain->zcash != 0 )
     {
         static uint32_t counter;
-        if ( counter++ < 3 )
+        if ( 0 && counter++ < 3 )
             printf("need to process joinsplits before can validate.%s\n",coin->symbol);
         bp->validated = (uint32_t)time(NULL);
         forceflag = 1;

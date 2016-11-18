@@ -450,7 +450,7 @@ void iguana_update_balances(struct supernet_info *myinfo,struct iguana_info *coi
     max = coin->bundlescount;
     if ( coin->bundles[max-1] == coin->current || coin->bundles[max-1] == 0 || (coin->bundles[max-1] != 0 && coin->bundles[max-1]->utxofinish <= 1) )
         max--;
-    if ( coin->chain->zcash != 0 )
+    if ( 1 && coin->chain->zcash != 0 )
     {
         coin->spendvectorsaved = 0;
         for (i=0; i<coin->bundlescount-1; i++)

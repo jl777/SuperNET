@@ -1337,7 +1337,7 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
                 bp->startutxo = bp->utxofinish = (uint32_t)time(NULL);
                 if ( bp->Xvalid == 0 )
                 {
-                    if ( (rand() % 10) == 0 )
+                    if ( 0 && (rand() % 10) == 0 )
                         printf("[%d] filesize %ld Xspendptr.%p %p num.%d\n",bp->hdrsi,filesize,ramchain->Xspendptr,ramchain->Xspendinds,ramchain->numXspends);
                     bp->Xvalid = 1;
                 }
@@ -1467,7 +1467,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct supernet_info *myinfo,struct
         {
             for (i=0; i<bp->n; i++)
             {
-                iguana_blockzcopyRO(zcash,(void *)&zRO,0,B,i);
+                iguana_blockzcopyRO(0*zcash,(void *)&zRO,0,B,i);
                 if ( bp->blocks[i] == 0 &&  (bp->blocks[i]= iguana_blockhashset("mapchain",coin,-1,zRO.RO.hash2,1)) == 0 )
                 {
                     printf("Error getting blockptr\n");
@@ -1477,7 +1477,7 @@ struct iguana_ramchain *_iguana_ramchain_map(struct supernet_info *myinfo,struct
                 {
                     bp->hashes[i] = zRO.RO.hash2;
                     //bp->blocks[i]->RO = zRO.RO;
-                    iguana_blockzcopyRO(zcash,&bp->blocks[i]->RO,0,(void *)&zRO,0);
+                    iguana_blockzcopyRO(0*zcash,&bp->blocks[i]->RO,0,(void *)&zRO,0);
                 }
                 /* if ( (bRO= iguana_blockzcopyRO(zcash,&bp->blocks[i]->RO,0,B,i)) != 0 )
                  {
@@ -1917,7 +1917,7 @@ long iguana_ramchain_data(struct supernet_info *myinfo,struct iguana_info *coin,
         {
             if ( (err= iguana_ramchain_verify(coin,ramchain)) == 0 )
             {
-                iguana_blockzcopyRO(coin->chain->zcash,B,0,&RO,0);
+                iguana_blockzcopyRO(0*coin->chain->zcash,B,0,&RO,0);
                 rdata->scriptspace = ramchain->H.scriptoffset = scriptspace;
                 rdata->stackspace = ramchain->H.stacksize = stackspace;
                 if ( (fpos= (int32_t)iguana_ramchain_save(coin,RAMCHAIN_ARG,(uint32_t)addr->ipbits,RO.hash2,RO.prev_block,bundlei,0,coin->chain->zcash)) >= 0 )
@@ -2310,7 +2310,7 @@ struct iguana_ramchain *iguana_bundleload(struct supernet_info *myinfo,struct ig
                     block->hdrsi = bp->hdrsi;
                     block->bundlei = i;
                     block->fpipbits = (uint32_t)calc_ipbits("127.0.0.1");
-                    iguana_blockzcopyRO(coin->chain->zcash,&block->RO,0,B,i);
+                    iguana_blockzcopyRO(0*coin->chain->zcash,&block->RO,0,B,i);
                     //printf("%x ",(int32_t)B[i].hash2.ulongs[3]);
                     bp->blocks[i] = block;
                     bp->hashes[i] = block->RO.hash2;
@@ -2561,7 +2561,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
                 iguana_blockunmark(coin,block,bp,i,1);
                 return(-1);
             }
-            iguana_blockzcopyRO(coin->chain->zcash,destB,i,&block->RO,0);
+            iguana_blockzcopyRO(0*coin->chain->zcash,destB,i,&block->RO,0);
             //destB[i] = block->RO;
         } else printf("bundlesave error getting block (%d:%d) %p vs %p\n",bp->hdrsi,i,block,bp->blocks[i]);
     }
@@ -2576,7 +2576,7 @@ int32_t iguana_bundlesaveHT(struct supernet_info *myinfo,struct iguana_info *coi
         {
             iguana_blocksetcounters(coin,block,dest);
             //coin->blocks.RO[bp->bundleheight+bundlei] = block->RO;
-            iguana_blockzcopyRO(coin->chain->zcash,destB,bundlei,&block->RO,0);
+            iguana_blockzcopyRO(0*coin->chain->zcash,destB,bundlei,&block->RO,0);
             //destB[bundlei] = block->RO;
             //fprintf(stderr,"(%d %d).%d ",R[bundlei].H.data->numtxids,dest->H.txidind,bundlei);
             if ( (err= iguana_ramchain_iterate(myinfo,coin,dest,&R[bundlei],bp,bundlei)) != 0 )
