@@ -387,6 +387,16 @@ void dpow_statemachinestart(void *ptr)
             printf("new ratification started. abort ht.%d\n",bp->height);
             break;
         }
+        if ( bp->isratify == 0 )
+        {
+            bits256 checkhash;
+            checkhash = dpow_getblockhash(myinfo,bp->srccoin,bp->height);
+            if ( bits256_cmp(checkhash,bp->hashmsg) != 0 )
+            {
+                printf("%s ht.%d %s got reorged to %s, abort notarization\n",bp->srccoin->symbol,bp->height,bits256_str(str,bp->hashmsg),bits256_str(str2,checkhash));
+                bp->state = 0xffffffff;
+            }
+        }
         if ( bp->state != 0xffffffff )
         {
             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);

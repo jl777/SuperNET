@@ -85,6 +85,36 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
+bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
+{
+    char buf[128],*retstr=0; bits256 blockhash;
+    memset(blockhash.bytes,0,sizeof(blockhash));
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"\"%d\"",height);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getblockhash",buf);
+        printf("%s ht.%d -> getblockhash.(%s)\n",coin->symbol,height,retstr);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        printf("test iguana mode getblockhash\n");
+        retstr = bitcoinrpc_getblockhash(myinfo,coin,0,0,height);
+    }
+    else
+    {
+        return(blockhash);
+    }
+    if ( retstr != 0 )
+    {
+        if ( strlen(retstr) == 64 )
+            decode_hex(blockhash.bytes,32,retstr);
+        free(retstr);
+    }
+    return(blockhash);
+}
+
+
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
