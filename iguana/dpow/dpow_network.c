@@ -558,7 +558,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         else
                         {
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
-                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 )
+                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff )
                             {
                                 if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 )
                                 {
