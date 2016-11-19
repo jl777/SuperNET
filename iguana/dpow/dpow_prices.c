@@ -723,7 +723,7 @@ double PAX_calcspline(struct PAX_spline *spline,double *outputs,double *slopes,i
 		if ( (f[n]= splinevals[i]) != 0. && utc32[i] != 0 )
 		{
 			//printf("i%d.(%u %f) ",i,utc32[i],splinevals[i]);
-            printf("%f ",splinevals[i]);
+            //printf("%f ",splinevals[i]);
 			if ( n > 0 )
 			{
 				if ( (gaps[n-1]= utc32[i] - lastxval) < 0 )
@@ -860,12 +860,12 @@ int32_t PAX_genspline(struct PAX_spline *spline,int32_t splineid,char *name,uint
     {
         if ( i < spline->num )
         {
-            if ( refvals[i] != 0 && output[i * 24] != refvals[i] )
+            if ( 0 && refvals[i] != 0 && output[i * 24] != refvals[i] )
                 printf("{%.8f != %.8f}.%d ",output[i * 24],refvals[i],i);
             spline->pricevals[i] = output[i * 24];
         }
     }
-    printf("spline.%s num.%d\n",name,spline->num);
+    //printf("spline.%s num.%d\n",name,spline->num);
     return(spline->num);
 }
 
@@ -1269,12 +1269,11 @@ int32_t PAX_ecbparse(char *date,double *prices,char *url,int32_t basenum)
     char *jsonstr,*relstr,*basestr,name[16]; int32_t count=0,i,relnum; cJSON *json,*ratesobj,*item; struct destbuf tmp;
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
-        //if ( Debuglevel > 2 )
+        if ( Debuglevel > 2 )
             printf("(%s)\n",jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             copy_cJSON(&tmp,jobj(json,"date")), safecopy(date,tmp.buf,64);
-            printf("tmpdate.(%s)\n",date);
             if ( (basestr= jstr(json,"base")) != 0 && strcmp(basestr,CURRENCIES[basenum]) == 0 && (ratesobj= jobj(json,"rates")) != 0 && (item= ratesobj->child) != 0 )
             {
                 while ( item != 0 )
@@ -1329,7 +1328,7 @@ int32_t PAX_ecbprices(char *date,double *prices,int32_t year,int32_t month,int32
                 count += PAX_ecbparse(basenum == 0 ? date : tmpdate,prices,url,basenum);
                 if ( (basenum != 0 && strcmp(tmpdate,date) != 0) || (checkdate[0] != 0 && strcmp(checkdate,date) != 0) )
                 {
-                    printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
+                    //printf("date mismatch (%s) != (%s) or checkdate.(%s)\n",tmpdate,date,checkdate);
                     return(-1);
                 }
             }
@@ -1364,7 +1363,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
             loaded = 1;
         else printf("fread error\n");
         fclose(fp);
-    } else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
+    } //else printf("ecb_matrix.(%s) load error fp.%p\n",fname,fp);
     datenum = conv_date(&seconds,date);
     year = datenum / 10000, month = (datenum / 100) % 100, day = (datenum % 100);
     if ( loaded == 0 )
@@ -1378,7 +1377,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
                     loaded = 1;
                 fclose(fp);
             }
-        } else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
+        } //else printf("peggy_matrix error loading %d.%d.%d\n",year,month,day);
     }
     else
     {
@@ -1410,7 +1409,7 @@ int32_t ecb_matrix(double basevals[MAX_CURRENCIES],double matrix[MAX_CURRENCIES]
     //"2000-01-03"
     if ( (datenum= conv_date(&seconds,date)) < 0 )
         return(-1);
-    printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
+    //printf("loaded.(%s) nonz.%d (%d %d %d) datenum.%d\n",date,n,year,month,day,datenum);
     return(datenum);
 }
 
@@ -1771,7 +1770,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         datenum = OS_conv_unixtime(&t,&seconds,(uint32_t)time(NULL)-(28-i+1)*24*3600);
         expand_datenum(dp->edate,datenum);
         timestamp = OS_conv_datenum(datenum,12,0,0);
-        printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
+        //printf("i.%d datenum.%d %s t%u\n",i,datenum,dp->edate,timestamp);
         if ( (datenum= ecb_matrix(dp->basevals,dp->ecbmatrix,dp->edate)) > 0 )
         {
             utc32[numsamples] = timestamp;
@@ -1795,7 +1794,7 @@ void PAX_genecbsplines(struct PAX_data *dp)
         prices[j][numsamples+1] = prices[j][numsamples-1] + diff;
         diff += prices[j][numsamples-1] - PAX_splineval(&dp->splines[j],utc32[numsamples-1] - 16*3600,1);
         prices[j][numsamples+2] = prices[j][numsamples-1] + diff;
-        printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
+        //printf("%s splineval %f vs %f %f %f\n",CURRENCIES[j],prices[j][numsamples-1],prices[j][numsamples],prices[j][numsamples+1],prices[j][numsamples+2]);
         PAX_genspline(&dp->splines[j],j,CURRENCIES[j],utc32,prices[j],numsamples+3,prices[j]);
     }
 }

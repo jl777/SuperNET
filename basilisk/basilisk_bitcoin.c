@@ -565,6 +565,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
                 free(rawtx);
                 if ( *completedp != 0 && sendflag != 0 )
                 {
+                    printf("splitfunds signedtx.(%s)\n",signedtx);
                     iguana_sendrawtransaction(myinfo,coin,signedtx);
                 }
                 rawtx = signedtx;

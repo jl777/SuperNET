@@ -493,7 +493,7 @@ void iguana_oldgotblockM(struct supernet_info *myinfo,struct iguana_info *coin,s
             addr->recvblocks += 1.;
             addr->recvtotal += recvlen;
         }
-        if ( speculative == 0 && iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,0) >= 0 )
+        if ( speculative == 0 && iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
         {
             txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
             txdata->zblock.RO.recvlen = recvlen;
@@ -851,7 +851,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         didinit = 1;
     }
     portable_mutex_lock(&mutex);*/
-    if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block,zcash) >= 0 )
+    if ( iguana_ramchain_data(myinfo,coin,addr,origtxdata,txarray,origtxdata->zblock.RO.txn_count,data,recvlen,bp,block) >= 0 )
     {
         txdata->zblock.fpipbits = (uint32_t)addr->ipbits;
         txdata->zblock.RO.recvlen = recvlen;
@@ -886,7 +886,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
             }
             else if ( bp->queued == 0 && bp->startutxo == 0 )
             {
-                iguana_bundleQ(myinfo,coin,bp,0);
+                iguana_bundleQ(myinfo,coin,bp,1000);
                 //printf("numsaved.%d [%d] %s\n",numsaved,bp->hdrsi,addr->ipaddr);
             }
         }

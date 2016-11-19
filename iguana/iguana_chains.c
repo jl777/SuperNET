@@ -309,8 +309,6 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;
         else safecopy(conf,jstr(argjson,"conf"),sizeof(conf));
-        if ( conf[0] != 0 )
-            printf("PATH.(%s) CONF.(%s)\n",path!=0?path:"",conf);
         safecopy(chain->name,jstr(argjson,"name"),sizeof(chain->name));
         //chain->dust = j64bits(argjson,"dust");
         if ( jobj(argjson,"txfee_satoshis") != 0 )
@@ -318,12 +316,16 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
         if ( chain->txfee == 0 )
             chain->txfee = (uint64_t)(SATOSHIDEN * jdouble(argjson,"txfee"));
         chain->use_addmultisig = juint(argjson,"useaddmultisig");
+        if ( (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
+            chain->rpcport = port;
+        //if ( conf[0] != 0 )
+            printf("PATH.(%s) CONF.(%s)\n",path!=0?path:"",conf);
         if ( juint(argjson,"p2p") != 0 )
             chain->portp2p = juint(argjson,"p2p");
         else chain->portp2p = juint(argjson,"portp2p");
         if ( jstr(argjson,"rpchost") != 0 )
             safecopy(chain->serverport,jstr(argjson,"rpchost"),sizeof(chain->serverport));
-       if ( jstr(argjson,"userpass") != 0 )
+        if ( jstr(argjson,"userpass") != 0 )
             safecopy(chain->userpass,jstr(argjson,"userpass"),sizeof(chain->userpass));
         chain->rpcport = juint(argjson,"rpcport");
         if ( chain->rpcport == 0 && (chain->rpcport= juint(argjson,"rpc")) == 0 && strcmp(chain->symbol,"RELAY") != 0 )
@@ -345,8 +347,6 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             else if ( strcmp("BTCD",chain->symbol) == 0 )
                 chain->rpcport = 14632;
         }
-        if ( chain->serverport[0] == 0 && (port= extract_userpass(chain->serverport,chain->userpass,chain->symbol,chain->userhome,path,conf)) != 0 )
-            chain->rpcport = port;
         chain->zcash = juint(argjson,"zcash");
         chain->debug = juint(argjson,"debug");
         chain->fixit = juint(argjson,"fixit");

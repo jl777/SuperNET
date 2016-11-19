@@ -19657,3 +19657,544 @@ len = 0;
              pthread_mutex_unlock(&komodo_mutex);
              if ( n >= 1000000 )
              printf("komodo_paxtotal n.%d iterations?\n",n);*/
+            void dpow_sync(struct supernet_info *myinfo,int32_t forceflag,struct dpow_info *dp,struct dpow_block *bp,int8_t bestk,uint64_t refmask,int32_t myind,bits256 srchash,int32_t src_or_dest)
+            {
+                int8_t lastk; uint64_t mask;
+                if ( bestk < 0 )
+                    mask = dpow_maskmin(refmask,bp,&lastk);
+                else
+                {
+                    lastk = bestk;
+                    mask = refmask;
+                }
+                //dpow_utxosync(myinfo,bp,mask,myind,srchash);
+                if ( forceflag || bp->notaries[myind].masks[lastk] == 0 )
+                {
+                    //printf("dpow sync update signedtxgen\n");
+                    dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,lastk,mask,myind,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,src_or_dest,0);
+                }
+            }
+            /*if ( channel == DPOW_ENTRIESCHANNEL )
+             {
+             struct dpow_entry notaries[DPOW_MAXRELAYS]; uint8_t n; int8_t bestk; struct dpow_coinentry *ptr,*refptr;
+             rlen = 0;
+             bestk = data[rlen++];
+             n = data[rlen++];
+             rlen += iguana_rwbignum(0,&data[rlen],sizeof(hashmsg),hashmsg.bytes);
+             //printf("got ENTRIES bestk.%d (%d %llx) recv.%llx numnotaries.%d\n",bestk,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,n);
+             if ( bits256_cmp(hashmsg,bp->hashmsg) == 0 )
+             {
+             memset(notaries,0,sizeof(notaries));
+             for (i=0; i<64; i++)
+             notaries[i].bestk = -1;
+             rlen += dpow_rwcoinentrys(0,&data[rlen],notaries,n,bestk);
+             //printf("matched hashmsg rlen.%d vs datalen.%d\n",rlen,datalen);
+             for (i=0; i<n; i++)
+             {
+             for (iter=0; iter<2; iter++)
+             {
+             ptr = iter != 0 ? &notaries[i].dest : &notaries[i].src;
+             refptr = iter != 0 ? &bp->notaries[i].dest : &bp->notaries[i].src;
+             if ( bits256_nonz(ptr->prev_hash) != 0 )
+             {
+             if ( bits256_nonz(refptr->prev_hash) == 0 )
+             {
+             printf(">>>>>>>>> %s got utxo.[%d] indirectly <<<<<<<<<<<\n",iter!=0?"dest":"src",i);
+             refptr->prev_hash = ptr->prev_hash;
+             refptr->prev_vout = ptr->prev_vout;
+             if ( iter == 1 && bits256_nonz(notaries[i].src.prev_hash) != 0 )
+             bp->recvmask |= (1LL << i);
+             }
+             }
+             if ( (bestk= notaries[i].bestk) >= 0 )
+             {
+             if ( ptr->siglens[bestk] > 0 && refptr->siglens[bestk] == 0 )
+             {
+             printf(">>>>>>>>>> got %s siglen.%d for [%d] indirectly bestk.%d <<<<<<<<<<\n",iter!=0?"dest":"src",ptr->siglens[bestk],i,bestk);
+             memcpy(refptr->sigs[bestk],ptr->sigs[bestk],ptr->siglens[bestk]);
+             refptr->siglens[bestk] = ptr->siglens[bestk];
+             if ( iter != 0 )
+             bp->destsigsmasks[bestk] |= (1LL << i);
+             else bp->srcsigsmasks[bestk] |= (1LL << i);
+             }
+             }
+             }
+             }
+             }
+             }
+             else if ( channel == DPOW_UTXOCHANNEL )
+             {
+             src_or_dest = 1;
+             coin = (src_or_dest != 0) ? bp->destcoin : bp->srccoin;
+             memset(&U,0,sizeof(U));
+             if ( dpow_rwutxobuf(0,data,&U,bp) < 0 )
+             {
+             printf("error from rwutxobuf\n");
+             return(0);
+             }
+             if ( bits256_cmp(U.hashmsg,bp->hashmsg) != 0 && bits256_nonz(bp->hashmsg) != 0 )
+             {
+             printf("unexpected mismatch hashmsg.%s vs %s\n",bits256_str(str,U.hashmsg),bits256_str(str2,bp->hashmsg));
+             return(0);
+             }
+             if ( (ep= dpow_notaryfind(myinfo,bp,height,&senderind,U.pubkey)) != 0 )
+             {
+             dpow_utxo2entry(bp,ep,&U);
+             if ( ((1LL << senderind) & bp->recvmask) == 0 )
+             {
+             dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
+             bp->recvmask |= (1LL << senderind);
+             }
+             dpow_sync(myinfo,0,dp,bp,-1,ep->recvmask,myind,srchash,src_or_dest);
+             flag = 1;
+             }
+             //printf("bestk.%d %llx vs recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
+             if ( 0 && flag == 0 && bp != 0 )
+             printf("ep.%p sender.%d UTXO.%d hashmsg.(%s) txid.(%s) v%d %llx\n",ep,senderind,height,bits256_str(str,U.hashmsg),bits256_str(str2,src_or_dest!=0?U.desthash:U.srchash),src_or_dest!=0?U.destvout:U.srcvout,(long long)bp->recvmask);
+             }
+             else if ( channel == DPOW_SIGCHANNEL || channel == DPOW_SIGBTCCHANNEL )
+             {
+             if ( dpow_rwsigentry(0,data,&dsig) < 0 )
+             {
+             printf("rwsigentry error\n");
+             return(0);
+             }
+             //printf("got sig.%x (%d %d) <<<<<<<<<< from.%d (%d %llx) sigs.%llx\n",channel,channel == DPOW_SIGCHANNEL,channel == DPOW_SIGBTCCHANNEL,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)(dsig.lastk>=0?bp->destsigsmasks[dsig.lastk]:0));
+             if ( channel == DPOW_SIGBTCCHANNEL )
+             {
+             src_or_dest = 1;
+             coin = bp->destcoin;
+             cp = &bp->notaries[dsig.senderind].dest;
+             //printf("gotsig %s channel.%x from %d bestk.%d %llx\n",coin->symbol,channel,dsig.senderind,dsig.lastk,(long long)dsig.mask);
+             }
+             else
+             {
+             src_or_dest = 0;
+             coin = bp->srccoin;
+             cp = &bp->notaries[dsig.senderind].src;
+             }
+             if ( dsig.senderind >= 0 && dsig.senderind < DPOW_MAXRELAYS )
+             {
+             if ( dsig.lastk < bp->numnotaries && dsig.senderind < bp->numnotaries && (ep= dpow_notaryfind(myinfo,bp,height,&senderind,dsig.senderpub)) != 0 )
+             {
+             vcalc_sha256(0,commit.bytes,dsig.beacon.bytes,sizeof(dsig.beacon));
+             if ( memcmp(dsig.senderpub,bp->notaries[dsig.senderind].pubkey,33) == 0 )
+             {
+             //if ( ep->masks[dsig.lastk] == 0 )
+             {
+             ep->masks[src_or_dest][dsig.lastk] = dsig.mask;
+             cp->siglens[dsig.lastk] = dsig.siglen;
+             memcpy(cp->sigs[dsig.lastk],dsig.sig,dsig.siglen);
+             ep->beacon = dsig.beacon;
+             if ( src_or_dest != 0 )
+             {
+             bp->destsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+             if ( bp->bestk >= 0 && bp->bestk == dsig.lastk && (bp->bestmask & bp->destsigsmasks[dsig.lastk]) == bp->bestmask )
+             {
+             dpow_sigscheck(myinfo,dp,bp,DPOW_SIGBTCCHANNEL,myind,1);
+             }
+             }
+             else
+             {
+             bp->srcsigsmasks[dsig.lastk] |= (1LL << dsig.senderind);
+             if ( bp->bestk >= 0 && bp->bestk == dsig.lastk && (bp->bestmask & bp->srcsigsmasks[dsig.lastk]) == bp->bestmask )
+             {
+             dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
+             }
+             }
+             //printf(" ht.%d (%d %llx) <<<<<<<< %s from.%d got lastk.%d %llx/%llx siglen.%d >>>>>>>>>\n",bp->height,bp->bestk,(long long)bp->bestmask,coin->symbol,dsig.senderind,dsig.lastk,(long long)dsig.mask,(long long)bp->destsigsmasks[dsig.lastk],dsig.siglen);
+             dpow_sync(myinfo,1,dp,bp,dsig.lastk,dsig.mask,myind,srchash,src_or_dest);
+             flag = 1;
+             }
+             } else printf("%s pubkey mismatch for senderind.%d %llx vs %llx\n",coin->symbol,dsig.senderind,*(long long *)dsig.senderpub,*(long long *)bp->notaries[dsig.senderind].pubkey);
+             } else printf("%s illegal lastk.%d or senderind.%d or senderpub.%llx\n",coin->symbol,dsig.lastk,dsig.senderind,*(long long *)dsig.senderpub);
+             } else printf("couldnt find senderind.%d height.%d channel.%x\n",dsig.senderind,height,channel);
+             //if ( 0 && bp != 0 )
+             //    printf("%s SIG.%d sender.%d lastk.%d mask.%llx siglen.%d recv.%llx\n",coin->symbol,height,dsig.senderind,dsig.lastk,(long long)dsig.mask,dsig.siglen,(long long)bp->recvmask);
+             }
+             else*/
+            int32_t dpow_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint32_t txidchannel,bits256 srchash,int32_t myind)
+            {
+                struct dpow_entry *ep; int32_t i,k,len,src_or_dest,sendutxo = 0; uint8_t data[sizeof(struct dpow_entry)+2]; struct dpow_utxoentry U;
+                ep = &bp->notaries[myind];
+                if ( bp->state < 1000 )
+                {
+                    src_or_dest = 1;
+                    bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+                    if ( bp->bestk >= 0 )
+                    {
+                        sendutxo = 0;
+                        for (i=0; i<bp->numnotaries; i++)
+                        {
+                            k = DPOW_MODIND(bp,i);
+                            if ( k == myind )
+                                continue;
+                            if ( ((1LL << k) & bp->recvmask) != 0 && (bp->notaries[k].recvmask & (1LL << myind)) == 0 )
+                            {
+                                //printf("other notary.%d doesnt have our.%d utxo yet\n",k,myind);
+                                sendutxo = 1;
+                                break;
+                            }
+                        }
+                        if ( ep->masks[src_or_dest][bp->bestk] == 0 )
+                        {
+                            //printf("dpow update signedtxgen\n");
+                            dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest,0);
+                        }
+                        if ( bp->bestk >= 0 && (rand() % 10) == 0 )
+                            dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+                    } else sendutxo = 1;
+                    if ( sendutxo != 0 )
+                    {
+                        memset(&U,0,sizeof(U));
+                        dpow_entry2utxo(&U,bp,&bp->notaries[myind]);
+                        if ( (len= dpow_rwutxobuf(1,data,&U,bp)) > 0 )
+                            dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,data,len);
+                    }
+                    if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
+                    {
+                        //printf("dpow update2 signedtxgen\n");
+                        dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGBTCCHANNEL,src_or_dest,0);
+                    }
+                    if ( bp->bestk >= 0 && (rand() % 10) == 0 )
+                    {
+                        dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGBTCCHANNEL);
+                        for (i=0; i<bp->numnotaries; i++)
+                            if ( bp->notaries[i].bestk >= 0 && bp->notaries[i].bestk != bp->bestk && bitweight(bp->notaries[i].recvmask & bp->recvmask) >= 7 )
+                                dpow_sigsend(myinfo,dp,bp,myind,bp->notaries[i].bestk,bp->recvmask,srchash,DPOW_SIGBTCCHANNEL);
+                    }
+                }
+                else if ( bp->state != 0xffffffff )
+                {
+                    src_or_dest = 0;
+                    if ( bp->bestk >= 0 && ep->masks[src_or_dest][bp->bestk] == 0 )
+                    {
+                        //printf("dpow update src signedtxgen\n");
+                        dpow_signedtxgen(myinfo,dp,(src_or_dest != 0) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,src_or_dest,0);
+                    }
+                    if ( bp->bestk >= 0 && (rand() % 10) == 0 )
+                        dpow_sigsend(myinfo,dp,bp,myind,bp->bestk,bp->bestmask,srchash,DPOW_SIGCHANNEL);
+                }
+                if ( (rand() % 20) == 0 )
+                {
+                    if ( bp->isratify != 0 )
+                    {
+                        uint64_t sigsmask,srcmask;
+                        if ( bp->bestk < 0 )
+                            sigsmask = srcmask = 0;
+                        else sigsmask = bp->destsigsmasks[bp->bestk], srcmask = bp->srcsigsmasks[bp->bestk];
+                        printf("notary[%d] %s numips.%d isratify.%d ht.%d FSM.%08x masks.%llx best.(%d %llx) sigsmask.%llx %llx src.%llx\n",myind,src_or_dest != 0 ? bp->destcoin->symbol : bp->srccoin->symbol,myinfo->numdpowipbits,bp->isratify,bp->height,bp->state,(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,(long long)sigsmask,(long long)(sigsmask & bp->bestmask),(long long)srcmask);
+                    }
+                    if ( bp->isratify != 0 )
+                    {
+                        bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+                        dpow_sendcoinentrys(myinfo,dp,bp);
+                        if ( bp->bestk >= 0 )
+                        {
+                            //printf("dpow update ratify signedtxgen\n");
+                            dpow_signedtxgen(myinfo,dp,(bp->state < 1000) ? bp->destcoin : bp->srccoin,bp,bp->bestk,bp->bestmask,myind,bp->state < 1000 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL,bp->state < 1000,0);
+                        }
+                        printf("ht.%d numnotaries.%d BEST.%llx from RECV.%llx bestk.%d sigsmask.%llx missing.%llx\n",bp->height,bp->numnotaries,(long long)bp->bestmask,(long long)bp->recvmask,bp->bestk,bp->bestk>=0?(long long)bp->destsigsmasks[bp->bestk]:0,bp->bestk>=0?(long long)(bp->bestmask & ~bp->destsigsmasks[bp->bestk]):0);
+                        if ( bp->height < DPOW_FIRSTRATIFY )
+                            dp->blocks[bp->height] = bp;
+                    }
+                }
+                if ( bp->state < 1000 && bp->bestk >= 0 && (bp->destsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
+                {
+                    dpow_sigscheck(myinfo,dp,bp,myind,1);
+                }
+                else if ( bp->state != 0xffffffff && bp->bestk >= 0 && (bp->srcsigsmasks[bp->bestk] & bp->bestmask) == bp->bestmask )
+                {
+                    dpow_sigscheck(myinfo,dp,bp,myind,0);
+                }
+                return(bp->state);
+            }
+            
+            uint32_t dpow_statemachineiterate(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int32_t myind,int32_t src_or_dest)
+            {
+                int32_t j,incr; char *opret_symbol,coinaddr[64]; uint32_t channel,sigchannel,txidchannel; bits256 srchash,zero;
+                if ( 0 && bp->numnotaries > 8 )
+                    incr = sqrt(bp->numnotaries) + 1;
+                else incr = 1;
+                memset(zero.bytes,0,sizeof(zero));
+                channel = DPOW_UTXOCHANNEL;
+                if ( bits256_nonz(bp->desttxid) == 0 )
+                {
+                    sigchannel = DPOW_SIGBTCCHANNEL;
+                    txidchannel = DPOW_BTCTXIDCHANNEL;
+                    opret_symbol = "";
+                }
+                else
+                {
+                    sigchannel = DPOW_SIGCHANNEL;
+                    txidchannel = DPOW_TXIDCHANNEL;
+                    opret_symbol = dp->symbol;
+                }
+                bitcoin_address(coinaddr,coin->chain->pubtype,dp->minerkey33,33);
+                if ( bits256_nonz(bp->hashmsg) == 0 && bp->height >= DPOW_FIRSTRATIFY )
+                {
+                    printf("null hashmsg\n");
+                    return(0);
+                }
+                for (j=0; j<sizeof(srchash); j++)
+                    srchash.bytes[j] = dp->minerkey33[j+1];
+                bp->bestk = dpow_bestk(bp,&bp->bestmask);
+                if ( bp->state < 7 )
+                {
+                    dpow_utxosync(myinfo,dp,bp,0,myind,srchash);
+                    bp->state++;
+                }
+                else
+                {
+                    dpow_update(myinfo,dp,bp,txidchannel,srchash,myind);
+                    if ( bits256_nonz(bp->srctxid) != 0 )
+                        bp->state = 0xffffffff;
+                }
+                return(bp->state);
+            }
+            /*int32_t dpow_voutratify(struct dpow_block *bp,uint8_t *serialized,int32_t m,uint8_t pubkeys[][33],int32_t numratified)
+             {
+             uint64_t satoshis; uint32_t locktime = 0; uint32_t numvouts; int32_t i,len = 0;
+             numvouts = numratified + 1;
+             len += iguana_rwvarint32(1,&serialized[len],&numvouts);
+             satoshis = DPOW_UTXOSIZE;
+             len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+             serialized[len++] = 35;
+             serialized[len++] = 33;
+             decode_hex(&serialized[len],33,CRYPTO777_PUBSECPSTR), len += 33;
+             serialized[len++] = CHECKSIG;
+             satoshis = DPOW_MINOUTPUT;
+             for (i=0; i<numratified; i++)
+             {
+             len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
+             serialized[len++] = 35;
+             serialized[len++] = 33;
+             memcpy(&serialized[len],pubkeys[i],33), len += 33;
+             serialized[len++] = CHECKSIG;
+             }
+             len += iguana_rwnum(1,&serialized[len],sizeof(locktime),&locktime);
+             printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
+             return(len);
+             }*/
+            
+            int32_t dpow_rwcoinentry(int32_t rwflag,uint8_t *serialized,struct dpow_coinentry *src,struct dpow_coinentry *dest,int8_t *bestkp)
+            {
+                int8_t bestk; struct dpow_coinentry *ptr; int32_t siglen,iter,len = 0;
+                len += iguana_rwbignum(rwflag,&serialized[len],sizeof(src->prev_hash),src->prev_hash.bytes);
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(src->prev_vout),(uint32_t *)&src->prev_vout);
+                len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dest->prev_hash),dest->prev_hash.bytes);
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(dest->prev_vout),(uint32_t *)&dest->prev_vout);
+                len += iguana_rwnum(rwflag,&serialized[len],sizeof(*bestkp),(uint32_t *)bestkp);
+                if ( (bestk= *bestkp) >= 0 )
+                {
+                    for (iter=0; iter<2; iter++)
+                    {
+                        ptr = (iter == 0) ? src : dest;
+                        len += iguana_rwnum(rwflag,&serialized[len],sizeof(ptr->siglens[bestk]),(uint32_t *)&ptr->siglens[bestk]);
+                        if ( (siglen= ptr->siglens[bestk]) > 0 )
+                        {
+                            if ( rwflag != 0 )
+                                memcpy(&serialized[len],ptr->sigs[bestk],siglen);
+                            else memcpy(ptr->sigs[bestk],&serialized[len],siglen);
+                            len += siglen;
+                        }
+                    }
+                }
+                return(len);
+            }
+            
+            int32_t dpow_rwcoinentrys(int32_t rwflag,uint8_t *serialized,struct dpow_entry notaries[DPOW_MAXRELAYS],uint8_t numnotaries,int8_t bestk)
+            {
+                int32_t i,len = 0;
+                for (i=0; i<numnotaries; i++)
+                {
+                    if ( rwflag != 0 )
+                        notaries[i].bestk = bestk;
+                    len += dpow_rwcoinentry(rwflag,&serialized[len],&notaries[i].src,&notaries[i].dest,&notaries[i].bestk);
+                }
+                return(len);
+            }
+            
+            int32_t dpow_sendcoinentrys(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp)
+            {
+                uint8_t data[sizeof(struct dpow_coinentry)*64 + 4096]; bits256 zero; int32_t len = 0;
+                memset(zero.bytes,0,sizeof(zero));
+                //printf("ht.%d >>>>>>>>>>>>> dpow_sendcoinentrys (%d %llx) <- %llx\n",bp->height,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask);
+                data[len++] = bp->bestk;
+                data[len++] = bp->numnotaries;
+                len += iguana_rwbignum(1,&data[len],sizeof(bp->hashmsg),bp->hashmsg.bytes);
+                len += dpow_rwcoinentrys(1,&data[len],bp->notaries,bp->numnotaries,bp->bestk);
+                dpow_send(myinfo,dp,bp,zero,bp->hashmsg,DPOW_ENTRIESCHANNEL,bp->height,data,len);
+                return(len);
+            }
+            
+            int32_t dpow_rwutxobuf(int32_t rwflag,uint8_t *data,struct dpow_utxoentry *up,struct dpow_block *bp)
+            {
+                uint8_t numnotaries; uint64_t othermask; int32_t i,len = 0;
+                len += iguana_rwbignum(rwflag,&data[len],sizeof(up->hashmsg),up->hashmsg.bytes);
+                len += iguana_rwbignum(rwflag,&data[len],sizeof(up->srchash),up->srchash.bytes);
+                len += iguana_rwbignum(rwflag,&data[len],sizeof(up->desthash),up->desthash.bytes);
+                if ( bits256_nonz(up->srchash) == 0 || bits256_nonz(up->desthash) == 0 )
+                {
+                    printf("dpow_rwutxobuf null src.%d or dest.%d\n",bits256_nonz(up->srchash),bits256_nonz(up->desthash));
+                    return(-1);
+                }
+                len += iguana_rwbignum(rwflag,&data[len],sizeof(up->commit),up->commit.bytes);
+                len += iguana_rwnum(rwflag,&data[len],sizeof(up->recvmask),(uint8_t *)&up->recvmask);
+                len += iguana_rwnum(rwflag,&data[len],sizeof(up->height),(uint8_t *)&up->height);
+                len += iguana_rwnum(rwflag,&data[len],sizeof(up->srcvout),&up->srcvout);
+                len += iguana_rwnum(rwflag,&data[len],sizeof(up->destvout),&up->destvout);
+                len += iguana_rwnum(rwflag,&data[len],sizeof(up->bestk),&up->bestk);
+                if ( rwflag != 0 )
+                {
+                    for (i=0; i<33; i++)
+                        data[len++] = up->pubkey[i];
+                    data[len++] = bp->numnotaries;
+                    for (i=0; i<bp->numnotaries; i++)
+                        len += iguana_rwnum(rwflag,&data[len],sizeof(*up->othermasks),(uint8_t *)&up->othermasks[(int32_t)i]);
+                }
+                else
+                {
+                    for (i=0; i<33; i++)
+                        up->pubkey[i] = data[len++];
+                    numnotaries = data[len++];
+                    if ( numnotaries <= bp->numnotaries )
+                    {
+                        for (i=0; i<numnotaries; i++)
+                        {
+                            len += iguana_rwnum(rwflag,&data[len],sizeof(othermask),(uint8_t *)&othermask);
+                            bp->notaries[(int32_t)i].othermask |= othermask;
+                        }
+                    } else return(-1);
+                }
+                return(len);
+            }
+            /*void dpow_utxosync(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint64_t recvmask,int32_t myind,bits256 srchash)
+             {
+             uint32_t i,j,r; int32_t len; struct dpow_utxoentry U; uint8_t utxodata[sizeof(U)+2];
+             if ( (bp->recvmask ^ recvmask) != 0 )
+             {
+             if ( ((1LL << myind) & recvmask) == 0 )
+             {
+             i = myind;
+             //printf("utxosync bp->%llx != %llx, myind.%d\n",(long long)bp->recvmask,(long long)recvmask,myind);
+             }
+             else
+             {
+             r = (rand() % bp->numnotaries);
+             for (j=0; j<bp->numnotaries; j++)
+             {
+             i = DPOW_MODIND(bp,j+r);
+             if ( ((1LL << i) & bp->recvmask) != 0 && ((1LL << i) & recvmask) == 0 )
+             break;
+             }
+             //printf("utxosync bp->%llx != %llx, random pick.%d\n",(long long)bp->recvmask,(long long)recvmask,i);
+             }
+             memset(&U,0,sizeof(U));
+             dpow_entry2utxo(&U,bp,&bp->notaries[i]);
+             //char str[65],str2[65];
+             //printf("send.(%s %s)\n",bits256_str(str,bp->notaries[i].dest.prev_hash),bits256_str(str2,bp->notaries[i].src.prev_hash));
+             if ( (len= dpow_rwutxobuf(1,utxodata,&U,bp)) > 0 )
+             dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,DPOW_UTXOCHANNEL,bp->height,utxodata,len);
+             }
+             }*/
+
+            /*else if ( strcmp(dp->symbol,"KMD") == 0 )
+             {
+             bp->bestk = -1;
+             bp->bestmask = 0;
+             bp->height = ((dp->checkpoint.blockhash.height / 10) % (DPOW_FIRSTRATIFY/10)) * 10;
+             printf("new rotation ht.%d\n",bp->height);
+             dp->blocks[checkpoint.blockhash.height] = 0;
+             checkpoint.blockhash.height = dp->checkpoint.blockhash.height;
+             dp->blocks[checkpoint.blockhash.height] = bp;
+             }*/
+
+            /*if ( Minerids[height] >= -1 )
+             {
+             printf("cached[%d] -> %d\n",height,Minerids[height]);
+             return(Minerids[height]);
+             }
+             if ( depth < 1 )
+             {
+             if ( (pindex= chainActive[height]) != 0 )
+             {
+             depth++;
+             komodo_index2pubkey33(pubkey33,pindex,height);
+             komodo_chosennotary(&notaryid,height,pubkey33);
+             if ( notaryid >= -1 )
+             {
+             Minerids[height] = notaryid;
+             if ( Minerfp != 0 )
+             {
+             fseek(Minerfp,height,SEEK_SET);
+             fputc(Minerids[height],Minerfp);
+             fflush(Minerfp);
+             }
+             }
+             depth--;
+             return(notaryid);
+             }
+             }
+             return(-2);*/
+            if ( Minerids[height-i] == -2 )
+            {
+                Minerids[height-i] = komodo_minerid(height-i);
+                if ( Minerids[height - i] == -2 )
+                {
+                    fprintf(stderr,"second -2 for Minerids[%d] current.%d\n",height-i,height);
+                    return(-2);
+                }
+            }
+            if ( Minerids[height-i] == notaryid )
+                return(-1);
+            /*if ( i == 0 && j == 0 && komodo_chosennotary(&nid,height,scriptbuf + 1) >= 0 )
+             {
+             if ( height < sizeof(Minerids)/sizeof(*Minerids) )
+             {
+             if ( (Minerids[height]= nid) >= -1 )
+             {
+             if ( Minerfp != 0 )
+             {
+             fseek(Minerfp,height,SEEK_SET);
+             fputc(Minerids[height],Minerfp);
+             fflush(Minerfp);
+             }
+             }
+             }
+             }*/
+            uint8_t pubkeys[64][33];
+            if ( pindex->nHeight > 73673 && komodo_notaries(pubkeys,76000) == 35 )
+            {
+                static int32_t didinit;
+                if ( didinit == 0 )
+                {
+                    if ( (pindex= chainActive[73673]) != 0 )
+                    {
+                        komodo_connectpindex(pindex);
+                    }
+                    didinit = 73673;
+                }
+            }
+            if ( i != 0 && notaryid >= 0 && notaryid < 64 && voutmask != 0 )
+            {
+                //komodo_stateupdate(height,0,0,notaryid,txhash,voutmask,numvouts,0,0,0,0,0,0,0);
+            }
+
+            /*if ( (k= komodo_nutxofind(height,block.vtx[i].vin[j].prevout.hash,block.vtx[i].vin[j].prevout.n)) >= 0 )
+             signedmask |= (1LL << k);
+             else if ( signedmask != 0 )
+             printf("signedmask.%llx but ht.%d i.%d j.%d not found (%s %d)\n",(long long)signedmask,height,i,j,block.vtx[i].vin[j].prevout.hash.ToString().c_str(),block.vtx[i].vin[j].prevout.n);*/
+            /*memset(Minerids,0xfe,sizeof(Minerids));
+             if ( (Minerfp= fopen(fname2,"rb+")) == 0 )
+             {
+             if ( (Minerfp= fopen(fname2,"wb")) != 0 )
+             {
+             fwrite(Minerids,1,sizeof(Minerids),Minerfp);
+             fclose(Minerfp);
+             }
+             Minerfp = fopen(fname2,"rb+");
+             }
+             if ( Minerfp != 0 && fread(Minerids,1,sizeof(Minerids),Minerfp) != sizeof(Minerids) )
+             printf("read error Minerids\n");*/
+
