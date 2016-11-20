@@ -27,7 +27,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    printf("%s\n",retstr);
+                    //printf("%s\n",retstr);
                     if ( (array= jarray(&num,retjson,"notaries")) != 0 )
                     {
                         if ( num > 64 )
@@ -42,6 +42,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
                                 decode_hex(pubkeys[i],33,pubkeystr);
                             else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
                         }
+                        printf("notaries.[%d] <- ht.%d\n",num,height);
                     }
                     free_json(retjson);
                 }
