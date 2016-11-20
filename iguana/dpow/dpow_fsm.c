@@ -285,7 +285,7 @@ void dpow_statemachinestart(void *ptr)
             printf("minerkey33-> ");
             for (i=0; i<33; i++)
                 printf("%02x",dp->minerkey33[i]);
-            printf(" statemachinestart this node %s %s is not official notary numnotaries.%d\n",srcaddr,destaddr,bp->numnotaries);
+            printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             free(ptr);
             dp->ratifying -= bp->isratify;
             return;

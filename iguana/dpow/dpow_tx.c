@@ -208,6 +208,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         return(-1);
     }
     opretlen = dpow_opreturnscript(data,opret,opretlen);
+    // insert 'A' values
     if ( opretlen < 0xfd )
         serialized[len++] = opretlen;
     else
