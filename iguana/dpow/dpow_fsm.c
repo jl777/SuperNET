@@ -158,7 +158,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
+    int32_t i,ht,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
@@ -171,6 +171,7 @@ void dpow_statemachinestart(void *ptr)
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
+    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     dest = iguana_coinfind(dp->dest);
     if ( src == 0 || dest == 0 )
     {
@@ -267,7 +268,10 @@ void dpow_statemachinestart(void *ptr)
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
-        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height);
+        ht = strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
+        if ( ht == 0 )
+            ht = src->longestchain;
+        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
         for (i=0; i<bp->numnotaries; i++)
         {
             //int32_t j; for (j=0; j<33; j++)
