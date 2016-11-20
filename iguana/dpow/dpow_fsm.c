@@ -72,7 +72,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
-        printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
+        //printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
         return(-1);
     }
     for (i=0; i<32; i++)
