@@ -742,7 +742,7 @@ uint32_t komodo_assetmagic(char *symbol,uint64_t supply)
     return(calc_crc32(0,buf,len));
 }
 
-int32_t komodo_shortflag(char *symbol)
+/*int32_t komodo_shortflag(char *symbol)
 {
     int32_t i,shortflag = 0;
     if ( symbol[0] == '-' )
@@ -753,18 +753,17 @@ int32_t komodo_shortflag(char *symbol)
         symbol[i] = 0;
     }
     return(shortflag);
-}
+}*/
 
-uint16_t komodo_assetport(uint32_t magic,int32_t shortflag)
+uint16_t komodo_assetport(uint32_t magic)
 {
-    return(8000 + shortflag*7777 + (magic % 7777));
+    return(8000 + (magic % 7777));
 }
 
-uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp,int32_t *shortflagp)
+uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 {
     *magicp = komodo_assetmagic(symbol,supply);
-    *shortflagp = komodo_shortflag(symbol);
-    return(komodo_assetport(*magicp,*shortflagp));
+    return(komodo_assetport(*magicp));
 }
 
 #define MAX_CURRENCIES 32
@@ -773,7 +772,7 @@ extern char CURRENCIES[][8];
 void komodo_assetcoins()
 {
     uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
-    int32_t i,j,shortflag; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
+    int32_t i,j; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
     if ( (userhome= OS_filestr(&filesize,"userhome.txt")) == 0 )
         userhome = "root";
     else
@@ -783,7 +782,7 @@ void komodo_assetcoins()
     }
     for (i=0; i<MAX_CURRENCIES; i++)
     {
-        port = komodo_port(CURRENCIES[i],10,&magic,&shortflag);
+        port = komodo_port(CURRENCIES[i],10,&magic);
         for (j=0; j<4; j++)
             sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);
         magicstr[j*2] = 0;

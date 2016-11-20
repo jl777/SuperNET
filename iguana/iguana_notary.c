@@ -347,6 +347,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
+    return(clonestr("{\"error\":\"dpow active is deprecated for now\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;

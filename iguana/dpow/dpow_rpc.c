@@ -699,26 +699,24 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
                 printf(" checkpubkey fiat %.8f check %.8f vs komodoshis %.8f dest.(%s) kmdheight.%d ht.%d seed.%llu\n",dstr(fiatoshis),dstr(checktoshis),dstr(komodoshis),destaddr,kmdheight,height,(long long)seed);
-                if ( shortflag == dp->SHORTFLAG )
+                if ( shortflag == 0 )
                 {
-                    if ( shortflag == 0 )
+                    if ( seed == 0 || checktoshis >= komodoshis )
                     {
-                        if ( seed == 0 || checktoshis >= komodoshis )
-                        {
-                            if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
-                                dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,komodoshis,rmd160,txid,vout,kmdheight,height);
-                        }
+                        if ( dpow_paxfind(dp,&space,txid,vout) == 0 )
+                            dpow_issuer_withdraw(dp,coinaddr,fiatoshis,shortflag,base,komodoshis,rmd160,txid,vout,kmdheight,height);
                     }
-                    else // short
+                }
+                else // short
+                {
+                    printf("shorting not yet, wait for pax2\n");
+                    /*for (i=0; i<opretlen; i++)
+                        printf("%02x",script[i]);
+                    printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
+                    if ( seed == 0 || fiatoshis < checktoshis )
                     {
-                        for (i=0; i<opretlen; i++)
-                            printf("%02x",script[i]);
-                        printf(" opret[%c] fiatoshis %.8f vs check %.8f\n",script[0],dstr(fiatoshis),dstr(checktoshis));
-                        if ( seed == 0 || fiatoshis < checktoshis )
-                        {
-                            
-                        }
-                    }
+                        
+                    }*/
                 }
             }
         }
@@ -750,7 +748,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
                 }
                 else
                 {
-                    
+                    printf("shorting not yet, wait for pax2\n");
                 }
             }
         }
@@ -860,7 +858,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
                         if ( (height % 100) == 0 )
                             fprintf(stderr,"%s.%d ",coin->symbol,height);
                         memset(&zero,0,sizeof(zero));
-                        komodo_stateupdate(height,0,0,0,zero,0,0,0,0,height,0,0,0,0);
+                        komodo_stateupdate(height,0,0,0,zero,0,0,0,0,height,0,0,0,0,0);
                     }*/
                     if ( dpow_issuer_block(dp,coin,height,port) < 0 )
                     {
