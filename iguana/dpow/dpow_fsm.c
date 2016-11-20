@@ -171,8 +171,9 @@ void dpow_statemachinestart(void *ptr)
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
     printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
-    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
     dest = iguana_coinfind(dp->dest);
+    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
+    dpow_getchaintip(myinfo,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
@@ -268,9 +269,9 @@ void dpow_statemachinestart(void *ptr)
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
-        ht = strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
+        ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
         if ( ht == 0 )
-            ht = src->longestchain;
+            ht = strcmp("KMD",src->symbol) == 0 ? src->longestchain : dest->longestchain;
         bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
         for (i=0; i<bp->numnotaries; i++)
         {
