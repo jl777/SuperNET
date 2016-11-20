@@ -22,12 +22,12 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
     {
         if ( coin->FULLNODE < 0 )
         {
-            sprintf(params,"[%d]",height);
+            sprintf(params,"[\"%d\"]",height);
             if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"notaries",params)) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    //printf("%s\n",retstr);
+                    printf("%s\n",retstr);
                     if ( (array= jarray(&num,retjson,"notaries")) != 0 )
                     {
                         if ( num > 64 )
