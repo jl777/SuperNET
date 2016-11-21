@@ -97,8 +97,9 @@ int32_t dpow_paxpending(uint8_t *hex)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 0 )
+                    if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 1 )
                     {
+                        n >>= 1;
                         printf("PAXPENDING.(%s)\n",retstr);
                         decode_hex(hex,n,hexstr);
                     }
