@@ -270,7 +270,7 @@ void dpow_statemachinestart(void *ptr)
     if ( kmdheight >= 0 )
     {
         ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
-        if ( ht == 0 )
+        if ( ht == 0 || strcmp("KMD",dest->symbol) == 0 )
             ht = strcmp("KMD",src->symbol) == 0 ? src->longestchain : dest->longestchain;
         bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
         for (i=0; i<bp->numnotaries; i++)

@@ -275,9 +275,9 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     myinfo->numdpows++;
     PAX_init();
     portable_mutex_init(&dp->mutex);
-    printf(">>>>>>>>>>>>>>> call paxpending\n");
-    uint8_t buf[32768];
-    dpow_paxpending(buf);
+    //printf(">>>>>>>>>>>>>>> call paxpending\n");
+    //uint8_t buf[32768];
+    //dpow_paxpending(buf);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
