@@ -103,9 +103,9 @@ int32_t dpow_paxpending(uint8_t *hex)
                 }
                 printf("PAXPENDING.(%s)\n",retstr);
                 free(retstr);
-            }
-        }
-    }
+            } else printf("dpow_paxpending: paxwithdraw null return\n");
+        } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
+    } else printf("dpow_paxpending: cant find KMD\n");
     return(n);
 }
 
