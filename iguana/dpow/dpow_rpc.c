@@ -98,10 +98,12 @@ int32_t dpow_paxpending(uint8_t *hex)
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 0 )
+                    {
+                        printf("PAXPENDING.(%s)\n",retstr);
                         decode_hex(hex,n,hexstr);
+                    }
                     free_json(retjson);
                 }
-                printf("PAXPENDING.(%s)\n",retstr);
                 free(retstr);
             } else printf("dpow_paxpending: paxwithdraw null return\n");
         } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
