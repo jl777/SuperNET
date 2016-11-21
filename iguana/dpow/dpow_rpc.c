@@ -86,6 +86,28 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
+int32_t dpow_paxpending(uint8_t *hex)
+{
+    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0;
+    if ( (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( coin->FULLNODE < 0 )
+        {
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"paxwithdraw","")) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 0 )
+                        decode_hex(hex,n,hexstr);
+                    free_json(retjson);
+                }
+                free(retstr);
+            }
+        }
+    }
+    return(n);
+}
+
 bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height)
 {
     char buf[128],*retstr=0; bits256 blockhash;
