@@ -93,7 +93,7 @@ int32_t dpow_paxpending(uint8_t *hex)
     {
         if ( coin->FULLNODE < 0 )
         {
-            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"paxwithdraw","")) != 0 )
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"paxpending","")) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
