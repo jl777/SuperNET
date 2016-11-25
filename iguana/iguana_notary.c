@@ -72,7 +72,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     {
         freq = 1;
         minsigs = (komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
-        if ( minsigs > DPOW_MINSIGS )
+        if ( minsigs < DPOW_MINSIGS )
             minsigs = DPOW_MINSIGS;
     }
     printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
