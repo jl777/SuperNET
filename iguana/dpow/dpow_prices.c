@@ -1474,7 +1474,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
                         item = jitem(array,i);
                         timestamp = juint(item,"date"), high = jdouble(item,"high"), low = jdouble(item,"low"), open = jdouble(item,"open");
                         close = jdouble(item,"close"), vol = jdouble(item,"volume"), quotevol = jdouble(item,"quoteVolume"), price = jdouble(item,"weightedAverage");
-                        //printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
+                        printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
                         //printf("[%u %d %f]",timestamp,OS_conv_unixtime(&seconds,timestamp),price);
                         if ( price != 0 )
                         {
@@ -1483,7 +1483,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
                             else dp->BTCDBTC = price;
                         }
                     }
-                    //printf("poloniex.%d\n",n);
+                    printf("poloniex.%d\n",n);
                 }
                 if ( kmdhist != 0 )
                     free_json(kmdhist);
