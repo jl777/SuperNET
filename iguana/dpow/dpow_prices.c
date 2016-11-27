@@ -1468,7 +1468,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
                 //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},
                 if ( kmdhist != 0 && (array= jarray(&n,kmdhist,0)) != 0 )
                 {
-                    //printf("GOT.(%s)\n",cJSON_Print(array));
+                    printf("GOT.(%s)\n",cJSON_Print(array));
                     for (i=0; i<1; i++)
                     {
                         item = jitem(array,i);
