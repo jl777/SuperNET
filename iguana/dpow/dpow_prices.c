@@ -1429,8 +1429,8 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     //bitcoincharts = url_json("http://api.bitcoincharts.com/v1/weighted_prices.json");
     blockchaininfo = 0;//url_json("https://blockchain.info/ticker");
     coindesk = 0;//url_json("http://api.coindesk.com/v1/bpi/historical/close.json");
-    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-2*3600*24));
-    sprintf(url2,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-2*3600*24));
+    sprintf(url,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_KMD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-3600*24));
+    sprintf(url2,"https://poloniex.com/public?command=returnChartData&currencyPair=BTC_BTCD&start=%ld&end=9999999999&period=86400",(long)(time(NULL)-3600*24));
     quandl = 0;//url_json("https://www.quandl.com/api/v1/datasets/BAVERAGE/USD.json?rows=1");
     if ( 0 && (str= jstr(quandl,"updated_at")) != 0 && (datenum= conv_date(&seconds,str)) > 0 && (array= jarray(&n,quandl,"data")) != 0 )
     {
@@ -1468,13 +1468,13 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
                 //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},
                 if ( kmdhist != 0 && (array= jarray(&n,kmdhist,0)) != 0 )
                 {
-                    printf("GOT.(%s)\n",cJSON_Print(array));
+                    //printf("GOT.(%s)\n",cJSON_Print(array));
                     for (i=0; i<1; i++)
                     {
                         item = jitem(array,i);
                         timestamp = juint(item,"date"), high = jdouble(item,"high"), low = jdouble(item,"low"), open = jdouble(item,"open");
                         close = jdouble(item,"close"), vol = jdouble(item,"volume"), quotevol = jdouble(item,"quoteVolume"), price = jdouble(item,"weightedAverage");
-                        printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
+                        //printf("[%u %f %f %f %f %f %f %f]",timestamp,high,low,open,close,vol,quotevol,price);
                         //printf("[%u %d %f]",timestamp,OS_conv_unixtime(&seconds,timestamp),price);
                         if ( price != 0 )
                         {
@@ -1483,7 +1483,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
                             else dp->BTCDBTC = price;
                         }
                     }
-                    printf("poloniex.%d\n",n);
+                    //printf("poloniex.%d\n",n);
                 }
                 if ( kmdhist != 0 )
                     free_json(kmdhist);
