@@ -190,6 +190,7 @@ void dpow_statemachinestart(void *ptr)
         bp->duration = duration;
         bp->srccoin = src;
         bp->destcoin = dest;
+        bp->myind = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -305,6 +306,7 @@ void dpow_statemachinestart(void *ptr)
             dp->ratifying -= bp->isratify;
             return;
         }
+        printf("myind.%d\n",myind);
     }
     else
     {
@@ -380,7 +382,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify == 0 || (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime = (uint32_t)time(NULL);
-    printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
+    printf("myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
