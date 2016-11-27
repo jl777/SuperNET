@@ -327,7 +327,7 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
-    printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
+    //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
     {
         ep->dest.prev_hash = destprevtxid0;
@@ -375,7 +375,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
-            printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             return;
         }
@@ -396,7 +396,7 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( bp->isratify == 0 )
             {
-                printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }
