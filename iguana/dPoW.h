@@ -102,9 +102,9 @@ struct dpow_block
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
-    int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
+    int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
+    uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
 };

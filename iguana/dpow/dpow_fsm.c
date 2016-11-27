@@ -169,7 +169,6 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
-    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
@@ -315,6 +314,8 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
+    bp->myind = myind;
+    printf("[%d] statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
