@@ -1492,7 +1492,8 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     }
     if ( (*kmdbtcp= dp->KMDBTC) == 0. )
         *kmdbtcp = dp->BTCDBTC / 50.22;
-    printf("KMD/BTC %.8f\n",*kmdbtcp);
+    if ( (rand() % 100) == 0 )
+        printf("KMD/BTC %.8f\n",*kmdbtcp);
     if ( btctrades != 0 && (array= jarray(&n,btctrades,0)) != 0 )
     {
         //printf("GOT.(%s)\n",cJSON_Print(array));
