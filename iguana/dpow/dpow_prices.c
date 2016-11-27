@@ -1450,8 +1450,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     }
     if ( 1 )
     {
-        double avebid,aveask,bidvol,askvol; struct exchange_quote sortbuf[512];
-        struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
+        double avebid,aveask,bidvol,askvol; //struct exchange_quote sortbuf[512]; struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
         //aveask = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&askvol,"KMD","BTC",1,argjson);
         //avebid = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&bidvol,"KMD","BTC",-1,argjson);
         if ( 0 && avebid > SMALLVAL && aveask > SMALLVAL )
