@@ -133,7 +133,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 49;
         n = 10;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
@@ -391,6 +391,8 @@ void dpow_statemachinestart(void *ptr)
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
+        if ( bp->isratify == 0 && dp->ratifying != 0 )
+            break;
         sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
