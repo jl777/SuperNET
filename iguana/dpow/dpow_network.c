@@ -72,7 +72,7 @@ int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
     return(firstz);
 }
 
-int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
+int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
     int32_t firstz; uint32_t crc32;
     if ( dexp->version0 == (DEX_VERSION & 0xff) && dexp->version1 == ((DEX_VERSION >> 8) & 0xff) )
@@ -689,7 +689,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     while ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
     {
         num++;
-        if ( dex_packetcheck(myinfo,dexp) == 0 )
+        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             printf("FROM BUS.%08x -> pub\n",dexp->crc32);
             nn_send(myinfo->pubsock,dexp,size,0);
@@ -706,7 +706,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
-            if ( dex_packetcheck(myinfo,dexp) == 0 )
+            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 nn_send(myinfo->dexsock,dexp,size,0);
                 if ( (m= myinfo->numdpowipbits) > 0 )
