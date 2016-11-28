@@ -47,12 +47,12 @@
 #include "nn.h"
 #include "bus.h"
 #else*/
-#if ISNOTARYNODE
-#include <nanomsg/nn.h>
-#include <nanomsg/bus.h>
-#include <nanomsg/pubsub.h>
-#include <nanomsg/reqrep.h>
-#endif
+//#if ISNOTARYNODE
+#include "../crypto777/nanosrc/nn.h"
+#include "../crypto777/nanosrc/bus.h"
+#include "../crypto777/nanosrc/pubsub.h"
+#include "../crypto777/nanosrc/reqrep.h"
+//#endif
 //#endif
 
 struct supernet_info;

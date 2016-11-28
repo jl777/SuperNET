@@ -32,7 +32,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
 
 void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64]; int32_t i,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr;
+    struct dex_nanomsghdr *dexp; char ipaddr[64]; int32_t size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr;
     crc32 = calc_crc32(0,data,datalen);
     size = (int32_t)(sizeof(*dexp) + datalen);
     dexp = calloc(1,size); // endian dependent!
