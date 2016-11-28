@@ -169,7 +169,6 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
-    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
@@ -190,6 +189,7 @@ void dpow_statemachinestart(void *ptr)
         bp->duration = duration;
         bp->srccoin = src;
         bp->destcoin = dest;
+        bp->myind = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -270,9 +270,16 @@ void dpow_statemachinestart(void *ptr)
     if ( kmdheight >= 0 )
     {
         ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
-        if ( ht == 0 )
-            ht = strcmp("KMD",src->symbol) == 0 ? src->longestchain : dest->longestchain;
-        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
+        if ( strcmp("KMD",dest->symbol) == 0 )
+        {
+            bp->numnotaries = komodo_notaries(dest->symbol,pubkeys,ht);
+        }
+        else
+        {
+            if ( ht == 0 )
+                ht = strcmp("KMD",src->symbol) == 0 ? src->longestchain : dest->longestchain;
+            bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
+        }
         for (i=0; i<bp->numnotaries; i++)
         {
             //int32_t j; for (j=0; j<33; j++)
@@ -298,6 +305,7 @@ void dpow_statemachinestart(void *ptr)
             dp->ratifying -= bp->isratify;
             return;
         }
+        printf("myind.%d\n",myind);
     }
     else
     {
@@ -306,6 +314,8 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
+    bp->myind = myind;
+    printf("[%d] statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
@@ -317,7 +327,7 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
-    printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
+    //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
     {
         ep->dest.prev_hash = destprevtxid0;
@@ -365,7 +375,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
-            printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             return;
         }
@@ -373,7 +383,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify == 0 || (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime = (uint32_t)time(NULL);
-    printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
+    printf("myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
@@ -386,7 +396,7 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( bp->isratify == 0 )
             {
-                printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }

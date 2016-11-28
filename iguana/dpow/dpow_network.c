@@ -560,7 +560,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff )
                             {
-                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 )
+                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
                                 {
                                     if ( bp->isratify == 0 )
                                         dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
@@ -617,7 +617,7 @@ int32_t dpow_opreturnscript(uint8_t *script,uint8_t *opret,int32_t opretlen)
     return(opretlen + offset);
 }
 
-int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,char *src,struct dpow_block *bp,int32_t src_or_dest)
+int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *heightmsgp,char *src,uint8_t *extras,int32_t extralen,struct dpow_block *bp,int32_t src_or_dest)
 {
     int32_t i,opretlen = 0; //bits256 beacon,beacons[DPOW_MAXRELAYS];
     opretlen += iguana_rwbignum(rwflag,&opret[opretlen],sizeof(*hashmsg),hashmsg->bytes);
@@ -651,6 +651,11 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
                 opret[opretlen++] = src[i];
         }
         opret[opretlen++] = 0;
+        if ( extras != 0 && extralen > 0 )
+        {
+            memcpy(&opret[opretlen],extras,extralen);
+            opretlen += extralen;
+        }
     }
     else
     {

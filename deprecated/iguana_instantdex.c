@@ -877,7 +877,7 @@ struct instantdex_accept *instantdex_quotefind(struct supernet_info *myinfo,stru
 
 struct iguana_bundlereq *instantdex_recvquotes(struct iguana_info *coin,struct iguana_bundlereq *req,bits256 *quotes,int32_t n)
 {
-    int32_t i,len,state,m = 0; uint8_t serialized[10000]; struct instantdex_accept *ap; struct exchange_info *exchange;
+    int32_t i,len,state,m = 0; uint8_t serialized[16384]; struct instantdex_accept *ap; struct exchange_info *exchange;
     exchange = exchanges777_find("bitcoin");
     if ( req->addr == 0 )
         return(0);

@@ -19,10 +19,10 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 7
+#define DPOW_MINSIGS 11     //((height < 90000) ? 7 : 11)
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0757
+#define DPOW_VERSION 0x0768
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
@@ -102,9 +102,9 @@ struct dpow_block
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
-    int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
+    int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
+    uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
 };

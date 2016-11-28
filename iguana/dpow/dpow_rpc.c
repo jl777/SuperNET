@@ -42,7 +42,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
                                 decode_hex(pubkeys[i],33,pubkeystr);
                             else printf("error i.%d of %d (%s)\n",i,num,pubkeystr!=0?pubkeystr:"");
                         }
-                        printf("notaries.[%d] <- ht.%d\n",num,height);
+                        //printf("notaries.[%d] <- ht.%d\n",num,height);
                     }
                     free_json(retjson);
                 }
@@ -93,18 +93,22 @@ int32_t dpow_paxpending(uint8_t *hex)
     {
         if ( coin->FULLNODE < 0 )
         {
-            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"paxwithdraw","")) != 0 )
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"paxpending","")) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 0 )
+                    if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 1 )
+                    {
+                        n >>= 1;
+                        printf("PAXPENDING.(%s)\n",retstr);
                         decode_hex(hex,n,hexstr);
+                    }
                     free_json(retjson);
                 }
                 free(retstr);
-            }
-        }
-    }
+            } else printf("dpow_paxpending: paxwithdraw null return\n");
+        } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
+    } else printf("dpow_paxpending: cant find KMD\n");
     return(n);
 }
 
@@ -445,10 +449,10 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             }
             if ( haveutxo == 0 )
                 printf("no utxo: need to fund address.(%s) or wait for splitfund to confirm\n",coinaddr);
-        } else printf("null utxo array size\n");
+        } //else printf("null utxo array size\n");
         free_json(unspents);
     } else printf("null return from dpow_listunspent\n");
-    if ( haveutxo > 0 )
+    if ( 0 && haveutxo > 0 )
         printf("%s haveutxo.%d\n",coin->symbol,haveutxo);
     return(haveutxo);
 }
@@ -780,7 +784,7 @@ void dpow_issuer_voutupdate(struct dpow_info *dp,char *symbol,int32_t isspecial,
 
 int32_t dpow_issuer_tx(struct dpow_info *dp,struct iguana_info *coin,int32_t height,int32_t txi,char *txidstr,uint32_t port)
 {
-    char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
+    char *retstr,params[256],*hexstr; uint8_t script[16384]; cJSON *json,*oldpub,*newpub,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
     sprintf(params,"[\"%s\", 1]",txidstr);
     if ( (retstr= dpow_issuemethod(coin->chain->userpass,(char *)"getrawtransaction",params,port)) != 0 )
     {
