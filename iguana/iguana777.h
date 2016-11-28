@@ -50,6 +50,8 @@
 #if ISNOTARYNODE
 #include <nanomsg/nn.h>
 #include <nanomsg/bus.h>
+#include <nanomsg/pubsub.h>
+#include <nanomsg/reqrep.h>
 #endif
 //#endif
 

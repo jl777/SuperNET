@@ -13,6 +13,79 @@
  *                                                                            *
  ******************************************************************************/
 
+struct dex_nanomsghdr
+{
+    uint32_t size,datalen,crc32;
+    uint8_t version0,version1,packet[];
+} PACKED;
+
+char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
+{
+    sprintf(str,"tcp://%s:%u",ipaddr,port);
+    return(str);
+}
+
+void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
+{
+    printf("DEX_PACKET.[%d]\n",size);
+}
+
+void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
+{
+    struct dex_nanomsghdr *dexp; char ipaddr[64]; int32_t i,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr;
+    crc32 = calc_crc32(0,data,datalen);
+    size = (int32_t)(sizeof(*dexp) + datalen);
+    dexp = calloc(1,size); // endian dependent!
+    dexp->size = size;
+    dexp->datalen = datalen;
+    dexp->crc32 = crc32;
+    dexp->version0 = DEX_VERSION & 0xff;
+    dexp->version1 = (DEX_VERSION >> 8) & 0xff;
+    memcpy(dexp->packet,data,datalen);
+    sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
+    if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
+    {
+        expand_ipbits(ipaddr,*retptr);
+        printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
+        nn_freemsg(retptr);
+    }
+    free(dexp);
+    printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
+}
+
+int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
+{
+    int32_t i,firstz = -1;
+    for (i=0; i<sizeof(myinfo->dexcrcs)/sizeof(*myinfo->dexcrcs); i++)
+    {
+        if ( myinfo->dexcrcs[i] == crc32 )
+        {
+            //printf("NANODUPLICATE.%08x\n",crc32);
+            return(-1);
+        }
+        else if ( firstz < 0 && myinfo->dexcrcs[i] == 0 )
+            firstz = i;
+    }
+    if ( firstz < 0 )
+        firstz = (rand() % (sizeof(myinfo->dexcrcs)/sizeof(*myinfo->dexcrcs)));
+    myinfo->dexcrcs[firstz] = crc32;
+    return(firstz);
+}
+
+int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
+{
+    int32_t firstz; uint32_t crc32;
+    if ( dexp->version0 == (DEX_VERSION & 0xff) && dexp->version1 == ((DEX_VERSION >> 8) & 0xff) )
+    {
+        if ( dexp->datalen == (size - sizeof(*dexp)) )
+        {
+            crc32 = calc_crc32(0,dexp->packet,dexp->datalen);
+            if ( dexp->crc32 == crc32 && (firstz= dex_crc32find(myinfo,crc32)) >= 0 )
+                return(0);
+        }
+    }
+    return(-1);
+}
 
 #if ISNOTARYNODE
 
@@ -34,22 +107,11 @@ struct dpow_nanomsghdr
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
 
-struct dex_nanomsghdr
-{
-    uint32_t size,datalen,crc32;
-    uint8_t version0,version1,packet[];
-} PACKED;
 
 uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height);
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
-
-char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
-{
-    sprintf(str,"tcp://%s:%u",ipaddr,port);
-    return(str);
-}
 
 static int _increasing_ipbits(const void *a,const void *b)
 {
@@ -186,25 +248,6 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         }
     }
     dpow_addnotary(myinfo,0,ipaddr);
-}
-
-int32_t dpow_crc32find(struct supernet_info *myinfo,uint32_t crc32)
-{
-    int32_t i,firstz = -1;
-    for (i=0; i<sizeof(dp->crcs)/sizeof(*dp->crcs); i++)
-    {
-        if ( myinfo->dexcrcs[i] == crc32 )
-        {
-            //printf("NANODUPLICATE.%08x\n",crc32);
-            return(-1);
-        }
-        else if ( firstz < 0 && myinfo->dexcrcs[i] == 0 )
-            firstz = i;
-    }
-    if ( firstz < 0 )
-        firstz = (rand() % (sizeof(myinfo->dexcrcs)/sizeof(*myinfo->dexcrcs)));
-    myinfo->dexcrcs[firstz] = crc32;
-    return(firstz);
 }
 
 void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
@@ -586,26 +629,6 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     expand_ipbits(ipaddr,myinfo->myaddr.myipbits);
     dpow_addnotary(myinfo,dp,ipaddr);
     //printf("recv numips.(%d %d)\n",myinfo->numdpowipbits,dp->numipbits);
-}
-
-int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
-{
-    int32_t firstz; uint32_t crc32;
-    if ( dexp->version0 == (DEX_VERSION & 0xff) && dexp->version1 == ((DEX_VERSION >> 8) & 0xff) )
-    {
-        if ( dexp->datalen == (size - sizeof(*dexp)) )
-        {
-            crc32 = calc_crc32(0,dexp->packet,dexp->datalen);
-            if ( dexp->crc32 == crc32 && (firstz= dpow_crc32find(myinfo,crc32)) >= 0 )
-                return(0);
-        }
-    }
-    return(-1);
-}
-
-void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
-{
-    printf("DEX_PACKET.[%d]\n",size);
 }
 
 void dpow_nanomsg_update(struct supernet_info *myinfo)
