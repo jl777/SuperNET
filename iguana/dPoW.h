@@ -45,6 +45,12 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
+#define DEX_VERSION 0x0101
+#define DPOW_SOCK 7775
+#define DEX_SOCK 7774
+#define PUB_SOCK 7773
+#define REP_SOCK 7772
+
 struct dpow_coinentry
 {
     bits256 prev_hash;
@@ -125,7 +131,7 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
+    uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;
     portable_mutex_t mutex;

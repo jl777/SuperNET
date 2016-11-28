@@ -83,7 +83,7 @@ struct supernet_info
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
-    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins;
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,dexcrcs[1024];
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
@@ -96,7 +96,7 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     FILE *dexfp;
-    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock;
+    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     //struct peggy_info *PEGS;
