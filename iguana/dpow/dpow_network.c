@@ -47,6 +47,8 @@ void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
     {
         expand_ipbits(ipaddr,*retptr);
         printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
+        // add to req list
+        // subscribe to 1st 3, drop 1st 25% of time
         nn_freemsg(retptr);
     }
     free(dexp);
@@ -86,6 +88,8 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
     }
     return(-1);
 }
+
+// poll sub sockets
 
 #if ISNOTARYNODE
 

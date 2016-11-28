@@ -133,7 +133,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 49;
         n = 10;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && dp->ratifying == 0 )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
