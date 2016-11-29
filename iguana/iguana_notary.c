@@ -247,8 +247,6 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
     }
     strcpy(dp->symbol,symbol);
-    src = iguana_coinfind(dp->symbol);
-    dest = iguana_coinfind(dp->dest);
     if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         strcpy(dp->dest,"BTC");
@@ -261,6 +259,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( dp->srcconfirms > DPOW_FIFOSIZE )
         dp->srcconfirms = DPOW_FIFOSIZE;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
     if ( src == 0 || dest == 0 )
         return(clonestr("{\"error\":\"source coin or dest coin not there\"}"));
     char tmp[67];
