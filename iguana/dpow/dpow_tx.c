@@ -426,8 +426,8 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                         dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                                         retval = 0;
                                         break;
-                                    }
-                                }
+                                    } else printf("sig didnt match pubkey? (%s)\n",jprint(item,0));
+                                } else printf("no scriptPubkey.(%s)\n",jprint(item,0));
                             } // else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));
