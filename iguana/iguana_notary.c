@@ -213,7 +213,7 @@ void dpow_addresses()
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
-    char *retstr; int32_t i; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -246,14 +246,6 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
             if ( strcmp(symbol,myinfo->DPOWS[i].symbol) == 0 )
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
     }
-    char tmp[67];
-    safecopy(tmp,pubkey,sizeof(tmp));
-    decode_hex(dp->minerkey33,33,tmp);
-    for (i=0; i<33; i++)
-        printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s)\n",tmp);
-    if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
-        return(clonestr("{\"error\":\"illegal pubkey\"}"));
     strcpy(dp->symbol,symbol);
     if ( strcmp(dp->symbol,"KMD") == 0 )
     {
@@ -267,14 +259,32 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( dp->srcconfirms > DPOW_FIFOSIZE )
         dp->srcconfirms = DPOW_FIFOSIZE;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if ( src == 0 || dest == 0 )
+        return(clonestr("{\"error\":\"source coin or dest coin not there\"}"));
+    char tmp[67];
+    safecopy(tmp,pubkey,sizeof(tmp));
+    decode_hex(dp->minerkey33,33,tmp);
+    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
+    srcvalid = dpow_validateaddress(myinfo,src,srcaddr);
+    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+    destvalid = dpow_validateaddress(myinfo,dest,destaddr);
+    for (i=0; i<33; i++)
+        printf("%02x",dp->minerkey33[i]);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
+    if ( srcvalid <= 0 || destvalid <= 0 )
+        return(clonestr("{\"error\":\"source address or dest address has no privkey, importprivkey\"}"));
+    if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
+        return(clonestr("{\"error\":\"illegal pubkey\"}"));
     if ( dp->blocks == 0 )
     {
         dp->maxblocks = 100000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    myinfo->numdpows++;
+    if ( myinfo->numdpows++ == 0 )
+        portable_mutex_init(&dp->mutex);
     PAX_init();
-    portable_mutex_init(&dp->mutex);
     //printf(">>>>>>>>>>>>>>> call paxpending\n");
     //uint8_t buf[32768];
     //dpow_paxpending(buf);

@@ -13,16 +13,40 @@
  *                                                                            *
  ******************************************************************************/
 
+// 1. add rpc hooks, debug
+// 2. sig validate in fsm
+
 struct dex_nanomsghdr
 {
     uint32_t size,datalen,crc32;
     uint8_t version0,version1,packet[];
 } PACKED;
 
+void dex_init(struct supernet_info *myinfo)
+{
+    strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
+    myinfo->dexipbits[0] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddr);
+    myinfo->numdexipbits = 1;
+    portable_mutex_init(&myinfo->dexmutex);
+}
+
 char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
 {
     sprintf(str,"tcp://%s:%u",ipaddr,port);
     return(str);
+}
+
+static int _increasing_ipbits(const void *a,const void *b)
+{
+#define uint32_a (*(uint32_t *)a)
+#define uint32_b (*(uint32_t *)b)
+	if ( uint32_b > uint32_a )
+		return(-1);
+	else if ( uint32_b < uint32_a )
+		return(1);
+	return(0);
+#undef uint32_a
+#undef uint32_b
 }
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
@@ -32,27 +56,74 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
 
 void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64]; int32_t size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr;
-    crc32 = calc_crc32(0,data,datalen);
-    size = (int32_t)(sizeof(*dexp) + datalen);
-    dexp = calloc(1,size); // endian dependent!
-    dexp->size = size;
-    dexp->datalen = datalen;
-    dexp->crc32 = crc32;
-    dexp->version0 = DEX_VERSION & 0xff;
-    dexp->version1 = (DEX_VERSION >> 8) & 0xff;
-    memcpy(dexp->packet,data,datalen);
-    sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-    if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
+    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr,ipbits;
+    if ( myinfo->reqsock < 0 && (myinfo->reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
-        expand_ipbits(ipaddr,*retptr);
-        printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
-        // add to req list
-        // subscribe to 1st 3, drop 1st 25% of time
-        nn_freemsg(retptr);
+        if ( nn_connect(myinfo->reqsock,nanomsg_tcpname(str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
+        {
+            nn_close(myinfo->reqsock);
+            myinfo->reqsock = -1;
+        }
+        else
+        {
+            if ( myinfo->subsock < 0 && (myinfo->subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
+            {
+                if ( nn_connect(myinfo->subsock,nanomsg_tcpname(str,myinfo->dexseed_ipaddr,PUB_SOCK)) < 0 )
+                {
+                    nn_close(myinfo->reqsock);
+                    myinfo->reqsock = -1;
+                    nn_close(myinfo->subsock);
+                    myinfo->subsock = -1;
+                }
+                else
+                {
+                    timeout = 1000;
+                    nn_setsockopt(myinfo->reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                    nn_setsockopt(myinfo->subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                    nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+                }
+            }
+        }
     }
-    free(dexp);
-    printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
+    if ( myinfo->reqsock >= 0 )
+    {
+        crc32 = calc_crc32(0,data,datalen);
+        size = (int32_t)(sizeof(*dexp) + datalen);
+        dexp = calloc(1,size); // endian dependent!
+        dexp->size = size;
+        dexp->datalen = datalen;
+        dexp->crc32 = crc32;
+        dexp->version0 = DEX_VERSION & 0xff;
+        dexp->version1 = (DEX_VERSION >> 8) & 0xff;
+        memcpy(dexp->packet,data,datalen);
+        sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
+        if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
+        {
+            portable_mutex_lock(&myinfo->dexmutex);
+            ipbits = *retptr;
+            expand_ipbits(ipaddr,ipbits);
+            printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
+            n = myinfo->numdexipbits;
+            for (i=0; i<n; i++)
+                if ( ipbits == myinfo->dexipbits[i] )
+                    break;
+            if ( i == n && n < 64 )
+            {
+                myinfo->dexipbits[n++] = ipbits;
+                qsort(myinfo->dexipbits,n,sizeof(uint32_t),_increasing_ipbits);
+                if ( (myinfo->numdexipbits= n) < 3 )
+                {
+                    if ( myinfo->subsock >= 0 )
+                        nn_connect(myinfo->subsock,nanomsg_tcpname(str,ipaddr,PUB_SOCK));
+                }
+            }
+            portable_mutex_unlock(&myinfo->dexmutex);
+            nn_connect(myinfo->reqsock,nanomsg_tcpname(str,ipaddr,REP_SOCK));
+            nn_freemsg(retptr);
+        }
+        free(dexp);
+        printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
+    }
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
@@ -89,7 +160,23 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
     return(-1);
 }
 
-// poll sub sockets
+void dex_subsock_poll(struct supernet_info *myinfo)
+{
+    int32_t size,n=0; struct dex_nanomsghdr *dexp;
+    while ( (size= nn_recv(myinfo->subsock,&dexp,NN_MSG,0)) >= 0 )
+    {
+        n++;
+        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+        {
+            printf("SUBSOCK.%08x",dexp->crc32);
+            dex_packet(myinfo,dexp,size);
+        }
+        if ( dexp != 0 )
+            nn_freemsg(dexp), dexp = 0;
+        if ( size == 0 || n++ > 100 )
+            break;
+    }
+}
 
 #if ISNOTARYNODE
 
@@ -116,19 +203,6 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height);
 int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uint64_t bestmask,int32_t myind,uint32_t deprec,int32_t src_or_dest,int32_t useratified);
 void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int32_t src_or_dest,int8_t bestk,uint64_t bestmask,uint8_t pubkeys[64][33],int32_t numratified);
-
-static int _increasing_ipbits(const void *a,const void *b)
-{
-#define uint32_a (*(uint32_t *)a)
-#define uint32_b (*(uint32_t *)b)
-	if ( uint32_b > uint32_a )
-		return(-1);
-	else if ( uint32_b < uint32_a )
-		return(1);
-	return(0);
-#undef uint32_a
-#undef uint32_b
-}
 
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {

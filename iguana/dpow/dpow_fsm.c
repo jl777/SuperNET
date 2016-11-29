@@ -391,7 +391,7 @@ void dpow_statemachinestart(void *ptr)
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
-        if ( bp->isratify == 0 && dp->ratifying != 0 )
+        if ( bp->isratify == 0 && myinfo->DPOWS[0].ratifying != 0 )
             break;
         sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
