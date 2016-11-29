@@ -141,7 +141,6 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
     return(blockhash);
 }
 
-
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
@@ -167,6 +166,35 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         free(retstr);
     }
     return(json);
+}
+
+int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    char buf[128],*retstr=0; cJSON *ismine,*json = 0; int32_t retval = -1;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"\"%s\"",address);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"validateaddress",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        retstr = bitcoinrpc_validateaddress(myinfo,coin,0,0,address);
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            retval = 1;
+        else retval = 0;
+        free(retstr);
+        
+    }
+    return(retval);
 }
 
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
