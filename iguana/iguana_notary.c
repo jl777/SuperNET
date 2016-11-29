@@ -272,7 +272,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     destvalid = dpow_validateaddress(myinfo,dest,destaddr);
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s) %s.valid%d -> %s.valid%d\n",tmp,srcaddr,srcvalid,destaddr,destvalid);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
     if ( srcvalid <= 0 || destvalid <= 0 )
         return(clonestr("{\"error\":\"source address or dest address has no privkey, importprivkey\"}"));
     if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
