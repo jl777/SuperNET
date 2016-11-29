@@ -387,7 +387,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
 
 void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,char *rawtx,cJSON *vins,int8_t bestk,uint64_t bestmask,int32_t myind,int32_t src_or_dest)
 {
-    int32_t j,m=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    int32_t j,m=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr,*pubstr; cJSON *signobj,*sobj,*txobj2,*item,*vin; uint8_t pubkey33[33]; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
     if ( bestk < 0 )
         return;
     for (j=0; j<sizeof(srchash); j++)
@@ -410,17 +410,24 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                             item = jitem(vin,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                //printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
-                                cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
-                                if ( src_or_dest != 0 )
-                                    bp->destsigsmasks[bestk] |= (1LL << myind);
-                                else bp->srcsigsmasks[bestk] |= (1LL << myind);
-                                decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
-                                ep->masks[src_or_dest][bestk] = bestmask;
-                                ep->beacon = bp->beacon;
-                                dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
-                                retval = 0;
-                                break;
+                                if ( (pubstr= jstr(item,"scriptPubkey")) != 0 && is_hexstr(pubstr,0) == 66 )
+                                {
+                                    decode_hex(pubkey33,33,&pubstr[1]);
+                                    if ( memcmp(pubkey33,dp->minerkey33,33) == 0 )
+                                    {
+                                        printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
+                                        cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
+                                        if ( src_or_dest != 0 )
+                                            bp->destsigsmasks[bestk] |= (1LL << myind);
+                                        else bp->srcsigsmasks[bestk] |= (1LL << myind);
+                                        decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
+                                        ep->masks[src_or_dest][bestk] = bestmask;
+                                        ep->beacon = bp->beacon;
+                                        dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
+                                        retval = 0;
+                                        break;
+                                    }
+                                }
                             } // else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));
