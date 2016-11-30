@@ -351,12 +351,15 @@ void iguana_iAkill(struct iguana_info *coin,struct iguana_peer *addr,int32_t mar
     //    iguana_possible_peer(coin,ipaddr);
 }
 
+
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
     int32_t opt,sock,result; char ipaddr[64],checkipaddr[64]; struct timeval timeout;
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent;
+	// fadedreamz - change
+
     if ( parse_ipaddr(ipaddr,hostname) != 0 )
         port = parse_ipaddr(ipaddr,hostname);
     hostent = gethostbyname(ipaddr);
