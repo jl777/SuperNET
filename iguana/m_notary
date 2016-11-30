@@ -20,6 +20,16 @@ tests/addnotarys_7776
 coins/btc_7776
 coins/kmd_7776
 coins/revs_7776
+coins/supernet_7776
+coins/dex_7776
+coins/bet_7776
+coins/bots_7776
+coins/hodl_7776
+coins/shark_7776
+coins/jumblr_7776
+coins/crypto_7776
+coins/pangea_7776
+coins/mgw_7776
 
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"

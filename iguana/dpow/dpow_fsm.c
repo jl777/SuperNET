@@ -208,6 +208,12 @@ void dpow_statemachinestart(void *ptr)
                     if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 )
                     {
                         decode_hex(bp->ratified_pubkeys[i],33,hexstr);
+                        for (j=0; j<i; j++)
+                            if ( memcmp(bp->ratified_pubkeys[j],bp->ratified_pubkeys[i],33) == 0 )
+                            {
+                                printf("ratification.%d is the same as %d, reject this donkey\n",j,i);
+                                exit(-1);
+                            }
                         if ( (handle= jstr(item,"handle")) != 0 )
                             safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
                         if ( i == 0 )

@@ -13,6 +13,10 @@
  *                                                                            *
  ******************************************************************************/
 
+/*
+ adding assetchain coin: copy genCOIN to SuperNET/iguana/coins, make a _7776 variant with RELAY=-1 and VALIDATE=0
+ */
+
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
