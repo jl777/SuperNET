@@ -241,10 +241,16 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     if ( myinfo->numdpows > 1 )
     {
         if ( strcmp(symbol,"KMD") == 0 || iguana_coinfind("BTC") == 0 )
+        {
+            dp->symbol[0] = 0;
             return(clonestr("{\"error\":\"cant dPoW KMD or BTC again\"}"));
+        }
         for (i=1; i<myinfo->numdpows; i++)
             if ( strcmp(symbol,myinfo->DPOWS[i].symbol) == 0 )
+            {
+                dp->symbol[0] = 0;
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
+            }
     }
     strcpy(dp->symbol,symbol);
     if ( strcmp(dp->symbol,"KMD") == 0 )
@@ -262,7 +268,10 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
     if ( src == 0 || dest == 0 )
+    {
+        dp->symbol[0] = 0;
         return(clonestr("{\"error\":\"source coin or dest coin not there\"}"));
+    }
     char tmp[67];
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
@@ -274,9 +283,15 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
     if ( srcvalid <= 0 || destvalid <= 0 )
+    {
+        dp->symbol[0] = 0;
         return(clonestr("{\"error\":\"source address or dest address has no privkey, importprivkey\"}"));
+    }
     if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
+    {
+        dp->symbol[0] = 0;
         return(clonestr("{\"error\":\"illegal pubkey\"}"));
+    }
     if ( dp->blocks == 0 )
     {
         dp->maxblocks = 100000;
