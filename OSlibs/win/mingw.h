@@ -34,11 +34,23 @@
 #define POLLERR     0x0008    /* Error condition */
 #define POLLHUP     0x0010    /* Hung up */
 #define POLLNVAL    0x0020    /* Invalid request: fd not open */
+
+ /**
+ * we want to use mingw provided pollfd if and only if we are compiling this 
+ * in windows 32bit but exclude it when we are compiling it in win 64
+ *
+ * @author - fadedreamz@gmail.com
+ * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
+ *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
+ */
+#if !defined(_M_X64)
 struct pollfd {
     SOCKET fd;        /* file descriptor */
     short events;     /* requested events */
     short revents;    /* returned events */
 };
+#endif
+
 #define poll(x, y, z)        win32_poll(x, y, z)
 
 /* These wrappers do nothing special except set the global errno variable if
