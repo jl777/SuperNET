@@ -612,7 +612,13 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
         fpos = -1;
         for (j=0; j<2; j++)
         {
+
+			// fadedreamz@gmail.com
+#if defined(WIN32) && defined(_DEBUG)
+			sprintf(fname, "%s/%s/%s_%s%s.txt", "iguana", GLOBAL_CONFSDIR, coin->symbol, j == 0 ? "" : "old", (iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
+#else
             sprintf(fname,"%s/%s_%s%s.txt",GLOBAL_CONFSDIR,coin->symbol,j==0?"":"old",(iter == 0) ? "peers" : "hdrs"), OS_compatible_path(fname);
+#endif
             //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
             //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
             OS_compatible_path(fname);

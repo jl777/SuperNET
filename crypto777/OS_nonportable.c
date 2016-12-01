@@ -13,7 +13,24 @@
  *                                                                            *
  ******************************************************************************/
 
- 
+ /**
+ * - we need to include WinSock2.h header to correctly use windows structure
+ * as the application is still using 32bit structure from mingw so, we need to
+ * add the include based on checking
+ *
+ * @author - fadedreamz@gmail.com
+ * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
+ *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
+ * 
+ * @remarks - we need this because in win64 we are using windows provided pollfd structure
+ *			  not from the mingw header, so we need to include the windows header
+ *			  if we are compiling in windows 64bit
+ */
+#if defined(_M_X64)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
+
 #include "OS_portable.h"
 
 
