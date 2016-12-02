@@ -414,7 +414,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                 valid = 0;
                                 if ( dp->ratifying != 0 && j == 0 && bp->myind == 0 )
                                     valid = 1;
-                                else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 66 )
+                                else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 70 )
                                 {
                                     decode_hex(pubkey33,33,&pubstr[2]);
                                     if ( memcmp(pubkey33,dp->minerkey33,33) == 0 )
