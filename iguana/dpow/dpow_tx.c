@@ -165,7 +165,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,opretlen,len=0; uint8_t opret[1024],data[4096];
+    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
     numvouts = 2;
     if ( pubkeys == 0 || numratified <= 0 )
     {
@@ -197,11 +197,17 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         }
         printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     }
+    if ( (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras)) > 0 )
+    {
+        for (i=0; i<n; i++)
+            printf("%02x",extras[i]);
+        printf(" <- withdraw.%d\n",n);
+    }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
     if ( src_or_dest != 0 )
-        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
-    else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,bp,src_or_dest);
+        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,extras,n,bp,src_or_dest);
+    else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,extras,n,bp,src_or_dest);
     if ( opretlen < 0 )
     {
         printf("negative opretlen src_or_dest.%d\n",src_or_dest);
@@ -381,7 +387,7 @@ cJSON *dpow_vins(struct iguana_info *coin,struct dpow_block *bp,int8_t bestk,uin
 
 void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct iguana_info *coin,struct dpow_block *bp,char *rawtx,cJSON *vins,int8_t bestk,uint64_t bestmask,int32_t myind,int32_t src_or_dest)
 {
-    int32_t j,m=0,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr; cJSON *signobj,*sobj,*txobj2,*item,*vin; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
+    int32_t j,m=0,valid,retval=-1; char *jsonstr,*signedtx,*rawtx2,*sigstr,*pubstr; cJSON *signobj,*vinitem,*sobj,*txobj2,*item,*vin; uint8_t pubkey33[33]; bits256 srchash; struct dpow_entry *ep; struct dpow_coinentry *cp;
     if ( bestk < 0 )
         return;
     for (j=0; j<sizeof(srchash); j++)
@@ -402,19 +408,42 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                         for (j=0; j<m; j++)
                         {
                             item = jitem(vin,j);
+                            vinitem = jitem(vins,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                //printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
-                                cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
-                                if ( src_or_dest != 0 )
-                                    bp->destsigsmasks[bestk] |= (1LL << myind);
-                                else bp->srcsigsmasks[bestk] |= (1LL << myind);
-                                decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
-                                ep->masks[src_or_dest][bestk] = bestmask;
-                                ep->beacon = bp->beacon;
-                                dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
-                                retval = 0;
-                                break;
+                                valid = 1;
+                                if ( dp->ratifying != 0 && j == 0 && bp->myind == 0 )
+                                    valid = 1;
+                                else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 70 )
+                                {
+                                    decode_hex(pubkey33,33,&pubstr[2]);
+                                    if ( memcmp(pubkey33,dp->minerkey33,33) == 0 )
+                                        valid = 1;
+                                    else
+                                    {
+                                        int32_t z;
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",dp->minerkey33[z]);
+                                        printf(" minerkey33 doesnt match\n");
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",pubkey33[z]);
+                                        printf(" scriptPubKey\n");
+                                    }
+                                }
+                                if ( valid != 0 )
+                                {
+                                    printf("bestk.%d %llx %s height.%d mod.%d VINI.%d myind.%d MINE.(%s) j.%d\n",bestk,(long long)bestmask,(src_or_dest != 0) ? bp->destcoin->symbol : bp->srccoin->symbol,bp->height,DPOW_MODIND(bp,0),j,myind,jprint(item,0),j);
+                                    cp->siglens[bestk] = (int32_t)strlen(sigstr) >> 1;
+                                    if ( src_or_dest != 0 )
+                                        bp->destsigsmasks[bestk] |= (1LL << myind);
+                                    else bp->srcsigsmasks[bestk] |= (1LL << myind);
+                                    decode_hex(cp->sigs[bestk],cp->siglens[bestk],sigstr);
+                                    ep->masks[src_or_dest][bestk] = bestmask;
+                                    ep->beacon = bp->beacon;
+                                    dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
+                                    retval = 0;
+                                    break;
+                                } else printf("sig.%d of %d didnt match pubkey? (%s)\n",j,m,jprint(vinitem,0));
                             } // else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));

@@ -1724,14 +1724,14 @@ STRING_AND_INT(bitcoinrpc,getreceivedbyaccount,account,minconf)
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly)
 { 
-    cJSON *retjson,*retarray,*txids,*vouts,*item,*array; int32_t vout,i,j,total,m,n = 0; struct iguana_waccount *wacct; char *coinaddr; bits256 txid;
+    cJSON *retjson,*retarray,*txids,*vouts,*item,*array; int32_t vout,i,j,total,m,n = 0; struct iguana_waccount *wacct=0; char *coinaddr; bits256 txid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( myinfo->expiration == 0 )
         return(clonestr("{\"error\":\"need to unlock wallet\"}"));
     retjson = cJSON_CreateObject();
     retarray = cJSON_CreateArray();
-    if ( (wacct= iguana_waccountfind(myinfo,account)) != 0 )
+    if ( account == 0 || account[0] == 0 || (wacct= iguana_waccountfind(myinfo,account)) != 0 )
     {
         if ( (array= iguana_getaddressesbyaccount(myinfo,coin,account)) != 0 )
         {
@@ -1768,7 +1768,8 @@ STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatch
                                          "blocktime": 1448045745,
                                          }*/
                                         item = cJSON_CreateObject();
-                                        jaddstr(item,"account",wacct->account);
+                                        if ( wacct != 0 )
+                                            jaddstr(item,"account",wacct->account);
                                         iguana_txdetails(myinfo,coin,item,txid,vout,iguana_txidheight(myinfo,coin,txid));
                                         jaddi(retarray,item);
                                     }

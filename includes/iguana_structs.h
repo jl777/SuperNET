@@ -40,7 +40,7 @@ struct iguana_peermsgrequest { struct queueitem DL; struct iguana_peer *addr; bi
 struct iguana_chain
 {
 	//const int32_t chain_id;
-    char name[32],symbol[8],messagemagic[64];
+    char name[32],symbol[16],messagemagic[64];
     uint8_t pubtype,p2shtype,wiftype,netmagic[4];
     char *genesis_hash,*genesis_hex; // hex string
     uint16_t portp2p,rpcport;

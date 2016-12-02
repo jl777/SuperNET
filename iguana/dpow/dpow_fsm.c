@@ -72,7 +72,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
-        printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
+        //printf("couldnt find myind height.%d | this means your pubkey for this node is not registered and needs to be ratified by majority vote of all notaries\n",height);
         return(-1);
     }
     for (i=0; i<32; i++)
@@ -133,7 +133,7 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
         minutxo = 49;
         n = 10;
     }
-    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration )
+    if ( (haveutxo= dpow_haveutxo(myinfo,coin,txidp,voutp,coinaddr)) <= minutxo && time(NULL) > dp->lastsplit+bp->duration && (bp->myind != 0 || dp->ratifying == 0) )
     {
         addresses = cJSON_CreateArray();
         jaddistr(addresses,coinaddr);
@@ -158,7 +158,7 @@ void dpow_statemachinestart(void *ptr)
 {
     void **ptrs = ptr;
     struct supernet_info *myinfo; struct dpow_info *dp; struct dpow_checkpoint checkpoint;
-    int32_t i,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime;
+    int32_t i,j,ht,destprevvout0,srcprevvout0,numratified=0,kmdheight,myind = -1; uint8_t pubkeys[64][33]; cJSON *ratified=0,*item; struct iguana_info *src,*dest; char *jsonstr,*handle,*hexstr,str[65],str2[65],srcaddr[64],destaddr[64]; bits256 zero,srchash,destprevtxid0,srcprevtxid0; struct dpow_block *bp; struct dpow_entry *ep = 0; uint32_t duration,minsigs,starttime,srctime;
     memset(&zero,0,sizeof(zero));
     srcprevtxid0 = destprevtxid0 = zero;
     srcprevvout0 = destprevvout0 = -1;
@@ -169,9 +169,10 @@ void dpow_statemachinestart(void *ptr)
     jsonstr = ptrs[4];
     kmdheight = -1;
     memcpy(&checkpoint,&ptrs[5],sizeof(checkpoint));
-    printf("statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
+    dpow_getchaintip(myinfo,&srchash,&srctime,dp->srctx,&dp->numsrctx,src);
+    dpow_getchaintip(myinfo,&srchash,&srctime,dp->desttx,&dp->numdesttx,dest);
     if ( src == 0 || dest == 0 )
     {
         printf("null coin ptr? (%s %p or %s %p)\n",dp->symbol,src,dp->dest,dest);
@@ -188,6 +189,7 @@ void dpow_statemachinestart(void *ptr)
         bp->duration = duration;
         bp->srccoin = src;
         bp->destcoin = dest;
+        bp->myind = -1;
         bp->opret_symbol = dp->symbol;
         if ( jsonstr != 0 && (ratified= cJSON_Parse(jsonstr)) != 0 )
         {
@@ -206,6 +208,12 @@ void dpow_statemachinestart(void *ptr)
                     if ( (hexstr= jstr(item,"pubkey")) != 0 && is_hexstr(hexstr,0) == 66 )
                     {
                         decode_hex(bp->ratified_pubkeys[i],33,hexstr);
+                        for (j=0; j<i; j++)
+                            if ( memcmp(bp->ratified_pubkeys[j],bp->ratified_pubkeys[i],33) == 0 )
+                            {
+                                printf("ratification.%d is the same as %d, reject this donkey\n",j,i);
+                                exit(-1);
+                            }
                         if ( (handle= jstr(item,"handle")) != 0 )
                             safecopy(bp->handles[i],handle,sizeof(bp->handles[i]));
                         if ( i == 0 )
@@ -267,7 +275,17 @@ void dpow_statemachinestart(void *ptr)
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
     if ( kmdheight >= 0 )
     {
-        bp->numnotaries = komodo_notaries(src->symbol,pubkeys,strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height);
+        ht = kmdheight;///strcmp("KMD",src->symbol) == 0 ? kmdheight : bp->height;
+        if ( strcmp("KMD",dest->symbol) == 0 )
+        {
+            bp->numnotaries = komodo_notaries(dest->symbol,pubkeys,ht);
+        }
+        else
+        {
+            if ( ht == 0 )
+                ht = strcmp("KMD",src->symbol) == 0 ? src->longestchain : dest->longestchain;
+            bp->numnotaries = komodo_notaries(src->symbol,pubkeys,ht);
+        }
         for (i=0; i<bp->numnotaries; i++)
         {
             //int32_t j; for (j=0; j<33; j++)
@@ -278,6 +296,9 @@ void dpow_statemachinestart(void *ptr)
             {
                 myind = i;
                 ep = &bp->notaries[myind];
+                for (j=0; j<33; j++)
+                    printf("%02x",dp->minerkey33[j]);
+                printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
             }
         }
         if ( myind < 0 || ep == 0 )
@@ -285,11 +306,12 @@ void dpow_statemachinestart(void *ptr)
             printf("minerkey33-> ");
             for (i=0; i<33; i++)
                 printf("%02x",dp->minerkey33[i]);
-            printf(" statemachinestart this node %s %s is not official notary numnotaries.%d\n",srcaddr,destaddr,bp->numnotaries);
+            printf(" statemachinestart this node %s %s is not official notary numnotaries.%d kmdht.%d bpht.%d\n",srcaddr,destaddr,bp->numnotaries,kmdheight,bp->height);
             free(ptr);
             dp->ratifying -= bp->isratify;
             return;
         }
+        printf("myind.%d\n",myind);
     }
     else
     {
@@ -298,6 +320,8 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
+    bp->myind = myind;
+    printf("[%d] statemachinestart %s->%s %s ht.%d minsigs.%d duration.%d start.%u\n",bp->myind,dp->symbol,dp->dest,bits256_str(str,checkpoint.blockhash.hash),checkpoint.blockhash.height,minsigs,duration,checkpoint.timestamp);
     if ( bp->isratify != 0 && memcmp(bp->notaries[0].pubkey,bp->ratified_pubkeys[0],33) != 0 )
     {
         for (i=0; i<33; i++)
@@ -309,7 +333,7 @@ void dpow_statemachinestart(void *ptr)
         dp->ratifying -= bp->isratify;
         return;
     }
-    printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
+    //printf(" myind.%d myaddr.(%s %s)\n",myind,srcaddr,destaddr);
     if ( myind == 0 && bits256_nonz(destprevtxid0) != 0 && bits256_nonz(srcprevtxid0) != 0 && destprevvout0 >= 0 && srcprevvout0 >= 0 )
     {
         ep->dest.prev_hash = destprevtxid0;
@@ -357,7 +381,7 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
-            printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+            printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
             dp->ratifying -= bp->isratify;
             return;
         }
@@ -365,7 +389,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify == 0 || (starttime= checkpoint.timestamp) == 0 )
         bp->starttime = starttime = (uint32_t)time(NULL);
-    printf("isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
+    printf("myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
@@ -373,12 +397,14 @@ void dpow_statemachinestart(void *ptr)
     //printf("done utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));
     while ( time(NULL) < starttime+bp->duration && src != 0 && dest != 0 && bp->state != 0xffffffff )
     {
+        if ( bp->isratify == 0 && myinfo->DPOWS[0].ratifying != 0 )
+            break;
         sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
             {
-                printf("abort ht.%d due to new checkpoint.%d\n",checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
+                printf("abort %s ht.%d due to new checkpoint.%d\n",dp->symbol,checkpoint.blockhash.height,dp->checkpoint.blockhash.height);
                 break;
             }
         }

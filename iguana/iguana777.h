@@ -13,6 +13,10 @@
  *                                                                            *
  ******************************************************************************/
 
+/*
+ adding assetchain coin: copy genCOIN to SuperNET/iguana/coins, make a _7776 variant with RELAY=-1 and VALIDATE=0
+ */
+
 #ifndef iguana777_net_h
 #define iguana777_net_h
 
@@ -47,10 +51,12 @@
 #include "nn.h"
 #include "bus.h"
 #else*/
-#if ISNOTARYNODE
-#include <nanomsg/nn.h>
-#include <nanomsg/bus.h>
-#endif
+//#if ISNOTARYNODE
+#include "../crypto777/nanosrc/nn.h"
+#include "../crypto777/nanosrc/bus.h"
+#include "../crypto777/nanosrc/pubsub.h"
+#include "../crypto777/nanosrc/reqrep.h"
+//#endif
 //#endif
 
 struct supernet_info;
@@ -83,7 +89,7 @@ struct supernet_info
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
-    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins;
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,dexcrcs[1024];
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
@@ -96,7 +102,7 @@ struct supernet_info
     void *ctx;
     uint8_t *pingbuf;
     FILE *dexfp;
-    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock;
+    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     //struct peggy_info *PEGS;
@@ -104,6 +110,7 @@ struct supernet_info
     struct liquidity_info linfos[64];
     struct komodo_notaries NOTARY;
     char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t dpowmutex;
+    char dexseed_ipaddr[64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];

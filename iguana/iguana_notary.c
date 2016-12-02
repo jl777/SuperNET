@@ -60,7 +60,7 @@ void dpow_checkpointset(struct supernet_info *myinfo,struct dpow_checkpoint *che
 
 void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t height,bits256 hash,uint32_t timestamp,uint32_t blocktime)
 {
-    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; uint8_t pubkeys[64][33];
+    void **ptrs; char str[65]; struct dpow_checkpoint checkpoint; int32_t freq,minsigs; //uint8_t pubkeys[64][33];
     dpow_checkpointset(myinfo,&dp->last,height,hash,timestamp,blocktime);
     checkpoint = dp->srcfifo[dp->srcconfirms];
     if ( strcmp("BTC",dp->dest) == 0 )
@@ -71,9 +71,9 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         freq = 1;
-        minsigs = (komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
-        if ( minsigs > DPOW_MINSIGS )
-            minsigs = DPOW_MINSIGS;
+        minsigs = 7;//(komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
+        //if ( minsigs < DPOW_MINSIGS )
+        //    minsigs = DPOW_MINSIGS;
     }
     printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
@@ -213,7 +213,7 @@ void dpow_addresses()
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
-    char *retstr; int32_t i; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -241,19 +241,17 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     if ( myinfo->numdpows > 1 )
     {
         if ( strcmp(symbol,"KMD") == 0 || iguana_coinfind("BTC") == 0 )
+        {
+            dp->symbol[0] = 0;
             return(clonestr("{\"error\":\"cant dPoW KMD or BTC again\"}"));
+        }
         for (i=1; i<myinfo->numdpows; i++)
             if ( strcmp(symbol,myinfo->DPOWS[i].symbol) == 0 )
+            {
+                dp->symbol[0] = 0;
                 return(clonestr("{\"error\":\"cant dPoW same coin again\"}"));
+            }
     }
-    char tmp[67];
-    safecopy(tmp,pubkey,sizeof(tmp));
-    decode_hex(dp->minerkey33,33,tmp);
-    for (i=0; i<33; i++)
-        printf("%02x",dp->minerkey33[i]);
-    printf(" DPOW with pubkey.(%s)\n",tmp);
-    if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
-        return(clonestr("{\"error\":\"illegal pubkey\"}"));
     strcpy(dp->symbol,symbol);
     if ( strcmp(dp->symbol,"KMD") == 0 )
     {
@@ -267,14 +265,44 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( dp->srcconfirms > DPOW_FIFOSIZE )
         dp->srcconfirms = DPOW_FIFOSIZE;
+    src = iguana_coinfind(dp->symbol);
+    dest = iguana_coinfind(dp->dest);
+    if ( src == 0 || dest == 0 )
+    {
+        dp->symbol[0] = 0;
+        return(clonestr("{\"error\":\"source coin or dest coin not there\"}"));
+    }
+    char tmp[67];
+    safecopy(tmp,pubkey,sizeof(tmp));
+    decode_hex(dp->minerkey33,33,tmp);
+    bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
+    srcvalid = dpow_validateaddress(myinfo,src,srcaddr);
+    bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
+    destvalid = dpow_validateaddress(myinfo,dest,destaddr);
+    for (i=0; i<33; i++)
+        printf("%02x",dp->minerkey33[i]);
+    printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
+    if ( srcvalid <= 0 || destvalid <= 0 )
+    {
+        dp->symbol[0] = 0;
+        return(clonestr("{\"error\":\"source address or dest address has no privkey, importprivkey\"}"));
+    }
+    if ( bitcoin_pubkeylen(dp->minerkey33) <= 0 )
+    {
+        dp->symbol[0] = 0;
+        return(clonestr("{\"error\":\"illegal pubkey\"}"));
+    }
     if ( dp->blocks == 0 )
     {
         dp->maxblocks = 100000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    myinfo->numdpows++;
+    if ( myinfo->numdpows++ == 0 )
+        portable_mutex_init(&dp->mutex);
     PAX_init();
-    portable_mutex_init(&dp->mutex);
+    //printf(">>>>>>>>>>>>>>> call paxpending\n");
+    //uint8_t buf[32768];
+    //dpow_paxpending(buf);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -347,6 +375,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
+    //return(clonestr("{\"error\":\"dpow active is deprecated for now\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;

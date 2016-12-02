@@ -20197,4 +20197,294 @@ len = 0;
              }
              if ( Minerfp != 0 && fread(Minerids,1,sizeof(Minerids),Minerfp) != sizeof(Minerids) )
              printf("read error Minerids\n");*/
+            /*#define issue_curl2(cmdstr) bitcoind_RPC(0,(char *)"curl",(char *)"http://127.0.0.1:7778",0,0,(char *)(cmdstr))
+             
+             void komodo_iteration(char *symbol)
+             {
+             char *retstr,*base,*coinaddr,*txidstr,cmd[512]; uint64_t value,fiatoshis; cJSON *array,*item; int32_t i,n,vout,shortflag,height,fiatheight; bits256 txid; uint8_t rmd160[20],addrtype;
+             //if ( ASSETCHAINS_SYMBOL[0] == 0 )
+             {
+             sprintf(cmd,"{\"agent\":\"dpow\",\"method\":\"pending\",\"fiat\":\"%s\"}",symbol);
+             if ( (retstr= issue_curl2(cmd)) != 0 )
+             {
+             if ( (array= cJSON_Parse(retstr)) != 0 )
+             {
+             if ( (n= cJSON_GetArraySize(array)) > 0 )
+             {
+             for (i=0; i<n; i++)
+             {
+             item = jitem(array,i);
+             coinaddr = jstr(item,(char *)"address");
+             value = jdouble(item,(char *)"KMD") * SATOSHIDEN;
+             base = jstr(item,(char *)"fiat");
+             shortflag = juint(item,(char *)"short");
+             vout = jint(item,(char *)"prev_vout");
+             height = jint(item,(char *)"kmdheight");
+             fiatheight = jint(item,(char *)"height");
+             txidstr = jstr(item,(char *)"prev_hash");
+             if ( coinaddr != 0 && base != 0 && value > 0 && height > 0 )
+             {
+             fiatoshis = jdouble(item,base) * SATOSHIDEN;
+             decode_hex((uint8_t *)&txid,sizeof(txid),txidstr);
+             bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+             //komodo_gateway_deposit(coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,height,fiatheight);
+             }
+             }
+             }
+             }
+             printf("retstr.(%s)\n",retstr);
+             free(retstr);
+             }
+             }
+             }*/
+            /*void komodo_nutxoadd(int32_t height,int32_t notaryid,uint256 txhash,uint64_t voutmask,int32_t numvouts)
+             {
+             struct nutxo_entry *np;
+             if ( numvouts > 1 && notaryid < 64 )
+             {
+             pthread_mutex_lock(&komodo_mutex);
+             np = (struct nutxo_entry *)calloc(1,sizeof(*np));
+             np->height = height;
+             np->txhash = txhash;
+             np->voutmask = voutmask;
+             np->notaryid = notaryid;
+             HASH_ADD_KEYPTR(hh,NUTXOS,&np->txhash,sizeof(np->txhash),np);
+             //printf("Add NUTXO[%d] <- %s notaryid.%d t%u %s %llx\n",Num_nutxos,Notaries[notaryid][0],notaryid,komodo_txtime(txhash),txhash.ToString().c_str(),(long long)voutmask);
+             Num_nutxos++;
+             pthread_mutex_unlock(&komodo_mutex);
+             }
+             }
+             
+             int32_t komodo_nutxofind(int32_t height,uint256 txhash,int32_t vout)
+             {
+             struct nutxo_entry *np;
+             pthread_mutex_lock(&komodo_mutex);
+             HASH_FIND(hh,NUTXOS,&txhash,sizeof(txhash),np);
+             pthread_mutex_unlock(&komodo_mutex);
+             if ( np != 0 && ((1LL << vout) & np->voutmask) != 0 )
+             return(np->notaryid);
+             return(-1);
+             }*/
+            
+            /*void komodo_eventadd_utxo(struct komodo_state *sp,char *symbol,int32_t height,uint8_t notaryid,uint256 txid,uint64_t voutmask,uint8_t numvouts)
+             {
+             struct komodo_event_utxo U;
+             memset(&U,0,sizeof(U));
+             U.txid = txid;
+             U.voutmask = voutmask;
+             U.numvouts = numvouts;
+             komodo_eventadd(height,symbol,KOMODO_EVENT_UTXO,(uint8_t *)&U,sizeof(U));
+             if ( sp != 0 )
+             komodo_nutxoadd(height,notaryid,txid,voutmask,numvouts);
+             }*/
+            /*if ( didinit == 0 )
+             {
+             for (baseid=0; baseid<=32; baseid++)
+             komodo_userpass(userpass[baseid],CURRENCIES[baseid]);
+             didinit = 1;
+             }*/
+            /*if ( (retstr= komodo_issuemethod(userpass[baseid],(char *)"getinfo",0,port)) != 0 )
+             {
+             if ( (infoobj= cJSON_Parse(retstr)) != 0 )
+             {
+             if ( (result= jobj(infoobj,(char *)"result")) != 0 )
+             {
+             blocks = juint(result,(char *)"blocks");
+             longest = juint(result,(char *)"longestchain");
+             //printf("%s.(%d L%d) ",base,blocks,longest);
+             if ( blocks > 0 && blocks == longest )
+             isrealtime = 1;
+             }
+             free_json(infoobj);
+             }
+             else printf("[%s] %s (%s)\n",ASSETCHAINS_SYMBOL,base,retstr);
+             free(retstr);
+             } // else printf("%s port.%u no getinfo\n",base,port);*/
+#ifdef pollmethod
+            void komodo_gateway_voutupdate(char *symbol,int32_t isspecial,int32_t height,int32_t txi,bits256 txid,int32_t vout,int32_t numvouts,uint64_t value,uint8_t *script,int32_t len)
+            {
+                int32_t i,opretlen,offset = 0; uint256 zero,utxid; const char *typestr;
+                typestr = "unknown";
+                memcpy(&utxid,&txid,sizeof(utxid));
+                if ( script[offset++] == 0x6a )
+                {
+                    offset += komodo_scriptitemlen(&opretlen,&script[offset]);
+                    if ( isspecial != 0 && len >= offset+32*2+4 && strcmp((char *)&script[offset+32*2+4],ASSETCHAINS_SYMBOL[0]==0?"KMD":ASSETCHAINS_SYMBOL) == 0 )
+                        typestr = "notarized";
+                    else if ( txi == 0 && vout == 1 && opretlen == 149 )
+                    {
+                        typestr = "pricefeed";
+                        komodo_paxpricefeed(height,&script[offset],opretlen);
+                        //printf("height.%d pricefeed len.%d\n",height,opretlen);
+                    }
+                    else komodo_stateupdate(height,0,0,0,utxid,0,0,0,0,0,0,value,&script[offset],opretlen,vout);
+                }
+                else if ( numvouts >= KOMODO_MINRATIFY )
+                    typestr = "ratify";
+            }
+            
+            int32_t komodo_gateway_tx(char *symbol,int32_t height,int32_t txi,char *txidstr,uint32_t port)
+            {
+                char *retstr,params[256],*hexstr; uint8_t script[10000]; cJSON *oldpub,*newpub,*json,*result,*vouts,*item,*sobj; int32_t vout,n,len,isspecial,retval = -1; uint64_t value; bits256 txid;
+                sprintf(params,"[\"%s\", 1]",txidstr);
+                if ( (retstr= komodo_issuemethod((char *)"getrawtransaction",params,port)) != 0 )
+                {
+                    if ( (json= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (result= jobj(json,(char *)"result")) != 0 )
+                        {
+                            oldpub = jobj(result,(char *)"vpub_old");
+                            newpub = jobj(result,(char *)"vpub_new");
+                            retval = 0;
+                            if ( oldpub == 0 && newpub == 0 && (vouts= jarray(&n,result,(char *)"vout")) != 0 )
+                            {
+                                isspecial = 0;
+                                txid = jbits256(result,(char *)"txid");
+                                for (vout=0; vout<n; vout++)
+                                {
+                                    item = jitem(vouts,vout);
+                                    value = SATOSHIDEN * jdouble(item,(char *)"value");
+                                    if ( (sobj= jobj(item,(char *)"scriptPubKey")) != 0 )
+                                    {
+                                        if ( (hexstr= jstr(sobj,(char *)"hex")) != 0 )
+                                        {
+                                            len = (int32_t)strlen(hexstr) >> 1;
+                                            if ( vout == 0 && ((memcmp(&hexstr[2],CRYPTO777_PUBSECPSTR,66) == 0 && len == 35) || (memcmp(&hexstr[6],CRYPTO777_RMD160STR,40) == 0 && len == 25)) )
+                                                isspecial = 1;
+                                            else if ( len <= sizeof(script) )
+                                            {
+                                                decode_hex(script,len,hexstr);
+                                                komodo_gateway_voutupdate(symbol,isspecial,height,txi,txid,vout,n,value,script,len);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else printf("error getting txids.(%s) %p\n",retstr,result);
+                        free_json(json);
+                    }
+                    free(retstr);
+                }
+                return(retval);
+            }
+            
+            int32_t komodo_gateway_block(char *symbol,int32_t height,uint16_t port)
+            {
+                char *retstr,*retstr2,params[128],*txidstr; int32_t i,n,retval = -1; cJSON *json,*tx=0,*result=0,*result2;
+                sprintf(params,"[%d]",height);
+                if ( (retstr= komodo_issuemethod((char *)"getblockhash",params,port)) != 0 )
+                {
+                    if ( (result= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (txidstr= jstr(result,(char *)"result")) != 0 && strlen(txidstr) == 64 )
+                        {
+                            sprintf(params,"[\"%s\"]",txidstr);
+                            if ( (retstr2= komodo_issuemethod((char *)"getblock",params,port)) != 0 )
+                            {
+                                //printf("getblock.(%s)\n",retstr2);
+                                if ( (json= cJSON_Parse(retstr2)) != 0 )
+                                {
+                                    if ( (result2= jobj(json,(char *)"result")) != 0 && (tx= jarray(&n,result2,(char *)"tx")) != 0 )
+                                    {
+                                        for (i=0; i<n; i++)
+                                            if ( komodo_gateway_tx(symbol,height,i,jstri(tx,i),port) < 0 )
+                                                break;
+                                        if ( i == n )
+                                            retval = 0;
+                                        else printf("komodo_gateway_block ht.%d error i.%d vs n.%d\n",height,i,n);
+                                    } else printf("cant get result.%p or tx.%p\n",result,tx);
+                                    free_json(json);
+                                } else printf("cant parse2.(%s)\n",retstr2);
+                                free(retstr2);
+                            } else printf("error getblock %s\n",params);
+                        } else printf("strlen.%ld (%s)\n",strlen(txidstr),txidstr);
+                        free_json(result);
+                    } else printf("couldnt parse.(%s)\n",retstr);
+                    free(retstr);
+                } else printf("error from getblockhash %d\n",height);
+                return(retval);
+            }
+            
+            void komodo_gateway_iteration(char *symbol)
+            {
+                char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint256 zero; uint16_t port = 7771;
+                if ( KMDHEIGHT <= 0 )
+                    KMDHEIGHT = 1;
+                //KOMODO_REALTIME = 0;
+                if ( (retstr= komodo_issuemethod((char *)"getinfo",0,port)) != 0 )
+                {
+                    if ( (infoobj= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
+                        {
+                            //printf("gateway KMDHEIGHT.%d kmdheight.%d\n",KMDHEIGHT,kmdheight);
+                            for (i=0; i<1000 && KMDHEIGHT<kmdheight; i++,KMDHEIGHT++)
+                            {
+                                if ( (KMDHEIGHT % 10) == 0 )
+                                {
+                                    if ( (KMDHEIGHT % 100) == 0 )
+                                        fprintf(stderr,"%s.%d ",symbol,KMDHEIGHT);
+                                    memset(&zero,0,sizeof(zero));
+                                    komodo_stateupdate(KMDHEIGHT,0,0,0,zero,0,0,0,0,KMDHEIGHT,0,0,0,0,0);
+                                }
+                                if ( komodo_gateway_block(symbol,KMDHEIGHT,port) < 0 )
+                                {
+                                    printf("error KMDHEIGHT %d\n",KMDHEIGHT);
+                                    break;
+                                }
+                                usleep(10000);
+                            }
+                            if ( KMDHEIGHT >= kmdheight )
+                                sp->KOMODO_REALTIME = (uint32_t)time(NULL);
+                        }
+                        free_json(infoobj);
+                    }
+                    free(retstr);
+                }
+                else
+                {
+                    printf("error from %s\n",symbol);
+                    sleep(30);
+                }
+            }
+            
+            void komodo_iteration(char *symbol)
+            {
+                char *retstr,*base,*coinaddr,*txidstr,cmd[512]; uint64_t value,fiatoshis; cJSON *array,*item; int32_t i,n,vout,shortflag,height,fiatheight; uint256 txid; uint8_t rmd160[20],addrtype;
+                if ( ASSETCHAINS_SYMBOL[0] == 0 )
+                {
+                    sprintf(cmd,"{\"agent\":\"dpow\",\"method\":\"pending\",\"fiat\":\"%s\"}",symbol);
+                    if ( (retstr= issue_curl(cmd)) != 0 )
+                    {
+                        if ( (array= cJSON_Parse(retstr)) != 0 )
+                        {
+                            if ( (n= cJSON_GetArraySize(array)) > 0 )
+                            {
+                                for (i=0; i<n; i++)
+                                {
+                                    item = jitem(array,i);
+                                    coinaddr = jstr(item,(char *)"address");
+                                    value = jdouble(item,(char *)"KMD") * COIN;
+                                    base = jstr(item,(char *)"fiat");
+                                    shortflag = juint(item,(char *)"short");
+                                    vout = jint(item,(char *)"prev_vout");
+                                    height = jint(item,(char *)"kmdheight");
+                                    fiatheight = jint(item,(char *)"height");
+                                    txidstr = jstr(item,(char *)"prev_hash");
+                                    if ( coinaddr != 0 && base != 0 && value > 0 && height > 0 )
+                                    {
+                                        fiatoshis = jdouble(item,base) * COIN;
+                                        decode_hex((uint8_t *)&txid,sizeof(txid),txidstr);
+                                        bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+                                        komodo_gateway_deposit(coinaddr,value,shortflag,base,fiatoshis,rmd160,txid,vout,height,fiatheight);
+                                    }
+                                }
+                            }
+                        }
+                        //printf("retstr.(%s)\n",retstr);
+                        free(retstr);
+                    }
+                }
+            }
+#else
 

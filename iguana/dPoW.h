@@ -19,10 +19,10 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 7
+#define DPOW_MINSIGS 17     //((height < 90000) ? 7 : 11)
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0757
+#define DPOW_VERSION 0x0770
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
@@ -44,6 +44,12 @@
 #define DPOW_BTCCONFIRMS 1
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
+
+#define DEX_VERSION 0x0101
+#define DPOW_SOCK 7775
+#define DEX_SOCK 7774
+#define PUB_SOCK 7773
+#define REP_SOCK 7772
 
 struct dpow_coinentry
 {
@@ -102,9 +108,9 @@ struct dpow_block
     struct dpow_entry notaries[DPOW_MAXRELAYS];
     uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
-    int8_t bestk,ratifybestk,pendingbestk,pendingratifybestk;
+    int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
-    uint8_t myind,ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
+    uint8_t ratified_pubkeys[DPOW_MAXRELAYS][33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
     char handles[DPOW_MAXRELAYS][32];
     char signedtx[32768]; uint8_t ratifyrawtx[2][32768]; uint32_t pendingcrcs[2];
 };
@@ -125,7 +131,7 @@ struct dpow_info
     struct dpow_checkpoint checkpoint,last,destchaintip,srcfifo[DPOW_FIFOSIZE],destfifo[DPOW_FIFOSIZE];
     struct dpow_hashheight approved[DPOW_FIFOSIZE],notarized[DPOW_FIFOSIZE];
     bits256 srctx[DPOW_MAXTX],desttx[DPOW_MAXTX];
-    uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify,crcs[16];
+    uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;
     portable_mutex_t mutex;

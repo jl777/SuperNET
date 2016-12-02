@@ -1238,7 +1238,7 @@ cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin
     {
         array = iguana_getaddressesbyaccount(myinfo,coin,"*");
         flag = 1;
-        //printf("listunspent.(%s)\n",jprint(array,0));
+        printf("listunspent.(%s)\n",jprint(array,0));
     }
     if ( minconf == 0 )
         minconf = 1;

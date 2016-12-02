@@ -857,6 +857,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                     originstr = &urlstr[i + strlen(fieldstr)];
                     if ( strncmp(originstr,"http://127.0.0.",strlen("http://127.0.0.")) == 0 )
                         originstr = "http://127.0.0.1:";
+                    if ( strncmp(originstr,"file://127.0.0.",strlen("file://127.0.0.")) == 0 )
+                        originstr = "http://127.0.0.1:";
                     if ( strncmp("null",originstr,strlen("null")) != 0 && strncmp("http://localhost:",originstr,strlen("http://localhost:")) != 0 && strncmp("http://127.0.0.1:",originstr,strlen("http://127.0.0.1:")) != 0 && strncmp("http://easydex.supernet.org",originstr,strlen("http://easydex.supernet.org")) != 0 )
                     {
                         printf("remote %s REJECT.(%s)\n",fieldstr,urlstr);
