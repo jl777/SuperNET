@@ -411,14 +411,24 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                             vinitem = jitem(vins,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                valid = 0;
-                                if ( dp->ratifying != 0 && j == 0 )
+                                valid = 1;
+                                if ( dp->ratifying != 0 && j == 0 && bp->myind == 0 )
                                     valid = 1;
-                                else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 66 )
+                                else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 70 )
                                 {
                                     decode_hex(pubkey33,33,&pubstr[2]);
                                     if ( memcmp(pubkey33,dp->minerkey33,33) == 0 )
                                         valid = 1;
+                                    else
+                                    {
+                                        int32_t z;
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",dp->minerkey33[z]);
+                                        printf(" minerkey33 doesnt match\n");
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",pubkey33[z]);
+                                        printf(" scriptPubKey\n");
+                                    }
                                 }
                                 if ( valid != 0 )
                                 {
@@ -433,7 +443,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                     dpow_sigsend(myinfo,dp,bp,myind,bestk,bestmask,srchash,src_or_dest != 0 ? DPOW_SIGBTCCHANNEL : DPOW_SIGCHANNEL);
                                     retval = 0;
                                     break;
-                                } else printf("sig didnt match pubkey? (%s)\n",jprint(vinitem,0));
+                                } else printf("sig.%d of %d didnt match pubkey? (%s)\n",j,m,jprint(vinitem,0));
                             } // else printf("notmine.(%s)\n",jprint(item,0));
                         }
                     } else printf("no vin[] (%s)\n",jprint(txobj2,0));
