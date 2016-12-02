@@ -553,7 +553,7 @@ uint64_t PAX_fiatdest(uint64_t *seedp,int32_t tokomodo,char *destaddr,uint8_t pu
 {
     uint8_t shortflag=0; char base[4]; int32_t i; uint8_t addrtype,rmd160[20]; int64_t komodoshis=0;
     for (i=0; i<3; i++)
-        base[i] = toupper(origbase[i]);
+        base[i] = toupper((int32_t)origbase[i]);
     base[i] = 0;
     if ( strcmp(base,"KMD") == 0 )
         return(0);

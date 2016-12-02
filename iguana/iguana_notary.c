@@ -347,7 +347,7 @@ STRING_ARG(dpow,pending,fiat)
     if ( fiat != 0 && fiat[0] != 0 )
     {
         for (i=0; fiat[i]!=0; i++)
-            base[i] = toupper(fiat[i]);
+            base[i] = toupper((int32_t)fiat[i]);
         base[i] = 0;
         for (i=0; i<myinfo->numdpows; i++)
         {
