@@ -419,6 +419,16 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                                     decode_hex(pubkey33,33,&pubstr[2]);
                                     if ( memcmp(pubkey33,dp->minerkey33,33) == 0 )
                                         valid = 1;
+                                    else
+                                    {
+                                        int32_t z;
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",dp->minerkey33[z]);
+                                        printf(" minerkey33 doesnt match\n");
+                                        for (z=0; z<33; z++)
+                                            printf("%02x",pubkey33[z]);
+                                        printf(" scriptPubKey\n");
+                                    }
                                 }
                                 if ( valid != 0 )
                                 {
