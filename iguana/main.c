@@ -1595,7 +1595,7 @@ void iguana_main(void *arg)
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
-            //dex_init(myinfo);
+            dex_init(myinfo);
         }
     }
 #ifdef IGUANA_OSTESTS
