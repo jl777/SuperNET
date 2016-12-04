@@ -81,6 +81,7 @@ void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
                     nn_setsockopt(myinfo->reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(myinfo->subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
+                    printf("DEXINIT req.%d sub.%d\n",myinfo->reqsock,myinfo->subsock);
                 }
             }
         }
@@ -317,6 +318,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                                    printf("DEXINIT dex.%d rep.%d\n",myinfo->dexsock,myinfo->repsock);
                                 }
                             }
                         }
@@ -748,6 +750,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                                         dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
                                     else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
                                     dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                                    dex_reqsend(myinfo,np->packet,np->datalen);
                                 }
                             }
                             //dp->crcs[firstz] = crc32;
