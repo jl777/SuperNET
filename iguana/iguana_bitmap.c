@@ -116,6 +116,7 @@ void gen_ppmfile(char *fname,int32_t binaryflag,uint8_t *bitmap,int32_t width,in
 
 void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
 {
+#ifdef later
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     FILE * outfile;		/* target file */
@@ -145,6 +146,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
     jpeg_finish_compress(&cinfo);
     fclose(outfile);
     jpeg_destroy_compress(&cinfo);
+#endif
 }
 
 /*

@@ -64,14 +64,14 @@ HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
+/*HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);*/
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
@@ -208,7 +208,7 @@ TWO_STRINGS(tradebot,stop,exchange,botid);
 TWO_STRINGS(tradebot,resume,exchange,botid);
 
 #ifndef WIN32
-HASH_ARG(pangea,call,tablehash);
+/*HASH_ARG(pangea,call,tablehash);
 HASH_AND_INT(pangea,raise,tablehash,numchips);
 HASH_AND_INT(pangea,bet,tablehash,numchips);
 HASH_ARG(pangea,check,tablehash);
@@ -222,7 +222,7 @@ INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_INT(pangea,buyin,tablehash,numchips);
-HASH_ARG(pangea,start,tablehash);
+HASH_ARG(pangea,start,tablehash);*/
 #endif
 
 ZERO_ARGS(SuperNET,help);
