@@ -1326,7 +1326,16 @@ int32_t iguana_Xspendmap(struct iguana_info *coin,struct iguana_ramchain *ramcha
         sprintf(fname,"%s/%s%s/spends/%s.%d",GLOBAL_DBDIR,iter==0?"ro/":"",coin->symbol,bits256_str(str,bp->hashes[0]),bp->bundleheight);
         if ( (ptr= OS_mapfile(fname,&filesize,0)) != 0 )
         {
+#if defined(_M_X64)
+			/*
+			* calculate the address in a portable manner
+			* in all platform sizeof(char) / sizeof(uchar) == 1
+			* @author - fadedreamz@gmail.com
+			*/
+			ramchain->Xspendinds = (void *)((unsigned char *)ptr + sizeof(sha256));
+#else
             ramchain->Xspendinds = (void *)((long)ptr + sizeof(sha256));
+#endif
             if ( bp->Xvalid == 0 )
                 vcalc_sha256(0,sha256.bytes,(void *)ramchain->Xspendinds,(int32_t)(filesize - sizeof(sha256)));
             ramchain->from_roX = (iter == 0);
@@ -1399,7 +1408,17 @@ struct iguana_ramchain *_iguana_ramchain_map(struct supernet_info *myinfo,struct
     if ( ramchain->fileptr != 0 && ramchain->filesize > 0 )
     {
         // verify hashes
+		
+		/*
+		* calculate the address in a portable manner
+		* in all platform sizeof(char) / sizeof(uchar) == 1
+		* @author - fadedreamz@gmail.com
+		*/
+#if defined(_M_X64)
+		ramchain->H.data = rdata = (void *)((unsigned char *)ramchain->fileptr + fpos);
+#else
         ramchain->H.data = rdata = (void *)(long)((long)ramchain->fileptr + fpos);
+#endif
         ramchain->H.ROflag = 1;
         ramchain->expanded = expanded;
         ramchain->numblocks = (bp == 0) ? 1 : bp->n;
@@ -2421,7 +2440,17 @@ int32_t iguana_mapchaininit(char *fname,struct iguana_info *coin,struct iguana_r
     memset(mapchain,0,sizeof(*mapchain));
     mapchain->fileptr = ptr;
     mapchain->filesize = filesize;
+
+	/*
+	* calculate the address in a portable manner
+	* in all platform sizeof(char) / sizeof(uchar) == 1
+	* @author - fadedreamz@gmail.com
+	*/
+#if defined(_M_X64)
+	mapchain->H.data = (void *)((unsigned char *)ptr + block->fpos);
+#else
     mapchain->H.data = (void *)(long)((long)ptr + block->fpos);
+#endif
     mapchain->H.ROflag = 1;
     if ( ptr == 0 || block->fpos > filesize )
     {

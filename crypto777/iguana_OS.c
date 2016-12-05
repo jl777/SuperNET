@@ -446,7 +446,16 @@ void *iguana_memalloc(struct OS_memspace *mem,long size,int32_t clearflag)
 #endif
     if ( (mem->used + size) <= mem->totalsize )
     {
+		/* 
+		* solution to calculate memory address in a portable way
+		* in all platform sizeof(char) / sizeof(uchar) == 1
+		* @author - fadedreamz@gmail.com
+		*/
+#if defined(_M_X64)
+		ptr = (void *)((unsigned char *)mem->ptr + mem->used);
+#else
         ptr = (void *)(long)(((long)mem->ptr + mem->used));
+#endif
         mem->used += size;
         if ( size*clearflag != 0 )
             memset(ptr,0,size);

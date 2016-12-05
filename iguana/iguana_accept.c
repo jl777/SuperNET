@@ -38,6 +38,7 @@ int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *ac
 	* 2^11*sizeof(struct fd) for win64 bit gives a very big number
 	* for that reason it cannot allocate memory from stack
 	* so the solution is to allocate memory from heap, instead of stack
+	* @author - fadedreamz@gmail.com
 	*/
 #if defined(_M_X64)
 	struct pollfd * fds;
@@ -89,6 +90,11 @@ int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *ac
         }
     }
 
+/**
+* graceful memory release, because we allocated memory on heap,
+* so we are releasing it here
+* @author - fadedreamz@gmail.com
+*/
 #if defined(_M_X64)
 	free(fds);
 #endif
