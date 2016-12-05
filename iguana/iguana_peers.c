@@ -1305,7 +1305,8 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         memset(&fds,0,sizeof(fds));
         fds.fd = addr->usock;
         fds.events |= (POLLOUT | POLLIN);
-        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 )
+
+		if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 )
         {
             flag += iguana_pollsendQ(coin,addr);
             if ( addr->dead != 0 )

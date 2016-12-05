@@ -28,9 +28,22 @@
  * are copied from linux man pages. A poll() macro is defined to
  * call the version in mingw.c.
  */
-#define POLLIN      0x0001    /* There is data to read */
+
 #define POLLPRI     0x0002    /* There is urgent data to read */
+#if defined(_M_X64)
+ /*
+ * when we are using WSAPoll() with window's struct pollfd struct
+ * we need to update the value for POLLIN and POLLOUT according to window's
+ * WSAPoll() return values
+ * @author - fadedreamz@gmail.com
+ */
+//TODO: need to update other values to match with WSAPoll() function 
+#define POLLIN      POLLRDNORM | POLLRDBAND     /* There is data to read */
+#define POLLOUT     POLLWRNORM    /* Writing now will not block */
+#else
+#define POLLIN      0x0001    /* There is data to read */
 #define POLLOUT     0x0004    /* Writing now will not block */
+#endif
 #define POLLERR     0x0008    /* Error condition */
 #define POLLHUP     0x0010    /* Hung up */
 #define POLLNVAL    0x0020    /* Invalid request: fd not open */
@@ -51,7 +64,16 @@ struct pollfd {
 };
 #endif
 
+#if defined(_M_X64)
+/*
+* we want to use the window's poll function if poll() is invoked in win64
+* as we are using window's pollfd struct when we are using x64
+* @author - fadedreamz@gmail.com
+*/
+#define poll(x, y, z)        WSAPoll(x, y, z)
+#else
 #define poll(x, y, z)        win32_poll(x, y, z)
+#endif
 
 /* These wrappers do nothing special except set the global errno variable if
  * an error occurs (winsock doesn't do this by default). They set errno
