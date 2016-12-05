@@ -123,7 +123,7 @@ void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
             nn_freemsg(retptr);
         }
         free(dexp);
-        printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
+        //printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
     }
 }
 
