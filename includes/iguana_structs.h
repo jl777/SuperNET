@@ -301,7 +301,17 @@ struct iguana_txblock
     struct iguana_zblock zblock;
 };
 
+#if defined(_M_X64)
+/*
+* calculate the address in a portable manner
+* in all platform sizeof(char) / sizeof(uchar) == 1
+* @author - fadedreamz@gmail.com
+*/
+#define RAMCHAIN_PTR(rdata,offset) ((void *)((unsigned char *)rdata + rdata->offset))
+#else
 #define RAMCHAIN_PTR(rdata,offset) ((void *)(long)((long)(rdata) + (long)(rdata)->offset))
+#endif
+
 struct iguana_ramchaindata
 {
     bits256 sha256;
@@ -461,7 +471,17 @@ struct iguana_info
     struct iguana_peers *peers; struct iguana_peer internaladdr;
     //basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     //basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
+#if defined(_M_X64)
+	/*
+	* because we have no choice but to pass the value as parameters
+	* we need 64bit to hold 64bit memory address, thus changing
+	* to uint64_t instead of long in win x64
+	* @author - fadedreamz@gmail.com
+	*/
+	uint64_t vinptrs[IGUANA_MAXPEERS + 1][2], voutptrs[IGUANA_MAXPEERS + 1][2];
+#else
     long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
+#endif
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
