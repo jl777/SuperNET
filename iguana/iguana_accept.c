@@ -13,6 +13,19 @@
  *                                                                            *
  ******************************************************************************/
 
+ /**
+ * - we need to include WinSock2.h header to correctly use windows structure
+ * as the application is still using 32bit structure from mingw so, we need to
+ * add the include based on checking
+ * @author - fadedreamz@gmail.com
+ * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
+ *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
+ */
+#if defined(_M_X64)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
+
 #include "iguana777.h"
 #include "exchanges777.h"
 
@@ -20,10 +33,28 @@ struct iguana_accept { struct queueitem DL; char ipaddr[64]; uint32_t ipbits; in
 
 int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *accepts,int32_t num,int32_t timeout)
 {
+	/** 
+	* This solution is for win64
+	* 2^11*sizeof(struct fd) for win64 bit gives a very big number
+	* for that reason it cannot allocate memory from stack
+	* so the solution is to allocate memory from heap, instead of stack
+	* @author - fadedreamz@gmail.com
+	*/
+#if defined(_M_X64)
+	struct pollfd * fds;
+	int32_t i, j, n, r, nonz, flag; struct iguana_accept *ptr;
+	if (num == 0)
+		return(0);;
+	fds = (struct pollfd *) malloc(sizeof(struct pollfd) * IGUANA_MAXPEERS);
+	if (NULL == fds)
+		return -1;
+	memset(fds, 0, sizeof(struct pollfd) * IGUANA_MAXPEERS);
+#else
     struct pollfd fds[IGUANA_MAXPEERS]; int32_t i,j,n,r,nonz,flag; struct iguana_accept *ptr;
     if ( num == 0 )
         return(0);;
     memset(fds,0,sizeof(fds));
+#endif
     flag = 0;
     r = (rand() % num);
     for (j=n=nonz=0; j<num&&j<sizeof(fds)/sizeof(*fds)-1; j++)
@@ -58,6 +89,15 @@ int32_t iguana_acceptspoll(uint8_t *buf,int32_t bufsize,struct iguana_accept *ac
             }
         }
     }
+
+/**
+* graceful memory release, because we allocated memory on heap,
+* so we are releasing it here
+* @author - fadedreamz@gmail.com
+*/
+#if defined(_M_X64)
+	free(fds);
+#endif
     return(0);
 }
 
