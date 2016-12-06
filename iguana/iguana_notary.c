@@ -300,9 +300,9 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     if ( myinfo->numdpows++ == 0 )
         portable_mutex_init(&dp->mutex);
     PAX_init();
-    //printf(">>>>>>>>>>>>>>> call paxpending\n");
-    //uint8_t buf[32768];
-    //dpow_paxpending(buf);
+    printf(">>>>>>>>>>>>>>> call paxpending\n");
+    uint8_t buf[32768];
+    dpow_paxpending(buf);
     return(clonestr("{\"result\":\"success\"}"));
 }
 

@@ -104,7 +104,7 @@ int32_t dpow_paxpending(uint8_t *hex)
                         decode_hex(hex,n,hexstr);
                     }
                     free_json(retjson);
-                }
+                } else printf("dpow_paxpending: parse error.(%s)\n",retstr);
                 free(retstr);
             } else printf("dpow_paxpending: paxwithdraw null return\n");
         } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
