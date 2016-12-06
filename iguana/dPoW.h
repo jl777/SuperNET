@@ -70,7 +70,7 @@ struct dpow_entry
 {
     bits256 commit,beacon,ratifysrcutxo,ratifydestutxo;
     uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask,ratifyrecvmask,ratifybestmask;
-    int32_t height; uint32_t pendingcrcs[2];
+    int32_t height; uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
     uint8_t pubkey[33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
