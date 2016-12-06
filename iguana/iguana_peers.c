@@ -13,6 +13,19 @@
  *                                                                            *
  ******************************************************************************/
 
+ /**
+ * - we need to include WinSock2.h header to correctly use windows structure
+ * as the application is still using 32bit structure from mingw so, we need to
+ * add the include based on checking
+ * @author - fadedreamz@gmail.com
+ * @remarks - #if (defined(_M_X64) || defined(__amd64__)) && defined(WIN32)
+ *     is equivalent to #if defined(_M_X64) as _M_X64 is defined for MSVC only
+ */
+#if defined(_M_X64)
+#define WIN32_LEAN_AND_MEAN
+#include <WinSock2.h>
+#endif
+
 #include "iguana777.h"
 
 #define _iguana_hashfind(coin,ipbits) _iguana_hashset(coin,ipbits,-1)
@@ -357,20 +370,70 @@ int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
     struct sockaddr_in saddr; socklen_t addrlen,slen;
     addrlen = sizeof(saddr);
     struct hostent *hostent;
+	
+	/** 
+	* gethostbyname() is deprecated and cause crash on x64 windows
+	* the solution is to implement similar functionality by using getaddrinfo()
+	* it is standard posix function and is correctly supported in win32/win64/linux
+	* @author - fadedreamz@gmail.com
+	*/
+#if defined(_M_X64)
+	struct addrinfo *addrresult = NULL;
+	struct addrinfo *returnptr = NULL;
+	struct addrinfo hints;
+	struct sockaddr_in * sockaddr_ipv4;
+	int retVal;
+	int found = 0;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+#endif
+
     if ( parse_ipaddr(ipaddr,hostname) != 0 )
         port = parse_ipaddr(ipaddr,hostname);
+
+#if defined(_M_X64)
+	retVal = getaddrinfo(ipaddr, NULL, &hints, &addrresult);
+	for (returnptr = addrresult; returnptr != NULL && found == 0; returnptr = returnptr->ai_next) {
+		switch (returnptr->ai_family) {
+		case AF_INET:
+			sockaddr_ipv4 = (struct sockaddr_in *) returnptr->ai_addr;
+			// we want to break from the loop after founding the first ipv4 address
+			found = 1;
+			break;
+		}
+	}
+
+	// if we iterate through the loop and didn't find anything,
+	// that means we failed in the dns lookup
+	if (found == 0) {
+		printf("getaddrinfo(%s) returned error\n", hostname);
+		freeaddrinfo(addrresult);
+		return(-1);
+	}
+#else
     hostent = gethostbyname(ipaddr);
     if ( hostent == NULL )
     {
         printf("gethostbyname(%s) returned error: %d port.%d ipaddr.(%s)\n",hostname,errno,port,ipaddr);
         return(-1);
     }
+#endif
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);
     //#ifdef WIN32
     //   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
     //#else
+
+#if defined(_M_X64)
+	saddr.sin_addr.s_addr = sockaddr_ipv4->sin_addr.s_addr;
+	// graceful cleanup
+	sockaddr_ipv4 = NULL;
+	freeaddrinfo(addrresult);
+#else
     memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
+#endif
     expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
     if ( strcmp(ipaddr,checkipaddr) != 0 )
         printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
@@ -1242,7 +1305,8 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         memset(&fds,0,sizeof(fds));
         fds.fd = addr->usock;
         fds.events |= (POLLOUT | POLLIN);
-        if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 )
+
+		if (  poll(&fds,1,timeout) > 0 && (fds.revents & POLLOUT) != 0 )
         {
             flag += iguana_pollsendQ(coin,addr);
             if ( addr->dead != 0 )
