@@ -201,12 +201,12 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     {
         for (i=0; i<n; i++)
             printf("%02x",extras[i]);
-        printf(" <- withdraw.%d\n",n);
+        printf(" <- withdraw.%d %08x\n",n,calc_crc32(0,extras,n));
     }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);
-    if ( src_or_dest != 0 )
-        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,extras,n,bp,src_or_dest);
+    if ( bp->isratify != 0 )
+        opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,0,0,bp,src_or_dest);
     else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,extras,n,bp,src_or_dest);
     if ( opretlen < 0 )
     {
