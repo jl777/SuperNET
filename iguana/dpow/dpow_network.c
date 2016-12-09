@@ -668,8 +668,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     if ( extralen > 0 )
-        np->paxwdcrc = calc_crc32(0,extras,extralen);
-    else np->paxwdcrc = 0;
+        np->notarize.paxwdcrc = calc_crc32(0,extras,extralen);
+    else np->notarize.paxwdcrc = 0;
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
