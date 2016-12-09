@@ -185,7 +185,7 @@ struct dpow_nanoutxo
 {
     bits256 srcutxo,destutxo;
     uint64_t bestmask,recvmask;
-    uint32_t pendingcrcs[2];
+    uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t srcvout,destvout;
     uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],bestk,pad;
 } PACKED;
@@ -319,6 +319,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     printf("DEXINIT dex.%d rep.%d\n",myinfo->dexsock,myinfo->repsock);
+                                    myinfo->nanoinit = (uint32_t)time(NULL);
                                 }
                             }
                         }
@@ -333,6 +334,8 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
     int32_t i;
+    if ( bp->myind < 0 )
+        return;
     if ( isratify != 0 )
     {
         np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
@@ -374,6 +377,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     //char str[65],str2[65];
     //printf("senderind.%d num.%d %s %s\n",senderind,bp->numnotaries,bits256_str(str,srcutxo),bits256_str(str2,destutxo));
+    if ( bp->myind < 0 )
+        return;
     if ( bp->isratify != 0 && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         memset(masks,0,sizeof(masks));
@@ -545,9 +550,11 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     }
 }
 
-void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN])
+void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
     int32_t i,bestmatches = 0,matches = 0;
+    if ( bp->myind < 0 )
+        return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
         bp->notaries[senderind].src.prev_hash = srcutxo;
@@ -556,6 +563,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         bp->notaries[senderind].dest.prev_vout = destvout;
         bp->notaries[senderind].bestmask = bestmask;
         bp->notaries[senderind].recvmask = recvmask;
+        bp->notaries[senderind].paxwdcrc = paxwdcrc;
         if ( (bp->notaries[senderind].bestk= bestk) >= 0 )
         {
             if ( (bp->notaries[senderind].src.siglens[bestk]= siglens[0]) != 0 )
@@ -585,7 +593,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 if ( bp->bestk >= 0 && bp->notaries[i].bestk == bp->bestk && bp->notaries[i].bestmask == bp->bestmask )
                 {
                     matches++;
-                    if ( ((1LL << i) & bp->bestmask) != 0 )
+                    if ( ((1LL << i) & bp->bestmask) != 0 && bp->notaries[i].paxwdcrc == bp->notaries[i].paxwdcrc )
                         bestmatches++;
                 } // else printf("mismatch.%d (%d %llx) ",i,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
             }
@@ -623,14 +631,18 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
-        dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs);
+        dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    struct dpow_nanomsghdr *np; int32_t i,size,sentbytes = 0; uint32_t crc32;
+    struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32; uint8_t extras[10000];
+    if ( bp->myind < 0 )
+        return;
+    if ( time(NULL) < myinfo->nanoinit+5 )
+        return;
     crc32 = calc_crc32(0,data,datalen);
      //dp->crcs[firstz] = crc32;
     size = (int32_t)(sizeof(*np) + datalen);
@@ -646,8 +658,11 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     //    printf("%08x ",np->ipbits[i]);
     //printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
     if ( bp->isratify == 0 )
+    {
+        extralen = dpow_paxpending(extras);
+        bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
         dpow_nanoutxoset(&np->notarize,bp,0);
-    else dpow_nanoutxoset(&np->ratify,bp,1);
+    } else dpow_nanoutxoset(&np->ratify,bp,1);
     np->size = size;
     np->datalen = datalen;
     np->crc32 = crc32;
@@ -663,6 +678,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     strcpy(np->symbol,dp->symbol);
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
+    if ( extralen > 0 )
+        np->notarize.paxwdcrc = calc_crc32(0,extras,extralen);
+    else np->notarize.paxwdcrc = 0;
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
@@ -714,6 +732,8 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 void dpow_nanomsg_update(struct supernet_info *myinfo)
 {
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
+    if ( time(NULL) < myinfo->nanoinit+5 )
+        return;
     while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
@@ -742,7 +762,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         else
                         {
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
-                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff )
+                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                             {
                                 if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
                                 {
@@ -878,6 +898,7 @@ int32_t dpow_rwopret(int32_t rwflag,uint8_t *opret,bits256 *hashmsg,int32_t *hei
         {
             memcpy(&opret[opretlen],extras,extralen);
             opretlen += extralen;
+            printf("added extra.%d opreturn for withdraws paxwdcrc.%08x\n",extralen,calc_crc32(0,extras,extralen));
         }
     }
     else
@@ -929,6 +950,8 @@ int32_t dpow_rwsigentry(int32_t rwflag,uint8_t *data,struct dpow_sigentry *dsig)
 void dpow_sigsend(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,int32_t myind,int8_t bestk,uint64_t bestmask,bits256 srchash,uint32_t sigchannel)
 {
     struct dpow_sigentry dsig; int32_t i,len; uint8_t data[4096]; struct dpow_entry *ep;
+    if ( bp->myind < 0 )
+        return;
     if ( ((1LL << myind) & bestmask) == 0 )
         return;
     ep = &bp->notaries[myind];

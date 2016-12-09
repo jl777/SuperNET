@@ -22,7 +22,7 @@
 #define DPOW_MINSIGS 17      //((height < 90000) ? 7 : 11)
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0771
+#define DPOW_VERSION 0x0772
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 300
@@ -70,7 +70,7 @@ struct dpow_entry
 {
     bits256 commit,beacon,ratifysrcutxo,ratifydestutxo;
     uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask,ratifyrecvmask,ratifybestmask;
-    int32_t height; uint32_t pendingcrcs[2];
+    int32_t height; uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
     uint8_t pubkey[33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];

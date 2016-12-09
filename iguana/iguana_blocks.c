@@ -313,8 +313,21 @@ int32_t iguana_blockROsize(uint8_t zcash)
 void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci)
 {
     int32_t bROsize = iguana_blockROsize(zcash);
+/**
+* The memory address calculation was done in a non-portable way using 
+* long value which has 4 bytes in 64bit windows (causing invalide memory address)
+* due to data truncation, 
+* the solution is to use portable way to calculate the address
+* in all platform sizeof(char) / sizeof(uchar) == 1
+* @author - fadedreamz@gmail.com
+*/
+#if defined(_M_X64)
+	dest = (void *)((unsigned char *)dest + desti*bROsize);
+	src = (void *)((unsigned char *)src + srci*bROsize);
+#else
     dest = (void *)((long)dest + desti*bROsize);
     src = (void *)((long)src + srci*bROsize);
+#endif
     memcpy(dest,src,bROsize);
     return(src);
 }

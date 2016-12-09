@@ -263,7 +263,11 @@ int32_t template_emit(char *retbuf,int32_t maxsize,char *template,char *varname,
     varnamelen = (int32_t)strlen(varname);
     while ( (match= strstr(varname,&template[offset])) != 0 )
     {
+#if defined(_M_X64)
+		position = (int32_t)((uint64_t)match - (uint64_t)&template[offset]);
+#else
         position = (int32_t)((long)match - (long)&template[offset]);
+#endif
         printf("found match.(%s) at %d offset.%d\n",varname,position,offset);
         if ( size + (valuelen + position) > maxsize )
             return(-1);

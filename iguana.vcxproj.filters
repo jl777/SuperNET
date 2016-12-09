@@ -102,6 +102,7 @@
     <ClCompile Include="iguana\secp256k1\src\secp256k1.c" />
     <ClCompile Include="iguana\SuperNET_keys.c" />
     <ClCompile Include="OSlibs\win\mingw.c" />
+    <ClCompile Include="iguana\iguana_notary.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="basilisk\basilisk.h" />
