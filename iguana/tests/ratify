@@ -1,2 +1,2 @@
 #!/bin/bash
-curl -s "http://komodonotary.com/notary.json" | curl "http://127.0.0.1:7776" -d @-
+curl -s "https://komodonotary.com/notary.json" | curl "http://127.0.0.1:7776" -d @-
