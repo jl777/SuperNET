@@ -185,7 +185,7 @@ struct dpow_nanoutxo
 {
     bits256 srcutxo,destutxo;
     uint64_t bestmask,recvmask;
-    uint32_t pendingcrcs[2];
+    uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t srcvout,destvout;
     uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],bestk,pad;
 } PACKED;
@@ -194,7 +194,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,paxwdcrc,ipbits[64];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
@@ -668,7 +668,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     if ( extralen > 0 )
-        np->paxwdcrc = calc_crc32(0,extra,extralen);
+        np->paxwdcrc = calc_crc32(0,extras,extralen);
     else np->paxwdcrc = 0;
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
