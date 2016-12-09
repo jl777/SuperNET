@@ -100,7 +100,7 @@ int32_t dpow_paxpending(uint8_t *hex)
                     if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 1 )
                     {
                         n >>= 1;
-                        printf("PAXPENDING.(%s)\n",hexstr);
+                        //printf("PAXPENDING.(%s)\n",hexstr);
                         decode_hex(hex,n,hexstr);
                     }
                     free_json(retjson);
