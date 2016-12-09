@@ -563,10 +563,17 @@ int32_t test_mofn256(struct supernet_info *myinfo,int32_t M,int32_t N)
         if ( m >= M )
             printf("%s %s error m.%d vs M.%d N.%d\n",bits256_str(str,secret),bits256_str(str2,recover),m,mofn->M,mofn->N);
     }
+#if defined(_M_X64)
+	if (((uint64_t)mofn - (uint64_t)space) >= sizeof(space) || ((uint64_t)mofn - (uint64_t)space) < 0)
+		free(mofn);
+	if (((uint64_t)cmp - (uint64_t)space) >= sizeof(space) || ((uint64_t)cmp - (uint64_t)space) < 0)
+		free(cmp);
+#else
     if ( ((long)mofn - (long)space) >= sizeof(space) || ((long)mofn - (long)space) < 0 )
         free(mofn);
     if ( ((long)cmp - (long)space) >= sizeof(space) || ((long)cmp - (long)space) < 0 )
         free(cmp);
+#endif
     return(retval);
 }
 

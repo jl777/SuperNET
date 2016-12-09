@@ -435,7 +435,11 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
         iguana_peerfname(coin,&hdrsi,iter==0?"DB/ro":"DB",fname,0,bp->hashes[0],zero,bp->n,1);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
+#if defined(_M_X64)
+			fseek(fp, (uint64_t)&rdata.Toffset - (uint64_t)&rdata, SEEK_SET);
+#else
             fseek(fp,(long)&rdata.Toffset - (long)&rdata,SEEK_SET);
+#endif
             if ( fread(&Toffset,1,sizeof(Toffset),fp) == sizeof(Toffset) )
             {
                 fseek(fp,Toffset + sizeof(struct iguana_txid) * txidind,SEEK_SET);
