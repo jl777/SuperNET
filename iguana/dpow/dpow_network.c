@@ -254,7 +254,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; int32_t timeout,retval;
+    char str[512]; int32_t timeout,retval,maxsize;
     if ( myinfo->ipaddr[0] == 0 )
     {
         printf("need to set ipaddr before nanomsg\n");
@@ -316,6 +316,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     myinfo->numdpowipbits = 1;
                                     timeout = 1000;
                                     nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                                    maxsize = 2048 * 1024;
+                                    printf("RCVMAX.%d ",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVMAXSIZE,&maxsize,sizeof(maxsize)));
+                                    printf("RCVTIMEO.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     printf("DEXINIT dex.%d rep.%d\n",myinfo->dexsock,myinfo->repsock);
