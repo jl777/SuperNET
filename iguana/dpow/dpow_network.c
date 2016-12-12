@@ -316,9 +316,8 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     myinfo->numdpowipbits = 1;
                                     timeout = 1000;
                                     nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                                    maxsize = 2048 * 1024;
-                                    printf("RCVMAX.%d ",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVMAXSIZE,&maxsize,sizeof(maxsize)));
-                                    printf("RCVTIMEO.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+                                    maxsize = 1024 * 1024;
+                                    printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     printf("DEXINIT dex.%d rep.%d\n",myinfo->dexsock,myinfo->repsock);
