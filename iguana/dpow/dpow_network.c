@@ -662,7 +662,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     if ( bp->isratify == 0 )
     {
         extralen = dpow_paxpending(extras);
-        bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
+        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
         dpow_nanoutxoset(&np->notarize,bp,0);
     } else dpow_nanoutxoset(&np->ratify,bp,1);
     np->size = size;
