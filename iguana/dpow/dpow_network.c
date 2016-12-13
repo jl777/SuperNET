@@ -254,7 +254,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
 {
-    char str[512]; int32_t timeout,retval;
+    char str[512]; int32_t timeout,retval,maxsize;
     if ( myinfo->ipaddr[0] == 0 )
     {
         printf("need to set ipaddr before nanomsg\n");
@@ -316,6 +316,8 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     myinfo->numdpowipbits = 1;
                                     timeout = 1000;
                                     nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                                    maxsize = 1024 * 1024;
+                                    printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     printf("DEXINIT dex.%d rep.%d\n",myinfo->dexsock,myinfo->repsock);
@@ -660,7 +662,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     if ( bp->isratify == 0 )
     {
         extralen = dpow_paxpending(extras);
-        bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
+        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
         dpow_nanoutxoset(&np->notarize,bp,0);
     } else dpow_nanoutxoset(&np->ratify,bp,1);
     np->size = size;
