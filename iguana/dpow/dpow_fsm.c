@@ -391,8 +391,8 @@ void dpow_statemachinestart(void *ptr)
     {
         if ( (starttime= checkpoint.timestamp) == 0 )
             bp->starttime = starttime = (uint32_t)time(NULL);
-        extralen = dpow_paxpending(extras);
-        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
+        extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+        bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
     printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
     for (i=0; i<sizeof(srchash); i++)
@@ -406,8 +406,8 @@ void dpow_statemachinestart(void *ptr)
         {
             if ( myinfo->DPOWS[0].ratifying != 0 )
                 break;
-            extralen = dpow_paxpending(extras);
-            bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = calc_crc32(0,extras,extralen);
+            extralen = dpow_paxpending(extras,&bp->paxwdcrc);
+            bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
         sleep(1);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )

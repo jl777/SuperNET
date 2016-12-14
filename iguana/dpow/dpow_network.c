@@ -645,7 +645,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32; uint8_t extras[10000];
+    struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
     if ( time(NULL) < myinfo->nanoinit+5 )
@@ -666,10 +666,15 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     //printf(" dpow_send.(%d) size.%d numipbits.%d myind.%d\n",datalen,size,np->numipbits,bp->myind);
     if ( bp->isratify == 0 )
     {
-        extralen = dpow_paxpending(extras);
-        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = calc_crc32(0,extras,extralen);
+        extralen = dpow_paxpending(extras,&paxwdcrc);
+        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         dpow_nanoutxoset(&np->notarize,bp,0);
-    } else dpow_nanoutxoset(&np->ratify,bp,1);
+    }
+    else
+    {
+        bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = 0;
+        dpow_nanoutxoset(&np->ratify,bp,1);
+    }
     np->size = size;
     np->datalen = datalen;
     np->crc32 = crc32;
@@ -685,13 +690,10 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     strcpy(np->symbol,dp->symbol);
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
-    if ( extralen > 0 )
-        bp->paxwdcrc = np->notarize.paxwdcrc = calc_crc32(0,extras,extralen);
-    else bp->paxwdcrc = np->notarize.paxwdcrc = 0;
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
-    //printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->crc32,datalen);
+    printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->paxwdcrc,datalen);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)

@@ -165,7 +165,7 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
 
 int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,int32_t src_or_dest,uint8_t pubkeys[][33],int32_t numratified)
 {
-    uint32_t locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
+    uint32_t paxwdcrc=0,locktime=0,numvouts; uint64_t satoshis,satoshisB; int32_t i,n=0,opretlen,len=0; uint8_t opret[16384],data[16384],extras[16384];
     numvouts = 2;
     if ( pubkeys == 0 || numratified <= 0 )
     {
@@ -197,11 +197,11 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         }
         printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     }
-    if ( (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras)) > 0 )
+    if ( (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc)) > 0 )
     {
         for (i=0; i<n; i++)
             printf("%02x",extras[i]);
-        printf(" <- withdraw.%d %08x\n",n,calc_crc32(0,extras,n));
+        printf(" <- withdraw.%d %08x\n",n,paxwdcrc);
     }
     satoshis = 0;
     len += iguana_rwnum(1,&serialized[len],sizeof(satoshis),&satoshis);

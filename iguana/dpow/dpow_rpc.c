@@ -86,9 +86,10 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
-int32_t dpow_paxpending(uint8_t *hex)
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp)
 {
-    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0;
+    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
+    paxwdcrc = 0;
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
         if ( coin->FULLNODE < 0 )
@@ -102,6 +103,8 @@ int32_t dpow_paxpending(uint8_t *hex)
                         n >>= 1;
                         //printf("PAXPENDING.(%s)\n",hexstr);
                         decode_hex(hex,n,hexstr);
+                        paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
+                        paxwdcrc |= (n & 0xff);
                     }
                     free_json(retjson);
                 } else printf("dpow_paxpending: parse error.(%s)\n",retstr);
@@ -109,6 +112,8 @@ int32_t dpow_paxpending(uint8_t *hex)
             } else printf("dpow_paxpending: paxwithdraw null return\n");
         } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
     } else printf("dpow_paxpending: cant find KMD\n");
+    if ( *paxwdcrcp != paxwdcrc )
+        *paxwdcrcp = paxwdcrc;
     return(n);
 }
 
