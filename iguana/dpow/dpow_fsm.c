@@ -389,7 +389,7 @@ void dpow_statemachinestart(void *ptr)
     }
     if ( bp->isratify == 0 )
     {
-        if ( (starttime= checkpoint.timestamp) == 0 )
+        //if ( (starttime= checkpoint.timestamp) == 0 )
             bp->starttime = starttime = (uint32_t)time(NULL);
         extralen = dpow_paxpending(extras,&bp->paxwdcrc);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
@@ -405,7 +405,10 @@ void dpow_statemachinestart(void *ptr)
         if ( bp->isratify == 0 )
         {
             if ( myinfo->DPOWS[0].ratifying != 0 )
+            {
+                printf("break due to already ratifying\n");
                 break;
+            }
             extralen = dpow_paxpending(extras,&bp->paxwdcrc);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
@@ -443,7 +446,7 @@ void dpow_statemachinestart(void *ptr)
             break;
         }
     }
-    printf("isratify.%d bestk.%d %llx sigs.%llx state machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x\n",bp->isratify,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc);
+    printf("isratify.%d:%d bestk.%d %llx sigs.%llx state.%x machine ht.%d completed state.%x %s.%s %s.%s recvmask.%llx paxwdcrc.%x %p %p\n",bp->isratify,dp->ratifying,bp->bestk,(long long)bp->bestmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),bp->state,bp->height,bp->state,dp->dest,bits256_str(str,bp->desttxid),dp->symbol,bits256_str(str2,bp->srctxid),(long long)bp->recvmask,bp->paxwdcrc,src,dest);
     dp->lastrecvmask = bp->recvmask;
     dp->ratifying -= bp->isratify;
     free(ptr);
