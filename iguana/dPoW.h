@@ -25,7 +25,7 @@
 #define DPOW_VERSION 0x0774
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 300
+#define DPOW_DURATION 600
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))

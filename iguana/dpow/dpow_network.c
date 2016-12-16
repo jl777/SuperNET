@@ -412,7 +412,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             }
         }
         //printf("RECV from %d best.(%d %llx) sigs.(%d %d) %llx %llx\n",senderind,bestk,(long long)bestmask,siglens[0],siglens[1],(long long)bp->ratifysigmasks[0],(long long)bp->ratifysigmasks[1]);
-// generalize for both paths
         bp->ratifyrecvmask = 0;
         bp->ratifybestmask = 0;
         bp->ratifybestk = -1;
@@ -599,6 +598,16 @@ void dpow_bestconsensus(struct dpow_block *bp)
     }
     if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->recvmask & masks[besti]) == masks[besti] )
         bp->bestmask = masks[besti], bp->bestk = bestks[besti];
+    if ( bp->bestmask == 0 || (time(NULL) / 100) != bp->lastepoch )
+    {
+        bp->bestmask = dpow_ratifybest(bp->recvmask,bp,&bp->bestk);
+        if ( (time(NULL) / 60) != bp->lastepoch )
+        {
+            bp->lastepoch = (uint32_t)(time(NULL) / 100);
+            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
+            sleep(2 + (rand() % 7));
+        }
+    }
 }
 
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
