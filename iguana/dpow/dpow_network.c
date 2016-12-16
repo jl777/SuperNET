@@ -602,7 +602,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                         paxmatches++;
                     if ( ((1LL << i) & bp->bestmask) != 0 )
                          bestmatches++;
-                } // else printf("mismatch.%d (%d %llx) ",i,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
+                } else printf("%d.(%x %llx) ",i,bp->notaries[i].paxwdcrc,(long long)bp->notaries[i].bestmask);
             }
             if ( bestmatches >= bp->minsigs )
             {
