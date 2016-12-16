@@ -138,6 +138,7 @@ struct dpow_info
     uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
+uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 
 
 #endif
