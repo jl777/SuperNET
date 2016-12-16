@@ -605,7 +605,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                          bestmatches++;
                 } else printf("%d.(%x %llx) ",i,bp->notaries[i].paxwdcrc,(long long)bp->notaries[i].bestmask);
             }
-            printf("recv.%llx\n",(long long)bp->recvmask;
+            printf("recv.%llx best.(%d %llx) m.%d p.%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,bestmatches);
             if ( bestmatches >= bp->minsigs )
             {
                 if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
