@@ -99,7 +99,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     return(bestmask);
 }
 
-uint64_t dpow_notarybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
+uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t m,j,k; uint64_t bestmask,mask = bp->require0;
     bestmask = 0;
