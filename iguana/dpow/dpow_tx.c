@@ -99,6 +99,30 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     return(bestmask);
 }
 
+uint64_t dpow_notarybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
+{
+    int32_t m,j,k; uint64_t bestmask,mask = bp->require0;
+    bestmask = 0;
+    *lastkp = -1;
+    for (m=j=0; j<bp->numnotaries; j++)
+    {
+        k = (j + ((uint32_t)time(NULL) / 60)) % bp->numnotaries;
+        if ( bp->require0 != 0 && k == 0 )
+            continue;
+        if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
+        {
+            mask |= (1LL << k);
+            if ( ++m == bp->minsigs-bp->require0 )
+            {
+                *lastkp = k;
+                bestmask = mask | bp->require0;
+                //printf("m.%d == minsigs.%d (%d %llx)\n",m,bp->minsigs,k,(long long)bestmask);
+            }
+        }
+    }
+    return(bestmask);
+}
+
 uint64_t dpow_maskmin(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
 {
     int32_t j,m,k; uint64_t bestmask,mask = 0;//bp->require0;
