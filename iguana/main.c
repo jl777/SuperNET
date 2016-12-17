@@ -1652,7 +1652,7 @@ void iguana_main(void *arg)
             }
         } else printf("couldnt parse.(%s)\n",jsonstr);
     }
-    if ( 1 )
+    if ( 0 )
     {
         int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
         char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
