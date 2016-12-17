@@ -376,7 +376,7 @@ STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
     //return(clonestr("{\"error\":\"dpow active is deprecated for now\"}"));
-    if ( 1 )
+    if ( 0 )
     {
         int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
         char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
