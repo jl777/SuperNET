@@ -19,13 +19,13 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 17      //((height < 90000) ? 7 : 11)
+#define DPOW_MINSIGS 11
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0774
+#define DPOW_VERSION 0x0775
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 300
+#define DPOW_DURATION 600
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -138,6 +138,7 @@ struct dpow_info
     uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
+uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 
 
 #endif
