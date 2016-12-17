@@ -598,14 +598,14 @@ void dpow_bestconsensus(struct dpow_block *bp)
     }
     if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->recvmask & masks[besti]) == masks[besti] )
         bp->bestmask = masks[besti], bp->bestk = bestks[besti];
-    if ( bp->bestmask == 0 || (time(NULL) / 100) != bp->lastepoch )
+    if ( bp->bestmask == 0 || (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( (time(NULL) / 60) != bp->lastepoch )
+        if ( (time(NULL) / 180) != bp->lastepoch )
         {
-            bp->lastepoch = (uint32_t)(time(NULL) / 60);
+            bp->lastepoch = (uint32_t)(time(NULL) / 180);
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
-            sleep(2 + (rand() % 7));
+            sleep(1 + (rand() % 3));
         }
     }
 }
