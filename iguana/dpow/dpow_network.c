@@ -766,9 +766,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
-    portable_mutex_lock(&dp->dpowmutex);
+    portable_mutex_lock(&myinfo->dpowmutex);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
-    portable_mutex_unlock(&dp->dpowmutex);
+    portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,bp->bestk,(long long)bp->bestmask);
 }
