@@ -710,6 +710,8 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
+        if ( senderind <= 1 )
+            printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,bp->bestk,(long long)np->bestmask);
         dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
@@ -766,7 +768,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,bp->bestk,(long long)bp->bestmask);
+    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,bp->bestk,(long long)bp->bestmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
