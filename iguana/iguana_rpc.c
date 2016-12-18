@@ -18,20 +18,22 @@
 #include "iguana777.h"
 //#include "SuperNET.h"
 
-#define RPCARGS struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,cJSON *params[],int32_t n,cJSON *json,char *remoteaddr,cJSON *array
-#define GLUEARGS cJSON *json,struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,char *remoteaddr,cJSON *params[]
+#define RPCARGS struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,cJSON *params[],int32_t n,cJSON *json,char *remoteaddr,cJSON *array,char *userpass
+#define GLUEARGS cJSON *json,struct supernet_info *myinfo,uint16_t port,struct iguana_info *coin,char *remoteaddr,cJSON *params[],char *userpass
 
-#define CALLGLUE myinfo,port,coin,remoteaddr,params
+#define CALLGLUE myinfo,port,coin,remoteaddr,params,userpass
 
 char *sglue(GLUEARGS,char *agent,char *method)
 {
     char *retstr,*rpcretstr,*walletstr,checkstr[65],dcheckstr[65]; cJSON *retjson,*tmpjson,*result,*error,*wallet; int32_t i,j,len; int64_t val; double dval;
     if ( json == 0 )
         json = cJSON_CreateObject();
-    //printf("sglue.(%s)\n",jprint(json,0));
+//printf("userpass.(%s)\n",userpass);
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
+    if ( userpass != 0 )
+        jaddstr(json,"userpass",userpass);
     if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
         iguana_walletlock(myinfo,0);
     if ( (retstr= SuperNET_JSON(myinfo,coin,json,remoteaddr,port)) != 0 )
@@ -667,7 +669,7 @@ char *iguana_bitcoinrpc(struct supernet_info *myinfo,uint16_t port,struct iguana
     for (i=0; i<sizeof(RPCcalls)/sizeof(*RPCcalls); i++)
     {
         if ( strcmp(RPCcalls[i].name,method) == 0 )
-            return((*RPCcalls[i].rpcfunc)(myinfo,port,coin,params,n,json,remoteaddr,array));
+            return((*RPCcalls[i].rpcfunc)(myinfo,port,coin,params,n,json,remoteaddr,array,jstr(json,"userpass")));
     }
     return(clonestr("{\"error\":\"invalid coin address\"}"));
 }
@@ -710,12 +712,13 @@ struct iguana_info *iguana_coinchoose(struct supernet_info *myinfo,char *symbol,
 
 char *iguana_bitcoinRPC(struct supernet_info *myinfo,char *method,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16]; uint32_t immed; int32_t i,n; char *retstr = 0;
+    cJSON *params[16],*array; struct iguana_info *coin = 0; char symbol[16],*userpass; uint32_t immed; int32_t i,n; char *retstr = 0;
     symbol[0] = 0;
     memset(params,0,sizeof(params));
-    //printf("bitcoinRPC\n");
+//printf("bitcoinRPC.(%s)\n",jprint(json,0));
     if ( json != 0 )
     {
+        userpass = jstr(json,"userpass");
         coin = iguana_coinchoose(myinfo,symbol,json,port);
         if ( myinfo->rpcsymbol[0] == 0 )
             strcpy(myinfo->rpcsymbol,symbol);
@@ -842,8 +845,8 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 
 char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
-    cJSON *tokens,*argjson,*origargjson,*json = 0; long filesize; struct iguana_info *coin = 0;
-    char symbol[64],buf[4096],*originstr,*fieldstr,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; struct iguana_info *coin = 0;
+    char symbol[64],buf[4096],*originstr,*fieldstr,*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     if ( myinfo->remoteorigin == 0 )
     {
@@ -965,13 +968,14 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         jaddstr(argjson,"agent",jstri(tokens,0));
     if ( num > 1 )
         jaddstr(argjson,"method",jstri(tokens,1));
-    //printf("urlstr.(%s)\n",urlstr+n);
     if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
     {
         jadd(json,"tokens",tokens);
         jaddstr(json,"urlmethod",urlmethod);
         if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
         {
+            userpass = jstr(argjson,"userpass");
+            printf("userpass.(%s)\n",userpass);
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
                 if ( n > 1 )
@@ -1064,6 +1068,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
             for (i=0; i<n; i++)
             {
                 argjson = jitem(origargjson,i);
+                if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
+                    jaddstr(argjson,"userpass",userpass);
 //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
                 coin = iguana_coinchoose(myinfo,symbol,argjson,port);
                 if ( (retstr= SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port)) != 0 )
@@ -1079,14 +1085,21 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         }
         else
         {
+            //printf("ARGJSON.(%s)\n",jprint(argjson,0));
             coin = iguana_coinchoose(myinfo,symbol,argjson,port);
+            if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
+                jaddstr(argjson,"userpass",userpass);
             retstr = SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);
+        if ( tmpjson != 0 )
+            free(tmpjson);
         return(retstr);
     }
     free_json(argjson);
+    if ( tmpjson != 0 )
+        free(tmpjson);
     *jsonflagp = 1;
     return(clonestr("{\"error\":\"couldnt process packet\"}"));
 }
