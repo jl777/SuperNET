@@ -623,13 +623,15 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         bp->notaries[senderind].src.prev_vout = srcvout;
         bp->notaries[senderind].dest.prev_hash = destutxo;
         bp->notaries[senderind].dest.prev_vout = destvout;
-        bp->notaries[senderind].bestmask = bestmask;
-        bp->notaries[senderind].recvmask = recvmask;
+        if ( bestmask != 0 )
+            bp->notaries[senderind].bestmask = bestmask;
+        if ( recvmask != 0 )
+            bp->notaries[senderind].recvmask = recvmask;
         if ( (bp->notaries[senderind].paxwdcrc= paxwdcrc) != 0 )
         {
             //fprintf(stderr,"{%d %x} ",senderind,paxwdcrc);
         }
-        if ( (bp->notaries[senderind].bestk= bestk) >= 0 )
+        if ( bestk >= 0 && (bp->notaries[senderind].bestk= bestk) >= 0 )
         {
             if ( (bp->notaries[senderind].src.siglens[bestk]= siglens[0]) != 0 )
             {
