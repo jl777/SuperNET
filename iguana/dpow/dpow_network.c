@@ -668,7 +668,9 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                             paxbestmatches++;
                         }
                     }
-                } else printf("%d.(%x %llx) ",i,bp->notaries[i].paxwdcrc,(long long)bp->notaries[i].bestmask);
+                }
+                if ( bp->notaries[i].paxwdcrc != 0 )
+                    printf("%d.(%x %d %llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
             }
             printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
