@@ -766,7 +766,9 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
+    portable_mutex_lock(&dp->dpowmutex);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
+    portable_mutex_unlock(&dp->dpowmutex);
     free(np);
     printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,bp->bestk,(long long)bp->bestmask);
 }
@@ -818,6 +820,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 )
         return;
+    portable_mutex_lock(&dp->dpowmutex);
     while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
@@ -868,6 +871,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( size == 0 || n++ > 100 )
             break;
     }
+    portable_mutex_unlock(&dp->dpowmutex);
     if ( 0 && n != 0 )
         printf("nanoupdates.%d\n",n);
     n = 0;

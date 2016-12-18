@@ -617,7 +617,7 @@ cJSON *dpow_paxjson(struct pax_transaction *pax)
 uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     /*if ( dp->PAX != 0 )
     {
         tmp = 0;
@@ -635,25 +635,25 @@ uint64_t dpow_paxtotal(struct dpow_info *dp)
         if ( pax->marked == 0 )
             total += pax->komodoshis;
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(total);
 }
 
 struct pax_transaction *dpow_paxfind(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout)
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax != 0 )
         memcpy(space,pax,sizeof(*pax));
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(pax);
 }
 
 struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout,int32_t mark)
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
@@ -670,14 +670,14 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
         printf(" paxmark.ht %d vout%d\n",mark,vout);
         memcpy(space,pax,sizeof(*pax));
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(pax);
 }
 
 cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     /*if ( dp->PAX != 0 )
     {
         tmp = 0;
@@ -695,14 +695,14 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
         if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(retjson);
 }
 
 void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t kmdheight,int32_t height) // assetchain context
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
@@ -711,7 +711,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         pax->vout = vout;
         HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     if ( coinaddr != 0 )
     {
         strcpy(pax->coinaddr,coinaddr);

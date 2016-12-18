@@ -298,7 +298,11 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
     if ( myinfo->numdpows++ == 0 )
-        portable_mutex_init(&dp->mutex);
+    {
+        portable_mutex_init(&dp->paxmutex);
+        portable_mutex_init(&dp->dexmutex);
+        portable_mutex_init(&dp->dpowmutex);
+    }
     PAX_init();
     //printf(">>>>>>>>>>>>>>> call paxpending\n");
     //uint8_t buf[32768];

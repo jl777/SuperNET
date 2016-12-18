@@ -134,7 +134,7 @@ struct dpow_info
     uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;
-    portable_mutex_t mutex;
+    portable_mutex_t paxmutex,dpowmutex,dexmutex;
     uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
