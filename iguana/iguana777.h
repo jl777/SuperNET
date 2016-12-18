@@ -110,7 +110,7 @@ struct supernet_info
     void *PAXDATA;
     struct liquidity_info linfos[64];
     struct komodo_notaries NOTARY;
-    char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t dpowmutex;
+    char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t notarymutex,dpowmutex;
     char dexseed_ipaddr[64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
     // compatibility
     bits256 pangea_category,instantdex_category;

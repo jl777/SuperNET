@@ -210,7 +210,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
     if ( myinfo->dpowsock >= 0 )
     {
-        portable_mutex_lock(&myinfo->dpowmutex);
+        portable_mutex_lock(&myinfo->notarymutex);
         ipbits = (uint32_t)calc_ipbits(ipaddr);
         for (iter=0; iter<2; iter++)
         {
@@ -247,7 +247,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
             if ( dp == 0 )
                 break;
         }
-        portable_mutex_unlock(&myinfo->dpowmutex);
+        portable_mutex_unlock(&myinfo->notarymutex);
     }
     return(retval);
 }
