@@ -556,17 +556,15 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
 
 void dpow_bestconsensus(struct dpow_block *bp)
 {
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
     memset(masks,0,sizeof(masks));
     memset(bestks,0xff,sizeof(bestks));
     memset(counts,0,sizeof(counts));
-    bp->recvmask = 0;
-    bp->bestmask = 0;
-    bp->bestk = -1;
+    recvmask = 0;
     for (numdiff=i=0; i<bp->numnotaries; i++)
     {
         if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
-            bp->recvmask |= (1LL << i);
+            recvmask |= (1LL << i);
         if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
             continue;
         //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
@@ -596,8 +594,12 @@ void dpow_bestconsensus(struct dpow_block *bp)
             besti = i;
         }
     }
-    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (bp->recvmask & masks[besti]) == masks[besti] )
-        bp->bestmask = masks[besti], bp->bestk = bestks[besti];
+    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    {
+        bp->bestmask = masks[besti];
+        bp->bestk = bestks[besti];
+        bp->recvmask = recvmask;
+    }
     if ( bp->bestmask == 0 || (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
