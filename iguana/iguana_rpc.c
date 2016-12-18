@@ -32,8 +32,14 @@ char *sglue(GLUEARGS,char *agent,char *method)
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
     jaddstr(json,"coin",coin->symbol);
-    if ( userpass != 0 )
-        jaddstr(json,"userpass",userpass);
+    if ( coin != 0 && coin->chain->userpass[0] != 0 )
+    {
+        if ( userpass == 0 || strcmp(userpass,coin->chain->userpass) != 0 )
+        {
+            printf("iguana authentication error {%s} (%s) != (%s)\n",jprint(json,0),userpass,coin->chain->userpass);
+            return(clonestr("{\"error\":\"authentication error\"}"));
+        }
+    }
     if ( myinfo->expiration != 0 && time(NULL) > myinfo->expiration )
         iguana_walletlock(myinfo,0);
     if ( (retstr= SuperNET_JSON(myinfo,coin,json,remoteaddr,port)) != 0 )
