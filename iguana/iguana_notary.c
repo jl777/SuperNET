@@ -297,13 +297,13 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         dp->maxblocks = 100000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    myinfo->numdpows++;
     portable_mutex_init(&dp->paxmutex);
     portable_mutex_init(&dp->dexmutex);
     PAX_init();
     //printf(">>>>>>>>>>>>>>> call paxpending\n");
     //uint8_t buf[32768];
     //dpow_paxpending(buf);
+    myinfo->numdpows++;
     return(clonestr("{\"result\":\"success\"}"));
 }
 
