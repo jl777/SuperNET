@@ -326,7 +326,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
 
 char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0; uint64_t tag;
+    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*userpass; uint64_t tag;
 //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
@@ -350,6 +350,14 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
+    }
+    if ( coin != 0 && coin->FULLNODE >= 0 && coin->chain->userpass[0] != 0 )
+    {
+        if ( (userpass= jstr(json,"userpass")) == 0 || strcmp(userpass,coin->chain->userpass) != 0 )
+        {
+            printf("iguana authentication error {%s} (%s) != (%s)\n",jprint(json,0),userpass,coin->chain->userpass);
+            return(clonestr("{\"error\":\"authentication error\"}"));
+        }
     }
     if ( (retstr= SuperNET_processJSON(myinfo,coin,json,remoteaddr,port)) == 0 )
         printf("null retstr from SuperNET_JSON\n");
