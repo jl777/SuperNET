@@ -820,7 +820,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 )
         return;
-    portable_mutex_lock(&dp->dpowmutex);
+    portable_mutex_lock(&myinfo->dpowmutex);
     while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
@@ -871,7 +871,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( size == 0 || n++ > 100 )
             break;
     }
-    portable_mutex_unlock(&dp->dpowmutex);
+    portable_mutex_unlock(&myinfo->dpowmutex);
     if ( 0 && n != 0 )
         printf("nanoupdates.%d\n",n);
     n = 0;
