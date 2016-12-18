@@ -106,7 +106,8 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     *lastkp = -1;
     for (m=j=0; j<bp->numnotaries; j++)
     {
-        k = (j + ((uint32_t)time(NULL) / 180)) % bp->numnotaries;
+        //k = (j + ((uint32_t)time(NULL) / 180)) % bp->numnotaries;
+        k = (j + (bp->height/DPOW_CHECKPOINTFREQ)) % bp->numnotaries;
         //if ( bp->require0 != 0 && k == 0 )
         //    continue;
         if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )

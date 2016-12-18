@@ -600,10 +600,10 @@ void dpow_bestconsensus(struct dpow_block *bp)
         bp->bestk = bestks[besti];
         bp->recvmask = recvmask;
     }
-    if ( bp->bestmask == 0 || (time(NULL) / 180) != bp->lastepoch )
+    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( (time(NULL) / 180) != bp->lastepoch )
+        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
         {
             bp->lastepoch = (uint32_t)(time(NULL) / 180);
             printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
