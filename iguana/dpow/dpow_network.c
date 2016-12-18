@@ -775,7 +775,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,np->bestk,(long long)np->bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask);
+    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
