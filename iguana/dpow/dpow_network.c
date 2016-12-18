@@ -740,6 +740,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     {
         extralen = dpow_paxpending(extras,&paxwdcrc);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
+        dpow_bestconsensus(bp);
         dpow_nanoutxoset(&np->notarize,bp,0);
     }
     else
@@ -765,7 +766,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     memcpy(np->packet,data,datalen);
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
-    //printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen);
+    printf("NANOSEND ht.%d channel.%08x (%d) crc32.%08x datalen.%d (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,bp->bestk,(long long)bp->bestmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
