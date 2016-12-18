@@ -297,12 +297,13 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         dp->maxblocks = 100000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    if ( myinfo->numdpows++ == 0 )
-        portable_mutex_init(&dp->mutex);
+    portable_mutex_init(&dp->paxmutex);
+    portable_mutex_init(&dp->dexmutex);
     PAX_init();
     //printf(">>>>>>>>>>>>>>> call paxpending\n");
     //uint8_t buf[32768];
     //dpow_paxpending(buf);
+    myinfo->numdpows++;
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -376,6 +377,25 @@ STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
     //return(clonestr("{\"error\":\"dpow active is deprecated for now\"}"));
+    if ( 0 )
+    {
+        int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
+        char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
+            "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+            "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
+        uint8_t pubkeys[64][33]; char coinaddr[64]; int32_t i,j; double val = 0.01;
+        int32_t n = komodo_notaries("KMD",pubkeys,114000);
+        //#include "notaries.h"
+        for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+        {
+            for (j=0; j<n; j++)
+            {
+                //decode_hex(pubkeys[j],33,Notaries[j][1]);
+                bitcoin_address(coinaddr,60,pubkeys[j],33);
+                printf("./komodo-cli -ac_name=%s sendtoaddress %s %f\n",CURRENCIES[i],coinaddr,val);
+            }
+        }
+    }
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;

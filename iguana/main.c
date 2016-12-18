@@ -326,8 +326,8 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
 
 char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*jsonstr=0; uint64_t tag;
-    //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
+    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*userpass; uint64_t tag;
+//printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     if ( (agent = jstr(json,"agent")) == 0 )
@@ -351,10 +351,16 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
     }
+    if ( coin != 0 && coin->FULLNODE >= 0 && coin->chain->userpass[0] != 0 )
+    {
+        if ( (userpass= jstr(json,"userpass")) == 0 || strcmp(userpass,coin->chain->userpass) != 0 )
+        {
+            printf("iguana authentication error {%s} (%s) != (%s)\n",jprint(json,0),userpass,coin->chain->userpass);
+            return(clonestr("{\"error\":\"authentication error\"}"));
+        }
+    }
     if ( (retstr= SuperNET_processJSON(myinfo,coin,json,remoteaddr,port)) == 0 )
         printf("null retstr from SuperNET_JSON\n");
-    if ( jsonstr != 0 )
-        free(jsonstr);
     if ( autologin != 0 )
         SuperNET_logout(myinfo,0,json,remoteaddr);
     return(retstr);
@@ -1611,6 +1617,7 @@ void iguana_main(void *arg)
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->dpowmutex);
+    portable_mutex_init(&myinfo->notarymutex);
     if ( myinfo->IAMNOTARY == 0 )
     {
 #if LIQUIDITY_PROVIDER
@@ -1651,25 +1658,6 @@ void iguana_main(void *arg)
                 printf("./komodo-cli -ac_name=REVS sendtoaddress %s %f\n",coinaddr,val);
             }
         } else printf("couldnt parse.(%s)\n",jsonstr);
-    }
-    if ( 0 )
-    {
-        int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
-        char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
-            "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-            "REVS" };
-        uint8_t pubkeys[64][33]; char coinaddr[64]; int32_t i,j; double val = 0.01;
-        //n = komodo_notaries("KMD",pubkeys,0);
-#include "notaries.h"
-        for (i=0; i<=32; i++)
-        {
-            for (j=0; j<sizeof(Notaries)/sizeof(*Notaries); j++)
-            {
-                decode_hex(pubkeys[j],33,Notaries[j][1]);
-                bitcoin_address(coinaddr,60,pubkeys[j],33);
-                printf("./komodo-cli -ac_name=%s sendtoaddress %s %f\n",CURRENCIES[i],coinaddr,val);
-            }
-        }
     }
     iguana_launchdaemons(myinfo);
 }
