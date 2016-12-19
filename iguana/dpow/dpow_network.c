@@ -187,7 +187,7 @@ struct dpow_nanoutxo
     uint64_t bestmask,recvmask;
     uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t srcvout,destvout;
-    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],pad; int8_t bestk;
+    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],pad,bestk;
 } PACKED;
 
 struct dpow_nanomsghdr
@@ -372,7 +372,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
                 np->bestmask = bp->bestmask, np->bestk = bp->bestk;
             else np->bestk = bp->notaries[bp->myind].bestk;
         } else np->bestk = bp->pendingbestk;
-        if ( np->bestk >= 0 )
+        if ( (int8_t)np->bestk >= 0 )
         {
             if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
                 memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
@@ -717,12 +717,12 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
 {
     if ( isratify != 0 )
     {
-        dpow_ratify_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->pendingcrcs);
+        dpow_ratify_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->pendingcrcs);
     }
     else
     {
-        dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        printf("RECV.%d %llx (%d %llx) %llx/%llx\n",senderind,(long long)np->recvmask,np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
+        dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
+        printf("RECV.%d %llx (%d %llx) %llx/%llx\n",senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
