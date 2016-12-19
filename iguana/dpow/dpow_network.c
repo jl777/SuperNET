@@ -767,7 +767,6 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->ratify.pendingcrcs[i] = bp->pendingcrcs[i];
     for (i=0; i<32; i++)
         np->srchash.bytes[i] = dp->minerkey33[i+1];
-    //np->srchash = srchash;
     np->desthash = desthash;
     np->channel = channel;
     np->height = msgbits;
@@ -861,18 +860,21 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                             {
-                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
+                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
                                 {
-                                    if ( bp->isratify == 0 )
-                                        dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
-                                    else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
-                                    dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                                    if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
+                                    {
+                                        if ( bp->isratify == 0 )
+                                            dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
+                                        else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
+                                        dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                                    } else printf("wrong senderind.%d\n",np->senderind);
                                 }
                             }
                             //dp->crcs[firstz] = crc32;
                         }
-                    }
-                } //else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
+                    } else printf("crc error %x vs %x or no dp.%p\n",crc32,np->crc32,dp);
+                } else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
             }
         }
         if ( np != 0 )
