@@ -747,7 +747,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     {
         extralen = dpow_paxpending(extras,&paxwdcrc);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
-        dpow_bestconsensus(bp);
+        //dpow_bestconsensus(bp);
         dpow_nanoutxoset(&np->notarize,bp,0);
     }
     else
