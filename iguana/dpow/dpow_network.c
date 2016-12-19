@@ -242,7 +242,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 else dp->numipbits = n;
                 //for (i=0; i<n; i++)
                 //    printf("%08x ",ptr[i]);
-                //printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp!=0?dp->numipbits:-1,iter);
+                printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp!=0?dp->numipbits:-1,iter);
             }
             if ( dp == 0 )
                 break;
@@ -604,8 +604,8 @@ void dpow_bestconsensus(struct dpow_block *bp)
     {
         bp->bestmask = masks[besti];
         bp->bestk = bestks[besti];
-        bp->recvmask = recvmask;
     }
+    bp->recvmask = recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
@@ -779,7 +779,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
+    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
@@ -824,11 +824,11 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     //printf("recv numips.(%d %d)\n",myinfo->numdpowipbits,dp->numipbits);
 }
 
-void dpow_nanomsg_update(struct supernet_info *myinfo)
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 )
-        return;
+        return(-1);
     portable_mutex_lock(&myinfo->dpowmutex);
     if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
@@ -874,7 +874,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             //dp->crcs[firstz] = crc32;
                         }
                     } else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
-                } else printf("ignore.%d np->datalen.%d %d (size %d - %ld)\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
+                } else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
             } else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
         } else printf("illegal size.%d\n",size);
         if ( np != 0 )
@@ -884,6 +884,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     n = 0;
     if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
     {
+        num++;
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             printf("FROM BUS.%08x -> pub\n",dexp->crc32);
@@ -895,6 +896,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
     {
+        num++;
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             nn_send(myinfo->dexsock,dexp,size,0);
@@ -909,6 +911,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( dexp != 0 )
             nn_freemsg(dexp), dexp = 0;
     }
+    return(num);
 }
 #else
 
@@ -919,7 +922,7 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
     return(0);
 }
 
-void dpow_nanomsg_update(struct supernet_info *myinfo) { }
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo) { return(0); }
 
 #endif
 
