@@ -722,7 +722,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,np->bestk,(long long)np->bestmask);
+        printf("RECV.%d %llx (%d %llx) %llx/%llx\n",senderind,(long long)np->recvmask,np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
