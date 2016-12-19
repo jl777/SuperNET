@@ -875,7 +875,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                         }
                     } else printf("crc error %x vs %x or no dp.%p [%s]\n",crc32,np->crc32,dp,np->symbol);
                 } else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
-            } else printf("wrong version\n");
+            } else printf("wrong version %02x %02x\n",np->version0,np->version1);
         } else printf("illegal size.%d\n",size);
         if ( np != 0 )
             nn_freemsg(np), np = 0;
