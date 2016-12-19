@@ -830,7 +830,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
     if ( time(NULL) < myinfo->nanoinit+5 )
         return;
     portable_mutex_lock(&myinfo->dpowmutex);
-    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
+    if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
         if ( size >= 0 )
@@ -879,12 +879,10 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-        //if ( size == 0 || num > 100 )
-            break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
     n = 0;
-    while ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
+    if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
     {
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
@@ -894,29 +892,22 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( dexp != 0 )
             nn_freemsg(dexp), dexp = 0;
-        if ( size == 0 || n++ > 1000 )
-            break;
     }
-    if ( n == 0 )
+    if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
     {
-        while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
+        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
-            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            nn_send(myinfo->dexsock,dexp,size,0);
+            if ( (m= myinfo->numdpowipbits) > 0 )
             {
-                nn_send(myinfo->dexsock,dexp,size,0);
-                if ( (m= myinfo->numdpowipbits) > 0 )
-                {
-                    r = myinfo->dpowipbits[rand() % m];
-                    nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    printf("REP.%08x -> dexbus, rep.%08x",dexp->crc32,r);
-                }
-                dex_packet(myinfo,dexp,size);
+                r = myinfo->dpowipbits[rand() % m];
+                nn_send(myinfo->repsock,&r,sizeof(r),0);
+                printf("REP.%08x -> dexbus, rep.%08x",dexp->crc32,r);
             }
-            if ( dexp != 0 )
-                nn_freemsg(dexp), dexp = 0;
-            if ( size == 0 || n++ > 100 )
-                break;
+            dex_packet(myinfo,dexp,size);
         }
+        if ( dexp != 0 )
+            nn_freemsg(dexp), dexp = 0;
     }
 }
 #else
