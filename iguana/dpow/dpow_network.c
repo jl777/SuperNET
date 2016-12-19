@@ -364,9 +364,15 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
         np->destvout = bp->notaries[bp->myind].dest.prev_vout;
-        np->bestmask = bp->pendingbestmask;//notaries[bp->myind].bestmask;
-        np->recvmask = bp->notaries[bp->myind].recvmask;
-        if ( (np->bestk= bp->pendingbestk) >= 0 )//notaries[bp->myind].bestk) >= 0 )
+        if ( (np->recvmask= bp->recvmask) == 0 )
+            np->recvmask = bp->notaries[bp->myind].recvmask;
+        if ( (np->bestmask= bp->pendingbestmask) == 0 )
+        {
+            if ( (np->bestmask= bp->notaries[bp->myind].bestmask) == 0 )
+                np->bestmask = bp->bestmask, np->bestk = bp->bestk;
+            else np->bestk = bp->notaries[bp->myind].bestk;
+        } else np->bestk = bp->pendingbestk;
+        if ( np->bestk >= 0 )
         {
             if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
                 memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
@@ -873,16 +879,13 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-        //if ( size == 0 || n++ > 10000 )
+        //if ( size == 0 || nun > 10000 )
             break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
-    if ( 0 && n != 0 )
-        printf("nanoupdates.%d\n",n);
     n = 0;
     while ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
     {
-        num++;
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             printf("FROM BUS.%08x -> pub\n",dexp->crc32);
@@ -894,12 +897,10 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( size == 0 || n++ > 1000 )
             break;
     }
-    n = 0;
-    if ( num == 0 )
+    if ( n == 0 )
     {
         while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
-            num++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 nn_send(myinfo->dexsock,dexp,size,0);
