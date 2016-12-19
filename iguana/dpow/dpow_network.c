@@ -721,9 +721,8 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
-        //if ( senderind <= 1 )
-            printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,np->bestk,(long long)np->bestmask);
         dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
+        printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,np->bestk,(long long)np->bestmask);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
@@ -868,7 +867,6 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                                         dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
                                     else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
                                     dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
-                                    dex_reqsend(myinfo,np->packet,np->datalen);
                                 }
                             }
                             //dp->crcs[firstz] = crc32;
