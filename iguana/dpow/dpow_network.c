@@ -364,9 +364,9 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
         np->destvout = bp->notaries[bp->myind].dest.prev_vout;
-        np->bestmask = bp->notaries[bp->myind].bestmask;
+        np->bestmask = bp->pendingbestmask;//notaries[bp->myind].bestmask;
         np->recvmask = bp->notaries[bp->myind].recvmask;
-        if ( (np->bestk= bp->notaries[bp->myind].bestk) >= 0 )
+        if ( (np->bestk= bp->pendingbestk) >= 0 )//notaries[bp->myind].bestk) >= 0 )
         {
             if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
                 memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
@@ -685,7 +685,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
-                    //printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
+                    printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
@@ -715,7 +715,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     }
     else
     {
-        if ( senderind <= 1 )
+        //if ( senderind <= 1 )
             printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,bp->bestk,(long long)np->bestmask);
         dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
     }
