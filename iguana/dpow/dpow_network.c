@@ -187,7 +187,7 @@ struct dpow_nanoutxo
     uint64_t bestmask,recvmask;
     uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t srcvout,destvout;
-    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],bestk,pad;
+    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],pad; int8_t bestk;
 } PACKED;
 
 struct dpow_nanomsghdr
