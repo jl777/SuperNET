@@ -716,7 +716,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         //if ( senderind <= 1 )
-            printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,bp->bestk,(long long)np->bestmask);
+        //    printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,bp->bestk,(long long)np->bestmask);
         dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
@@ -727,8 +727,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
-    if ( time(NULL) < myinfo->nanoinit+5 )
-        return;
+    //if ( time(NULL) < myinfo->nanoinit+5 )
+    //    return;
     crc32 = calc_crc32(0,data,datalen);
      //dp->crcs[firstz] = crc32;
     size = (int32_t)(sizeof(*np) + datalen);
@@ -873,7 +873,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-        if ( size == 0 || n++ > 100 )
+        if ( size == 0 || n++ > 10000 )
             break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
@@ -891,7 +891,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( dexp != 0 )
             nn_freemsg(dexp), dexp = 0;
-        if ( size == 0 || n++ > 100 )
+        if ( size == 0 || n++ > 1000 )
             break;
     }
     n = 0;
