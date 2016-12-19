@@ -879,7 +879,7 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-        //if ( size == 0 || nun > 10000 )
+        if ( size == 0 || num > 100 )
             break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
