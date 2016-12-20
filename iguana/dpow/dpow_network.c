@@ -797,6 +797,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
             break;
         }
     }
+    if ( myinfo->dexsock >= 0 )
+        nn_send(myinfo->dexsock,np,size,0);
     //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     if ( bp->myind <= 2 )
@@ -916,12 +918,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
-            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            /*if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 printf("FROM BUS.%08x -> pub\n",dexp->crc32);
                 nn_send(myinfo->pubsock,dexp,size,0);
                 dex_packet(myinfo,dexp,size);
-            }
+            }*/
+            printf("GOT DEX PACKET.%d\n",size);
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }
