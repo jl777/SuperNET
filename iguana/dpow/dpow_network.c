@@ -919,23 +919,23 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             nn_freemsg(np), np = 0;
     } else printf("no packets\n");
     n = 0;
-    if ( myinfo->dexsock >= 0 )
+    if ( 0 && myinfo->dexsock >= 0 )
     {
         if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
-            /*if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 printf("FROM BUS.%08x -> pub\n",dexp->crc32);
                 nn_send(myinfo->pubsock,dexp,size,0);
                 dex_packet(myinfo,dexp,size);
-            }*/
+            }
             printf("GOT DEX PACKET.%d\n",size);
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }
     }
-    if ( myinfo->repsock >= 0 )
+    if ( 0 && myinfo->repsock >= 0 )
     {
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
