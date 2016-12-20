@@ -187,7 +187,7 @@ struct dpow_nanoutxo
     uint64_t bestmask,recvmask;
     uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t srcvout,destvout;
-    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],bestk,pad;
+    uint8_t sigs[2][DPOW_MAXSIGLEN],siglens[2],pad,bestk;
 } PACKED;
 
 struct dpow_nanomsghdr
@@ -208,7 +208,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
-    if ( myinfo->dpowsock >= 0 )
+    if ( myinfo->dpowsock >= 0 && myinfo->dexsock >= 0 )
     {
         portable_mutex_lock(&myinfo->notarymutex);
         ipbits = (uint32_t)calc_ipbits(ipaddr);
@@ -233,6 +233,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                 {
                     retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr,DPOW_SOCK));
+                    printf("NN_CONNECT to (%s)\n",str);
                     retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(str,ipaddr,DEX_SOCK));
                 }
                 n++;
@@ -270,6 +271,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         }
         else
         {
+            printf("NN_BIND to %s\n",str);
             if ( myinfo->dexsock < 0 && (myinfo->dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
             {
                 if ( nn_bind(myinfo->dexsock,nanomsg_tcpname(str,myinfo->ipaddr,DEX_SOCK)) < 0 )
@@ -312,27 +314,88 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
-                                    myinfo->numdpowipbits = 1;
                                     timeout = 1000;
-                                    nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     maxsize = 1024 * 1024;
-                                    printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("RCVBUF.%d\n",nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("DEXINIT dpow.%d dex.%d rep.%d\n",myinfo->dpowsock,myinfo->dexsock,myinfo->repsock);
-                                    myinfo->nanoinit = (uint32_t)time(NULL);
                                 }
                             }
                         }
                     }
                 }
             }
+            myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
+            myinfo->numdpowipbits = 1;
+            timeout = 1000;
+            nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            maxsize = 1024 * 1024;
+            printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+            myinfo->nanoinit = (uint32_t)time(NULL);
+        }
+    } else printf("error creating nanosocket\n");
+    dpow_addnotary(myinfo,0,ipaddr);
+}
+
+void dpow_bestconsensus(struct dpow_block *bp)
+{
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    memset(masks,0,sizeof(masks));
+    memset(bestks,0xff,sizeof(bestks));
+    memset(counts,0,sizeof(counts));
+    recvmask = 0;
+    for (numdiff=i=0; i<bp->numnotaries; i++)
+    {
+        if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
+            recvmask |= (1LL << i);
+        if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
+            continue;
+        //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
+        //    continue;
+        for (j=0; j<numdiff; j++)
+            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] )
+            {
+                counts[j]++;
+                break;
+            }
+        if ( j == numdiff && bp->notaries[i].bestk >= 0 && bp->notaries[i].bestmask != 0 )
+        {
+            masks[numdiff] = bp->notaries[i].bestmask;
+            bestks[numdiff] = bp->notaries[i].bestk;
+            counts[numdiff]++;
+            //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,counts[numdiff]);
+            numdiff++;
         }
     }
-    dpow_addnotary(myinfo,0,ipaddr);
+    besti = -1, best = 0;
+    for (i=0; i<numdiff; i++)
+    {
+        //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
+        if ( counts[i] > best )
+        {
+            best = counts[i];
+            besti = i;
+        }
+    }
+    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    {
+        bp->bestmask = masks[besti];
+        bp->bestk = bestks[besti];
+        printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+    }
+    bp->recvmask = recvmask;
+    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
+    {
+        bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
+        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
+        {
+            bp->lastepoch = (uint32_t)(time(NULL) / 180);
+            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
+            sleep(1 + (rand() % 3));
+        }
+    }
 }
 
 void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
@@ -360,13 +423,20 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
     }
     else
     {
+        dpow_bestconsensus(bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
         np->destvout = bp->notaries[bp->myind].dest.prev_vout;
-        np->bestmask = bp->notaries[bp->myind].bestmask;
-        np->recvmask = bp->notaries[bp->myind].recvmask;
-        if ( (np->bestk= bp->notaries[bp->myind].bestk) >= 0 )
+        if ( (np->recvmask= bp->recvmask) == 0 )
+            np->recvmask = bp->notaries[bp->myind].recvmask;
+        if ( (np->bestmask= bp->pendingbestmask) == 0 )
+        {
+            if ( (np->bestmask= bp->notaries[bp->myind].bestmask) == 0 )
+                np->bestmask = bp->bestmask, np->bestk = bp->bestk;
+            else np->bestk = bp->notaries[bp->myind].bestk;
+        } else np->bestk = bp->pendingbestk;
+        if ( (int8_t)np->bestk >= 0 )
         {
             if ( (np->siglens[0]= bp->notaries[bp->myind].src.siglens[bp->bestk]) > 0 )
                 memcpy(np->sigs[0],bp->notaries[bp->myind].src.sigs[bp->bestk],np->siglens[0]);
@@ -554,64 +624,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
     }
 }
 
-void dpow_bestconsensus(struct dpow_block *bp)
-{
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
-    memset(masks,0,sizeof(masks));
-    memset(bestks,0xff,sizeof(bestks));
-    memset(counts,0,sizeof(counts));
-    recvmask = 0;
-    for (numdiff=i=0; i<bp->numnotaries; i++)
-    {
-        if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
-            recvmask |= (1LL << i);
-        if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
-            continue;
-        //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
-        //    continue;
-        for (j=0; j<numdiff; j++)
-            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] )
-            {
-                counts[j]++;
-                break;
-            }
-        if ( j == numdiff && bp->notaries[i].bestk >= 0 && bp->notaries[i].bestmask != 0 )
-        {
-            masks[numdiff] = bp->notaries[i].bestmask;
-            bestks[numdiff] = bp->notaries[i].bestk;
-            counts[numdiff]++;
-            //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,counts[numdiff]);
-            numdiff++;
-        }
-    }
-    besti = -1, best = 0;
-    for (i=0; i<numdiff; i++)
-    {
-        //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
-        if ( counts[i] > best )
-        {
-            best = counts[i];
-            besti = i;
-        }
-    }
-    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
-    {
-        bp->bestmask = masks[besti];
-        bp->bestk = bestks[besti];
-        bp->recvmask = recvmask;
-    }
-    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
-    {
-        bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
-        {
-            bp->lastepoch = (uint32_t)(time(NULL) / 180);
-            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
-            sleep(1 + (rand() % 3));
-        }
-    }
-}
-
 void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t senderind,int8_t bestk,uint64_t bestmask,uint64_t recvmask,bits256 srcutxo,uint16_t srcvout,bits256 destutxo,uint16_t destvout,uint8_t siglens[2],uint8_t sigs[2][DPOW_MAXSIGLEN],uint32_t paxwdcrc)
 {
     int32_t i,bestmatches = 0,matches = 0,paxmatches = 0,paxbestmatches = 0;
@@ -651,7 +663,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         dpow_bestconsensus(bp);
         //bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
         //bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-        if ( bp->paxwdcrc != 0 )
+        //if ( bp->paxwdcrc != 0 )
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
@@ -677,15 +689,16 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                         }
                     }
                 }
-                if ( bp->notaries[i].paxwdcrc != 0 )
-                    printf("%d.(%x %d %llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask);
+                if ( bp->myind <= 2 && bp->notaries[i].paxwdcrc != 0 )
+                    printf("%d.(%x %d %llx r%llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)bp->notaries[i].recvmask);
             }
-            printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
+            if ( bp->myind <= 2 )
+                printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
                 if ( bp->pendingbestk != bp->bestk || bp->pendingbestmask != bp->bestmask )
                 {
-                    //printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
+                    printf("new PENDING BESTK (%d %llx) state.%d\n",bp->bestk,(long long)bp->bestmask,bp->state);
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
@@ -707,17 +720,17 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
     }
 }
 
-void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct dpow_nanoutxo *np,int32_t isratify,int8_t senderind)
+void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct dpow_nanoutxo *np,int32_t isratify,int8_t senderind,uint32_t channel)
 {
     if ( isratify != 0 )
     {
-        dpow_ratify_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->pendingcrcs);
+        dpow_ratify_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->pendingcrcs);
     }
     else
     {
-        if ( senderind <= 1 )
-            printf("RECV.%d %llx (%d %llx)\n",senderind,(long long)np->recvmask,bp->bestk,(long long)np->bestmask);
-        dpow_notarize_update(myinfo,dp,bp,senderind,np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
+        dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
+        if ( bp->myind <= 2 )
+            printf("lag.[%d] RECV.%d r%llx (%d %llx) %llx/%llx\n",(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
@@ -727,8 +740,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
-    if ( time(NULL) < myinfo->nanoinit+5 )
-        return;
+    //if ( time(NULL) < myinfo->nanoinit+5 )
+    //    return;
     crc32 = calc_crc32(0,data,datalen);
      //dp->crcs[firstz] = crc32;
     size = (int32_t)(sizeof(*np) + datalen);
@@ -747,7 +760,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     {
         extralen = dpow_paxpending(extras,&paxwdcrc);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
-        dpow_bestconsensus(bp);
+        //dpow_bestconsensus(bp);
         dpow_nanoutxoset(&np->notarize,bp,0);
     }
     else
@@ -762,20 +775,32 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->ratify.pendingcrcs[i] = bp->pendingcrcs[i];
     for (i=0; i<32; i++)
         np->srchash.bytes[i] = dp->minerkey33[i+1];
-    //np->srchash = srchash;
     np->desthash = desthash;
-    np->channel = channel;
+    if ( (np->channel= channel) == 0 )
+        np->channel = (uint32_t)time(NULL);
     np->height = msgbits;
     np->myipbits = myinfo->myaddr.myipbits;
     strcpy(np->symbol,dp->symbol);
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
-    portable_mutex_lock(&myinfo->dpowmutex);
-    sentbytes = nn_send(myinfo->dpowsock,np,size,0);
-    portable_mutex_unlock(&myinfo->dpowmutex);
+    sentbytes = -1;
+    //portable_mutex_lock(&myinfo->dpowmutex);
+    for (i=0; i<100; i++)
+    {
+        struct nn_pollfd pfd;
+        pfd.fd = myinfo->dpowsock;
+        pfd.events = NN_POLLOUT;
+        if ( nn_poll(&pfd,1,100) > 0 )
+        {
+            sentbytes = nn_send(myinfo->dpowsock,np,size,0);
+            break;
+        }
+    }
+    //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx)\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask);
+    if ( bp->myind <= 2 )
+        printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
@@ -820,13 +845,21 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     //printf("recv numips.(%d %d)\n",myinfo->numdpowipbits,dp->numipbits);
 }
 
-void dpow_nanomsg_update(struct supernet_info *myinfo)
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
-    if ( time(NULL) < myinfo->nanoinit+5 )
-        return;
-    portable_mutex_lock(&myinfo->dpowmutex);
-    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
+    if ( time(NULL) < myinfo->nanoinit+5 || myinfo->dpowsock < 0 )
+        return(-1);
+    //portable_mutex_lock(&myinfo->dpowmutex);
+    for (i=0; i<100; i++)
+    {
+        struct nn_pollfd pfd;
+        pfd.fd = myinfo->dpowsock;
+        pfd.events = NN_POLLIN;
+        if ( nn_poll(&pfd,1,100) > 0 )
+            break;
+    }
+    if ( i < 100 && (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
         if ( size >= 0 )
@@ -856,48 +889,43 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
                             dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
                             if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
                             {
-                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries && memcmp(bp-> notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
+                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
                                 {
-                                    if ( bp->isratify == 0 )
-                                        dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
-                                    else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
-                                    dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
-                                    dex_reqsend(myinfo,np->packet,np->datalen);
+                                    if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
+                                    {
+                                        if ( bp->isratify == 0 )
+                                            dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind,np->channel);
+                                        else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind,np->channel);
+                                        dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                                    } else printf("wrong senderind.%d\n",np->senderind);
                                 }
                             }
                             //dp->crcs[firstz] = crc32;
                         }
-                    }
-                } //else printf("ignore np->datalen.%d %d (size %d - %ld)\n",np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np));
-            }
-        }
+                    } //else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
+                } //else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
+            } //else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
+        } else printf("illegal size.%d\n",size);
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-        if ( size == 0 || n++ > 100 )
-            break;
-    }
-    portable_mutex_unlock(&myinfo->dpowmutex);
-    if ( 0 && n != 0 )
-        printf("nanoupdates.%d\n",n);
+    } else printf("no packets\n");
+    //portable_mutex_unlock(&myinfo->dpowmutex);
     n = 0;
-    while ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
+    if ( myinfo->dexsock >= 0 )
     {
-        num++;
-        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+        if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
-            printf("FROM BUS.%08x -> pub\n",dexp->crc32);
-            nn_send(myinfo->pubsock,dexp,size,0);
-            dex_packet(myinfo,dexp,size);
+            num++;
+            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            {
+                printf("FROM BUS.%08x -> pub\n",dexp->crc32);
+                nn_send(myinfo->pubsock,dexp,size,0);
+                dex_packet(myinfo,dexp,size);
+            }
+            if ( dexp != 0 )
+                nn_freemsg(dexp), dexp = 0;
         }
-        if ( dexp != 0 )
-            nn_freemsg(dexp), dexp = 0;
-        if ( size == 0 || n++ > 100 )
-            break;
-    }
-    n = 0;
-    if ( num == 0 )
-    {
-        while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
+        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
@@ -913,10 +941,9 @@ void dpow_nanomsg_update(struct supernet_info *myinfo)
             }
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
-            if ( size == 0 || n++ > 100 )
-                break;
         }
     }
+    return(num);
 }
 #else
 
@@ -927,7 +954,7 @@ uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow
     return(0);
 }
 
-void dpow_nanomsg_update(struct supernet_info *myinfo) { }
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo) { return(0); }
 
 #endif
 

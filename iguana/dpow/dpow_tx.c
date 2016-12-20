@@ -110,7 +110,7 @@ uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
         k = (j + (bp->height/DPOW_CHECKPOINTFREQ)) % bp->numnotaries;
         //if ( bp->require0 != 0 && k == 0 )
         //    continue;
-        if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 )
+        if ( bits256_nonz(bp->notaries[k].src.prev_hash) != 0 && bits256_nonz(bp->notaries[k].dest.prev_hash) != 0 && bp->paxwdcrc == bp->notaries[k].paxwdcrc )
         {
             mask |= (1LL << k);
             if ( ++m == bp->minsigs )//-bp->require0 )
