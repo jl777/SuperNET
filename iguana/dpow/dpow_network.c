@@ -208,7 +208,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
-    if ( myinfo->dpowsock >= 0 )
+    if ( myinfo->dpowsock >= 0 && myinfo->dexsock >= 0 )
     {
         portable_mutex_lock(&myinfo->notarymutex);
         ipbits = (uint32_t)calc_ipbits(ipaddr);
@@ -234,7 +234,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 {
                     retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr,DPOW_SOCK));
                     printf("NN_CONNECT to (%s)\n",str);
-                    //retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(str,ipaddr,DEX_SOCK));
+                    retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(str,ipaddr,DEX_SOCK));
                 }
                 n++;
                 qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
@@ -272,7 +272,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         else
         {
             printf("NN_BIND to %s\n",str);
-            /*if ( myinfo->dexsock < 0 && (myinfo->dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
+            if ( myinfo->dexsock < 0 && (myinfo->dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
             {
                 if ( nn_bind(myinfo->dexsock,nanomsg_tcpname(str,myinfo->ipaddr,DEX_SOCK)) < 0 )
                 {
@@ -321,19 +321,19 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("RCVBUF.%d\n",nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("DEXINIT dpow.%d dex.%d rep.%d\n",myinfo->dpowsock,myinfo->dexsock,myinfo->repsock);
-                                    myinfo->nanoinit = (uint32_t)time(NULL);
                                 }
                             }
                         }
                     }
                 }
-            }*/
+            }
             myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
             myinfo->numdpowipbits = 1;
             timeout = 1000;
             nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
+            myinfo->nanoinit = (uint32_t)time(NULL);
         }
     } else printf("error creating nanosocket\n");
     dpow_addnotary(myinfo,0,ipaddr);
@@ -783,7 +783,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
     sentbytes = -1;
-    portable_mutex_lock(&myinfo->dpowmutex);
+    //portable_mutex_lock(&myinfo->dpowmutex);
     for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
@@ -795,7 +795,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
             break;
         }
     }
-    portable_mutex_unlock(&myinfo->dpowmutex);
+    //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
@@ -847,7 +847,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 || myinfo->dpowsock < 0 )
         return(-1);
-    portable_mutex_lock(&myinfo->dpowmutex);
+    //portable_mutex_lock(&myinfo->dpowmutex);
     for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
@@ -906,7 +906,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( np != 0 )
             nn_freemsg(np), np = 0;
     } else printf("no packets\n");
-    portable_mutex_unlock(&myinfo->dpowmutex);
+    //portable_mutex_unlock(&myinfo->dpowmutex);
     n = 0;
     if ( myinfo->dexsock >= 0 )
     {
