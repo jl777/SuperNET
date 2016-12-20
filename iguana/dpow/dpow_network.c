@@ -335,6 +335,65 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     dpow_addnotary(myinfo,0,ipaddr);
 }
 
+void dpow_bestconsensus(struct dpow_block *bp)
+{
+    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
+    memset(masks,0,sizeof(masks));
+    memset(bestks,0xff,sizeof(bestks));
+    memset(counts,0,sizeof(counts));
+    recvmask = 0;
+    for (numdiff=i=0; i<bp->numnotaries; i++)
+    {
+        if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
+            recvmask |= (1LL << i);
+        if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
+            continue;
+        //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
+        //    continue;
+        for (j=0; j<numdiff; j++)
+            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] )
+            {
+                counts[j]++;
+                break;
+            }
+        if ( j == numdiff && bp->notaries[i].bestk >= 0 && bp->notaries[i].bestmask != 0 )
+        {
+            masks[numdiff] = bp->notaries[i].bestmask;
+            bestks[numdiff] = bp->notaries[i].bestk;
+            counts[numdiff]++;
+            //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,counts[numdiff]);
+            numdiff++;
+        }
+    }
+    besti = -1, best = 0;
+    for (i=0; i<numdiff; i++)
+    {
+        //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
+        if ( counts[i] > best )
+        {
+            best = counts[i];
+            besti = i;
+        }
+    }
+    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
+    {
+        bp->bestmask = masks[besti];
+        bp->bestk = bestks[besti];
+        printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+    }
+    bp->recvmask = recvmask;
+    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
+    {
+        bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
+        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
+        {
+            bp->lastepoch = (uint32_t)(time(NULL) / 180);
+            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
+            sleep(1 + (rand() % 3));
+        }
+    }
+}
+
 void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
     int32_t i;
@@ -558,65 +617,6 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
         }
         if ( (rand() % 100) == 0 )
             printf("[%d] numips.%d %s RATIFY.%d matches.%d bestmatches.%d bestk.%d %llx recv.%llx %llx sigmasks.(%llx %llx) crcval.%x num.%d\n",bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,bestmatches,bp->ratifybestk,(long long)bp->ratifybestmask,(long long)bp->ratifyrecvmask,(long long)matchesmask,(long long)bp->ratifysigmasks[1],(long long)bp->ratifysigmasks[0],crcval,numcrcs);
-    }
-}
-
-void dpow_bestconsensus(struct dpow_block *bp)
-{
-    int8_t bestks[64]; int32_t counts[64],i,j,numcrcs=0,numdiff,besti,best,bestmatches = 0,matches = 0; uint64_t masks[64],matchesmask,recvmask; uint32_t crcval=0; char srcaddr[64],destaddr[64];
-    memset(masks,0,sizeof(masks));
-    memset(bestks,0xff,sizeof(bestks));
-    memset(counts,0,sizeof(counts));
-    recvmask = 0;
-    for (numdiff=i=0; i<bp->numnotaries; i++)
-    {
-        if ( bits256_nonz(bp->notaries[i].src.prev_hash) != 0 && bits256_nonz(bp->notaries[i].dest.prev_hash) != 0 )
-            recvmask |= (1LL << i);
-        if ( bp->notaries[i].bestk < 0 || bp->notaries[i].bestmask == 0 )
-            continue;
-        //if ( bp->require0 != 0 && (bp->notaries[i].bestmask & 1) == 0 )
-        //    continue;
-        for (j=0; j<numdiff; j++)
-            if ( bp->notaries[i].bestk == bestks[j] && bp->notaries[i].bestmask == masks[j] )
-            {
-                counts[j]++;
-                break;
-            }
-        if ( j == numdiff && bp->notaries[i].bestk >= 0 && bp->notaries[i].bestmask != 0 )
-        {
-            masks[numdiff] = bp->notaries[i].bestmask;
-            bestks[numdiff] = bp->notaries[i].bestk;
-            counts[numdiff]++;
-            //printf("j.%d numdiff.%d (%d %llx).%d\n",j,numdiff,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,counts[numdiff]);
-            numdiff++;
-        }
-    }
-    besti = -1, best = 0;
-    for (i=0; i<numdiff; i++)
-    {
-        //printf("(%d %llx).%d ",bestks[i],(long long)masks[i],counts[i]);
-        if ( counts[i] > best )
-        {
-            best = counts[i];
-            besti = i;
-        }
-    }
-    if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
-    {
-        bp->bestmask = masks[besti];
-        bp->bestk = bestks[besti];
-        printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
-    }
-    bp->recvmask = recvmask;
-    if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
-    {
-        bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);
-        if ( 0 && (time(NULL) / 180) != bp->lastepoch )
-        {
-            bp->lastepoch = (uint32_t)(time(NULL) / 180);
-            printf("epoch %u\n",bp->lastepoch % bp->numnotaries);
-            sleep(1 + (rand() % 3));
-        }
     }
 }
 
