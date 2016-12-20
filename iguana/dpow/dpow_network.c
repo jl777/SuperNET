@@ -270,6 +270,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         }
         else
         {
+            printf("NN_BIND to %s\n",str);
             if ( myinfo->dexsock < 0 && (myinfo->dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
             {
                 if ( nn_bind(myinfo->dexsock,nanomsg_tcpname(str,myinfo->ipaddr,DEX_SOCK)) < 0 )
