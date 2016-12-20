@@ -604,6 +604,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
     {
         bp->bestmask = masks[besti];
         bp->bestk = bestks[besti];
+        printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask = recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
@@ -657,7 +658,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         dpow_bestconsensus(bp);
         //bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
         //bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-        if ( bp->paxwdcrc != 0 )
+        //if ( bp->paxwdcrc != 0 )
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
