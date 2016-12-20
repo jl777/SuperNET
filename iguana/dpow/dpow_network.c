@@ -233,6 +233,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                 {
                     retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr,DPOW_SOCK));
+                    printf("NN_CONNECT to (%s)\n",str);
                     retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(str,ipaddr,DEX_SOCK));
                 }
                 n++;
@@ -242,7 +243,7 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 else dp->numipbits = n;
                 //for (i=0; i<n; i++)
                 //    printf("%08x ",ptr[i]);
-                printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp!=0?dp->numipbits:-1,iter);
+                //printf("addnotary.[%d] (%s) retval.%d (total %d %d) iter.%d\n",n,ipaddr,retval,myinfo->numdpowipbits,dp!=0?dp->numipbits:-1,iter);
             }
             if ( dp == 0 )
                 break;
@@ -716,7 +717,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
     }
 }
 
-void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct dpow_nanoutxo *np,int32_t isratify,int8_t senderind)
+void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,struct dpow_nanoutxo *np,int32_t isratify,int8_t senderind,uint32_t channel)
 {
     if ( isratify != 0 )
     {
@@ -725,7 +726,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        printf("lag.[%d] RECV.%d r%llx (%d %llx) %llx/%llx\n",(int32_t)(time(NULL)-np->channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
+        printf("lag.[%d] RECV.%d r%llx (%d %llx) %llx/%llx\n",(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
@@ -794,7 +795,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    printf("%d NANOSEND.%s ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
+    printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
@@ -880,8 +881,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                     if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
                                     {
                                         if ( bp->isratify == 0 )
-                                            dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind);
-                                        else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind);
+                                            dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind,np->channel);
+                                        else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind,np->channel);
                                         dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
                                     } else printf("wrong senderind.%d\n",np->senderind);
                                 }
