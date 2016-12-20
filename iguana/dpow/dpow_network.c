@@ -335,7 +335,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
         }
-    }
+    } else printf("error creating nanosocket\n");
     dpow_addnotary(myinfo,0,ipaddr);
 }
 
@@ -845,10 +845,18 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
-    if ( time(NULL) < myinfo->nanoinit+5 )
+    if ( time(NULL) < myinfo->nanoinit+5 || myinfo->dpowsock < 0 )
         return(-1);
     portable_mutex_lock(&myinfo->dpowmutex);
-    if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
+    for (i=0; i<100; i++)
+    {
+        struct nn_pollfd pfd;
+        pfd.fd = myinfo->dpowsock;
+        pfd.events = NN_POLLIN;
+        if ( nn_poll(&pfd,1,100) > 0 )
+            break;
+    }
+    if ( i < 100 && (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
     {
         num++;
         if ( size >= 0 )
@@ -900,34 +908,37 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     } else printf("no packets\n");
     portable_mutex_unlock(&myinfo->dpowmutex);
     n = 0;
-    if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
+    if ( myinfo->dexsock >= 0 )
     {
-        num++;
-        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+        if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
-            printf("FROM BUS.%08x -> pub\n",dexp->crc32);
-            nn_send(myinfo->pubsock,dexp,size,0);
-            dex_packet(myinfo,dexp,size);
-        }
-        if ( dexp != 0 )
-            nn_freemsg(dexp), dexp = 0;
-    }
-    if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
-    {
-        num++;
-        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
-        {
-            nn_send(myinfo->dexsock,dexp,size,0);
-            if ( (m= myinfo->numdpowipbits) > 0 )
+            num++;
+            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
-                r = myinfo->dpowipbits[rand() % m];
-                nn_send(myinfo->repsock,&r,sizeof(r),0);
-                printf("REP.%08x -> dexbus, rep.%08x",dexp->crc32,r);
+                printf("FROM BUS.%08x -> pub\n",dexp->crc32);
+                nn_send(myinfo->pubsock,dexp,size,0);
+                dex_packet(myinfo,dexp,size);
             }
-            dex_packet(myinfo,dexp,size);
+            if ( dexp != 0 )
+                nn_freemsg(dexp), dexp = 0;
         }
-        if ( dexp != 0 )
-            nn_freemsg(dexp), dexp = 0;
+        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
+        {
+            num++;
+            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            {
+                nn_send(myinfo->dexsock,dexp,size,0);
+                if ( (m= myinfo->numdpowipbits) > 0 )
+                {
+                    r = myinfo->dpowipbits[rand() % m];
+                    nn_send(myinfo->repsock,&r,sizeof(r),0);
+                    printf("REP.%08x -> dexbus, rep.%08x",dexp->crc32,r);
+                }
+                dex_packet(myinfo,dexp,size);
+            }
+            if ( dexp != 0 )
+                nn_freemsg(dexp), dexp = 0;
+        }
     }
     return(num);
 }
