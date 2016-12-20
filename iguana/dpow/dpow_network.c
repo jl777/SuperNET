@@ -724,7 +724,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        printf("RECV.%d r%llx (%d %llx) %llx/%llx\n",senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
+        printf("lag.[%d] RECV.%d r%llx (%d %llx) %llx/%llx\n",(int32_t)(time(NULL)-np->channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
 }
@@ -770,18 +770,30 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     for (i=0; i<32; i++)
         np->srchash.bytes[i] = dp->minerkey33[i+1];
     np->desthash = desthash;
-    np->channel = channel;
+    if ( (np->channel= channel) == 0 )
+        np->channel = (uint32_t)time(NULL);
     np->height = msgbits;
     np->myipbits = myinfo->myaddr.myipbits;
     strcpy(np->symbol,dp->symbol);
     np->version0 = DPOW_VERSION & 0xff;
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
+    sentbytes = -1;
     portable_mutex_lock(&myinfo->dpowmutex);
-    sentbytes = nn_send(myinfo->dpowsock,np,size,0);
+    for (i=0; i<100; i++)
+    {
+        struct nn_pollfd pfd;
+        pfd.fd = myinfo->dpowsock;
+        pfd.events = NN_POLLOUT;
+        if ( nn_poll(&pfd,1,100) > 0 )
+        {
+            sentbytes = nn_send(myinfo->dpowsock,np,size,0);
+            break;
+        }
+    }
     portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    printf("NANOSEND ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
+    printf("%d NANOSEND.%s ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
