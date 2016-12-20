@@ -77,7 +77,9 @@ void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
                 }
                 else
                 {
-                    timeout = 1000;
+                    timeout = 100;
+                    nn_setsockopt(myinfo->reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                    nn_setsockopt(myinfo->subsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(myinfo->reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(myinfo->subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(myinfo->subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
@@ -314,7 +316,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    timeout = 1000;
+                                    timeout = 100;
+                                    nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                                    nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(myinfo->repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     maxsize = 1024 * 1024;
