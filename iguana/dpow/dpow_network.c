@@ -387,7 +387,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
     {
         bp->bestmask = masks[besti];
         bp->bestk = bestks[besti];
-        printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+        //printf("set best to (%d %llx) recv.%llx\n",bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask = recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
@@ -733,7 +733,7 @@ void dpow_nanoutxoget(struct supernet_info *myinfo,struct dpow_info *dp,struct d
     else
     {
         dpow_notarize_update(myinfo,dp,bp,senderind,(int8_t)np->bestk,np->bestmask,np->recvmask,np->srcutxo,np->srcvout,np->destutxo,np->destvout,np->siglens,np->sigs,np->paxwdcrc);
-        if ( bp->myind <= 2 )
+        if ( 0 && bp->myind <= 2 )
             printf("lag.[%d] RECV.%d r%llx (%d %llx) %llx/%llx\n",(int32_t)(time(NULL)-channel),senderind,(long long)np->recvmask,(int8_t)np->bestk,(long long)np->bestmask,(long long)np->srcutxo.txid,(long long)np->destutxo.txid);
     }
     //dpow_bestmask_update(myinfo,dp,bp,nn_senderind,nn_bestk,nn_bestmask,nn_recvmask);
@@ -801,14 +801,14 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
             break;
         }
     }
-    if ( myinfo->dexsock >= 0 )
+    /*if ( myinfo->dexsock >= 0 )
     {
         printf("SEND DEX PACKET\n");
         nn_send(myinfo->dexsock,np,size,0);
-    }
+    }*/
     portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
-    if ( bp->myind <= 2 )
+    if ( 0 && bp->myind <= 2 )
         printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
 }
 
