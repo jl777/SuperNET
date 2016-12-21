@@ -920,7 +920,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         } else printf("illegal size.%d\n",size);
         if ( np != 0 )
             nn_freemsg(np), np = 0;
-    } else printf("no packets\n");
+    } //else printf("no packets\n");
     n = 0;
     if ( 0 && myinfo->dexsock >= 0 )
     {
