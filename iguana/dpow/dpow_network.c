@@ -390,9 +390,9 @@ void dpow_bestconsensus(struct dpow_block *bp)
     }
     if ( besti >= 0 && bestks[besti] >= 0 && masks[besti] != 0 && (recvmask & masks[besti]) == masks[besti] )
     {
-        bp->bestmask = masks[besti];
-        bp->bestk = bestks[besti];
-        printf("set best.%d to (%d %llx) recv.%llx\n",best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
+        bp->notaries[bp->myind].bestmask = bp->bestmask = masks[besti];
+        bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
+        //printf("set best.%d to (%d %llx) recv.%llx\n",best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
     bp->recvmask = recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
