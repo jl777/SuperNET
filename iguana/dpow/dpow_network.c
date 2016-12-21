@@ -749,8 +749,8 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     struct dpow_nanomsghdr *np; int32_t i,size,extralen=0,sentbytes = 0; uint32_t crc32,paxwdcrc; uint8_t extras[10000];
     if ( bp->myind < 0 )
         return;
-    //if ( time(NULL) < myinfo->nanoinit+5 )
-    //    return;
+    if ( time(NULL) < myinfo->nanoinit+5 )
+        return;
     crc32 = calc_crc32(0,data,datalen);
      //dp->crcs[firstz] = crc32;
     size = (int32_t)(sizeof(*np) + datalen);
