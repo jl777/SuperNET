@@ -696,7 +696,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                         {
                             bestmatches++;
                             paxbestmatches++;
-                        } else printf("?%x ",bp->notaries[i].paxwdcrc);
+                        } //else printf("?%x ",bp->notaries[i].paxwdcrc);
                     }
                 }
                 if ( 0 && bp->myind <= 2 && bp->notaries[i].paxwdcrc != 0 )
