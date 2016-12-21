@@ -24,6 +24,7 @@ struct dex_nanomsghdr
 
 void dex_init(struct supernet_info *myinfo)
 {
+    return;
     strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
     myinfo->dexipbits[0] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddr);
     myinfo->numdexipbits = 1;
