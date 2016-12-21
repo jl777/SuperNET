@@ -432,7 +432,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
     }
     else
     {
-        //dpow_bestconsensus(bp);
+        dpow_bestconsensus(bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
@@ -669,7 +669,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
             }
         }
-        dpow_bestconsensus(bp);
+        //dpow_bestconsensus(bp);
         //bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
         //bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
         //if ( bp->paxwdcrc != 0 )
