@@ -213,9 +213,9 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
 int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *ipaddr)
 {
     char str[512]; uint32_t ipbits,*ptr; int32_t i,iter,n,retval = -1;
+    portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock >= 0 && myinfo->dexsock >= 0 )
     {
-        portable_mutex_lock(&myinfo->notarymutex);
         ipbits = (uint32_t)calc_ipbits(ipaddr);
         for (iter=0; iter<2; iter++)
         {
@@ -253,8 +253,8 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
             if ( dp == 0 )
                 break;
         }
-        portable_mutex_unlock(&myinfo->notarymutex);
     }
+    portable_mutex_unlock(&myinfo->notarymutex);
     return(retval);
 }
 
@@ -266,6 +266,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
         printf("need to set ipaddr before nanomsg\n");
         return;
     }
+    portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock < 0 && (myinfo->dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
         if ( nn_bind(myinfo->dpowsock,nanomsg_tcpname(str,myinfo->ipaddr,DPOW_SOCK)) < 0 )
@@ -342,7 +343,8 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             printf("RCVBUF.%d\n",nn_setsockopt(myinfo->dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
             myinfo->nanoinit = (uint32_t)time(NULL);
         }
-    } else printf("error creating nanosocket\n");
+    } //else printf("error creating nanosocket\n");
+    portable_mutex_unlock(&myinfo->notarymutex);
     dpow_addnotary(myinfo,0,ipaddr);
 }
 
