@@ -795,7 +795,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     memcpy(np->packet,data,datalen);
     sentbytes = -1;
     //portable_mutex_lock(&myinfo->dpowmutex);
-    /*for (i=0; i<100; i++)
+    for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
         pfd.fd = myinfo->dpowsock;
@@ -805,14 +805,13 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
             sentbytes = nn_send(myinfo->dpowsock,np,size,0);
             break;
         }
-    }*/
+    }
     /*if ( myinfo->dexsock >= 0 )
     {
         printf("SEND DEX PACKET\n");
         nn_send(myinfo->dexsock,np,size,0);
     }*/
     //portable_mutex_unlock(&myinfo->dpowmutex);
-    sentbytes = nn_send(myinfo->dpowsock,np,size,0);
     free(np);
     if ( 0 && bp->myind <= 2 )
         printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
@@ -865,7 +864,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 || myinfo->dpowsock < 0 )
         return(-1);
-    /*portable_mutex_lock(&myinfo->dpowmutex);
+    //portable_mutex_lock(&myinfo->dpowmutex);
     for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
@@ -873,8 +872,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         pfd.events = NN_POLLIN;
         if ( nn_poll(&pfd,1,100) > 0 )
             break;
-    }*/
-    if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 ) //i < 100 &&
+    }
+    if ( i < 100 && (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 ) 
     {
         num++;
         if ( size >= 0 )
