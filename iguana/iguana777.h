@@ -59,10 +59,10 @@
 #include "../crypto777/nanosrc/tcp.h"
 #else
 #include "/usr/local/include/nanomsg/nn.h"
-#include "/usr/local/include/bus.h"
-#include "/usr/local/include/pubsub.h"
-#include "/usr/local/include/reqrep.h"
-#include "/usr/local/include/tcp.h"
+#include "/usr/local/include/nanomsg/bus.h"
+#include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/reqrep.h"
+#include "/usr/local/include/nanomsg/tcp.h"
 #endif
 
 struct supernet_info;
