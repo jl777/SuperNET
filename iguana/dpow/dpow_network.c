@@ -74,9 +74,11 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
         }
         else
         {
-            timeout = 500;
+            timeout = 2500;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+            timeout = 500;
+            nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
             {
                 if ( nn_connect(subsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,PUB_SOCK)) < 0 )
@@ -140,9 +142,14 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
             }
             portable_mutex_unlock(&myinfo->dexmutex);
             nn_freemsg(retptr);
-        } else retval = -2;
+        }
+        else
+        {
+            retval = -2;
+            printf("no rep return? recvbytes.%d\n",recvbytes);
+        }
+        printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d recv.%d timestamp.%u\n",size,dexp->crc32,datalen,sentbytes,recvbytes,dexp->timestamp);
         free(dexp);
-        printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d timestamp.%u\n",size,dexp->crc32,datalen,sentbytes,dexp->timestamp);
     } else retval = -1;
     return(retval);
 }
@@ -987,7 +994,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             {
                 r = myinfo->dpowipbits[rand() % m];
                 nn_send(myinfo->repsock,&r,sizeof(r),0);
-                printf("REP.%08x <- rand ip m.%d %x",dexp->crc32,m,r);
+                printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
             } else printf("illegal state without dpowipbits?\n");
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
