@@ -18,7 +18,7 @@
 
 struct dex_nanomsghdr
 {
-    uint32_t size,datalen,crc32,timestamp;
+    uint32_t crc32,size,datalen,timestamp;
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -56,12 +56,12 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    printf("DEX_PACKET.[%d] crc.%x lag.%d\n",size,calc_crc32(0,(void *)dexp,size),(int32_t)(time(NULL)-dexp->timestamp));
+    printf("DEX_PACKET.[%d] crc.%x lag.%d\n",size,calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32))),(int32_t)(time(NULL)-dexp->timestamp));
 }
 
 int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t retval=0,timeout,i,n,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr,ipbits;
+    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t retval=0,timeout,i,n,size,recvbytes,sentbytes = 0; uint32_t *retptr,ipbits;
     if ( myinfo->reqsock < 0 && (myinfo->reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
         if ( nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
@@ -95,16 +95,15 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
     }
     if ( myinfo->reqsock >= 0 )
     {
-        crc32 = calc_crc32(0,data,datalen);
         size = (int32_t)(sizeof(*dexp) + datalen);
         dexp = calloc(1,size); // endian dependent!
         dexp->size = size;
         dexp->datalen = datalen;
-        dexp->crc32 = crc32;
         dexp->timestamp = (uint32_t)time(NULL);
         dexp->version0 = DEX_VERSION & 0xff;
         dexp->version1 = (DEX_VERSION >> 8) & 0xff;
         memcpy(dexp->packet,data,datalen);
+        dexp->crc32 = calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32)));
         sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
