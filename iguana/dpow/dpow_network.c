@@ -24,7 +24,6 @@ struct dex_nanomsghdr
 
 void dex_init(struct supernet_info *myinfo)
 {
-    return;
     strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
     myinfo->dexipbits[0] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddr);
     myinfo->numdexipbits = 1;
@@ -60,11 +59,9 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     printf("DEX_PACKET.[%d]\n",size);
 }
 
-void dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
+int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr,ipbits;
-printf("dex_reqsend not active yet\n");
-return;
+    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t retval=0,timeout,i,n,size,recvbytes,sentbytes = 0; uint32_t crc32,*retptr,ipbits;
     if ( myinfo->reqsock < 0 && (myinfo->reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
         if ( nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
@@ -127,14 +124,15 @@ return;
                     if ( myinfo->subsock >= 0 )
                         nn_connect(myinfo->subsock,nanomsg_tcpname(0,str,ipaddr,PUB_SOCK));
                 }
+                nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
             }
             portable_mutex_unlock(&myinfo->dexmutex);
-            nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
             nn_freemsg(retptr);
-        }
+        } else retval = -2;
         free(dexp);
-        //printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
-    }
+        printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d\n",size,dexp->crc32,datalen,sentbytes);
+    } else retval = -1;
+    return(retval);
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
@@ -174,7 +172,6 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 void dex_subsock_poll(struct supernet_info *myinfo)
 {
     int32_t size,n=0; struct dex_nanomsghdr *dexp;
-printf("subsock poll not active yet\n");
     while ( (size= nn_recv(myinfo->subsock,&dexp,NN_MSG,0)) >= 0 )
     {
         n++;
@@ -704,10 +701,10 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                         } //else printf("?%x ",bp->notaries[i].paxwdcrc);
                     }
                 }
-                if ( 0 && bp->myind <= 2 && bp->notaries[i].paxwdcrc != 0 )
+                if ( 1 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
                     printf("%d.(%x %d %llx r%llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)bp->notaries[i].recvmask);
             }
-            if ( 0 && bp->myind <= 2 )
+            if ( 1 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
@@ -928,7 +925,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             nn_freemsg(np), np = 0;
     } //else printf("no packets\n");
     n = 0;
-    if ( 0 && myinfo->dexsock >= 0 )
+    if ( myinfo->dexsock >= 0 )
     {
         if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
@@ -939,12 +936,12 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 nn_send(myinfo->pubsock,dexp,size,0);
                 dex_packet(myinfo,dexp,size);
             }
-            printf("GOT DEX PACKET.%d\n",size);
+            printf("GOT DEX bus PACKET.%d\n",size);
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }
     }
-    if ( 0 && myinfo->repsock >= 0 )
+    if ( myinfo->repsock >= 0 )
     {
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
@@ -960,6 +957,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 }
                 dex_packet(myinfo,dexp,size);
             }
+            printf("GOT DEX rep PACKET.%d\n",size);
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }

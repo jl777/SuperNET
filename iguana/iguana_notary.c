@@ -344,6 +344,20 @@ THREE_STRINGS(iguana,passthru,asset,function,hex)
     else return(clonestr("{\"error\":\"assetchain not active, start in bitcoind mode\"}"));
 }
 
+
+STRING_ARG(dex,send,hex)
+{
+    uint8_t data[8192]; int32_t datalen,retval;
+    if ( hex != 0 && (datalen= is_hexstr(hex,0)) > 0 && (datalen>>1) < sizeof(data) )
+    {
+        datalen >>= 1;
+        decode_hex(data,datalen,hex);
+        if ( (retval= dex_reqsend(myinfo,data,datalen)) == 0 )
+            return(clonestr("{\"result\":\"success\"}"));
+        else return(clonestr("{\"error\":\"dex send: retval error\"}"));
+    } else return(clonestr("{\"error\":\"dex send: invalid hex\"}"));
+}
+
 STRING_ARG(dpow,pending,fiat)
 {
     struct dpow_info *dp; char base[64]; int32_t i;
