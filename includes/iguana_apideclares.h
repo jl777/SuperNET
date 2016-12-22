@@ -19,6 +19,7 @@ STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
+STRING_ARG(dpow,bindaddr,ipaddr);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
