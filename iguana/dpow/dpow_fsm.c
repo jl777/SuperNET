@@ -93,10 +93,10 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
             {
                 if ( bp->state < 1000 )
                 {
-                    //bp->desttxid = txid;
-                    //bp->state = 1000;
-                    //dp->destupdated = 0;
-                    //dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
+                    bp->desttxid = txid;
+                    bp->state = 1000;
+                    dp->destupdated = 0;
+                    dpow_signedtxgen(myinfo,dp,bp->srccoin,bp,bp->bestk,bp->bestmask,myind,DPOW_SIGCHANNEL,0,bp->isratify);
                     //dpow_sigscheck(myinfo,dp,bp,DPOW_SIGCHANNEL,myind,0);
                 }
             }
@@ -104,9 +104,9 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
             {
                 if ( bp->state != 0xffffffff )
                 {
-                    //bp->srctxid = txid;
-                    //printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
-                    //bp->state = 0xffffffff;
+                    bp->srctxid = txid;
+                    printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
+                    bp->state = 0xffffffff;
                 }
             }
         }
