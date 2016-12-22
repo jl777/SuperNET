@@ -480,7 +480,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
     }
     else
     {
-        //dpow_bestconsensus(bp);
+        dpow_bestconsensus(bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
