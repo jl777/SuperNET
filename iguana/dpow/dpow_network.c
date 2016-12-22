@@ -110,30 +110,27 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
             ipbits = *retptr;
             expand_ipbits(ipaddr,ipbits);
             printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
-            if ( myinfo->IAMNOTARY == 0 )
+            portable_mutex_lock(&myinfo->dexmutex);
+            n = myinfo->numdexipbits;
+            for (i=0; i<n; i++)
+                if ( ipbits == myinfo->dexipbits[i] )
+                    break;
+            if ( i == n && n < 64 )
             {
-                portable_mutex_lock(&myinfo->dexmutex);
-                n = myinfo->numdexipbits;
-                for (i=0; i<n; i++)
-                    if ( ipbits == myinfo->dexipbits[i] )
-                        break;
-                if ( i == n && n < 64 )
+                myinfo->dexipbits[n++] = ipbits;
+                qsort(myinfo->dexipbits,n,sizeof(uint32_t),_increasing_ipbits);
+                if ( (myinfo->numdexipbits= n) < 3 )
                 {
-                    myinfo->dexipbits[n++] = ipbits;
-                    qsort(myinfo->dexipbits,n,sizeof(uint32_t),_increasing_ipbits);
-                    if ( (myinfo->numdexipbits= n) < 3 )
+                    if ( myinfo->IAMNOTARY == 0 && myinfo->subsock >= 0 )
                     {
-                        if ( myinfo->subsock >= 0 )
-                        {
-                            nn_connect(myinfo->subsock,nanomsg_tcpname(0,str,ipaddr,PUB_SOCK));
-                            printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
-                        }
+                        nn_connect(myinfo->subsock,nanomsg_tcpname(0,str,ipaddr,PUB_SOCK));
+                        printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                     }
-                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
-                    printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
-                portable_mutex_unlock(&myinfo->dexmutex);
+                nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+                printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
             }
+            portable_mutex_unlock(&myinfo->dexmutex);
             nn_freemsg(retptr);
         } else retval = -2;
         free(dexp);
@@ -806,8 +803,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     for (i=0; i<32; i++)
         np->srchash.bytes[i] = dp->minerkey33[i+1];
     np->desthash = desthash;
-    if ( (np->channel= channel) == 0 )
-        np->channel = (uint32_t)time(NULL);
+    np->channel = channel;
     np->height = msgbits;
     np->myipbits = myinfo->myaddr.myipbits;
     strcpy(np->symbol,dp->symbol);
@@ -942,7 +938,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             nn_freemsg(np), np = 0;
     } //else printf("no packets\n");
     n = 0;
-    if ( myinfo->dexsock >= 0 )
+    if ( myinfo->dexsock >= 0 ) // from servers
     {
         if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
         {
@@ -958,20 +954,22 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 nn_freemsg(dexp), dexp = 0;
         }
     }
-    if ( myinfo->repsock >= 0 )
+    if ( myinfo->repsock >= 0 ) // from clients
     {
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
+            if ( (m= myinfo->numdpowipbits) > 0 )
+            {
+                r = myinfo->dpowipbits[rand() % m];
+                nn_send(myinfo->repsock,&r,sizeof(r),0);
+                printf("REP.%08x <- rand ip m.%d %x",dexp->crc32,m,r);
+            } else printf("illegal state without dpowipbits?\n");
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 nn_send(myinfo->dexsock,dexp,size,0);
-                if ( (m= myinfo->numdpowipbits) > 0 )
-                {
-                    r = myinfo->dpowipbits[rand() % m];
-                    nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    printf("REP.%08x -> dexbus, rep.%08x",dexp->crc32,r);
-                }
+                nn_send(myinfo->pubsock,dexp,size,0);
+                printf("REP.%08x -> dexbus and pub, t.%d lag.%d",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                 dex_packet(myinfo,dexp,size);
             }
             printf("GOT DEX rep PACKET.%d\n",size);

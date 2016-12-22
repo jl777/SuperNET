@@ -89,7 +89,7 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
         if ( bits256_cmp(txid,srchash) == 0 )
         {
             //printf("verify (%s) it is properly signed! set ht.%d signedtxid to %s\n",coin->symbol,height,bits256_str(str,txid));
-            if ( src_or_dest != 0 )
+            if ( channel == DPOW_BTCTXIDCHANNEL )
             {
                 if ( bp->state < 1000 )
                 {
@@ -104,9 +104,9 @@ int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struc
             {
                 if ( bp->state != 0xffffffff )
                 {
-                    bp->srctxid = txid;
-                    printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
-                    bp->state = 0xffffffff;
+                    //bp->srctxid = txid;
+                    //printf("set state elapsed %d COMPLETED %s.(%s) %s.(%s)\n",(int32_t)(time(NULL) - bp->starttime),dp->symbol,bits256_str(str,bp->desttxid),dp->dest,bits256_str(str2,txid));
+                    //bp->state = 0xffffffff;
                 }
             }
         }
