@@ -45,7 +45,7 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
-#define DEX_VERSION 0x0101
+#define DEX_VERSION 0x0102
 #define DPOW_SOCK 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
@@ -139,6 +139,7 @@ struct dpow_info
     struct dpow_block **blocks;
 };
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
-
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
+void dex_updateclient(struct supernet_info *myinfo);
 
 #endif

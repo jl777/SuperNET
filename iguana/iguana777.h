@@ -51,13 +51,19 @@
 #include "nn.h"
 #include "bus.h"
 #else*/
-//#if ISNOTARYNODE
+#ifdef __APPLE__
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
 #include "../crypto777/nanosrc/reqrep.h"
-//#endif
-//#endif
+#include "../crypto777/nanosrc/tcp.h"
+#else
+#include "/usr/local/include/nanomsg/nn.h"
+#include "/usr/local/include/nanomsg/bus.h"
+#include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/reqrep.h"
+#include "/usr/local/include/nanomsg/tcp.h"
+#endif
 
 struct supernet_info;
 struct exchange_info;

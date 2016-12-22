@@ -882,22 +882,24 @@ void basilisks_loop(void *arg)
                 basilisk_ping_send(myinfo,relay);
             counter++;
             if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
-            {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 500;
-            }
             else if ( myinfo->numdpows > 1 )
             {
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 10;
             }
+            endmilli = startmilli + 10;
         }
-        else if ( myinfo->IAMLP != 0 )
-            endmilli = startmilli + 1000;
-        else endmilli = startmilli + 2000;
+        else
+        {
+            if ( myinfo->IAMNOTARY == 0 )
+                dex_updateclient(myinfo);
+            if ( myinfo->IAMLP != 0 )
+                endmilli = startmilli + 1000;
+            else endmilli = startmilli + 2000;
+        }
         //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);

@@ -1593,6 +1593,7 @@ void iguana_main(void *arg)
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
+    dex_init(myinfo);
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
@@ -1601,7 +1602,6 @@ void iguana_main(void *arg)
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
-            dex_init(myinfo);
         }
     }
 #ifdef IGUANA_OSTESTS
