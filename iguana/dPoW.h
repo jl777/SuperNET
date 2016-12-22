@@ -139,6 +139,7 @@ struct dpow_info
     struct dpow_block **blocks;
 };
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
 
 
 #endif

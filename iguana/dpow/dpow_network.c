@@ -936,7 +936,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 nn_send(myinfo->pubsock,dexp,size,0);
                 dex_packet(myinfo,dexp,size);
             }
-            printf("GOT DEX bus PACKET.%d\n",size);
+            //printf("GOT DEX bus PACKET.%d\n",size);
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }
