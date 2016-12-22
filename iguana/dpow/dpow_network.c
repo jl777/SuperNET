@@ -180,7 +180,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
     {
         if ( dexp->datalen == (size - sizeof(*dexp)) )
         {
-            crc32 = calc_crc32(0,dexp->packet,dexp->datalen);
+            crc32 = calc_crc32(0,(void *)((long)dexp + sizeof(dexp->crc32)),(int32_t)(size - sizeof(dexp->crc32)));
             if ( dexp->crc32 == crc32 && (firstz= dex_crc32find(myinfo,crc32)) >= 0 )
                 return(0);
         }
