@@ -105,6 +105,7 @@ struct supernet_info
     struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
+    char bindaddr[64];
     // fadedreamz
 	struct peggy_info *PEGS;
     void *PAXDATA;

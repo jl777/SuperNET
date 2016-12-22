@@ -362,6 +362,21 @@ STRING_ARG(dpow,pending,fiat)
     return(clonestr("[]"));
 }
 
+STRING_ARG(dpow,bindaddr,ipaddr)
+{
+    uint32_t ipbits; char checkbuf[64];
+    if ( ipaddr != 0 && ipaddr[0] != 0 )
+    {
+        ipbits = (uint32_t)calc_ipbits(ipaddr);
+        expand_ipbits(checkbuf,ipbits);
+        if ( strcmp(ipaddr,checkbuf) == 0 )
+        {
+            strcpy(myinfo->bindaddr,ipaddr);
+            return(clonestr("{\"result\":\"success\"}"));
+        } else return(clonestr("{\"error\":\"invalid bind ipaddr\"}"));
+    } else return(clonestr("{\"error\":\"no bind ipaddr\"}"));
+}
+
 STRING_ARG(iguana,addnotary,ipaddr)
 {
     static int32_t didinit;

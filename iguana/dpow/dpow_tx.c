@@ -436,7 +436,7 @@ void dpow_rawtxsign(struct supernet_info *myinfo,struct dpow_info *dp,struct igu
                             vinitem = jitem(vins,j);
                             if ( (sobj= jobj(item,"scriptSig")) != 0 && (sigstr= jstr(sobj,"hex")) != 0 && strlen(sigstr) > 32 )
                             {
-                                valid = 1;
+                                valid = 0;
                                 if ( dp->ratifying != 0 && j == 0 && bp->myind == 0 )
                                     valid = 1;
                                 else if ( (pubstr= jstr(vinitem,"scriptPubKey")) != 0 && is_hexstr(pubstr,0) == 70 )

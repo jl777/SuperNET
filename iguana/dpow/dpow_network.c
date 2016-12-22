@@ -31,8 +31,13 @@ void dex_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->dexmutex);
 }
 
-char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
+char *nanomsg_tcpname(struct supernet_info *myinfo,char *str,char *ipaddr,uint16_t port)
 {
+    if ( myinfo != 0 ) // bind path)
+    {
+        if ( myinfo->bindaddr[0] != 0 && strcmp(ipaddr,myinfo->ipaddr) == 0 )
+            ipaddr = myinfo->bindaddr;
+    }
     sprintf(str,"tcp://%s:%u",ipaddr,port);
     return(str);
 }
@@ -62,7 +67,7 @@ printf("dex_reqsend not active yet\n");
 return;
     if ( myinfo->reqsock < 0 && (myinfo->reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
-        if ( nn_connect(myinfo->reqsock,nanomsg_tcpname(str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
+        if ( nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
         {
             nn_close(myinfo->reqsock);
             myinfo->reqsock = -1;
@@ -71,7 +76,7 @@ return;
         {
             if ( myinfo->subsock < 0 && (myinfo->subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
             {
-                if ( nn_connect(myinfo->subsock,nanomsg_tcpname(str,myinfo->dexseed_ipaddr,PUB_SOCK)) < 0 )
+                if ( nn_connect(myinfo->subsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,PUB_SOCK)) < 0 )
                 {
                     nn_close(myinfo->reqsock);
                     myinfo->reqsock = -1;
@@ -120,11 +125,11 @@ return;
                 if ( (myinfo->numdexipbits= n) < 3 )
                 {
                     if ( myinfo->subsock >= 0 )
-                        nn_connect(myinfo->subsock,nanomsg_tcpname(str,ipaddr,PUB_SOCK));
+                        nn_connect(myinfo->subsock,nanomsg_tcpname(0,str,ipaddr,PUB_SOCK));
                 }
             }
             portable_mutex_unlock(&myinfo->dexmutex);
-            nn_connect(myinfo->reqsock,nanomsg_tcpname(str,ipaddr,REP_SOCK));
+            nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
             nn_freemsg(retptr);
         }
         free(dexp);
@@ -238,9 +243,9 @@ int32_t dpow_addnotary(struct supernet_info *myinfo,struct dpow_info *dp,char *i
                 ptr[n] = ipbits;
                 if ( iter == 0 && strcmp(ipaddr,myinfo->ipaddr) != 0 )
                 {
-                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(str,ipaddr,DPOW_SOCK));
+                    retval = nn_connect(myinfo->dpowsock,nanomsg_tcpname(0,str,ipaddr,DPOW_SOCK));
                     printf("NN_CONNECT to (%s)\n",str);
-                    retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(str,ipaddr,DEX_SOCK));
+                    retval = nn_connect(myinfo->dexsock,nanomsg_tcpname(0,str,ipaddr,DEX_SOCK));
                 }
                 n++;
                 qsort(ptr,n,sizeof(uint32_t),_increasing_ipbits);
@@ -270,9 +275,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
     portable_mutex_lock(&myinfo->notarymutex);
     if ( myinfo->dpowsock < 0 && (myinfo->dpowsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
     {
-        if ( nn_bind(myinfo->dpowsock,nanomsg_tcpname(str,myinfo->ipaddr,DPOW_SOCK)) < 0 )
+        if ( nn_bind(myinfo->dpowsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK)) < 0 )
         {
-            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(str,myinfo->ipaddr,DPOW_SOCK));
+            printf("error binding to dpowsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DPOW_SOCK));
             nn_close(myinfo->dpowsock);
             myinfo->dpowsock = -1;
         }
@@ -281,9 +286,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             printf("NN_BIND to %s\n",str);
             if ( myinfo->dexsock < 0 && (myinfo->dexsock= nn_socket(AF_SP,NN_BUS)) >= 0 )
             {
-                if ( nn_bind(myinfo->dexsock,nanomsg_tcpname(str,myinfo->ipaddr,DEX_SOCK)) < 0 )
+                if ( nn_bind(myinfo->dexsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DEX_SOCK)) < 0 )
                 {
-                    printf("error binding to dexsock (%s)\n",nanomsg_tcpname(str,myinfo->ipaddr,DEX_SOCK));
+                    printf("error binding to dexsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,DEX_SOCK));
                     nn_close(myinfo->dexsock);
                     myinfo->dexsock = -1;
                     nn_close(myinfo->dpowsock);
@@ -293,9 +298,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                 {
                     if ( myinfo->pubsock < 0 && (myinfo->pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
                     {
-                        if ( nn_bind(myinfo->pubsock,nanomsg_tcpname(str,myinfo->ipaddr,PUB_SOCK)) < 0 )
+                        if ( nn_bind(myinfo->pubsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,PUB_SOCK)) < 0 )
                         {
-                            printf("error binding to pubsock (%s)\n",nanomsg_tcpname(str,myinfo->ipaddr,PUB_SOCK));
+                            printf("error binding to pubsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,PUB_SOCK));
                             nn_close(myinfo->pubsock);
                             myinfo->pubsock = -1;
                             nn_close(myinfo->dexsock);
@@ -307,9 +312,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                         {
                             if ( myinfo->repsock < 0 && (myinfo->repsock= nn_socket(AF_SP,NN_REP)) >= 0 )
                             {
-                                if ( nn_bind(myinfo->repsock,nanomsg_tcpname(str,myinfo->ipaddr,REP_SOCK)) < 0 )
+                                if ( nn_bind(myinfo->repsock,nanomsg_tcpname(myinfo,str,myinfo->ipaddr,REP_SOCK)) < 0 )
                                 {
-                                    printf("error binding to repsock (%s)\n",nanomsg_tcpname(str,myinfo->ipaddr,REP_SOCK));
+                                    printf("error binding to repsock (%s)\n",nanomsg_tcpname(myinfo,str,myinfo->ipaddr,REP_SOCK));
                                     nn_close(myinfo->repsock);
                                     myinfo->repsock = -1;
                                     nn_close(myinfo->pubsock);
@@ -712,6 +717,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     bp->pendingbestk = bp->bestk;
                     bp->pendingbestmask = bp->bestmask;
                     dpow_signedtxgen(myinfo,dp,bp->destcoin,bp,bp->bestk,bp->bestmask,bp->myind,DPOW_SIGBTCCHANNEL,1,0);
+                    printf("finished signing\n");
                 }
                 if ( bp->destsigsmasks[bp->bestk] == bp->bestmask ) // have all sigs
                 {
@@ -795,7 +801,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
     np->version1 = (DPOW_VERSION >> 8) & 0xff;
     memcpy(np->packet,data,datalen);
     sentbytes = -1;
-    portable_mutex_lock(&myinfo->dpowmutex);
+    // deadlocks! portable_mutex_lock(&myinfo->dpowmutex);
     for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
@@ -808,7 +814,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         }
         usleep(1000);
     }
-    portable_mutex_unlock(&myinfo->dpowmutex);
+    //portable_mutex_unlock(&myinfo->dpowmutex);
     free(np);
     if ( 0 && bp->myind <= 2 )
         printf("%d NANOSEND.%d ht.%d channel.%08x (%d) pax.%08x datalen.%d (%d %llx) (%d %llx) recv.%llx\n",i,sentbytes,np->height,np->channel,size,np->notarize.paxwdcrc,datalen,(int8_t)np->notarize.bestk,(long long)np->notarize.bestmask,bp->notaries[bp->myind].bestk,(long long)bp->notaries[bp->myind].bestmask,(long long)bp->recvmask);
