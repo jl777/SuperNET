@@ -894,7 +894,8 @@ void basilisks_loop(void *arg)
         }
         else
         {
-            dex_update(myinfo);
+            if ( myinfo->IAMNOTARY == 0 )
+                dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
                 endmilli = startmilli + 1000;
             else endmilli = startmilli + 2000;
