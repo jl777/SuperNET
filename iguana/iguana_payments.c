@@ -288,11 +288,29 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
 
 bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
-    bits256 txid; uint8_t *serialized; int32_t i,len,n; struct iguana_peer *addr; cJSON *vals; char *str;
+    bits256 txid,checktxid; uint8_t *serialized; int32_t i,len,n; struct iguana_peer *addr; cJSON *vals; char *str;
     len = (int32_t)strlen(signedtx) >> 1;
     serialized = calloc(1,sizeof(struct iguana_msghdr) + len);
     decode_hex(&serialized[sizeof(struct iguana_msghdr)],len,signedtx);
     txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
+    if ( coin->FULLNODE < 0 )
+    {
+        if ( (str= dpow_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
+        {
+            if ( is_hexstr(str,0) == sizeof(checktxid)*2 )
+            {
+                decode_hex(checktxid.bytes,sizeof(checktxid),str);
+                if ( bits256_cmp(txid,checktxid) == 0 )
+                {
+                    free(str);
+                    return(txid);
+                }
+            }
+            free(str);
+            memset(txid.bytes,0,sizeof(txid));
+            return(txid);
+        }
+    }
     if ( coin->peers != 0 && (n= coin->peers->numranked) > 0 )
     {
         for (i=0; i<8 && i<n; i++)

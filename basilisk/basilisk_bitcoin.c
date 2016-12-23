@@ -584,8 +584,8 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
-    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
-        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
+    //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+    //    return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
@@ -882,11 +882,11 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    char *retstr=0,*symbol,*coinaddr; cJSON *retjson,*txoutjson; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
-    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
-        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
+    //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+    //    return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     //if ( coin == 0 )
     {
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
@@ -896,6 +896,35 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     if ( coin != 0 )
     {
+        if ( coin->FULLNODE < 0 )
+        {
+            txid = jbits256(vals,"txid");
+            vout = jint(vals,"vout");
+            if ( (txoutjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
+            {
+                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= SATOSHIDEN*jdouble(txoutjson,"value")) != 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"address",coinaddr);
+                    jadd64bits(retjson,"satoshis",value);
+                    jaddnum(retjson,"value",dstr(value));
+                    height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
+                    jaddnum(retjson,"height",height);
+                    jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
+                    jaddbits256(retjson,"txid",txid);
+                    jaddnum(retjson,"vout",vout);
+                    jaddstr(retjson,"coin",coin->symbol);
+                }
+                else
+                {
+                    free_json(txoutjson);
+                    return(clonestr("{\"error\":\"return from gettxout missing fields\"}"));
+                }
+                free_json(txoutjson);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"null return from gettxout\"}"));
+        }
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )

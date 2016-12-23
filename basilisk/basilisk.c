@@ -213,6 +213,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         return(-1);
     }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
+    //dex_reqsend(myinfo,&data[-(int32_t)sizeof(struct iguana_msghdr)],datalen);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
@@ -876,7 +877,7 @@ void basilisks_loop(void *arg)
         startmilli = OS_milliseconds();
         basilisk_issued_purge(myinfo,600000);
         basilisk_p2pQ_process(myinfo,777);
-        if ( myinfo->NOTARY.RELAYID >= 0 )
+        if ( myinfo->IAMNOTARY != 0 )
         {
             if ( relay != 0 )
                 basilisk_ping_send(myinfo,relay);
@@ -894,8 +895,7 @@ void basilisks_loop(void *arg)
         }
         else
         {
-            if ( myinfo->IAMNOTARY == 0 )
-                dex_updateclient(myinfo);
+            dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
                 endmilli = startmilli + 1000;
             else endmilli = startmilli + 2000;
