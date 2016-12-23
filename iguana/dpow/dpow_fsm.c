@@ -36,7 +36,7 @@ void dpow_utxo2entry(struct dpow_block *bp,struct dpow_entry *ep,struct dpow_utx
         bp->notaries[i].othermask |= up->othermasks[i];
     ep->commit = up->commit;
     ep->height = up->height;
-    ep->recvmask = up->recvmask;
+    ep->recvmask |= up->recvmask;
     ep->bestk = up->bestk;
     ep->src.prev_hash = up->srchash;
     ep->dest.prev_hash = up->desthash;

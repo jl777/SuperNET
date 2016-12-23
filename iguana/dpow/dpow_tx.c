@@ -22,7 +22,7 @@ void dpow_bestmask_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         return;
     bp->notaries[nn_senderind].bestk = nn_bestk;
     bp->notaries[nn_senderind].bestmask = nn_bestmask;
-    bp->notaries[nn_senderind].recvmask = nn_recvmask;
+    bp->notaries[nn_senderind].recvmask |= nn_recvmask;
     startscore = bp->scores[nn_senderind];
     if ( bp->bestk >= 0 )
     {
