@@ -56,7 +56,7 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    printf("DEX_PACKET.[%d] crc.%x lag.%d\n",size,calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32))),(int32_t)(time(NULL)-dexp->timestamp));
+    printf("uniq DEX_PACKET.[%d] crc.%x lag.%d\n",size,calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32))),(int32_t)(time(NULL)-dexp->timestamp));
 }
 
 int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
@@ -717,11 +717,13 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
             }
         }
-        dpow_bestconsensus(bp);
-        //bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
-        //bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-        //if ( bp->paxwdcrc != 0 )
-            bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
+        if ( (bp->notaries[bp->myind].paxwdcrc= bp->paxwdcrc) != 0 )
+            dpow_bestconsensus(bp);
+        else
+        {
+            bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
+            bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+        }
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
         if ( bp->bestmask != 0 )

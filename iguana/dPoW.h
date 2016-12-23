@@ -141,5 +141,6 @@ struct dpow_info
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
 void dex_updateclient(struct supernet_info *myinfo);
+int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen);
 
 #endif

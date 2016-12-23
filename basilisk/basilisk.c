@@ -213,6 +213,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
         return(-1);
     }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
+    dex_reqsend(myinfo,&data[-(int32_t)sizeof(struct iguana_msghdr)],datalen);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
