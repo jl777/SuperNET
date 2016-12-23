@@ -367,7 +367,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     maxsize = 1024 * 1024;
                                     printf("RCVBUF.%d\n",nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("RCVBUF.%d\n",nn_setsockopt(repsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
-                                    printf("DEXINIT dpow.%d dex.%d rep.%d\n",dpowsock,myinfo->dexsock,myinfo->repsock);
+                                    printf("DEXINIT dpow.%d dex.%d rep.%d\n",dpowsock,dexsock,repsock);
                                 }
                             }
                         }
@@ -480,7 +480,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
     }
     else
     {
-        dpow_bestconsensus(bp);
+        //dpow_bestconsensus(bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
@@ -692,9 +692,9 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         bp->notaries[senderind].src.prev_vout = srcvout;
         bp->notaries[senderind].dest.prev_hash = destutxo;
         bp->notaries[senderind].dest.prev_vout = destvout;
-        //if ( bestmask != 0 )
+        if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
-        //if ( recvmask != 0 )
+        if ( recvmask != 0 )
             bp->notaries[senderind].recvmask = recvmask;
         if ( (bp->notaries[senderind].paxwdcrc= paxwdcrc) != 0 )
         {
