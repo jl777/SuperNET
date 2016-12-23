@@ -1618,21 +1618,21 @@ void iguana_main(void *arg)
     iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
+#if LIQUIDITY_PROVIDER
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
+#endif
     if ( myinfo->IAMNOTARY == 0 )
     {
-#if LIQUIDITY_PROVIDER
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
-#endif
         if ( iguana_commandline(myinfo,arg) == 0 )
         {
             iguana_helpinit(myinfo);
