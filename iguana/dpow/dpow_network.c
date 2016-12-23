@@ -731,7 +731,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         {
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-            //dpow_bestconsensus(bp);
+            dpow_bestconsensus(bp);
         }
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;

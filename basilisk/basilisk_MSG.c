@@ -307,7 +307,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     } else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
-    if ( 0 && data != 0 && datalen != 0 )
+    if ( data != 0 && datalen != 0 )
         dex_reqsend(myinfo,space,datalen+BASILISK_KEYSIZE);
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
 }
