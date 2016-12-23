@@ -483,7 +483,7 @@ void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isr
     }
     else
     {
-        //dpow_bestconsensus(bp);
+        dpow_bestconsensus(bp);
         np->srcutxo = bp->notaries[bp->myind].src.prev_hash;
         np->srcvout = bp->notaries[bp->myind].src.prev_vout;
         np->destutxo = bp->notaries[bp->myind].dest.prev_hash;
@@ -691,13 +691,19 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
         return;
     if ( bp->isratify == 0 && bp->state != 0xffffffff && senderind >= 0 && senderind < bp->numnotaries && bits256_nonz(srcutxo) != 0 && bits256_nonz(destutxo) != 0 )
     {
-        bp->notaries[senderind].src.prev_hash = srcutxo;
-        bp->notaries[senderind].src.prev_vout = srcvout;
-        bp->notaries[senderind].dest.prev_hash = destutxo;
-        bp->notaries[senderind].dest.prev_vout = destvout;
-        //if ( bestmask != 0 )
+        if ( bits256_nonz(srcutxo) != 0 )
+        {
+            bp->notaries[senderind].src.prev_hash = srcutxo;
+            bp->notaries[senderind].src.prev_vout = srcvout;
+        }
+        if ( bits256_nonz(destutxo) != 0 )
+        {
+            bp->notaries[senderind].dest.prev_hash = destutxo;
+            bp->notaries[senderind].dest.prev_vout = destvout;
+        }
+        if ( bestmask != 0 )
             bp->notaries[senderind].bestmask = bestmask;
-        //if ( recvmask != 0 )
+        if ( recvmask != 0 )
             bp->notaries[senderind].recvmask = recvmask;
         if ( (bp->notaries[senderind].paxwdcrc= paxwdcrc) != 0 )
         {
@@ -720,13 +726,12 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 else bp->destsigsmasks[bestk] &= ~(1LL << senderind);
             }
         }
-        if ( (bp->notaries[bp->myind].paxwdcrc= bp->paxwdcrc) != 0 )
-            dpow_bestconsensus(bp);
-        else
+        bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
+        if ( bp->bestmask == 0 )
         {
-            //bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
-            //bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-            dpow_bestconsensus(bp);
+            bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
+            bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
+            //dpow_bestconsensus(bp);
         }
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;

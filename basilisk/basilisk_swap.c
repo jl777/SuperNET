@@ -18,8 +18,8 @@
 // more better LP commands
 
 // depends on just three external functions:
-//      iguana_sendrawtransaction(myinfo,coin,signedtx);
-//      basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)
+//     - iguana_sendrawtransaction(myinfo,coin,signedtx);
+//     - basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)
 //      basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)
 
 
