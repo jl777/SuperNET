@@ -291,10 +291,12 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
+    data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,&space[BASILISK_KEYSIZE],sizeof(space)-BASILISK_KEYSIZE,hexstr);
     if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
-        if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+        memcpy(space,key,BASILISK_KEYSIZE);
+        if ( data != 0 )
         {
             retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"));
         } else printf("no get_dataptr\n");
@@ -305,6 +307,8 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     } else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+    if ( data != 0 && datalen != 0 )
+        dex_reqsend(myinfo,space,datalen+BASILISK_KEYSIZE);
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
