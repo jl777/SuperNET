@@ -1036,9 +1036,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr) { }
 
-uint32_t dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
+void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen)
 {
-    return(0);
+    return;
 }
 
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo) { return(0); }
