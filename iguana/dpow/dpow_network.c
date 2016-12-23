@@ -442,7 +442,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
         bp->notaries[bp->myind].bestk = bp->bestk = bestks[besti];
         //printf("set best.%d to (%d %llx) recv.%llx\n",best,bp->bestk,(long long)bp->bestmask,(long long)recvmask);
     }
-    bp->recvmask = recvmask;
+    bp->recvmask |= recvmask;
     if ( bp->bestmask == 0 )//|| (time(NULL) / 180) != bp->lastepoch )
     {
         bp->bestmask = dpow_notarybestk(bp->recvmask,bp,&bp->bestk);

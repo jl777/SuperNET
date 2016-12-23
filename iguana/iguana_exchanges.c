@@ -22,16 +22,18 @@
 
 //char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
-int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes,double offset)
 {
     int32_t i; struct exchange_quote *quote;
-    printf("instantdex_updatesources.%s update dir.%d numquotes.%d\n",exchange->name,dir,numquotes);
+    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d offset %.6f\n",exchange->name,dir,numquotes,offset);
     for (i=0; i<numquotes; i++)
     {
         quote = &quotes[i << 1];
-        //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
         if ( quote->price > SMALLVAL )
         {
+            //printf("%s n.%d ind.%d i.%d dir.%d price %.8f vol %.8f offset %.6f\n",exchange->name,n,ind,i,dir,quote->price+offset,quote->volume,offset);
+            quote->price += offset;
+            quote->satoshis = quote->price * SATOSHIDEN;
             sortbuf[n] = *quote;
             sortbuf[n].val = ind;
             sortbuf[n].exchangebits = exchange->exchangebits;
@@ -45,7 +47,7 @@ int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_
 
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson)
 {
-    char *str; double totalvol,pricesum; uint32_t timestamp;
+    char *str; double totalvol,pricesum,hblas[64][2],refbid,refask; uint32_t timestamp;
     struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
     if ( myinfo == 0 )
@@ -86,33 +88,55 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
                 }
             }
         }
-        for (i=0; i<num; i++)
+        memset(hblas,0,sizeof(hblas));
+        refbid = refask = 0.;
+        if ( strcmp(rel,"USD") == 0 )
         {
-            if ( active[i]->numbids > 0 && active[i]->numasks > 0 )
+            for (i=0; i<num; i++)
             {
-                
+                if ( active[i]->numbids > 0 && active[i]->numasks > 0 )
+                {
+                    hblas[i][0] = active[i]->bidasks[0].price;
+                    hblas[i][1] = active[i]->bidasks[1].price;
+                    if ( active[i]->exchange != 0 && strcmp("poloniex",active[i]->exchange->name) == 0 )
+                        refbid = active[i]->bidasks[0].price, refask = active[i]->bidasks[1].price;
+                    //printf("(%6f %.6f) ",hblas[i][0],hblas[i][1]);
+                }
             }
+            //printf(" refbid %.6f refask %.7f\n",refbid,refask);
+            if ( refbid != 0. && refask != 0. )
+            {
+                for (i=0; i<num; i++)
+                {
+                    if ( hblas[i][0] != 0. && hblas[i][1] != 0. )
+                        hblas[i][0] = (refbid - hblas[i][0]), hblas[i][1] = (refask - hblas[i][1]);
+                    else memset(hblas[i],0,sizeof(hblas[i]));
+                }
+            } else memset(hblas,0,sizeof(hblas));
         }
         for (i=n=0; i<num; i++)
         {
             if ( dir < 0 && active[i]->numbids > 0 )
-                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids,hblas[i][0]);
             else if ( dir > 0 && active[i]->numasks > 0 )
-                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks,hblas[i][1]);
         }
-        printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
+        //printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
         if ( dir < 0 )
             revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
         else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
-        for (totalvol=pricesum=i=0; i<n; i++)// && totalvol < basevolume; i++)
+        //for (i=0; i<n; i++)
+        //    printf("%.6f ",sortbuf[i].price);
+        //printf("%d prices\n",n);
+        for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
         {
             quote = sortbuf[i];
-            printf("dir.%d n.%d i.%d price %.8f %.8f %.8f\n",dir,n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            //printf("dir.%d n.%d i.%d price %.8f %.8f %.8f\n",dir,n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
             if ( quote.satoshis != 0 )
             {
                 pricesum += (quote.price * quote.volume);
                 totalvol += quote.volume;
-                printf("dir.%d i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",dir,i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
+                //printf("dir.%d i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",dir,i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
             }
         }
         if ( totalvol > 0. )
