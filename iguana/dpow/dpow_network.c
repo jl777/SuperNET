@@ -367,7 +367,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     maxsize = 1024 * 1024;
                                     printf("RCVBUF.%d\n",nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
                                     printf("RCVBUF.%d\n",nn_setsockopt(repsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
-                                    printf("DEXINIT dpow.%d dex.%d rep.%d\n",dpowsock,myinfo->dexsock,myinfo->repsock);
+                                    printf("DEXINIT dpow.%d dex.%d rep.%d\n",dpowsock,dexsock,repsock);
                                 }
                             }
                         }
