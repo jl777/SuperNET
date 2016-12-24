@@ -185,6 +185,8 @@ struct dpow_block *dpow_heightfind(struct supernet_info *myinfo,struct dpow_info
                 return(bp);
         }
     }
+    if ( bp != 0 && bp->state == 0xffffffff )
+        bp = 0;
     return(bp);
 }
 
