@@ -349,14 +349,14 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 
 int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
-    bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
+    bits256 hash2; int32_t len; uint8_t serialized[sizeof(struct iguana_msgblock) + 32768];
     if ( coin->chain->debug != 0 || coin->chain->zcash != 0 )
     {
         *validp = 1;
         return(0);
     }
     *validp = 0;
-    if ( iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block) < 0 )
+    if ( (len= iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block)) < 0 )
         return(-1);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
@@ -367,8 +367,10 @@ int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *co
         if ( dispflag != 0 )
         {
             static uint32_t counter;
-            if ( (counter++ % 10000) == 9999 )
-                printf("iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            //for (i=0; i<len; i++)
+            //    printf("%02x",serialized[i]);
+            if ( (counter++ % 100) == 99 )
+                printf(" iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
             //getchar();
         }
         return(-1);

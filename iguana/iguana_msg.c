@@ -242,7 +242,7 @@ int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain 
         msg->H.bits = block->RO.bits;
         msg->H.nonce = block->RO.nonce;
         msg->txn_count = block->RO.txn_count;
-        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,&zmsg,IGUANA_MAXPACKETSIZE);
+        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,(void *)msg,IGUANA_MAXPACKETSIZE);
     }
     else
     {
