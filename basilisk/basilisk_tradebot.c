@@ -510,6 +510,9 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
             {
                 *issueR = tmpR, hwm = metric;
                 printf("set hwm\n");
+                for (i=0; i<sizeof(*issueR); i++)
+                    printf("%02x",((uint8_t *)issueR)[i]);
+                printf("\n");
             }
     }
     return(hwm);
