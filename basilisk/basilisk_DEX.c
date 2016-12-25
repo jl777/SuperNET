@@ -425,13 +425,16 @@ char *basilisk_respond_requests(struct supernet_info *myinfo,bits256 hash,uint32
     portable_mutex_lock(&myinfo->DEX_reqmutex);
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space),refrp)) != 0 )
     {
-        //printf("numrequests.%d r.%u q.%u\n",num,requestid,quoteid);
+        printf("numrequests.%d r.%u q.%u\n",num,requestid,quoteid);
         for (i=0; i<num; i++)
         {
             rp = &requests[i];
             if ( quoteid == 0 || (quoteid == rp->quoteid && (bits256_cmp(hash,rp->srchash) == 0 || bits256_cmp(hash,rp->desthash) == 0)) )
                 qflag = 1;
             else qflag = 0;
+            int32_t j; for (j=0; j<sizeof(*rp); j++)
+                printf("%02x",((uint8_t *)rp)[j]);
+            printf(" rp[%d] of %d qflag.%d\n",i,num,qflag);
             if ( requestid == 0 || (rp->requestid == requestid && qflag != 0) )
                 jaddi(array,basilisk_requestjson(rp));
         }
