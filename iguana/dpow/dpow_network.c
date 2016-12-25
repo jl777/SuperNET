@@ -56,10 +56,15 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    char *retstr;
-    printf("uniq DEX_PACKET.[%d] crc.%x lag.%d\n",size,calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32))),(int32_t)(time(NULL)-dexp->timestamp));
-    if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
-        free(retstr);
+    char *retstr; int32_t i;
+    for (i=0; i<size; i++)
+        printf("%02x",((uint8_t *)dexp)[i]);
+    printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32))),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
+    if ( dexp->datalen > BASILISK_KEYSIZE )
+    {
+        if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
+            free(retstr);
+    }
 }
 
 int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
@@ -118,6 +123,9 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
         memcpy(dexp->packet,data,datalen);
         dexp->crc32 = calc_crc32(0,(void *)((long)dexp+sizeof(dexp->crc32)),(int32_t)(size-sizeof(dexp->crc32)));
         sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
+        for (i=0; i<size; i++)
+            printf("%02x",((uint8_t *)dexp)[i]);
+        printf(" sent.%d:%d\n",sentbytes,size);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
             ipbits = *retptr;
@@ -198,7 +206,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
     {
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
-            printf("SUBSOCK.%08x",dexp->crc32);
+            printf("SUBSOCK.%08x ",dexp->crc32);
             dex_packet(myinfo,dexp,size);
         }
         if ( dexp != 0 )
