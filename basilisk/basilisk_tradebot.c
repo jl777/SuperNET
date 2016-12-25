@@ -447,7 +447,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     {
         if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
         {
-            printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
+            printf("automatch[%d] quoteid.%u triggered %.8f > %.8f\n",maxi,list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             *issueR = list[maxi];
             if ( minamount > 0 )
                 metric = (dstr(maxamount) / dstr(minamount)) - 1.;

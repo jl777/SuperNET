@@ -285,14 +285,15 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jdelete(vals,"msgid");
         jaddnum(vals,"msgid",msgid);
     }
-    if ( myinfo->NOTARY.RELAYID >= 0 || myinfo->dexsock >= 0 )
+    if ( myinfo->NOTARY.RELAYID >= 0 || myinfo->dexsock >= 0 || myinfo->subsock >= 0 )
     {
         channel = juint(vals,"channel");
         width = juint(vals,"width");
         retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(vals,"srchash"),jbits256(vals,"desthash"),width);
+        //printf("getmessage.(%s)\n",retstr);
         return(retstr);
     }
-    //printf("getmessage not relay.%d\n",myinfo->NOTARY.RELAYID);
+    //printf("getmessage not relay.%d dexsock.%d subsock.%d\n",myinfo->NOTARY.RELAYID,myinfo->dexsock,myinfo->subsock);
     return(basilisk_standardservice("MSG",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,1));
 }
 
@@ -300,7 +301,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],space2[16384],*data,*ptr = 0; char *retstr=0;
     data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,&space[BASILISK_KEYSIZE],sizeof(space)-BASILISK_KEYSIZE,hexstr);
-    if ( myinfo->dexsock >= 0 || (myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0) )
+    if ( myinfo->subsock >= 0 || myinfo->dexsock >= 0 || (myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0) )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
         if ( data != 0 )
