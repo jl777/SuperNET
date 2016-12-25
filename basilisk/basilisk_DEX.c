@@ -666,9 +666,9 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid)
 {
     cJSON *vals; char *retstr;
     myinfo->DEXactive = (uint32_t)time(NULL) + INSTANTDEX_LOCKTIME;
-    //if ( myinfo->IAMLP != 0 )
-    //    return(basilisk_respond_accept(myinfo,requestid,quoteid));
-    //else
+    if ( myinfo->IAMLP != 0 || myinfo->dexsock >= 0 || myinfo->subsock >= 0 )
+        return(basilisk_respond_accept(myinfo,requestid,quoteid));
+    else
     {
         vals = cJSON_CreateObject();
         jaddnum(vals,"quoteid",(uint32_t)quoteid);
