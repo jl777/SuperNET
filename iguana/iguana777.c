@@ -893,11 +893,11 @@ void iguana_coinloop(void *arg)
             {
                 if ( coin->FULLNODE < 0 )
                     continue;
-                if ( strcmp(coin->symbol,"RELAY") == 0 )
+                /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
                         basilisk_requests_poll(myinfo);
-                }
+                }*/
                 if ( n > 1 && coin->RTheight > 0 && (rand() % 10) != 0 )
                     continue;
                 if ( coin->peers == 0 )

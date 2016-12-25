@@ -216,6 +216,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         //if ( jstr(valsobj,"relay") != 0 )
         //    rp->relaybits = (uint32_t)calc_ipbits(jstr(valsobj,"relay"));
         rp->requestid = basilisk_requestid(rp);
+        printf("set requestid <- %u\n",rp->requestid);
         if ( rp->destamount != 0 && bits256_nonz(rp->desthash) != 0 )
         {
             rp->quoteid = basilisk_quoteid(rp);

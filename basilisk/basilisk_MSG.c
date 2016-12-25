@@ -216,9 +216,9 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     msg->expiration = (uint32_t)time(NULL) + duration;
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
-    //int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
-    //    printf("%02x",key[i]);
-    //printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
+    int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
+        printf("%02x",key[i]);
+    printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     portable_mutex_unlock(&myinfo->messagemutex);
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
@@ -292,7 +292,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
     int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
     data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,&space[BASILISK_KEYSIZE],sizeof(space)-BASILISK_KEYSIZE,hexstr);
-    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
+    //if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
         memcpy(space,key,BASILISK_KEYSIZE);
@@ -304,7 +304,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
             free(ptr);
         if ( retstr != 0 )
             free(retstr);
-    } else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
+    } //else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
     if ( data != 0 && datalen != 0 )
