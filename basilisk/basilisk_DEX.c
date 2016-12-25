@@ -385,7 +385,10 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
             printf("%02x",((uint8_t *)refrp)[i]);
         printf(" uniq\n");
     }
-    for (j=m=0; j<myinfo->NOTARY.NUMRELAYS; j++)
+    if ( refrp != 0 )
+        m = 1;
+    else m = 0;
+    for (j=0; j<myinfo->NOTARY.NUMRELAYS; j++)
     {
         relay = &myinfo->NOTARY.RELAYS[j];
         if ( (n= relay->numrequests) > 0 )
