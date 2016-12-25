@@ -379,7 +379,12 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
         requests = (void *)space;
     else requests = calloc(m,sizeof(*requests));
     if ( refrp != 0 )
+    {
         requests[0] = *refrp;
+        for (i=0; i<sizeof(*refrp); i++)
+            printf("%02x",((uint8_t *)refrp)[i]);
+        printf(" uniq\n");
+    }
     for (j=m=0; j<myinfo->NOTARY.NUMRELAYS; j++)
     {
         relay = &myinfo->NOTARY.RELAYS[j];
@@ -443,6 +448,7 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,uint32_t requestid,ui
 {
     int32_t i,num=0; char *retstr=0; struct basilisk_request *requests,*rp; uint8_t space[4096];
     portable_mutex_lock(&myinfo->DEX_reqmutex);
+    printf("respond accept\n");
     if ( (requests= _basilisk_requests_uniq(myinfo,&num,space,sizeof(space),refrp)) != 0 )
     {
         for (i=0; i<num; i++)
