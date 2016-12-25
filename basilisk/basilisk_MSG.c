@@ -218,11 +218,11 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     QUEUEITEMS++;
     {
         struct basilisk_request R;
-        int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
+        /*int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
             printf("%02x",key[i]);
         printf(" key, ");
         for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);
+            printf("%02x",data[i]);*/
         basilisk_rwDEXquote(0,data,&R);
         printf(" %s <- ADDMSG.[%d] exp %u %p (%p %p)\n",jprint(basilisk_requestjson(&R),1),QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     }
@@ -298,12 +298,11 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
-    int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
+    int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],space2[16384],*data,*ptr = 0; char *retstr=0;
     data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,&space[BASILISK_KEYSIZE],sizeof(space)-BASILISK_KEYSIZE,hexstr);
     if ( myinfo->dexsock >= 0 || (myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0) )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
-        memcpy(space,key,BASILISK_KEYSIZE);
         if ( data != 0 )
         {
             retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"));
@@ -316,7 +315,11 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
     if ( data != 0 && datalen != 0 )
-        dex_reqsend(myinfo,"DEX",space,datalen+BASILISK_KEYSIZE);
+    {
+        memcpy(space2,key,BASILISK_KEYSIZE);
+        memcpy(&space2[BASILISK_KEYSIZE],data,datalen);
+        dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE);
+    }
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -524,7 +527,6 @@ uint32_t basilisk_crcrecv(struct supernet_info *myinfo,int32_t width,uint8_t *ve
                         } else printf("not keystr.%p or no data.%p or bad datalen.%d\n",keystr,hexstr,datalen);
                     }
                 }
-                printf("(%s).%d ",jprint(item,0),i);
             }
             //printf("n.%d maxlen.%d\n",n,maxlen);
         }
