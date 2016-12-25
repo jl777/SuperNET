@@ -19,6 +19,7 @@
 struct dex_nanomsghdr
 {
     uint32_t crc32,size,datalen,timestamp;
+    char handler[8];
     uint8_t version0,version1,packet[];
 } PACKED;
 
@@ -67,7 +68,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     }
 }
 
-int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
+int32_t dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
 {
     struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t retval=0,timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits;
     portable_mutex_lock(&myinfo->dexmutex);
@@ -115,6 +116,7 @@ int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen)
     {
         size = (int32_t)(sizeof(*dexp) + datalen);
         dexp = calloc(1,size); // endian dependent!
+        safecopy(dexp->handler,handler,sizeof(dexp->handler));
         dexp->size = size;
         dexp->datalen = datalen;
         dexp->timestamp = (uint32_t)time(NULL);

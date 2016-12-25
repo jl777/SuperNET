@@ -900,8 +900,8 @@ void basilisks_loop(void *arg)
                 endmilli = startmilli + 1000;
             else endmilli = startmilli + 2000;
         }
-        //if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
-        //    basilisk_requests_poll(myinfo);
+        if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
+            basilisk_requests_poll(myinfo);
         //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
