@@ -703,7 +703,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                             bp->hashes[bundlei] = block->RO.hash2;
                             iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                         }
-                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
+                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
@@ -724,9 +724,11 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                     iguana_RTnewblock(myinfo,coin,block);
                 block->hdrsi = hdrsi;
                 block->bundlei = bundlei;
-                bp = coin->bundles[hdrsi];
-                if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
-                    printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);
+                if ( 0 && (bp= coin->bundles[hdrsi]) != 0 )
+                {
+                    if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+                        printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);
+                }
                 return(block);
             }
         }
