@@ -1842,9 +1842,6 @@ void basilisk_swaploop(void *_swap)
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
     int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
-    for (i=0; i<sizeof(*rp); i++)
-        printf("%02x",((uint8_t *)rp)[i]);
-    printf(" thread start %p\n",rp);
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1858,9 +1855,6 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
         swap->myinfo = myinfo;
-        for (i=0; i<sizeof(swap->I.req); i++)
-            fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
-        fprintf(stderr,"START swap requestid.%u %p\n",rp->requestid,&swap->I.req);
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
@@ -1868,8 +1862,9 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+300 )
             {
                 m = n = 0;
-                printf("waiting for offer to be accepted\n");
+                dpow_nanomsg_update(myinfo);
                 sleep(3);
+                printf("waiting for offer to be accepted\n");
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
                 if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                 {
@@ -1884,7 +1879,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                                 if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
                                     m++;
                                 else printf("(%s)\n",jprint(item,0));
-                            } else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
+                            } //else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
                         }
                     }
                 } else printf("no retarray\n");
