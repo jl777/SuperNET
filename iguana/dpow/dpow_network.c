@@ -195,13 +195,13 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                     nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
-                nn_freemsg(retptr);
             }
             else
             {
-                retstr = (char *)retptr;
+                retstr = clonestr((char *)retptr);
                 printf("REQ got.%d (%s)\n",recvbytes,retstr);
             }
+            nn_freemsg(retptr);
             portable_mutex_unlock(&myinfo->dexmutex);
         }
         else
