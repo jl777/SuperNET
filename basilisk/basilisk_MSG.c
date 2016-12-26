@@ -463,7 +463,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
                 numcandidates++;
             }
         }
-        printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
         if ( numcandidates > 0 )
         {
             for (j=0; j<numcandidates; j++)
