@@ -1503,7 +1503,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->I.otherstatebits & 0x80) != 0 && (swap->I.statebits & 0x80) != 0 )
             break;
-        sleep(1);//3 + (swap->iambob == 0)*10);
+        sleep(3 + (swap->iambob == 0)*10);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->I.otherstatebits & 0x80) == 0 )
@@ -1686,7 +1686,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         }
         if ( (rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
-        sleep(1);//3 + (swap->iambob == 0));
+        sleep(3 + (swap->iambob == 0));
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
@@ -1714,7 +1714,7 @@ void basilisk_swaploop(void *_swap)
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
-        sleep(1);
+        sleep(3);
         dpow_nanomsg_update(myinfo);
         dex_updateclient(myinfo);
     }
@@ -1727,7 +1727,7 @@ void basilisk_swaploop(void *_swap)
             swap->I.statebits |= 0x20;
             break;
         }
-        sleep(1);//3 + (swap->iambob == 0)*10);
+        sleep(3 + (swap->iambob == 0)*10);
         dpow_nanomsg_update(myinfo);
         dex_updateclient(myinfo);
     }
@@ -1817,7 +1817,7 @@ void basilisk_swaploop(void *_swap)
     }
     while ( basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
-        sleep(1);
+        sleep(3);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( time(NULL) > swap->I.expiration )
