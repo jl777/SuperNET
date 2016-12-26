@@ -228,11 +228,13 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
     return(-1);
 }
 
-char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
+char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
-    cJSON *retjson;
-    if ( (bits256_cmp(rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(rp->desthash,myinfo->myaddr.persistent) == 0) )
+    cJSON *retjson; struct basilisk_request *rp;
+    if ( (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
+        rp = calloc(1,sizeof(*rp));
+        *rp = *_rp;
         printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
         if ( basilisk_thread_start(myinfo,rp,statebits,optionduration) != 0 )
         {
@@ -276,10 +278,10 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     if ( hwm > 0. )
     {
-        printf("hwm %f\n",hwm);
-        for (i=0; i<sizeof(issueR); i++)
-            printf("%02x",((uint8_t *)&issueR)[i]);
-        printf("\n");
+        //printf("hwm %f\n",hwm);
+        //for (i=0; i<sizeof(issueR); i++)
+        //    printf("%02x",((uint8_t *)&issueR)[i]);
+        //printf("\n");
         myinfo->DEXaccept = issueR;
         issueR.quoteid = basilisk_quoteid(&issueR);
         datalen = basilisk_rwDEXquote(1,data,&issueR);
@@ -303,6 +305,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             }
             if ( crc != 0 )
             {
+                printf("crc.%08x -> basilisk_starta\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
             } else printf("couldnt accept offer\n");
