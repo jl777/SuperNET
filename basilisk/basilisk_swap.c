@@ -1721,6 +1721,8 @@ void basilisk_swaploop(void *_swap)
     while ( (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
         printf("B r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
+        basilisk_sendstate(myinfo,swap,data,maxlen);
+        basilisk_sendchoosei(myinfo,swap,data,maxlen);
         basilisk_sendmostprivs(myinfo,swap,data,maxlen);
         if ( basilisk_swapget(myinfo,swap,0x20,data,maxlen,basilisk_verify_privkeys) == 0 )
         {
