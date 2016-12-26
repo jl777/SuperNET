@@ -125,14 +125,14 @@ int32_t dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int
         memcpy(dexp->packet,data,datalen);
         dexp->crc32 = calc_crc32(0,data,datalen);
         sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-        //for (i=0; i<size; i++)
-        //    printf("%02x",((uint8_t *)dexp)[i]);
-        //printf(" sent.%d:%d\n",sentbytes,size);
+        for (i=0; i<datalen; i++)
+            printf("%02x",((uint8_t *)data)[i]);
+        printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
             ipbits = *retptr;
             expand_ipbits(ipaddr,ipbits);
-            printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
+            //printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
             portable_mutex_lock(&myinfo->dexmutex);
             n = myinfo->numdexipbits;
             for (i=0; i<n; i++)
@@ -206,6 +206,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
     int32_t size= -1; struct dex_nanomsghdr *dexp;
     if ( myinfo->subsock >= 0 && (size= nn_recv(myinfo->subsock,&dexp,NN_MSG,0)) >= 0 )
     {
+        printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
         if ( dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             printf("SUBSOCK.%08x ",dexp->crc32);

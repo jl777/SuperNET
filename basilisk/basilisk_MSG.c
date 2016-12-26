@@ -216,17 +216,6 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     msg->expiration = (uint32_t)time(NULL) + duration;
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
-    {
-        struct basilisk_request R;
-        /*int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
-            printf("%02x",key[i]);
-        printf(" key, ");
-        for (i=0; i<datalen; i++)
-            printf("%02x",data[i]);*/
-        basilisk_rwDEXquote(0,data,&R);
-        printf(" %s <- ADDMSG.[%d] exp %u %p (%p %p)\n",jprint(basilisk_requestjson(&R),1),QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
-    }
-
     portable_mutex_unlock(&myinfo->messagemutex);
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
@@ -315,12 +304,10 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
     } //else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+    memcpy(space2,key,BASILISK_KEYSIZE);
     if ( data != 0 && datalen != 0 )
-    {
-        memcpy(space2,key,BASILISK_KEYSIZE);
         memcpy(&space2[BASILISK_KEYSIZE],data,datalen);
-        dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE);
-    }
+    dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE);
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"

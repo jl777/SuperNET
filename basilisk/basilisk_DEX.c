@@ -178,7 +178,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
             {
                 for (i=0; i<sizeof(*rp); i++)
                     printf("%02x",((uint8_t *)rp)[i]);
-                printf(" <- rp\n");
+                printf(" <- rp.%p\n",rp);
                 for (i=0; i<sizeof(R); i++)
                     printf("%02x",((uint8_t *)&R)[i]);
                 printf(" <- R mismatch\n");
@@ -292,9 +292,9 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             free(retstr);*/
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
-            printf("my req hwm %f\n",hwm);
             if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
+            printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
             numiters = 0;
             while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
