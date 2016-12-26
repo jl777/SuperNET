@@ -595,8 +595,8 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         if ( (reqjson= basilisk_requestjson(&R)) != 0 )
             free_json(reqjson);
         datalen = basilisk_rwDEXquote(1,serialized,&R);
-        int32_t i; for (i=0; i<sizeof(R); i++)
-            printf("%02x",((uint8_t *)&R)[i]);
+        //int32_t i; for (i=0; i<sizeof(R); i++)
+        //    printf("%02x",((uint8_t *)&R)[i]);
         printf(" R.requestid.%u vs calc %u, q.%u datalen.%d\n",R.requestid,basilisk_requestid(&R),R.quoteid,datalen);
         basilisk_rwDEXquote(0,serialized,&R);
     } else printf("error creating request\n");

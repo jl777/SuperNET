@@ -1798,7 +1798,9 @@ void basilisk_swaploop(void *_swap)
                     else
                     {
                         retval = 0;
-                        printf("ALICE PAYMENT created\n");
+                        for (i=0; i<swap->alicepayment.I.spendlen; i++)
+                            printf("%02x",swap->alicepayment.txbytes[i]);
+                        printf(" ALICE PAYMENT created\n");
                         iguana_unspents_mark(myinfo,swap->alicecoin,swap->alicepayment.vins);
                         basilisk_txlog(myinfo,swap,&swap->alicepayment,-1);
                         break;
@@ -1810,6 +1812,9 @@ void basilisk_swaploop(void *_swap)
                 swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
                 iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
                 basilisk_txlog(myinfo,swap,&swap->myfee,-1);
+                for (i=0; i<swap->myfee.I.spendlen; i++)
+                    printf("%02x",swap->myfee.txbytes[i]);
+                printf(" alice fee %p\n",swap->myfee.txbytes);
             }
             else
             {

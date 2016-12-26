@@ -446,7 +446,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
     {
         for (i=0; i<numcrcs; i++)
         {
-            printf("%08x ",rawcrcs[i]);
+            //printf("%08x ",rawcrcs[i]);
             for (j=0; j<numcandidates; j++)
             {
                 if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
