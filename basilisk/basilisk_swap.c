@@ -1815,7 +1815,10 @@ void basilisk_swaploop(void *_swap)
                 basilisk_txlog(myinfo,swap,&swap->myfee,-1);
                 for (i=0; i<swap->myfee.I.spendlen; i++)
                     printf("%02x",swap->myfee.txbytes[i]);
-                printf(" alice fee %p\n",swap->myfee.txbytes);
+                printf(" alice fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+                swap->I.statebits |= 0x40;
+                if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen > 0 )
+                    break;
             }
             else
             {
