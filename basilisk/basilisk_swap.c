@@ -1844,7 +1844,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
     int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
     for (i=0; i<sizeof(*rp); i++)
         printf("%02x",((uint8_t *)rp)[i]);
-    printf(" thread start\n");
+    printf(" thread start %p\n",rp);
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1858,7 +1858,9 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
         swap->myinfo = myinfo;
-        printf("START swap requestid.%u\n",rp->requestid);
+        for (i=0; i<sizeof(swap->I.req); i++)
+            fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
+        fprintf(stderr,"START swap requestid.%u %p\n",rp->requestid,&swap->I.req);
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
@@ -1890,8 +1892,8 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             if ( statebits != 0 || m > n/2 )
             {
                 for (i=0; i<sizeof(swap->I.req); i++)
-                    printf("%02x",((uint8_t *)&swap->I.req)[i]);
-                fprintf(stderr," m.%d n.%d launch.%d %d\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
+                    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
+                fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     

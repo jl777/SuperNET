@@ -117,16 +117,16 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
-        printf(" basilisk_rwDEXquote.%d: quoteid.%u mismatch calc %u\n",rwflag,rp->quoteid,basilisk_quoteid(rp));
+        printf(" basilisk_rwDEXquote.%d: quoteid.%u mismatch calc %u rp.%p\n",rwflag,rp->quoteid,basilisk_quoteid(rp),rp);
     if ( basilisk_requestid(rp) != rp->requestid )
-        printf(" basilisk_rwDEXquote.%d: requestid.%u mismatch calc %u\n",rwflag,rp->requestid,basilisk_requestid(rp));
+        printf(" basilisk_rwDEXquote.%d: requestid.%u mismatch calc %u rp.%p\n",rwflag,rp->requestid,basilisk_requestid(rp),rp);
     return(len);
 }
 
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
-    printf("basilisk_request_enqueue\n");
+    printf(" basilisk_request_enqueue\n");
     len = basilisk_rwDEXquote(1,serialized+1,rp);
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
     {
