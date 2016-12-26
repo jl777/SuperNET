@@ -882,7 +882,7 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol,*coinaddr; cJSON *retjson,*txoutjson; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height;
+    char *retstr=0,*symbol,*coinaddr; cJSON *retjson,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
@@ -894,12 +894,12 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     }
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+    txid = jbits256(vals,"txid");
+    vout = jint(vals,"vout");
     if ( coin != 0 )
     {
         if ( coin->FULLNODE < 0 )
         {
-            txid = jbits256(vals,"txid");
-            vout = jint(vals,"vout");
             if ( (txoutjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
             {
                 if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= SATOSHIDEN*jdouble(txoutjson,"value")) != 0 )
@@ -934,6 +934,39 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = OS_milliseconds() + 10000;
             return(retstr);
+        }
+    }
+    if ( myinfo->reqsock >= 0 )
+    {
+        if ( coin != 0 && (retstr= dex_getrawtransaction(myinfo,coin->symbol,txid)) != 0 )
+        {
+            if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    printf("txjson.(%s)\n",jprint(txjson,0));
+                    if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= j64bits(txjson,"value") * SATOSHIDEN) != 0 )
+                    {
+                        jaddstr(retjson,"address",coinaddr);
+                        jadd64bits(retjson,"satoshis",value);
+                        jaddnum(retjson,"value",dstr(value));
+                        //height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
+                        //jaddnum(retjson,"height",height);
+                        jaddnum(retjson,"numconfirms",jint(txjson,"confirmations"));
+                        
+                        jaddbits256(retjson,"txid",txid);
+                        jaddnum(retjson,"vout",vout);
+                        jaddstr(retjson,"coin",coin->symbol);
+                        free(retstr);
+                        free_json(txoutjson);
+                        return(jprint(retjson,1));
+                    }
+                }
+                free_json(txoutjson);
+            }
+            free(retstr);
         }
     }
     return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));

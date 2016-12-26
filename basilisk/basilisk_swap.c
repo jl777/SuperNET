@@ -257,7 +257,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
     jaddstr(argjson,"coin",rawtx->coin->symbol);
     if ( (valstr= basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)) != 0 )
     {
-        //char str[65]; printf("%s %s valstr.(%s)\n",rawtx->name,bits256_str(str,rawtx->actualtxid),valstr);
+        //char str[65]; printf("%s %s valstr.(%s)\n",rawtx->name,bits256_str(str,rawtx->I.actualtxid),valstr);
         if ( (valuearray= cJSON_Parse(valstr)) != 0 )
         {
             if ( is_cJSON_Array(valuearray) != 0 )

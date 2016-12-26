@@ -347,16 +347,16 @@ THREE_STRINGS(iguana,passthru,asset,function,hex)
 
 TWO_STRINGS(dex,send,hex,handler)
 {
-    uint8_t data[8192]; int32_t datalen,retval;
+    uint8_t data[8192]; int32_t datalen; char *retstr;
     if ( hex != 0 && (datalen= is_hexstr(hex,0)) > 0 && (datalen>>1) < sizeof(data) )
     {
         datalen >>= 1;
         decode_hex(data,datalen,hex);
         if ( handler == 0 || handler[0] == 0 )
             handler = "DEX";
-        if ( (retval= dex_reqsend(myinfo,handler,data,datalen)) == 0 )
+        if ( (retstr= dex_reqsend(myinfo,handler,data,datalen)) == 0 )
             return(clonestr("{\"result\":\"success\"}"));
-        else return(clonestr("{\"error\":\"dex send: retval error\"}"));
+        else return(retstr);
     } else return(clonestr("{\"error\":\"dex send: invalid hex\"}"));
 }
 
