@@ -95,12 +95,15 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
         dex_rwrequest(0,dexp->packet,&dexreq);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
+            printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
             if ( dexreq.func == 'T' )
             {
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.txid)) != 0 )
                     retstr = jprint(retjson,1);
             }
         }
+        if ( retstr == 0 )
+            return(clonestr("{\"error\":\"null return\"}"));
     }
     return(retstr);
 }
@@ -197,7 +200,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
             else
             {
                 retstr = (char *)retptr;
-                printf("REQ got (%s)\n",retstr);
+                printf("REQ got.%d (%s)\n",recvbytes,retstr);
             }
             portable_mutex_unlock(&myinfo->dexmutex);
         }
