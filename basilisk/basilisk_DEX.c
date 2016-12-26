@@ -391,9 +391,9 @@ struct basilisk_request *_basilisk_requests_uniq(struct supernet_info *myinfo,in
     if ( refrp != 0 )
     {
         requests[0] = *refrp;
-        for (i=0; i<sizeof(*refrp); i++)
-            printf("%02x",((uint8_t *)refrp)[i]);
-        printf(" uniq\n");
+        //for (i=0; i<sizeof(*refrp); i++)
+        //    printf("%02x",((uint8_t *)refrp)[i]);
+        //printf(" uniq\n");
     }
     if ( refrp != 0 )
         m = 1;
