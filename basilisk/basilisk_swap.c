@@ -1842,6 +1842,9 @@ void basilisk_swaploop(void *_swap)
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
     int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
+    for (i=0; i<sizeof(*rp); i++)
+        printf("%02x",((uint8_t *)rp)[i]);
+    printf(" thread start\n");
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1886,7 +1889,9 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             }
             if ( statebits != 0 || m > n/2 )
             {
-                fprintf(stderr,"m.%d n.%d launch.%d %d\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
+                for (i=0; i<sizeof(swap->I.req); i++)
+                    printf("%02x",((uint8_t *)&swap->I.req)[i]);
+                fprintf(stderr," m.%d n.%d launch.%d %d\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)));
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     

@@ -34,7 +34,7 @@ int32_t basilisk_ping_processDEX(struct supernet_info *myinfo,uint32_t senderipb
                 if ( relay->numrequests < relay->maxrequests )
                 {
                     memcpy(serialized,&data[len],clen);
-                    //printf("ping processDEX\n");
+                    printf("ping processDEX\n");
                     n = basilisk_rwDEXquote(0,serialized,&R);
                     if ( n != clen )
                         printf("n.%d clen.%d\n",n,clen);
@@ -126,6 +126,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
+    printf("basilisk_request_enqueue\n");
     len = basilisk_rwDEXquote(1,serialized+1,rp);
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
     {
@@ -254,7 +255,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,u
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768],buf[4096],key[BASILISK_KEYSIZE]; cJSON *outerarray,*retjson; uint32_t msgid,crcs[2],crc,channel; int32_t datalen,i,n,keylen,numiters; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[32768],buf[4096]; cJSON *outerarray,*retjson; uint32_t msgid,crcs[2],crc,channel; int32_t datalen,i,n,numiters; struct basilisk_request issueR; double hwm = 0.;
     if ( time(NULL) < lastpoll+3 )
         return;
     lastpoll = (uint32_t)time(NULL);
@@ -283,12 +284,12 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         //    printf("%02x",((uint8_t *)&issueR)[i]);
         //printf("\n");
         myinfo->DEXaccept = issueR;
-        issueR.quoteid = basilisk_quoteid(&issueR);
+        /*issueR.quoteid = basilisk_quoteid(&issueR);
         datalen = basilisk_rwDEXquote(1,data,&issueR);
         msgid = (uint32_t)time(NULL);
         keylen = basilisk_messagekey(key,0,msgid,issueR.srchash,issueR.desthash);
         if ( (retstr= basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,BASILISK_DEXDURATION)) != 0 )
-            free(retstr);
+            free(retstr);*/
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
             printf("my req hwm %f\n",hwm);
