@@ -1064,7 +1064,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     {
         swap->bobcoin = iguana_coinfind("BTC");
         swap->I.bobsatoshis = swap->I.req.srcamount;
-        swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
+        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->alicecoin = iguana_coinfind(swap->I.req.dest);
         swap->I.alicesatoshis = swap->I.req.destamount;
         swap->I.aliceconfirms = swap->I.bobconfirms * 3;
@@ -1073,7 +1073,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     {
         swap->bobcoin = iguana_coinfind("BTC");
         swap->I.bobsatoshis = swap->I.req.destamount;
-        swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
+        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->alicecoin = iguana_coinfind(swap->I.req.src);
         swap->I.alicesatoshis = swap->I.req.srcamount;
         swap->I.aliceconfirms = swap->I.bobconfirms * 3;
