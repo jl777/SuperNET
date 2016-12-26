@@ -1503,7 +1503,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->I.otherstatebits & 0x80) != 0 && (swap->I.statebits & 0x80) != 0 )
             break;
-        sleep(3 + (swap->I.iambob == 0)*10);
+        sleep(3 + (swap->I.iambob == 0)*1);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->I.otherstatebits & 0x80) == 0 )
@@ -1714,9 +1714,9 @@ void basilisk_swaploop(void *_swap)
         basilisk_waitchoosei(myinfo,swap,data,maxlen); // wait for choosei 0x08
         if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
-        sleep(3);
-        dpow_nanomsg_update(myinfo);
-        dex_updateclient(myinfo);
+        sleep(1);
+        //dpow_nanomsg_update(myinfo);
+        //dex_updateclient(myinfo);
     }
     while ( (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
@@ -1729,7 +1729,7 @@ void basilisk_swaploop(void *_swap)
             swap->I.statebits |= 0x20;
             break;
         }
-        sleep(3 + (swap->I.iambob == 0)*10);
+        sleep(3 + (swap->I.iambob == 0)*1);
         dpow_nanomsg_update(myinfo);
         dex_updateclient(myinfo);
     }
