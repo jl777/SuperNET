@@ -325,7 +325,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
             printf("%02x",coin->chain->alertpubkey[i]);
         char str[65]; printf(" alertpubkey.%d, alerthash2.%s\n",plen,bits256_str(str,alerthash2));
     } else msg->siglen = 0;
-    printf("  ALERT v.%d relay.%lld expires.%lld ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,(long long)msg->relayuntil,(long long)msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
+    //printf("  ALERT v.%d relay.%lld expires.%lld ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,(long long)msg->relayuntil,(long long)msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
     return(len);
 }
 
@@ -1251,7 +1251,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
             //printf("error.(%s) (%s): len.%d != recvlen.%d\n",H->command,addr->ipaddr,len,recvlen);
             //for (i=0; i<len; i++)
             //    printf("%02x",data[i]);
-            if ( len != 0 && strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) )
+            if ( len != 0 && strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) && strcmp(H->command,"alert") != 0 )
                 printf("%s %s.%s len mismatch %d != %d\n",coin->symbol,addr!=0?addr->ipaddr:"local",H->command,len,recvlen);
         }
         else if ( len != recvlen && recvlen > 1 )

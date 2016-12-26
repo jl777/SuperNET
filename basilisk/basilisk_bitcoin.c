@@ -942,6 +942,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         {
             if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
             {
+                printf("TX.(%s)\n",jprint(txoutjson,0));
                 if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
                 {
                     retjson = cJSON_CreateObject();
@@ -966,7 +967,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                 }
                 free_json(txoutjson);
             }
-            free(retstr);
+            return(retstr);
         }
     }
     return(basilisk_standardservice("VAL",myinfo,0,hash,vals,hexstr,1));
