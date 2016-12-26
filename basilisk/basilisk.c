@@ -209,7 +209,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     }
     if ( basilisk_notarycmd(type) != 0 && myinfo->NOTARY.NUMRELAYS == 0 )
     {
-        printf("no notary nodes to send (%s) to\n",type);
+        //printf("no notary nodes to send (%s) to\n",type);
         return(-1);
     }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -900,6 +900,8 @@ void basilisks_loop(void *arg)
                 endmilli = startmilli + 1000;
             else endmilli = startmilli + 2000;
         }
+        if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
+            basilisk_requests_poll(myinfo);
         //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);

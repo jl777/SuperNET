@@ -22,7 +22,7 @@
 #define DPOW_MINSIGS 11
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0776
+#define DPOW_VERSION 0x0777
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 600
@@ -45,7 +45,7 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
-#define DEX_VERSION 0x0102
+#define DEX_VERSION 0x0103
 #define DPOW_SOCK 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
@@ -141,11 +141,14 @@ struct dpow_info
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
 int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
 void dex_updateclient(struct supernet_info *myinfo);
-int32_t dex_reqsend(struct supernet_info *myinfo,uint8_t *data,int32_t datalen);
+char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
+char *dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
+cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
 
 #endif

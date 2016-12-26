@@ -410,7 +410,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    //printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
+    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
     double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,list[0].src,list[0].dest)) > 0. )
     {
@@ -447,8 +447,10 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     {
         if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
         {
-            printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             *issueR = list[maxi];
+            for (i=0; i<sizeof(*issueR); i++)
+                printf("%02x",((uint8_t *)issueR)[i]);
+            printf(" automatch[%d] quoteid.%u triggered %.8f > %.8f\n",maxi,list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             if ( minamount > 0 )
                 metric = (dstr(maxamount) / dstr(minamount)) - 1.;
             else metric = 1.;
@@ -489,6 +491,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                             *issueR = tmpR;
                             hwm = metric;
                             refR = tmpR;
+                            printf("SET HWM\n");
                         }
                         m = 0;
                     }
@@ -504,7 +507,13 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
         //printf("process_results n.%d m.%d nonz.%d\n",n,m,nonz);
         if ( m > 0 && m < sizeof(list)/sizeof(*list) )
             if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
+            {
                 *issueR = tmpR, hwm = metric;
+                printf("set hwm\n");
+                for (i=0; i<sizeof(*issueR); i++)
+                    printf("%02x",((uint8_t *)issueR)[i]);
+                printf("\n");
+            }
     }
     return(hwm);
 }

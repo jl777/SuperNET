@@ -172,7 +172,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
             continue;
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -1256,7 +1256,7 @@ cJSON *iguana_listunspents(struct supernet_info *myinfo,struct iguana_info *coin
     {
         array = iguana_getaddressesbyaccount(myinfo,coin,"*");
         flag = 1;
-        printf("listunspent.(%s)\n",jprint(array,0));
+        //printf("listunspent.(%s)\n",jprint(array,0));
     }
     if ( minconf == 0 )
         minconf = 1;
