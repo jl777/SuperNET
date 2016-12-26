@@ -938,7 +938,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
     int32_t i,n=0,num=0,size,firstz = -1; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
-    if ( time(NULL) < myinfo->nanoinit+5 || myinfo->dpowsock < 0 )
+    if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     portable_mutex_lock(&myinfo->dpowmutex);
     for (i=0; i<100; i++)

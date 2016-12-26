@@ -1859,10 +1859,11 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
             starttime = (uint32_t)time(NULL);
-            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+300 )
+            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+30 )
             {
                 m = n = 0;
                 dpow_nanomsg_update(myinfo);
+                dex_updateclient(myinfo);
                 sleep(3);
                 printf("waiting for offer to be accepted\n");
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);

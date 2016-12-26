@@ -147,5 +147,6 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
 
 #endif
