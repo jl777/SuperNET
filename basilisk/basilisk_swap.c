@@ -1713,6 +1713,8 @@ void basilisk_swaploop(void *_swap)
         if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
         sleep(1);
+        dpow_nanomsg_update(myinfo);
+        dex_updateclient(myinfo);
     }
     while ( (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {

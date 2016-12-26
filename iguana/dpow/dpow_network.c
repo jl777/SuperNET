@@ -125,9 +125,9 @@ int32_t dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int
         memcpy(dexp->packet,data,datalen);
         dexp->crc32 = calc_crc32(0,data,datalen);
         sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-        for (i=0; i<datalen; i++)
-            printf("%02x",((uint8_t *)data)[i]);
-        printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
+        //for (i=0; i<datalen; i++)
+        //    printf("%02x",((uint8_t *)data)[i]);
+        //printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
             ipbits = *retptr;
