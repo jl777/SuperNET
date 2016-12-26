@@ -76,7 +76,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
         {
             while ( width >= 0 && n < 60 )
             {
-                if ( msgid == keymsgid && keychannel == channel )
+                if ( (keymsgid == 0 || msgid == keymsgid) && (keychannel == 0 || keychannel == channel) )
                     return(0);
                 msgid--;
                 n++;
