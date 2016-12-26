@@ -943,10 +943,10 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
             {
                 printf("TX.(%s)\n",jprint(txoutjson,0));
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
                 if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
                 {
-                    retjson = cJSON_CreateObject();
-                    jaddstr(retjson,"result","success");
                     printf("txjson.(%s)\n",jprint(txjson,0));
                     if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= j64bits(txjson,"value") * SATOSHIDEN) != 0 )
                     {
@@ -965,7 +965,9 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                         return(jprint(retjson,1));
                     }
                 }
+                jaddnum(retjson,"numconfirms",0);
                 free_json(txoutjson);
+                return(jprint(retjson,1));
             }
             return(retstr);
         }
