@@ -1206,7 +1206,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 ) //i < 100 &&
+    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 && num < 100 )
     {
         if ( size > 0 )
         {
@@ -1257,8 +1257,6 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( np != 0 )
             nn_freemsg(np), np = 0;
     } //else printf("no packets\n");
-    if ( num != 0 )
-        return(num);
     n = 0;
     if ( myinfo->dexsock >= 0 ) // from servers
     {
