@@ -508,6 +508,11 @@ HASH_AND_STRING(dex,gettransaction,txid,symbol)
     return(_dex_getrawtransaction(myinfo,symbol,txid));
 }
 
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
+{
+    return(_dex_gettxout(myinfo,symbol,txid,vout));
+}
+
 STRING_ARG(dex,getinfo,symbol)
 {
     return(_dex_getinfo(myinfo,symbol));

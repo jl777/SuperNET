@@ -193,6 +193,7 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
     int32_t len = 0;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->height),&dexreq->height);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->vout),&dexreq->vout);
     if ( rwflag != 0 )
     {
         memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
@@ -261,7 +262,7 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 
 char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
 {
-    uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
     datalen = dex_rwrequest(1,packet,dexreq);
     return(dex_reqsend(myinfo,"request",packet,datalen));
 }
@@ -279,6 +280,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
 {
     struct dex_request dexreq;
+    char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
