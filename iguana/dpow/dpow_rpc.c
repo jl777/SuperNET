@@ -260,6 +260,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
         if ( (raw= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
+            printf("RAW.(%s)\n",raw);
             if ( (rawjson= cJSON_Parse(raw)) != 0 )
             {
                 if ( (rawtx= jstr(rawjson,"result")) != 0 )
