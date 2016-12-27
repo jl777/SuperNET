@@ -93,9 +93,9 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         dex_rwrequest(0,dexp->packet,&dexreq);
+        printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
-            printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
             if ( dexreq.func == 'T' )
             {
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.txid)) != 0 )
