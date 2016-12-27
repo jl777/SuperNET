@@ -91,12 +91,10 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
 char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 {
     char buf[65],*retstr = 0; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
-    dex_rwrequest(0,dexp->packet,&dexreq);
-    printf("(%s) dex_response.%s (%c)\n",dexp->handler,dexreq.name,dexreq.func);
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         dex_rwrequest(0,dexp->packet,&dexreq);
-        printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
+        //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
             if ( dexreq.func == 'T' )
