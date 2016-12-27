@@ -147,7 +147,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
     {
         if ( (num= dpow_nanomsg_update(myinfo)) <= 0 )
             break;
-        //fprintf(stderr,"%d ",num);
+        fprintf(stderr,"%d ",num);
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
