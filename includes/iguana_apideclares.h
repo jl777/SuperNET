@@ -21,6 +21,7 @@ ZERO_ARGS(dpow,cancelratify);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
 TWO_STRINGS(dex,send,hex,handler);
+HASH_AND_STRING(dex,gettransaction,txid,symbol);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);

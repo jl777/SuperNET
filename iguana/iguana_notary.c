@@ -502,6 +502,11 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     }
     return(clonestr("{\"result\":\"started ratification\"}"));
 }
+
+HASH_AND_STRING(dex,gettransaction,txid,symbol)
+{
+    return(dex_getrawtransaction(myinfo,symbol,txid));
+}
 #include "../includes/iguana_apiundefs.h"
 
 
