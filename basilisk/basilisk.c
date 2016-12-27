@@ -891,7 +891,7 @@ void basilisks_loop(void *arg)
                 if ( (counter % myinfo->numdpows) != 0 )
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
             }
-            endmilli = startmilli + 10;
+            endmilli = startmilli + 500;
         }
         else
         {
