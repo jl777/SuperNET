@@ -143,7 +143,6 @@ int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
 void dex_updateclient(struct supernet_info *myinfo);
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen);
 char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);
-cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
@@ -154,6 +153,7 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height);
 bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
+cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -161,5 +161,6 @@ char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2);
 char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height);
 char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol);
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx);
+char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout);
 
 #endif

@@ -186,7 +186,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     return(retstr);
 }
 
-struct dex_request { bits256 hash; int32_t height; char name[15]; uint8_t func; };
+struct dex_request { bits256 hash; int32_t height; uint16_t vout; char name[15]; uint8_t func; };
 
 int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
 {
@@ -218,6 +218,11 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
             if ( dexreq.func == 'T' )
             {
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.hash)) != 0 )
+                    retstr = jprint(retjson,1);
+            }
+            else if ( dexreq.func == 'O' )
+            {
+                if ( (retjson= dpow_gettxout(myinfo,coin,dexreq.hash,dexreq.vout)) != 0 )
                     retstr = jprint(retjson,1);
             }
             else if ( dexreq.func == 'H' )
@@ -254,57 +259,70 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
     return(retstr);
 }
 
+char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
+{
+    uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    datalen = dex_rwrequest(1,packet,dexreq);
+    return(dex_reqsend(myinfo,"request",packet,datalen));
+}
+
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid)
 {
-    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
     dexreq.func = 'T';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    return(_dex_sendrequest(myinfo,&dexreq));
+}
+
+char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.hash = txid;
+    dexreq.vout = vout;
+    dexreq.func = 'O';
+    return(_dex_sendrequest(myinfo,&dexreq));
 }
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
 {
-    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    return(_dex_sendrequest(myinfo,&dexreq));
 }
 
 char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
 {
-    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = hash2;
     dexreq.func = 'B';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    return(_dex_sendrequest(myinfo,&dexreq));
 }
 
 char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height)
 {
-    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.height = height;
     dexreq.func = 'H';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    return(_dex_sendrequest(myinfo,&dexreq));
 }
 
 char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
 {
-    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'P';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    return(_dex_sendrequest(myinfo,&dexreq));
 }
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
