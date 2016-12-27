@@ -207,9 +207,10 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
     return(len);
 }
 
-char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
+char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 {
     char buf[65],*retstr = 0; int32_t datalen; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
+    *broadcastflagp = 0;
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);
@@ -257,6 +258,7 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
             {
                 printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+                *broadcastflagp = 1;
             }
         }
         if ( retstr == 0 )
@@ -1134,7 +1136,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t i,n=0,num=0,size,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
+    int32_t i,n=0,num=0,size,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0;
     if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     portable_mutex_lock(&myinfo->dpowmutex);
@@ -1220,10 +1222,15 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             num++;
             //printf("REP got %d\n",size);
-            if ( (retstr= dex_response(myinfo,dexp)) != 0 )
+            if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 nn_send(myinfo->repsock,retstr,(int32_t)strlen(retstr)+1,0);
                 free(retstr);
+                if ( broadcastflag != 0 )
+                {
+                    printf("BROADCAST dexp request.[%d]\n",size);
+                    nn_send(myinfo->dexsock,dexp,size,0);
+                }
             }
             else
             {
