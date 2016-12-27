@@ -569,7 +569,7 @@ TWO_STRINGS(dex,listunspent,symbol,address)
     return(_dex_listunspent(myinfo,symbol,address));
 }
 
-TWO_STRINGS_AND_TWO_DOUBLES(dest,listtransactions,symbol,address,count,skip)
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
     return(_dex_listtransactions(myinfo,symbol,address,count,skip));
 }
