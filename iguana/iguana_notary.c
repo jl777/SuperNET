@@ -215,7 +215,7 @@ void dpow_addresses()
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
-    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -278,9 +278,25 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    srcvalid = dpow_validateaddress(myinfo,src,srcaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,src,srcaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            srcvalid = 1;
+        else srcvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
-    destvalid = dpow_validateaddress(myinfo,dest,destaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,dest,destaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            destvalid = 1;
+        else destvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
@@ -508,6 +524,11 @@ HASH_AND_STRING(dex,gettransaction,txid,symbol)
     return(_dex_getrawtransaction(myinfo,symbol,txid));
 }
 
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
+{
+    return(_dex_gettxout(myinfo,symbol,txid,vout));
+}
+
 STRING_ARG(dex,getinfo,symbol)
 {
     return(_dex_getinfo(myinfo,symbol));
@@ -516,6 +537,11 @@ STRING_ARG(dex,getinfo,symbol)
 STRING_ARG(dex,getbestblockhash,symbol)
 {
     return(_dex_getbestblockhash(myinfo,symbol));
+}
+
+STRING_ARG(dex,alladdresses,symbol)
+{
+    return(_dex_alladdresses(myinfo,symbol));
 }
 
 STRING_AND_INT(dex,getblockhash,symbol,height)
@@ -528,8 +554,30 @@ HASH_AND_STRING(dex,getblock,hash,symbol)
     return(_dex_getblock(myinfo,symbol,hash));
 }
 
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx)
+{
+    return(_dex_sendrawtransaction(myinfo,symbol,signedtx));
+}
 
+TWO_STRINGS(dex,importaddress,symbol,address)
+{
+    return(_dex_importaddress(myinfo,symbol,address));
+}
 
+TWO_STRINGS(dex,validateaddress,symbol,address)
+{
+    return(_dex_validateaddress(myinfo,symbol,address));
+}
+
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+}
 #include "../includes/iguana_apiundefs.h"
 
 

@@ -1,0 +1,2 @@
+#!/bin/bash
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listtransactions\",\"address\":\"15R3C2ZKmak5pCc4duLY2jLtFD3o1jaeNd\",\"count\":100,\"skip\":0,\"symbol\":\"BTC\"}"

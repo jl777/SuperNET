@@ -198,9 +198,9 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[128],*retstr=0; cJSON *ismine,*json = 0; int32_t retval = -1;
+    char buf[128],*retstr=0; 
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"\"%s\"",address);
@@ -215,16 +215,7 @@ int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *co
     {
         return(0);
     }
-    if ( retstr != 0 )
-    {
-        json = cJSON_Parse(retstr);
-        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
-            retval = 1;
-        else retval = 0;
-        free(retstr);
-        
-    }
-    return(retval);
+    return(retstr);
 }
 
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
@@ -306,7 +297,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    char buf[128],*retstr; cJSON *json = 0;
+    char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
@@ -319,13 +310,35 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
-        json = iguana_listunspents(myinfo,coin,0,1,coin->longestchain,"");
+        array = cJSON_CreateArray();
+        jaddistr(array,coinaddr);
+        json = iguana_listunspents(myinfo,coin,array,1,coin->longestchain,"");
+        free_json(array);
     }
     else
     {
         return(0);
     }
     return(json);
+}
+
+cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
+{
+    char buf[128],*retstr; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        if ( count == 0 )
+            count = 100;
+        sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listtransactions",buf)) != 0 )
+        {
+            //printf("LIST.(%s)\n",retstr);
+            json = cJSON_Parse(retstr);
+            free(retstr);
+            return(json);
+        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
 }
 
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
@@ -411,6 +424,63 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     {
         return(0);
     }
+}
+
+char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr,fname[1024]; long filesize;
+    sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+    retstr = OS_filestr(&filesize,fname);
+    return(retstr);
+}
+
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    char buf[1024],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson; int32_t i,n; FILE *fp;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
+        if ( (alladdresses= dpow_alladdresses(myinfo,coin)) != 0 )
+        {
+            if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
+            {
+                if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
+                {
+                    for (i=0; i<n; i++)
+                        if ( strcmp(address,jstri(alljson,i)) == 0 )
+                            break;
+                    if ( i == n )
+                    {
+                        jaddistr(alljson,address);
+                        outstr = jprint(alljson,0);
+                        sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+                        if ( (fp= fopen(fname,"wb")) != 0 )
+                        {
+                            fwrite(outstr,1,strlen(outstr)+1,fp);
+                            fclose(fp);
+                            printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
+                        }
+                        free(outstr);
+                    }
+                }
+                free_json(alljson);
+            }
+            free(alladdresses);
+        }
+        else
+        {
+            sprintf(buf,"[\"%s\"]",address);
+            sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                fwrite(buf,1,strlen(buf)+1,fp);
+                fclose(fp);
+            }
+        }
+        return(retstr);
+    }
+    else return(0);
 }
 
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)

@@ -91,8 +91,11 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         {
             if ( strcmp(command,"signrawtransaction") != 0 )
                 printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
+            retstr = rpcstr;
+            rpcstr = 0;
         }
-        free(rpcstr);
+        if ( rpcstr != 0 )
+            free(rpcstr);
     } else retstr = rpcstr;
     free_json(json);
     //fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: postprocess returns.(%s)\n",retstr);
