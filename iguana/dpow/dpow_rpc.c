@@ -418,7 +418,7 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
     char buf[128],*retstr;
     if ( coin->FULLNODE < 0 )
     {
-        sprintf(buf,"[\"%s\", \"\", 0]",address);
+        sprintf(buf,"[\"%s\", \"%s\", 0]",address,address);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
         return(retstr);
     }
