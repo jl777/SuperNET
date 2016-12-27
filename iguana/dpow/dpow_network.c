@@ -1249,7 +1249,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                             } //else printf("height.%d bp.%p state.%x senderind.%d\n",np->height,bp,bp!=0?bp->state:0,np->senderind);
                             //dp->crcs[firstz] = crc32;
                         }
-                    } else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
+                    } //else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
                 } else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
             } else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
         } else printf("illegal size.%d\n",size);
