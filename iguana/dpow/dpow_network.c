@@ -1032,7 +1032,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             }
             if ( flag >= 0 )
             {
-                printf("flag.%d -> send\n",flag);
+                //printf("flag.%d -> send\n",flag);
                 for (i=0; i<sizeof(srchash); i++)
                     srchash.bytes[i] = dp->minerkey33[i+1];
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
