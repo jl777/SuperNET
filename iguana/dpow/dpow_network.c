@@ -627,7 +627,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    timeout = 100;
+                                    timeout = 3000;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -645,7 +645,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             }
             myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
             myinfo->numdpowipbits = 1;
-            timeout = 300;
+            timeout = 3000;
             nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
