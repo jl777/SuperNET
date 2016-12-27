@@ -938,7 +938,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     }
     if ( myinfo->reqsock >= 0 )
     {
-        if ( (retstr= dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
+        if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
         {
             if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -955,7 +955,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                             jaddstr(retjson,"address",coinaddr);
                         jadd64bits(retjson,"satoshis",value);
                         jaddnum(retjson,"value",dstr(value));
-                        if ( (infostr= dex_getinfo(myinfo,symbol)) != 0 )
+                        if ( (infostr= _dex_getinfo(myinfo,symbol)) != 0 )
                         {
                             if ( (info= cJSON_Parse(infostr)) != 0 )
                             {

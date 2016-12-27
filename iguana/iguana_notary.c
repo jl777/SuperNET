@@ -505,8 +505,31 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
 
 HASH_AND_STRING(dex,gettransaction,txid,symbol)
 {
-    return(dex_getrawtransaction(myinfo,symbol,txid));
+    return(_dex_getrawtransaction(myinfo,symbol,txid));
 }
+
+STRING_ARG(dex,getinfo,symbol)
+{
+    return(_dex_getinfo(myinfo,symbol));
+}
+
+STRING_ARG(dex,getbestblockhash,symbol)
+{
+    return(_dex_getbestblockhash(myinfo,symbol));
+}
+
+STRING_AND_INT(dex,getblockhash,symbol,height)
+{
+    return(_dex_getblockhash(myinfo,symbol,height));
+}
+
+HASH_AND_STRING(dex,getblock,hash,symbol)
+{
+    return(_dex_getblock(myinfo,symbol,hash));
+}
+
+
+
 #include "../includes/iguana_apiundefs.h"
 
 

@@ -148,9 +148,17 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
 void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
-char *dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
-cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
-char *dex_getinfo(struct supernet_info *myinfo,char *symbol);
+
 cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
+cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
+cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash);
+bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height);
+bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
+
+char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
+char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
+char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2);
+char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height);
+char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol);
 
 #endif
