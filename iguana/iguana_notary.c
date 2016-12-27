@@ -538,6 +538,10 @@ TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx)
     return(_dex_sendrawtransaction(myinfo,symbol,signedtx));
 }
 
+TWO_STRINGS(dex,importaddress,symbol,address)
+{
+    return(_dex_importaddress(myinfo,symbol,address));
+}
 #include "../includes/iguana_apiundefs.h"
 
 

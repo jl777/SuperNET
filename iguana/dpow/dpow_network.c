@@ -253,6 +253,11 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
                 printf("SEND.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
                 retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
+            else if ( dexreq.func == 'A' )
+            {
+                printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
+                retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+            }
         }
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
@@ -338,6 +343,22 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     strcpy((char *)&packet[datalen],signedtx);
     printf("PACKET.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(signedtx));
     datalen += strlen(signedtx) + 1;
+    retstr = dex_reqsend(myinfo,"request",packet,datalen);
+    free(packet);
+    return(retstr);
+}
+
+char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
+    packet = calloc(1,sizeof(dexreq)+strlen(address)+1);
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'A';
+    datalen = dex_rwrequest(1,packet,&dexreq);
+    strcpy((char *)&packet[datalen],address);
+    printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(address));
+    datalen += strlen(address) + 1;
     retstr = dex_reqsend(myinfo,"request",packet,datalen);
     free(packet);
     return(retstr);

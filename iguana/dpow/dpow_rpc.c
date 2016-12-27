@@ -413,6 +413,18 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     }
 }
 
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    char buf[128],*retstr;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"[\"%s\"]",address);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
+        return(retstr);
+    }
+    else return(0);
+}
+
 int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin)
 {
     int32_t n,i,height = -1,maxtx = *numtxp; bits256 besthash,oldhash; cJSON *array,*json;
