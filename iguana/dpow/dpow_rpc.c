@@ -459,12 +459,14 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
                         {
                             fwrite(outstr,1,strlen(outstr)+1,fp);
                             fclose(fp);
+                            printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
                         }
                         free(outstr);
                     }
                 }
                 free_json(alljson);
             }
+            free(alladdresses);
         }
         else
         {

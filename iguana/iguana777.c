@@ -839,7 +839,7 @@ void iguana_helper(void *arg)
 
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
+    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,n,bundlei; bits256 zero; char dirname[512],*symbol,*alladdresses,*retstr; cJSON *alljson;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
     //    printf("%02x",((uint8_t *)coin->chain)[i]);
@@ -872,6 +872,20 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
     printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
+    if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
+    {
+        if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
+        {
+            if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i))) != 0 )
+                        free(retstr);
+            }
+            free_json(alljson);
+        }
+        free(alladdresses);
+    }
     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
 
