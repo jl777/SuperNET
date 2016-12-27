@@ -179,7 +179,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
             if ( nn_poll(&pfd,1,100) > 0 )
             {
                 sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-                printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
+                //printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
                 break;
             }
             usleep(1000);
@@ -188,7 +188,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
-            printf("req returned.[%d]\n",recvbytes);
+            //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             if ( strcmp(handler,"DEX") == 0 )
             {
@@ -210,7 +210,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+//nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
@@ -1109,7 +1109,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
-            printf("REP got %d\n",size);
+            //printf("REP got %d\n",size);
             if ( (retstr= dex_response(myinfo,dexp)) != 0 )
             {
                 nn_send(myinfo->repsock,retstr,(int32_t)strlen(retstr)+1,0);
@@ -1121,7 +1121,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
