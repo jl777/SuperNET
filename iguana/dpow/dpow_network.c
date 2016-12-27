@@ -1206,7 +1206,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    if ( i < 100 && (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
+    if ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 ) //i < 100 && 
     {
         if ( size > 0 )
         {
