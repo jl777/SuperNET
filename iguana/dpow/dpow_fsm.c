@@ -412,7 +412,7 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,&bp->paxwdcrc);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        sleep(3);
+        sleep(5);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )
