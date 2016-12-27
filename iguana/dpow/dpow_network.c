@@ -186,14 +186,14 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     return(retstr);
 }
 
-struct dex_request { bits256 hash; int32_t height; uint16_t vout; char name[15]; uint8_t func; };
+struct dex_request { bits256 hash; int32_t intarg; uint16_t shortarg; char name[15]; uint8_t func; };
 
 int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
 {
     int32_t len = 0;
     len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->height),&dexreq->height);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->vout),&dexreq->vout);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->intarg),&dexreq->intarg);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->shortarg),&dexreq->shortarg);
     if ( rwflag != 0 )
     {
         memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
@@ -224,12 +224,12 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'O' )
             {
-                if ( (retjson= dpow_gettxout(myinfo,coin,dexreq.hash,dexreq.vout)) != 0 )
+                if ( (retjson= dpow_gettxout(myinfo,coin,dexreq.hash,dexreq.shortarg)) != 0 )
                     retstr = jprint(retjson,1);
             }
             else if ( dexreq.func == 'H' )
             {
-                hash2 = dpow_getblockhash(myinfo,coin,dexreq.height);
+                hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
                 bits256_str(buf,hash2);
                 retstr = clonestr(buf);
             }
@@ -256,14 +256,17 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'S' )
             {
-                printf("SEND.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
                 retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
+            }
+            else if ( dexreq.func == 'L' )
+            {
+                if ( (retjson= dpow_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                    retstr = jprint(retjson,1);
             }
             else if ( dexreq.func == 'A' )
             {
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 *broadcastflagp = 1;
-                printf("address.(%s) datalen.%d strlen.%ld ->(%s)\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]),retstr);
                 if ( retstr == 0 )
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
@@ -315,7 +318,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
-    dexreq.vout = vout;
+    dexreq.shortarg = vout;
     dexreq.func = 'O';
     return(_dex_sendrequest(myinfo,&dexreq));
 }
@@ -344,7 +347,7 @@ char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height
     struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
-    dexreq.height = height;
+    dexreq.intarg = height;
     dexreq.func = 'H';
     return(_dex_sendrequest(myinfo,&dexreq));
 }
@@ -391,6 +394,17 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
+    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+}
+
+char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.intarg = skip;
+    dexreq.shortarg = count;
+    dexreq.func = 'L';
     return(_dex_sendrequeststr(myinfo,&dexreq,address));
 }
 

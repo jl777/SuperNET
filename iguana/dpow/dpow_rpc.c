@@ -322,6 +322,24 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     return(json);
 }
 
+cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
+{
+    char buf[128],*retstr; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        if ( count == 0 )
+            count = 100;
+        sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listtransactions",buf)) != 0 )
+        {
+            json = cJSON_Parse(retstr);
+            free(retstr);
+            return(json);
+        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
+}
+
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
 {
     cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
