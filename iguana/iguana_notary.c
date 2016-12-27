@@ -288,7 +288,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         retstr = 0;
     }
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
-    if ( (retstr= dpow_validateaddress(myinfo,src,destaddr)) != 0 )
+    if ( (retstr= dpow_validateaddress(myinfo,dest,destaddr)) != 0 )
     {
         json = cJSON_Parse(retstr);
         if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
