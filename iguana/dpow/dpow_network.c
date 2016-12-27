@@ -68,73 +68,6 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     }
 }
 
-struct dex_request { bits256 hash; int32_t height; char name[15]; uint8_t func; };
-
-int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
-{
-    int32_t len = 0;
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->height),&dexreq->height);
-    if ( rwflag != 0 )
-    {
-        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        serialized[len++] = dexreq->func;
-    }
-    else
-    {
-        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        dexreq->func = serialized[len++];
-    }
-    return(len);
-}
-
-char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
-{
-    char buf[65],*retstr = 0; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
-    if ( strcmp(dexp->handler,"request") == 0 )
-    {
-        dex_rwrequest(0,dexp->packet,&dexreq);
-        //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
-        if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
-        {
-            if ( dexreq.func == 'T' )
-            {
-                if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.hash)) != 0 )
-                    retstr = jprint(retjson,1);
-            }
-            else if ( dexreq.func == 'H' )
-            {
-                hash2 = dpow_getblockhash(myinfo,coin,dexreq.height);
-                bits256_str(buf,hash2);
-                retstr = clonestr(buf);
-            }
-            else if ( dexreq.func == 'B' )
-            {
-                if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
-                    retstr = jprint(retjson,1);
-            }
-            else if ( dexreq.func == 'I' )
-            {
-                if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
-                    retstr = jprint(retjson,1);
-            }
-            else if ( dexreq.func == 'P' )
-            {
-                hash2 = dpow_getbestblockhash(myinfo,coin);
-                bits256_str(buf,hash2);
-                retstr = clonestr(buf);
-            }
-            else if ( dexreq.func == 'S' )
-            {
-                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[sizeof(dexreq)]);
-            }
-        }
-        if ( retstr == 0 )
-            return(clonestr("{\"error\":\"null return\"}"));
-    }
-    return(retstr);
-}
-
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
 {
     struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; char *retstr = 0;
@@ -253,6 +186,74 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     return(retstr);
 }
 
+struct dex_request { bits256 hash; int32_t height; char name[15]; uint8_t func; };
+
+int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
+{
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->height),&dexreq->height);
+    if ( rwflag != 0 )
+    {
+        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        serialized[len++] = dexreq->func;
+    }
+    else
+    {
+        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        dexreq->func = serialized[len++];
+    }
+    return(len);
+}
+
+char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
+{
+    char buf[65],*retstr = 0; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
+    if ( strcmp(dexp->handler,"request") == 0 )
+    {
+        dex_rwrequest(0,dexp->packet,&dexreq);
+        //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
+        if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
+        {
+            if ( dexreq.func == 'T' )
+            {
+                if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.hash)) != 0 )
+                    retstr = jprint(retjson,1);
+            }
+            else if ( dexreq.func == 'H' )
+            {
+                hash2 = dpow_getblockhash(myinfo,coin,dexreq.height);
+                bits256_str(buf,hash2);
+                retstr = clonestr(buf);
+            }
+            else if ( dexreq.func == 'B' )
+            {
+                if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
+                    retstr = jprint(retjson,1);
+            }
+            else if ( dexreq.func == 'I' )
+            {
+                if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+                    retstr = jprint(retjson,1);
+            }
+            else if ( dexreq.func == 'P' )
+            {
+                hash2 = dpow_getbestblockhash(myinfo,coin);
+                bits256_str(buf,hash2);
+                retstr = clonestr(buf);
+            }
+            else if ( dexreq.func == 'S' )
+            {
+                printf("SEND.(%s)\n",(char *)&dexp->packet[sizeof(dexreq)]);
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[sizeof(dexreq)]);
+            }
+        }
+        if ( retstr == 0 )
+            return(clonestr("{\"error\":\"null return\"}"));
+    }
+    return(retstr);
+}
+
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid)
 {
     struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
@@ -308,7 +309,7 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
 {
-    struct dex_request dexreq; uint8_t *packet; int32_t datalen;
+    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
     packet = calloc(1,sizeof(dexreq)+strlen(signedtx)+1);
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
@@ -316,7 +317,10 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     datalen = dex_rwrequest(1,packet,&dexreq);
     strcpy((char *)&packet[sizeof(dexreq)],signedtx);
     datalen += strlen(signedtx) + 1;
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    printf("PACKET.(%s)\n",(char *)&packet[sizeof(dexreq)]);
+    retstr = dex_reqsend(myinfo,"request",packet,datalen);
+    free(packet);
+    return(retstr);
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
