@@ -83,7 +83,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         }
         else
         {
-            timeout = 500;
+            timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             timeout = 2000;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -1197,7 +1197,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     portable_mutex_lock(&myinfo->dpowmutex);
-    for (i=0; i<100; i++)
+    /*for (i=0; i<100; i++)
     {
         struct nn_pollfd pfd;
         pfd.fd = myinfo->dpowsock;
@@ -1205,12 +1205,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( nn_poll(&pfd,1,100) > 0 )
             break;
         usleep(1000);
-    }
-    if ( i < 100 && (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 )
+    }*/
+    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 && num < 100 )
     {
-        num++;
-        if ( size >= 0 )
+        if ( size > 0 )
         {
+            //fprintf(stderr,"%d ",size);
+            num++;
             if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
             {
                 //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
@@ -1259,8 +1260,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     n = 0;
     if ( myinfo->dexsock >= 0 ) // from servers
     {
-        if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) >= 0 )
+        if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) > 0 )
         {
+            //fprintf(stderr,"%d ",size);
             num++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
@@ -1275,9 +1277,10 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( myinfo->repsock >= 0 ) // from clients
     {
-        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
+        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
+            //fprintf(stderr,"%d ",size);
             //printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
