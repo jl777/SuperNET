@@ -627,7 +627,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    timeout = 100;
+                                    timeout = 3000;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -645,7 +645,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             }
             myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
             myinfo->numdpowipbits = 1;
-            timeout = 300;
+            timeout = 3000;
             nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -993,12 +993,12 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             }
         }
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
-        //if ( bp->bestmask == 0 )
+        if ( bp->bestmask == 0 )
         {
             bp->recvmask |= (1LL << senderind) | (1LL << bp->myind);
             bp->bestmask = dpow_maskmin(bp->recvmask,bp,&bp->bestk);
-            //dpow_bestconsensus(bp);
         }
+        dpow_bestconsensus(bp);
         if ( bp->bestk >= 0 )
             bp->notaries[bp->myind].bestk = bp->bestk;
         if ( bp->bestmask != 0 )
@@ -1026,17 +1026,17 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
                 else if ( i == senderind && ((1LL << bp->myind) & bp->bestmask) != 0 && ((1LL << i) & bp->bestmask) != 0 && ((1LL << bp->myind) & bp->notaries[i].recvmask) == 0 )
                     flag = senderind;
-                if ( 0 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
+                if ( 1 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
                     printf("%d.(%x %d %llx r%llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)bp->notaries[i].recvmask);
             }
             if ( flag >= 0 )
             {
-                //printf("flag.%d -> send\n",flag);
+                printf("flag.%d -> send\n",flag);
                 for (i=0; i<sizeof(srchash); i++)
                     srchash.bytes[i] = dp->minerkey33[i+1];
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             }
-            if ( 0 && bp->myind <= 1 )
+            if ( 1 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
