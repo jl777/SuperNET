@@ -103,7 +103,8 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
             }
             else if ( dexreq.func == 'I' )
             {
-                
+                if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+                    retstr = jprint(retjson,1);
             }
         }
         if ( retstr == 0 )
