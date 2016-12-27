@@ -297,7 +297,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    char buf[128],*retstr; cJSON *json = 0;
+    char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
@@ -310,7 +310,10 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
-        json = iguana_listunspents(myinfo,coin,0,1,coin->longestchain,"");
+        array = cJSON_CreateArray();
+        jaddistr(array,coinaddr);
+        json = iguana_listunspents(myinfo,coin,array,1,coin->longestchain,"");
+        free_json(array);
     }
     else
     {

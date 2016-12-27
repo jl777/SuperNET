@@ -243,6 +243,11 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
                     retstr = jprint(retjson,1);
             }
+            else if ( dexreq.func == 'U' )
+            {
+                if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                    retstr = jprint(retjson,1);
+            }
             else if ( dexreq.func == 'P' )
             {
                 hash2 = dpow_getbestblockhash(myinfo,coin);
@@ -278,6 +283,19 @@ char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
     datalen = dex_rwrequest(1,packet,dexreq);
     return(dex_reqsend(myinfo,"request",packet,datalen));
+}
+
+char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str)
+{
+    uint8_t *packet; int32_t datalen,slen; char *retstr;
+    slen = (int32_t)strlen(str)+1;
+    packet = calloc(1,sizeof(*dexreq)+slen);
+    datalen = dex_rwrequest(1,packet,dexreq);
+    strcpy((char *)&packet[datalen],str);
+    datalen += slen;
+    retstr = dex_reqsend(myinfo,"request",packet,datalen);
+    free(packet);
+    return(retstr);
 }
 
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid)
@@ -342,50 +360,38 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
 {
-    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
-    packet = calloc(1,sizeof(dexreq)+strlen(signedtx)+1);
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    strcpy((char *)&packet[datalen],signedtx);
-    printf("PACKET.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(signedtx));
-    datalen += strlen(signedtx) + 1;
-    retstr = dex_reqsend(myinfo,"request",packet,datalen);
-    free(packet);
-    return(retstr);
+    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx));
 }
 
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
 {
-    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
-    packet = calloc(1,sizeof(dexreq)+strlen(address)+1);
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    strcpy((char *)&packet[datalen],address);
-    printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(address));
-    datalen += strlen(address) + 1;
-    retstr = dex_reqsend(myinfo,"request",packet,datalen);
-    free(packet);
-    return(retstr);
+    return(_dex_sendrequeststr(myinfo,&dexreq,address));
 }
 
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
 {
-    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
-    packet = calloc(1,sizeof(dexreq)+strlen(address)+1);
+    struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'V';
-    datalen = dex_rwrequest(1,packet,&dexreq);
-    strcpy((char *)&packet[datalen],address);
-    printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(address));
-    datalen += strlen(address) + 1;
-    retstr = dex_reqsend(myinfo,"request",packet,datalen);
-    free(packet);
-    return(retstr);
+    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+}
+
+char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'U';
+    return(_dex_sendrequeststr(myinfo,&dexreq,address));
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)

@@ -563,6 +563,11 @@ TWO_STRINGS(dex,validateaddress,symbol,address)
 {
     return(_dex_validateaddress(myinfo,symbol,address));
 }
+
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
 #include "../includes/iguana_apiundefs.h"
 
 
