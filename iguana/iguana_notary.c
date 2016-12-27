@@ -528,7 +528,10 @@ HASH_AND_STRING(dex,getblock,hash,symbol)
     return(_dex_getblock(myinfo,symbol,hash));
 }
 
-
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx)
+{
+    return(_dex_sendrawtransaction(myinfo,symbol,signedtx));
+}
 
 #include "../includes/iguana_apiundefs.h"
 

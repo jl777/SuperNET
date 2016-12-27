@@ -124,6 +124,10 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
                 bits256_str(buf,hash2);
                 retstr = clonestr(buf);
             }
+            else if ( dexreq.func == 'S' )
+            {
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[sizeof(dexreq)]);
+            }
         }
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
@@ -299,6 +303,19 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'P';
     datalen = dex_rwrequest(1,packet,&dexreq);
+    return(dex_reqsend(myinfo,"request",packet,datalen));
+}
+
+char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
+{
+    struct dex_request dexreq; uint8_t *packet; int32_t datalen;
+    packet = calloc(1,sizeof(dexreq)+strlen(signedtx)+1);
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'S';
+    datalen = dex_rwrequest(1,packet,&dexreq);
+    strcpy((char *)&packet[sizeof(dexreq)],signedtx);
+    datalen += strlen(signedtx) + 1;
     return(dex_reqsend(myinfo,"request",packet,datalen));
 }
 
