@@ -1122,7 +1122,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         np->srchash.bytes[i] = dp->minerkey33[i+1];
     np->desthash = desthash;
     np->channel = channel;
-    np->height = msgbits;
+    np->height = bp->height;//msgbits;
     np->myipbits = myinfo->myaddr.myipbits;
     strcpy(np->symbol,dp->symbol);
     np->version0 = DPOW_VERSION & 0xff;
