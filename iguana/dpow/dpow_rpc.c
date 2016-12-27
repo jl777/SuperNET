@@ -254,20 +254,12 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
 
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    char buf[128],str[65],*retstr=0,*raw,*rawtx=0; cJSON *rawjson,*json = 0;
+    char buf[128],str[65],*retstr=0; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        if ( (raw= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
-            printf("RAW.(%s)\n",raw);
-            if ( (rawjson= cJSON_Parse(raw)) != 0 )
-            {
-                if ( (rawtx= jstr(rawjson,"result")) != 0 )
-                    retstr = dpow_decoderawtransaction(myinfo,coin,rawtx);
-                free_json(rawjson);
-            }
-            free(raw);
         }
         usleep(10000);
     }
