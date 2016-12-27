@@ -208,10 +208,10 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
 
 char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 {
-    char buf[65],*retstr = 0; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
+    char buf[65],*retstr = 0; int32_t datalen; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
     if ( strcmp(dexp->handler,"request") == 0 )
     {
-        dex_rwrequest(0,dexp->packet,&dexreq);
+        datalen = dex_rwrequest(0,dexp->packet,&dexreq);
         //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
@@ -244,8 +244,8 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
             }
             else if ( dexreq.func == 'S' )
             {
-                printf("SEND.(%s)\n",(char *)&dexp->packet[sizeof(dexreq)]);
-                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[sizeof(dexreq)]);
+                printf("SEND.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
+                retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
         }
         if ( retstr == 0 )
@@ -315,9 +315,9 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
     datalen = dex_rwrequest(1,packet,&dexreq);
-    strcpy((char *)&packet[sizeof(dexreq)],signedtx);
+    strcpy((char *)&packet[datalen],signedtx);
+    printf("PACKET.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(signedtx));
     datalen += strlen(signedtx) + 1;
-    printf("PACKET.(%s)\n",(char *)&packet[sizeof(dexreq)]);
     retstr = dex_reqsend(myinfo,"request",packet,datalen);
     free(packet);
     return(retstr);
