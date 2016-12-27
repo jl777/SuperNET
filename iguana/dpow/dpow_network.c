@@ -90,6 +90,8 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
 char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 {
     char *retstr = 0; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
+    dex_rwrequest(0,dexp->packet,&dexreq);
+    printf("(%s) dex_response.%s (%c)\n",dexp->handler,dexreq.name,dexreq.func);
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         dex_rwrequest(0,dexp->packet,&dexreq);
@@ -169,18 +171,29 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         dexp->version1 = (DEX_VERSION >> 8) & 0xff;
         memcpy(dexp->packet,data,datalen);
         dexp->crc32 = calc_crc32(0,data,datalen);
-        sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
+        for (i=0; i<100; i++)
+        {
+            struct nn_pollfd pfd;
+            pfd.fd = myinfo->reqsock;
+            pfd.events = NN_POLLOUT;
+            if ( nn_poll(&pfd,1,100) > 0 )
+            {
+                sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
+                printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
+                break;
+            }
+            usleep(1000);
+        }
         //for (i=0; i<datalen; i++)
         //    printf("%02x",((uint8_t *)data)[i]);
-        //printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
         if ( (recvbytes= nn_recv(myinfo->reqsock,&retptr,NN_MSG,0)) >= 0 )
         {
+            printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             if ( strcmp(handler,"DEX") == 0 )
             {
                 ipbits = *retptr;
                 expand_ipbits(ipaddr,ipbits);
-                //printf("req returned.[%d] %08x %s\n",recvbytes,*retptr,ipaddr);
                 n = myinfo->numdexipbits;
                 for (i=0; i<n; i++)
                     if ( ipbits == myinfo->dexipbits[i] )
@@ -1096,6 +1109,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) >= 0 )
         {
             num++;
+            printf("REP got %d\n",size);
             if ( (retstr= dex_response(myinfo,dexp)) != 0 )
             {
                 nn_send(myinfo->repsock,retstr,(int32_t)strlen(retstr)+1,0);
@@ -1107,7 +1121,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
