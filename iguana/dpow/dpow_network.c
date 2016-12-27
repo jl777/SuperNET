@@ -260,6 +260,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'L' )
             {
+                printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
                 if ( (retjson= dpow_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
                     retstr = jprint(retjson,1);
             }
