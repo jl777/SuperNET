@@ -839,7 +839,7 @@ void iguana_helper(void *arg)
 
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,n,bundlei; bits256 zero; char dirname[512],*symbol,*alladdresses,*retstr; cJSON *alljson;
+    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
     //    printf("%02x",((uint8_t *)coin->chain)[i]);
@@ -872,6 +872,17 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
     printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
+    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+}
+
+void iguana_coinloop(void *arg)
+{
+    struct supernet_info *myinfo; int32_t flag,i,j,n;  cJSON *alljson; struct iguana_peer *addr; bits256 zero; uint32_t now; char *alladdresses,*retstr; struct iguana_info *coin,**coins = arg;
+    myinfo = SuperNET_MYINFO(0);
+    n = (int32_t)(long)coins[0];
+    coins++;
+    coin = coins[0];
+    printf("begin coinloop[%d] %s\n",n,coin->symbol);
     if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
     {
         if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
@@ -886,17 +897,6 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
         }
         free(alladdresses);
     }
-    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-}
-
-void iguana_coinloop(void *arg)
-{
-    struct supernet_info *myinfo; int32_t flag,i,j,n; struct iguana_peer *addr; bits256 zero; uint32_t now; struct iguana_info *coin,**coins = arg;
-    myinfo = SuperNET_MYINFO(0);
-    n = (int32_t)(long)coins[0];
-    coins++;
-    coin = coins[0];
-    printf("begin coinloop[%d] %s\n",n,coin->symbol);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
