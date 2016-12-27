@@ -1245,7 +1245,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                                         dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
                                     } else printf("wrong senderind.%d\n",np->senderind);
                                 }
-                            }
+                            } else printf("height.%d bp.%p state.%x senderind.%d\n",np->height,bp,bp!=0?bp->state:0,np->senderind);
                             //dp->crcs[firstz] = crc32;
                         }
                     } else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
