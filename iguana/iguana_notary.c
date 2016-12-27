@@ -143,11 +143,11 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t i,height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
-    for (i=0; i<100; i++)
+    for (i=0; i<3; i++)
     {
         if ( (num= dpow_nanomsg_update(myinfo)) <= 0 )
             break;
-        fprintf(stderr,"%d ",num);
+        //fprintf(stderr,"%d ",num);
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);

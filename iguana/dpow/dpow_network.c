@@ -1210,7 +1210,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( size > 0 )
         {
-            fprintf(stderr,"%d ",size);
+            //fprintf(stderr,"%d ",size);
             num++;
             if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
             {
@@ -1262,7 +1262,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     {
         if ( (size= nn_recv(myinfo->dexsock,&dexp,NN_MSG,0)) > 0 )
         {
-            fprintf(stderr,"%d ",size);
+            //fprintf(stderr,"%d ",size);
             num++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
@@ -1280,7 +1280,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
-            fprintf(stderr,"%d ",size);
+            //fprintf(stderr,"%d ",size);
             //printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
