@@ -29,6 +29,7 @@ HASH_AND_STRING(dex,getblock,hash,symbol);
 TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
 HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
 TWO_STRINGS(dex,importaddress,symbol,address);
+TWO_STRINGS(dex,validateaddress,symbol,address);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);

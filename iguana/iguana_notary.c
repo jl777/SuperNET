@@ -215,7 +215,7 @@ void dpow_addresses()
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
-    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -278,9 +278,25 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    srcvalid = dpow_validateaddress(myinfo,src,srcaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,src,srcaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            srcvalid = 1;
+        else srcvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
-    destvalid = dpow_validateaddress(myinfo,dest,destaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,src,destaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            destvalid = 1;
+        else destvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
@@ -541,6 +557,11 @@ TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx)
 TWO_STRINGS(dex,importaddress,symbol,address)
 {
     return(_dex_importaddress(myinfo,symbol,address));
+}
+
+TWO_STRINGS(dex,validateaddress,symbol,address)
+{
+    return(_dex_validateaddress(myinfo,symbol,address));
 }
 #include "../includes/iguana_apiundefs.h"
 

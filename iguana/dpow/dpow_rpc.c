@@ -198,9 +198,9 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[128],*retstr=0; cJSON *ismine,*json = 0; int32_t retval = -1;
+    char buf[128],*retstr=0; 
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"\"%s\"",address);
@@ -215,16 +215,7 @@ int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *co
     {
         return(0);
     }
-    if ( retstr != 0 )
-    {
-        json = cJSON_Parse(retstr);
-        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
-            retval = 1;
-        else retval = 0;
-        free(retstr);
-        
-    }
-    return(retval);
+    return(retstr);
 }
 
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)

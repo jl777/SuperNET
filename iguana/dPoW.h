@@ -155,6 +155,7 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -164,5 +165,6 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol);
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx);
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout);
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
 
 #endif

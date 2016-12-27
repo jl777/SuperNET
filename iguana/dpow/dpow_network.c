@@ -256,9 +256,15 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'A' )
             {
-                printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]));
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 *broadcastflagp = 1;
+                printf("address.(%s) datalen.%d strlen.%ld ->(%s)\n",(char *)&dexp->packet[datalen],datalen,strlen((char *)&dexp->packet[datalen]),retstr);
+                if ( retstr == 0 )
+                    retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+            }
+            else if ( dexreq.func == 'V' )
+            {
+                retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
         }
         if ( retstr == 0 )
@@ -357,6 +363,22 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
+    datalen = dex_rwrequest(1,packet,&dexreq);
+    strcpy((char *)&packet[datalen],address);
+    printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(address));
+    datalen += strlen(address) + 1;
+    retstr = dex_reqsend(myinfo,"request",packet,datalen);
+    free(packet);
+    return(retstr);
+}
+
+char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; uint8_t *packet; int32_t datalen; char *retstr;
+    packet = calloc(1,sizeof(dexreq)+strlen(address)+1);
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'V';
     datalen = dex_rwrequest(1,packet,&dexreq);
     strcpy((char *)&packet[datalen],address);
     printf("address.(%s) datalen.%d strlen.%ld\n",(char *)&packet[datalen],datalen,strlen(address));
