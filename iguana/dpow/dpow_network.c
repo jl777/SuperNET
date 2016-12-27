@@ -101,6 +101,10 @@ char *dex_response(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.txid)) != 0 )
                     retstr = jprint(retjson,1);
             }
+            else if ( dexreq.func == 'I' )
+            {
+                
+            }
         }
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
@@ -199,7 +203,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
             else
             {
                 retstr = clonestr((char *)retptr);
-                printf("REQ got.%d (%s)\n",recvbytes,retstr);
+                //printf("REQ got.%d (%s)\n",recvbytes,retstr);
             }
             nn_freemsg(retptr);
             portable_mutex_unlock(&myinfo->dexmutex);
@@ -222,6 +226,16 @@ char *dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 tx
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.txid = txid;
     dexreq.func = 'T';
+    datalen = dex_rwrequest(1,packet,&dexreq);
+    return(dex_reqsend(myinfo,"request",packet,datalen));
+}
+
+char *dex_getinfo(struct supernet_info *myinfo,char *symbol)
+{
+    struct dex_request dexreq; uint8_t packet[sizeof(dexreq)]; int32_t datalen;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'I';
     datalen = dex_rwrequest(1,packet,&dexreq);
     return(dex_reqsend(myinfo,"request",packet,datalen));
 }

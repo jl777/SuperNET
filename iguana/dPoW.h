@@ -150,5 +150,6 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
 char *dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
+char *dex_getinfo(struct supernet_info *myinfo,char *symbol);
 
 #endif
