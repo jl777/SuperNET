@@ -436,7 +436,7 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
 
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[128],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson; int32_t i,n; FILE *fp;
+    char buf[1024],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson; int32_t i,n; FILE *fp;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
@@ -464,6 +464,16 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
                     }
                 }
                 free_json(alljson);
+            }
+        }
+        else
+        {
+            sprintf(buf,"[\"%s\"]",address);
+            sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                fwrite(buf,1,strlen(buf)+1,fp);
+                fclose(fp);
             }
         }
         return(retstr);
