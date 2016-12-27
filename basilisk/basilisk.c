@@ -882,7 +882,7 @@ void basilisks_loop(void *arg)
             if ( relay != 0 )
                 basilisk_ping_send(myinfo,relay);
             counter++;
-            if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
+            if ( myinfo->numdpows == 1 )
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
             else if ( myinfo->numdpows > 1 )
             {
