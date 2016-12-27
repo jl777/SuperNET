@@ -882,7 +882,7 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol,*coinaddr; cJSON *retjson,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n;
+    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
@@ -938,34 +938,44 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     }
     if ( myinfo->reqsock >= 0 )
     {
-        if ( coin != 0 && (retstr= dex_getrawtransaction(myinfo,coin->symbol,txid)) != 0 )
+        if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
         {
             if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
             {
-                printf("TX.(%s)\n",jprint(txoutjson,0));
+                //printf("TX.(%s)\n",jprint(txoutjson,0));
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","success");
+                jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
                 if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
                 {
-                    printf("txjson.(%s)\n",jprint(txjson,0));
-                    if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= j64bits(txjson,"value") * SATOSHIDEN) != 0 )
+                    //printf("txjson.(%s)\n",jprint(txjson,0));
+                    if ( (value= jdouble(txjson,"value") * SATOSHIDEN) != 0 )
                     {
-                        jaddstr(retjson,"address",coinaddr);
+                        if ( (sobj= jobj(txjson,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 && (coinaddr= jstri(addrs,0)) != 0 )
+                            jaddstr(retjson,"address",coinaddr);
                         jadd64bits(retjson,"satoshis",value);
                         jaddnum(retjson,"value",dstr(value));
-                        //height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
-                        //jaddnum(retjson,"height",height);
-                        jaddnum(retjson,"numconfirms",jint(txjson,"confirmations"));
-                        
+                        if ( (infostr= _dex_getinfo(myinfo,symbol)) != 0 )
+                        {
+                            if ( (info= cJSON_Parse(infostr)) != 0 )
+                            {
+                                if ( (height= jint(info,"blocks")) > 0 )
+                                {
+                                    height -= jint(txoutjson,"confirmations");
+                                    jaddnum(retjson,"height",height);
+                                }
+                                free_json(info);
+                            }
+                            free(infostr);
+                        }
                         jaddbits256(retjson,"txid",txid);
                         jaddnum(retjson,"vout",vout);
-                        jaddstr(retjson,"coin",coin->symbol);
+                        jaddstr(retjson,"coin",symbol);
                         free(retstr);
                         free_json(txoutjson);
                         return(jprint(retjson,1));
                     }
                 }
-                jaddnum(retjson,"numconfirms",0);
                 free_json(txoutjson);
                 return(jprint(retjson,1));
             }

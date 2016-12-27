@@ -146,6 +146,31 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
     return(blockhash);
 }
 
+cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char buf[128],*retstr=0; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        buf[0] = 0;
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(json);
+}
+
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
 {
     char buf[128],str[65],*retstr=0; cJSON *json = 0;
@@ -254,14 +279,12 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
 
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    char buf[128],str[65],*retstr=0,*rawtx=0; cJSON *json = 0;
+    char buf[128],str[65],*retstr=0; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        if ( (rawtx= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
-            retstr = dpow_decoderawtransaction(myinfo,coin,rawtx);
-            free(rawtx);
         }
         usleep(10000);
     }
