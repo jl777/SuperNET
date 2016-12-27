@@ -539,6 +539,11 @@ STRING_ARG(dex,getbestblockhash,symbol)
     return(_dex_getbestblockhash(myinfo,symbol));
 }
 
+STRING_ARG(dex,alladdresses,symbol)
+{
+    return(_dex_alladdresses(myinfo,symbol));
+}
+
 STRING_AND_INT(dex,getblockhash,symbol,height)
 {
     return(_dex_getblockhash(myinfo,symbol,height));

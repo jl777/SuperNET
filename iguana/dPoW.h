@@ -158,6 +158,7 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
 char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
 cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
+char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -170,5 +171,6 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *coinaddr,int32_t count,int32_t skip);
+char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol);
 
 #endif

@@ -23,6 +23,7 @@ STRING_ARG(dpow,bindaddr,ipaddr);
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);
 STRING_ARG(dex,getinfo,symbol);
+STRING_ARG(dex,alladdresses,symbol);
 STRING_ARG(dex,getbestblockhash,symbol);
 STRING_AND_INT(dex,getblockhash,symbol,height);
 HASH_AND_STRING(dex,getblock,hash,symbol);

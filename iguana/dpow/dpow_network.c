@@ -258,6 +258,10 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
+            else if ( dexreq.func == '*' )
+            {
+                retstr = dpow_alladdresses(myinfo,coin);
+            }
             else if ( dexreq.func == 'L' )
             {
                 //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
@@ -330,6 +334,15 @@ char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
+    return(_dex_sendrequest(myinfo,&dexreq));
+}
+
+char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = '*';
     return(_dex_sendrequest(myinfo,&dexreq));
 }
 
