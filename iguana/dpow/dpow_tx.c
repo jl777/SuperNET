@@ -237,7 +237,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
     else opretlen = dpow_rwopret(1,opret,&bp->hashmsg,&bp->height,bp->srccoin->symbol,extras,n,bp,src_or_dest);
     if ( opretlen < 0 )
     {
-        printf("negative opretlen src_or_dest.%d\n",src_or_dest);
+        printf("negative opretlen.%d src_or_dest.%d\n",opretlen,src_or_dest);
         return(-1);
     }
     opretlen = dpow_opreturnscript(data,opret,opretlen);
@@ -571,7 +571,7 @@ void dpow_sigscheck(struct supernet_info *myinfo,struct dpow_info *dp,struct dpo
         {
             if ( (retstr= dpow_sendrawtransaction(myinfo,coin,bp->signedtx)) != 0 )
             {
-                printf("sendrawtransaction.(%s)\n",retstr);
+                //printf("sendrawtransaction.(%s)\n",retstr);
                 if ( is_hexstr(retstr,0) == sizeof(txid)*2 )
                 {
                     decode_hex(txid.bytes,sizeof(txid),retstr);
