@@ -564,6 +564,8 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
             }
         }
     }
+    if ( coin->notarychain >= 0 )
+        return(coin);
      //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(myinfo,coin,coin->chain);
     int32_t bundlei = -2;

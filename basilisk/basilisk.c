@@ -954,7 +954,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         timeoutmillis = BASILISK_TIMEOUT;
     if ( coin != 0 )
     {
-        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
         {
             if ( (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
             {

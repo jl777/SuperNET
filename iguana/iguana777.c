@@ -839,7 +839,10 @@ void iguana_helper(void *arg)
 
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
+    char NOTARYCHAINS[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
+        "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
+    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
     //    printf("%02x",((uint8_t *)coin->chain)[i]);
@@ -869,10 +872,23 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    if ( coin->FULLNODE == 0 )
+    {
+        coin->notarychain = -1;
+        for (i=0; i<sizeof(NOTARYCHAINS)/sizeof(*NOTARYCHAINS); i++)
+            if ( strcmp(coin->symbol,NOTARYCHAINS[i]) == 0 )
+            {
+                coin->notarychain = i;
+                break;
+            }
+    }
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
-    printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
-    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+    printf("SEED_IPADDR initpeer.(%s) notarychain.%d\n",addr->ipaddr,coin->notarychain);
+    if ( coin->notarychain < 0 )
+    {
+        iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
+    }
 }
 
 void iguana_coinloop(void *arg)
@@ -890,7 +906,7 @@ void iguana_coinloop(void *arg)
             if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
             {
                 for (i=0; i<n; i++)
-                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i))) != 0 )
+                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i),i<n-1)) != 0 )
                         free(retstr);
             }
             free_json(alljson);
@@ -905,7 +921,7 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                if ( coin->FULLNODE < 0 )
+                if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
                     continue;
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
