@@ -1098,9 +1098,18 @@ double _max100(double val)
 
 cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    int32_t i; struct iguana_peer *addr; cJSON *array,*retjson = cJSON_CreateObject();
+    int32_t i; char *retstr; struct iguana_peer *addr; cJSON *array,*retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
+        if ( coin->notarychain >= 0 )
+        {
+            if ( (retstr= _dex_getinfo(myinfo,coin->symbol)) != 0 )
+            {
+                retjson = cJSON_Parse(retstr);
+                free(retstr);
+                return(retjson);
+            } else return(cJSON_Parse("{\"error\":\"null return\"}"));
+        }
         jaddstr(retjson,"result","success");
         jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
         jaddnum(retjson,"kbfee",dstr(coin->txfee_perkb));
@@ -1146,7 +1155,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     struct basilisk_item Lptr,*ptr; int32_t incr,i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
         return(jprint(iguana_getinfo(myinfo,coin),1));
     else
     {

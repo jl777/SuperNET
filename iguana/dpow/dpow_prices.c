@@ -1462,7 +1462,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
         }
         else
         {
-            for (iter=0; iter<2; iter++)
+            for (iter=1; iter<2; iter++)
             {
                 kmdhist = url_json(iter == 0 ? url : url2);
                 //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},

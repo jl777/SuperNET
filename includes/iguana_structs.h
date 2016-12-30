@@ -517,6 +517,7 @@ struct iguana_info
     char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
+    int32_t notarychain;
     struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];

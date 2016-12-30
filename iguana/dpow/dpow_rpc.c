@@ -434,7 +434,7 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
     return(retstr);
 }
 
-char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address,int32_t forceflag)
 {
     char buf[1024],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson; int32_t i,n; FILE *fp;
     if ( coin->FULLNODE < 0 )
@@ -447,21 +447,27 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
             {
                 if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
                 {
-                    for (i=0; i<n; i++)
-                        if ( strcmp(address,jstri(alljson,i)) == 0 )
-                            break;
+                    if ( forceflag == 0 )
+                    {
+                        for (i=0; i<n; i++)
+                            if ( strcmp(address,jstri(alljson,i)) == 0 )
+                                break;
+                    } else i = n = 0;
                     if ( i == n )
                     {
                         jaddistr(alljson,address);
-                        outstr = jprint(alljson,0);
-                        sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
-                        if ( (fp= fopen(fname,"wb")) != 0 )
+                        if ( forceflag == 0 )
                         {
-                            fwrite(outstr,1,strlen(outstr)+1,fp);
-                            fclose(fp);
-                            printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
+                            outstr = jprint(alljson,0);
+                            sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+                            if ( (fp= fopen(fname,"wb")) != 0 )
+                            {
+                                fwrite(outstr,1,strlen(outstr)+1,fp);
+                                fclose(fp);
+                                printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
+                            }
+                            free(outstr);
                         }
-                        free(outstr);
                     }
                 }
                 free_json(alljson);

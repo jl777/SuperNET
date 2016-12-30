@@ -447,7 +447,7 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"RELAY") != 0 )
         return(0);
-    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
+    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 || coin->notarychain >= 0 )
     {
         infojson = iguana_getinfo(myinfo,coin);
         Lptr->retstr = jprint(infojson,1);
