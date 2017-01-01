@@ -872,12 +872,13 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    coin->notarychain = -1;
     if ( coin->FULLNODE == 0 )
     {
-        coin->notarychain = -1;
         for (i=0; i<sizeof(NOTARYCHAINS)/sizeof(*NOTARYCHAINS); i++)
             if ( strcmp(coin->symbol,NOTARYCHAINS[i]) == 0 )
             {
+                printf("SET NOTARYCHAIN.%d\n",i);
                 coin->notarychain = i;
                 break;
             }
@@ -885,10 +886,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
     printf("SEED_IPADDR initpeer.(%s) notarychain.%d\n",addr->ipaddr,coin->notarychain);
-    if ( coin->notarychain < 0 )
-    {
-        iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
-    }
+    iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
 
 void iguana_coinloop(void *arg)
@@ -899,20 +897,6 @@ void iguana_coinloop(void *arg)
     coins++;
     coin = coins[0];
     printf("begin coinloop[%d] %s\n",n,coin->symbol);
-    if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
-    {
-        if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
-        {
-            if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i),i<n-1)) != 0 )
-                        free(retstr);
-            }
-            free_json(alljson);
-        }
-        free(alladdresses);
-    }
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -921,6 +905,25 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
+                if ( coin->didaddresses == 0 )
+                {
+                    coin->didaddresses = 1;
+                    coin->notarychain = -1;
+                    if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
+                    {
+                        if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
+                        {
+                            if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
+                            {
+                                for (i=0; i<n; i++)
+                                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i),i<n-1)) != 0 )
+                                        free(retstr);
+                            }
+                            free_json(alljson);
+                        }
+                        free(alladdresses);
+                    }
+                }
                 if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
                     continue;
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )

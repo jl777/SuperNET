@@ -560,6 +560,8 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             {
                 i = (r + j) % n;
                 item = jitem(unspents,i);
+                if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                    continue;
                 satoshis = SATOSHIDEN * jdouble(item,"amount");
                 if ( satoshis == DPOW_UTXOSIZE && (address= jstr(item,"address")) != 0 && strcmp(address,coinaddr) == 0 )
                 {
