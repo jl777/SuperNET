@@ -1220,6 +1220,8 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                     {
                         for (i=0; i<n; i++)
                         {
+                            if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                                continue;
                             item = jitem(array,i);
                             if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                             {
