@@ -19,7 +19,7 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 11
+#define DPOW_MINSIGS 17
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
 #define DPOW_VERSION 0x0777
