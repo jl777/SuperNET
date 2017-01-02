@@ -433,7 +433,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
         "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
     uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     int32_t n = komodo_notaries("KMD",pubkeys,114000);
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 )
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("KMD")) != 0 )
     {
         if ( numblocks == 0 )
             numblocks = 10000;
@@ -444,40 +444,44 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             current = jint(infojson,"blocks");
             free_json(infojson);
         } else return(clonestr("{\"error\":\"cant get current height\"}"));
-        if ( (fp= fopen("signedmasks","rb")) != 0 )
+        if ( (coin= iguana_coinfind("BTC")) != 0 )
         {
-            while ( 1 )
+            if ( (fp= fopen("signedmasks","rb")) != 0 )
             {
-                if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                while ( 1 )
                 {
-                    printf("ht.%d %llx vs current.%d - %d\n",height,(long long)signedmask,current,numblocks);
-                    if ( height > current - numblocks )
+                    if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
                     {
-                        for (j=0; j<64; j++)
-                            if ( ((1LL << j) & signedmask) != 0 )
-                                vals[j] += (double)DPOW_UTXOSIZE / SATOSHIDEN;
-                    }
-                } else break;
-            }
-            fclose(fp);
-        } else return(clonestr("{\"error\":\"cant open signedmasks\"}"));
-        for (sum=j=0; j<n; j++)
-        {
-            if ( (val= vals[j]) > 0. )
+                        if ( height > current - numblocks )
+                        {
+                            printf("ht.%d %llx vs current.%d - %d\n",height,(long long)signedmask,current,numblocks);
+                            for (j=0; j<64; j++)
+                                if ( ((1LL << j) & signedmask) != 0 )
+                                    vals[j] += (double)DPOW_UTXOSIZE / SATOSHIDEN;
+                        }
+                    } else break;
+                }
+                fclose(fp);
+            } else return(clonestr("{\"error\":\"cant open signedmasks\"}"));
+            for (sum=j=0; j<n; j++)
             {
-                bitcoin_address(coinaddr,60,pubkeys[j],33);
-                sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
-                if ( sendflag != 0 && system(cmd) != 0 )
-                    printf("ERROR with (%s)\n",cmd);
-                else
+                if ( (val= vals[j]) > 0. )
                 {
-                    printf("(%d %f) ",j,val);
-                    sum += val;
+                    bitcoin_address(coinaddr,60,pubkeys[j],33);
+                    sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
+                    if ( sendflag != 0 && system(cmd) != 0 )
+                        printf("ERROR with (%s)\n",cmd);
+                    else
+                    {
+                        printf("(%d %f) ",j,val);
+                        sum += val;
+                    }
                 }
             }
+            printf("%s sent %.8f BTC\n",sendflag!=0?"":"would have",sum);
+            return(clonestr("{\"result\":\"success\"}"));
         }
-        printf("%s sent %.8f BTC\n",sendflag!=0?"":"would have",sum);
-        return(clonestr("{\"result\":\"success\"}"));
+        else return(clonestr("{\"error\":\"cant find BTC\"}"));
     }
     for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
     {
