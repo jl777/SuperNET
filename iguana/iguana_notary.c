@@ -450,7 +450,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             {
                 if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
                 {
-                    printf("ht.%d %llx\n",height,(long long)signedmask);
+                    printf("ht.%d %llx vs current.%d - %d\n",height,(long long)signedmask,current,numblocks);
                     if ( height > current - numblocks )
                     {
                         for (j=0; j<64; j++)
