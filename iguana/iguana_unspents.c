@@ -1223,7 +1223,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                             item = jitem(array,i);
                             if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
                             {
-                                printf("skip unspendable.(%s)\n",jprint(item,0));
+                                //printf("skip unspendable.(%s)\n",jprint(item,0));
                                 continue;
                             }
                             if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
