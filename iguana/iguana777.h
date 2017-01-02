@@ -116,7 +116,7 @@ struct supernet_info
     // fadedreamz
 	struct peggy_info *PEGS;
     void *PAXDATA;
-    struct liquidity_info linfos[64];
+    struct liquidity_info linfos[512];
     struct komodo_notaries NOTARY;
     char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t notarymutex,dpowmutex;
     char dexseed_ipaddr[64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;

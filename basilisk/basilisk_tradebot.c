@@ -343,7 +343,9 @@ void tradebot_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
         {
             strcpy(li.base,refli.base);
             strcpy(li.rel,refli.rel);
-            li.refprice = (1. / li.refprice);
+            if ( fabs(li.refprice) > SMALLVAL )
+                li.refprice = (1. / li.refprice);
+            else li.refprice = 0.;
             printf("Set rev linfo[%d] (%s/%s) %.6f %.8f\n",i,li.base,li.rel,li.profit,li.refprice);
             myinfo->linfos[i] = li;
             return;
