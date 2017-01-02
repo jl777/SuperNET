@@ -20,7 +20,7 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
-STRING_ARG(dpow,fundnotaries,symbol);
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
 
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);

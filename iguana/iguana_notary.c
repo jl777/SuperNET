@@ -425,14 +425,59 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
-STRING_ARG(dpow,fundnotaries,symbol)
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 {
     int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
     char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
         "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
         "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
-    uint8_t pubkeys[64][33]; char coinaddr[64],cmd[1024]; int32_t i,j; double val = 0.01;
+    uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     int32_t n = komodo_notaries("KMD",pubkeys,114000);
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 )
+    {
+        if ( numblocks == 0 )
+            numblocks = 10000;
+        else sendflag = 1;
+        memset(vals,0,sizeof(vals));
+        if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+        {
+            current = jint(infojson,"blocks");
+            free_json(infojson);
+        } else return(clonestr("{\"error\":\"cant get current height\"}"));
+        if ( (fp= fopen("signedmasks","rb")) != 0 )
+        {
+            while ( 1 )
+            {
+                if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                {
+                    if ( height > current - numblocks )
+                    {
+                        for (j=0; j<64; j++)
+                            if ( ((1LL << j) & signedmask) != 0 )
+                                vals[j] += (double)DPOW_UTXOSIZE / SATOSHIDEN;
+                    }
+                } else break;
+            }
+            fclose(fp);
+        }
+        for (sum=j=0; j<n; j++)
+        {
+            if ( (val= vals[j]) > 0. )
+            {
+                bitcoin_address(coinaddr,60,pubkeys[j],33);
+                sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
+                if ( sendflag != 0 && system(cmd) != 0 )
+                    printf("ERROR with (%s)\n",cmd);
+                else
+                {
+                    printf("(%d %f) ",j,val);
+                    sum += val;
+                }
+            }
+        }
+        printf("%s sent %.8f BTC\n",sendflag!=0?"":"would have",sum);
+        return(clonestr("{\"result\":\"success\"}"));
+    }
     for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,CURRENCIES[i]) == 0 )
