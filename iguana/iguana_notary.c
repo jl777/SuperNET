@@ -170,7 +170,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-            char str[65]; printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+            char str[65]; printf("[%s] %s %s height.%d vs last.%d\n",dp->dest,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
