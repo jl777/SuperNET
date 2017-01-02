@@ -1169,7 +1169,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
     }
     memset(pubkey,0,sizeof(pubkey));
     //remains = required * 1.1 + coin->txfee;
-    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || (coin->FULLNODE == 0 && coin->notarychain >= 0) )
     {
         for (i=numunspents=0; i<numaddrs; i++)
         {
@@ -1220,9 +1220,12 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                     {
                         for (i=0; i<n; i++)
                         {
-                            if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
-                                continue;
                             item = jitem(array,i);
+                            if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                            {
+                                printf("skip unspendable.(%s)\n",jprint(item,0));
+                                continue;
+                            }
                             if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                             {
                                 printf("no spendscriptstr.(%s)\n",jprint(item,0));
@@ -1237,13 +1240,16 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                                 break;
                         }
                     }
+                    if ( numunspents == 0 )
+                        printf("no unspents.(%s)\n",jprint(array,0));
                     free_json(array);
                 }
             }
         }
     }
     *totalp = sum;
-    printf("numunspents.%d max.%d sum %.8f required %.8f\n",numunspents,max,dstr(sum),dstr(required));
+    coinaddr = addresses != 0 ? jstri(addresses,i) : "";
+    printf("numunspents.%d max.%d sum %.8f required %.8f (%s)\n",numunspents,max,dstr(sum),dstr(required),coinaddr);
     return(numunspents);
 }
 
