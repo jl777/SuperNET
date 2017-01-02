@@ -450,6 +450,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             {
                 if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
                 {
+                    printf("ht.%d %llx\n",height,(long long)signedmask);
                     if ( height > current - numblocks )
                     {
                         for (j=0; j<64; j++)
@@ -459,7 +460,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                 } else break;
             }
             fclose(fp);
-        }
+        } else return(clonestr("{\"error\":\"cant open signedmasks\"}"));
         for (sum=j=0; j<n; j++)
         {
             if ( (val= vals[j]) > 0. )
