@@ -157,7 +157,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
-            char str[65]; printf("%s %s height.%d vs last.%d\n",dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
+            char str[65]; printf("[%s] %s %s height.%d vs last.%d\n",dp->symbol,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
                 printf("iguana_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
@@ -170,7 +170,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-            char str[65]; printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+            char str[65]; printf("[%s] %s %s height.%d vs last.%d\n",dp->dest,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
@@ -425,14 +425,64 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
-STRING_ARG(dpow,fundnotaries,symbol)
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 {
     int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
     char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
         "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
         "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
-    uint8_t pubkeys[64][33]; char coinaddr[64],cmd[1024]; int32_t i,j; double val = 0.01;
+    uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     int32_t n = komodo_notaries("KMD",pubkeys,114000);
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("KMD")) != 0 )
+    {
+        if ( numblocks == 0 )
+            numblocks = 10000;
+        else sendflag = 1;
+        memset(vals,0,sizeof(vals));
+        if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+        {
+            current = jint(infojson,"blocks");
+            free_json(infojson);
+        } else return(clonestr("{\"error\":\"cant get current height\"}"));
+        if ( (coin= iguana_coinfind("BTC")) != 0 )
+        {
+            if ( (fp= fopen("signedmasks","rb")) != 0 )
+            {
+                while ( 1 )
+                {
+                    if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                    {
+                        if ( height > current - numblocks )
+                        {
+                            printf("ht.%d %llx vs current.%d - %d\n",height,(long long)signedmask,current,numblocks);
+                            for (j=0; j<64; j++)
+                                if ( ((1LL << j) & signedmask) != 0 )
+                                    vals[j] += (double)DPOW_UTXOSIZE / SATOSHIDEN;
+                        }
+                    } else break;
+                }
+                fclose(fp);
+            } else return(clonestr("{\"error\":\"cant open signedmasks\"}"));
+            for (sum=j=0; j<n; j++)
+            {
+                if ( (val= vals[j]) > 0. )
+                {
+                    bitcoin_address(coinaddr,60,pubkeys[j],33);
+                    sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
+                    if ( sendflag != 0 && system(cmd) != 0 )
+                        printf("ERROR with (%s)\n",cmd);
+                    else
+                    {
+                        printf("(%d %f) ",j,val);
+                        sum += val;
+                    }
+                }
+            }
+            printf("%s sent %.8f BTC\n",sendflag!=0?"":"would have",sum);
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+        else return(clonestr("{\"error\":\"cant find BTC\"}"));
+    }
     for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,CURRENCIES[i]) == 0 )
