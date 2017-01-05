@@ -69,27 +69,6 @@ struct tradebot_arbpair *tradebot_arbpair_find(char *base,char *rel)
     return(0);
 }
 
-struct tradebot_arbpair *tradebot_arbpair_create(char *base,char *rel)
-{
-    struct tradebot_arbpair *pair; char fname[1024];
-    if ( Tradebot_numarbpairs < sizeof(Arbpairs)/sizeof(*Arbpairs) )
-    {
-        printf("new pair.%d (%s/%s)\n",Tradebot_numarbpairs,base,rel);
-        pair = &Arbpairs[Tradebot_numarbpairs++];
-        strcpy(pair->rel,rel);
-        strcpy(pair->base,base);
-        if ( strcmp(base,"NXT") == 0 && strcmp(rel,"BTC") == 0 )
-            Pair_NXTBTC = pair, printf("Pair_NXTBTC <- %p\n",pair);
-        else if ( strcmp(base,"BTC") == 0 && strcmp(rel,"USD") == 0 )
-            Pair_BTCUSD = pair;
-        else if ( strcmp(base,"BTC") == 0 && strcmp(rel,"CNY") == 0 )
-            Pair_BTCCNY = pair;
-        sprintf(fname,"SVM/rawfeatures/%s_%s",base,rel);
-        pair->fp = OS_appendfile(fname);
-        return(pair);
-    } else return(0);
-}
-
 int32_t tradebots_calcrawfeatures(struct tradebot_arbpair *pair)
 {
     int32_t starti,i,n = 0; double ave; uint32_t timestamp;
@@ -153,6 +132,37 @@ uint32_t tradebots_featureset(double *highbidp,double *lowaskp,double *avep,doub
             n = starti+TRADEBOTS_RAWFEATURESINCR;
     }
     return(timestamp);
+}
+
+struct tradebot_arbpair *tradebot_arbpair_create(char *base,char *rel)
+{
+    struct tradebot_arbpair *pair; char fname[1024]; double ave;
+    if ( Tradebot_numarbpairs < sizeof(Arbpairs)/sizeof(*Arbpairs) )
+    {
+        printf("new pair.%d (%s/%s)\n",Tradebot_numarbpairs,base,rel);
+        pair = &Arbpairs[Tradebot_numarbpairs++];
+        strcpy(pair->rel,rel);
+        strcpy(pair->base,base);
+        if ( strcmp(base,"NXT") == 0 && strcmp(rel,"BTC") == 0 )
+            Pair_NXTBTC = pair, printf("Pair_NXTBTC <- %p\n",pair);
+        else if ( strcmp(base,"BTC") == 0 && strcmp(rel,"USD") == 0 )
+            Pair_BTCUSD = pair;
+        else if ( strcmp(base,"BTC") == 0 && strcmp(rel,"CNY") == 0 )
+            Pair_BTCCNY = pair;
+        sprintf(fname,"SVM/rawfeatures/%s_%s",base,rel);
+        pair->fp = OS_appendfile(fname);
+        if ( (ftell(pair->fp) % sizeof(pair->rawfeatures)) != 0 )
+        {
+            printf("misalinged rawfeatures %ld %ld\n",ftell(pair->fp),(ftell(pair->fp) % sizeof(pair->rawfeatures)));
+        }
+        fseek(pair->fp,(ftell(pair->fp) / sizeof(pair->rawfeatures)) * sizeof(pair->rawfeatures) - sizeof(pair->rawfeatures),SEEK_SET);
+        if ( fread(pair->rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
+        {
+            pair->lasttime = tradebots_featureset(&pair->highbid,&pair->lowask,&ave,&pair->hblavolume,pair->bidaves,pair->askaves,pair->bidslopes,pair->askslopes,pair->rawfeatures);
+            printf("%s/%s [%.8f %.8f] %u\n",pair->base,pair->rel,pair->highbid,pair->lowask,pair->lasttime);
+        }
+        return(pair);
+    } else return(0);
 }
 
 int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint32_t reftimestamp,float *refrawfeatures)
@@ -357,6 +367,8 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
             }
             if ( iter == 0 )
             {
+                if ( hblas == 0 )
+                    break;
                 highbid = hblas[0];
                 lowask = hblas[1];
                 for (i=1; i<maxi; i++)
