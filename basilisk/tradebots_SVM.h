@@ -406,10 +406,11 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
     {
         if ( (y= vars->answers[(weekinds[i]-vars->starti)*TRADEBOTS_NUMANSWERS + answerind]) != 0.f )
         {
-            if ( 0 )
+            svmtype *features = vars->features[weekinds[i]-vars->starti];//get_jfp_features(vars->selector,numfeatures,vars->c,weekinds[i]);
+            //printf("i.%d weekind.%d starti.%d y %f %p\n",i,weekinds[i],vars->starti,y,features);
+            if ( 0 && features != 0 )
             {
                 double oldsum=oldW0,sum=W0;
-                svmtype *features = vars->features[weekinds[i]-vars->starti];//get_jfp_features(vars->selector,numfeatures,vars->c,weekinds[i]);
                 for (j=0; j<numfeatures; j++)
                 {
                     oldsum += oldW[j] * CONDITION(features[j]);
@@ -907,7 +908,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
                 STocas_add_newcuts(vars,answerind,numfeatures,weekinds,new_cut,vars->numposcuts[answerind]+vars->numnegcuts[answerind],ptr->W,ptr->new_a);
                 vars->add_time += (OS_milliseconds() - startmilli);
 //printf("done %d calc ocas_add_newcuts.A%d poscuts.%d negcuts.%d | good.%d bad.%d\n",c_to_refc(vars->c),answerind,vars->numposcuts[answerind],vars->numnegcuts[answerind],vars->good[answerind],vars->bad[answerind]);
-            } else inactives[answerind] = 1, printf("maxnohwm.%d\n",max_nohwm);
+            } else inactives[answerind] = 1;//, printf("maxnohwm.%d\n",max_nohwm);
         }
         startmilli = OS_milliseconds();
         for (answerind=0; answerind<lastanswerind; answerind++)
@@ -986,7 +987,8 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
         vars->weekinds[answerind] = calloc(vars->maxlen,sizeof(*vars->weekinds[answerind]));
     for (weekind=starti; weekind<=endi; weekind++)
     {
-        vars->features[weekind - starti] = get_features(numfeatures,c,weekind);
+        if ( (vars->features[weekind - starti]= get_features(numfeatures,c,weekind)) == 0 )
+            continue;
         for (answerind=0; answerind<TRADEBOTS_NUMANSWERS; answerind++)
         {
             if ( (vars->posA[answerind]+vars->negA[answerind]) >= vars->maxlen )
@@ -1049,8 +1051,8 @@ int32_t ocas_gen(int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
 {
     int32_t i; struct ocas_vars *vars = calloc(1,sizeof(*vars));
     ocas_init(vars,c,numfeatures,starti,endi);
-    for (i=0; i<10; i++)
-        ocas_iter(vars,100);
+    for (i=0; i<100; i++)
+        ocas_iter(vars,10);
     ocas_purge(vars);
     return(0);
 }

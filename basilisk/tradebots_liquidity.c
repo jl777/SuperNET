@@ -57,7 +57,7 @@ struct tradebot_arbpair
     uint8_t dirmasks[2],slopedirs[2];
     char *svmpairs[TRADEBOTS_MAXPAIRS][2];
     int32_t RTgood[TRADEBOTS_NUMANSWERS],RTbad[TRADEBOTS_NUMANSWERS],numrawfeatures,numsvmfeatures,numpairs;
-    float rawfeatures[TRADEBOTS_NUMANSWERS+64],prevrawfeatures[TRADEBOTS_NUMANSWERS+64],*svms; // svms is coeffs vector[TRADEBOTS_NUMANSWERS]
+    float rawfeatures[TRADEBOTS_NUMANSWERS+64],prevrawfeatures[60 * TRADEBOTS_NUMANSWERS+64],*svms; // svms is coeffs vector[TRADEBOTS_NUMANSWERS]
     float RTpreds[TRADEBOTS_NUMANSWERS],svmpreds[TRADEBOTS_NUMANSWERS],answers[TRADEBOTS_NUMANSWERS];
 };
 struct tradebot_arbpair Arbpairs[TRADEBOTS_MAXPAIRS],*Pair_NXTBTC,*Pair_BTCUSD,*Pair_BTCCNY;
@@ -76,7 +76,9 @@ int32_t tradebots_calcrawfeatures(struct tradebot_arbpair *pair)
 {
     int32_t starti,i,n = 0; double ave; uint32_t timestamp;
     n = TRADEBOTS_NUMANSWERS;
-    memcpy(pair->prevrawfeatures,pair->rawfeatures,sizeof(pair->prevrawfeatures));
+    for (i=59; i>0; i--)
+        memcpy(&pair->prevrawfeatures[i*72],&pair->prevrawfeatures[(i-1)*72],sizeof(pair->rawfeatures));
+    memcpy(pair->prevrawfeatures,pair->rawfeatures,sizeof(pair->rawfeatures));
     memset(pair->rawfeatures,0,sizeof(pair->rawfeatures));
     if ( fabs(pair->highbid) < SMALLVAL || fabs(pair->lowask) < SMALLVAL )
         return(-1);
@@ -179,7 +181,7 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
     timestamp = tradebots_featureset(&highbid,&lowask,&ave,&vol,bidaves,askaves,bidslopes,askslopes,rawfeatures);
     if ( timestamp == 0 || reftimestamp == 0 || timestamp >= reftimestamp+60 )
     {
-        printf("tradebots_expandrawfeatures: timestamp.%u vs reftimestamp.%u\n",timestamp,reftimestamp);
+        //printf("tradebots_expandrawfeatures: timestamp.%u vs reftimestamp.%u\n",timestamp,reftimestamp);
         return(-1);
     }
     factor = sqrt(reftimestamp - timestamp);
@@ -190,7 +192,7 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
     factor = 1. / factor;
     if ( refhighbid == 0. || highbid == 0. || lowask == 0. || reflowask == 0. )
     {
-        printf("tradebots_expandrawfeatures: (%f %f) ref (%f %f)\n",highbid,lowask,refhighbid,reflowask);
+        //printf("tradebots_expandrawfeatures: (%f %f) ref (%f %f)\n",highbid,lowask,refhighbid,reflowask);
         return(-1);
     }
     svmfeatures[n++] = highbid;
@@ -243,10 +245,16 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
             svmfeatures[n++] = (askslopes[i] - bidslopes[j]);
         }
     }
-    if ( fabs(factor - 1.) > SMALLVAL )
+    //if ( fabs(factor - 1.) > SMALLVAL )
     {
         for (i=starti; i<n; i++)
-            svmfeatures[i] *= factor;
+            if ( svmfeatures[i] != 0.f )
+            {
+                //svmfeatures[i] *= factor;
+                if ( svmfeatures[i] > 0. )
+                    svmfeatures[i] = cbrt(svmfeatures[i]);
+                else svmfeatures[i] = -cbrt(-svmfeatures[i]);
+            }
     }
     return(n);
 }
@@ -261,6 +269,8 @@ int32_t tradebots_calcsvmfeatures(double *svmfeatures,struct tradebot_arbpair *p
         return(-1);
     }
     numpairfeatures = n = tradebots_expandrawfeatures(svmfeatures,rawfeatures,reftimestamp,prevrawfeatures);
+    for (i=0; i<60; i++,n+=numpairfeatures)
+        tradebots_expandrawfeatures(svmfeatures,rawfeatures,reftimestamp,&prevrawfeatures[i*72]);
     if ( 0 && pair->numsvmfeatures != (1+pair->numpairs)*n )
     {
         for (i=0; i<pair->numpairs; i++) // need to do lookups
@@ -366,7 +376,7 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
                                     }
                                     else if ( futuremax < minval )
                                         pair->answers[j] = (futuremax - minval), flag++;
-                                    pair->answers[j] = _pairaved(futuremax,futuremin) - _pairaved(minval,maxval);
+                                    //pair->answers[j] = _pairaved(futuremax,futuremin) - _pairaved(minval,maxval);
                                     //printf("i.%d j.%d gap.%d ind.%d answer %9.6f (%f %f) -> (%f %f)\n",i,j,Tradebots_answergaps[j],ind,pair->answers[j],minval,maxval,futuremin,futuremax);
                                 }
                             }
@@ -406,9 +416,9 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
                         hblas[i << 1] = highbid;
                         hblas[(i << 1) + 1] = lowask;
                     }
-                    printf("%9.6f ",_pairaved(highbid,lowask));
+                    //printf("%9.6f ",_pairaved(highbid,lowask));
                 }
-                printf("maxi.%d\n",maxi);
+                //printf("maxi.%d\n",maxi);
             }
         }
         if ( hblas != 0 )
@@ -438,14 +448,15 @@ double get_yval(double *answerp,int32_t selector,int32_t ind,int32_t refc,int32_
             answer = -.01;
         if ( answerp != 0 )
             *answerp = answer;
+       */
         if ( answer > 0. )
+            answer = cbrt(answer);
+        else answer = -cbrt(-answer);
+        *answerp = answer;
+        /*if ( answer > 0. )
             return(1.);
         else if ( answer < 0. )
             return(-1.);*/
-        if ( answer > 0. )
-            answer = sqrt(answer);
-        else answer = -sqrt(-answer);
-        *answerp = answer;
         return(answer);
     }
 	return(0.);
@@ -453,20 +464,20 @@ double get_yval(double *answerp,int32_t selector,int32_t ind,int32_t refc,int32_
 
 float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
 {
-    struct tradebot_arbpair *pair; long savepos; int32_t i,n; double svmfeatures[4096];
-    float rawfeatures[sizeof(pair->rawfeatures)],prevrawfeatures[sizeof(pair->rawfeatures)],*svmf=0;
+    struct tradebot_arbpair *pair; long savepos; int32_t i,n; double svmfeatures[32768];
+    float rawfeatures[sizeof(pair->rawfeatures)],prevrawfeatures[60 * sizeof(pair->rawfeatures)],*svmf=0;
     pair = &Arbpairs[refc];
     pair->numsvmfeatures = numfeatures;
-    if ( pair->fp != 0 && ind > 0 )
+    if ( pair->fp != 0 && ind > 61 )
     {
         savepos = ftell(pair->fp);
-        fseek(pair->fp,(ind-1)*sizeof(pair->rawfeatures),SEEK_SET);
-        if ( fread(&prevrawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) && fread(&rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
+        fseek(pair->fp,(ind-60)*sizeof(pair->rawfeatures),SEEK_SET);
+        if ( fread(prevrawfeatures,60,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) && fread(&rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
         {
+            n = tradebots_calcsvmfeatures(svmfeatures,pair,rawfeatures,prevrawfeatures);
             //for (i=0; i<72; i++)
             //    printf("%9.6f ",rawfeatures[i]);
-            //printf("rawfeatures[%d]\n",ind);
-            n = tradebots_calcsvmfeatures(svmfeatures,pair,rawfeatures,prevrawfeatures);
+            //printf("rawfeatures[%d] -> %d\n",ind,n);
             if ( n != pair->numsvmfeatures )
             {
                 printf("unexpected numsvmfeatures refc.%d ind.%d %d vs %d\n",refc,ind,n,pair->numsvmfeatures);
@@ -483,7 +494,12 @@ float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
 
 double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)
 {
-    return(0.);
+    int32_t i,nonz=0;
+    for (i=0; i<numfeatures; i++)
+        if ( W[i] != 0. )
+            nonz++;//, printf("%.6f ",W[i]);
+    printf("W0 %.7f numfeatures.%d nonz.%d\n",W0,numfeatures,nonz);
+    return(W0);
 }
 
 #ifndef _WIN
@@ -991,7 +1007,7 @@ TWO_STRINGS(tradebots,gensvm,base,rel)
 #ifdef _WIN
     return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
 #else
-    int32_t numfeatures = 317; struct tradebot_arbpair *pair;
+    int32_t numfeatures = 317*61; struct tradebot_arbpair *pair;
     if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
     {
         tradebots_calcanswers(pair);
