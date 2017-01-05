@@ -184,11 +184,6 @@ double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_
     else return(0);
 }
 
-void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
-{
-    
-}
-
 cJSON *exchanges777_allpairs(char *baserels[][2],int32_t num)
 {
     int32_t i; char str[32]; cJSON *json,*item,*array = cJSON_CreateArray();
@@ -339,11 +334,11 @@ double exchange_setquote(struct exchange_quote *bidasks,int32_t *numbidsp,int32_
         }
         if ( commission != 0. )
         {
-            //printf("price %f fee %f -> ",price,prices->commission * price);
+            printf("price %f fee %f -> ",price,commission * price);
             if ( bidask == 0 )
                 price -= commission * price;
             else price += commission * price;
-            //printf("%f\n",price);
+            printf("%f\n",price);
         }
         quote = (bidask == 0) ? &bidasks[(*numbidsp)<<1] : &bidasks[((*numasksp)<<1) + 1];
         quote->price = price, quote->volume = volume, quote->timestamp = timestamp, quote->orderid = orderid, quote->offerNXT = offerNXT;
@@ -400,6 +395,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
                 if ( strcmp(exchange->name,"kraken") == 0 )
                     timestamp = juint(jitem(item,2),0);
                 else orderid = j64bits(jitem(item,2),0);
+                //printf("{%s} (%.8f %.8f) %f\n",jprint(item,0),price,volume,commission);
             }
             else
             {
@@ -456,7 +452,7 @@ double exchanges777_standardprices(struct exchange_info *exchange,double commiss
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
         //if ( strcmp(exchangestr,"btc38") == 0 )
-        //printf("(%s) -> (%s)\n",url,jsonstr);
+        //printf("%f (%s) -> (%s)\n",commission,url,jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             hbla = exchanges777_json_orderbook(exchange,commission,base,rel,quotes,maxdepth,json,field,"bids","asks",price,volume,invert);
@@ -859,7 +855,7 @@ void exchanges777_loop(void *ptr)
                             if ( req->bidasks[(i << 1) + 1].price > SMALLVAL )
                                 req->numasks++;
 //printf("%-10s %s/%s numbids.%d numasks.%d\n",exchange->name,req->base,req->rel,req->numbids,req->numasks);
-                        prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
+                        tradebots_processprices(myinfo,exchange,req->base,req->rel,req->bidasks,req->numbids,req->numasks);
                     }
                     queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL);
                 }
@@ -954,7 +950,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
     {
-        //printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
+        printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     }
     if ( depth <= 0 )
@@ -977,7 +973,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
         req->commission = exchange->commission;
     if ( monitor == 0 )
     {
-        printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
+        //printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
         return(exchanges777_submit(exchange,req,'Q',maxseconds));
     }
     else

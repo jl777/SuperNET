@@ -77,7 +77,7 @@ double UPDATE(struct exchange_info *exchange,char *base,char *rel,struct exchang
 {
     cJSON *json,*obj; char *jsonstr,market[128],url[1024]; double hbla = 0.;
     sprintf(market,"%s-%s",rel,base);
-    sprintf(url,"https://bittrex.com/api/v1.1/public/getorderbook?market=%s&type=both&depth=%d",market,maxdepth);
+    sprintf(url,"http://bittrex.com/api/v1.1/public/getorderbook?market=%s&type=both&depth=%d",market,maxdepth);
     jsonstr = issue_curl(url);
     if ( jsonstr != 0 )
     {
@@ -166,8 +166,11 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
         return(0);
     }
     sprintf(payload,"https://bittrex.com/api/v1.1/market/%slimit?apikey=%s&nonce=%llu&market=%s&rate=%.8f&quantity=%.8f",dir>0?"buy":"sell",exchange->apikey,(long long)exchange_nonce(exchange),pairstr,price,volume);
-    if ( CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 && (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
+    if ( //CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 &&
+        (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
     {
+        if ( *retstrp != 0 )
+            printf("SIGNPOST returned.(%s) %s\n",*retstrp,jprint(json,0));
         if ( is_cJSON_True(cJSON_GetObjectItem(json,"success")) != 0 && (resultobj= cJSON_GetObjectItem(json,"result")) != 0 )
         {
             copy_cJSON(&uuidstr,cJSON_GetObjectItem(resultobj,"uuid"));

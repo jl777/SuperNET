@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "../iguana/iguana777.h"
+#include "exchanges777.h"
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
@@ -482,6 +483,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "tradebots_liquidity.c"
 #include "basilisk_tradebot.c"
 #include "basilisk_swap.c"
 #include "basilisk_DEX.c"

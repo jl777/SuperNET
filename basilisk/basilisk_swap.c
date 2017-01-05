@@ -1558,7 +1558,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                         printf("Bob error spending alice payment\n");
                     else
                     {
-                        basilisk_swap_balancingtrade(myinfo,swap,1);
+                        tradebot_swap_balancingtrade(myinfo,swap,1);
                         printf("Bob spends alicepayment\n");
                         swap->I.statebits |= 0x40000;
                         while ( basilisk_numconfirms(myinfo,&swap->bobspend) < swap->I.aliceconfirms )
@@ -1629,7 +1629,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                 if ( basilisk_swapget(myinfo,swap,0x8000,data,maxlen,basilisk_verify_bobpaid) == 0 )
                 {
                     printf("got bobpayment\n");
-                    basilisk_swap_balancingtrade(myinfo,swap,0);
+                    tradebot_swap_balancingtrade(myinfo,swap,0);
                     // verify payment and submit, set confirmed height
                     swap->I.statebits |= 0x8000;
                 }

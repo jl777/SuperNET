@@ -134,6 +134,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval);
 void calc_rmd160(char *hexstr,uint8_t buf[20],uint8_t *msg,int32_t len);
 void calc_OP_HASH160(char *hexstr,uint8_t hash160[20],char *msg);
 double dxblend(double *destp,double val,double decay);
+double _xblend(float *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime

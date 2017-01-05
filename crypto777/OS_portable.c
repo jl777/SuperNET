@@ -94,6 +94,17 @@ char *OS_portable_path(char *str)
 #endif
 }
 
+FILE *OS_appendfile(char *origfname)
+{
+    char fname[1024]; FILE *fp;
+    strcpy(fname,origfname);
+    OS_portable_path(fname);
+    if ( (fp= fopen(fname,"rb+")) == 0 )
+        fp = fopen(fname,"wb");
+    else fseek(fp,0,SEEK_END);
+    return(fp);
+}
+
 int32_t OS_portable_renamefile(char *fname,char *newfname)
 {
 #ifdef _WIN32

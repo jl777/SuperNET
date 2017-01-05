@@ -676,6 +676,8 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s/ECB",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/BTC",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/BTCD",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM"), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM/rawfeatures"), OS_ensure_directory(dirname);
 }
 
 void iguana_Qinit()
@@ -1619,9 +1621,10 @@ void iguana_main(void *arg)
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
 #if LIQUIDITY_PROVIDER
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("nxtae"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
-    //myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
