@@ -287,11 +287,15 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
             {
                 savepos = ftell(pair->fp);
                 timestamp = tradebots_featureset(&highbid,&lowask,&ave,&vol,bidaves,askaves,bidslopes,askslopes,rawfeatures);
+                printf("timestamp.%u firsttime.%u\n",timestamp,firsttime);
+                if ( timestamp == 0 )
+                    continue;
                 if ( firsttime == 0 )
                 {
                     firsttime = timestamp;
                     maxi = (int32_t)((time(NULL) - firsttime) / 60 + 1);
                     hblas = calloc(maxi,sizeof(*hblas)*2);
+                    printf("HBLAS[%d] allocated\n",maxi);
                 }
                 if ( (i= (timestamp - firsttime)/60) >= 0 && i < maxi )
                 {
@@ -373,6 +377,8 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
         if ( hblas != 0 )
             free(hblas);
     }
+    if ( pair->fp != 0 && (ftell(pair->fp) % sizeof(pair->rawfeatures)) != 0 )
+        printf("ERROR: %s/%s not on feature boundary\n",pair->base,pair->rel);
 }
 
 static char *assetids[][2] =
