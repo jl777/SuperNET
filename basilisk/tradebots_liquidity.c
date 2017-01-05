@@ -451,7 +451,10 @@ double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures
 {
     return(0.);
 }
+
+#ifndef _WIN
 #include "tradebots_SVM.h"
+#endif
 
 static char *assetids[][2] =
 {
@@ -951,6 +954,9 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
 
 TWO_STRINGS(tradebots,gensvm,base,rel)
 {
+#ifdef _WIN
+    return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
+#else
     int32_t numfeatures = 532; struct tradebot_arbpair *pair;
     if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
     {
@@ -958,6 +964,7 @@ TWO_STRINGS(tradebots,gensvm,base,rel)
         ocas_gen(pair->refc,numfeatures,0,(int32_t)(ftell(pair->fp) / sizeof(pair->rawfeatures)));
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"cant find arbpair\"}"));
+#endif
 }
 
 #include "../includes/iguana_apiundefs.h"
