@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -26,6 +26,9 @@
 #define TRADEBOTS_RAWFEATURESINCR 7
 #define TRADEBOTS_MAXPAIRS 1024
 
+#define _OCAS_PLUS_INF (-log(0.0))
+double OCAS_PLUS_INF,OCAS_NEG_INF;
+
 double Tradebots_decays[TRADEBOTS_NUMDECAYS] = { 0.5, 0.666, 0.8, 0.9, 0.95, 0.99, 0.995, 0.999 };
 int32_t Tradebots_answergaps[TRADEBOTS_NUMANSWERS] = { 5, 10, 15, 20, 30, 60, 120, 720 };
 
@@ -46,7 +49,7 @@ struct tradebot_arbpair
 {
     char base[32],rel[32];
     uint32_t lasttime,lastanswertime; FILE *fp;
-    int32_t numexchanges,counter,btccounter,usdcounter,cnycounter;
+    int32_t numexchanges,counter,btccounter,usdcounter,cnycounter,refc;
     double highbid,lowask,hblavolume,btcbid,btcask,btcvol,usdbid,usdask,usdvol,cnybid,cnyask,cnyvol;
     double bidaves[TRADEBOTS_NUMDECAYS],askaves[TRADEBOTS_NUMDECAYS];
     double bidslopes[TRADEBOTS_NUMDECAYS],askslopes[TRADEBOTS_NUMDECAYS];
@@ -60,7 +63,7 @@ struct tradebot_arbpair
 struct tradebot_arbpair Arbpairs[TRADEBOTS_MAXPAIRS],*Pair_NXTBTC,*Pair_BTCUSD,*Pair_BTCCNY;
 int32_t Tradebot_numarbpairs;
 
-struct tradebot_arbpair *tradebot_arbpair_find(char *base,char *rel)
+struct tradebot_arbpair *tradebots_arbpair_find(char *base,char *rel)
 {
     int32_t i;
     for (i=0; i<Tradebot_numarbpairs; i++)
@@ -134,13 +137,14 @@ uint32_t tradebots_featureset(double *highbidp,double *lowaskp,double *avep,doub
     return(timestamp);
 }
 
-struct tradebot_arbpair *tradebot_arbpair_create(char *base,char *rel)
+struct tradebot_arbpair *tradebots_arbpair_create(char *base,char *rel)
 {
     struct tradebot_arbpair *pair; char fname[1024]; double ave;
     if ( Tradebot_numarbpairs < sizeof(Arbpairs)/sizeof(*Arbpairs) )
     {
         printf("new pair.%d (%s/%s)\n",Tradebot_numarbpairs,base,rel);
-        pair = &Arbpairs[Tradebot_numarbpairs++];
+        pair = &Arbpairs[Tradebot_numarbpairs];
+        pair->refc = Tradebot_numarbpairs++;
         strcpy(pair->rel,rel);
         strcpy(pair->base,base);
         if ( strcmp(base,"NXT") == 0 && strcmp(rel,"BTC") == 0 )
@@ -240,31 +244,26 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
     return(n);
 }
 
-int32_t tradebots_calcsvmfeatures(double *svmfeatures,struct tradebot_arbpair *pair)
+int32_t tradebots_calcsvmfeatures(double *svmfeatures,struct tradebot_arbpair *pair,float *rawfeatures,float *prevrawfeatures)
 {
     int32_t i,j,n,numpairfeatures,flag; struct tradebot_arbpair *ptr; uint32_t reftimestamp;
-    memcpy(&reftimestamp,pair->rawfeatures,sizeof(reftimestamp));
+    memcpy(&reftimestamp,rawfeatures,sizeof(reftimestamp));
     if ( reftimestamp == 0 )
         return(-1);
-    numpairfeatures = n = tradebots_expandrawfeatures(svmfeatures,pair->rawfeatures,reftimestamp,pair->prevrawfeatures);
-    if ( pair->numsvmfeatures != (1+pair->numpairs)*n )
+    numpairfeatures = n = tradebots_expandrawfeatures(svmfeatures,rawfeatures,reftimestamp,prevrawfeatures);
+    if ( 0 && pair->numsvmfeatures != (1+pair->numpairs)*n )
     {
-        for (i=0; i<pair->numpairs; i++)
+        for (i=0; i<pair->numpairs; i++) // need to do lookups
         {
             flag = -1;
-            if ( (ptr= tradebot_arbpair_find(pair->svmpairs[i][0],pair->svmpairs[i][1])) != 0 )
-                flag = tradebots_expandrawfeatures(&svmfeatures[n],ptr->rawfeatures,reftimestamp,pair->rawfeatures);
+            if ( (ptr= tradebots_arbpair_find(pair->svmpairs[i][0],pair->svmpairs[i][1])) != 0 )
+                flag = tradebots_expandrawfeatures(&svmfeatures[n],ptr->rawfeatures,reftimestamp,rawfeatures);
             if ( flag < 0 )
             {
                 for (j=0; j<numpairfeatures; j++)
                     svmfeatures[n++] = 0.;
             } else n += flag;
         }
-    }
-    if ( n != pair->numsvmfeatures )
-    {
-        printf("unexpected numsvmfeatures %d vs %d\n",n,pair->numsvmfeatures);
-        return(-1);
     }
     return(n);
 }
@@ -287,6 +286,7 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
     double highbid,lowask,futurebid,futureask,ave,vol,bidaves[TRADEBOTS_NUMDECAYS],askaves[TRADEBOTS_NUMDECAYS],bidslopes[TRADEBOTS_NUMDECAYS],askslopes[TRADEBOTS_NUMDECAYS];
     float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin,futuremax,minval,maxval,*hblas = 0;
     uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi;
+    OCAS_PLUS_INF = _OCAS_PLUS_INF; OCAS_NEG_INF = -_OCAS_PLUS_INF;
     if ( pair->fp != 0 )
     {
         for (iter=0; iter<2; iter++)
@@ -297,7 +297,7 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
             {
                 savepos = ftell(pair->fp);
                 timestamp = tradebots_featureset(&highbid,&lowask,&ave,&vol,bidaves,askaves,bidslopes,askslopes,rawfeatures);
-                printf("timestamp.%u firsttime.%u\n",timestamp,firsttime);
+                //printf("timestamp.%u firsttime.%u\n",timestamp,firsttime);
                 if ( timestamp == 0 )
                     continue;
                 if ( firsttime == 0 )
@@ -393,6 +393,66 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
         printf("ERROR: %s/%s not on feature boundary\n",pair->base,pair->rel);
 }
 
+double get_yval(double *answerp,int32_t selector,int32_t ind,int32_t refc,int32_t answerind)
+{
+    float answer; struct tradebot_arbpair *pair; long savepos;
+    pair = &Arbpairs[refc];
+    if ( pair->fp != 0 )
+    {
+        savepos = ftell(pair->fp);
+        fseek(pair->fp,ind*sizeof(pair->rawfeatures)+answerind*sizeof(*pair->rawfeatures),SEEK_SET);
+        if ( fread(&answer,1,sizeof(answer),pair->fp) != sizeof(answer) )
+            answer = 0;
+        fseek(pair->fp,savepos,SEEK_SET);
+        if ( isnan(answer) != 0 )
+            return(0);
+        if ( answer > .01 )
+            answer = .01;
+        else if ( answer < -.01 )
+            answer = -.01;
+        if ( answerp != 0 )
+            *answerp = answer;
+        if ( answer > 0. )
+            return(1.);
+        else if ( answer < 0. )
+            return(-1.);
+    }
+	return(0.);
+}
+
+float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
+{
+    struct tradebot_arbpair *pair; long savepos; int32_t i,n; double svmfeatures[4096];
+    float rawfeatures[sizeof(pair->rawfeatures)],prevrawfeatures[sizeof(pair->rawfeatures)],*svmf=0;
+    pair = &Arbpairs[refc];
+    pair->numsvmfeatures = numfeatures;
+    if ( pair->fp != 0 && ind > 0 )
+    {
+        savepos = ftell(pair->fp);
+        fseek(pair->fp,(ind-1)*sizeof(pair->rawfeatures),SEEK_SET);
+        if ( fread(&prevrawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) && fread(&rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
+        {
+            n = tradebots_calcsvmfeatures(svmfeatures,pair,rawfeatures,prevrawfeatures);
+            if ( n != pair->numsvmfeatures )
+            {
+                printf("unexpected numsvmfeatures %d vs %d\n",n,pair->numsvmfeatures);
+                //return(-1);
+            }
+            svmf = calloc(n,sizeof(*svmf));
+            for (i=0; i<n; i++)
+                svmf[i] = svmfeatures[i];
+        }
+        fseek(pair->fp,savepos,SEEK_SET);
+    }
+    return(svmf);
+}
+
+double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)
+{
+    return(0.);
+}
+#include "tradebots_SVM.h"
+
 static char *assetids[][2] =
 {
     { "12071612744977229797", "UNITY" },
@@ -438,7 +498,7 @@ void tradebot_arbentry(struct tradebot_arbentry *arb,char *exchange,double price
     } else printf("mismatched arbexchange? (%s vs %s)\n",arb->exchange,exchange);
 }
 
-struct tradebot_arbexchange *tradebot_arbexchange_find(struct tradebot_arbpair *pair,char *exchange)
+struct tradebot_arbexchange *tradebots_arbexchange_find(struct tradebot_arbpair *pair,char *exchange)
 {
     int32_t i;
     for (i=0; i<pair->numexchanges; i++)
@@ -447,7 +507,7 @@ struct tradebot_arbexchange *tradebot_arbexchange_find(struct tradebot_arbpair *
     return(0);
 }
 
-struct tradebot_arbexchange *tradebot_arbexchange_create(struct tradebot_arbpair *pair,char *exchange)
+struct tradebot_arbexchange *tradebots_arbexchange_create(struct tradebot_arbpair *pair,char *exchange)
 {
     if ( pair->numexchanges < sizeof(pair->exchanges)/sizeof(*pair->exchanges) )
     {
@@ -466,15 +526,15 @@ void tradebot_arbcandidate(struct supernet_info *myinfo,char *exchange,int32_t t
         return;
     }
     offset = (tradedir > 0) ? 0 : 1;
-    if ( (pair= tradebot_arbpair_find(base,rel)) == 0 )
-        pair = tradebot_arbpair_create(base,rel);
+    if ( (pair= tradebots_arbpair_find(base,rel)) == 0 )
+        pair = tradebots_arbpair_create(base,rel);
     if ( pair == 0 )
     {
         printf("cant get pair for %s %s/%s\n",exchange,base,rel);
         return;
     }
-    if ( (arbex= tradebot_arbexchange_find(pair,exchange)) == 0 )
-        arbex = tradebot_arbexchange_create(pair,exchange);
+    if ( (arbex= tradebots_arbexchange_find(pair,exchange)) == 0 )
+        arbex = tradebots_arbexchange_create(pair,exchange);
     if ( arbex != 0 )
     {
         //printf("cand.%d %16s %s %12.6f (%5s/%-5s) at %12.8f profit %.03f\n",pair->numexchanges,exchange,tradedir<0?"ask":"bid",volume,base,rel,price,profitmargin);
@@ -617,13 +677,13 @@ void tradebot_arbcandidate(struct supernet_info *myinfo,char *exchange,int32_t t
                         {
                             if ( myinfo->svmfeatures == 0 )
                                 myinfo->svmfeatures = calloc(sizeof(*myinfo->svmfeatures),pair->numsvmfeatures);
-                            if ( tradebots_calcsvmfeatures(myinfo->svmfeatures,pair) > 0 )
+                            if ( tradebots_calcsvmfeatures(myinfo->svmfeatures,pair,pair->rawfeatures,pair->prevrawfeatures) > 0 )
                                 tradebots_calcpreds(pair->RTpreds,pair,myinfo->svmfeatures);
                         }
                     }
                     pair->lasttime = (uint32_t)time(NULL);
                 }
-                if ( time(NULL) > pair->lastanswertime+3600 )
+                if ( 0 && time(NULL) > pair->lastanswertime+3600 )
                 {
                     tradebots_calcanswers(pair);
                     pair->lastanswertime = (uint32_t)time(NULL);
@@ -861,8 +921,8 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
             price = bidasks[1].price;
         tradebot_arbcandidate(myinfo,exchange->name,-1,base,rel,price,volume,(uint32_t)time(NULL),profitmargin);
     }
-    if ( (pair= tradebot_arbpair_find(base,rel)) == 0 )
-        pair = tradebot_arbpair_create(base,rel);
+    if ( (pair= tradebots_arbpair_find(base,rel)) == 0 )
+        pair = tradebots_arbpair_create(base,rel);
     if ( pair != 0 )
     {
         if ( strcmp(rel,"NXT") == 0 )
@@ -885,3 +945,19 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         }
     }
 }
+
+#include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
+
+TWO_STRINGS(tradebots,gensvm,base,rel)
+{
+    int32_t numfeatures = 532; struct tradebot_arbpair *pair;
+    if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
+    {
+        tradebots_calcanswers(pair);
+        ocas_gen(pair->refc,numfeatures,0,(int32_t)(ftell(pair->fp) / sizeof(pair->rawfeatures)));
+        return(clonestr("{\"result\":\"success\"}"));
+    } else return(clonestr("{\"error\":\"cant find arbpair\"}"));
+}
+
+#include "../includes/iguana_apiundefs.h"
