@@ -169,9 +169,9 @@ void ocas_purge(struct ocas_vars *vars)
     for (i=0; i<TRADEBOTS_NUMANSWERS; i++)
     {
         if ( vars->CLspaces[i] != 0 )
-            free(vars->CLspaces[i]);
+            myaligned_free(vars->CLspaces[i],sizeof(*vars->CLspaces[i]));
         if ( vars->lhs[i] != 0 )
-            free(vars->lhs[i]);
+            myaligned_free(vars->lhs[i],sizeof(*vars->lhs[i]) + vars->numfeatures*vars->maxlhs*sizeof(double));
         if ( vars->weekinds[i] != 0 )
             free(vars->weekinds[i]);
     }
@@ -248,6 +248,7 @@ static inline void add_ocas_output(register double y,register struct ocas_vars *
 static inline void STocas_calc_outputs(register struct ocas_vars *vars,register int c,register int answerind,register double *output,register double *old_output,register double *W,register double W0,register int numfeatures,register int *weekinds,register int numdocs)
 {
     register int i,j;
+    //vars->good[answerind] = vars->bad[answerind] = 0;
     //printf("start STocas_calc_outputs.(%p %s.A%d %p) %p %p %p\n",vars,CONTRACTS[c],answerind,weekinds,output,old_output,W);
     for (i=0; i<numdocs; i++)
     {
@@ -260,6 +261,15 @@ static inline void STocas_calc_outputs(register struct ocas_vars *vars,register 
                 if ( isnan(features[j]) != 0 )
                     printf("%d ",j);
             printf("nans | i.%d w%d output %19.16f\n",i,weekinds[i],output[i]);
+        }
+        else if ( output[i] != 0. )
+        {
+            if ( 0 && vars->answers[(i-vars->starti)*TRADEBOTS_NUMANSWERS + answerind]*output[i] <= 0 )
+            {
+                if ( vars->answers[(i-vars->starti)*TRADEBOTS_NUMANSWERS + answerind] != 0.f )
+                    printf("(%f %f) ",vars->answers[(i-vars->starti)*TRADEBOTS_NUMANSWERS + answerind],output[i]);
+            }
+            //printf("[%f %f] ",vars->answers[(i-vars->starti)*TRADEBOTS_NUMANSWERS + answerind],output[i]);
         }
     }
     //printf("finish STocas_calc_outputs\n");
@@ -468,7 +478,7 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
     {
         if ( (y= vars->answers[(weekinds[i]-vars->starti)*TRADEBOTS_NUMANSWERS + answerind]) != 0.f )
         {
-            answermag = fabs(y);	// 1.;
+            answermag = 1.;//fabs(y);	// 1.;
             if ( (old_output[i] * (1. - t2) + t2*output[i]) <= answermag ) //1.
                 add_newcut_entry(vars,answerind,new_cut,i,weekinds[i],y);
             newoutput = (old_output[i] * (1. - t1)) + (t1 * output[i]);
@@ -492,7 +502,11 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
             dist += fabs(preds[i] - y);
             old_output[i] = newoutput;
             if ( newoutput > 0. ) good++;
-            else bad++;
+            else if ( newoutput < 0. )
+            {
+                bad++;
+                //printf("(%f %f) ",y,newoutput);
+            }
         } else zero++;//,printf("i.%d -> w%d | zeroes.%d good.%d bad.%d of len.%d\n",i,weekinds[i],zero,good,bad,len);
     }
     //printf("finished strategy\n");
@@ -736,239 +750,6 @@ static inline void ocas_update_Lspace(register struct ocas_vars *vars,register i
     update_ocas_model(ptr->W,ptr->oldW,vars,numfeatures,answerind,lhs,numlhs);
 }
 
-/*static inline int calc_thread_startendis(register int *startip,register int threadid,register int numthreads,register int n)
-{
-    register double incr;
-    incr = ((double)n / numthreads);
-    *startip = threadid * incr;
-    if ( threadid == numthreads-1 )
-        return(n-1);
-    else return(((threadid+1) * incr) - 1);
-}
-
-static inline int count_Numpending()
-{
-    int i,n=0;
-    for (i=0; i<TRADEBOTS_MAXPAIRS; i++)
-        if ( Numpending[i] != 0 )
-            n++;
-    return(n);
-}
-
-static inline int incr_Numpending(register int threadid)
-{
-    Numpending[threadid]++;
-    //printf("Numpending.%d thread.%d of %d\n",count_Numpending(),threadid,num_sync_counters);
-    return(count_Numpending());
-}
-
-static inline int decr_Numpending(register int threadid)
-{
-    Numpending[threadid]--;
-    //printf("Numpending.%d thread.%d of %d\n",count_Numpending(),threadid,num_sync_counters);
-    return(count_Numpending());
-}
-
-static inline void addnewcutglue(void *_args)
-{
-    register long *args = _args;
-    double private_newA[MAX_OCAS_FEATURES];
-    int starti=0,numfeatures;
-    register double *slice_newA,*W,*ref_new_a;
-    register struct ocas_vars *vars;
-    register struct ocas_ptrs *PTRS;
-    register int endi=0,i,c,threadid,cutlen,numthreads,selector,dir,weekind,answerind,*weekinds,*new_cut;
-    threadid = (int)args[0]; numthreads = (int)args[1]; numfeatures = (int)args[2]; c = (int)args[3];
-    slice_newA = (double *)args[4]; weekinds = (int *)args[5]; new_cut = (int *)args[6];
-    cutlen = (int)args[7]; answerind = (int)args[8]; selector = (int)args[9];
-    vars = (struct ocas_vars *)args[10]; W = (double *)args[11]; PTRS = (struct ocas_ptrs *)args[12]; ref_new_a = (double *)args[13];
-    memset(private_newA,0,sizeof(*private_newA) * numfeatures);
-    if ( PTRS->numdevs == 0 || numthreads == MAIN_MAXCORES )
-    {
-        endi = calc_thread_startendis(&starti,threadid,numthreads,cutlen);
-        //printf("inside addnewcutglue.t%d\n",threadid);
-        for (i=starti; i<=endi; i++)
-        {
-            weekind = new_cut[i];
-            dir = (weekind & 1);
-            weekind >>= 1;
-            add_ocas_output(dir==0?1.:-1.,vars,selector,c,weekind,answerind,W,private_newA,numfeatures);
-        }
-        //printf("end inside addnewcutglue.t%d\n",threadid);
-    }
-    else
-    {
-#ifdef INSIDE_OPENCL
-        register void *krn;
-        int numgroups,docid,n,devid,localbufsize = sizeof(double);
-        devid = threadid;
-        printf("devid.%d %p %p %p A%02d t%d of %d: start.%d w%d to end.%d w%d\n",devid,PTRS->new_aCL[devid],PTRS->new_cutCL[devid],PTRS->featuresCL[devid],answerind,threadid,numthreads,starti,new_cut[starti],endi,new_cut[endi]);
-        for (i=n=0; i<cutlen; i++)
-        {
-            weekind = new_cut[i];
-            dir = (weekind & 1);
-            weekind >>= 1;
-            if ( (docid= PTRS->CLweekinds_map[devid][weekind]) >= 0 )
-            {
-                if ( docid >= PTRS->numdocsCL[devid] )
-                    fatal("fatal docid >= PTRS->numdocsCL[devid]");
-                //printf("i.%d weekind.%d n.%d docid.%d [%d]\n",i,weekind,n,docid,new_cut[i]&1);
-                PTRS->new_cutCL[devid][n++] = (docid<<1) | dir;
-            }
-        }
-        if ( n != 0 )
-        {
-            _clmsync(devid,devcontext(devid),devid&1,PTRS->new_cutCL[devid],0,sizeof(int) * n,CL_MEM_DEVICE|CL_EVENT_WAIT|CL_EVENT_RELEASE);
-            krn = PTRS->krns[devid][1];
-            clarg_set_local(krn,0,localbufsize);
-            clarg_set_global(krn,1,PTRS->new_aCL[devid]);
-            clarg_set(krn,2,numfeatures);
-            clarg_set_global(krn,3,PTRS->new_cutCL[devid]);
-            clarg_set(krn,4,n);
-            clarg_set_global(krn,5,PTRS->featuresCL[devid]);
-            clarg_set(krn,6,PTRS->numdocsCL[devid]);
-            numgroups = ((numfeatures + NUM_CUDA_CORES-1)/NUM_CUDA_CORES);
-            struct clndrange_struct ndr = { 1, {0,0,0,0}, {numgroups*NUM_CUDA_CORES,0,0,0}, {NUM_CUDA_CORES,0,0,0} };
-            clfork(devid,devcontext(devid),devid&1,krn,&ndr,CL_FAST);
-            clmsync(devid,devcontext(devid),devid&1,PTRS->new_aCL[devid],CL_MEM_HOST|CL_EVENT_WAIT|CL_EVENT_RELEASE);
-            int good,errs,testmode = 0;
-            for (i=errs=good=0; i<numfeatures; i++)
-            {
-                if ( testmode != 0 && ref_new_a[i]*PTRS->new_aCL[devid][i] < 0 )
-                {
-                    errs++, printf("i.%d ref %9.6f vs CL %9.6f [%.20f]\n",i,ref_new_a[i],PTRS->new_aCL[devid][i],ref_new_a[i]-PTRS->new_aCL[devid][i]);
-                    //PTRS->new_aCL[devid][i] = ref_new_a[i];
-                } else if ( ref_new_a[i] != 0. ) good++;
-                private_newA[i] = PTRS->new_aCL[devid][i];
-            }
-            if ( testmode != 0 )
-                printf("errs.%d good.%d | newA.%d cutlen.%d numgroups.%d ndrange.%d copied %9.6f | ref %9.6f\n",errs,good,devid,n,numgroups,numgroups*NUM_CUDA_CORES,_dbufave(PTRS->new_aCL[devid],numfeatures),_dbufave(ref_new_a,numfeatures));
-        }
-#endif
-    }
-    for (i=0; i<numfeatures; i++)
-        slice_newA[i*MAIN_MAXCORES + threadid] = private_newA[i];
-    decr_Numpending(threadid);
-}
-
-static inline void outputglue(void *_args)
-{
-    register long *args = _args;
-    double W0;
-    int starti,numdocs,numfeatures;
-    register struct ocas_ptrs *PTRS;
-    register struct ocas_vars *vars;
-    register double *output,*W,*old_output;
-    register int i,c,endi,threadid,numthreads,answerind,selector,*weekinds;
-    threadid = (int)args[0]; numthreads = (int)args[1]; numfeatures = (int)args[2]; c = (int)args[3];
-    W = (double *)args[4]; weekinds = (int *)args[5]; output = (double *)args[6];
-    numdocs = (int)args[7]; W0 = *(double *)&args[8]; answerind = (int)args[9];
-    selector = (int)args[10]; vars = (struct ocas_vars *)args[11]; PTRS = (struct ocas_ptrs *)args[12]; old_output = (double *)args[13];
-    if ( PTRS->numdevs == 0 || numthreads == MAIN_MAXCORES )
-    {
-        endi = calc_thread_startendis(&starti,threadid,numthreads,numdocs);
-        for (i=starti; i<=endi; i++)
-            output[i] = calc_ocas_output(vars,selector,c,weekinds[i],answerind,W,W0,numfeatures);
-    }
-#ifdef INSIDE_OPENCL
-    else
-    {
-        register void *krn;
-        double y;
-        int numgroups,weekind,outputi,devid,localbufsize = sizeof(double);
-        devid = threadid;
-        memcpy(PTRS->WCL[devid],W,sizeof(*W) * numfeatures);
-        clmsync(devid,devcontext(devid),devid&1,PTRS->WCL[devid],CL_MEM_DEVICE|CL_EVENT_WAIT|CL_EVENT_RELEASE);
-        krn = PTRS->krns[devid][0];
-        clarg_set_local(krn,0,localbufsize);
-        clarg_set_global(krn,1,PTRS->predCL[devid]);
-        clarg_set(krn,2,numfeatures);
-        clarg_set_global(krn,3,PTRS->WCL[devid]);
-        clarg_set(krn,4,W0);
-        clarg_set_global(krn,5,PTRS->featuresCL[devid]);
-        clarg_set(krn,6,PTRS->numdocsCL[devid]);
-        numgroups = ((numdocs + NUM_CUDA_CORES-1)/NUM_CUDA_CORES);
-        struct clndrange_struct ndr = { 1, {0,0,0,0}, {numgroups*NUM_CUDA_CORES,0,0,0}, {NUM_CUDA_CORES,0,0,0} };
-        printf("fork.%d dot numdocs.%d numgroups.%d\n",devid,numdocs,numgroups);
-        clfork(devid,devcontext(devid),devid&1,krn,&ndr,CL_FAST);
-        clmsync(devid,devcontext(devid),devid&1,PTRS->predCL[devid],CL_MEM_HOST|CL_EVENT_WAIT|CL_EVENT_RELEASE);
-        starti = PTRS->devstarti[devid];
-        int errs,good,testmode = 0;
-        errs = good = 0;
-        for (i=0; i<PTRS->numdocsCL[devid]; i++)
-        {
-            weekind = PTRS->CLweekinds[devid][i];
-            y = get_yval(0,selector,weekind,c,answerind);
-            outputi = PTRS->weekinds_maps[answerind][weekind];
-            if ( outputi >= 0 )
-            {
-                if ( testmode != 0 )
-                {
-                    if ( fabs(output[outputi] - PTRS->predCL[devid][i] * y) > .000001 || output[outputi] * PTRS->predCL[devid][i] * y < 0 )
-                        errs++, printf("i.%d starti.%d weekind.%d output[%d] %9.6f vs y.%.0f %9.6f CL [%13.10f] W0 %9.6f W0 %9.6f\n",i,starti,weekind,PTRS->weekinds_maps[answerind][weekind],output[PTRS->weekinds_maps[answerind][weekind]],y,PTRS->predCL[devid][i],output[PTRS->weekinds_maps[answerind][weekind]] - y*PTRS->predCL[devid][i],vars->W0[answerind],W0);
-                    else good++;
-                }
-                else output[outputi] = PTRS->predCL[devid][i] * y;
-            }
-        }
-        if ( testmode != 0 )
-            printf("errs.%d vs good.%d | devid.%d numdocs.%d numgroups.%d ndrange.%d copy %d to %d | preds %9.6f\n",errs,good,devid,numdocs,numgroups,numgroups*NUM_CUDA_CORES,starti,PTRS->devendi[devid],_dbufave(PTRS->predCL[devid],PTRS->numdocsCL[devid]));
-    }
-#endif
-    decr_Numpending(threadid);
-}
-
-static inline void lspaceglue(void *_args)
-{
-    long *args = _args;
-    double QPSolverTolRel,C,netcuts,cutlen;
-    int answerind,numfeatures;
-    struct ocas_vars *vars;
-    answerind = (int)args[0];
-    numfeatures = (int)args[1];
-    vars = (struct ocas_vars *)args[2];
-    netcuts = *(double *)&args[3];
-    cutlen = *(double *)&args[4];
-    C = *(double *)&args[5];
-    QPSolverTolRel = *(double *)&args[6];
-    //printf("LSpace glue.A%d\n",answerind);
-    ocas_update_Lspace(vars,answerind,netcuts,cutlen,numfeatures,C,0.,QPSolverTolRel);
-    decr_Numpending(answerind);
-}
-
-static inline void ocas_add_newcuts(register struct ocas_ptrs *PTRS,register int numthreads,register struct ocas_vars *vars,register int answerind,register int numfeatures,register int *weekinds,register int *new_cut,register int numcuts,register double *W,register double *new_a)
-{
-    STocas_add_newcuts(vars,answerind,numfeatures,weekinds,new_cut,numcuts,W,new_a);
-}
-
-static inline void ocas_calc_outputs(register struct ocas_ptrs *PTRS,register int numthreads,register struct ocas_vars *vars,register int c,register int answerind,register double *output,register double *old_output,register double *W,register double W0,register int numfeatures,register int *weekinds,register int numdocs)
-{
-    long args[MAIN_MAXCORES][16];
-    register int threadid;
-    register dispatch_group_t group;
-    if ( numthreads == 1 && PTRS->numdevs == 0 )
-    {
-        STocas_calc_outputs(vars,c,answerind,output,old_output,W,W0,numfeatures,weekinds,numdocs);
-        return;
-    }
-    memset(args,0,sizeof(args));
-    for (threadid=0; threadid<numthreads; threadid++)
-    {
-        args[threadid][0] = (long)threadid; args[threadid][1] = (long)numthreads; args[threadid][2] = (long)numfeatures; args[threadid][3] = (long)c;
-        args[threadid][4] = (long)W; args[threadid][5] = (long)weekinds; args[threadid][6] = (long)output; args[threadid][7] = (long)numdocs;
-        *(double *)&args[threadid][8] = W0; args[threadid][9] = (long)answerind; args[threadid][10] = (long)vars->selector; args[threadid][11] = (long)vars;
-        args[threadid][12] = (long)PTRS; args[threadid][13] = (long)old_output;
-    }
-    group = dispatch_group_create();
-    for (threadid=0; threadid<numthreads; threadid++)
-    {
-        incr_Numpending(threadid);
-        dispatch_group_async_f(group,dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT,0),(void *)args[threadid],outputglue);
-    }
-    dispatch_group_wait(group,DISPATCH_TIME_FOREVER);
-    dispatch_release(group);
-}*/
-
 static inline void start_ocas_iter(register struct ocas_vars *vars,register int c,register int answerind)
 {
     if ( vars->pratio[answerind] == 0. )
@@ -987,7 +768,7 @@ static void ocas_print(struct ocas_vars *vars,int answerind,int ishwm,double C)
     dispvals[0] = vars->Q_P[answerind]/1000000000.; dispvals[1] = (C * vars->Q_D[answerind])/1000000000.;
     dispvals[2] = (vars->Q_P[answerind]-C * vars->Q_D[answerind]) / 1000000000; 
     dispvals[3] = (vars->Q_P[answerind]-C * vars->Q_D[answerind]) / MAX(1,fabs(vars->Q_P[answerind]));
-    printf("%3d %d.A%02d",vars->nohwm[answerind],vars->refc,answerind);
+    printf("%3d %d.A%02d +%d -%d",vars->nohwm[answerind],vars->refc,answerind,vars->good[answerind],vars->bad[answerind]);
     printf(" %4d %8.2f |QP %9.3f QD %10.2f [%11.2f %9.1f] SV.%3d %3d |M%9.3f errs.%-6d %-8.0f %5.2f%% errs %6.5f A%9.6f W0%9.6f D%11.9f\n",//[%7.4f%%]\n",
            vars->numIt[answerind],vars->ocas_time/1000,dispvals[0],dispvals[1],dispvals[2],dispvals[3], 
            vars->nNZAlpha[answerind], vars->numlhs[answerind],
@@ -1111,7 +892,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
                     if ( Method != 0 )
                     {
                         startmilli = OS_milliseconds();
-                        printf("%d calc_ocas_strategy.A%d len.%d | numthreads.%d\n",c_to_refc(vars->c),answerind,vars->len[answerind],numthreads);
+                        //printf("%d calc_ocas_strategy.A%d len.%d | numthreads.%d\n",c_to_refc(vars->c),answerind,vars->len[answerind],numthreads);
                         calc_ocas_strategy(vars,answerind,vars->C,numfeatures,vars->maxlen,weekinds,new_cut,ptr->W,ptr->oldW,ptr->output_pred,ptr->old_output,hpfb);
                         vars->w_time += (OS_milliseconds() - startmilli);
                     }
@@ -1125,7 +906,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
                 //ocas_add_newcuts(PTRS,numthreads,vars,answerind,numfeatures,weekinds,new_cut,vars->numposcuts[answerind]+vars->numnegcuts[answerind],ptr->W,ptr->new_a);
                 STocas_add_newcuts(vars,answerind,numfeatures,weekinds,new_cut,vars->numposcuts[answerind]+vars->numnegcuts[answerind],ptr->W,ptr->new_a);
                 vars->add_time += (OS_milliseconds() - startmilli);
-printf("done %d calc ocas_add_newcuts.A%d poscuts.%d negcuts.%d | numthreads.%d\n",c_to_refc(vars->c),answerind,vars->numposcuts[answerind],vars->numnegcuts[answerind],vars->numthreads);
+//printf("done %d calc ocas_add_newcuts.A%d poscuts.%d negcuts.%d | good.%d bad.%d\n",c_to_refc(vars->c),answerind,vars->numposcuts[answerind],vars->numnegcuts[answerind],vars->good[answerind],vars->bad[answerind]);
             } else inactives[answerind] = 1, printf("maxnohwm.%d\n",max_nohwm);
         }
         startmilli = OS_milliseconds();
@@ -1157,7 +938,7 @@ static inline int init_ocas_vars(int numthreads,int selector,long answerindmask,
     for (answerind=0; answerind<lastanswerind; answerind++)
     {
         //printf("A%d.len_%d ",answerind,vars->len[answerind]);
-        if ( vars->len[answerind] > 0 && (answerindmask == -1L || ((1L<<answerind) & answerindmask) != 0) )
+        if ( vars->len[answerind] > 0 )//&& (answerindmask == -1L || ((1L<<answerind) & answerindmask) != 0) )
         {
             vars->refc = c_to_refc(c); vars->c = c; vars->C = C; 
             vars->numfeatures = numfeatures; vars->maxlhs = maxlhs; 
@@ -1180,8 +961,12 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
 {
     struct ocas_CLbuffers *ptr; struct ocas_lhsbuffers *lhs;
     int32_t nonz,weekind,answerind; double answer,y;
+    if ( numfeatures < 0 )
+        return;
+    vars->maxlhs = MAX_OCAS_LHS;
+    vars->numfeatures = numfeatures;
     vars->maxlen = (endi - starti + 1);
-    vars->C = 1.0;
+    vars->C = 1.;
     vars->c = c;
     vars->TolRel = 0.01;
     vars->TolAbs = 0.0;
@@ -1236,12 +1021,14 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
     init_ocas_vars(1,0,-1,vars,c,vars->C,numfeatures,MAX_OCAS_LHS,vars->maxlen,vars->maxlen,vars->answerabsaves,vars->posA,vars->negA);
     for (answerind=0; answerind<TRADEBOTS_NUMANSWERS; answerind++)
     {
-        //printf("%s.A%d call init ocas vars weekinds[0] %p numfeatures.%d\n",CONTRACTS[c_to_refc(c)],answerind,vars->weekinds[0],numfeatures);
         //if ( answerindmask != -1 && ((1L<<answerind) & answerindmask) == 0 )
         //    continue;
         //printf("finish A%d len.%d\n",answerind,vars->len[answerind]);
         lhs = vars->lhs[answerind];
         ptr = vars->CLspaces[answerind];
+        printf("%d.A%d call init ocas vars weekinds[0] %p numfeatures.%d (%p %p)\n",c_to_refc(vars->c),answerind,vars->weekinds[0],numfeatures,lhs,ptr);
+        if ( lhs == 0 || ptr == 0 )
+            continue;
         vars->numlhs[answerind] = 0;//init_full_A(lhs->full_A,vars->numfeatures,c,answerind,models);
         memset(ptr->W,0,sizeof(*ptr->W) * numfeatures);
         memset(ptr->oldW,0,sizeof(*ptr->oldW) * numfeatures);
@@ -1262,7 +1049,7 @@ int32_t ocas_gen(int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
 {
     int32_t i; struct ocas_vars *vars = calloc(1,sizeof(*vars));
     ocas_init(vars,c,numfeatures,starti,endi);
-    for (i=0; i<MAX_OCAS_LHS; i++)
+    for (i=0; i<10; i++)
         ocas_iter(vars,100);
     ocas_purge(vars);
     return(0);

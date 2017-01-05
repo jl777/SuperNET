@@ -123,6 +123,7 @@ uint32_t tradebots_featureset(double *highbidp,double *lowaskp,double *avep,doub
     *lowaskp = rawfeatures[n++];
     *avep = _pairaved(*highbidp,*lowaskp);
     *volp = rawfeatures[n++];
+    //printf("[%9.6f %9.6f] vol %f t.%u\n",*highbidp,*lowaskp,*volp,timestamp);
     n = TRADEBOTS_RAWFEATURESINCR + TRADEBOTS_NUMANSWERS;
     for (i=0; i<TRADEBOTS_NUMDECAYS; i++)
     {
@@ -177,7 +178,10 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
     tradebots_featureset(&refhighbid,&reflowask,&refave,&refvol,refbidaves,refaskaves,refbidslopes,refaskslopes,refrawfeatures);
     timestamp = tradebots_featureset(&highbid,&lowask,&ave,&vol,bidaves,askaves,bidslopes,askslopes,rawfeatures);
     if ( timestamp == 0 || reftimestamp == 0 || timestamp >= reftimestamp+60 )
+    {
+        printf("tradebots_expandrawfeatures: timestamp.%u vs reftimestamp.%u\n",timestamp,reftimestamp);
         return(-1);
+    }
     factor = sqrt(reftimestamp - timestamp);
     if ( factor > 60. )
         factor = 60.;
@@ -185,7 +189,10 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
         factor = 1.;
     factor = 1. / factor;
     if ( refhighbid == 0. || highbid == 0. || lowask == 0. || reflowask == 0. )
+    {
+        printf("tradebots_expandrawfeatures: (%f %f) ref (%f %f)\n",highbid,lowask,refhighbid,reflowask);
         return(-1);
+    }
     svmfeatures[n++] = highbid;
     svmfeatures[n++] = (highbid / ave) - 1.;
     svmfeatures[n++] = lowask;
@@ -247,9 +254,12 @@ int32_t tradebots_expandrawfeatures(double *svmfeatures,float *rawfeatures,uint3
 int32_t tradebots_calcsvmfeatures(double *svmfeatures,struct tradebot_arbpair *pair,float *rawfeatures,float *prevrawfeatures)
 {
     int32_t i,j,n,numpairfeatures,flag; struct tradebot_arbpair *ptr; uint32_t reftimestamp;
-    memcpy(&reftimestamp,rawfeatures,sizeof(reftimestamp));
+    memcpy(&reftimestamp,&rawfeatures[TRADEBOTS_NUMANSWERS],sizeof(reftimestamp));
     if ( reftimestamp == 0 )
+    {
+        printf("reftimestamp.%u is illegal\n",reftimestamp);
         return(-1);
+    }
     numpairfeatures = n = tradebots_expandrawfeatures(svmfeatures,rawfeatures,reftimestamp,prevrawfeatures);
     if ( 0 && pair->numsvmfeatures != (1+pair->numpairs)*n )
     {
@@ -272,11 +282,14 @@ int32_t tradebots_calcpreds(float *RTpreds,struct tradebot_arbpair *pair,double 
 {
     int32_t i,j,n=0; double feature,preds[TRADEBOTS_NUMANSWERS];
     memset(preds,0,sizeof(preds));
-    for (i=n=0; i<pair->numsvmfeatures; i++)
+    if ( pair->svms != 0 )
     {
-        feature = svmfeatures[i];
-        for (j=0; j<TRADEBOTS_NUMANSWERS; j++)
-            preds[j] += feature * pair->svms[n++];
+        for (i=n=0; i<pair->numsvmfeatures; i++)
+        {
+            feature = svmfeatures[i];
+            for (j=0; j<TRADEBOTS_NUMANSWERS; j++)
+                preds[j] += feature * pair->svms[n++];
+        }
     }
     return(n);
 }
@@ -311,8 +324,16 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
                 {
                     if ( iter == 0 )
                     {
-                        _xblend(&hblas[i << 1],highbid,0.5);
-                        _xblend(&hblas[(i << 1) + 1],lowask,0.5);
+                        if ( hblas[i << 1] == 0 )
+                        {
+                            hblas[i << 1] = highbid;
+                            hblas[(i << 1) + 1] = lowask;
+                        }
+                        else
+                        {
+                            _xblend(&hblas[i << 1],highbid,0.5);
+                            _xblend(&hblas[(i << 1) + 1],lowask,0.5);
+                        }
                     }
                     else
                     {
@@ -329,33 +350,35 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
                                 {
                                     futurebid = hblas[ind << 1];
                                     futureask = hblas[(ind << 1) + 1];
-                                }
-                                minval = MIN(highbid,lowask);
-                                maxval = MAX(highbid,lowask);
-                                futuremin = MIN(futurebid,futureask);
-                                futuremax = MAX(futurebid,futureask);
-                                if ( futuremin > maxval )
-                                {
-                                    if ( futuremax < minval )
-                                        printf("%s/%s A%d: highly volatile minmax.(%f %f) -> (%f %f) %d of %d\n",pair->base,pair->rel,j,minval,maxval,futuremin,futuremax,i,maxi);
-                                    else
+                                    minval = MIN(highbid,lowask);
+                                    maxval = MAX(highbid,lowask);
+                                    futuremin = MIN(futurebid,futureask);
+                                    futuremax = MAX(futurebid,futureask);
+                                    if ( futuremin > maxval )
                                     {
-                                        pair->answers[j] = (futuremin - maxval);
-                                        flag++;
+                                        if ( futuremax < minval )
+                                            printf("%s/%s A%d: highly volatile minmax.(%f %f) -> (%f %f) %d of %d\n",pair->base,pair->rel,j,minval,maxval,futuremin,futuremax,i,maxi);
+                                        else
+                                        {
+                                            pair->answers[j] = (futuremin - maxval);
+                                            flag++;
+                                        }
                                     }
+                                    else if ( futuremax < minval )
+                                        pair->answers[j] = (futuremax - minval), flag++;
+                                    pair->answers[j] = _pairaved(futuremax,futuremin) - _pairaved(minval,maxval);
+                                    //printf("i.%d j.%d gap.%d ind.%d answer %9.6f (%f %f) -> (%f %f)\n",i,j,Tradebots_answergaps[j],ind,pair->answers[j],minval,maxval,futuremin,futuremax);
                                 }
-                                else if ( futuremax < minval )
-                                    pair->answers[j] = (futuremax - minval), flag++;
                             }
                             if ( flag != 0 )
                             {
                                 fseek(pair->fp,fpos,SEEK_SET);
                                 if ( fwrite(pair->answers,1,sizeof(pair->answers),pair->fp) != sizeof(pair->answers) )
                                     printf("error writing answers for %s/%s t%u i.%d of %d\n",pair->base,pair->rel,timestamp,i,maxi);
-                                else
+                                else if ( 0 )
                                 {
                                     for (j=0; j<TRADEBOTS_NUMANSWERS; j++)
-                                        printf("%9.6f ",pair->answers[i]);
+                                        printf("%9.6f ",pair->answers[j]);
                                     printf("%s/%s answers %d of %d\n",pair->base,pair->rel,i,maxi);
                                 }
                                 fseek(pair->fp,savepos,SEEK_SET);
@@ -383,7 +406,9 @@ void tradebots_calcanswers(struct tradebot_arbpair *pair)
                         hblas[i << 1] = highbid;
                         hblas[(i << 1) + 1] = lowask;
                     }
+                    printf("%9.6f ",_pairaved(highbid,lowask));
                 }
+                printf("maxi.%d\n",maxi);
             }
         }
         if ( hblas != 0 )
@@ -406,7 +431,8 @@ double get_yval(double *answerp,int32_t selector,int32_t ind,int32_t refc,int32_
         fseek(pair->fp,savepos,SEEK_SET);
         if ( isnan(answer) != 0 )
             return(0);
-        if ( answer > .01 )
+        answer /= 10.;
+        /*if ( answer > .01 )
             answer = .01;
         else if ( answer < -.01 )
             answer = -.01;
@@ -415,7 +441,12 @@ double get_yval(double *answerp,int32_t selector,int32_t ind,int32_t refc,int32_
         if ( answer > 0. )
             return(1.);
         else if ( answer < 0. )
-            return(-1.);
+            return(-1.);*/
+        if ( answer > 0. )
+            answer = sqrt(answer);
+        else answer = -sqrt(-answer);
+        *answerp = answer;
+        return(answer);
     }
 	return(0.);
 }
@@ -432,10 +463,13 @@ float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
         fseek(pair->fp,(ind-1)*sizeof(pair->rawfeatures),SEEK_SET);
         if ( fread(&prevrawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) && fread(&rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
         {
+            //for (i=0; i<72; i++)
+            //    printf("%9.6f ",rawfeatures[i]);
+            //printf("rawfeatures[%d]\n",ind);
             n = tradebots_calcsvmfeatures(svmfeatures,pair,rawfeatures,prevrawfeatures);
             if ( n != pair->numsvmfeatures )
             {
-                printf("unexpected numsvmfeatures %d vs %d\n",n,pair->numsvmfeatures);
+                printf("unexpected numsvmfeatures refc.%d ind.%d %d vs %d\n",refc,ind,n,pair->numsvmfeatures);
                 //return(-1);
             }
             svmf = calloc(n,sizeof(*svmf));
@@ -648,7 +682,7 @@ void tradebot_arbcandidate(struct supernet_info *myinfo,char *exchange,int32_t t
                             pair->dirmasks[1] |= (1 << i);
                     }
                 }
-                printf("%12.6f %7s/%-3s %8s %14.8f %8s %14.8f spread %6.2f%% %02x:%02x %02x:%02x %d\n",volume,base,rel,bid->exchange,highbid,ask->exchange,lowask,100.*(lowask-highbid)/_pairaved(highbid,lowask),pair->dirmasks[0],pair->slopedirs[0],pair->dirmasks[1],pair->slopedirs[1],pair->counter);
+                //printf("%12.6f %7s/%-3s %8s %14.8f %8s %14.8f spread %6.2f%% %02x:%02x %02x:%02x %d\n",volume,base,rel,bid->exchange,highbid,ask->exchange,lowask,100.*(lowask-highbid)/_pairaved(highbid,lowask),pair->dirmasks[0],pair->slopedirs[0],pair->dirmasks[1],pair->slopedirs[1],pair->counter);
                 //printf("BTC.(%.8f %.8f) %.8f %.8f USD.(%.4f %.4f) CNY.(%.3f %.3f)\n",pair->btcbid,pair->btcask,Pair_BTCUSD!=0?Pair_BTCUSD->highbid:0,Pair_BTCUSD!=0?Pair_BTCUSD->lowask:0,pair->usdbid,pair->usdask,pair->cnybid,pair->cnyask);
             }
             if ( highbid != 0 )
@@ -957,7 +991,7 @@ TWO_STRINGS(tradebots,gensvm,base,rel)
 #ifdef _WIN
     return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
 #else
-    int32_t numfeatures = 532; struct tradebot_arbpair *pair;
+    int32_t numfeatures = 317; struct tradebot_arbpair *pair;
     if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
     {
         tradebots_calcanswers(pair);
