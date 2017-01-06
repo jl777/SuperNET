@@ -52,7 +52,6 @@ char *sglue(GLUEARGS,char *agent,char *method)
             {
                 if ( (wallet= iguana_walletjson(myinfo)) != 0 )
                 {
-                    //printf("WALLETSTR.(%s)\n",jprint(wallet,0));
                     if ( (walletstr= SuperNET_login(myinfo,coin,json,remoteaddr,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
                     {
                         free(walletstr);
