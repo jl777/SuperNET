@@ -334,9 +334,10 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     return(txid);
 }
 
-uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
+uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,uint64_t value)
 {
-    char *retstr; cJSON *retjson; uint64_t interest = 0;
+    char *retstr; int32_t height; cJSON *retjson; struct iguana_txid T,*tx;
+    int32_t minutes; uint64_t numerator,denominator,interest = 0;
     if ( coin->FULLNODE < 0 ) // komodod is running
     {
         if ( (retjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
@@ -359,9 +360,20 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
     }
     else // we have it local
     {
-        
+        if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount)) != 0 && tx->locktime >LOCKTIME_THRESHOLD )
+        {
+            if ( (minutes= ((uint32_t)time(NULL) - 60 - tx->locktime) / 60) >= 60 )
+            {
+                numerator = (value * KOMODO_INTEREST);
+                denominator = (((uint64_t)365 * 24 * 60) / minutes);
+                if ( denominator == 0 )
+                    denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
+                interest = (numerator / denominator) / SATOSHIDEN;
+                fprintf(stderr,"komodo_interest %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",(long long)value,(double)value/SATOSHIDEN,tx->locktime,(uint32_t)time(NULL),minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
+            }
+        }
     }
-    char str[65]; printf("interest for %s.v%d %.8f\n",bits256_str(str,txid),vout,dstr(interest));
+    char str[65]; printf("interest for %s.v%d %.8f %.8f\n",bits256_str(str,txid),vout,dstr(value),dstr(interest));
     return(interest);
 }
 
@@ -373,7 +385,7 @@ uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,
         for (i=0; i<n; i++)
         {
             item = jitem(vins,i);
-            interest += iguana_interest(myinfo,coin,jbits256(item,"txid"),jint(item,"vout"));
+            interest += iguana_interest(myinfo,coin,jbits256(item,"txid"),jint(item,"vout"),jdouble(item,"value")*SATOSHIDEN);
         }
     }
     return(interest);
