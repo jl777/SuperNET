@@ -257,10 +257,13 @@ static inline void STocas_calc_outputs(register struct ocas_vars *vars,register 
         if ( 1 && isnan(output[i]) != 0 )
         {
             svmtype *features = vars->features[weekinds[i]-vars->starti];//get_jfp_features(vars->selector,numfeatures,c,weekinds[i]);
-            for (j=0; j<numfeatures; j++)
-                if ( isnan(features[j]) != 0 )
-                    printf("%d ",j);
-            printf("nans | i.%d w%d output %19.16f\n",i,weekinds[i],output[i]);
+            if ( features != 0 )
+            {
+                for (j=0; j<numfeatures; j++)
+                    if ( isnan(features[j]) != 0 )
+                        printf("%d ",j);
+                printf("nans | i.%d w%d output %19.16f\n",i,weekinds[i],output[i]);
+            }
         }
         else if ( output[i] != 0. )
         {
@@ -479,7 +482,7 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
     {
         if ( (y= vars->answers[(weekinds[i]-vars->starti)*TRADEBOTS_NUMANSWERS + answerind]) != 0.f )
         {
-            answermag = 1.;//fabs(y);	// 1.;
+            answermag = fabs(y);	// 1.;
             if ( (old_output[i] * (1. - t2) + t2*output[i]) <= answermag ) //1.
                 add_newcut_entry(vars,answerind,new_cut,i,weekinds[i],y);
             newoutput = (old_output[i] * (1. - t1)) + (t1 * output[i]);
@@ -487,11 +490,14 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
             {
                 double sum=W0;
                 svmtype *features = vars->features[weekinds[i]-vars->starti];//get_jfp_features(vars->selector,numfeatures,vars->c,weekinds[i]);
-                for (j=0; j<numfeatures; j++)
-                    sum += W[j] * CONDITION(features[j]);
-                if ( fabs(sum*y - newoutput) > .0000001 )
-                    printf("numIt.%d docid.%-6d w%-6d sum %11.7f * y%2.0f %11.7f != %11.7f newoutput [%11.7f] W0 %11.7f oldW0 %11.7f\n",vars->numIt[answerind],i,weekinds[i],sum,y,sum*y,newoutput,newoutput-sum*y,W0,oldW0);
-                newoutput = sum*y;
+                if ( features != 0 )
+                {
+                    for (j=0; j<numfeatures; j++)
+                        sum += W[j] * CONDITION(features[j]);
+                    if ( fabs(sum*y - newoutput) > .0000001 )
+                        printf("numIt.%d docid.%-6d w%-6d sum %11.7f * y%2.0f %11.7f != %11.7f newoutput [%11.7f] W0 %11.7f oldW0 %11.7f\n",vars->numIt[answerind],i,weekinds[i],sum,y,sum*y,newoutput,newoutput-sum*y,W0,oldW0);
+                    newoutput = sum*y;
+                }
             }
             if ( newoutput <= answermag )
             {
@@ -881,7 +887,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
                             add_newcut_entry(vars,answerind,new_cut,i,weekinds[i],y);
                         }
                     }
-                    fprintf(stderr,"skip %c.A%02d cuts +%d -%d, ",c_to_refc(vars->c),answerind,vars->numposcuts[answerind],vars->numnegcuts[answerind]);
+                    fprintf(stderr,"skip %d.A%02d cuts +%d -%d, ",c_to_refc(vars->c),answerind,vars->numposcuts[answerind],vars->numnegcuts[answerind]);
                 }
                 else
                 {
@@ -1028,7 +1034,7 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
         //printf("finish A%d len.%d\n",answerind,vars->len[answerind]);
         lhs = vars->lhs[answerind];
         ptr = vars->CLspaces[answerind];
-        printf("%d.A%d call init ocas vars weekinds[0] %p numfeatures.%d (%p %p)\n",c_to_refc(vars->c),answerind,vars->weekinds[0],numfeatures,lhs,ptr);
+        //printf("%d.A%d call init ocas vars weekinds[0] %p numfeatures.%d (%p %p)\n",c_to_refc(vars->c),answerind,vars->weekinds[0],numfeatures,lhs,ptr);
         if ( lhs == 0 || ptr == 0 )
             continue;
         vars->numlhs[answerind] = 0;//init_full_A(lhs->full_A,vars->numfeatures,c,answerind,models);

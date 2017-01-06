@@ -51,7 +51,9 @@
 #include "nn.h"
 #include "bus.h"
 #else*/
-#ifdef __APPLE__
+//#ifdef __APPLE__
+#if defined(__APPLE__) || defined(WIN32)
+
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"

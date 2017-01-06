@@ -334,6 +334,51 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     return(txid);
 }
 
+uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
+{
+    char *retstr; cJSON *retjson; uint64_t interest = 0;
+    if ( coin->FULLNODE < 0 ) // komodod is running
+    {
+        if ( (retjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
+        {
+            interest = jdouble(retjson,"interest") * SATOSHIDEN;
+            free_json(retjson);
+        }
+    }
+    else if ( coin->FULLNODE == 0 ) // basilisk mode -> use DEX* API
+    {
+        if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                interest = jdouble(retjson,"interest") * SATOSHIDEN;
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+    }
+    else // we have it local
+    {
+        
+    }
+    char str[65]; printf("interest for %s.v%d %.8f\n",bits256_str(str,txid),vout,dstr(interest));
+    return(interest);
+}
+
+uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
+{
+    int32_t i,n; cJSON *item; uint64_t interest = 0;
+    if ( is_cJSON_Array(vins) != 0 && (n= cJSON_GetArraySize(vins)) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            item = jitem(vins,i);
+            interest += iguana_interest(myinfo,coin,jbits256(item,"txid"),jint(item,"vout"));
+        }
+    }
+    return(interest);
+}
+
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V,int32_t maxmode)
 {
     uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; uint64_t avail,total,change; struct iguana_outpoint *unspents = 0;
@@ -351,6 +396,8 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
         {
+            if ( strcmp(coin->symbol,"KMD") == 0 )
+                total += iguana_interests(myinfo,coin,vins);
             if ( total < (satoshis + txfee) )
             {
                 free_json(vins);
