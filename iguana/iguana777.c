@@ -837,6 +837,15 @@ void iguana_helper(void *arg)
     }
 }
 
+/*
+To add a new dPoW'ed assetchain with DEX* API support:
+    1. add to komodo/src: assetchains, dpowassets, fiat-cli
+    2. add to end of CURRENCIES[] array in fundnotaries (iguana_notary.c)
+    3. create to fiat/<ac_name>
+    4. add to NOTARYCHAINS[] array
+    5. add to m_notary coins/<ac_name> get gen_acname  from where komodod was launched, change RELAY:-1
+*/
+
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char NOTARYCHAINS[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
