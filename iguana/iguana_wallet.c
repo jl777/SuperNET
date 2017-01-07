@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -1505,12 +1505,10 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         {
             free(retstr);
             retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
-            //printf("DECRYPT.(%s)\n",retstr);
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,privkey);
             iguana_waccountswitch(myinfo,coin,account,waddr->coinaddr,0);
             waddr->privkey = privkey;
             retjson = iguana_walletadd(myinfo,0,coin,retstr,account,waddr,0,0);
-            //printf("AFTERADD.(%s)\n",jprint(retjson,0));
             if ( retstr != 0 )
                 scrubfree(retstr);
             return(jprint(retjson,1));

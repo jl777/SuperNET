@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -39,6 +39,9 @@
 #endif
 #endif
 
+#define LOCKTIME_THRESHOLD 500000000
+#define KOMODO_INTEREST ((uint64_t)(0.05 * SATOSHIDEN))   // 5%
+
 //#define BTC2_VERSION
 #define BTC2_HARDFORK_HEIGHT 444444
 #define BTC2_SIGHASH_FORKID 0xcf
@@ -51,7 +54,8 @@
 #include "nn.h"
 #include "bus.h"
 #else*/
-#ifdef __APPLE__
+//#ifdef __APPLE__
+#if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
@@ -84,7 +88,7 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
-struct liquidity_info { char base[64],rel[64]; double profit,refprice; };
+struct liquidity_info { char base[16],rel[16],exchange[16]; uint64_t assetid; double profit,refprice; int dir; };
 struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };
 
 struct supernet_info
@@ -94,6 +98,8 @@ struct supernet_info
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
     char *decryptstr;
+    void (*liquidity_command)(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals);
+    double (*liquidity_active)(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume);
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
     uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,dexcrcs[1024];
     uint16_t argport,rpcport;
@@ -124,6 +130,7 @@ struct supernet_info
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
+    double *svmfeatures;
 };
 
 #include "../includes/iguana_funcs.h"

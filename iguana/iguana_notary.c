@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -71,12 +71,14 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         freq = 1;
-        minsigs = 7;//(komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
+        //minsigs = 7;//(komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
         //if ( minsigs < DPOW_MINSIGS )
-        //    minsigs = DPOW_MINSIGS;
+        minsigs = DPOW_MINSIGS;
     }
     printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
+    if ( dp->SRCREALTIME == 0 && strcmp(dp->dest,"KMD") == 0 )
+        return;
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
@@ -142,22 +144,23 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
-    int32_t i,height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
-    for (i=0; i<3; i++)
+    int32_t height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
+    if ( strcmp(dp->symbol,"KMD") == 0 )
     {
-        if ( (num= dpow_nanomsg_update(myinfo)) <= 0 )
-            break;
+        num = dpow_nanomsg_update(myinfo);
         //fprintf(stderr,"%d ",num);
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    //fprintf(stderr,"i.%d dp.%p dPoWupdate (%s -> %s)\n",i,dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
+    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     if ( src != 0 && dest != 0 )
     {
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
-            char str[65]; printf("[%s] %s %s height.%d vs last.%d\n",dp->symbol,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
+            char str[65];
+            if ( strcmp(dp->symbol,"KMD") == 0 || height != dp->destchaintip.blockhash.height+1 )
+                printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
                 printf("iguana_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
@@ -169,8 +172,12 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
+            {
+                //fprintf(stderr,"[I ");
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-            char str[65]; printf("[%s] %s %s height.%d vs last.%d\n",dp->dest,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+                //fprintf(stderr," %d] ",dp->SRCHEIGHT);
+            }
+            char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )

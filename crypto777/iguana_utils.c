@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -191,6 +191,14 @@ void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
     }
     if ( hexstr != 0 )
         init_hexbytes_noT(hexstr,rmd160,20);
+}
+
+double _xblend(float *destp,double val,double decay)
+{
+    double oldval;
+	if ( (oldval = *destp) != 0. )
+		return((oldval * decay) + ((1. - decay) * val));
+	else return(val);
 }
 
 double _dxblend(double *destp,double val,double decay)

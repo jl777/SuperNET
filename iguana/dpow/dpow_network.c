@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -163,7 +163,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-//nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
@@ -1206,7 +1206,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 && num < 100 )
+    while ( (size= nn_recv(myinfo->dpowsock,&np,NN_MSG,0)) >= 0 && num < 1000 )
     {
         if ( size > 0 )
         {

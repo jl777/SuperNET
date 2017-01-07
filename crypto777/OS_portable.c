@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -92,6 +92,17 @@ char *OS_portable_path(char *str)
 #endif
     return(str);
 #endif
+}
+
+FILE *OS_appendfile(char *origfname)
+{
+    char fname[1024]; FILE *fp;
+    strcpy(fname,origfname);
+    OS_portable_path(fname);
+    if ( (fp= fopen(fname,"rb+")) == 0 )
+        fp = fopen(fname,"wb");
+    else fseek(fp,0,SEEK_END);
+    return(fp);
 }
 
 int32_t OS_portable_renamefile(char *fname,char *newfname)

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -43,6 +43,7 @@ ZERO_ARGS(pax,start);
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
 ZERO_ARGS(tradebot,amlp);
 ZERO_ARGS(tradebot,notlp);
+TWO_STRINGS(tradebots,gensvm,base,rel);
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
 TWO_STRINGS(iguana,rate,base,rel);

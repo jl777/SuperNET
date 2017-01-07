@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -412,7 +412,7 @@ void dpow_statemachinestart(void *ptr)
             extralen = dpow_paxpending(extras,&bp->paxwdcrc);
             bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
         }
-        sleep(5);
+        sleep(13);
         if ( dp->checkpoint.blockhash.height > checkpoint.blockhash.height )
         {
             if ( bp->isratify == 0 )

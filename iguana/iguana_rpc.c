@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -52,7 +52,6 @@ char *sglue(GLUEARGS,char *agent,char *method)
             {
                 if ( (wallet= iguana_walletjson(myinfo)) != 0 )
                 {
-                    //printf("WALLETSTR.(%s)\n",jprint(wallet,0));
                     if ( (walletstr= SuperNET_login(myinfo,coin,json,remoteaddr,myinfo->handle,myinfo->secret,myinfo->permanentfile,0)) != 0 )
                     {
                         free(walletstr);

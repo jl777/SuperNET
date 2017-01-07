@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "../iguana/iguana777.h"
+#include "../iguana/exchanges777.h"
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
@@ -482,6 +483,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "tradebots_liquidity.c"
 #include "basilisk_tradebot.c"
 #include "basilisk_swap.c"
 #include "basilisk_DEX.c"
@@ -875,39 +877,55 @@ void basilisks_loop(void *arg)
         if ( relay == 0 )
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
+        //fprintf(stderr,"A ");
         basilisk_issued_purge(myinfo,600000);
+        //fprintf(stderr,"B ");
         basilisk_p2pQ_process(myinfo,777);
+        //fprintf(stderr,"C ");
         if ( myinfo->IAMNOTARY != 0 )
         {
             if ( relay != 0 )
+            {
+                //fprintf(stderr,"D ");
                 basilisk_ping_send(myinfo,relay);
+            }
             counter++;
+            //fprintf(stderr,"E ");
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 50;
+                endmilli = startmilli + 100;
             }
             else if ( myinfo->numdpows > 1 )
             {
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
+                {
+                    //fprintf(stderr,"F ");
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 10;
+                }
+                endmilli = startmilli + 30;
             }
         }
         else
         {
+            //fprintf(stderr,"G ");
             dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
-                endmilli = startmilli + 1000;
-            else endmilli = startmilli + 2000;
+                endmilli = startmilli + 500;
+            else endmilli = startmilli + 1000;
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
+        {
+            //fprintf(stderr,"H ");
             basilisk_requests_poll(myinfo);
-        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        }
+        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
+        //printf("finished waiting numdpow.%d\n",myinfo->numdpows);
         iter++;
     }
 }
