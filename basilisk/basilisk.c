@@ -878,20 +878,20 @@ void basilisks_loop(void *arg)
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
         endmilli = startmilli + 1000;
-        fprintf(stderr,"A ");
+        //fprintf(stderr,"A ");
         basilisk_issued_purge(myinfo,600000);
-        fprintf(stderr,"B ");
+        //fprintf(stderr,"B ");
         basilisk_p2pQ_process(myinfo,777);
-        fprintf(stderr,"C ");
+        //fprintf(stderr,"C ");
         if ( myinfo->IAMNOTARY != 0 )
         {
             if ( relay != 0 )
             {
-                fprintf(stderr,"D ");
+                //fprintf(stderr,"D ");
                 basilisk_ping_send(myinfo,relay);
             }
             counter++;
-            fprintf(stderr,"E ");
+            //fprintf(stderr,"E ");
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
@@ -903,7 +903,7 @@ void basilisks_loop(void *arg)
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
                 {
-                    fprintf(stderr,"F ");
+                    //fprintf(stderr,"F ");
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
                 }
                 endmilli = startmilli + 30;
@@ -911,7 +911,7 @@ void basilisks_loop(void *arg)
         }
         else
         {
-            fprintf(stderr,"G ");
+            //fprintf(stderr,"G ");
             dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
                 endmilli = startmilli + 500;
@@ -919,13 +919,13 @@ void basilisks_loop(void *arg)
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
         {
-            fprintf(stderr,"H ");
+            //fprintf(stderr,"H ");
             basilisk_requests_poll(myinfo);
         }
-        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
+        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
-        printf("finished waiting numdpow.%d\n",myinfo->numdpows);
+        //printf("finished waiting numdpow.%d\n",myinfo->numdpows);
         iter++;
     }
 }

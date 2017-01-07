@@ -1011,7 +1011,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         {
             if ( (result= jobj(infoobj,(char *)"result")) != 0 && (currentheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<30 && height<=currentheight; i++,height++)
+                for (i=0; i<100 && height<=currentheight; i++,height++)
                 {
                     /*fprintf(stderr,"%s.%d ",coin->symbol,height);
                     if ( (height % 10) == 0 )

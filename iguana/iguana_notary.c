@@ -152,7 +152,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
+    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     if ( src != 0 && dest != 0 )
     {
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
@@ -171,9 +171,9 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
             {
-                fprintf(stderr,"[I ");
+                //fprintf(stderr,"[I ");
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-                fprintf(stderr," %d] ",dp->SRCHEIGHT);
+                //fprintf(stderr," %d] ",dp->SRCHEIGHT);
             }
             char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
@@ -205,7 +205,6 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             }
         } //else printf("error getchaintip for %s\n",dp->symbol);
     } else printf("iguana_dPoWupdate missing src.(%s) %p or dest.(%s) %p\n",dp->symbol,src,dp->dest,dest);
-    fprintf(stderr,"done.%s\n",dp->symbol);
 }
 
 void dpow_addresses()
