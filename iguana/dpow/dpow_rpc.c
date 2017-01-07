@@ -1001,7 +1001,7 @@ int32_t dpow_issuer_block(struct dpow_info *dp,struct iguana_info *coin,int32_t 
 
 int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int32_t height,uint32_t *isrealtimep)
 {
-    char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
+    char *retstr; int32_t i,currentheight=0; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
     if ( height <= 0 )
         height = 1;
     *isrealtimep = 0;
@@ -1009,9 +1009,9 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
+            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (currentheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<1000 && height<=kmdheight; i++,height++)
+                for (i=0; i<30 && height<=currentheight; i++,height++)
                 {
                     /*fprintf(stderr,"%s.%d ",coin->symbol,height);
                     if ( (height % 10) == 0 )
@@ -1028,7 +1028,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
                     }
                     usleep(10000);
                 }
-                if ( height >= kmdheight )
+                if ( height >= currentheight )
                     *isrealtimep = (uint32_t)time(NULL);
             }
             free_json(infoobj);
@@ -1038,7 +1038,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     }
     else
     {
-        //printf("error from %s\n",coin->symbol);
+        printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
         usleep(100000);
     }
     return(height);

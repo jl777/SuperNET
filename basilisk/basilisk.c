@@ -868,7 +868,7 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t i,iter; double startmilli,endmilli; struct dpow_info *dp;
+    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli; struct dpow_info *dp;
     iter = 0;
     relay = iguana_coinfind("RELAY");
     printf("start basilisk loop\n");
@@ -908,10 +908,10 @@ void basilisks_loop(void *arg)
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
             basilisk_requests_poll(myinfo);
-        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
-        printf("finished waiting\n");
+        //printf("finished waiting\n");
         iter++;
     }
 }

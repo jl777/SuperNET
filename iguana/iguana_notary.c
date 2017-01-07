@@ -170,7 +170,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
             {
-                fprintf(stderr,"[I");
+                fprintf(stderr,"[I ");
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
                 fprintf(stderr," %d] ",dp->SRCHEIGHT);
             }
