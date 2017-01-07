@@ -34,6 +34,7 @@ coins/jumblr_7776
 coins/crypto_7776
 coins/pangea_7776
 coins/mgw_7776
+coins/mvp_7776
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"

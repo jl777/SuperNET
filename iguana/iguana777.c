@@ -837,11 +837,22 @@ void iguana_helper(void *arg)
     }
 }
 
+/*
+To add a new dPoW'ed assetchain with DEX* API support:
+    1. add to komodo/src: assetchains, dpowassets, fiat-cli
+    2. add to end of CURRENCIES[] array in fundnotaries (iguana_notary.c)
+    3. create fiat/<ac_name>
+    4. add to NOTARYCHAINS[] array in iguana_callcoinstart
+    5. add to m_notary coins/<ac_name> get gen_acname  from where komodod was launched, change RELAY:-1 and port to 7776 and make <ac_name>_7776 variant
+    6. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node> but without -gen
+    7. from a single node, fundnotaries <ac_name> to get notaries able to dPoW
+*/
+
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char NOTARYCHAINS[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
         "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
+        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
     struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
