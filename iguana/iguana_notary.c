@@ -490,7 +490,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
         }
         else return(clonestr("{\"error\":\"cant find BTC\"}"));
     }
-    for (i=32; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+    for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,CURRENCIES[i]) == 0 )
         {

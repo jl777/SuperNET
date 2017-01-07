@@ -844,7 +844,7 @@ To add a new dPoW'ed assetchain with DEX* API support:
     3. create fiat/<ac_name>
     4. add to NOTARYCHAINS[] array in iguana_callcoinstart
     5. add to m_notary coins/<ac_name> get gen_acname  from where komodod was launched, change RELAY:-1 and port to 7776 and make <ac_name>_7776 variant
-    6. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node>
+    6. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node> but without -gen
     7. from a single node, fundnotaries <ac_name> to get notaries able to dPoW
 */
 
