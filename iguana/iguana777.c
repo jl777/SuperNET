@@ -841,7 +841,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char NOTARYCHAINS[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
         "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
+        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
     struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)

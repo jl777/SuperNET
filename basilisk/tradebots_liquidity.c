@@ -501,7 +501,7 @@ float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
     return(svmf);
 }
 
-double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)
+/*double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)
 {
     int32_t i,nonz=0;
     for (i=0; i<numfeatures; i++)
@@ -509,19 +509,18 @@ double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures
             nonz++;//, printf("%.6f ",W[i]);
     printf("model.%d W0 %.7f numfeatures.%d nonz.%d\n",answerind,W0,numfeatures,nonz);
     return(W0);
+}*/
+
+void tradebots_modelfname(char *modelname,char *base,char *rel,int32_t answerind,int32_t numfeatures)
+{
+	sprintf(modelname,"%s/SVM/models/%s_%s_%d.A%d",GLOBAL_DBDIR,base,rel,numfeatures,answerind);
+    OS_portable_path(modelname);
 }
 
-/*double load_model(register int *posAp,register int *negAp,register double *W,register int refc,register int answerind,register int numfeatures)
+double load_model(register int *posAp,register int *negAp,register double *W,register int refc,register int answerind,register int numfeatures)
 {
-	int j;
-	FILE *fp;
-	double perc;
-	char modelname[512];
-#ifdef __APPLE__
-	sprintf(modelname,"/Volumes/SSD/models/%s_%d.A%c%c",CONTRACTS[refc],numfeatures,(answerind/10)+'0',(answerind%10)+'0');
-#else
-	sprintf(modelname,"/media/raptor/models/%s_%d.A%c%c",CONTRACTS[refc],numfeatures,(answerind/10)+'0',(answerind%10)+'0');
-#endif
+	int32_t j; FILE *fp; double perc; char modelname[512];
+    tradebots_modelfname(modelname,Arbpairs[refc].base,Arbpairs[refc].rel,answerind,numfeatures);
 	if ( (fp= fopen(modelname,"rb")) != 0 )
 	{
 		//printf("load file\n");
@@ -540,7 +539,7 @@ double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures
 #ifndef DISABLE_EXISTINGMODEL
 	else if ( 0 )
 	{
-		sprintf(modelname,"/media/raptor/models/%s_%d.A%c%c",CONTRACTS[0],numfeatures,(answerind/10)+'0',(answerind%10)+'0');
+        tradebots_modelfname(modelname,Arbpairs[refc].base,Arbpairs[refc].rel,answerind,numfeatures);
 		if ( (fp= fopen(modelname,"rb")) != 0 )
 		{
 			j = (int)fread(W,sizeof(*W),numfeatures+1,fp);
@@ -551,7 +550,7 @@ double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures
 			if ( fread(negAp,1,sizeof(*negAp),fp) == sizeof(*negAp) )
 				j++;
 			fclose(fp);
-			printf("Using backup model for %s loaded %s bias %9.6f | %5.2f%%\n",CONTRACTS[refc],modelname,W[numfeatures],perc);
+			printf("Using backup model for %s/%s loaded %s bias %9.6f | %5.2f%%\n",Arbpairs[refc].base,Arbpairs[refc].rel,modelname,W[numfeatures],perc);
 			return(perc * .9);
 		}
 	}
@@ -562,9 +561,8 @@ double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures
 
 int save_model(int refc,int answerind,double *W,int numfeatures,double W0,double perc,int posA,int negA)
 {
-	FILE *fp;
-	char modelname[512];
-	sprintf(modelname,"/media/raptor/models/%s_%d.A%c%c",CONTRACTS[refc],numfeatures,(answerind/10)+'0',(answerind%10)+'0');
+	FILE *fp; char modelname[512];
+    tradebots_modelfname(modelname,Arbpairs[refc].base,Arbpairs[refc].rel,answerind,numfeatures);
 	//printf("modelname.%s m.%p predabs %f\n",modelname,m,predabs);
 	if ( (fp= fopen(modelname,"wb")) != 0 )
 	{
@@ -582,23 +580,26 @@ int save_model(int refc,int answerind,double *W,int numfeatures,double W0,double
 
 double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)
 {
-	double fileperc,perc = (100. * (double)(len - bad)) / len;
+	double perc = (100. * (double)(len - bad)) / len;
 #ifndef DISABLE_EXISTINGMODEL
-	int _posA,_negA;
-	double tmpW[MAX_OCAS_FEATURES+2],fileperc;
-	if ( (fileperc= load_model(&_posA,&_negA,tmpW,refc_to_c(refc),answerind,numfeatures)) > perc )
+	int32_t _posA,_negA; double *tmpW,fileperc;
+    tmpW = calloc(numfeatures+2,sizeof(*tmpW));
+	if ( (fileperc= load_model(&_posA,&_negA,tmpW,refc,answerind,numfeatures)) > perc )
 	{
 		if ( (_posA+_negA) != 0 && _posA >= posA && _negA >= negA )
 		{
 			memcpy(W,tmpW,sizeof(*W)*numfeatures);
-			printf("%s.A%02d numfeatures.%d posA.%d negA.%d saved model %f is better than %f +A%d -A%d\n",CONTRACTS[refc],answerind,numfeatures,_posA,_negA,fileperc,perc,posA,negA);
+			printf("%s/%s.A%02d numfeatures.%d posA.%d negA.%d saved model %f is better than %f +A%d -A%d\n",Arbpairs[refc].base,Arbpairs[refc].rel,answerind,numfeatures,_posA,_negA,fileperc,perc,posA,negA);
+            W0 = tmpW[numfeatures];
+            free(tmpW);
 			return(tmpW[numfeatures]);
 		}
 	}
+    free(tmpW);
 #endif
 	save_model(refc,answerind,W,numfeatures,W0,perc,posA,negA);
 	return(W0);
-}*/
+}
 
 #ifndef _WIN
 #include "tradebots_SVM.h"

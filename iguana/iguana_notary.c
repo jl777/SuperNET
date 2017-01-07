@@ -437,7 +437,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
     char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
         "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-        "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW" };
+        "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
     uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     int32_t n = komodo_notaries("KMD",pubkeys,114000);
     if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("KMD")) != 0 )
@@ -490,7 +490,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
         }
         else return(clonestr("{\"error\":\"cant find BTC\"}"));
     }
-    for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+    for (i=32; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,CURRENCIES[i]) == 0 )
         {

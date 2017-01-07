@@ -678,6 +678,7 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s/BTCD",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"SVM"), OS_ensure_directory(dirname);
     sprintf(dirname,"SVM/rawfeatures"), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM/models"), OS_ensure_directory(dirname);
 }
 
 void iguana_Qinit()
