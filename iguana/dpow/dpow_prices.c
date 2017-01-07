@@ -1890,7 +1890,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             splineval = PAX_splineval(&dp->splines[i],timestamp,0);
             pvals[6+i] = PAX_val32(splineval);
             if ( dispflag != 0 )
-                printf("%d ",pvals[6+i]);
+                printf("%u ",pvals[6+i]);
         }
         if ( pvals[6+CNY] != 0 && pvals[6+USD] != 0 )
             dp->CNYUSD = ((double)pvals[6 + CNY] / pvals[6 + USD]) * MINDENOMS[USD] / MINDENOMS[CNY];

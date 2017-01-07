@@ -182,7 +182,7 @@ void dpow_statemachinestart(void *ptr)
         kmdheight = checkpoint.blockhash.height;
     else if ( strcmp(dest->symbol,"KMD") == 0 )
         kmdheight = dest->longestchain;
-    if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
+    //if ( (bp= dp->blocks[checkpoint.blockhash.height]) == 0 )
     {
         bp = calloc(1,sizeof(*bp));
         bp->minsigs = minsigs;
