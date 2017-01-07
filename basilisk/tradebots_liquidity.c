@@ -956,7 +956,11 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     safecopy(li.exchange,exchange,sizeof(li.exchange));
     li.profit = jdouble(vals,"profit");
     li.refprice = jdouble(vals,"refprice");
+    li.bid = jdouble(vals,"bid");
+    li.ask = jdouble(vals,"ask");
+    li.maxvol = jdouble(vals,"maxvol");
     li.dir = jint(vals,"dir"); // positive -> buy, negative -> sell, 0 or missing -> both
+    li.onetime = jint(vals,"onetime");
     // li.theoretical = ... dotproduct
     // li.filter = ...
     // li.trigger = ...
@@ -1007,7 +1011,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
                 } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
             }
             myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) %.6f %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.refprice);
+            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.6f ask %.8f maxvol %.f ref %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.maxvol,li.refprice);
             return;
         }
     }
@@ -1044,11 +1048,18 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
         //printf(">>>>>>>> %s %s/%s [%d] dir.%d refli.dir %d vs %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.base,refli.rel);
         if ( dir != 0 && dir * refli.dir <= 0 )
         {
-            if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
+            if ( refli.profit != 0. )
             {
-                *refpricep = refli.refprice;
-                return(refli.profit);
-            } else break;
+                if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
+                {
+                    *refpricep = refli.refprice;
+                    return(refli.profit);
+                } else break;
+            }
+            else
+            {
+                //bid, ask, track pending, recover expired, onetime
+            }
         }
     }
     return(0.);
