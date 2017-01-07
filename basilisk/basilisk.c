@@ -878,13 +878,20 @@ void basilisks_loop(void *arg)
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
         endmilli = startmilli + 1000;
+        fprintf(stderr,"A ");
         basilisk_issued_purge(myinfo,600000);
+        fprintf(stderr,"B ");
         basilisk_p2pQ_process(myinfo,777);
+        fprintf(stderr,"C ");
         if ( myinfo->IAMNOTARY != 0 )
         {
             if ( relay != 0 )
+            {
+                fprintf(stderr,"D ");
                 basilisk_ping_send(myinfo,relay);
+            }
             counter++;
+            fprintf(stderr,"E ");
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
@@ -895,19 +902,26 @@ void basilisks_loop(void *arg)
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
+                {
+                    fprintf(stderr,"F ");
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                }
                 endmilli = startmilli + 30;
             }
         }
         else
         {
+            fprintf(stderr,"G ");
             dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
                 endmilli = startmilli + 500;
             else endmilli = startmilli + 1000;
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
+        {
+            fprintf(stderr,"H ");
             basilisk_requests_poll(myinfo);
+        }
         printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
