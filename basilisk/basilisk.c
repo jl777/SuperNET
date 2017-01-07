@@ -888,7 +888,7 @@ void basilisks_loop(void *arg)
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 2500;
+                endmilli = startmilli + 100;
             }
             else if ( myinfo->numdpows > 1 )
             {
@@ -896,7 +896,7 @@ void basilisks_loop(void *arg)
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 100;
+                endmilli = startmilli + 30;
             }
         }
         else
@@ -908,10 +908,10 @@ void basilisks_loop(void *arg)
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
             basilisk_requests_poll(myinfo);
-        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
-        printf("finished waiting\n");
+        printf("finished waiting numdpow.%d\n",myinfo->numdpows);
         iter++;
     }
 }
