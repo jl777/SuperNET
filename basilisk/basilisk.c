@@ -868,7 +868,7 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t iter; double startmilli,endmilli; struct dpow_info *dp;
+    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t i,iter; double startmilli,endmilli; //struct dpow_info *dp;
     iter = 0;
     relay = iguana_coinfind("RELAY");
     printf("start basilisk loop\n");
@@ -891,19 +891,21 @@ void basilisks_loop(void *arg)
             }
             else if ( myinfo->numdpows > 1 )
             {
-                dp = &myinfo->DPOWS[counter % myinfo->numdpows];
+                /*dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
-                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 10;
+                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);*/
+                for (i=0; i<myinfo->numdpows; i++)
+                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[i]);
+                endmilli = startmilli + 300;
             }
         }
         else
         {
             dex_updateclient(myinfo);
             if ( myinfo->IAMLP != 0 )
-                endmilli = startmilli + 1000;
-            else endmilli = startmilli + 2000;
+                endmilli = startmilli + 500;
+            else endmilli = startmilli + 1000;
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
             basilisk_requests_poll(myinfo);
