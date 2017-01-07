@@ -513,7 +513,7 @@ float *get_features(int32_t numfeatures,int32_t refc,int32_t ind)
 
 void tradebots_modelfname(char *modelname,char *base,char *rel,int32_t answerind,int32_t numfeatures)
 {
-	sprintf(modelname,"%s/SVM/models/%s_%s_%d.A%d",GLOBAL_DBDIR,base,rel,numfeatures,answerind);
+	sprintf(modelname,"SVM/models/%s_%s_%d.A%d",base,rel,numfeatures,answerind);
     OS_portable_path(modelname);
 }
 
@@ -563,7 +563,7 @@ int save_model(int refc,int answerind,double *W,int numfeatures,double W0,double
 {
 	FILE *fp; char modelname[512];
     tradebots_modelfname(modelname,Arbpairs[refc].base,Arbpairs[refc].rel,answerind,numfeatures);
-	//printf("modelname.%s m.%p predabs %f\n",modelname,m,predabs);
+    printf("save model.(%s)\n",modelname);
 	if ( (fp= fopen(modelname,"wb")) != 0 )
 	{
 		//printf("save %s %.f%% posA.%d negA.%d\n",modelname,perc,posA,negA);
@@ -576,6 +576,29 @@ int save_model(int refc,int answerind,double *W,int numfeatures,double W0,double
 		return(0);
 	}
 	return(-1);
+}
+
+double init_model(double *percp,double *W,double *oldW,int c,int answerind,int numfeatures)
+{
+	int32_t j,posA,negA,nonz=0; double *bestmodel=0;
+	memset(oldW,0,sizeof(*oldW)*numfeatures);
+	memset(W,0,sizeof(*W)*numfeatures);
+    if ( load_model(&posA,&negA,W,c,answerind,numfeatures) > 0 )
+    {
+        bestmodel = W;
+        if ( bestmodel != 0 )
+        {
+            for (j=0; j<=numfeatures; j++)
+            {
+                if ( bestmodel[j] != 0 )
+                    nonz++;
+                oldW[j] = W[j];
+            }
+            if ( nonz != 0 )
+                return(bestmodel[numfeatures]);
+        }
+	}
+	return(0.);
 }
 
 double set_ocas_model(int refc,int answerind,double *W,double W0,int numfeatures,int firstweekind,int len,int bad,double dist,double predabs,int posA,int negA,double answerabs,double aveanswer)

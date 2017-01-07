@@ -432,12 +432,23 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
+char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
+    "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
+
+ZERO_ARGS(dpow,notarychains)
+{
+    int32_t i; cJSON *array = cJSON_CreateArray();
+    jaddistr(array,"KMD");
+    jaddistr(array,"BTC");
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
+        jaddistr(array,NOTARY_CURRENCIES[i]);
+    return(jprint(array,1));
+}
+
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 {
     int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
-    char CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
-        "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-        "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
     uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
     int32_t n = komodo_notaries("KMD",pubkeys,114000);
     if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("KMD")) != 0 )
@@ -490,14 +501,14 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
         }
         else return(clonestr("{\"error\":\"cant find BTC\"}"));
     }
-    for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
     {
-        if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,CURRENCIES[i]) == 0 )
+        if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,NOTARY_CURRENCIES[i]) == 0 )
         {
             for (j=0; j<n; j++)
             {
                 bitcoin_address(coinaddr,60,pubkeys[j],33);
-                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f\n",CURRENCIES[i],coinaddr,val);
+                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f\n",NOTARY_CURRENCIES[i],coinaddr,val);
                 if ( system(cmd) != 0 )
                     printf("ERROR with (%s)\n",cmd);
             }

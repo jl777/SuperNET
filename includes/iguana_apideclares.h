@@ -21,6 +21,7 @@ ZERO_ARGS(dpow,cancelratify);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
+ZERO_ARGS(dpow,notarychains);
 
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);

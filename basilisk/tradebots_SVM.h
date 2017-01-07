@@ -1041,10 +1041,10 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
         memset(ptr->W,0,sizeof(*ptr->W) * numfeatures);
         memset(ptr->oldW,0,sizeof(*ptr->oldW) * numfeatures);
         vars->W0[answerind] = vars->oldW0[answerind] = 0;
-#ifdef ENABLE_EXISTINGMODEL
+#ifndef DISABLE_EXISTINGMODEL
         double init_model(double *percp,double *W,double *oldW,int c,int answerind,int numfeatures);
         vars->W0[answerind] = init_model(&vars->hwmperc[answerind],ptr->W,ptr->oldW,c,answerind,vars->numfeatures);
-        if ( _dbufave(ptr->W,numfeatures) != 0 && bitweight(answerindmask) == 1 )
+        if ( _dbufave(ptr->W,numfeatures) != 0 )
             validate_ocas_model(vars,answerind,ptr->output_pred,ptr->old_output,vars->weekinds[answerind],vars->len[answerind],ptr->W,vars->W0[answerind],numfeatures,1);
 #endif
         //printf("%s.A%d call init ocas vars weekinds[0] %p\n",CONTRACTS[c_to_refc(c)],answerind,vars->weekinds[0]);
@@ -1057,8 +1057,8 @@ int32_t ocas_gen(int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
 {
     int32_t i; struct ocas_vars *vars = calloc(1,sizeof(*vars));
     ocas_init(vars,c,numfeatures,starti,endi);
-    for (i=0; i<100; i++)
-        ocas_iter(vars,10);
+    for (i=0; i<10; i++)
+        ocas_iter(vars,3);
     ocas_purge(vars);
     return(0);
 }
