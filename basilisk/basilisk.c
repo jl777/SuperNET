@@ -908,10 +908,10 @@ void basilisks_loop(void *arg)
         }
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
             basilisk_requests_poll(myinfo);
-        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
-        //printf("finished waiting\n");
+        printf("finished waiting\n");
         iter++;
     }
 }
