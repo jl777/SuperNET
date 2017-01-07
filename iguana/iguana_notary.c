@@ -159,7 +159,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
             char str[65];
-            if ( height != dp->destchaintip.blockhash.height+1 )
+            if ( strcmp(dp->symbol,"KMD") == 0 || height != dp->destchaintip.blockhash.height+1 )
                 printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
