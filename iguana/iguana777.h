@@ -55,8 +55,7 @@
 #include "bus.h"
 #else*/
 //#ifdef __APPLE__
-#if defined(__APPLE__) || defined(WIN32)
-
+#if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
