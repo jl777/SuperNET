@@ -868,7 +868,7 @@ int32_t basilisk_issued_purge(struct supernet_info *myinfo,int32_t timepad)
 void basilisks_loop(void *arg)
 {
     static uint32_t counter;
-    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t i,iter; double startmilli,endmilli; //struct dpow_info *dp;
+    struct iguana_info *relay; struct supernet_info *myinfo = arg; int32_t i,iter; double startmilli,endmilli; struct dpow_info *dp;
     iter = 0;
     relay = iguana_coinfind("RELAY");
     printf("start basilisk loop\n");
@@ -877,6 +877,7 @@ void basilisks_loop(void *arg)
         if ( relay == 0 )
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
         basilisk_issued_purge(myinfo,600000);
         basilisk_p2pQ_process(myinfo,777);
         if ( myinfo->IAMNOTARY != 0 )
@@ -887,17 +888,15 @@ void basilisks_loop(void *arg)
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 50;
+                endmilli = startmilli + 2500;
             }
             else if ( myinfo->numdpows > 1 )
             {
-                /*dp = &myinfo->DPOWS[counter % myinfo->numdpows];
+                dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
-                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);*/
-                for (i=0; i<myinfo->numdpows; i++)
-                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[i]);
-                endmilli = startmilli + 300;
+                    iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
+                endmilli = startmilli + 100;
             }
         }
         else

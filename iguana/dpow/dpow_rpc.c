@@ -1039,7 +1039,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     else
     {
         //printf("error from %s\n",coin->symbol);
-        sleep(3);
+        usleep(100000);
     }
     return(height);
 }
