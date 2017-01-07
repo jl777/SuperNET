@@ -151,7 +151,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
     }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    //fprintf(stderr,"i.%d dp.%p dPoWupdate (%s -> %s)\n",i,dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
+    fprintf(stderr,"i.%d dp.%p dPoWupdate (%s -> %s)\n",i,dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     if ( src != 0 && dest != 0 )
     {
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
