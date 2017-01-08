@@ -725,7 +725,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
     }
 }
 
-void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
+void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
     int32_t i,err; cJSON *ujson; char coinaddr[64];
     if ( bp->myind < 0 )
@@ -1142,12 +1142,12 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         extralen = dpow_paxpending(extras,&paxwdcrc);
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = paxwdcrc;
         //dpow_bestconsensus(bp);
-        dpow_nanoutxoset(&np->notarize,bp,0);
+        dpow_nanoutxoset(myinfo,dp,&np->notarize,bp,0);
     }
     else
     {
         bp->paxwdcrc = bp->notaries[bp->myind].paxwdcrc = np->notarize.paxwdcrc = 0;
-        dpow_nanoutxoset(&np->ratify,bp,1);
+        dpow_nanoutxoset(myinfo,dp,&np->ratify,bp,1);
     }
     np->size = size;
     np->datalen = datalen;
