@@ -741,9 +741,9 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
             err = 0;
             if ( (ujson= dpow_gettxout(myinfo,bp->srccoin,np->srcutxo,np->srcvout)) != 0 )
             {
-                if ( j64bits(ujson,"value") == 0 )
+                if ( (uint64_t)(jdouble(ujson,"value") * SATOSHIDEN) == 0 )
                 {
-                    printf("(%s)\n",jprint(ujson,0));
+                    //printf("(%s)\n",jprint(ujson,0));
                     err = 1;
                 }
                 free_json(ujson);
@@ -762,7 +762,7 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
             err = 0;
             if ( (ujson= dpow_gettxout(myinfo,bp->destcoin,np->destutxo,np->destvout)) != 0 )
             {
-                if ( j64bits(ujson,"value") == 0 )
+                if ( (uint64_t)(jdouble(ujson,"value") * SATOSHIDEN) == 0 )
                     err = 1;
                 free_json(ujson);
             } else err = 1;
