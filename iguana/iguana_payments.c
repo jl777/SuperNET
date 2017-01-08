@@ -379,13 +379,15 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
 
 uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    int32_t i,n; cJSON *item; uint64_t interest = 0;
+    int32_t i,n; cJSON *item; uint64_t value,interest = 0;
     if ( is_cJSON_Array(vins) != 0 && (n= cJSON_GetArraySize(vins)) > 0 )
     {
         for (i=0; i<n; i++)
         {
             item = jitem(vins,i);
-            interest += iguana_interest(myinfo,coin,jbits256(item,"txid"),jint(item,"vout"),jdouble(item,"value")*SATOSHIDEN);
+            if ( (value= jdouble(item,"value")*SATOSHIDEN) == 0 )
+                value = jdouble(item,"amount")*SATOSHIDEN;
+            interest += iguana_interest(myinfo,coin,jbits256(item,"txid"),jint(item,"vout"),value);
         }
     }
     return(interest);
@@ -725,6 +727,7 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
             jaddnum(retjson,"height",height);
             jaddnum(retjson,"confirmations",coin->blocks.hwmchain.height - height + 1);
             jaddnum(retjson,"value",dstr(value));
+            jaddnum(retjson,"amount",dstr(value));
             if ( (height % coin->chain->bundlesize) == 0 && vout == 0 )
                 jadd(retjson,"coinbase",jtrue());
             else jadd(retjson,"coinbase",jfalse());

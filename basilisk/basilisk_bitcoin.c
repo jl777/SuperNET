@@ -354,6 +354,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"address",coinaddr);
     jadd64bits(retjson,"satoshis",value);
+    jaddnum(retjson,"amount",dstr(value));
     jaddnum(retjson,"value",dstr(value));
     jaddnum(retjson,"height",height);
     jaddnum(retjson,"numconfirms",coin->blocks.hwmchain.height - height + 1);
@@ -909,6 +910,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                     jaddstr(retjson,"address",coinaddr);
                     jadd64bits(retjson,"satoshis",value);
                     jaddnum(retjson,"value",dstr(value));
+                    jaddnum(retjson,"amount",dstr(value));
                     height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
                     jaddnum(retjson,"height",height);
                     jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));

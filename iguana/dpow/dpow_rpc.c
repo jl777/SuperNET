@@ -562,7 +562,8 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
                 item = jitem(unspents,i);
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
                     continue;
-                satoshis = SATOSHIDEN * jdouble(item,"amount");
+                if ( (satoshis= SATOSHIDEN * jdouble(item,"amount")) == 0 )
+                    satoshis= SATOSHIDEN * jdouble(item,"value");
                 if ( satoshis == DPOW_UTXOSIZE && (address= jstr(item,"address")) != 0 && strcmp(address,coinaddr) == 0 )
                 {
                     if ( (str= jstr(item,"scriptPubKey")) != 0 && is_hexstr(str,0) == sizeof(script)*2 )
