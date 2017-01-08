@@ -727,51 +727,53 @@ void dpow_bestconsensus(struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i,err,vout; cJSON *ujson; char coinaddr[64]; 
+    int32_t i,err,vout; cJSON *ujson; char coinaddr[64],str[65];
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
     {
         np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
-        err = 0;
-        if ( (ujson= dpow_gettxout(myinfo,bp->srccoin,np->srcutxo,np->srcvout)) != 0 )
-        {
-            if ( j64bits(ujson,"value") == 0 )
-                err = 1;
-            free_json(ujson);
-        } else err = 1;
-        if ( err != 0 )
-        {
-            bitcoin_address(coinaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
-            if ( dpow_haveutxo(myinfo,bp->srccoin,&bp->notaries[bp->myind].ratifysrcutxo,&vout,coinaddr) > 0 )
-            {
-                printf("Replace UTXO.%s\n",bp->srccoin->symbol);
-                bp->notaries[bp->myind].ratifysrcvout = vout;
-                np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
-                np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
-            }
-            else printf("cant find utxo.%s\n",bp->srccoin->symbol);
-        }
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
-        err = 0;
-        if ( (ujson= dpow_gettxout(myinfo,bp->destcoin,np->destutxo,np->destvout)) != 0 )
+        if ( bp->myind != 0 )
         {
-            if ( j64bits(ujson,"value") == 0 )
-                err = 1;
-            free_json(ujson);
-        } else err = 1;
-        if ( err != 0 )
-        {
-            bitcoin_address(coinaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
-            if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&vout,coinaddr) > 0 )
+            err = 0;
+            if ( (ujson= dpow_gettxout(myinfo,bp->srccoin,np->srcutxo,np->srcvout)) != 0 )
             {
-                printf("Replace UTXO.%s\n",bp->destcoin->symbol);
-                bp->notaries[bp->myind].ratifydestvout = vout;
-                np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
-                np->destvout = bp->notaries[bp->myind].ratifydestvout;
-            } else printf("cant find utxo.%s\n",bp->destcoin->symbol);
+                if ( j64bits(ujson,"value") == 0 )
+                    err = 1;
+                free_json(ujson);
+            } else err = 1;
+            if ( err != 0 )
+            {
+                bitcoin_address(coinaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
+                if ( dpow_haveutxo(myinfo,bp->srccoin,&bp->notaries[bp->myind].ratifysrcutxo,&vout,coinaddr) > 0 )
+                {
+                    bp->notaries[bp->myind].ratifysrcvout = vout;
+                    np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
+                    np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
+                    printf("Replace UTXO.%s < %s/v%d\n",bp->srccoin->symbol,bits256_str(str,np->srcutxo),vout);
+                } else printf("cant find utxo.%s\n",bp->srccoin->symbol);
+            }
+            err = 0;
+            if ( (ujson= dpow_gettxout(myinfo,bp->destcoin,np->destutxo,np->destvout)) != 0 )
+            {
+                if ( j64bits(ujson,"value") == 0 )
+                    err = 1;
+                free_json(ujson);
+            } else err = 1;
+            if ( err != 0 )
+            {
+                bitcoin_address(coinaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
+                if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&vout,coinaddr) > 0 )
+                {
+                    bp->notaries[bp->myind].ratifydestvout = vout;
+                    np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
+                    np->destvout = bp->notaries[bp->myind].ratifydestvout;
+                    printf("Replace UTXO.%s < %s/v%d\n",bp->destcoin->symbol,bits256_str(str,np->destutxo),vout);
+                } else printf("cant find utxo.%s\n",bp->destcoin->symbol);
+            }
         }
         np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
