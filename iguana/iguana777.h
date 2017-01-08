@@ -92,8 +92,7 @@ struct liquidity_info
 {
     char base[16],rel[16],exchange[16];
     uint64_t assetid;
-    double profit,refprice,bid,ask,maxvol;
-    int8_t dir,onetime;
+    double profit,refprice,bid,ask,minvol,maxvol,totalvol;
 };
 
 struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t timestamps[64]; };

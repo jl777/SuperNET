@@ -878,10 +878,185 @@ void tradebot_arbcandidate(struct supernet_info *myinfo,char *exchange,int32_t t
     }
 }
 
+cJSON *linfo_json(struct liquidity_info *li)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddstr(item,"base",li->base);
+    jaddstr(item,"rel",li->rel);
+    if ( li->exchange[0] != 0 )
+        jaddstr(item,"exchange",li->exchange);
+    if ( li->assetid != 0 )
+        jadd64bits(item,"assetid",li->assetid);
+    if ( li->profit != 0. )
+        jaddnum(item,"profitmargin",li->profit);
+    if ( li->refprice != 0. )
+        jaddnum(item,"refprice",li->refprice);
+    if ( li->bid != 0. )
+        jaddnum(item,"bid",li->bid);
+    if ( li->ask != 0. )
+        jaddnum(item,"ask",li->ask);
+    if ( li->minvol != 0. )
+        jaddnum(item,"minvol",li->minvol);
+    if ( li->maxvol != 0. )
+        jaddnum(item,"maxvol",li->maxvol);
+    if ( li->totalvol != 0. )
+        jaddnum(item,"totalvol",li->totalvol);
+    return(item);
+}
+
+void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals)
+{
+    struct liquidity_info li,refli; int32_t i; char *exchange,*relstr,numstr[32];
+    if ( (exchange= jstr(vals,"exchange")) == 0 )
+        exchange = "DEX";
+    else if ( strcmp(exchange,"*") == 0 )
+        exchange = "";
+    else if ( exchanges777_find(exchange) == 0 )
+    {
+        printf("cant find exchange.(%s)\n",exchange);
+        return;
+    }
+    if ( (relstr= jstr(vals,"rel")) == 0 )
+        relstr = "BTC";
+    if ( base == 0 || base[0] == 0 )
+        base = jstr(vals,"base");
+    if ( base == 0 || base[0] == 0 )
+        return;
+    memset(&li,0,sizeof(li));
+    safecopy(li.base,base,sizeof(li.base));
+    safecopy(li.rel,relstr,sizeof(li.rel));
+    strncpy(li.exchange,exchange,sizeof(li.exchange));
+    li.profit = jdouble(vals,"profit");
+    li.refprice = jdouble(vals,"refprice");
+    li.bid = jdouble(vals,"bid");
+    li.ask = jdouble(vals,"ask");
+    if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
+        li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.01;
+    if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
+        li.maxvol = li.minvol;
+    if ( (li.totalvol= jdouble(vals,"total")) < li.maxvol )
+        li.totalvol = li.maxvol;
+    if ( strcmp("NXT",li.rel) == 0 )
+        li.assetid = NXT_assetidfind(base);
+    else if ( strcmp("UNITY",base) == 0 )
+        li.assetid = NXT_assetidfind(base);
+    if ( strcmp(li.base,"BTC") == 0 && strcmp("USD",li.rel) != 0 && strcmp("CNY",li.rel) != 0 )
+    {
+        printf("unsupported base BTC (%s/%s)\n",li.base,li.rel);
+        return;
+    }
+    if ( strcmp(li.base,"BTC") != 0 && strcmp("BTC",li.rel) != 0 &&
+        strcmp(li.base,"NXT") != 0 && strcmp("NXT",li.rel) != 0 &&
+        strcmp(li.base,"USD") != 0 && strcmp("USD",li.rel) != 0 &&
+        strcmp(li.base,"CNY") != 0 && strcmp("CNY",li.rel) != 0 &&
+        strcmp(li.exchange,"DEX") != 0 ) // filter out most invalids
+    {
+        printf("unsupported base/rel %s/%s\n",li.base,li.rel);
+        return;
+    }
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    {
+        refli = myinfo->linfos[i];
+        if ( strcmp(li.rel,refli.base) == 0 && strcmp(li.base,refli.rel) == 0 )
+        {
+            /*li = refli;
+            strcpy(li.base,refli.base);
+            strcpy(li.rel,refli.rel);
+            if ( fabs(li.refprice) > SMALLVAL )
+                li.refprice = (1. / li.refprice);
+            else li.refprice = 0.;
+            li.dir = -li.dir;
+            myinfo->linfos[i] = li;*/
+            printf("cant Set rev linfo[%d] (%s/%s) %.6f %.8f already have (%s/%s)\n",i,li.rel,li.base,li.profit,li.refprice,refli.base,refli.rel);
+            return;
+        }
+        else if ( refli.base[0] == 0 || (strcmp(li.base,refli.base) == 0 && strcmp(li.rel,refli.rel) == 0 && strcmp(li.exchange,refli.exchange) == 0) )
+        {
+            if ( refli.base[0] == 0 && li.exchange[0] != 0 && strcmp(li.exchange,"DEX") != 0 )
+            {
+                if ( strcmp("NXT",li.rel) == 0 && li.assetid != 0 )
+                {
+                    sprintf(numstr,"%llu",(long long)li.assetid);
+                    printf("monitor %s %s\n",li.rel,numstr);
+                    tradebot_monitor(myinfo,0,0,0,li.exchange,numstr,li.rel,0.);
+                } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
+            }
+            myinfo->linfos[i] = li;
+            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.6f ask %.8f maxvol %.f ref %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.maxvol,li.refprice);
+            return;
+        }
+    }
+    printf("ERROR: too many linfos %d\n",i);
+}
+
+int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume)
+{
+    if ( (li->minvol == 0 || volume >= li->minvol) && (li->maxvol == 0 || volume <= li->maxvol) )
+        return(0);
+    else return(-1);
+}
+
+double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume)
+{
+    int32_t i,dir; struct liquidity_info refli;
+    *refpricep = 0.;
+    //printf("%s %s/%s\n",exchange,base,rel);
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    {
+        refli = myinfo->linfos[i];
+        if ( refli.base[0] == 0 )
+            continue;
+        if ( strcmp(base,refli.base) == 0 && strcmp(rel,refli.rel) == 0 )
+            dir = 1;
+        else if ( strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 )
+            dir = -1;
+        else dir = 0;
+        if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
+        {
+            //printf("continue %s %s/%s [%d] dir.%d refli.dir %d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.exchange,refli.base,refli.rel);
+            continue;
+        }
+        //printf(">>>>>>>> %s %s/%s [%d] dir.%d refli.dir %d vs %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.base,refli.rel);
+        if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
+        {
+            if ( refli.profit != 0. )
+                *refpricep = refli.refprice;
+            else if ( dir > 0 )
+                *refpricep = refli.bid;
+            else if ( dir < 0 )
+                *refpricep = refli.ask;
+            return(refli.profit);
+        }
+        break;
+    }
+    return(0.);
+}
+
+struct liquidity_info *_default_lifind(struct supernet_info *myinfo,int32_t *dirp,char *base,char *rel)
+{
+    struct liquidity_info *li; int32_t i;
+    *dirp = 0;
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    {
+        li = &myinfo->linfos[i];
+        if ( strcmp(li->base,base) == 0 && strcmp(li->rel,rel) == 0 )
+        {
+            *dirp = 1;
+            return(li);
+        }
+        else if ( strcmp(li->base,rel) == 0 && strcmp(li->rel,base) == 0 )
+        {
+            *dirp = -1;
+            return(li);
+        }
+    }
+    return(0);
+}
+
 void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
     // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    double price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64];
+    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir;
     srcamount = swap->I.req.srcamount;
     destamount = swap->I.req.destamount;
     profitmargin = (double)swap->I.req.profitmargin / 1000000.;
@@ -889,6 +1064,16 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
     {
         printf("illegal amount for balancing %f %f\n",srcamount,destamount);
         return;
+    }
+    if ( (li= _default_lifind(myinfo,&idir,swap->I.req.src,swap->I.req.dest)) != 0 )
+    {
+        if ( idir < 0 )
+            vol = 1. / ((double)destamount / SATOSHIDEN);
+        else vol = ((double)srcamount / SATOSHIDEN);
+        li->totalvol -= vol;
+        if ( li->totalvol <= 0. || (li->minvol != 0. && li->totalvol < li->minvol) )
+            li->minvol = li->maxvol = li->totalvol = 0.;
+        printf("li.(%s/%s) totalvol %f after -= %f minmax.(%f %f)\n",li->base,li->rel,li->totalvol,vol,li->minvol,li->maxvol);
     }
     strcpy(rel,"BTC");
     if ( strcmp(swap->I.req.src,"BTC") == 0 )
@@ -930,139 +1115,6 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
             else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
         }
     }
-}
-
-void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals)
-{
-    struct liquidity_info li,refli; int32_t i; char *exchange,*relstr,numstr[32];
-    if ( (exchange= jstr(vals,"exchange")) == 0 )
-        exchange = "DEX";
-    else if ( strcmp(exchange,"*") == 0 )
-        exchange = "";
-    else if ( exchanges777_find(exchange) == 0 )
-    {
-        printf("cant find exchange.(%s)\n",exchange);
-        return;
-    }
-    if ( (relstr= jstr(vals,"rel")) == 0 )
-        relstr = "BTC";
-    if ( base == 0 || base[0] == 0 )
-        base = jstr(vals,"base");
-    if ( base == 0 || base[0] == 0 )
-        return;
-    memset(&li,0,sizeof(li));
-    safecopy(li.base,base,sizeof(li.base));
-    safecopy(li.rel,relstr,sizeof(li.rel));
-    safecopy(li.exchange,exchange,sizeof(li.exchange));
-    li.profit = jdouble(vals,"profit");
-    li.refprice = jdouble(vals,"refprice");
-    li.bid = jdouble(vals,"bid");
-    li.ask = jdouble(vals,"ask");
-    li.maxvol = jdouble(vals,"maxvol");
-    li.dir = jint(vals,"dir"); // positive -> buy, negative -> sell, 0 or missing -> both
-    li.onetime = jint(vals,"onetime");
-    // li.theoretical = ... dotproduct
-    // li.filter = ...
-    // li.trigger = ...
-    // PAX response
-    if ( strcmp("NXT",li.rel) == 0 )
-        li.assetid = NXT_assetidfind(base);
-    else if ( strcmp("UNITY",base) == 0 )
-        li.assetid = NXT_assetidfind(base);
-    if ( strcmp(li.base,"BTC") == 0 && strcmp("USD",li.rel) != 0 && strcmp("CNY",li.rel) != 0 )
-    {
-        printf("unsupported base BTC (%s/%s)\n",li.base,li.rel);
-        return;
-    }
-    if ( strcmp(li.base,"BTC") != 0 && strcmp("BTC",li.rel) != 0 &&
-        strcmp(li.base,"NXT") != 0 && strcmp("NXT",li.rel) != 0 &&
-        strcmp(li.base,"USD") != 0 && strcmp("USD",li.rel) != 0 &&
-        strcmp(li.base,"CNY") != 0 && strcmp("CNY",li.rel) != 0 &&
-        strcmp(li.exchange,"DEX") != 0 ) // filter out most invalids
-    {
-        printf("unsupported base/rel %s/%s\n",li.base,li.rel);
-        return;
-    }
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        refli = myinfo->linfos[i];
-        /*if ( strcmp(li.rel,refli.base) == 0 && strcmp(li.base,refli.rel) == 0 )
-        {
-            li = refli;
-            strcpy(li.base,refli.base);
-            strcpy(li.rel,refli.rel);
-            if ( fabs(li.refprice) > SMALLVAL )
-                li.refprice = (1. / li.refprice);
-            else li.refprice = 0.;
-            li.dir = -li.dir;
-            printf("Set rev linfo[%d] (%s/%s) %.6f %.8f\n",i,li.base,li.rel,li.profit,li.refprice);
-            myinfo->linfos[i] = li;
-            return;
-        }
-        else*/ if ( refli.base[0] == 0 || (strcmp(li.base,refli.base) == 0 && strcmp(li.rel,refli.rel) == 0 && strcmp(li.exchange,refli.exchange) == 0) )
-        {
-            if ( refli.base[0] == 0 && li.exchange[0] != 0 && strcmp(li.exchange,"DEX") != 0 )
-            {
-                if ( strcmp("NXT",li.rel) == 0 && li.assetid != 0 )
-                {
-                    sprintf(numstr,"%llu",(long long)li.assetid);
-                    printf("monitor %s %s\n",li.rel,numstr);
-                    tradebot_monitor(myinfo,0,0,0,li.exchange,numstr,li.rel,0.);
-                } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
-            }
-            myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.6f ask %.8f maxvol %.f ref %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.maxvol,li.refprice);
-            return;
-        }
-    }
-    printf("ERROR: too many linfos %d\n",i);
-}
-
-int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume)
-{
-    // check order exposure
-    // check cumulative exposure
-    return(0);
-}
-
-double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume)
-{
-    int32_t i,dir; struct liquidity_info refli;
-    *refpricep = 0.;
-    //printf("%s %s/%s\n",exchange,base,rel);
-    for (i=sizeof(myinfo->linfos)/sizeof(*myinfo->linfos)-1; i>=0; i--)
-    {
-        refli = myinfo->linfos[i];
-        if ( refli.base[0] == 0 )
-            continue;
-        if ( strcmp(base,refli.base) == 0 && strcmp(rel,refli.rel) == 0 )
-            dir = 1;
-        else if ( strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 )
-            dir = -1;
-        else dir = 0;
-        if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
-        {
-            //printf("continue %s %s/%s [%d] dir.%d refli.dir %d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.exchange,refli.base,refli.rel);
-            continue;
-        }
-        //printf(">>>>>>>> %s %s/%s [%d] dir.%d refli.dir %d vs %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.base,refli.rel);
-        if ( dir != 0 && dir * refli.dir <= 0 )
-        {
-            if ( refli.profit != 0. )
-            {
-                if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
-                {
-                    *refpricep = refli.refprice;
-                    return(refli.profit);
-                } else break;
-            }
-            else
-            {
-                //bid, ask, track pending, recover expired, onetime
-            }
-        }
-    }
-    return(0.);
 }
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
@@ -1145,7 +1197,7 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
-TWO_STRINGS(tradebots,gensvm,base,rel)
+TWO_STRINGS(tradebot,gensvm,base,rel)
 {
 #ifdef _WIN
     return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
@@ -1159,6 +1211,17 @@ TWO_STRINGS(tradebots,gensvm,base,rel)
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"cant find arbpair\"}"));
 #endif
+}
+
+ZERO_ARGS(tradebot,openliquidity)
+{
+    int32_t i; cJSON *array = cJSON_CreateArray();
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    {
+        if ( myinfo->linfos[i].base[0] != 0 )
+            jaddi(array,linfo_json(&myinfo->linfos[i]));
+    }
+    return(jprint(array,1));
 }
 
 #include "../includes/iguana_apiundefs.h"
