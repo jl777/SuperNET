@@ -387,14 +387,15 @@ void dpow_statemachinestart(void *ptr)
         }
         sleep(1);
     }
+    starttime = (uint32_t)time(NULL);
     if ( bp->isratify == 0 )
     {
         //if ( (starttime= checkpoint.timestamp) == 0 )
-            bp->starttime = starttime = (uint32_t)time(NULL);
+            bp->starttime = starttime;
         extralen = dpow_paxpending(extras,&bp->paxwdcrc);
         bp->notaries[bp->myind].paxwdcrc = bp->paxwdcrc;
     }
-    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),checkpoint.timestamp);
+    printf("PAXWDCRC.%x myind.%d isratify.%d DPOW.%s statemachine checkpoint.%d %s start.%u+dur.%d vs %ld\n",bp->paxwdcrc,bp->myind,bp->isratify,src->symbol,checkpoint.blockhash.height,bits256_str(str,checkpoint.blockhash.hash),starttime,bp->duration,time(NULL));
     for (i=0; i<sizeof(srchash); i++)
         srchash.bytes[i] = dp->minerkey33[i+1];
     //printf("start utxosync start.%u %u\n",starttime,(uint32_t)time(NULL));

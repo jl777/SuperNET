@@ -44,7 +44,8 @@ ZERO_ARGS(pax,start);
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
 ZERO_ARGS(tradebot,amlp);
 ZERO_ARGS(tradebot,notlp);
-TWO_STRINGS(tradebots,gensvm,base,rel);
+TWO_STRINGS(tradebot,gensvm,base,rel);
+ZERO_ARGS(tradebot,openliquidity);
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
 TWO_STRINGS(iguana,rate,base,rel);
