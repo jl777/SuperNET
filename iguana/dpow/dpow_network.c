@@ -727,7 +727,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i,err; cJSON *ujson; char coinaddr[64]; uint16_t vout;
+    int32_t i,err,vout; cJSON *ujson; char coinaddr[64]; 
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
