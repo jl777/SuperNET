@@ -742,7 +742,10 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
             if ( (ujson= dpow_gettxout(myinfo,bp->srccoin,np->srcutxo,np->srcvout)) != 0 )
             {
                 if ( j64bits(ujson,"value") == 0 )
+                {
+                    printf("(%s)\n",jprint(ujson,0));
                     err = 1;
+                }
                 free_json(ujson);
             } else err = 1;
             if ( err != 0 )
