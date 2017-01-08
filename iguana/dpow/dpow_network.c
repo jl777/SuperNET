@@ -727,7 +727,7 @@ void dpow_bestconsensus(struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i,err; cJSON *ujson; char coinaddr[64];
+    int32_t i,err; cJSON *ujson; char coinaddr[64]; uint16_t vout;
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
@@ -744,9 +744,10 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
         if ( err != 0 )
         {
             bitcoin_address(coinaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
-            if ( dpow_haveutxo(myinfo,bp->srccoin,&bp->notaries[bp->myind].ratifysrcutxo,&bp->notaries[bp->myind].ratifysrcvout,coinaddr) > 0 )
+            if ( dpow_haveutxo(myinfo,bp->srccoin,&bp->notaries[bp->myind].ratifysrcutxo,&vout,coinaddr) > 0 )
             {
                 printf("Replace UTXO.%s\n",bp->srccoin->symbol);
+                bp->notaries[bp->myind].ratifysrcvout = vout;
                 np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
                 np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
             }
@@ -764,9 +765,10 @@ void dpow_nanoutxoset(struct supernet_info *myinfo,struct dpow_info *dp,struct d
         if ( err != 0 )
         {
             bitcoin_address(coinaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
-            if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&bp->notaries[bp->myind].ratifydestvout,coinaddr) > 0 )
+            if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&vout,coinaddr) > 0 )
             {
                 printf("Replace UTXO.%s\n",bp->destcoin->symbol);
+                bp->notaries[bp->myind].ratifydestvout = vout;
                 np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
                 np->destvout = bp->notaries[bp->myind].ratifydestvout;
             } else printf("cant find utxo.%s\n",bp->destcoin->symbol);
