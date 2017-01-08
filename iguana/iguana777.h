@@ -122,7 +122,7 @@ struct supernet_info
     uint8_t *pingbuf;
     struct basilisk_request DEXaccept;
     FILE *dexfp;
-    struct dpow_info DPOWS[64]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
+    struct dpow_info DPOWS[128]; int32_t numdpows,dpowsock,dexsock,pubsock,repsock,subsock,reqsock;
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     char bindaddr[64];

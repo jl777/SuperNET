@@ -81,6 +81,7 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
         return;
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
+        dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
@@ -322,7 +323,7 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 100000;
+        dp->maxblocks = 1000000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
     portable_mutex_init(&dp->paxmutex);
