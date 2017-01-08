@@ -727,15 +727,50 @@ void dpow_bestconsensus(struct dpow_block *bp)
 
 void dpow_nanoutxoset(struct dpow_nanoutxo *np,struct dpow_block *bp,int32_t isratify)
 {
-    int32_t i;
+    int32_t i,err; cJSON *ujson; char coinaddr[64];
     if ( bp->myind < 0 )
         return;
     if ( isratify != 0 )
     {
         np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
         np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
+        err = 0;
+        if ( (ujson= dpow_gettxout(myinfo,bp->srccoin,np->srcutxo,np->srcvout)) != 0 )
+        {
+            if ( j64bits(ujson,"value") == 0 )
+                err = 1;
+            free_json(ujson);
+        } else err = 1;
+        if ( err != 0 )
+        {
+            bitcoin_address(coinaddr,bp->srccoin->chain->pubtype,dp->minerkey33,33);
+            if ( dpow_haveutxo(myinfo,bp->srccoin,&bp->notaries[bp->myind].ratifysrcutxo,&bp->notaries[bp->myind].ratifysrcvout,coinaddr) > 0 )
+            {
+                printf("Replace UTXO.%s\n",bp->srccoin->symbol);
+                np->srcutxo = bp->notaries[bp->myind].ratifysrcutxo;
+                np->srcvout = bp->notaries[bp->myind].ratifysrcvout;
+            }
+            else printf("cant find utxo.%s\n",bp->srccoin->symbol);
+        }
         np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
         np->destvout = bp->notaries[bp->myind].ratifydestvout;
+        err = 0;
+        if ( (ujson= dpow_gettxout(myinfo,bp->destcoin,np->destutxo,np->destvout)) != 0 )
+        {
+            if ( j64bits(ujson,"value") == 0 )
+                err = 1;
+            free_json(ujson);
+        } else err = 1;
+        if ( err != 0 )
+        {
+            bitcoin_address(coinaddr,bp->destcoin->chain->pubtype,dp->minerkey33,33);
+            if ( dpow_haveutxo(myinfo,bp->destcoin,&bp->notaries[bp->myind].ratifydestutxo,&bp->notaries[bp->myind].ratifydestvout,coinaddr) > 0 )
+            {
+                printf("Replace UTXO.%s\n",bp->destcoin->symbol);
+                np->destutxo = bp->notaries[bp->myind].ratifydestutxo;
+                np->destvout = bp->notaries[bp->myind].ratifydestvout;
+            } else printf("cant find utxo.%s\n",bp->destcoin->symbol);
+        }
         np->bestmask = bp->ratifybestmask;
         np->recvmask = bp->ratifyrecvmask;
         //printf("send ratify best.(%d %llx) siglens.(%d %d)\n", bp->ratifybestk,(long long)bp->ratifybestmask,bp->ratifysiglens[0],bp->ratifysiglens[1]);
@@ -888,11 +923,11 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             //printf("crcval.%x numcrcs.%d bestmatches.%d matchesmask.%llx\n",crcval,numcrcs,bestmatches,(long long)matchesmask);
-            if ( bestmatches >= bp->minsigs )
+            if ( bestmatches >= bp->minsigs && numcrcs >= bp->minsigs )
             {
                 if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {
-                    printf("new PENDING RATIFY BESTK (%d %llx)\n",bp->ratifybestk,(long long)bp->ratifybestmask);
+                    printf("new PENDING RATIFY BESTK (%d %llx) crcval.%08x num.%d\n",bp->ratifybestk,(long long)bp->ratifybestmask,crcval,numcrcs);
                     bp->pendingratifybestk = bp->ratifybestk;
                     bp->pendingratifybestmask = bp->ratifybestmask;
                     memset(bp->notaries[bp->myind].ratifysigs,0,sizeof(bp->notaries[bp->myind].ratifysigs));
