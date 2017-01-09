@@ -35,7 +35,7 @@ coins/crypto_7776
 coins/pangea_7776
 coins/mgw_7776
 coins/mvp_7776
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\"}"
+curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"passthru\",\"method\":\"paxfiats\"}"
 
 #curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
 curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"KMD\",\"pubkey\":\"$pubkey\"}"
