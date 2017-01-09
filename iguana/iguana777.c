@@ -837,23 +837,9 @@ void iguana_helper(void *arg)
     }
 }
 
-/*
-To add a new dPoW'ed assetchain with DEX* API support:
-    1. add to komodo/src: assetchains, dpowassets, fiat-cli
-    2. add to end of CURRENCIES[] array in fundnotaries (iguana_notary.c)
-    3. create fiat/<ac_name>
-    4. add to NOTARYCHAINS[] array in iguana_callcoinstart
-    5. add to m_notary coins/<ac_name> get gen_acname  from where komodod was launched, change RELAY:-1 and port to 7776 and make <ac_name>_7776 variant
-    6. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node> but without -gen
-    7. from a single node, fundnotaries <ac_name> to get notaries able to dPoW
-*/
-
 void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    char NOTARYCHAINS[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
-        "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-        "KMD", "BTC", "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
-    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t i,bundlei; bits256 zero; char dirname[512],*symbol;
+    struct iguana_bundle *bp; struct iguana_peer *addr; int32_t bundlei; bits256 zero; char dirname[512],*symbol;
     iguana_rwiAddrind(coin,0,0,0);
     //for (i=0; i<sizeof(*coin->chain); i++)
     //    printf("%02x",((uint8_t *)coin->chain)[i]);
@@ -883,17 +869,8 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
-    coin->notarychain = -1;
-    if ( coin->FULLNODE == 0 )
-    {
-        for (i=0; i<sizeof(NOTARYCHAINS)/sizeof(*NOTARYCHAINS); i++)
-            if ( strcmp(coin->symbol,NOTARYCHAINS[i]) == 0 )
-            {
-                printf("SET NOTARYCHAIN.%d\n",i);
-                coin->notarychain = i;
-                break;
-            }
-    }
+    if ( coin->FULLNODE != 0 )
+        coin->notarychain = -1;
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
     printf("SEED_IPADDR initpeer.(%s) notarychain.%d\n",addr->ipaddr,coin->notarychain);
@@ -919,7 +896,6 @@ void iguana_coinloop(void *arg)
                 if ( coin->didaddresses == 0 )
                 {
                     coin->didaddresses = 1;
-                    coin->notarychain = -1;
                     if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
                     {
                         if ( (alljson= cJSON_Parse(alladdresses)) != 0 )

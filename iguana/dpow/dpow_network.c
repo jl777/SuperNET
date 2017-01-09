@@ -274,6 +274,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 *broadcastflagp = 1;
                 if ( retstr == 0 )
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+                else printf("funcA.(%s)\n",retstr);
             }
             else if ( dexreq.func == 'V' )
             {
