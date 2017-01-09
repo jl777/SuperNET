@@ -163,7 +163,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    //nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
