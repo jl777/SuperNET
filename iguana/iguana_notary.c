@@ -243,8 +243,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         return(clonestr("{\"error\":\"need 33 byte pubkey\"}"));
     if ( symbol == 0 || symbol[0] == 0 )
         symbol = "KMD";
-    if ( myinfo->numdpows == 1 )
-        komodo_assetcoins();
+    //if ( myinfo->numdpows == 1 )
+    //    komodo_assetcoins(-1);
     if ( iguana_coinfind(symbol) == 0 )
         return(clonestr("{\"error\":\"cant dPoW an inactive coin\"}"));
     if ( strcmp(symbol,"KMD") == 0 && iguana_coinfind("BTC") == 0 )
@@ -450,19 +450,21 @@ ZERO_ARGS(dpow,notarychains)
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
 {
     int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
-    uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
-    int32_t n = komodo_notaries("KMD",pubkeys,114000);
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("KMD")) != 0 )
+    uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,n,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
+    if ( (coin= iguana_coinfind("KMD")) == 0 )
+        return(clonestr("{\"error\":\"need KMD active\"}"));
+    if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        current = jint(infojson,"blocks");
+        free_json(infojson);
+    } else return(clonestr("{\"error\":\"cant get current height\"}"));
+    n = komodo_notaries("KMD",pubkeys,current);
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && coin != 0 )
     {
         if ( numblocks == 0 )
             numblocks = 10000;
         else sendflag = 1;
         memset(vals,0,sizeof(vals));
-        if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
-        {
-            current = jint(infojson,"blocks");
-            free_json(infojson);
-        } else return(clonestr("{\"error\":\"cant get current height\"}"));
         if ( (coin= iguana_coinfind("BTC")) != 0 )
         {
             if ( (fp= fopen("signedmasks","rb")) != 0 )

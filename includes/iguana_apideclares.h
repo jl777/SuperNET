@@ -22,6 +22,9 @@ THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
 ZERO_ARGS(dpow,notarychains);
+ZERO_ARGS(passthru,paxfiats);
+ZERO_ARGS(basilisk,paxfiats);
+ZERO_ARGS(iguana,paxfiats);
 
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);

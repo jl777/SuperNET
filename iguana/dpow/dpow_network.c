@@ -60,7 +60,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     char *retstr; 
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
-    //printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
+    printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
     if ( dexp->datalen > BASILISK_KEYSIZE )
     {
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
@@ -271,15 +271,21 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'A' )
             {
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen],0);
-                *broadcastflagp = 1;
                 if ( retstr == 0 )
+                {
+                    *broadcastflagp = 1;
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+                }
+                else
+                {
+                    printf("funcA.(%s)\n",retstr);
+                }
             }
             else if ( dexreq.func == 'V' )
             {
                 retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
-        }
+        } else printf("(%s) not active\n",dexreq.name);
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
     }
@@ -289,21 +295,27 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
 {
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
-    datalen = dex_rwrequest(1,packet,dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    if ( iguana_isnotarychain(dexreq->name) >= 0 )
+    {
+        datalen = dex_rwrequest(1,packet,dexreq);
+        return(dex_reqsend(myinfo,"request",packet,datalen));
+    } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
 char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str)
 {
     uint8_t *packet; int32_t datalen,slen; char *retstr;
-    slen = (int32_t)strlen(str)+1;
-    packet = calloc(1,sizeof(*dexreq)+slen);
-    datalen = dex_rwrequest(1,packet,dexreq);
-    strcpy((char *)&packet[datalen],str);
-    datalen += slen;
-    retstr = dex_reqsend(myinfo,"request",packet,datalen);
-    free(packet);
-    return(retstr);
+    if ( iguana_isnotarychain(dexreq->name) >= 0 )
+    {
+        slen = (int32_t)strlen(str)+1;
+        packet = calloc(1,sizeof(*dexreq)+slen);
+        datalen = dex_rwrequest(1,packet,dexreq);
+        strcpy((char *)&packet[datalen],str);
+        datalen += slen;
+        retstr = dex_reqsend(myinfo,"request",packet,datalen);
+        free(packet);
+        return(retstr);
+    } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid)
@@ -319,7 +331,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
 {
     struct dex_request dexreq;
-    char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
+    //char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
@@ -1553,7 +1565,7 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 #define MAX_CURRENCIES 32
 extern char CURRENCIES[][8];
 
-void komodo_assetcoins()
+void komodo_assetcoins(int32_t fullnode)
 {
     uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
     int32_t i,j; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
@@ -1570,7 +1582,7 @@ void komodo_assetcoins()
         for (j=0; j<4; j++)
             sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);
         magicstr[j*2] = 0;
-        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":\"%s\"}",CURRENCIES[i],port,port+1,magicstr);
+        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":%d,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":\"%s\"}",CURRENCIES[i],fullnode,port,port+1,magicstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( (coin= iguana_coinadd(CURRENCIES[i],CURRENCIES[i],json,0)) == 0 )
@@ -1579,7 +1591,7 @@ void komodo_assetcoins()
                 return;
             }
             free_json(json);
-            coin->FULLNODE = -1;
+            coin->FULLNODE = fullnode;
             coin->chain->rpcport = port + 1;
             coin->chain->pubtype = 60;
             coin->chain->p2shtype = 85;

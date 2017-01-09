@@ -1367,7 +1367,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
 
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
 {
-    char *retstr,buf[128],wifstr[128]; cJSON *retjson; int32_t need_KMD = 0,need_BTC = 0;
+    char *retstr,buf[128],wifstr[128],*dexstr; cJSON *retjson,*dexjson; int32_t need_KMD = 0,need_BTC = 0;
     if ( remoteaddr != 0 || coin == 0 )
         return(clonestr("{\"error\":\"no remote encrypt or no coin\"}"));
     iguana_walletlock(myinfo,coin);
@@ -1413,6 +1413,12 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,128);
             jaddstr(retjson,"BTCwif",wifstr);
+        }
+        if ( (dexstr= _dex_importaddress(myinfo,coin->symbol,waddr.coinaddr)) != 0 )
+        {
+            if ( (dexjson= cJSON_Parse(dexstr)) != 0 )
+                jadd(retjson,"deximport",dexjson);
+            free(dexstr);
         }
         retstr = jprint(retjson,1);
     }

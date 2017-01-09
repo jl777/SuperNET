@@ -15,6 +15,16 @@
 
 #include "iguana777.h"
 
+/*
+ To add a new dPoW'ed assetchain with DEX* API support:
+ 1. add to komodo/src: assetchains, dpowassets, fiat-cli
+ 2. add to end of NOTARY_CURRENCIES[] array in fundnotaries (iguana_notary.c)
+ 3. create fiat/<ac_name>
+ 4. add to m_notary coins/<ac_name> get gen_acname  from where komodod was launched, change RELAY:-1 and port to 7776 and make <ac_name>_7776 variant
+ 5. launch from a single node with -gen, launch a second node using -addnode=<ipaddr of 1st node> but without -gen
+ 6. from a single node, fundnotaries <ac_name> to get notaries able to dPoW
+ */
+
 void iguana_initQ(queue_t *Q,char *name)
 {
     struct stritem *tst,*item;
@@ -74,6 +84,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
         iguana_meminit(&coin->blockMEM,"blockMEM",coin->blockspace,coin->blockspacesize,0);
         iguana_initQs(coin);
         coin->bindsock = -1;
+        coin->notarychain = -1;
         OS_randombytes((unsigned char *)&coin->instance_nonce,sizeof(coin->instance_nonce));
         coin->startutc = (uint32_t)time(NULL);
         while ( time(NULL) == coin->startutc )
@@ -514,6 +525,29 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->active = saved;
 }
 
+int32_t iguana_isnotarychain(char *symbol)
+{
+    int32_t i,n,notarychain = -1; char *jsonstr; cJSON *chains;
+    if ( (jsonstr= dpow_notarychains(0,0,0,0)) != 0 )
+    {
+        if ( (chains= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(chains)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                    if ( strcmp(symbol,jstri(chains,i)) == 0 )
+                    {
+                        notarychain = i;
+                        break;
+                    }
+            }
+            free_json(chains);
+        }
+        free(jsonstr);
+    }
+    return(notarychain);
+}
+
 struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
     FILE *fp; char fname[512],*symbol; int32_t j,iter; long fpos; bits256 lastbundle;
@@ -564,8 +598,11 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
             }
         }
     }
-    if ( coin->notarychain >= 0 )
+    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
+    {
+        printf("SET %s NOTARYCHAIN.%d\n",coin->symbol,coin->notarychain);
         return(coin);
+    }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(myinfo,coin,coin->chain);
     int32_t bundlei = -2;
