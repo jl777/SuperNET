@@ -271,10 +271,15 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'A' )
             {
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen],0);
-                *broadcastflagp = 1;
                 if ( retstr == 0 )
+                {
+                    *broadcastflagp = 1;
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
-                else printf("funcA.(%s)\n",retstr);
+                }
+                else
+                {
+                    printf("funcA.(%s)\n",retstr);
+                }
             }
             else if ( dexreq.func == 'V' )
             {
