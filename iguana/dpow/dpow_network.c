@@ -270,7 +270,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'A' )
             {
-                retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen],0);
+                retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 if ( retstr == 0 )
                 {
                     *broadcastflagp = 1;
@@ -935,6 +935,8 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
             {
                 if ( ((1LL << i) & matchesmask) != 0 )
                 {
+                    if ( bp->notaries[i].pendingcrcs[bp->state < 1000] == 0 )
+                        continue;
                     if ( numcrcs == 0 )
                         numcrcs++, crcval = bp->notaries[i].pendingcrcs[bp->state < 1000];
                     else if ( numcrcs > 0 && crcval == bp->notaries[i].pendingcrcs[bp->state < 1000] )
@@ -942,7 +944,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             //printf("crcval.%x numcrcs.%d bestmatches.%d matchesmask.%llx\n",crcval,numcrcs,bestmatches,(long long)matchesmask);
-            if ( bestmatches >= bp->minsigs && numcrcs >= bp->minsigs )
+            if ( bestmatches >= bp->minsigs )
             {
                 if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {

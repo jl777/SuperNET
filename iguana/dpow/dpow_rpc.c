@@ -434,9 +434,22 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
     return(retstr);
 }
 
-char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address,int32_t forceflag)
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[1024],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson; int32_t i,n; FILE *fp;
+    char buf[1024],*retstr,*alladdresses,*outstr,fname[1024]; cJSON *alljson,*validatejson; int32_t i,n,doneflag = 0; FILE *fp;
+    if ( (retstr= dpow_validateaddress(myinfo,coin,address)) != 0 )
+    {
+        if ( (validatejson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                doneflag = 1;
+            free_json(validatejson);
+        }
+        free(retstr);
+        retstr = 0;
+    }
+    if ( doneflag != 0 )
+        return(0); // success
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
@@ -448,27 +461,21 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
             {
                 if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
                 {
-                    if ( forceflag == 0 )
-                    {
-                        for (i=0; i<n; i++)
-                            if ( strcmp(address,jstri(alljson,i)) == 0 )
-                                break;
-                    } else i = n = 0;
+                    for (i=0; i<n; i++)
+                        if ( strcmp(address,jstri(alljson,i)) == 0 )
+                            break;
                     if ( i == n )
                     {
                         jaddistr(alljson,address);
-                        if ( forceflag == 0 )
+                        outstr = jprint(alljson,0);
+                        sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+                        if ( (fp= fopen(fname,"wb")) != 0 )
                         {
-                            outstr = jprint(alljson,0);
-                            sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
-                            if ( (fp= fopen(fname,"wb")) != 0 )
-                            {
-                                fwrite(outstr,1,strlen(outstr)+1,fp);
-                                fclose(fp);
-                                printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
-                            }
-                            free(outstr);
+                            fwrite(outstr,1,strlen(outstr)+1,fp);
+                            fclose(fp);
+                            printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
                         }
+                        free(outstr);
                     }
                 }
                 free_json(alljson);
