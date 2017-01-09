@@ -1580,7 +1580,7 @@ void komodo_assetcoins(int32_t fullnode)
                 return;
             }
             free_json(json);
-            coin->FULLNODE = -1;
+            coin->FULLNODE = fullnode;
             coin->chain->rpcport = port + 1;
             coin->chain->pubtype = 60;
             coin->chain->p2shtype = 85;
