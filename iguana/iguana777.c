@@ -896,8 +896,9 @@ void iguana_coinloop(void *arg)
                 if ( coin->didaddresses == 0 )
                 {
                     coin->didaddresses = 1;
-                    if ( myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
+                    if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
                     {
+                        printf("(%s) ALL.(%s)\n",coin->symbol,alladdresses);
                         if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
                         {
                             if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
