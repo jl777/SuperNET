@@ -60,7 +60,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     char *retstr; 
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
-    //printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
+    printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
     if ( dexp->datalen > BASILISK_KEYSIZE )
     {
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
@@ -163,7 +163,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+                    //nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
@@ -214,7 +214,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);
-        //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
+        printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
             if ( dexreq.func == 'T' )
@@ -280,7 +280,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
-        }
+        } else printf("(%s) not active\n",dexreq.name);
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
     }
@@ -1324,7 +1324,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             num++;
             //fprintf(stderr,"%d ",size);
-            //printf("REP got %d\n",size);
+            printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 nn_send(myinfo->repsock,retstr,(int32_t)strlen(retstr)+1,0);
@@ -1341,13 +1341,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
                     nn_send(myinfo->dexsock,dexp,size,0);
                     nn_send(myinfo->pubsock,dexp,size,0);
-                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 }
             }

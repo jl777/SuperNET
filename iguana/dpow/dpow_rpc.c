@@ -441,7 +441,7 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
     {
         sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
-        printf("importaddress.(%s) -> (%s)\n",address,retstr);
+        printf("%s importaddress.(%s) -> (%s)\n",coin->symbol,address,retstr);
         if ( (alladdresses= dpow_alladdresses(myinfo,coin)) != 0 )
         {
             if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
@@ -479,7 +479,7 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
         {
             sprintf(buf,"[\"%s\"]",address);
             sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
-            printf("first importaddress.(%s) -> %s\n",fname);
+            printf("%s first importaddress.(%s) -> %s\n",coin->symbol,address,fname);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
                 fwrite(buf,1,strlen(buf)+1,fp);
