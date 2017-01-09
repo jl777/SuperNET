@@ -904,7 +904,7 @@ void iguana_coinloop(void *arg)
                             if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
                             {
                                 for (i=0; i<n; i++)
-                                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i),i<n-1)) != 0 )
+                                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i))) != 0 )
                                         free(retstr);
                             }
                             free_json(alljson);
