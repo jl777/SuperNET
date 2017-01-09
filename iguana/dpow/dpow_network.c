@@ -214,7 +214,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
     if ( strcmp(dexp->handler,"request") == 0 )
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);
-        printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
+        //printf("dex_response.%s (%c)\n",dexreq.name,dexreq.func);
         if ( (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
             if ( dexreq.func == 'T' )
@@ -290,21 +290,27 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
 {
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
-    datalen = dex_rwrequest(1,packet,dexreq);
-    return(dex_reqsend(myinfo,"request",packet,datalen));
+    if ( iguana_isnotarychain(dexreq->name) >= 0 )
+    {
+        datalen = dex_rwrequest(1,packet,dexreq);
+        return(dex_reqsend(myinfo,"request",packet,datalen));
+    } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
 char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str)
 {
     uint8_t *packet; int32_t datalen,slen; char *retstr;
-    slen = (int32_t)strlen(str)+1;
-    packet = calloc(1,sizeof(*dexreq)+slen);
-    datalen = dex_rwrequest(1,packet,dexreq);
-    strcpy((char *)&packet[datalen],str);
-    datalen += slen;
-    retstr = dex_reqsend(myinfo,"request",packet,datalen);
-    free(packet);
-    return(retstr);
+    if ( iguana_isnotarychain(dexreq->name) >= 0 )
+    {
+        slen = (int32_t)strlen(str)+1;
+        packet = calloc(1,sizeof(*dexreq)+slen);
+        datalen = dex_rwrequest(1,packet,dexreq);
+        strcpy((char *)&packet[datalen],str);
+        datalen += slen;
+        retstr = dex_reqsend(myinfo,"request",packet,datalen);
+        free(packet);
+        return(retstr);
+    } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid)
@@ -320,7 +326,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
 {
     struct dex_request dexreq;
-    char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
+    //char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
@@ -1324,7 +1330,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             num++;
             //fprintf(stderr,"%d ",size);
-            printf("REP got %d\n",size);
+            //printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 nn_send(myinfo->repsock,retstr,(int32_t)strlen(retstr)+1,0);
@@ -1341,13 +1347,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     nn_send(myinfo->repsock,&r,sizeof(r),0);
-                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
                     nn_send(myinfo->dexsock,dexp,size,0);
                     nn_send(myinfo->pubsock,dexp,size,0);
-                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 }
             }

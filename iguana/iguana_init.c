@@ -525,9 +525,32 @@ void iguana_coinpurge(struct iguana_info *coin)
     coin->active = saved;
 }
 
+int32_t iguana_isnotarychain(char *symbol)
+{
+    int32_t i,n,notarychain = -1; char *jsonstr; cJSON *chains;
+    if ( (jsonstr= dpow_notarychains(0,0,0,0)) != 0 )
+    {
+        if ( (chains= cJSON_Parse(jsonstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(chains)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                    if ( strcmp(symbol,jstri(chains,i)) == 0 )
+                    {
+                        notarychain = i;
+                        break;
+                    }
+            }
+            free_json(chains);
+        }
+        free(jsonstr);
+    }
+    return(notarychain);
+}
+
 struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_info *coin,int32_t initialheight,int32_t mapflags)
 {
-    FILE *fp; char fname[512],*symbol,*jsonstr; cJSON *chains; int32_t j,i,n,iter; long fpos; bits256 lastbundle;
+    FILE *fp; char fname[512],*symbol; int32_t j,iter; long fpos; bits256 lastbundle;
     /*if ( coin->peers == 0 )
     {
         printf("cant start privatechain directly\n");
@@ -575,27 +598,11 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
             }
         }
     }
-    coin->notarychain = -1;
-    if ( (jsonstr= dpow_notarychains(0,0,0,0)) != 0 )
+    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
     {
-        if ( (chains= cJSON_Parse(jsonstr)) != 0 )
-        {
-            if ( (n= cJSON_GetArraySize(chains)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                    if ( strcmp(coin->symbol,jstri(chains,i)) == 0 )
-                    {
-                        printf("SET %s NOTARYCHAIN.%d\n",coin->symbol,i);
-                        coin->notarychain = i;
-                        break;
-                    }
-            }
-            free_json(chains);
-        }
-        free(jsonstr);
-    }
-    if ( coin->notarychain >= 0 )
+        printf("SET %s NOTARYCHAIN.%d\n",coin->symbol,coin->notarychain);
         return(coin);
+    }
      //coin->firstblock = coin->blocks.parsedblocks + 1;
     iguana_genesis(myinfo,coin,coin->chain);
     int32_t bundlei = -2;
