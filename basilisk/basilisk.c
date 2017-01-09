@@ -1044,4 +1044,21 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     return(jprint(retjson,1));
 }
 
+ZERO_ARGS(passthru,paxfiats)
+{
+    komodo_assetcoins(-1);
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+ZERO_ARGS(basilisk,paxfiats)
+{
+    komodo_assetcoins(0);
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+ZERO_ARGS(iguana,paxfiats)
+{
+    komodo_assetcoins(1);
+    return(clonestr("{\"result\":\"success\"}"));
+}
 #include "../includes/iguana_apiundefs.h"

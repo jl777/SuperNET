@@ -1553,7 +1553,7 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 #define MAX_CURRENCIES 32
 extern char CURRENCIES[][8];
 
-void komodo_assetcoins()
+void komodo_assetcoins(int32_t fullnode)
 {
     uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
     int32_t i,j; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
@@ -1570,7 +1570,7 @@ void komodo_assetcoins()
         for (j=0; j<4; j++)
             sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);
         magicstr[j*2] = 0;
-        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":-1,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":\"%s\"}",CURRENCIES[i],port,port+1,magicstr);
+        sprintf(jsonstr,"{\"newcoin\":\"%s\",\"RELAY\":%d,\"VALIDATE\":0,\"portp2p\":%u,\"rpcport\":%u,\"netmagic\":\"%s\"}",CURRENCIES[i],fullnode,port,port+1,magicstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             if ( (coin= iguana_coinadd(CURRENCIES[i],CURRENCIES[i],json,0)) == 0 )
