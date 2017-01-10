@@ -51,6 +51,8 @@
 #define PUB_SOCK 7773
 #define REP_SOCK 7772
 
+#define DPOW_EPOCHDURATION 600
+
 struct dpow_coinentry
 {
     bits256 prev_hash;
