@@ -1698,9 +1698,12 @@ void komodo_assetcoins(int32_t fullnode)
             coin->chain->pubtype = 60;
             coin->chain->p2shtype = 85;
             coin->chain->wiftype = 188;
-            sprintf(confstr,"%s.conf",CURRENCIES[i]);
-            sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
-            extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
+            if ( fullnode < 0 )
+            {
+                sprintf(confstr,"%s.conf",CURRENCIES[i]);
+                sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
+                extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
+            }
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }

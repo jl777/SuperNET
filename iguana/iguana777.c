@@ -27,10 +27,10 @@ struct iguana_info *iguana_coinfind(char *symbol)
     struct iguana_info *coin=0; uint32_t symbolcrc; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     while ( myinfo->allcoins_being_added != 0 )
     {
-        sleep(3);
+        sleep(1);
         if ( myinfo->allcoins_being_added != 0 )
             printf("wait for coinadd to complete, OK if rare\n");
-        sleep(3);
+        sleep(1);
     }
     symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
     //portable_mutex_lock(&myinfo->allcoins_mutex);
