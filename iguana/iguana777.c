@@ -58,6 +58,8 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             else
             {
                 coin->chain = iguana_chainfind(myinfo,(char *)symbol,argjson,1);
+                if ( coin->FULLNODE >= 0 )
+                    coin->chain->userpass[0] = 0;
                 coin->peers = calloc(1,sizeof(*coin->peers));
                 for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
@@ -1144,13 +1146,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->active = juint(json,"active");
     if ( (coin->minconfirms= minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
-    if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
-    {
-        printf("cant initialize chain.(%s)\n",jstr(json,0));
-        strcpy(coin->name,"illegalcoin");
-        coin->symbol[0] = 0;
-        return(0);
-    }
     if ( jobj(json,"RELAY") != 0 )
         coin->FULLNODE = jint(json,"RELAY");
     else coin->FULLNODE = (strcmp(coin->symbol,"BTCD") == 0);
@@ -1159,6 +1154,15 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     else coin->VALIDATENODE = (strcmp(coin->symbol,"BTCD") == 0);
     if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
         SuperNET_MYINFO(0)->IAMRELAY++;
+    if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
+    {
+        printf("cant initialize chain.(%s)\n",jstr(json,0));
+        strcpy(coin->name,"illegalcoin");
+        if ( coin->FULLNODE >= 0 )
+            coin->chain->userpass[0] = 0;
+        coin->symbol[0] = 0;
+        return(0);
+    }
 #ifdef __PNACL
     coin->VALIDATENODE = coin->FULLNODE = 0;
 #endif
