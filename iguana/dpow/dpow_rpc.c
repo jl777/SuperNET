@@ -436,7 +436,7 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    struct hashstr_item *hashstr,*tmp; cJSON *alljson; char *alladdresses,*outstr,fname[1024]; int32_t i,n,saveflag = 0;
+    struct hashstr_item *hashstr,*tmp; cJSON *alljson; char *outstr,fname[1024]; int32_t saveflag = 0;
     HASH_FIND(hh,coin->alladdresses,address,strlen(address),hashstr);
     if ( hashstr == 0 )
     {
