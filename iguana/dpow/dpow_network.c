@@ -944,7 +944,7 @@ void dpow_ratify_update(struct supernet_info *myinfo,struct dpow_info *dp,struct
                 }
             }
             //printf("crcval.%x numcrcs.%d bestmatches.%d matchesmask.%llx\n",crcval,numcrcs,bestmatches,(long long)matchesmask);
-            if ( bestmatches >= bp->minsigs )
+            if ( bestmatches >= bp->minsigs && numcrcs >= bp->minsigs )
             {
                 if ( bp->pendingratifybestk != bp->ratifybestk || bp->pendingratifybestmask != bp->ratifybestmask )
                 {
