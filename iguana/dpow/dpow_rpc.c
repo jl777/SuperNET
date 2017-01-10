@@ -501,9 +501,9 @@ char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
     }
     if ( isvalid == 0 )
         return(clonestr("{\"isvalid\":false}"));
+    update_alladdresses(myinfo,coin,address);
     if ( doneflag != 0 )
         return(0); // success
-    update_alladdresses(myinfo,coin,address);
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", \"%s\", false]",address,address);

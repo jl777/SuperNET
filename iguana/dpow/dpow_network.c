@@ -371,19 +371,30 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M)
 {
-    char *retstr = 0; int32_t i,max = myinfo->numdexipbits;
-    for (i=0; i<=max; i++)
+    char *retstrs[64]; int32_t i,j,max = myinfo->numdexipbits;
+    memset(retstrs,0,sizeof(retstrs));
+    for (i=j=0; i<=max; i++)
     {
-        if ( (retstr= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
+        if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
-            if ( strncmp(retstr,"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 )
-                break;
+            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 )
+            {
+                if ( ++j == M )
+                    break;
+            }
             else if ( i < max )
-                free(retstr);
+                free(retstrs[j]);
         }
         //printf("automatic retry.%d of %d\n",i,max);
     }
-    return(retstr);
+    if ( j == 1 )
+        return(retstrs[0]);
+    else
+    {
+        for (i=0; i<j; i++)
+            printf("(%s).%d\n",retstrs[i],i);
+    }
+    return(retstrs[0]);
 }
 
 char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M)
