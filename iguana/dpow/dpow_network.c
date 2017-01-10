@@ -101,7 +101,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
 
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; char *retstr = 0;
+    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; char *retstr = 0;
     portable_mutex_lock(&myinfo->dexmutex);
     subsock = myinfo->subsock;
     reqsock = myinfo->reqsock;
@@ -174,9 +174,22 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         {
             //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
+            ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
-            {
                 ipbits = *retptr;
+            else
+            {
+                retstr = clonestr((char *)retptr);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    ipbits = juint(retjson,"randipbits");
+                    free_json(retjson);
+                    printf("GOT randipbits.%08x\n",ipbits);
+                }
+                //printf("REQ got.%d (%s)\n",recvbytes,retstr);
+            }
+            if ( ipbits != 0 )
+            {
                 expand_ipbits(ipaddr,ipbits);
                 n = myinfo->numdexipbits;
                 for (i=0; i<n; i++)
@@ -198,11 +211,6 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
-            else
-            {
-                retstr = clonestr((char *)retptr);
-                //printf("REQ got.%d (%s)\n",recvbytes,retstr);
-            }
             nn_freemsg(retptr);
             portable_mutex_unlock(&myinfo->dexmutex);
         }
@@ -215,6 +223,17 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         free(dexp);
     } //else retval = -1;
     return(retstr);
+}
+
+void dpow_randipbits(struct supernet_info *myinfo,cJSON *retjson)
+{
+    int32_t m; uint32_t ipbits;
+    if ( (m= myinfo->numdpowipbits) > 0 )
+    {
+        ipbits = myinfo->dpowipbits[(uint32_t)rand() % m];
+        jaddnum(retjson,"randipbits",ipbits);
+        printf("add randipbits.%08x\n",ipbits);
+    }
 }
 
 char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
@@ -230,12 +249,18 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             if ( dexreq.func == 'T' )
             {
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'O' )
             {
                 if ( (retjson= dpow_gettxout(myinfo,coin,dexreq.hash,dexreq.shortarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'H' )
             {
@@ -246,17 +271,26 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'B' )
             {
                 if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'I' )
             {
                 if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'U' )
             {
                 if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'P' )
             {
@@ -276,7 +310,10 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
                 if ( (retjson= dpow_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'A' )
             {
