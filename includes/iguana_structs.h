@@ -464,6 +464,8 @@ struct iguana_RTtxid
     struct iguana_RTspend *spends[];
 };
 
+struct hashstr_item { UT_hash_handle hh; char address[40]; };
+
 struct iguana_info
 {
     UT_hash_handle hh;
@@ -533,6 +535,7 @@ struct iguana_info
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
+    struct hashstr_item *alladdresses;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

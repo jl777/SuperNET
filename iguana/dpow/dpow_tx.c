@@ -512,7 +512,7 @@ int32_t dpow_signedtxgen(struct supernet_info *myinfo,struct dpow_info *dp,struc
             if ( useratified != 0 )
             {
                 len = (int32_t)strlen(rawtx) >> 1;
-                if ( len <= sizeof(bp->ratifyrawtx[0]) )
+                if ( len <= sizeof(bp->ratifyrawtx[src_or_dest]) )
                 {
                     decode_hex(bp->ratifyrawtx[src_or_dest],len,rawtx),bp->rawratifiedlens[src_or_dest] = len;
                 }

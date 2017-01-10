@@ -23,6 +23,27 @@ struct dex_nanomsghdr
     uint8_t version0,version1,packet[];
 } PACKED;
 
+struct dex_request { bits256 hash; int32_t intarg; uint16_t shortarg; char name[15]; uint8_t func; };
+
+int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
+{
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->intarg),&dexreq->intarg);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->shortarg),&dexreq->shortarg);
+    if ( rwflag != 0 )
+    {
+        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        serialized[len++] = dexreq->func;
+    }
+    else
+    {
+        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        dexreq->func = serialized[len++];
+    }
+    return(len);
+}
+
 void dex_init(struct supernet_info *myinfo)
 {
     strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
@@ -57,20 +78,30 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    char *retstr; 
+    char *retstr; int32_t datalen; struct iguana_info *coin; struct dex_request dexreq;
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
     printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
-    if ( dexp->datalen > BASILISK_KEYSIZE )
+    if ( strcmp(dexp->handler,"DEX") == 0 )//dexp->datalen > BASILISK_KEYSIZE )
     {
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
             free(retstr);
     }
+    else if ( strcmp(dexp->handler,"request") == 0 )
+    {
+        datalen = dex_rwrequest(0,dexp->packet,&dexreq);
+        if ( myinfo->IAMNOTARY != 0 && dexreq.func == 'A' && (coin= iguana_coinfind(dexreq.name)) != 0 )
+        {
+            if ( (retstr= dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                free(retstr);
+            printf("process broadcast importaddress.(%s) [%s]\n",(char *)&dexp->packet[datalen],dexreq.name);
+        }
+    }
 }
 
-char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
+char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; char *retstr = 0;
+    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; char *retstr = 0;
     portable_mutex_lock(&myinfo->dexmutex);
     subsock = myinfo->subsock;
     reqsock = myinfo->reqsock;
@@ -85,7 +116,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         {
             timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            timeout = 2000;
+            timeout = 1000;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -143,9 +174,22 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         {
             //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
+            ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
-            {
                 ipbits = *retptr;
+            else
+            {
+                retstr = clonestr((char *)retptr);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    ipbits = juint(retjson,"randipbits");
+                    free_json(retjson);
+                    if ( 0 && ipbits != 0 )
+                        printf("GOT randipbits.%08x\n",ipbits);
+                }
+            }
+            if ( ipbits != 0 )
+            {
                 expand_ipbits(ipaddr,ipbits);
                 n = myinfo->numdexipbits;
                 for (i=0; i<n; i++)
@@ -167,11 +211,6 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
-            else
-            {
-                retstr = clonestr((char *)retptr);
-                //printf("REQ got.%d (%s)\n",recvbytes,retstr);
-            }
             nn_freemsg(retptr);
             portable_mutex_unlock(&myinfo->dexmutex);
         }
@@ -186,25 +225,17 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     return(retstr);
 }
 
-struct dex_request { bits256 hash; int32_t intarg; uint16_t shortarg; char name[15]; uint8_t func; };
-
-int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
+void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson)
 {
-    int32_t len = 0;
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->intarg),&dexreq->intarg);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->shortarg),&dexreq->shortarg);
-    if ( rwflag != 0 )
+    int32_t m; uint32_t ipbits; char *coinstr;
+    if ( (m= myinfo->numdpowipbits) > 0 )
     {
-        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        serialized[len++] = dexreq->func;
+        ipbits = myinfo->dpowipbits[(uint32_t)rand() % m];
+        jaddnum(retjson,"randipbits",ipbits);
+        //printf("add randipbits.%08x\n",ipbits);
     }
-    else
-    {
-        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        dexreq->func = serialized[len++];
-    }
-    return(len);
+    if ( (coinstr= jstr(retjson,"coin")) == 0 )
+        jaddstr(retjson,"coin",coin->symbol);
 }
 
 char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
@@ -220,43 +251,74 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             if ( dexreq.func == 'T' )
             {
                 if ( (retjson= dpow_gettransaction(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'O' )
             {
                 if ( (retjson= dpow_gettxout(myinfo,coin,dexreq.hash,dexreq.shortarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'H' )
             {
                 hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
                 bits256_str(buf,hash2);
-                retstr = clonestr(buf);
+                if ( (retstr= clonestr(buf)) != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'B' )
             {
                 if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'I' )
             {
                 if ( (retjson= dpow_getinfo(myinfo,coin)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'U' )
             {
                 if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'P' )
             {
                 hash2 = dpow_getbestblockhash(myinfo,coin);
                 bits256_str(buf,hash2);
-                retstr = clonestr(buf);
+                if ( (retstr= clonestr(buf)) != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'S' )
             {
                 retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
+                if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == '*' )
             {
@@ -266,7 +328,10 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
                 if ( (retjson= dpow_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'A' )
             {
@@ -280,10 +345,22 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 {
                     printf("funcA.(%s)\n",retstr);
                 }
+                if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'V' )
             {
                 retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+                if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
             }
         } else printf("(%s) not active\n",dexreq.name);
         if ( retstr == 0 )
@@ -292,17 +369,45 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
     return(retstr);
 }
 
-char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
+char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M)
+{
+    char *retstrs[64]; int32_t i,j,max = myinfo->numdexipbits;
+    memset(retstrs,0,sizeof(retstrs));
+    for (i=j=0; i<=max; i++)
+    {
+        if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
+        {
+            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 )
+            {
+                if ( ++j == M )
+                    break;
+            }
+            else if ( i < max )
+                free(retstrs[j]);
+        }
+        //printf("automatic retry.%d of %d\n",i,max);
+    }
+    if ( j == 1 )
+        return(retstrs[0]);
+    else
+    {
+        for (i=0; i<j; i++)
+            printf("(%s).%d\n",retstrs[i],i);
+    }
+    return(retstrs[0]);
+}
+
+char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M)
 {
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
     {
         datalen = dex_rwrequest(1,packet,dexreq);
-        return(dex_reqsend(myinfo,"request",packet,datalen));
+        return(dex_reqsend(myinfo,"request",packet,datalen,M));
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
-char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str)
+char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str,int32_t M)
 {
     uint8_t *packet; int32_t datalen,slen; char *retstr;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
@@ -312,7 +417,7 @@ char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexre
         datalen = dex_rwrequest(1,packet,dexreq);
         strcpy((char *)&packet[datalen],str);
         datalen += slen;
-        retstr = dex_reqsend(myinfo,"request",packet,datalen);
+        retstr = dex_reqsend(myinfo,"request",packet,datalen,M);
         free(packet);
         return(retstr);
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
@@ -325,7 +430,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
     dexreq.func = 'T';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
@@ -337,7 +442,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     dexreq.hash = txid;
     dexreq.shortarg = vout;
     dexreq.func = 'O';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,3));
 }
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
@@ -346,7 +451,7 @@ char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
@@ -355,7 +460,7 @@ char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = '*';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
@@ -365,7 +470,7 @@ char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = hash2;
     dexreq.func = 'B';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height)
@@ -375,7 +480,7 @@ char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.intarg = height;
     dexreq.func = 'H';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
@@ -384,7 +489,7 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'P';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,3));
 }
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
@@ -393,7 +498,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
-    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx));
+    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx,3));
 }
 
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -402,7 +507,7 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -411,7 +516,7 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'V';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
@@ -420,7 +525,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
@@ -431,7 +536,7 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     dexreq.intarg = skip;
     dexreq.shortarg = count;
     dexreq.func = 'L';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
@@ -1598,9 +1703,12 @@ void komodo_assetcoins(int32_t fullnode)
             coin->chain->pubtype = 60;
             coin->chain->p2shtype = 85;
             coin->chain->wiftype = 188;
-            sprintf(confstr,"%s.conf",CURRENCIES[i]);
-            sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
-            extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
+            if ( fullnode < 0 )
+            {
+                sprintf(confstr,"%s.conf",CURRENCIES[i]);
+                sprintf(path,"%s/.komodo/%s",userhome,CURRENCIES[i]);
+                extract_userpass(coin->chain->serverport,coin->chain->userpass,CURRENCIES[i],coin->chain->userhome,path,confstr);
+            }
         }
         printf("(%s %u) ",CURRENCIES[i],port);
     }
