@@ -58,8 +58,8 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             else
             {
                 coin->chain = iguana_chainfind(myinfo,(char *)symbol,argjson,1);
-                //if ( coin->FULLNODE >= 0 )
-                //    coin->chain->userpass[0] = 0;
+                if ( coin->FULLNODE >= 0 )
+                    coin->chain->userpass[0] = 0;
                 coin->peers = calloc(1,sizeof(*coin->peers));
                 for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
@@ -1158,8 +1158,8 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     {
         printf("cant initialize chain.(%s)\n",jstr(json,0));
         strcpy(coin->name,"illegalcoin");
-        //if ( coin->FULLNODE >= 0 )
-        //    coin->chain->userpass[0] = 0;
+        if ( coin->FULLNODE >= 0 )
+            coin->chain->userpass[0] = 0;
         coin->symbol[0] = 0;
         return(0);
     }

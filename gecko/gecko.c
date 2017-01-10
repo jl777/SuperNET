@@ -180,8 +180,8 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         virt->enableCACHE = 1;
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
         iguana_chaininit(myinfo,virt->chain,1,valsobj);
-        //if ( virt->FULLNODE >= 0 )
-        //    virt->chain->userpass[0] = 0;
+        if ( virt->FULLNODE >= 0 )
+            virt->chain->userpass[0] = 0;
         virt->chain->isPoS = 1;
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )
