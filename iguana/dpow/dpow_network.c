@@ -369,7 +369,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
     return(retstr);
 }
 
-char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
+char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M)
 {
     char *retstr = 0; int32_t i,max = myinfo->numdexipbits;
     for (i=0; i<=max; i++)
@@ -386,17 +386,17 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     return(retstr);
 }
 
-char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq)
+char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M)
 {
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
     {
         datalen = dex_rwrequest(1,packet,dexreq);
-        return(dex_reqsend(myinfo,"request",packet,datalen));
+        return(dex_reqsend(myinfo,"request",packet,datalen,M));
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
-char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str)
+char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str,int32_t M)
 {
     uint8_t *packet; int32_t datalen,slen; char *retstr;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
@@ -406,7 +406,7 @@ char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexre
         datalen = dex_rwrequest(1,packet,dexreq);
         strcpy((char *)&packet[datalen],str);
         datalen += slen;
-        retstr = dex_reqsend(myinfo,"request",packet,datalen);
+        retstr = dex_reqsend(myinfo,"request",packet,datalen,M);
         free(packet);
         return(retstr);
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
@@ -419,7 +419,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
     dexreq.func = 'T';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
@@ -431,7 +431,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     dexreq.hash = txid;
     dexreq.shortarg = vout;
     dexreq.func = 'O';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,3));
 }
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
@@ -440,7 +440,7 @@ char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
@@ -449,7 +449,7 @@ char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = '*';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
@@ -459,7 +459,7 @@ char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = hash2;
     dexreq.func = 'B';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height)
@@ -469,7 +469,7 @@ char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.intarg = height;
     dexreq.func = 'H';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,1));
 }
 
 char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
@@ -478,7 +478,7 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'P';
-    return(_dex_sendrequest(myinfo,&dexreq));
+    return(_dex_sendrequest(myinfo,&dexreq,3));
 }
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
@@ -487,7 +487,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
-    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx));
+    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx,3));
 }
 
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -496,7 +496,7 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -505,7 +505,7 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'V';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
@@ -514,7 +514,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
@@ -525,7 +525,7 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     dexreq.intarg = skip;
     dexreq.shortarg = count;
     dexreq.func = 'L';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
