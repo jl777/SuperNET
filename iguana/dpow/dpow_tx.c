@@ -82,7 +82,7 @@ uint64_t dpow_ratifybest(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp)
     *lastkp = -1;
     for (m=j=0; j<bp->numnotaries; j++)
     {
-        k = (j + ((uint32_t)time(NULL) / 100)) % bp->numnotaries;//DPOW_MODIND(bp,j);
+        k = (j + ((uint32_t)time(NULL) / DPOW_EPOCHDURATION)) % bp->numnotaries;//DPOW_MODIND(bp,j);
         if ( bp->require0 != 0 && k == 0 )
             continue;
         if ( bits256_nonz(bp->notaries[k].ratifysrcutxo) != 0 && bits256_nonz(bp->notaries[k].ratifydestutxo) != 0 )
