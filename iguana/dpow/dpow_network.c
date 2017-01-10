@@ -184,9 +184,9 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
                 {
                     ipbits = juint(retjson,"randipbits");
                     free_json(retjson);
-                    printf("GOT randipbits.%08x\n",ipbits);
+                    if ( ipbits != 0 )
+                        printf("GOT randipbits.%08x\n",ipbits);
                 }
-                //printf("REQ got.%d (%s)\n",recvbytes,retstr);
             }
             if ( ipbits != 0 )
             {
@@ -232,7 +232,7 @@ void dpow_randipbits(struct supernet_info *myinfo,cJSON *retjson)
     {
         ipbits = myinfo->dpowipbits[(uint32_t)rand() % m];
         jaddnum(retjson,"randipbits",ipbits);
-        printf("add randipbits.%08x\n",ipbits);
+        //printf("add randipbits.%08x\n",ipbits);
     }
 }
 
