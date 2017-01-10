@@ -444,23 +444,6 @@ void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,c
         strncpy(hashstr->address,address,sizeof(hashstr->address));
         HASH_ADD_KEYPTR(hh,coin->alladdresses,hashstr->address,strlen(address),hashstr);
         saveflag = 1;
-        if ( (alladdresses= dpow_alladdresses(myinfo,coin)) != 0 )
-        {
-            if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
-            {
-                if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
-                {
-                    for (i=0; i<n; i++)
-                        if ( strcmp(address,jstri(alljson,i)) == 0 )
-                        {
-                            saveflag = 0;
-                            break;
-                        }
-                }
-                free_json(alljson);
-            }
-            free(alladdresses);
-        }
     }
     if ( saveflag != 0 )
     {
