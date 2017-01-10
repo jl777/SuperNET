@@ -323,12 +323,6 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == '*' )
             {
                 retstr = dpow_alladdresses(myinfo,coin);
-                if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    dpow_randipbits(myinfo,coin,retjson);
-                    free(retstr);
-                    retstr = jprint(retjson,1);
-                }
             }
             else if ( dexreq.func == 'L' )
             {
