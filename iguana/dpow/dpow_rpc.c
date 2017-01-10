@@ -484,18 +484,23 @@ void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[1024],*retstr; cJSON *validatejson; int32_t doneflag = 0;
+    char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0;
     if ( (retstr= dpow_validateaddress(myinfo,coin,address)) != 0 )
     {
         if ( (validatejson= cJSON_Parse(retstr)) != 0 )
         {
-            if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
-                doneflag = 1;
+            if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+            {
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                    doneflag = 1;
+            }
             free_json(validatejson);
         }
         free(retstr);
         retstr = 0;
     }
+    if ( isvalid == 0 )
+        return(clonestr("{\"isvalid\":false}"));
     if ( doneflag != 0 )
         return(0); // success
     update_alladdresses(myinfo,coin,address);

@@ -116,7 +116,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         {
             timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            timeout = 2000;
+            timeout = 1000;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -184,7 +184,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
                 {
                     ipbits = juint(retjson,"randipbits");
                     free_json(retjson);
-                    if ( ipbits != 0 )
+                    if ( 0 && ipbits != 0 )
                         printf("GOT randipbits.%08x\n",ipbits);
                 }
             }
@@ -377,17 +377,17 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
 {
-    char *retstr = 0; int32_t i,max = myinfo->numdpowipbits;
+    char *retstr = 0; int32_t i,max = myinfo->numdexipbits;
     for (i=0; i<=max; i++)
     {
         if ( (retstr= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
             if ( strncmp(retstr,"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 )
                 break;
-            else if ( i < max-1 )
+            else if ( i < max )
                 free(retstr);
         }
-        printf("automatic retry\n");
+        //printf("automatic retry.%d of %d\n",i,max);
     }
     return(retstr);
 }
