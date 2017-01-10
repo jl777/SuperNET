@@ -879,7 +879,7 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void iguana_coinloop(void *arg)
 {
-    struct supernet_info *myinfo; int32_t flag,i,j,n;  cJSON *alljson; struct iguana_peer *addr; bits256 zero; uint32_t now; char *alladdresses,*retstr; struct iguana_info *coin,**coins = arg;
+    struct supernet_info *myinfo; int32_t flag,i,j,n; struct iguana_peer *addr; bits256 zero; uint32_t now; struct iguana_info *coin,**coins = arg;
     myinfo = SuperNET_MYINFO(0);
     n = (int32_t)(long)coins[0];
     coins++;
@@ -896,21 +896,8 @@ void iguana_coinloop(void *arg)
                 if ( coin->didaddresses == 0 )
                 {
                     coin->didaddresses = 1;
-                    if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 && (alladdresses= _dex_alladdresses(myinfo,coin->symbol)) != 0 )
-                    {
-                        printf("(%s) ALL.(%s)\n",coin->symbol,alladdresses);
-                        if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
-                        {
-                            if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
-                            {
-                                for (i=0; i<n; i++)
-                                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i))) != 0 )
-                                        free(retstr);
-                            }
-                            free_json(alljson);
-                        }
-                        free(alladdresses);
-                    }
+                    if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 )
+                        init_alladdresses(myinfo,coin);
                 }
                 if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
                     continue;
