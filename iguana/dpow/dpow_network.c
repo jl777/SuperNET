@@ -23,6 +23,27 @@ struct dex_nanomsghdr
     uint8_t version0,version1,packet[];
 } PACKED;
 
+struct dex_request { bits256 hash; int32_t intarg; uint16_t shortarg; char name[15]; uint8_t func; };
+
+int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
+{
+    int32_t len = 0;
+    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->intarg),&dexreq->intarg);
+    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->shortarg),&dexreq->shortarg);
+    if ( rwflag != 0 )
+    {
+        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        serialized[len++] = dexreq->func;
+    }
+    else
+    {
+        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
+        dexreq->func = serialized[len++];
+    }
+    return(len);
+}
+
 void dex_init(struct supernet_info *myinfo)
 {
     strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
@@ -57,7 +78,7 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    char *retstr; 
+    char *retstr; int32_t datalen; struct iguana_info *coin; struct dex_request dexreq;
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
     printf(" uniq DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
@@ -65,6 +86,16 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     {
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
             free(retstr);
+    }
+    else if ( strcmp(dexp->handler,"request") == 0 )
+    {
+        datalen = dex_rwrequest(0,dexp->packet,&dexreq);
+        if ( dexreq.func == 'A' && (coin= iguana_coinfind(dexreq.name)) != 0 )
+        {
+            if ( (retstr= dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                free(retstr);
+        }
+        printf("process broadcast importaddress.(%s) [%s]\n",(char *)&dexp->packet[datalen],dexreq.name);
     }
 }
 
@@ -184,27 +215,6 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         free(dexp);
     } //else retval = -1;
     return(retstr);
-}
-
-struct dex_request { bits256 hash; int32_t intarg; uint16_t shortarg; char name[15]; uint8_t func; };
-
-int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dexreq)
-{
-    int32_t len = 0;
-    len += iguana_rwbignum(rwflag,&serialized[len],sizeof(dexreq->hash),dexreq->hash.bytes);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->intarg),&dexreq->intarg);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(dexreq->shortarg),&dexreq->shortarg);
-    if ( rwflag != 0 )
-    {
-        memcpy(&serialized[len],dexreq->name,sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        serialized[len++] = dexreq->func;
-    }
-    else
-    {
-        memcpy(dexreq->name,&serialized[len],sizeof(dexreq->name)), len += sizeof(dexreq->name);
-        dexreq->func = serialized[len++];
-    }
-    return(len);
 }
 
 char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
