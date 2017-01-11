@@ -228,14 +228,17 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
 void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson)
 {
     int32_t m; uint32_t ipbits; char *coinstr;
-    if ( (m= myinfo->numdpowipbits) > 0 )
+    if ( is_cJSON_Array(retjson) == 0 )
     {
-        ipbits = myinfo->dpowipbits[(uint32_t)rand() % m];
-        jaddnum(retjson,"randipbits",ipbits);
-        //printf("add randipbits.%08x\n",ipbits);
+        if ( (m= myinfo->numdpowipbits) > 0 )
+        {
+            ipbits = myinfo->dpowipbits[(uint32_t)rand() % m];
+            jaddnum(retjson,"randipbits",ipbits);
+            //printf("add randipbits.%08x\n",ipbits);
+        }
+        if ( (coinstr= jstr(retjson,"coin")) == 0 )
+            jaddstr(retjson,"coin",coin->symbol);
     }
-    if ( (coinstr= jstr(retjson,"coin")) == 0 )
-        jaddstr(retjson,"coin",coin->symbol);
 }
 
 char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
@@ -377,7 +380,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
-            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 )
+            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 )
             {
                 if ( ++j == M )
                     break;
@@ -1188,7 +1191,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
                 else if ( i == senderind && ((1LL << bp->myind) & bp->bestmask) != 0 && ((1LL << i) & bp->bestmask) != 0 && ((1LL << bp->myind) & bp->notaries[i].recvmask) == 0 )
                     flag = senderind;
-                if ( 0 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
+                if ( 1 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
                     printf("%d.(%x %d %llx r%llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)bp->notaries[i].recvmask);
             }
             if ( flag >= 0 )
@@ -1198,7 +1201,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     srchash.bytes[i] = dp->minerkey33[i+1];
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             }
-            if ( 0 && bp->myind <= 1 )
+            if ( 1 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
@@ -1220,6 +1223,14 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                             dpow_sigscheck(myinfo,dp,bp,bp->myind,0,bp->bestk,bp->bestmask,0,0);
                     } //else printf("srcmask.%llx != bestmask.%llx\n",(long long)bp->srcsigsmasks[bp->bestk],(long long)bp->bestmask);
                 } //else printf("destmask.%llx != bestmask.%llx\n",(long long)bp->destsigsmasks[bp->bestk],(long long)bp->bestmask);
+            }
+        }
+        else
+        {
+            for (i=0; i<bp->numnotaries; i++)
+            {
+                if ( bp->paxwdcrc == bp->notaries[i].paxwdcrc )
+                    paxmatches++;
             }
         }
         if ( (rand() % 130) == 0 )
