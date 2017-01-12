@@ -270,7 +270,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'H' )
             {
                 hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
-                printf("getblockhash %d -> (%s)\n",dexreq.intarg,bits256_str(buf,hash2));
+                //printf("getblockhash %d -> (%s)\n",dexreq.intarg,bits256_str(buf,hash2));
                 bits256_str(buf,hash2);
                 retstr = clonestr(buf);
             }
@@ -365,7 +365,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
-            printf("j.%d of max.%d (%s)\n",j,max,retstrs[j]);
+            //printf("j.%d of max.%d (%s)\n",j,max,retstrs[j]);
             if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )
             {
                 if ( ++j == M )
@@ -378,22 +378,22 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     }
     if ( j == 1 )
         return(retstrs[0]);
-    else
+    else if ( j >= M )
     {
+        origretstr0 = retstrs[0];
         err = 0;
         if ( strcmp(field,"*") != 0 )
         {
             for (i=0; i<j; i++)
             {
-                printf("%s ",retstrs[i]);
+                //printf("%s ",retstrs[i]);
                 if ( (retjson= cJSON_Parse(retstrs[i])) != 0 )
                 {
-                    if ( i == 0 )
-                        origretstr0 = retstrs[0];
-                    else free(retstrs[i]);
+                    if ( i != 0 )
+                        free(retstrs[i]);
                     retstrs[i] = jprint(jobj(retjson,field),0);
                     free_json(retjson);
-                    printf("(%s).%d\n",retstrs[i],i);
+                    //printf("(%s).%d\n",retstrs[i],i);
                 } else err++;
             }
         }
@@ -402,6 +402,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
             for (i=1; i<j; i++)
                 if ( strcmp(retstrs[0],retstrs[i]) != 0 )
                 {
+                    printf("retstrs[%s] != [%s]\n",retstrs[i],retstrs[0]);
                     err = 1;
                     break;
                 }
@@ -414,9 +415,16 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         }
         else
         {
-            free(retstrs[0]);
+            if ( retstrs[0] != origretstr0 )
+                free(retstrs[0]);
             retstrs[0] = origretstr0;
         }
+    }
+    else
+    {
+        for (i=0; i<j; i++)
+            free(retstrs[i]);
+        retstrs[0] = clonestr("{\"error\":\"less than required responses\"}");
     }
     return(retstrs[0]);
 }
