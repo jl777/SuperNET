@@ -1236,7 +1236,7 @@ ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime)
     bits256 txid; int32_t offset,spendlen=0,n; uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; uint64_t satoshis; char *hexstr,*field,*txstr; cJSON *txobj,*item,*obj,*retjson = cJSON_CreateObject();
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,1,0)) != 0 )
+    if ( coin != 0 && (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,locktime,1,0)) != 0 )
     {
         iguana_createvins(myinfo,coin,txobj,vins);
         if ( (n= cJSON_GetArraySize(vouts)) > 0 )

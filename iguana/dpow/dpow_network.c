@@ -270,13 +270,9 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'H' )
             {
                 hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
+                //printf("getblockhash %d -> (%s)\n",dexreq.intarg,bits256_str(buf,hash2));
                 bits256_str(buf,hash2);
-                if ( (retstr= clonestr(buf)) != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    dpow_randipbits(myinfo,coin,retjson);
-                    free(retstr);
-                    retstr = jprint(retjson,1);
-                }
+                retstr = clonestr(buf);
             }
             else if ( dexreq.func == 'B' )
             {
@@ -306,22 +302,11 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 hash2 = dpow_getbestblockhash(myinfo,coin);
                 bits256_str(buf,hash2);
-                if ( (retstr= clonestr(buf)) != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    dpow_randipbits(myinfo,coin,retjson);
-                    free(retstr);
-                    retstr = jprint(retjson,1);
-                }
+                retstr = clonestr(buf);
             }
             else if ( dexreq.func == 'S' )
             {
                 retstr = dpow_sendrawtransaction(myinfo,coin,(char *)&dexp->packet[datalen]);
-                if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
-                {
-                    dpow_randipbits(myinfo,coin,retjson);
-                    free(retstr);
-                    retstr = jprint(retjson,1);
-                }
             }
             else if ( dexreq.func == '*' )
             {
@@ -372,15 +357,16 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
     return(retstr);
 }
 
-char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M)
+char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field)
 {
-    char *retstrs[64]; int32_t i,j,max = myinfo->numdexipbits;
+    char *retstrs[64],*origretstr0 = 0; cJSON *retjson; int32_t err,i,j,max = myinfo->numdexipbits;
     memset(retstrs,0,sizeof(retstrs));
     for (i=j=0; i<=max; i++)
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
-            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 )
+            //printf("j.%d of max.%d (%s)\n",j,max,retstrs[j]);
+            if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )
             {
                 if ( ++j == M )
                     break;
@@ -392,25 +378,68 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     }
     if ( j == 1 )
         return(retstrs[0]);
+    else if ( j >= M )
+    {
+        origretstr0 = retstrs[0];
+        err = 0;
+        if ( strcmp(field,"*") != 0 )
+        {
+            for (i=0; i<j; i++)
+            {
+                //printf("%s ",retstrs[i]);
+                if ( (retjson= cJSON_Parse(retstrs[i])) != 0 )
+                {
+                    if ( i != 0 )
+                        free(retstrs[i]);
+                    retstrs[i] = jprint(jobj(retjson,field),0);
+                    free_json(retjson);
+                    //printf("(%s).%d\n",retstrs[i],i);
+                } else err++;
+            }
+        }
+        if ( err == 0 )
+        {
+            for (i=1; i<j; i++)
+                if ( strcmp(retstrs[0],retstrs[i]) != 0 )
+                {
+                    printf("retstrs[%s] != [%s]\n",retstrs[i],retstrs[0]);
+                    err = 1;
+                    break;
+                }
+        }
+        if ( err != 0 )
+        {
+            for (i=0; i<j; i++)
+                free(retstrs[i]);
+            retstrs[0] = clonestr("{\"error\":\"couldnt get consensus\"}");
+        }
+        else
+        {
+            if ( retstrs[0] != origretstr0 )
+                free(retstrs[0]);
+            retstrs[0] = origretstr0;
+        }
+    }
     else
     {
         for (i=0; i<j; i++)
-            printf("(%s).%d\n",retstrs[i],i);
+            free(retstrs[i]);
+        retstrs[0] = clonestr("{\"error\":\"less than required responses\"}");
     }
     return(retstrs[0]);
 }
 
-char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M)
+char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M,char *field)
 {
     uint8_t packet[sizeof(*dexreq)]; int32_t datalen;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
     {
         datalen = dex_rwrequest(1,packet,dexreq);
-        return(dex_reqsend(myinfo,"request",packet,datalen,M));
+        return(dex_reqsend(myinfo,"request",packet,datalen,M,field));
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
 }
 
-char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str,int32_t M)
+char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexreq,char *str,int32_t M,char *field)
 {
     uint8_t *packet; int32_t datalen,slen; char *retstr;
     if ( iguana_isnotarychain(dexreq->name) >= 0 )
@@ -420,7 +449,7 @@ char *_dex_sendrequeststr(struct supernet_info *myinfo,struct dex_request *dexre
         datalen = dex_rwrequest(1,packet,dexreq);
         strcpy((char *)&packet[datalen],str);
         datalen += slen;
-        retstr = dex_reqsend(myinfo,"request",packet,datalen,M);
+        retstr = dex_reqsend(myinfo,"request",packet,datalen,M,field);
         free(packet);
         return(retstr);
     } else return(clonestr("{\"error\":\"not notarychain\"}"));
@@ -433,7 +462,7 @@ char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 t
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = txid;
     dexreq.func = 'T';
-    return(_dex_sendrequest(myinfo,&dexreq,1));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
@@ -445,7 +474,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     dexreq.hash = txid;
     dexreq.shortarg = vout;
     dexreq.func = 'O';
-    return(_dex_sendrequest(myinfo,&dexreq,3));
+    return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
 }
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
@@ -454,7 +483,7 @@ char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
-    return(_dex_sendrequest(myinfo,&dexreq,1));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
@@ -463,7 +492,7 @@ char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = '*';
-    return(_dex_sendrequest(myinfo,&dexreq,1));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
@@ -473,7 +502,7 @@ char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.hash = hash2;
     dexreq.func = 'B';
-    return(_dex_sendrequest(myinfo,&dexreq,1));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height)
@@ -483,7 +512,7 @@ char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.intarg = height;
     dexreq.func = 'H';
-    return(_dex_sendrequest(myinfo,&dexreq,1));
+    return(_dex_sendrequest(myinfo,&dexreq,3,"*"));
 }
 
 char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
@@ -492,7 +521,7 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'P';
-    return(_dex_sendrequest(myinfo,&dexreq,3));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
@@ -501,7 +530,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
-    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx,3));
+    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx,3,"*"));
 }
 
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -510,7 +539,7 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
 }
 
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
@@ -519,7 +548,7 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'V';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
 }
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
@@ -528,7 +557,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
 }
 
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
@@ -539,7 +568,7 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     dexreq.intarg = skip;
     dexreq.shortarg = count;
     dexreq.func = 'L';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1));
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
@@ -1191,7 +1220,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                 }
                 else if ( i == senderind && ((1LL << bp->myind) & bp->bestmask) != 0 && ((1LL << i) & bp->bestmask) != 0 && ((1LL << bp->myind) & bp->notaries[i].recvmask) == 0 )
                     flag = senderind;
-                if ( 1 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
+                if ( 0 && bp->myind <= 1 && bp->notaries[i].paxwdcrc != 0 )
                     printf("%d.(%x %d %llx r%llx) ",i,bp->notaries[i].paxwdcrc,bp->notaries[i].bestk,(long long)bp->notaries[i].bestmask,(long long)bp->notaries[i].recvmask);
             }
             if ( flag >= 0 )
@@ -1201,7 +1230,7 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
                     srchash.bytes[i] = dp->minerkey33[i+1];
                 dpow_send(myinfo,dp,bp,srchash,bp->hashmsg,0,bp->height,(void *)"ping",0);
             }
-            if ( 1 && bp->myind <= 1 )
+            if ( 0 && bp->myind <= 1 )
                 printf("recv.%llx best.(%d %llx) m.%d p.%d:%d b.%d\n",(long long)bp->recvmask,bp->bestk,(long long)bp->bestmask,matches,paxmatches,paxbestmatches,bestmatches);
             if ( bestmatches >= bp->minsigs && paxbestmatches >= bp->minsigs )
             {
@@ -1231,7 +1260,11 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 if ( bp->paxwdcrc == bp->notaries[i].paxwdcrc )
                     paxmatches++;
+                else if ( bp->myind <= 1 )
+                    printf("%x.%d ",bp->notaries[i].paxwdcrc,i);
             }
+            if ( bp->myind <= 1 )
+                printf("mypaxcrc.%x\n",bp->paxwdcrc);
         }
         if ( (rand() % 130) == 0 )
             printf("%p ht.%d [%d] ips.%d %s NOTARIZE.%d matches.%d paxmatches.%d bestmatches.%d bestk.%d %llx recv.%llx sigmasks.(%llx %llx) senderind.%d state.%x (%x %x %x) pax.%x\n",bp,bp->height,bp->myind,dp->numipbits,dp->symbol,bp->minsigs,matches,paxmatches,bestmatches,bp->bestk,(long long)bp->bestmask,(long long)bp->recvmask,(long long)(bp->bestk>=0?bp->destsigsmasks[bp->bestk]:0),(long long)(bp->bestk>=0?bp->srcsigsmasks[bp->bestk]:0),senderind,bp->state,bp->hashmsg.uints[0],bp->desttxid.uints[0],bp->srctxid.uints[0],bp->paxwdcrc);

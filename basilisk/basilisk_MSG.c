@@ -309,7 +309,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
         memcpy(space2,key,BASILISK_KEYSIZE);
         if ( data != 0 && datalen != 0 )
             memcpy(&space2[BASILISK_KEYSIZE],data,datalen);
-        dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE,1);
+        dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE,1,"");
     } else printf("sendmessage space too small error for %d\n",datalen);
     free(space);
     free(space2);
