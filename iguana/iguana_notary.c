@@ -381,7 +381,7 @@ TWO_STRINGS(dex,send,hex,handler)
         decode_hex(data,datalen,hex);
         if ( handler == 0 || handler[0] == 0 )
             handler = "DEX";
-        if ( (retstr= dex_reqsend(myinfo,handler,data,datalen,1)) == 0 )
+        if ( (retstr= dex_reqsend(myinfo,handler,data,datalen,1,"")) == 0 )
             return(clonestr("{\"result\":\"success\"}"));
         else return(retstr);
     } else return(clonestr("{\"error\":\"dex send: invalid hex\"}"));

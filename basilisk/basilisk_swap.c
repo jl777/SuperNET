@@ -325,7 +325,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
     V[0].ignore_cltverr = ignore_cltverr;
     if ( dest->I.redeemlen != 0 )
         memcpy(V[0].p2shscript,dest->redeemscript,dest->I.redeemlen), V[0].p2shlen = dest->I.redeemlen;
-    txobj = bitcoin_txcreate(rawtx->coin->chain->isPoS,locktime,userdata == 0 ? 1 : 1,timestamp);//rawtx->coin->chain->locktime_txversion);
+    txobj = bitcoin_txcreate(rawtx->coin->symbol,rawtx->coin->chain->isPoS,locktime,userdata == 0 ? 1 : 1,timestamp);//rawtx->coin->chain->locktime_txversion);
     vins = cJSON_CreateArray();
     item = cJSON_CreateObject();
     if ( userdata != 0 && userdatalen > 0 )

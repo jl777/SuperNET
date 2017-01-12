@@ -550,7 +550,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
     bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
+    if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )
             duplicates = 1;
@@ -609,7 +609,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 )
     {
-        if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,juint(valsobj,"timestamp"))) != 0 )
+        if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,juint(valsobj,"timestamp"))) != 0 )
         {
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
             decode_hex(buf,spendlen,spendscriptstr);
