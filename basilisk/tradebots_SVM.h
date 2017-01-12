@@ -20,7 +20,16 @@
 //#include <dispatch/dispatch.h>
 
 typedef float svmtype;
+#ifdef WIN32
+// fadedreamz@gmail.com - added for successful compilation, however, for MSVC probably require a particular OpenCL SDK
+// to work with it (e,g nvidia or amd SDK)
+typedef struct fake_opencl_double {
+	double x;
+	double y;
+}double2;
+#else
 typedef double double2 __attribute__((ext_vector_type(2)));
+#endif
 #define MAX_VECTORS (1440 * 365 * 5)
 #define MAIN_MAXCORES 16
 #define c_to_refc(c) (c)
