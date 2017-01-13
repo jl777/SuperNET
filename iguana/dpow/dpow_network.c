@@ -86,11 +86,11 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket->packetlen,sizeof(*sigpacket));
     //printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
-    //if ( sigpacket != 0 )
-    //    nn_freemsg(sigpacket);
+    if ( sigpacket != 0 )
+        nn_freemsg(sigpacket), sigpacket = 0;
     *freeptrp = sigpacket;
     *(void **)packetp = sigpacket;
-    return(recvbytes);
+    return(0);
 }
 
 struct dex_nanomsghdr
