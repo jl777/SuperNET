@@ -51,7 +51,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
 
 int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int32_t n,int32_t sock,void *packetp)
 {
-    int32_t i,recvbytes; uint8_t pubkey33[33]; bits256 packethash; struct signed_nnpacket *sigpacket;
+    int32_t i,recvbytes; uint8_t pubkey33[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
     *freeptrp = 0;
     recvbytes = nn_recv(sock,&sigpacket,NN_MSG,0);
@@ -86,8 +86,8 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket->packetlen,sizeof(*sigpacket));
     //printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
-    //if ( sigpacket != 0 )
-    //    nn_freemsg(sigpacket), sigpacket = 0;
+    if ( sigpacket != 0 )
+        nn_freemsg(sigpacket), sigpacket = 0;
     *freeptrp = sigpacket;
     *(void **)packetp = sigpacket;
     return(0);
@@ -1538,7 +1538,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             } //else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
         } //else printf("illegal size.%d\n",size);
         if ( freeptr != 0 )
-            nn_freemsg(np), np = 0, freeptr = 0;
+            nn_freemsg(freeptr), np = 0, freeptr = 0;
     } //else printf("no packets\n");
     n = 0;
     if ( myinfo->dexsock >= 0 ) // from servers
