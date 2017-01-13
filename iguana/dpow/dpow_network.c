@@ -77,6 +77,8 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
     } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket->packetlen,sizeof(*sigpacket));
     if ( sigpacket != 0 )
         nn_freemsg(sigpacket);
+    *freeptrp = 0;
+    *(void **)packetp = 0;
     return(-1);
 }
 
