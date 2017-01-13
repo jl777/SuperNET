@@ -54,7 +54,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
     *(void **)packetp = 0;
     *freeptrp = 0;
     recvbytes = nn_recv(sock,&sigpacket,NN_MSG,0);
-    if ( recvbytes > sizeof(sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
+    if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
         vcalc_sha256(0,packethash.bytes,(void *)&sigpacket->nonce,(int32_t)(sigpacket->packetlen+sizeof(sigpacket->nonce)+sizeof(sigpacket->packetlen)));
         if ( bits256_cmp(packethash,sigpacket->packethash) == 0 && sigpacket->packethash.bytes[0] == 0 )
