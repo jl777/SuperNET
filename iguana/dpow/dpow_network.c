@@ -1527,7 +1527,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     n = 0;
     if ( myinfo->dexsock >= 0 ) // from servers
     {
-        if ( (size= signed_nn_recvnn_recv(myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
+        if ( (size= signed_nn_recv(myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
         {
             //fprintf(stderr,"%d ",size);
             num++;
@@ -1544,7 +1544,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( myinfo->repsock >= 0 ) // from clients
     {
-        if ( (size= signed_nn_recvnn_recv(myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->repsock,&dexp)) > 0 )
+        if ( (size= signed_nn_recv(myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->repsock,&dexp)) > 0 )
         {
             num++;
             //fprintf(stderr,"%d ",size);
