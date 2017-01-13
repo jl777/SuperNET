@@ -26,7 +26,7 @@ struct signed_nnpacket
 
 int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
-    int32_t i,sentbytes,siglen = 0; uint8_t sig[65]; struct signed_nnpacket *sigpacket;
+    int32_t i,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33]; struct signed_nnpacket *sigpacket;
     if ( (sigpacket= calloc(1,size + sizeof(*sigpacket))) != 0 )
     {
         sigpacket->packetlen = size;
@@ -38,8 +38,12 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             if ( sigpacket->packethash.bytes[0] == 0 )
                 break;
         }
+        bitcoin_pubkey33(ctx,pubkey33,privkey);
         if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
         {
+            for (i=0; i<33; i++)
+                printf("%02x",pubkey33[i]);
+            printf(" signed pubkey\n");
             memcpy(sigpacket->sig64,sig+1,64);
             sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
             return(sentbytes - siglen);
@@ -71,7 +75,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
-                    if ( i < 2 )
+                    if ( 0 && i < 2 )
                     {
                         int32_t j;
                         for (j=0; j<33; j++)
@@ -1338,10 +1342,10 @@ void dpow_notarize_update(struct supernet_info *myinfo,struct dpow_info *dp,stru
             {
                 if ( bp->paxwdcrc == bp->notaries[i].paxwdcrc )
                     paxmatches++;
-                else if ( bp->myind <= 1 )
+                else if ( 0 && bp->myind <= 1 )
                     printf("%x.%d ",bp->notaries[i].paxwdcrc,i);
             }
-            if ( bp->myind <= 1 )
+            if ( 0 && bp->myind <= 1 )
                 printf("mypaxcrc.%x\n",bp->paxwdcrc);
         }
         if ( (rand() % 130) == 0 )
