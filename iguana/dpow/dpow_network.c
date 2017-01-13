@@ -41,9 +41,9 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
         bitcoin_pubkey33(ctx,pubkey33,privkey);
         if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
         {
-            for (i=0; i<33; i++)
-                printf("%02x",pubkey33[i]);
-            printf(" signed pubkey\n");
+            //for (i=0; i<33; i++)
+            //    printf("%02x",pubkey33[i]);
+            //printf(" signed pubkey\n");
             memcpy(sigpacket->sig64,sig+1,64);
             sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
             return(sentbytes - siglen);
@@ -71,7 +71,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                     if ( memcmp(pubkey33,notaries[i].pubkey,33) == 0 )
                     {
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
-                        printf("got signed packet from notary.%d\n",i);
+                        //printf("got signed packet from notary.%d\n",i);
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
@@ -83,9 +83,9 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                         printf(" pubkey[%d]\n",i);
                     }
                 }
-                for (i=0; i<33; i++)
-                    printf("%02x",pubkey33[i]);
-                printf(" invalid pubkey33 n.%d\n",n);
+                //for (i=0; i<33; i++)
+                //    printf("%02x",pubkey33[i]);
+                //printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
