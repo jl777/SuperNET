@@ -151,14 +151,18 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
     return(retval);
 }
 
-int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 messagehash2,uint8_t *pubkey)
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messagehash2,uint8_t *pubkey,size_t plen)
 {
-    int32_t retval = -1; size_t plen; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
+    int32_t retval = -1; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
     pubkey[0] = 0;
     SECP_ENSURE_CTX
     {
-        plen = (sig65[0] <= 31) ? 65 : 33;
-        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig65 + 1,0);
+        if ( plen == 0 )
+        {
+            plen = (sig[0] <= 31) ? 65 : 33;
+            sig++;
+        }
+        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig,0);
         secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {

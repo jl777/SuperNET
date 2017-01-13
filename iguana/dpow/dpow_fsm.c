@@ -370,6 +370,11 @@ void dpow_statemachinestart(void *ptr)
             bp->notaries[myind].ratifydestvout = ep->dest.prev_vout;
         }
     }
+    if ( strcmp(bp->srccoin->symbol,"KMD") == 0 )
+    {
+        memcpy(myinfo->notaries,bp->notaries,bp->numnotaries * sizeof(*bp->notaries));
+        myinfo->numnotaries = bp->numnotaries;
+    }
     bp->recvmask |= (1LL << myind);
     bp->notaries[myind].othermask |= (1LL << myind);
     dp->checkpoint = checkpoint;
