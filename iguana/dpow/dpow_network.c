@@ -63,6 +63,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
             if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
                 for (i=0; i<n; i++)
+                {
                     if ( memcmp(pubkey33,notaries[i].pubkey,33) == 0 )
                     {
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
@@ -70,6 +71,14 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
+                    if ( i < 2 )
+                    {
+                        int32_t j;
+                        for (j=0; j<33; j++)
+                            printf("%02x",notaries[i].pubkey[j]);
+                        printf(" pubkey[%d]\n",i);
+                    }
+                }
                 for (i=0; i<33; i++)
                     printf("%02x",pubkey33[i]);
                 printf(" invalid pubkey33 n.%d\n",n);
