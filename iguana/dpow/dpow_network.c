@@ -1489,7 +1489,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 1000 )
+    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 && num < 1000 )
     {
         if ( size > 0 )
         {
