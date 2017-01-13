@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -15,14 +15,28 @@
 
 #include "iguana777.h"
 
-int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen)
+#if defined(_M_X64)
+ /*
+ * because we have no choice but to pass the value as parameters
+ * we need 64bit to hold 64bit memory address, thus changing
+ * to uint64_t instead of long in win x64
+ * @author - fadedreamz@gmail.com
+ */
+int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,uint64_t fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen)
+#else
+int32_t iguana_scriptdata(struct iguana_info *coin, uint8_t *scriptspace, long fileptr[2], char *fname, uint64_t scriptpos, int32_t scriptlen)
+#endif
 {
     FILE *fp; long err; int32_t retval = scriptlen;
 #ifndef __PNACL__
     if ( scriptpos < 0xffffffff )
     {
         if ( fileptr[0] == 0 )
-            fileptr[0] = (long)OS_mapfile(fname,&fileptr[1],0);
+#if defined(_M_X64)
+            fileptr[0] = (uint64_t)OS_mapfile(fname,&fileptr[1],0);
+#else
+			fileptr[0] = (long)OS_mapfile(fname, &fileptr[1], 0);
+#endif
         if ( fileptr[0] != 0 )
         {
             if ( (scriptpos + scriptlen) <= fileptr[1] )
@@ -249,7 +263,17 @@ int32_t iguana_ramtxbytes(struct iguana_info *coin,uint8_t *serialized,int32_t m
 
 int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *blockspace,int32_t max,struct iguana_peer *addr,bits256 hash2,int32_t validatesigs)
 {
+#if defined(_M_X64)
+	/*
+	* because we have no choice but to access the memory address
+	* we need 64bit to correctly hold 64bit memory address, thus changing
+	* to uint64_t instead of long in win x64
+	* @author - fadedreamz@gmail.com
+	*/
+	struct iguana_txid *tx, T; bits256 checktxid; int32_t i, len, total, bundlei = -2; struct iguana_block *block; struct iguana_msgzblock zmsgB; bits256 *tree, checkhash2, merkle_root; struct iguana_bundle *bp = 0; uint64_t tmp; char str[65]; struct iguana_ramchaindata *rdata;
+#else
     struct iguana_txid *tx,T; bits256 checktxid; int32_t i,len,total,bundlei=-2; struct iguana_block *block; struct iguana_msgzblock zmsgB; bits256 *tree,checkhash2,merkle_root; struct iguana_bundle *bp=0; long tmp; char str[65]; struct iguana_ramchaindata *rdata;
+#endif
     if ( (bp= iguana_bundlefind(coin,&bp,&bundlei,hash2)) != 0 && bundlei >= 0 && bundlei < bp->n )
     {
         if ( (rdata= bp->ramchain.H.data) == 0 )//&& bp == coin->current )
@@ -298,7 +322,17 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
             }
             if ( i == block->RO.txn_count )
             {
+#if defined(_M_X64)
+				/*
+				* because we have no choice but to access the memory address
+				* we need 64bit to correctly hold 64bit memory address, thus changing
+				* to uint64_t instead of long in win x64
+				* @author - fadedreamz@gmail.com
+				*/
+				tmp = (uint64_t)&blockspace[sizeof(struct iguana_msghdr) + total + sizeof(bits256)];
+#else
                 tmp = (long)&blockspace[sizeof(struct iguana_msghdr) + total + sizeof(bits256)];
+#endif
                 tmp &= ~(sizeof(bits256) - 1);
                 tree = (void *)tmp;
                 for (i=0; i<block->RO.txn_count; i++)

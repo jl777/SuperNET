@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -1462,7 +1462,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
         }
         else
         {
-            for (iter=0; iter<2; iter++)
+            for (iter=1; iter<2; iter++)
             {
                 kmdhist = url_json(iter == 0 ? url : url2);
                 //{"date":1406160000,"high":0.01,"low":0.00125,"open":0.01,"close":0.001375,"volume":1.50179994,"quoteVolume":903.58818412,"weightedAverage":0.00166204},
@@ -1890,7 +1890,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             splineval = PAX_splineval(&dp->splines[i],timestamp,0);
             pvals[6+i] = PAX_val32(splineval);
             if ( dispflag != 0 )
-                printf("%d ",pvals[6+i]);
+                printf("%u ",pvals[6+i]);
         }
         if ( pvals[6+CNY] != 0 && pvals[6+USD] != 0 )
             dp->CNYUSD = ((double)pvals[6 + CNY] / pvals[6 + USD]) * MINDENOMS[USD] / MINDENOMS[CNY];

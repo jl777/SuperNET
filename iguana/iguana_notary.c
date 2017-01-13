@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -71,14 +71,17 @@ void dpow_srcupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t he
     else
     {
         freq = 1;
-        minsigs = 7;//(komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
+        //minsigs = 7;//(komodo_notaries(dp->symbol,pubkeys,height) >> 1) + 1;
         //if ( minsigs < DPOW_MINSIGS )
-        //    minsigs = DPOW_MINSIGS;
+        minsigs = DPOW_MINSIGS;
     }
     printf("%s/%s src ht.%d dest.%u nonz.%d %s minsigs.%d\n",dp->symbol,dp->dest,checkpoint.blockhash.height,dp->destupdated,bits256_nonz(checkpoint.blockhash.hash),bits256_str(str,dp->last.blockhash.hash),minsigs);
     dpow_fifoupdate(myinfo,dp->srcfifo,dp->last);
+    if ( dp->SRCREALTIME == 0 && strcmp(dp->dest,"KMD") == 0 )
+        return;
     if ( bits256_nonz(checkpoint.blockhash.hash) != 0 && (checkpoint.blockhash.height % freq) == 0 )
     {
+        dpow_heightfind(myinfo,dp,checkpoint.blockhash.height + 1000);
         ptrs = calloc(1,sizeof(void *)*5 + sizeof(struct dpow_checkpoint));
         ptrs[0] = (void *)myinfo;
         ptrs[1] = (void *)dp;
@@ -142,17 +145,23 @@ void dpow_destupdate(struct supernet_info *myinfo,struct dpow_info *dp,int32_t h
 
 void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
-    int32_t height; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
-    dpow_nanomsg_update(myinfo);
+    int32_t height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
+    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
+    if ( strcmp(dp->symbol,"KMD") == 0 )
+    {
+        num = dpow_nanomsg_update(myinfo);
+        //fprintf(stderr,"%d ",num);
+    }
     src = iguana_coinfind(dp->symbol);
     dest = iguana_coinfind(dp->dest);
-    //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
     if ( src != 0 && dest != 0 )
     {
         dp->numdesttx = sizeof(dp->desttx)/sizeof(*dp->desttx);
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->desttx,&dp->numdesttx,dest)) != dp->destchaintip.blockhash.height && height >= 0 )
         {
-            //printf("%s %s height.%d vs last.%d\n",dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
+            char str[65];
+            if ( strcmp(dp->symbol,"KMD") == 0 || height != dp->destchaintip.blockhash.height+1 )
+                printf("[%s].%d %s %s height.%d vs last.%d\n",dp->symbol,dp->SRCHEIGHT,dp->dest,bits256_str(str,blockhash),height,dp->destchaintip.blockhash.height);
             if ( height <= dp->destchaintip.blockhash.height )
             {
                 printf("iguana_dPoWupdate dest.%s reorg detected %d vs %d\n",dp->dest,height,dp->destchaintip.blockhash.height);
@@ -164,8 +173,12 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
             if ( strcmp(dp->dest,"KMD") == 0 )
+            {
+                //fprintf(stderr,"[I ");
                 dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-            char str[65]; printf("%s %s height.%d vs last.%d\n",dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
+                //fprintf(stderr," %d] ",dp->SRCHEIGHT);
+            }
+            char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
             if ( height < dp->last.blockhash.height )
@@ -213,7 +226,7 @@ void dpow_addresses()
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
-    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -230,8 +243,8 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
         return(clonestr("{\"error\":\"need 33 byte pubkey\"}"));
     if ( symbol == 0 || symbol[0] == 0 )
         symbol = "KMD";
-    if ( myinfo->numdpows == 1 )
-        komodo_assetcoins();
+    //if ( myinfo->numdpows == 1 )
+    //    komodo_assetcoins(-1);
     if ( iguana_coinfind(symbol) == 0 )
         return(clonestr("{\"error\":\"cant dPoW an inactive coin\"}"));
     if ( strcmp(symbol,"KMD") == 0 && iguana_coinfind("BTC") == 0 )
@@ -276,9 +289,25 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     safecopy(tmp,pubkey,sizeof(tmp));
     decode_hex(dp->minerkey33,33,tmp);
     bitcoin_address(srcaddr,src->chain->pubtype,dp->minerkey33,33);
-    srcvalid = dpow_validateaddress(myinfo,src,srcaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,src,srcaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            srcvalid = 1;
+        else srcvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     bitcoin_address(destaddr,dest->chain->pubtype,dp->minerkey33,33);
-    destvalid = dpow_validateaddress(myinfo,dest,destaddr);
+    if ( (retstr= dpow_validateaddress(myinfo,dest,destaddr)) != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+            destvalid = 1;
+        else destvalid = 0;
+        free(retstr);
+        retstr = 0;
+    }
     for (i=0; i<33; i++)
         printf("%02x",dp->minerkey33[i]);
     printf(" DPOW with pubkey.(%s) %s.valid%d %s -> %s %s.valid%d\n",tmp,srcaddr,srcvalid,dp->symbol,dp->dest,destaddr,destvalid);
@@ -294,15 +323,16 @@ TWO_STRINGS(iguana,dpow,symbol,pubkey)
     }
     if ( dp->blocks == 0 )
     {
-        dp->maxblocks = 100000;
+        dp->maxblocks = 1000000;
         dp->blocks = calloc(dp->maxblocks,sizeof(*dp->blocks));
     }
-    if ( myinfo->numdpows++ == 0 )
-        portable_mutex_init(&dp->mutex);
+    portable_mutex_init(&dp->paxmutex);
+    portable_mutex_init(&dp->dexmutex);
     PAX_init();
     //printf(">>>>>>>>>>>>>>> call paxpending\n");
     //uint8_t buf[32768];
     //dpow_paxpending(buf);
+    myinfo->numdpows++;
     return(clonestr("{\"result\":\"success\"}"));
 }
 
@@ -341,6 +371,22 @@ THREE_STRINGS(iguana,passthru,asset,function,hex)
     else return(clonestr("{\"error\":\"assetchain not active, start in bitcoind mode\"}"));
 }
 
+
+TWO_STRINGS(dex,send,hex,handler)
+{
+    uint8_t data[8192]; int32_t datalen; char *retstr;
+    if ( hex != 0 && (datalen= is_hexstr(hex,0)) > 0 && (datalen>>1) < sizeof(data) )
+    {
+        datalen >>= 1;
+        decode_hex(data,datalen,hex);
+        if ( handler == 0 || handler[0] == 0 )
+            handler = "DEX";
+        if ( (retstr= dex_reqsend(myinfo,handler,data,datalen,1,"")) == 0 )
+            return(clonestr("{\"result\":\"success\"}"));
+        else return(retstr);
+    } else return(clonestr("{\"error\":\"dex send: invalid hex\"}"));
+}
+
 STRING_ARG(dpow,pending,fiat)
 {
     struct dpow_info *dp; char base[64]; int32_t i;
@@ -359,6 +405,21 @@ STRING_ARG(dpow,pending,fiat)
     return(clonestr("[]"));
 }
 
+STRING_ARG(dpow,bindaddr,ipaddr)
+{
+    uint32_t ipbits; char checkbuf[64];
+    if ( ipaddr != 0 && ipaddr[0] != 0 )
+    {
+        ipbits = (uint32_t)calc_ipbits(ipaddr);
+        expand_ipbits(checkbuf,ipbits);
+        if ( strcmp(ipaddr,checkbuf) == 0 )
+        {
+            strcpy(myinfo->bindaddr,ipaddr);
+            return(clonestr("{\"result\":\"success\"}"));
+        } else return(clonestr("{\"error\":\"invalid bind ipaddr\"}"));
+    } else return(clonestr("{\"error\":\"no bind ipaddr\"}"));
+}
+
 STRING_ARG(iguana,addnotary,ipaddr)
 {
     static int32_t didinit;
@@ -372,10 +433,96 @@ STRING_ARG(iguana,addnotary,ipaddr)
     return(clonestr("{\"result\":\"notary node added\"}"));
 }
 
+char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
+    "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
+
+ZERO_ARGS(dpow,notarychains)
+{
+    int32_t i; cJSON *array = cJSON_CreateArray();
+    jaddistr(array,"KMD");
+    jaddistr(array,"BTC");
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
+        jaddistr(array,NOTARY_CURRENCIES[i]);
+    return(jprint(array,1));
+}
+
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
+{
+    int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
+    uint8_t pubkeys[64][33]; cJSON *infojson; char coinaddr[64],cmd[1024]; uint64_t signedmask; int32_t i,j,n,sendflag=0,current=0,height; FILE *fp; double vals[64],sum,val = 0.01;
+    if ( (coin= iguana_coinfind("KMD")) == 0 )
+        return(clonestr("{\"error\":\"need KMD active\"}"));
+    if ( (infojson= dpow_getinfo(myinfo,coin)) != 0 )
+    {
+        current = jint(infojson,"blocks");
+        free_json(infojson);
+    } else return(clonestr("{\"error\":\"cant get current height\"}"));
+    n = komodo_notaries("KMD",pubkeys,current);
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && coin != 0 )
+    {
+        if ( numblocks == 0 )
+            numblocks = 10000;
+        else sendflag = 1;
+        memset(vals,0,sizeof(vals));
+        if ( (coin= iguana_coinfind("BTC")) != 0 )
+        {
+            if ( (fp= fopen("signedmasks","rb")) != 0 )
+            {
+                while ( 1 )
+                {
+                    if ( fread(&height,1,sizeof(height),fp) == sizeof(height) && fread(&signedmask,1,sizeof(signedmask),fp) == sizeof(signedmask) )
+                    {
+                        if ( height > current - numblocks )
+                        {
+                            printf("ht.%d %llx vs current.%d - %d\n",height,(long long)signedmask,current,numblocks);
+                            for (j=0; j<64; j++)
+                                if ( ((1LL << j) & signedmask) != 0 )
+                                    vals[j] += (double)DPOW_UTXOSIZE / SATOSHIDEN;
+                        }
+                    } else break;
+                }
+                fclose(fp);
+            } else return(clonestr("{\"error\":\"cant open signedmasks\"}"));
+            for (sum=j=0; j<n; j++)
+            {
+                if ( (val= vals[j]) > 0. )
+                {
+                    bitcoin_address(coinaddr,60,pubkeys[j],33);
+                    sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
+                    if ( sendflag != 0 && system(cmd) != 0 )
+                        printf("ERROR with (%s)\n",cmd);
+                    else
+                    {
+                        printf("(%d %f) ",j,val);
+                        sum += val;
+                    }
+                }
+            }
+            printf("%s sent %.8f BTC\n",sendflag!=0?"":"would have",sum);
+            return(clonestr("{\"result\":\"success\"}"));
+        }
+        else return(clonestr("{\"error\":\"cant find BTC\"}"));
+    }
+    for (i=0; i<sizeof(NOTARY_CURRENCIES)/sizeof(*NOTARY_CURRENCIES); i++)
+    {
+        if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,NOTARY_CURRENCIES[i]) == 0 )
+        {
+            for (j=0; j<n; j++)
+            {
+                bitcoin_address(coinaddr,60,pubkeys[j],33);
+                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f\n",NOTARY_CURRENCIES[i],coinaddr,val);
+                if ( system(cmd) != 0 )
+                    printf("ERROR with (%s)\n",cmd);
+            }
+        }
+    }
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
 STRING_ARG(dpow,active,maskhex)
 {
     uint8_t data[8],revdata[8]; int32_t i,len; uint64_t mask; cJSON *retjson,*array = cJSON_CreateArray();
-    //return(clonestr("{\"error\":\"dpow active is deprecated for now\"}"));
     if ( maskhex == 0 || maskhex[0] == 0 )
     {
         mask = myinfo->DPOWS[0].lastrecvmask;
@@ -448,6 +595,66 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
     {
     }
     return(clonestr("{\"result\":\"started ratification\"}"));
+}
+
+HASH_AND_STRING(dex,gettransaction,txid,symbol)
+{
+    return(_dex_getrawtransaction(myinfo,symbol,txid));
+}
+
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
+{
+    return(_dex_gettxout(myinfo,symbol,txid,vout));
+}
+
+STRING_ARG(dex,getinfo,symbol)
+{
+    return(_dex_getinfo(myinfo,symbol));
+}
+
+STRING_ARG(dex,getbestblockhash,symbol)
+{
+    return(_dex_getbestblockhash(myinfo,symbol));
+}
+
+STRING_ARG(dex,alladdresses,symbol)
+{
+    return(_dex_alladdresses(myinfo,symbol));
+}
+
+STRING_AND_INT(dex,getblockhash,symbol,height)
+{
+    return(_dex_getblockhash(myinfo,symbol,height));
+}
+
+HASH_AND_STRING(dex,getblock,hash,symbol)
+{
+    return(_dex_getblock(myinfo,symbol,hash));
+}
+
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx)
+{
+    return(_dex_sendrawtransaction(myinfo,symbol,signedtx));
+}
+
+TWO_STRINGS(dex,importaddress,symbol,address)
+{
+    return(_dex_importaddress(myinfo,symbol,address));
+}
+
+TWO_STRINGS(dex,validateaddress,symbol,address)
+{
+    return(_dex_validateaddress(myinfo,symbol,address));
+}
+
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
 }
 #include "../includes/iguana_apiundefs.h"
 

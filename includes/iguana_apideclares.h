@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -19,6 +19,26 @@ STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
 THREE_STRINGS(iguana,passthru,asset,function,hex);
+STRING_ARG(dpow,bindaddr,ipaddr);
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
+ZERO_ARGS(dpow,notarychains);
+ZERO_ARGS(passthru,paxfiats);
+ZERO_ARGS(basilisk,paxfiats);
+ZERO_ARGS(iguana,paxfiats);
+
+TWO_STRINGS(dex,send,hex,handler);
+HASH_AND_STRING(dex,gettransaction,txid,symbol);
+STRING_ARG(dex,getinfo,symbol);
+STRING_ARG(dex,alladdresses,symbol);
+STRING_ARG(dex,getbestblockhash,symbol);
+STRING_AND_INT(dex,getblockhash,symbol,height);
+HASH_AND_STRING(dex,getblock,hash,symbol);
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
+TWO_STRINGS(dex,importaddress,symbol,address);
+TWO_STRINGS(dex,validateaddress,symbol,address);
+TWO_STRINGS(dex,listunspent,symbol,address);
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
@@ -27,6 +47,8 @@ ZERO_ARGS(pax,start);
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
 ZERO_ARGS(tradebot,amlp);
 ZERO_ARGS(tradebot,notlp);
+TWO_STRINGS(tradebot,gensvm,base,rel);
+ZERO_ARGS(tradebot,openliquidity);
 
 INT_AND_ARRAY(iguana,rates,unused,quotes);
 TWO_STRINGS(iguana,rate,base,rel);
@@ -64,14 +86,14 @@ HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
+/*HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);*/
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
@@ -208,7 +230,7 @@ TWO_STRINGS(tradebot,stop,exchange,botid);
 TWO_STRINGS(tradebot,resume,exchange,botid);
 
 #ifndef WIN32
-HASH_ARG(pangea,call,tablehash);
+/*HASH_ARG(pangea,call,tablehash);
 HASH_AND_INT(pangea,raise,tablehash,numchips);
 HASH_AND_INT(pangea,bet,tablehash,numchips);
 HASH_ARG(pangea,check,tablehash);
@@ -222,7 +244,7 @@ INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_INT(pangea,buyin,tablehash,numchips);
-HASH_ARG(pangea,start,tablehash);
+HASH_ARG(pangea,start,tablehash);*/
 #endif
 
 ZERO_ARGS(SuperNET,help);

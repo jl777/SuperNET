@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -58,6 +58,7 @@
 #define IGUANA_MAXBUNDLES (50000000 / 500)
 
 #define IGUANA_MINPEERS 64
+
 #define IGUANA_LOG2MAXPEERS 11 // cant exceed 13 bits as ramchain unspents has bitfield
 
 #define IGUANA_MAXPEERS (1 << IGUANA_LOG2MAXPEERS)

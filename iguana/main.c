@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -326,8 +326,8 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
 
 char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,uint16_t port)
 {
-    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*jsonstr=0; uint64_t tag;
-    //printf("SuperNET_JSON.(%s)\n",jprint(json,0));
+    int32_t autologin = 0; uint32_t timestamp; char *retstr=0,*agent=0,*method=0,*userpass; uint64_t tag;
+//printf("SuperNET_JSON.(%s)\n",jprint(json,0));
     if ( remoteaddr != 0 && strcmp(remoteaddr,"127.0.0.1") == 0 )
         remoteaddr = 0;
     if ( (agent = jstr(json,"agent")) == 0 )
@@ -351,10 +351,16 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
     }
+    if ( coin != 0 && coin->FULLNODE >= 0 && coin->chain->userpass[0] != 0 )
+    {
+        if ( (userpass= jstr(json,"userpass")) == 0 || strcmp(userpass,coin->chain->userpass) != 0 )
+        {
+            printf("iguana authentication error {%s} (%s) != (%s)\n",jprint(json,0),userpass,coin->chain->userpass);
+            return(clonestr("{\"error\":\"authentication error\"}"));
+        }
+    }
     if ( (retstr= SuperNET_processJSON(myinfo,coin,json,remoteaddr,port)) == 0 )
         printf("null retstr from SuperNET_JSON\n");
-    if ( jsonstr != 0 )
-        free(jsonstr);
     if ( autologin != 0 )
         SuperNET_logout(myinfo,0,json,remoteaddr);
     return(retstr);
@@ -670,6 +676,9 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s/ECB",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/BTC",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/BTCD",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM"), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM/rawfeatures"), OS_ensure_directory(dirname);
+    sprintf(dirname,"SVM/models"), OS_ensure_directory(dirname);
 }
 
 void iguana_Qinit()
@@ -1552,10 +1561,8 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         if ( (str= SuperNET_encryptjson(myinfo,coin,argjson,remoteaddr,password,myinfo->permanentfile,myinfo->decryptstr == 0 ? "" : myinfo->decryptstr)) != 0 )
             free(str);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
-        printf("(%s) logged into (%s) %s %s\n",password,myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
     } else return(clonestr("{\"error\":\"need passphrase\"}"));
-    printf("(%s) logged into (%s) %s %s\n",password,myinfo->myaddr.NXTADDR,myinfo->myaddr.BTC,myinfo->myaddr.BTCD);
     return(SuperNET_activehandle(IGUANA_CALLARGS));
 }
 
@@ -1587,6 +1594,7 @@ void iguana_main(void *arg)
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
+    dex_init(myinfo);
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
@@ -1595,7 +1603,6 @@ void iguana_main(void *arg)
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
-            dex_init(myinfo);
         }
     }
 #ifdef IGUANA_OSTESTS
@@ -1611,21 +1618,23 @@ void iguana_main(void *arg)
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
     portable_mutex_init(&myinfo->dpowmutex);
+    portable_mutex_init(&myinfo->notarymutex);
+#if LIQUIDITY_PROVIDER
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("nxtae"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
+    // prices reversed? myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
+    myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
+#endif
     if ( myinfo->IAMNOTARY == 0 )
     {
-#if LIQUIDITY_PROVIDER
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("poloniex"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bittrex"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btc38"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("huobi"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("coinbase"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("lakebtc"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("quadriga"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("okcoin"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("btce"),0);
-        myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitstamp"),0);
-#endif
         if ( iguana_commandline(myinfo,arg) == 0 )
         {
             iguana_helpinit(myinfo);
@@ -1651,25 +1660,6 @@ void iguana_main(void *arg)
                 printf("./komodo-cli -ac_name=REVS sendtoaddress %s %f\n",coinaddr,val);
             }
         } else printf("couldnt parse.(%s)\n",jsonstr);
-    }
-    if ( 0 )
-    {
-        int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
-        char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
-            "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-            "REVS" };
-        uint8_t pubkeys[64][33]; char coinaddr[64]; int32_t i,j; double val = 0.01;
-        //n = komodo_notaries("KMD",pubkeys,0);
-#include "notaries.h"
-        for (i=0; i<=32; i++)
-        {
-            for (j=0; j<sizeof(Notaries)/sizeof(*Notaries); j++)
-            {
-                decode_hex(pubkeys[j],33,Notaries[j][1]);
-                bitcoin_address(coinaddr,60,pubkeys[j],33);
-                printf("./komodo-cli -ac_name=%s sendtoaddress %s %f\n",CURRENCIES[i],coinaddr,val);
-            }
-        }
     }
     iguana_launchdaemons(myinfo);
 }

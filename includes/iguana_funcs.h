@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -134,6 +134,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval);
 void calc_rmd160(char *hexstr,uint8_t buf[20],uint8_t *msg,int32_t len);
 void calc_OP_HASH160(char *hexstr,uint8_t hash160[20],char *msg);
 double dxblend(double *destp,double val,double decay);
+double _xblend(float *destp,double val,double decay);
 
 // json
 int32_t iguana_processjsonQ(struct iguana_info *coin); // reentrant, can be called during any idletime
@@ -307,7 +308,7 @@ cJSON *iguana_signtx(struct supernet_info *myinfo,struct iguana_info *coin,bits2
 void iguana_addscript(struct iguana_info *coin,cJSON *dest,uint8_t *script,int32_t scriptlen,char *fieldname);
 bits256 iguana_genesis(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_chain *chain);
 
-cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp);
+cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp);
 cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t satoshis);
 cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys,uint8_t *sigscript,int32_t siglen);
 
@@ -468,7 +469,7 @@ struct iguana_waddress *iguana_waddressadd(struct supernet_info *myinfo,struct i
 cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *txobj,cJSON *vins);
 bits256 bitcoin_pubkey33(void *ctx,uint8_t *data,bits256 privkey);
 bits256 bitcoin_randkey(void *ctx);
-int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig64,bits256 messagehash2,uint8_t *pubkey);
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig64,bits256 messagehash2,uint8_t *pubkey,size_t plen);
 int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t script[IGUANA_MAXSCRIPTSIZE],cJSON *scriptobj,int32_t interpret,int64_t nLockTime,struct vin_info *V);
 cJSON *iguana_spendasm(struct iguana_info *coin,uint8_t *spendscript,int32_t spendlen);
 uint64_t iguana_unspentavail(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt,int32_t minconf,int32_t maxconf);
@@ -580,7 +581,16 @@ struct iguana_peer *iguana_peerfindipbits(struct iguana_info *coin,uint32_t ipbi
 //int32_t basilisk_relays_send(struct supernet_info *myinfo,struct iguana_peer *addr);
 int32_t basilisk_hashes_send(struct supernet_info *myinfo,struct iguana_info *virt,struct iguana_peer *addr,char *CMD,bits256 *txids,int32_t num);
 int32_t iguana_opreturn(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,int64_t crypto777_payment,int32_t height,uint64_t hdrsi_unspentind,int64_t payment,uint32_t fileid,uint64_t scriptpos,uint32_t scriptlen);
+/*
+* because the address passed in a non-portable way we defined uint64_t as parameter to 
+* allow the pass of 64bit memory address in windows 64
+* @author - fadedreamz@gmail.com
+*/
+#if defined(_M_X64)
+int32_t iguana_scriptdata(struct iguana_info *coin, uint8_t *scriptspace, uint64_t fileptr[2], char *fname, uint64_t scriptpos, int32_t scriptlen);
+#else
 int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fileptr[2],char *fname,uint64_t scriptpos,int32_t scriptlen);
+#endif
 void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits);
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);

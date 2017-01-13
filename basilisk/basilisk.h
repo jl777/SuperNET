@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -17,7 +17,7 @@
 #define H_BASILISK_H
 
 //#define BASILISK_DISABLESENDTX
-//#define BASILISK_DISABLEWAITTX
+#define BASILISK_DISABLEWAITTX
 
 #include "../iguana/iguana777.h"
 
@@ -79,6 +79,7 @@ struct basilisk_swapinfo
 struct basilisk_swap
 {
     struct supernet_info *myinfo; struct iguana_info *bobcoin,*alicecoin;
+    void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];

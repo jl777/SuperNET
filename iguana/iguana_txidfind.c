@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -193,7 +193,17 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 //    ramchain->sparsemax = i;
                 return(setind);
             }
+			// fadedreamz@gmail.com
+#if defined(_M_X64)
+			/*
+			* calculate the address in a portable manner
+			* in all platform sizeof(char) / sizeof(uchar) == 1
+			* @author - fadedreamz@gmail.com
+			*/
+			else if (x < maxitems && memcmp((void *)((unsigned char *)refdata + x*refsize), key, keylen) == 0)
+#else
             else if ( x < maxitems && memcmp((void *)(long)((long)refdata + x*refsize),key,keylen) == 0 )
+#endif
             {
                 if ( setind == 0 )
                     ramchain->sparsehits++;

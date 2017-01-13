@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -585,6 +585,7 @@ int64_t iguana_RTpkhashbalance(struct supernet_info *myinfo,struct iguana_info *
     return(deposits - spent);
 }
 
+// jl777: todo support notarychain iterate listunspent
 int32_t iguana_RTpkhasharray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *array,int32_t minconf,int32_t maxconf,uint64_t *totalp,struct iguana_pkhash *P,int32_t max,uint8_t rmd160[20],char *coinaddr,uint8_t *pubkey33,int32_t lastheight,struct iguana_outpoint *unspents,int32_t *numunspentsp,int32_t maxunspents,char *remoteaddr,int32_t includespent)
 {
     int32_t i,n,m,numunspents; uint64_t spent,deposits,netbalance,total; struct iguana_outpoint lastpt; struct iguana_pkhash *p,_p; struct iguana_ramchain *ramchain; struct iguana_bundle *bp;
@@ -1071,7 +1072,7 @@ int32_t iguana_unspentfindjson(cJSON *destarray,cJSON *item)
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends)
 {
     uint64_t total = 0; int32_t i,j,m,n,numrmds,numunspents=0; char *coinaddr,*retstr; uint8_t *rmdarray; cJSON *vals,*unspents,*item,*array,*retjson,*retarray; bits256 hash;
-    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
     {
         retjson = cJSON_CreateArray();
         rmdarray = iguana_rmdarray(myinfo,coin,&numrmds,argarray,0);
@@ -1168,7 +1169,7 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
     }
     memset(pubkey,0,sizeof(pubkey));
     //remains = required * 1.1 + coin->txfee;
-    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || (coin->FULLNODE == 0 && coin->notarychain >= 0) )
     {
         for (i=numunspents=0; i<numaddrs; i++)
         {
@@ -1220,6 +1221,11 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                         for (i=0; i<n; i++)
                         {
                             item = jitem(array,i);
+                            if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                            {
+                                //printf("skip unspendable.(%s)\n",jprint(item,0));
+                                continue;
+                            }
                             if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                             {
                                 printf("no spendscriptstr.(%s)\n",jprint(item,0));
@@ -1234,13 +1240,16 @@ int32_t iguana_RTunspentslists(struct supernet_info *myinfo,struct iguana_info *
                                 break;
                         }
                     }
+                    if ( numunspents == 0 )
+                        printf("no unspents.(%s)\n",jprint(array,0));
                     free_json(array);
                 }
             }
         }
     }
     *totalp = sum;
-    printf("numunspents.%d max.%d sum %.8f required %.8f\n",numunspents,max,dstr(sum),dstr(required));
+    coinaddr = addresses != 0 ? jstri(addresses,i) : "";
+    printf("numunspents.%d max.%d sum %.8f required %.8f (%s)\n",numunspents,max,dstr(sum),dstr(required),coinaddr);
     return(numunspents);
 }
 
@@ -1416,7 +1425,11 @@ int32_t iguana_utxoaddr_map(struct iguana_info *coin,char *fname)
         memcpy(&last,(void *)((long)coin->utxoaddrfileptr+sizeof(uint64_t)),sizeof(last));
         memcpy(&coin->utxoaddrind,(void *)((long)coin->utxoaddrfileptr+sizeof(uint64_t)+sizeof(uint32_t)),sizeof(coin->utxoaddrind));
         memcpy(&coin->utxoaddrhash.bytes,(void *)((long)coin->utxoaddrfileptr+sizeof(uint64_t)+2*sizeof(uint32_t)),sizeof(coin->utxoaddrhash));
+#if defined(_M_X64)
+		coin->utxoaddroffsets = (void *)((unsigned char *)coin->utxoaddrfileptr + sizeof(uint64_t) + 2 * sizeof(uint32_t) + sizeof(bits256));
+#else
         coin->utxoaddroffsets = (void *)((long)coin->utxoaddrfileptr + sizeof(uint64_t) + 2*sizeof(uint32_t) + sizeof(bits256));
+#endif
         for (ind=total=count=0; ind<0x10000; ind++)
         {
             if ( (offset= coin->utxoaddroffsets[ind]) != 0 )

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -27,10 +27,10 @@ struct iguana_info *iguana_coinfind(char *symbol)
     struct iguana_info *coin=0; uint32_t symbolcrc; struct supernet_info *myinfo = SuperNET_MYINFO(0);
     while ( myinfo->allcoins_being_added != 0 )
     {
-        sleep(3);
+        sleep(1);
         if ( myinfo->allcoins_being_added != 0 )
             printf("wait for coinadd to complete, OK if rare\n");
-        sleep(3);
+        sleep(1);
     }
     symbolcrc = calc_crc32(0,symbol,(int32_t)strlen(symbol));
     //portable_mutex_lock(&myinfo->allcoins_mutex);
@@ -58,6 +58,8 @@ struct iguana_info *iguana_coinadd(char *symbol,char *name,cJSON *argjson,int32_
             else
             {
                 coin->chain = iguana_chainfind(myinfo,(char *)symbol,argjson,1);
+                //if ( coin->FULLNODE >= 0 )
+                //    coin->chain->userpass[0] = 0;
                 coin->peers = calloc(1,sizeof(*coin->peers));
                 for (j=0; j<IGUANA_MAXPEERS; j++)
                 {
@@ -869,9 +871,11 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(zero.bytes,0,sizeof(zero));
     if ( (bp= iguana_bundlecreate(coin,&bundlei,0,*(bits256 *)coin->chain->genesis_hashdata,zero,1)) != 0 )
         bp->bundleheight = 0;
+    if ( coin->FULLNODE != 0 )
+        coin->notarychain = -1;
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
-    printf("SEED_IPADDR initpeer.(%s)\n",addr->ipaddr);
+    printf("SEED_IPADDR initpeer.(%s) notarychain.%d\n",addr->ipaddr,coin->notarychain);
     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
 
@@ -891,13 +895,19 @@ void iguana_coinloop(void *arg)
         {
             if ( (coin= coins[i]) != 0 )
             {
-                if ( coin->FULLNODE < 0 )
+                if ( coin->didaddresses == 0 )
+                {
+                    coin->didaddresses = 1;
+                    if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 )
+                        init_alladdresses(myinfo,coin);
+                }
+                if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
                     continue;
-                if ( strcmp(coin->symbol,"RELAY") == 0 )
+                /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
                         basilisk_requests_poll(myinfo);
-                }
+                }*/
                 if ( n > 1 && coin->RTheight > 0 && (rand() % 10) != 0 )
                     continue;
                 if ( coin->peers == 0 )
@@ -1128,7 +1138,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     if ( coin->MAXMEM == 0 )
         coin->MAXMEM = IGUANA_DEFAULTRAM;
     coin->MAXMEM *= (1024L * 1024 * 1024);
-    coin->enableCACHE = 0;//(strcmp("BTC",coin->symbol) != 0);
+    coin->enableCACHE = 0;//(strcmp("BTCD",coin->symbol) == 0);
     if ( jobj(json,"cache") != 0 )
         coin->enableCACHE = juint(json,"cache");
     if ( (coin->polltimeout= juint(json,"poll")) <= 0 )
@@ -1136,13 +1146,6 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     coin->active = juint(json,"active");
     if ( (coin->minconfirms= minconfirms) == 0 )
         coin->minconfirms = (strcmp(symbol,"BTC") == 0) ? 3 : 10;
-    if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
-    {
-        printf("cant initialize chain.(%s)\n",jstr(json,0));
-        strcpy(coin->name,"illegalcoin");
-        coin->symbol[0] = 0;
-        return(0);
-    }
     if ( jobj(json,"RELAY") != 0 )
         coin->FULLNODE = jint(json,"RELAY");
     else coin->FULLNODE = (strcmp(coin->symbol,"BTCD") == 0);
@@ -1151,6 +1154,15 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
     else coin->VALIDATENODE = (strcmp(coin->symbol,"BTCD") == 0);
     if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
         SuperNET_MYINFO(0)->IAMRELAY++;
+    if ( coin->chain == 0 && (coin->chain= iguana_createchain(json)) == 0 )
+    {
+        printf("cant initialize chain.(%s)\n",jstr(json,0));
+        strcpy(coin->name,"illegalcoin");
+        //if ( coin->FULLNODE >= 0 )
+        //    coin->chain->userpass[0] = 0;
+        coin->symbol[0] = 0;
+        return(0);
+    }
 #ifdef __PNACL
     coin->VALIDATENODE = coin->FULLNODE = 0;
 #endif
@@ -1194,10 +1206,13 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
         coins = mycalloc('A',1+1,sizeof(*coins));
         if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json,virtcoin)) != 0 )
         {
-            coins[0] = (void *)((long)1);
-            coins[1] = coin;
-            printf("launch.%p coinloop for.%s services.%llx started.%p peers.%p\n",coin,coin->symbol,(long long)services,coin->started,coin->peers);
-            coin->launched = iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
+            if ( iguana_isnotarychain(coin->symbol) < 0 )
+            {
+                coins[0] = (void *)((long)1);
+                coins[1] = coin;
+                printf("launch.%p coinloop for.%s services.%llx started.%p peers.%p\n",coin,coin->symbol,(long long)services,coin->started,coin->peers);
+                coin->launched = iguana_launch(coin,"iguana_coinloop",iguana_coinloop,coins,IGUANA_PERMTHREAD);
+            }
             coin->active = 1;
             coin->started = 0;
             return(1);

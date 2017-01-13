@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -301,7 +301,17 @@ struct iguana_txblock
     struct iguana_zblock zblock;
 };
 
+#if defined(_M_X64)
+/*
+* calculate the address in a portable manner
+* in all platform sizeof(char) / sizeof(uchar) == 1
+* @author - fadedreamz@gmail.com
+*/
+#define RAMCHAIN_PTR(rdata,offset) ((void *)((unsigned char *)rdata + rdata->offset))
+#else
 #define RAMCHAIN_PTR(rdata,offset) ((void *)(long)((long)(rdata) + (long)(rdata)->offset))
+#endif
+
 struct iguana_ramchaindata
 {
     bits256 sha256;
@@ -454,6 +464,8 @@ struct iguana_RTtxid
     struct iguana_RTspend *spends[];
 };
 
+struct hashstr_item { UT_hash_handle hh; char address[40]; };
+
 struct iguana_info
 {
     UT_hash_handle hh;
@@ -461,7 +473,17 @@ struct iguana_info
     struct iguana_peers *peers; struct iguana_peer internaladdr;
     //basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     //basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
+#if defined(_M_X64)
+	/*
+	* because we have no choice but to pass the value as parameters
+	* we need 64bit to hold 64bit memory address, thus changing
+	* to uint64_t instead of long in win x64
+	* @author - fadedreamz@gmail.com
+	*/
+	uint64_t vinptrs[IGUANA_MAXPEERS + 1][2], voutptrs[IGUANA_MAXPEERS + 1][2];
+#else
     long vinptrs[IGUANA_MAXPEERS+1][2],voutptrs[IGUANA_MAXPEERS+1][2];
+#endif
     uint32_t fastfind; FILE *fastfps[0x100]; uint8_t *fast[0x100]; int32_t *fasttables[0x100]; long fastsizes[0x100];
     uint64_t instance_nonce,myservices,totalsize,totalrecv,totalpackets,sleeptime;
     int64_t mining,totalfees,TMPallocated,MAXRECVCACHE,MAXMEM,PREFETCHLAG,estsize,activebundles;
@@ -497,6 +519,7 @@ struct iguana_info
     char lastdispstr[2048];
     double txidfind_totalmillis,txidfind_num,spendtxid_totalmillis,spendtxid_num;
     struct iguana_monitorinfo monitoring[256];
+    int32_t notarychain,didaddresses;
     struct datachain_info dPoW;
     struct iguana_zblock newblock; char *newblockstr;
     int32_t relay_RTheights[BASILISK_MAXRELAYS];
@@ -512,6 +535,7 @@ struct iguana_info
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
+    struct hashstr_item *alladdresses;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

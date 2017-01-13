@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -271,7 +271,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
         {
             if ( block->bundlei >= 0 && ((block->hdrsi != bp->hdrsi || block->bundlei != bundlei) && (block->hdrsi != 0 || block->bundlei != 0)) )
             {
-                char str[65]; printf("blockadd warning: %d[%d] main.%d prevent <- %d[%d] %s\n",block->hdrsi,block->bundlei,block->mainchain,bp->hdrsi,bundlei,bits256_str(str,hash2));
+                //char str[65]; printf("blockadd warning: %d[%d] main.%d prevent <- %d[%d] %s\n",block->hdrsi,block->bundlei,block->mainchain,bp->hdrsi,bundlei,bits256_str(str,hash2));
                 //iguana_blockunmark(coin,block,bp,bundlei,block->mainchain != 0);
                 err |= 2;
                 return(-1);
@@ -435,7 +435,11 @@ struct iguana_txid *iguana_bundletx(struct iguana_info *coin,struct iguana_bundl
         iguana_peerfname(coin,&hdrsi,iter==0?"DB/ro":"DB",fname,0,bp->hashes[0],zero,bp->n,1);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
+#if defined(_M_X64)
+			fseek(fp, (uint64_t)&rdata.Toffset - (uint64_t)&rdata, SEEK_SET);
+#else
             fseek(fp,(long)&rdata.Toffset - (long)&rdata,SEEK_SET);
+#endif
             if ( fread(&Toffset,1,sizeof(Toffset),fp) == sizeof(Toffset) )
             {
                 fseek(fp,Toffset + sizeof(struct iguana_txid) * txidind,SEEK_SET);

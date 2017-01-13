@@ -1,6 +1,6 @@
 
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -180,6 +180,8 @@ struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbo
         virt->enableCACHE = 1;
         serialized = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,hexbuf,sizeof(hexbuf),hexstr);
         iguana_chaininit(myinfo,virt->chain,1,valsobj);
+        //if ( virt->FULLNODE >= 0 )
+        //    virt->chain->userpass[0] = 0;
         virt->chain->isPoS = 1;
         hdrsize = (virt->chain->zcash != 0) ? sizeof(struct iguana_msgzblockhdr) : sizeof(struct iguana_msgblockhdr);
         if ( gecko_blocknonce_verify(virt,serialized,hdrsize,virt->chain->nBits,0,0) > 0 )

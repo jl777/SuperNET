@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -209,8 +209,8 @@ int32_t iguana_rwblock(struct supernet_info *myinfo,char *symbol,uint8_t zcash,u
     if ( rwflag == 1 )
     {
         if ( zcash == 0 )
-            x = zmsg->txn_count;
-        else x = msg->txn_count;
+            x = msg->txn_count;
+        else x = zmsg->txn_count;
     }
     //char str[65],str2[65]; printf("zcash.%d len.%d: block version.%d timestamp.%u bits.%x nonce.%u prev.(%s) %llx  hash2.%s zlen.%d\n",zcash,len,msg->H.version,msg->H.timestamp,msg->H.bits,msg->H.nonce,bits256_str(str,msg->H.prev_block),(long long)msg->H.merkle_root.txid,bits256_str(str2,*hash2p),(int32_t)sizeof(struct iguana_msgzblockhdr));
     len += iguana_rwvarint(rwflag,&serialized[len],&x);
@@ -242,7 +242,7 @@ int32_t iguana_serialize_block(struct supernet_info *myinfo,struct iguana_chain 
         msg->H.bits = block->RO.bits;
         msg->H.nonce = block->RO.nonce;
         msg->txn_count = block->RO.txn_count;
-        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,&zmsg,IGUANA_MAXPACKETSIZE);
+        len = iguana_rwblock(myinfo,chain->symbol,chain->zcash,chain->auxpow,chain->hashalgo,1,hash2p,serialized,(void *)msg,IGUANA_MAXPACKETSIZE);
     }
     else
     {
@@ -325,7 +325,7 @@ int32_t iguana_rwmsgalert(struct iguana_info *coin,int32_t rwflag,uint8_t *seria
             printf("%02x",coin->chain->alertpubkey[i]);
         char str[65]; printf(" alertpubkey.%d, alerthash2.%s\n",plen,bits256_str(str,alerthash2));
     } else msg->siglen = 0;
-    printf("  ALERT v.%d relay.%lld expires.%lld ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,(long long)msg->relayuntil,(long long)msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
+    //printf("  ALERT v.%d relay.%lld expires.%lld ID.%d cancel.%d numlist.%d minver.%d maxver.%d subver.(%s) priority.%d comment.(%s) STATUS.(%s) reserved.(%s)\n",msg->version,(long long)msg->relayuntil,(long long)msg->expiration,msg->ID,msg->cancel,msg->numcancellist,msg->minver,msg->maxver,msg->subver,msg->priority,msg->comment,msg->statusbar,msg->reserved);
     return(len);
 }
 
@@ -1251,7 +1251,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
             //printf("error.(%s) (%s): len.%d != recvlen.%d\n",H->command,addr->ipaddr,len,recvlen);
             //for (i=0; i<len; i++)
             //    printf("%02x",data[i]);
-            if ( len != 0 && strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) )
+            if ( len != 0 && strcmp(H->command,"addr") != 0 && (coin->chain->auxpow == 0 || strcmp(H->command,"headers") != 0) && strcmp(H->command,"alert") != 0 )
                 printf("%s %s.%s len mismatch %d != %d\n",coin->symbol,addr!=0?addr->ipaddr:"local",H->command,len,recvlen);
         }
         else if ( len != recvlen && recvlen > 1 )
