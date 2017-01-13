@@ -22,7 +22,7 @@ struct signed_nnpacket
     bits256 packethash;
     uint32_t nonce,packetlen;
     uint8_t packet[];
-};
+} PACKED;
 
 int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
@@ -75,6 +75,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket->packetlen,sizeof(*sigpacket));
+    printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
     if ( sigpacket != 0 )
         nn_freemsg(sigpacket);
     *freeptrp = 0;
