@@ -84,7 +84,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                 printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
-    } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket->packetlen,sizeof(*sigpacket));
+    } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
     //printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
     if ( sigpacket != 0 )
         nn_freemsg(sigpacket), sigpacket = 0;
