@@ -852,7 +852,7 @@ THREE_STRINGS(bitcoinrpc,verifymessage,address,sig,message)
         //    printf("%02x",sigbuf[i]);
         //printf(" siglen.%d [%d] address.(%s) sig.(%s) message.(%s)\n",len,sigbuf[0],address,sig,message);
         hash2 = iguana_messagehash2(message,coin->chain->messagemagic);
-        if ( bitcoin_recoververify(myinfo->ctx,coin->symbol,sigbuf,hash2,pubkey) == 0 )
+        if ( bitcoin_recoververify(myinfo->ctx,coin->symbol,sigbuf,hash2,pubkey,0) == 0 )
             jadd(retjson,"result",jtrue());
         else jadd(retjson,"result",jfalse());
         jaddstr(retjson,"coin",coin->symbol);

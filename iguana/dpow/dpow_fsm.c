@@ -292,6 +292,8 @@ void dpow_statemachinestart(void *ptr)
             //    printf("%02x",pubkeys[i][j]);
             //printf(" <= pubkey[%d]\n",i);
             memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
+            if ( strcmp("KMD",src->symbol) == 0 )
+                memcpy(myinfo->notaries[i].pubkey,pubkeys[i],33);
             if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
             {
                 myind = i;
@@ -301,6 +303,8 @@ void dpow_statemachinestart(void *ptr)
                 printf(" MYIND.%d <<<<<<<<<<<<<<<<<<<<<<\n",myind);
             }
         }
+        if ( strcmp("KMD",src->symbol) == 0 )
+            myinfo->numnotaries = bp->numnotaries;
         if ( myind < 0 || ep == 0 )
         {
             printf("minerkey33-> ");
