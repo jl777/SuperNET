@@ -38,12 +38,13 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             if ( sigpacket->packethash.bytes[0] == 0 )
                 break;
         }
-        if ( (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
+        if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
         {
             memcpy(sigpacket->sig64,sig+1,64);
             sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
             return(sentbytes - siglen);
-        }
+        } else printf("couldnt find nonce\n");
+        free(sigpacket);
     }
     return(-1);
 }
