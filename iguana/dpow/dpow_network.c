@@ -70,7 +70,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                 {
                     *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
                     *freeptrp = sigpacket;
-                    printf("got signed packet from notary0\n");
+                    //printf("got signed packet from notary0\n");
                     return((int32_t)(recvbytes - sizeof(*sigpacket)));
                 }
                 for (i=0; i<n && i<64; i++)
@@ -78,7 +78,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                     if ( memcmp(pubkey33,notaries[i],33) == 0 )
                     {
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
-                        printf("got signed packet from notary.%d\n",i);
+                        //printf("got signed packet from notary.%d\n",i);
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
