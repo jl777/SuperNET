@@ -52,7 +52,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
 
 int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_t n,int32_t sock,void *packetp)
 {
-    int32_t i,recvbytes; uint8_t pubkey33[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
+    int32_t i,recvbytes; uint8_t pubkey33[33],pubkey0[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
     *freeptrp = 0;
     recvbytes = nn_recv(sock,&sigpacket,NN_MSG,0);
@@ -63,6 +63,14 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
         {
             if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
+                char *notary0 = "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828";
+                decode_hex(pubkey0,33,notary0);
+                if ( memcmp(pubkey0,pubkey33,33) == 0 )
+                {
+                    *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
+                    *freeptrp = sigpacket;
+                    return((int32_t)(recvbytes - sizeof(*sigpacket)));
+                }
                 for (i=0; i<n && i<64; i++)
                 {
                     if ( memcmp(pubkey33,notaries[i],33) == 0 )
@@ -258,6 +266,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             else if ( retptr != 0 )
             {
                 retstr = clonestr((char *)retptr);
+                printf("GOT.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     ipbits = juint(retjson,"randipbits");

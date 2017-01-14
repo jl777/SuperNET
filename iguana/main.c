@@ -1643,25 +1643,31 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
-        }
-    } else basilisks_init(myinfo);
-    char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
-    if ( (retstr= _dex_notaries(myinfo,"KMD")) != 0 )
-    {
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (myinfo->numnotaries= jint(retjson,"numnotaries")) != 0 && (array= jarray(&n,retjson,"notaries")) != 0 && n == myinfo->numnotaries )
+            char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
+            if ( (retstr= _dex_notaries(myinfo,"KMD")) != 0 )
             {
-                for (i=0; i<n; i++)
+                printf("INITIAL NOTARIES.(%s)\n",retstr);
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    item = jitem(array,i);
-                    if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 33*2 )
-                        decode_hex(myinfo->notaries[i],33,pubkeystr);
+                    if ( (myinfo->numnotaries= jint(retjson,"numnotaries")) != 0 && (array= jarray(&n,retjson,"notaries")) != 0 && n == myinfo->numnotaries )
+                    {
+                        for (i=0; i<n; i++)
+                        {
+                            item = jitem(array,i);
+                            if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 33*2 )
+                                decode_hex(myinfo->notaries[i],33,pubkeystr);
+                        }
+                    }
+                    free_json(retjson);
                 }
+                free(retstr);
             }
-            free_json(retjson);
         }
-        free(retstr);
+    }
+    else
+    {
+        basilisks_init(myinfo);
+        myinfo->numnotaries = komodo_notaries("KMD",myinfo->notaries,-1);
     }
     if ( 0 )
     {
