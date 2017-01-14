@@ -316,6 +316,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
     if ( maxi >= 0 && myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[maxi].src,list[maxi].dest,(double)maxamount/SATOSHIDEN)) > 0. )
     {
+        printf("maxi.%d profitmargin %f\n",maxi,profitmargin);
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
