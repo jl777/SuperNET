@@ -38,11 +38,17 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
         bitcoin_pubkey33(ctx,pubkey33,privkey);
         if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
         {
-            //for (i=0; i<33; i++)
-            //    printf("%02x",pubkey33[i]);
-            //printf(" signed pubkey\n");
             memcpy(sigpacket->sig64,sig+1,64);
+            if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
+            {
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey33[i]);
+                printf(" signed pubkey\n");
+            }
             sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
+            for (i=0; i<size+sizeof(*sigpacket); i++)
+                printf("%02x",((uint8_t *)sigpacket)[i]);
+            printf(" <- nnsend\n");
             return(sentbytes - siglen);
         } else printf("couldnt find nonce\n");
         free(sigpacket);
@@ -55,7 +61,12 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     int32_t i,recvbytes; uint8_t pubkey33[33],pubkey0[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
     *freeptrp = 0;
-    recvbytes = nn_recv(sock,&sigpacket,NN_MSG,0);
+    if ( (recvbytes= nn_recv(sock,&sigpacket,NN_MSG,0)) > 0 )
+    {
+        for (i=0; i<recvbytes; i++)
+            printf("%02x",((uint8_t *)sigpacket)[i]);
+        printf(" <- RECV.%d\n",recvbytes);
+    }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
         vcalc_sha256(0,packethash.bytes,(void *)&sigpacket->nonce,(int32_t)(sigpacket->packetlen+sizeof(sigpacket->nonce)+sizeof(sigpacket->packetlen)));
