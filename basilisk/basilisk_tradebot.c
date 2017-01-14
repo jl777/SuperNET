@@ -312,7 +312,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    //printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
+    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
     double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
     if ( maxi >= 0 && myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[maxi].src,list[maxi].dest,(double)maxamount/SATOSHIDEN)) > 0. )
     {
@@ -379,7 +379,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                     {
                         memset(&R,0,sizeof(R));
                         basilisk_rwDEXquote(0,hexdata,&R);
-                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                        printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
                     }
                 } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )
