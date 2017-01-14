@@ -875,11 +875,6 @@ void iguana_callcoinstart(struct supernet_info *myinfo,struct iguana_info *coin)
         coin->notarychain = -1;
     addr = &coin->peers->active[IGUANA_MAXPEERS-2];
     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));
-    if ( strcmp(coin->symbol,"KMD") == 0 && myinfo->IAMNOTARY != 0 )
-    {
-        myinfo->numnotaries = komodo_notaries("KMD",myinfo->notaries,-1);
-        printf("INIT with %d notaries\n",myinfo->numnotaries);
-    }
     printf("SEED_IPADDR initpeer.(%s) notarychain.%d\n",addr->ipaddr,coin->notarychain);
     iguana_launch(coin,"connection",iguana_startconnection,addr,IGUANA_CONNTHREAD);
 }
@@ -907,7 +902,14 @@ void iguana_coinloop(void *arg)
                         init_alladdresses(myinfo,coin);
                 }
                 if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
+                {
+                    if ( myinfo->IAMNOTARY != 0 && strcmp("KMD",coin->symbol) == 0 && myinfo->numnotaries <= 0 )
+                    {
+                        myinfo->numnotaries = komodo_notaries("KMD",myinfo->notaries,-1);
+                        printf("INIT with %d notaries\n",myinfo->numnotaries);
+                    }
                     continue;
+                }
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
