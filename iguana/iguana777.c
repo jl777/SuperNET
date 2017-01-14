@@ -903,11 +903,6 @@ void iguana_coinloop(void *arg)
                 }
                 if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
                 {
-                    if ( myinfo->IAMNOTARY != 0 && strcmp("KMD",coin->symbol) == 0 && myinfo->numnotaries <= 0 )
-                    {
-                        myinfo->numnotaries = komodo_notaries("KMD",myinfo->notaries,-1);
-                        printf("INIT with %d notaries\n",myinfo->numnotaries);
-                    }
                     continue;
                 }
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )
