@@ -59,6 +59,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             }
         }
         free(sigpacket);
+        printf("error signing nnpacket\n");
     }
     return(-1);
 }
@@ -222,7 +223,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         {
             timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            timeout = 2000;
+            timeout = 3000;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -1586,7 +1587,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 300 )
+    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 100 )
     {
         num++;
         if ( size > 0 )
