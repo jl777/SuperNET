@@ -52,7 +52,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
     }
     return(-1);
 }
-
+//dex* api
 int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int32_t n,int32_t sock,void *packetp)
 {
     int32_t i,recvbytes; uint8_t pubkey33[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
@@ -243,7 +243,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             pfd.events = NN_POLLOUT;
             if ( nn_poll(&pfd,1,100) > 0 )
             {
-                sentbytes = signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->reqsock,dexp,size);
+                sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
                 //printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
                 break;
             }
@@ -258,7 +258,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
                 ipbits = *retptr;
-            else
+            else if ( retptr != 0 )
             {
                 retstr = clonestr((char *)retptr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -288,7 +288,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
+                    //nn_connect(myinfo->reqsock,nanomsg_tcpname(0,str,ipaddr,REP_SOCK));
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
@@ -693,7 +693,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
         //printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
-        if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+        if ( dexp != 0 && dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             //printf("SUBSOCK.%08x ",dexp->crc32);
             dex_packet(myinfo,dexp,size);
@@ -1564,7 +1564,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( myinfo->repsock >= 0 ) // from clients
     {
-        if ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->repsock,&dexp)) > 0 )
+        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
             //fprintf(stderr,"%d ",size);
@@ -1596,8 +1596,10 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 }
             }
             //printf("GOT DEX rep PACKET.%d\n",size);
-            if ( freeptr != 0 )
-                nn_freemsg(freeptr), dexp = 0, freeptr = 0;
+            //if ( freeptr != 0 )
+            //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
+            if ( dexp != 0 )
+                nn_freemsg(dexp), dexp = 0;
         }
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
