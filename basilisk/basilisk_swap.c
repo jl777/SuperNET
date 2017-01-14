@@ -1022,15 +1022,16 @@ void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basi
 
 int32_t bitcoin_coinptrs(struct supernet_info *myinfo,struct iguana_info **bobcoinp,struct iguana_info **alicecoinp,char *src,char *dest,bits256 srchash,bits256 desthash)
 {
+    struct iguana_info *coin = iguana_coinfind(src);
     *bobcoinp = *alicecoinp = 0;
-    if ( strcmp("BTC",src) == 0 )
+    if ( strcmp("BTC",src) == 0 || coin->notarychain >= 0 )
     {
-        *bobcoinp = iguana_coinfind("BTC");
+        *bobcoinp = iguana_coinfind(src);
         *alicecoinp = iguana_coinfind(dest);
     }
-    else if ( strcmp("BTC",dest) == 0 )
+    else //if ( strcmp("BTC",dest) == 0 )
     {
-        *bobcoinp = iguana_coinfind("BTC");
+        *bobcoinp = iguana_coinfind(dest);
         *alicecoinp = iguana_coinfind(src);
     }
     if ( bits256_cmp(myinfo->myaddr.persistent,srchash) == 0 )
