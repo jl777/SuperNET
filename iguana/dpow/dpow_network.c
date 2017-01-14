@@ -43,9 +43,9 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
                 memcpy(sigpacket->sig64,sig+1,64);
                 if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
                 {
-                    for (i=0; i<33; i++)
-                        printf("%02x",pubkey33[i]);
-                    printf(" signed pubkey\n");
+                    //for (i=0; i<33; i++)
+                    //    printf("%02x",pubkey33[i]);
+                    //printf(" signed pubkey\n");
                     if ( memcmp(pubkey33,signpubkey33,33) == 0 )
                     {
                         sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);

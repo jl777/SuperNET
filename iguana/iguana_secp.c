@@ -131,11 +131,11 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                             {
                                 sig[0] = 27 + recid + (fCompressed != 0 ? 4 : 0);
                                 retval = 64 + 1;
-                                size_t i,plen = 33; uint8_t pubkey[33];
-                                secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&CHECKPUB,SECP256K1_EC_COMPRESSED);
-                                for (i=0; i<33; i++)
-                                    printf("%02x",pubkey[i]);
-                                printf(" bitcoin_sign's pubkey\n");
+                                //size_t i,plen = 33; uint8_t pubkey[33];
+                                //secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&CHECKPUB,SECP256K1_EC_COMPRESSED);
+                                //for (i=0; i<33; i++)
+                                //    printf("%02x",pubkey[i]);
+                                //printf(" bitcoin_sign's pubkey\n");
 
                             } else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
