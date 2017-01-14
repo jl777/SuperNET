@@ -23,7 +23,7 @@ struct signed_nnpacket
 
 int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
-    int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33]; struct signed_nnpacket *sigpacket;
+    int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket;
     if ( (sigpacket= calloc(1,size + sizeof(*sigpacket))) != 0 )
     {
         sigpacket->packetlen = size;
@@ -35,25 +35,29 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             if ( sigpacket->packethash.bytes[0] == 0 )
                 break;
         }
-        bitcoin_pubkey33(ctx,pubkey33,privkey);
-        if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
+        bitcoin_pubkey33(ctx,signpubkey33,privkey);
+        for (j=0; j<10; j++)
         {
-            memcpy(sigpacket->sig64,sig+1,64);
-            for (j=0; j<10; j++)
+            if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
             {
+                memcpy(sigpacket->sig64,sig+1,64);
                 if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
                 {
                     for (i=0; i<33; i++)
                         printf("%02x",pubkey33[i]);
                     printf(" signed pubkey\n");
+                    if ( memcmp(pubkey33,signpubkey33,33) == 0 )
+                    {
+                        sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
+                        //for (i=0; i<size+sizeof(*sigpacket); i++)
+                        //    printf("%02x",((uint8_t *)sigpacket)[i]);
+                        //printf(" <- nnsend\n");
+                        free(sigpacket);
+                        return(sentbytes - siglen);
+                    }
                 }
             }
-            sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
-            //for (i=0; i<size+sizeof(*sigpacket); i++)
-            //    printf("%02x",((uint8_t *)sigpacket)[i]);
-            //printf(" <- nnsend\n");
-            return(sentbytes - siglen);
-        } else printf("couldnt find nonce\n");
+        }
         free(sigpacket);
     }
     return(-1);
