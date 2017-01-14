@@ -442,7 +442,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'N' )
             {
                 uint8_t pubkeys[64][33]; char str[128]; int32_t numnotaries; cJSON *array,*item;
-                if ( (numnotaries= komodo_notaries("KMD",pubkeys,-1)) > 0 && numnotaries < 64 )
+                if ( (numnotaries= komodo_notaries("KMD",pubkeys,-1)) > 0 && numnotaries <= 64 )
                 {
                     retjson = cJSON_CreateObject();
                     array = cJSON_CreateArray();
