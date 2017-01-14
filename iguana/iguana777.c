@@ -902,7 +902,9 @@ void iguana_coinloop(void *arg)
                         init_alladdresses(myinfo,coin);
                 }
                 if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
+                {
                     continue;
+                }
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
