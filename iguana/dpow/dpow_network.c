@@ -1568,11 +1568,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             num++;
             //fprintf(stderr,"%d ",size);
-            printf("REP got %d\n",size);
+            //printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                printf("send back[%ld]\n",strlen(retstr)+1);
+                //printf("send back[%ld]\n",strlen(retstr)+1);
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
@@ -1586,13 +1586,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
-                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 }
             }
