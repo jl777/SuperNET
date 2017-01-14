@@ -451,6 +451,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                         item = cJSON_CreateObject();
                         init_hexbytes_noT(str,pubkeys[i],33);
                         jaddstr(item,"pubkey",str);
+                        printf("[%s %d] ",str,i);
                         bitcoin_address(str,0,pubkeys[i],33);
                         jaddstr(item,"BTCaddress",str);
                         bitcoin_address(str,60,pubkeys[i],33);
@@ -459,11 +460,11 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     }
                     jadd(retjson,"notaries",array);
                     jaddnum(retjson,"numnotaries",numnotaries);
+                    printf("numnotaries.%d\n",numnotaries);
                 }
                 if ( retjson != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
-                    free(retstr);
                     retstr = jprint(retjson,1);
                 }
                 printf("DEX NOTARIES -> (%s)\n",retstr);

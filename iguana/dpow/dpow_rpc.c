@@ -51,7 +51,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             {
                 height = jint(retjson,"blocks") - 1;
                 free_json(retjson);
-printf("komodo_notaries height.%d\n",height);
+//printf("komodo_notaries height.%d\n",height);
             }
         }
         if ( coin->FULLNODE < 0 )
