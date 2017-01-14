@@ -1667,8 +1667,6 @@ void iguana_main(void *arg)
     else
     {
         basilisks_init(myinfo);
-        myinfo->numnotaries = komodo_notaries("KMD",myinfo->notaries,-1);
-        printf("INIT with %d notaries\n",myinfo->numnotaries);
     }
     if ( 0 )
     {
