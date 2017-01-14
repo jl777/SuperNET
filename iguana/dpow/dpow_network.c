@@ -264,7 +264,10 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
-                ipbits = *retptr;
+            {
+                if ( retptr != 0 )
+                    ipbits = *retptr;
+            }
             else if ( retptr != 0 )
             {
                 retstr = clonestr((char *)retptr);
