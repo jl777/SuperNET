@@ -64,6 +64,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
             if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
                 char *notary0 = "03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828";
+                // expand to official notaries
                 decode_hex(pubkey0,33,notary0);
                 if ( memcmp(pubkey0,pubkey33,33) == 0 )
                 {
@@ -465,6 +466,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     free(retstr);
                     retstr = jprint(retjson,1);
                 }
+                printf("DEX NOTARIES -> (%s)\n",retstr);
             }
         } else printf("(%s) not active\n",dexreq.name);
         if ( retstr == 0 )
