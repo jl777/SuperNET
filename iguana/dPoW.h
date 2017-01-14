@@ -22,7 +22,7 @@
 #define DPOW_MINSIGS 17
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0779
+#define DPOW_VERSION 0x0780
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
 #define DPOW_DURATION 600

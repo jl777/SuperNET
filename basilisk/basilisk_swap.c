@@ -1022,15 +1022,18 @@ void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basi
 
 int32_t bitcoin_coinptrs(struct supernet_info *myinfo,struct iguana_info **bobcoinp,struct iguana_info **alicecoinp,char *src,char *dest,bits256 srchash,bits256 desthash)
 {
+    struct iguana_info *coin = iguana_coinfind(src);
+    if ( coin == 0 || iguana_coinfind(dest) == 0 )
+        return(0);
     *bobcoinp = *alicecoinp = 0;
-    if ( strcmp("BTC",src) == 0 )
+    if ( strcmp("BTC",src) == 0 || coin->notarychain >= 0 )
     {
-        *bobcoinp = iguana_coinfind("BTC");
+        *bobcoinp = iguana_coinfind(src);
         *alicecoinp = iguana_coinfind(dest);
     }
-    else if ( strcmp("BTC",dest) == 0 )
+    else //if ( strcmp("BTC",dest) == 0 )
     {
-        *bobcoinp = iguana_coinfind("BTC");
+        *bobcoinp = iguana_coinfind(dest);
         *alicecoinp = iguana_coinfind(src);
     }
     if ( bits256_cmp(myinfo->myaddr.persistent,srchash) == 0 )
@@ -1862,6 +1865,7 @@ void basilisk_swaploop(void *_swap)
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
     int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
+    printf("basilisk_thread_start\n");
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
