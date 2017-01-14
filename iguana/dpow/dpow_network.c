@@ -46,9 +46,9 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
                 printf(" signed pubkey\n");
             }
             sentbytes = nn_send(sock,sigpacket,size + sizeof(*sigpacket),0);
-            for (i=0; i<size+sizeof(*sigpacket); i++)
-                printf("%02x",((uint8_t *)sigpacket)[i]);
-            printf(" <- nnsend\n");
+            //for (i=0; i<size+sizeof(*sigpacket); i++)
+            //    printf("%02x",((uint8_t *)sigpacket)[i]);
+            //printf(" <- nnsend\n");
             return(sentbytes - siglen);
         } else printf("couldnt find nonce\n");
         free(sigpacket);

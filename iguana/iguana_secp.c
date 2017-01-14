@@ -167,6 +167,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messag
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
             plen = 33;
+            memset(pubkey,0,33);
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);//plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
             {
