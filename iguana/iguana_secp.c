@@ -181,8 +181,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messag
                     pubkey[0] = 2;
                 else if ( pubkey[0] != 2 )
                     pubkey[0] = 3;*/
-            }
-            else printf("secp256k1_ecdsa_verify error\n");
+            } else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
         ENDSECP_ENSURE_CTX
     }
