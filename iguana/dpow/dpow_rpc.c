@@ -15,13 +15,44 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
+cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char buf[128],*retstr=0; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        buf[0] = 0;
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(json);
+}
+
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
     int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
         if ( height < 0 )
-            height = coin->longestchain;
+        {
+            if ( (retjson= dpow_getinfo(SuperNET_MYINFO(0),coin)) != 0 )
+            {
+                height = jint(retjson,"blocks") - 1;
+                free_json(retjson);
+            }
+        }
         if ( coin->FULLNODE < 0 )
         {
             sprintf(params,"[\"%d\"]",height);
@@ -146,31 +177,6 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
         free(retstr);
     }
     return(blockhash);
-}
-
-cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    char buf[128],*retstr=0; cJSON *json = 0;
-    if ( coin->FULLNODE < 0 )
-    {
-        buf[0] = 0;
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
-    }
-    else
-    {
-        return(0);
-    }
-    if ( retstr != 0 )
-    {
-        json = cJSON_Parse(retstr);
-        free(retstr);
-    }
-    return(json);
 }
 
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
