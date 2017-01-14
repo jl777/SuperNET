@@ -1000,7 +1000,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 {
     int32_t i,dir; struct liquidity_info refli;
     *refpricep = 0.;
-    //printf("%s %s/%s\n",exchange,base,rel);
+    printf("_default_liquidity_active %s %s/%s\n",exchange,base,rel);
     for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
     {
         refli = myinfo->linfos[i];
@@ -1013,10 +1013,10 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
         else dir = 0;
         if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
         {
-            //printf("continue %s %s/%s [%d] dir.%d refli.dir %d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.exchange,refli.base,refli.rel);
+            printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
             continue;
         }
-        //printf(">>>>>>>> %s %s/%s [%d] dir.%d refli.dir %d vs %s/%s\n",exchange,base,rel,i,dir,refli.dir,refli.base,refli.rel);
+        printf(">>>>>>>> %s %s/%s [%d] dir.%d vs %s/%s\n",exchange,base,rel,i,dir,refli.base,refli.rel);
         if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
         {
             if ( refli.profit != 0. )
