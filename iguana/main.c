@@ -1644,7 +1644,7 @@ void iguana_main(void *arg)
             iguana_appletests(myinfo);
 #endif
             char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
-            if ( (retstr= _dex_notaries(myinfo,"KMD")) != 0 )
+            if ( (retstr= _dex_getnotaries(myinfo,"KMD")) != 0 )
             {
                 printf("INITIAL NOTARIES.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )

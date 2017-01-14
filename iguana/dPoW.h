@@ -179,7 +179,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *coinaddr,int32_t count,int32_t skip);
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol);
 int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
-char *_dex_notaries(struct supernet_info *myinfo,char *symbol);
+char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
 
 #endif

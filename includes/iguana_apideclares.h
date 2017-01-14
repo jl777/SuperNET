@@ -29,6 +29,7 @@ ZERO_ARGS(iguana,paxfiats);
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);
 STRING_ARG(dex,getinfo,symbol);
+STRING_ARG(dex,getnotaries,symbol);
 STRING_ARG(dex,alladdresses,symbol);
 STRING_ARG(dex,getbestblockhash,symbol);
 STRING_AND_INT(dex,getblockhash,symbol,height);

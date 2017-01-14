@@ -656,6 +656,12 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
     return(_dex_listtransactions(myinfo,symbol,address,count,skip));
 }
+
+STRING_ARG(dex,getnotaries,symbol)
+{
+    return(_dex_getnotaries(myinfo,symbol));
+}
+
 #include "../includes/iguana_apiundefs.h"
 
 

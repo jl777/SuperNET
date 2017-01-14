@@ -259,7 +259,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            printf("req returned.[%d]\n",recvbytes);
+            //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
@@ -267,7 +267,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             else if ( retptr != 0 )
             {
                 retstr = clonestr((char *)retptr);
-                printf("GOT.(%s)\n",retstr);
+                //printf("GOT.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     ipbits = juint(retjson,"randipbits");
@@ -619,7 +619,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol)
     return(height);
 }
 
-char *_dex_notaries(struct supernet_info *myinfo,char *symbol)
+char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
 {
     struct dex_request dexreq;
     memset(&dexreq,0,sizeof(dexreq));
