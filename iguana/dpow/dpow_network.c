@@ -253,7 +253,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            //printf("req returned.[%d]\n",recvbytes);
+            printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
@@ -1568,10 +1568,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         {
             num++;
             //fprintf(stderr,"%d ",size);
-            //printf("REP got %d\n",size);
+            printf("REP got %d\n",size);
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
+                printf("send back[%ld]\n",strlen(retstr)+1);
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
@@ -1585,13 +1586,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
-                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 }
             }
