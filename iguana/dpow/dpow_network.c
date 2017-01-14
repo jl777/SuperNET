@@ -13,9 +13,6 @@
  *                                                                            *
  ******************************************************************************/
 
-// 1. add rpc hooks, debug
-// 2. sig validate in fsm
-
 struct signed_nnpacket
 {
     uint8_t sig64[64];
@@ -52,8 +49,8 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
     }
     return(-1);
 }
-//dex* api
-int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int32_t n,int32_t sock,void *packetp)
+
+int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_t n,int32_t sock,void *packetp)
 {
     int32_t i,recvbytes; uint8_t pubkey33[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
@@ -66,9 +63,9 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
         {
             if ( bitcoin_recoververify(ctx,"nnrecv",sigpacket->sig64,sigpacket->packethash,pubkey33,33) == 0 )
             {
-                for (i=0; i<n; i++)
+                for (i=0; i<n && i<64; i++)
                 {
-                    if ( memcmp(pubkey33,notaries[i].pubkey,33) == 0 )
+                    if ( memcmp(pubkey33,notaries[i],33) == 0 )
                     {
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
                         //printf("got signed packet from notary.%d\n",i);
@@ -79,13 +76,13 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,struct dpow_entry *notaries,int
                     {
                         int32_t j;
                         for (j=0; j<33; j++)
-                            printf("%02x",notaries[i].pubkey[j]);
+                            printf("%02x",notaries[i][j]);
                         printf(" pubkey[%d]\n",i);
                     }
                 }
-                //for (i=0; i<33; i++)
-                //    printf("%02x",pubkey33[i]);
-                //printf(" invalid pubkey33 n.%d\n",n);
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey33[i]);
+                printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
@@ -325,7 +322,7 @@ void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON
 
 char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct dex_nanomsghdr *dexp)
 {
-    char buf[65],*retstr = 0; int32_t datalen; bits256 hash2; cJSON *retjson; struct iguana_info *coin; struct dex_request dexreq;
+    char buf[65],*retstr = 0; int32_t i,datalen; bits256 hash2; cJSON *retjson=0; struct iguana_info *coin; struct dex_request dexreq;
     *broadcastflagp = 0;
     if ( strcmp(dexp->handler,"request") == 0 )
     {
@@ -426,6 +423,34 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 if ( retstr != 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'N' )
+            {
+                uint8_t pubkeys[64][33]; char str[128]; int32_t numnotaries; cJSON *array,*item;
+                if ( (numnotaries= komodo_notaries("KMD",pubkeys,-1)) > 0 && numnotaries < 64 )
+                {
+                    retjson = cJSON_CreateObject();
+                    array = cJSON_CreateArray();
+                    for (i=0; i<numnotaries; i++)
+                    {
+                        item = cJSON_CreateObject();
+                        init_hexbytes_noT(str,pubkeys[i],33);
+                        jaddstr(item,"pubkey",str);
+                        bitcoin_address(str,0,pubkeys[i],33);
+                        jaddstr(item,"BTCaddress",str);
+                        bitcoin_address(str,60,pubkeys[i],33);
+                        jaddstr(item,"KMDaddress",str);
+                        jaddi(array,item);
+                    }
+                    jadd(retjson,"notaries",array);
+                    jaddnum(retjson,"numnotaries",numnotaries);
+                }
+                if ( retjson != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     free(retstr);
@@ -565,6 +590,31 @@ char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'I';
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
+}
+
+int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol)
+{
+    char *retstr; cJSON *retjson; int32_t height = -1;
+    if ( (retstr= _dex_getinfo(myinfo,symbol)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            height = jint(retjson,"blocks") - 1;
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(height);
+}
+
+char *_dex_notaries(struct supernet_info *myinfo,char *symbol)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'N';
+    dexreq.intarg = -1;
     return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 

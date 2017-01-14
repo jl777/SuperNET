@@ -20,6 +20,8 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
     int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
+        if ( height < 0 )
+            height = coin->longestchain;
         if ( coin->FULLNODE < 0 )
         {
             sprintf(params,"[\"%d\"]",height);
