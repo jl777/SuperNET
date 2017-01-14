@@ -63,9 +63,9 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     *freeptrp = 0;
     if ( (recvbytes= nn_recv(sock,&sigpacket,NN_MSG,0)) > 0 )
     {
-        for (i=0; i<recvbytes; i++)
-            printf("%02x",((uint8_t *)sigpacket)[i]);
-        printf(" <- RECV.%d\n",recvbytes);
+        //for (i=0; i<recvbytes; i++)
+        //    printf("%02x",((uint8_t *)sigpacket)[i]);
+        //printf(" <- RECV.%d\n",recvbytes);
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
