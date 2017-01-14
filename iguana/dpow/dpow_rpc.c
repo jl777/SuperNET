@@ -84,7 +84,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             }
         }
     }
-    printf("komodo_notaries returns.%d\n",num);
+    //printf("komodo_notaries returns.%d\n",num);
     return(num);
 }
 

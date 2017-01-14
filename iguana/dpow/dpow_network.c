@@ -467,7 +467,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
                 }
-                printf("DEX NOTARIES -> (%s)\n",retstr);
+                //printf("DEX NOTARIES -> (%s)\n",retstr);
             }
         } else printf("(%s) not active\n",dexreq.name);
         if ( retstr == 0 )
@@ -484,7 +484,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
         {
-            //printf("j.%d of max.%d (%s)\n",j,max,retstrs[j]);
+            //printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
             if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )
             {
                 if ( ++j == M )
@@ -496,7 +496,10 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
         //printf("automatic retry.%d of %d\n",i,max);
     }
     if ( j == 1 )
+    {
+        //printf("return.(%s)\n",retstrs[0]);
         return(retstrs[0]);
+    }
     else if ( j >= M )
     {
         origretstr0 = retstrs[0];
