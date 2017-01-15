@@ -15,6 +15,7 @@
 
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 STRING_ARG(iguana,initfastfind,activecoin)
 {

@@ -223,6 +223,7 @@ void dpow_addresses()
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {

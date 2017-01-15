@@ -25,6 +25,8 @@ ZERO_ARGS(dpow,notarychains);
 ZERO_ARGS(passthru,paxfiats);
 ZERO_ARGS(basilisk,paxfiats);
 ZERO_ARGS(iguana,paxfiats);
+STRING_AND_INT(iguana,snapshot,symbol,height);
+INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
 
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);
