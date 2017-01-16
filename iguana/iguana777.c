@@ -764,25 +764,23 @@ void iguana_helper(void *arg)
                                         if ( coin->bundles[i] == 0 || coin->bundles[i]->validated <= 1 )
                                             break;
                                     if ( i == j )
-                                    {
                                         iguana_bundlevalidate(myinfo,coin,bp,0);
-                                        if ( bp->validated > 1 )//&& coin->chain->zcash == 0 )
+                                }
+                                if ( bp->validated > 1 )//&& coin->chain->zcash == 0 )
+                                {
+                                    for (i=0; i<j; i++)
+                                        if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
+                                            break;
+                                    retval = 1;
+                                    if ( bp->utxofinish == 0 )
+                                    {
+                                        bp->startutxo = (uint32_t)time(NULL);
+                                        if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
                                         {
-                                            for (i=0; i<j; i++)
-                                                if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
-                                                    break;
-                                            retval = 1;
-                                            if ( bp->utxofinish == 0 )
+                                            if ( retval > 0 )
                                             {
-                                                bp->startutxo = (uint32_t)time(NULL);
-                                                if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
-                                                {
-                                                    if ( retval > 0 )
-                                                    {
-                                                        printf("  GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                                                        bp->utxofinish = (uint32_t)time(NULL);
-                                                    }
-                                                }
+                                                printf("  GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                                                bp->utxofinish = (uint32_t)time(NULL);
                                             }
                                         }
                                     }

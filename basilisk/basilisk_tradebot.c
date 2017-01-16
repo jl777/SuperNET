@@ -281,6 +281,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
+//bids and asks??
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
     {
@@ -312,10 +313,12 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    //printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
+    // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
+    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
     double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
     if ( maxi >= 0 && myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[maxi].src,list[maxi].dest,(double)maxamount/SATOSHIDEN)) > 0. )
     {
+        printf("maxi.%d profitmargin %f\n",maxi,profitmargin);
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
@@ -379,7 +382,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                     {
                         memset(&R,0,sizeof(R));
                         basilisk_rwDEXquote(0,hexdata,&R);
-                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                        printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
                     }
                 } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )

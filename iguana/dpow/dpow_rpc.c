@@ -662,7 +662,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
             }
             free_json(retjson);
         }
-        printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
+        //printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
     }
     return(satoshis);
 }
@@ -1050,7 +1050,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         {
             if ( (result= jobj(infoobj,(char *)"result")) != 0 && (currentheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<100 && height<=currentheight; i++,height++)
+                for (i=0; i<500 && height<=currentheight; i++,height++)
                 {
                     /*fprintf(stderr,"%s.%d ",coin->symbol,height);
                     if ( (height % 10) == 0 )
@@ -1080,6 +1080,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
         usleep(100000);
     }
+    //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
 

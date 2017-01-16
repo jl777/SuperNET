@@ -631,8 +631,8 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         {
             if ( bp->startutxo == 0 )
                 bp->startutxo = (uint32_t)time(NULL) - 60;
-            if ( bp->utxofinish == 0 )
-                bp->utxofinish = (uint32_t)time(NULL);
+            //if ( bp->utxofinish == 0 )
+            //    bp->utxofinish = (uint32_t)time(NULL);
             n++;
         }
         if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )

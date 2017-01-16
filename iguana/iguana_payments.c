@@ -364,11 +364,19 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
         {
             if ( (minutes= ((uint32_t)time(NULL) - 60 - tx->locktime) / 60) >= 60 )
             {
-                numerator = (value * KOMODO_INTEREST);
                 denominator = (((uint64_t)365 * 24 * 60) / minutes);
                 if ( denominator == 0 )
                     denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
-                interest = (numerator / denominator) / SATOSHIDEN;
+                if ( value > 25000LL*SATOSHIDEN && height > 155949 )
+                {
+                    numerator = (value / 20); // assumes 5%!
+                    interest = (numerator / denominator);
+                }
+                else
+                {
+                    numerator = (value * KOMODO_INTEREST);
+                    interest = (numerator / denominator) / SATOSHIDEN;
+                }
                 fprintf(stderr,"komodo_interest %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",(long long)value,(double)value/SATOSHIDEN,tx->locktime,(uint32_t)time(NULL),minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
             }
         }

@@ -220,6 +220,7 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
 {
