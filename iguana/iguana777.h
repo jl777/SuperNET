@@ -40,7 +40,7 @@
 #endif
 
 #define LOCKTIME_THRESHOLD 500000000
-#define KOMODO_INTEREST ((uint64_t)(0.05 * SATOSHIDEN))   // 5%
+#define KOMODO_INTEREST ((uint64_t)(0.05 * SATOSHIDEN))   // 5% CANNOT CHANGE as komodo_interest.h div 20
 
 //#define BTC2_VERSION
 #define BTC2_HARDFORK_HEIGHT 444444

@@ -1080,6 +1080,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
         usleep(100000);
     }
+    printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
 

@@ -1895,6 +1895,8 @@ INT_ARRAY_STRING(iguana,dividends,height,vals,symbol)
         }
         free(retstr);
         retjson = cJSON_CreateObject();
+        jaddstr(retjson,"coin",symbol);
+        jaddnum(retjson,"height",height);
         jaddnum(retjson,"total",dstr(total));
         jaddnum(retjson,"excluded",dstr(excluded));
         if ( dust != 0 )
