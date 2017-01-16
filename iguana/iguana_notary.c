@@ -170,14 +170,14 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             } else dpow_destupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
         } // else printf("error getchaintip for %s\n",dp->dest);
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
+        if ( strcmp(dp->dest,"KMD") == 0 && dp->SRCHEIGHT < src->longestchain )
+        {
+            //fprintf(stderr,"[I ");
+            dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
+            //fprintf(stderr," %d] ",dp->SRCHEIGHT);
+        }
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
-            if ( strcmp(dp->dest,"KMD") == 0 )
-            {
-                //fprintf(stderr,"[I ");
-                dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-                //fprintf(stderr," %d] ",dp->SRCHEIGHT);
-            }
             char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
