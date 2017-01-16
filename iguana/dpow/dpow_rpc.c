@@ -662,7 +662,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
             }
             free_json(retjson);
         }
-        printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
+        //printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
     }
     return(satoshis);
 }
