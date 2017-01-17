@@ -903,7 +903,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 int32_t dex_subsock_poll(struct supernet_info *myinfo)
 {
     int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
-    fprintf(stderr,"subsock\n");
+    fprintf(stderr,"subsock.%d\n",myinfo->subsock);
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
         if ( dexp != 0 )
@@ -1810,9 +1810,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
-                }
+                } else printf("failed dexpacketcheck\n");
             }
             //printf("GOT DEX rep PACKET.%d\n",size);
             //if ( freeptr != 0 )
