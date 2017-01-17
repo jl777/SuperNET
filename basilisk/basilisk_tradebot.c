@@ -361,7 +361,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             *issueR = list[maxi];
             for (i=0; i<sizeof(*issueR); i++)
                 printf("%02x",((uint8_t *)issueR)[i]);
-            printf(" automatch[%d] quoteid.%u triggered %.8f > %.8f\n",maxi,list[maxi].quoteid,dstr(maxamount),dstr(minamount));
+            printf(" automatch[%d] r.%u quoteid.%u triggered %.8f > %.8f\n",maxi,list[maxi].requestid,list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             if ( minamount > 0 )
                 metric = (dstr(maxamount) / dstr(minamount)) - 1.;
             else metric = 1.;

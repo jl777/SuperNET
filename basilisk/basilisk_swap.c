@@ -1899,8 +1899,8 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+BASILISK_MSGDURATION )
             {
                 m = n = 0;
-                //dpow_nanomsg_update(myinfo);
-                //dex_updateclient(myinfo);
+                dpow_nanomsg_update(myinfo);
+                dex_updateclient(myinfo);
                 sleep(3);
                 printf("waiting for offer to be accepted\n");
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
