@@ -1894,7 +1894,7 @@ uint16_t komodo_port(char *symbol,uint64_t supply,uint32_t *magicp)
 #define MAX_CURRENCIES 32
 extern char CURRENCIES[][8];
 
-void komodo_assetcoins(int32_t fullnode)
+void komodo_assetcoins(int32_t fullnode,uint64_t mask)
 {
     uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname);
     int32_t i,j; uint32_t magic; cJSON *json; uint16_t port; long filesize; char *userhome,confstr[16],jsonstr[512],magicstr[9],path[512]; struct iguana_info *coin;
@@ -1907,6 +1907,8 @@ void komodo_assetcoins(int32_t fullnode)
     }
     for (i=0; i<MAX_CURRENCIES; i++)
     {
+        if ( ((1LL << i) & mask) == 0 )
+            continue;
         port = komodo_port(CURRENCIES[i],10,&magic);
         for (j=0; j<4; j++)
             sprintf(&magicstr[j*2],"%02x",((uint8_t *)&magic)[j]);

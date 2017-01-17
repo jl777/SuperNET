@@ -22,9 +22,9 @@ THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
 ZERO_ARGS(dpow,notarychains);
-ZERO_ARGS(passthru,paxfiats);
-ZERO_ARGS(basilisk,paxfiats);
-ZERO_ARGS(iguana,paxfiats);
+INT_ARG(passthru,paxfiats,mask);
+INT_ARG(basilisk,paxfiats,mask);
+INT_ARG(iguana,paxfiats,mask);
 STRING_AND_INT(iguana,snapshot,symbol,height);
 INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
 
