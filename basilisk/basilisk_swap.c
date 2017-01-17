@@ -1874,7 +1874,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         }
     if ( i == myinfo->numswaps && i < sizeof(myinfo->swaps)/sizeof(*myinfo->swaps) )
     {
-        printf("basilisk_thread_start request.%u\n",rp->requestid);
+        printf("basilisk_thread_start request.%u statebits.%d\n",rp->requestid,statebits);
         swap = calloc(1,sizeof(*swap));
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
@@ -1909,7 +1909,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                     }
                 } else printf("no retarray\n");
             }
-            if ( statebits != 0 || m > n/2 )
+            if ( statebits != 0 || m > 0 )//n/2 )
             {
                 //for (i=0; i<sizeof(swap->I.req); i++)
                 //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
@@ -1919,7 +1919,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                     
                 }
                 myinfo->swaps[myinfo->numswaps++] = swap;
-            } else printf("%u/%u offer wasnt accepted\n",rp->requestid,rp->quoteid);
+            } else printf("%u/%u offer wasnt accepted statebits.%d m.%d n.%d\n",rp->requestid,rp->quoteid,statebits,m,n);
         }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
