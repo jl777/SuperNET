@@ -45,7 +45,7 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
-#define DEX_VERSION 0x0103
+#define DEX_VERSION 0x0104
 #define DPOW_SOCK 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
@@ -182,5 +182,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
 cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+
+void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen);
 
 #endif

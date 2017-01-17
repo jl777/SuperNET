@@ -278,7 +278,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     }
 }
 
-char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen)
+char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen)
 {
     struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; void *freeptr; char *retstr = 0;
     portable_mutex_lock(&myinfo->dexmutex);
@@ -328,7 +328,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
     portable_mutex_unlock(&myinfo->dexmutex);
     if ( myinfo->reqsock >= 0 )
     {
-        size = (int32_t)(sizeof(*dexp) + datalen);
+        size = (int32_t)(sizeof(*dexp) + keylen + datalen);
         dexp = calloc(1,size); // endian dependent!
         safecopy(dexp->handler,handler,sizeof(dexp->handler));
         dexp->size = size;
@@ -336,7 +336,12 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         dexp->timestamp = (uint32_t)time(NULL);
         dexp->version0 = DEX_VERSION & 0xff;
         dexp->version1 = (DEX_VERSION >> 8) & 0xff;
-        memcpy(dexp->packet,data,datalen);
+        if ( key != 0 && keylen != 0 )
+        {
+            memcpy(dexp->packet,key,keylen);
+            memcpy(&dexp->packet[keylen],data,datalen);
+        }
+        else memcpy(dexp->packet,data,datalen);
         dexp->crc32 = calc_crc32(0,data,datalen);
         for (i=0; i<100; i++)
         {
@@ -415,6 +420,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         free(dexp);
     } //else retval = -1;
     return(retstr);
+}
+
+void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen)
+{
+    int32_t keylen; uint8_t key[BASILISK_KEYSIZE]; char *retstr;
+    keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
+    if ( (retstr= _dex_reqsend(myinfo,"DEX",key,keylen,data,datalen)) != 0 )
+        free(retstr);
 }
 
 void dpow_randipbits(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *retjson)
@@ -593,7 +606,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     memset(retstrs,0,sizeof(retstrs));
     for (i=j=0; i<=max; i++)
     {
-        if ( (retstrs[j]= _dex_reqsend(myinfo,handler,data,datalen)) != 0 )
+        if ( (retstrs[j]= _dex_reqsend(myinfo,handler,0,0,data,datalen)) != 0 )
         {
             //printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
             if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )

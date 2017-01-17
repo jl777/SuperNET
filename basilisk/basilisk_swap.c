@@ -867,10 +867,10 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
 uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
     //if ( (rand() % 10) == 0 )
-        basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2);
-    if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
-        return(nextbits);
-    basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2);
+    //    basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2);
+    //if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
+        //return(nextbits);
+    dex_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen); //INSTANTDEX_LOCKTIME*2
     return(0);
 }
 
@@ -1711,7 +1711,8 @@ void basilisk_swaploop(void *_swap)
     while ( (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
     {
         printf("A r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
-        basilisk_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid),60);
+        //basilisk_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid),60);
+        dex_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid)); //,60);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_sendpubkeys(myinfo,swap,data,maxlen); // send pubkeys
         if ( basilisk_checkdeck(myinfo,swap,data,maxlen) == 0) // check for other deck 0x02

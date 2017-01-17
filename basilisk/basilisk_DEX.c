@@ -269,7 +269,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,u
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768],buf[4096]; cJSON *outerarray,*retjson; uint32_t msgid,crcs[2],crc,channel; int32_t datalen,i,n,numiters; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
     if ( time(NULL) < lastpoll+3 )
         return;
     lastpoll = (uint32_t)time(NULL);
@@ -306,24 +306,27 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             free(retstr);*/
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
-            if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
+            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+            if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+           /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
             printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
             numiters = crc = 0;
-            /*while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
+            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
             {
                 printf("didnt get back what was sent\n");
                 sleep(3);
                 basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
                 numiters++;
             }
-            if ( crc != 0 )*/
+            if ( crc != 0 )
             {
                 printf("crc.%08x -> basilisk_starta\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
-            } // else printf("couldnt accept offer\n");
+            } // else printf("couldnt accept offer\n");*/
         }
         else //if ( issueR.quoteid == 0 )
         {
@@ -332,7 +335,10 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
-            crcs[0] = crcs[1] = 0;
+            dex_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen); //INSTANTDEX_LOCKTIME*2
+            if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+            /*crcs[0] = crcs[1] = 0;
             numiters = 0;
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
             while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
@@ -347,7 +353,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 printf("crc.%08x -> basilisk_start\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
-            }
+            }*/
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
 }
