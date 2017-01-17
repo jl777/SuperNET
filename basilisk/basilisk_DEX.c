@@ -528,6 +528,29 @@ ZERO_ARGS(InstantDEX,allcoins)
     return(jprint(retjson,1));
 }
 
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    cJSON *unspents=0,*array=0; char *retstr,coinaddr[64];
+    bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    if ( coin->FULLNODE > 0 )
+    {
+        array = cJSON_CreateArray();
+        jaddistr(array,coinaddr);
+        unspents = iguana_listunspents(myinfo,coin,array,0,0,"");
+        free_json(array);
+    }
+    else if ( coin->FULLNODE == 0 )
+    {
+        if ( (retstr= _dex_listunspent(myinfo,coin->symbol,coinaddr)) != 0 )
+        {
+            unspents = cJSON_Parse(retstr);
+            free(retstr);
+        }
+    }
+    else unspents = dpow_listunspent(myinfo,coin,coinaddr);
+    return(unspents);
+}
+
 STRING_ARG(InstantDEX,available,source)
 {
     uint64_t total = 0; int32_t i,n=0; cJSON *item,*unspents,*retjson = 0;
@@ -535,7 +558,7 @@ STRING_ARG(InstantDEX,available,source)
     {
         if ( myinfo->expiration != 0 )
         {
-            if ( (unspents= iguana_listunspents(myinfo,coin,0,0,0,remoteaddr)) != 0 )
+            if ( (unspents= basilisk_unspents(myinfo,coin)) != 0 )
             {
                 //printf("available.(%s)\n",jprint(unspents,0));
                 if ( (n= cJSON_GetArraySize(unspents)) > 0 )
