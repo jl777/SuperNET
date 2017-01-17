@@ -884,7 +884,8 @@ void iguana_coinloop(void *arg)
     n = (int32_t)(long)coins[0];
     coins++;
     coin = coins[0];
-    printf("begin coinloop[%d] %s\n",n,coin->symbol);
+    coin->notarychain = iguana_isnotarychain(coin->symbol);
+    printf("begin coinloop[%d] %s notarychain.%d\n",n,coin->symbol,coin->notarychain);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -1126,6 +1127,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->startPEND =  coin->endPEND = 1;
 #endif
     } else coin->MAXPEERS = 0;
+    coin->notarychain = iguana_isnotarychain(coin->symbol);
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
