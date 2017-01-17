@@ -607,6 +607,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field)
 {
     char *retstrs[64],*origretstr0 = 0; cJSON *retjson; int32_t err,i,j,max = myinfo->numdexipbits;
+M = 1;
     memset(retstrs,0,sizeof(retstrs));
     for (i=j=0; i<=max; i++)
     {

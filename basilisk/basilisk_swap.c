@@ -658,6 +658,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
         {
             if ( lockinputs != 0 )
             {
+                printf("lockinputs\n");
                 iguana_RTunspentslock(myinfo,rawtx->coin,vins);
                 if ( (n= cJSON_GetArraySize(vins)) != 0 )
                 {
@@ -684,7 +685,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
 
 int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay)
 {
-    char *retstr,scriptstr[1024]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *valsobj,*retarray=0; struct vin_info *V;
+    char *retstr,scriptstr[1024],coinaddr[64]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *addresses,*valsobj,*retarray=0; struct vin_info *V;
     //bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
     if ( rawtx->coin->changeaddr[0] == 0 )
     {
@@ -703,6 +704,10 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
     jaddnum(valsobj,"locktime",locktime);
     jaddnum(valsobj,"timeout",30000);
     jaddnum(valsobj,"timestamp",swap->I.started+delay);
+    addresses = cJSON_CreateArray();
+    bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    jaddistr(addresses,coinaddr);
+    jadd(valsobj,"addresses",addresses);
     rawtx->I.locktime = locktime;
     //printf("%s locktime.%u\n",rawtx->name,locktime);
     V = calloc(256,sizeof(*V));

@@ -169,10 +169,13 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     for (above=below=i=0; i<numunspents; i++)
     {
         if ( (atx_value= unspents[i].value) <= 0 )
+        {
+            printf("illegal value.%d\n",i);
             continue;
+        }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -214,6 +217,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     *abovep = above;
     *belowip = belowi;
     *belowp = below;
+    printf("above.%d below.%d\n",abovei,belowi);
     return(abovei >= 0 ? abovei : belowi);
 }
 
@@ -436,6 +440,8 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
             free_json(array);
         }
     }
+    if ( unspents == 0 )
+        return(0);
     num = max;
     /*unspents = calloc(max,sizeof(*unspents));
     if ( (num= iguana_RTunspentslists(myinfo,coin,&avail,unspents,max,satoshis+txfee,minconf,addresses,remoteaddr)) <= 0 )
