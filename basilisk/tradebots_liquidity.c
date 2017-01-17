@@ -931,7 +931,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     li.bid = jdouble(vals,"bid");
     li.ask = jdouble(vals,"ask");
     if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
-        li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.01;
+        li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.001;
     if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
         li.maxvol = li.minvol;
     if ( (li.totalvol= jdouble(vals,"total")) < li.maxvol )
