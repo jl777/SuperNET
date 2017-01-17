@@ -281,7 +281,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
-//bids and asks??
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
     if ( (active= basilisk_request_started(myinfo,list[0].requestid)) != 0 )
     {
@@ -353,7 +352,6 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             issueR->destamount = destamount;
             issueR->quotetime = (uint32_t)time(NULL);
             issueR->profitmargin = (uint32_t)(profitmargin * 1000000);
-            printf("issueR set!\n");
         }
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote

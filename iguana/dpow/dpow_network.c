@@ -153,7 +153,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     {
         //for (i=0; i<recvbytes; i++)
         //    printf("%02x",((uint8_t *)sigpacket)[i]);
-        printf(" <- RECV.%d crc.%08x\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes));
+        //printf(" <- RECV.%d crc.%08x\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes));
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
@@ -260,7 +260,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
     char *retstr; int32_t datalen; struct iguana_info *coin; struct dex_request dexreq;
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
-    printf(" uniq.%s DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",dexp->handler,size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
+    //printf(" uniq.%s DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",dexp->handler,size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
     if ( strcmp(dexp->handler,"DEX") == 0 && dexp->datalen > BASILISK_KEYSIZE )
     {
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
@@ -355,7 +355,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
             if ( nn_poll(&pfd,1,100) > 0 )
             {
                 sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-                printf(" sent.%d:%d datalen.%d crc.%08x\n",sentbytes,size,datalen,calc_crc32(0,(void *)dexp,size));
+                //printf(" sent.%d:%d datalen.%d crc.%08x\n",sentbytes,size,datalen,calc_crc32(0,(void *)dexp,size));
                 break;
             }
             usleep(1000);
@@ -364,7 +364,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            printf("req returned.[%d]\n",recvbytes);
+            //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
@@ -914,7 +914,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
     {
         if ( dexp != 0 )
         {
-            printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
+            //printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 dex_packet(myinfo,dexp,size);
         } //else printf("size.%d\n",size);
@@ -1778,11 +1778,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             num++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
-                printf("FROM BUS.%08x -> pub\n",dexp->crc32);
+                //printf("FROM BUS.%08x -> pub\n",dexp->crc32);
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                 dex_packet(myinfo,dexp,size);
             }
-            printf("GOT DEX bus PACKET.%d\n",size);
+            //printf("GOT DEX bus PACKET.%d\n",size);
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }
@@ -1792,7 +1792,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
-            printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+            //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
@@ -1816,7 +1816,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 } else printf("failed dexpacketcheck\n");
             }
