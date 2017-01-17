@@ -388,7 +388,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                     {
                         memset(&R,0,sizeof(R));
                         basilisk_rwDEXquote(0,hexdata,&R);
-                        printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
+                        //printf("[%d].(%s)\n",i,jprint(basilisk_requestjson(&R),1));
                     }
                 } else basilisk_parsejson(&R,item);
                 if ( nonz != 0 )
@@ -420,10 +420,10 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
             if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
             {
                 *issueR = tmpR, hwm = metric;
-                printf("set hwm\n");
-                for (i=0; i<sizeof(*issueR); i++)
-                    printf("%02x",((uint8_t *)issueR)[i]);
-                printf("\n");
+                //printf("set hwm\n");
+                //for (i=0; i<sizeof(*issueR); i++)
+                //    printf("%02x",((uint8_t *)issueR)[i]);
+                //printf("\n");
             }
     }
     return(hwm);

@@ -1026,16 +1026,27 @@ int32_t bitcoin_coinptrs(struct supernet_info *myinfo,struct iguana_info **bobco
     if ( coin == 0 || iguana_coinfind(dest) == 0 )
         return(0);
     *bobcoinp = *alicecoinp = 0;
-    if ( strcmp("BTC",src) == 0 || coin->notarychain >= 0 )
+    if ( strcmp("BTC",src) == 0 )
     {
         *bobcoinp = iguana_coinfind(src);
         *alicecoinp = iguana_coinfind(dest);
     }
-    else //if ( strcmp("BTC",dest) == 0 )
+    else if ( strcmp("BTC",dest) == 0 )
     {
         *bobcoinp = iguana_coinfind(dest);
         *alicecoinp = iguana_coinfind(src);
     }
+    else if ( (coin= iguana_coinfind(src)) != 0 && coin->chain->havecltv != 0 )
+    {
+        *bobcoinp = iguana_coinfind(src);
+        *alicecoinp = iguana_coinfind(dest);
+    }
+    else if ( (coin= iguana_coinfind(dest)) != 0 && coin->chain->havecltv != 0 )
+    {
+        *bobcoinp = iguana_coinfind(dest);
+        *alicecoinp = iguana_coinfind(src);
+    }
+    else return(0);
     if ( bits256_cmp(myinfo->myaddr.persistent,srchash) == 0 )
     {
         if ( strcmp(src,(*bobcoinp)->symbol) == 0 )
@@ -1047,12 +1058,12 @@ int32_t bitcoin_coinptrs(struct supernet_info *myinfo,struct iguana_info **bobco
     else if ( bits256_cmp(myinfo->myaddr.persistent,desthash) == 0 )
     {
         if ( strcmp(src,(*bobcoinp)->symbol) == 0 )
-            return(0);
-        else if ( strcmp(dest,(*alicecoinp)->symbol) == 0 )
             return(-1);
-        else return(1);
+        else if ( strcmp(dest,(*alicecoinp)->symbol) == 0 )
+            return(1);
+        else return(0);
     }
-    return(-1);
+    return(0);
 }
 
 struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t optionduration)
@@ -1147,7 +1158,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
     }
     if ( bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash) != swap->I.iambob )
     {
-        printf("iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
+        printf("error iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
         return(0);
     }
     if ( bits256_nonz(myinfo->persistent_priv) == 0 || (x= instantdex_pubkeyargs(myinfo,swap,2 + INSTANTDEX_DECKSIZE,myinfo->persistent_priv,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
@@ -1884,11 +1895,12 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
             starttime = (uint32_t)time(NULL);
-            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+60 )
+            printf("statebits.%x m.%d n.%d\n",statebits,m,n);
+            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+BASILISK_MSGDURATION )
             {
                 m = n = 0;
-                dpow_nanomsg_update(myinfo);
-                dex_updateclient(myinfo);
+                //dpow_nanomsg_update(myinfo);
+                //dex_updateclient(myinfo);
                 sleep(3);
                 printf("waiting for offer to be accepted\n");
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
@@ -1910,6 +1922,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
                     }
                 } else printf("no retarray\n");
             }
+            printf("LAUNCH check.%d m.%d\n",statebits,m);
             if ( statebits != 0 || m > 0 )//n/2 )
             {
                 //for (i=0; i<sizeof(swap->I.req); i++)
