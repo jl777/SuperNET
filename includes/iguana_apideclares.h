@@ -39,6 +39,7 @@ HASH_AND_STRING(dex,getblock,hash,symbol);
 TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
 HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
 TWO_STRINGS(dex,importaddress,symbol,address);
+TWO_STRINGS(dex,checkaddress,symbol,address);
 TWO_STRINGS(dex,validateaddress,symbol,address);
 TWO_STRINGS(dex,listunspent,symbol,address);
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
