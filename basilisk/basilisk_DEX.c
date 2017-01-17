@@ -232,6 +232,11 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
     cJSON *retjson; struct basilisk_request *rp=0; int32_t i;
+    if ( _rp->requestid == myinfo->lastdexrequestid )
+    {
+        printf("filter duplicate r%u\n",_rp->requestid);
+        return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
+    }
     if ( (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -245,6 +250,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,u
             rp = calloc(1,sizeof(*rp));
             *rp = *_rp;
             printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
+            myinfo->lastdexrequestid = rp->requestid;
             if ( basilisk_thread_start(myinfo,rp,statebits,optionduration) != 0 )
             {
                 basilisk_request_enqueue(myinfo,rp);

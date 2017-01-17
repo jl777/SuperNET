@@ -107,7 +107,7 @@ struct supernet_info
     void (*liquidity_command)(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals);
     double (*liquidity_active)(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume);
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
-    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,dexcrcs[1024];
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,lastdexrequestid,dexcrcs[1024];
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
