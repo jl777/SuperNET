@@ -395,7 +395,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
                         }
                     }
                     nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
-                    if ( (rand() % 100) < 42 )
+                    if ( (rand() % 100) < 4 )
                         nn_connect(myinfo->reqsock,str);
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
