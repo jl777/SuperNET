@@ -512,19 +512,19 @@ ZERO_ARGS(InstantDEX,allcoins)
     {
         if ( coin->FULLNODE < 0 )
             jaddistr(native,coin->symbol);
-        else if ( coin->virtualchain != 0 )
-            jaddistr(virtual,coin->symbol);
-        else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+        //else if ( coin->virtualchain != 0 )
+        //    jaddistr(virtual,coin->symbol);
+        else if ( coin->FULLNODE > 0 )//|| coin->VALIDATENODE > 0 )
             jaddistr(full,coin->symbol);
-        else if ( coin->notarychain >= 0 )
-            jaddistr(notarychains,coin->symbol);
+        //else if ( coin->notarychain >= 0 )
+        //    jaddistr(notarychains,coin->symbol);
         else jaddistr(basilisk,coin->symbol);
     }
     jadd(retjson,"native",native);
     jadd(retjson,"basilisk",basilisk);
     jadd(retjson,"full",full);
-    jadd(retjson,"virtual",virtual);
-    jadd(retjson,"notarychains",notarychains);
+    //jadd(retjson,"virtual",virtual);
+    //jadd(retjson,"notarychains",notarychains);
     return(jprint(retjson,1));
 }
 
