@@ -153,7 +153,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     {
         //for (i=0; i<recvbytes; i++)
         //    printf("%02x",((uint8_t *)sigpacket)[i]);
-        //printf(" <- RECV.%d\n",recvbytes);
+        printf(" <- RECV.%d crc.%08x\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes));
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
@@ -350,7 +350,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
             if ( nn_poll(&pfd,1,100) > 0 )
             {
                 sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-                //printf(" sent.%d:%d datalen.%d\n",sentbytes,size,datalen);
+                printf(" sent.%d:%d datalen.%d crc.%08x\n",sentbytes,size,datalen,calc_crc32(0,(void *)dexp,size));
                 break;
             }
             usleep(1000);
@@ -1786,7 +1786,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
-            //printf("REP got %d\n",size);
+            printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
