@@ -133,6 +133,7 @@ char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coi
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     spentp->hdrsi = -1;
+    printf("RTinputaddress.(%s)\n",jprint(vinobj,0));
     if ( jobj(vinobj,"txid") != 0 && jobj(vinobj,"vout") != 0 )
     {
         txid = jbits256(vinobj,"txid");
