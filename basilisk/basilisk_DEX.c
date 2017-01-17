@@ -234,7 +234,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,u
     cJSON *retjson; struct basilisk_request *rp=0; int32_t i;
     if ( _rp->requestid == myinfo->lastdexrequestid )
     {
-        printf("filter duplicate r%u\n",_rp->requestid);
+        //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
     if ( (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
@@ -342,7 +342,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
-            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx) quoteid.%u\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid,issueR.quoteid);
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx) last.%u r.%u quoteid.%u\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid,myinfo->lastdexrequestid,issueR.requestid,issueR.quoteid);
             dex_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen); //INSTANTDEX_LOCKTIME*2
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
