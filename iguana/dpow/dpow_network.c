@@ -21,20 +21,79 @@ struct signed_nnpacket
     uint8_t packet[];
 } PACKED;
 
+/*
+ NN_CONNECT to (tcp://167.114.118.5:7775)
+NN_CONNECT to (tcp://10.0.0.4:7775)
+NN_CONNECT to (tcp://85.143.211.6:7775)
+NN_CONNECT to (tcp://158.69.25.7:7775)
+NN_CONNECT to (tcp://123.249.79.12:7775)
+NN_CONNECT to (tcp://141.105.66.18:7775)
+NN_CONNECT to (tcp://198.27.75.27:7775)
+NN_CONNECT to (tcp://198.204.226.34:7775)
+NN_CONNECT to (tcp://144.76.94.38:7775)
+NN_CONNECT to (tcp://142.54.174.42:7775)
+NN_CONNECT to (tcp://88.198.70.43:7775)
+NN_CONNECT to (tcp://182.162.169.44:7775)
+NN_CONNECT to (tcp://104.168.128.50:7775)
+NN_CONNECT to (tcp://167.114.64.64:7775)
+NN_CONNECT to (tcp://185.169.229.64:7775)
+NN_CONNECT to (tcp://46.4.68.72:7775)
+NN_CONNECT to (tcp://173.208.203.74:7775)
+NN_CONNECT to (tcp://192.99.232.81:7775)
+NN_CONNECT to (tcp://149.56.28.84:7775)
+NN_CONNECT to (tcp://148.251.190.89:7775)
+NN_CONNECT to (tcp://149.56.240.91:7775)
+NN_CONNECT to (tcp://88.99.56.99:7775)
+NN_CONNECT to (tcp://217.106.238.109:7775)
+NN_CONNECT to (tcp://142.54.164.114:7775)
+NN_CONNECT to (tcp://163.172.101.118:7775)
+NN_CONNECT to (tcp://189.1.174.119:7775)
+NN_CONNECT to (tcp://1.234.19.123:7775)
+NN_CONNECT to (tcp://221.121.144.138:7775)
+NN_CONNECT to (tcp://46.166.168.138:7775)
+NN_CONNECT to (tcp://221.121.144.140:7775)
+NN_CONNECT to (tcp://163.172.100.144:7775)
+NN_CONNECT to (tcp://185.106.122.147:7775)
+NN_CONNECT to (tcp://103.18.58.150:7775)
+NN_CONNECT to (tcp://23.88.234.153:7775)
+NN_CONNECT to (tcp://164.132.202.176:7775)
+NN_CONNECT to (tcp://178.63.85.196:7775)
+NN_CONNECT to (tcp://69.12.77.197:7775)
+NN_CONNECT to (tcp://192.157.238.198:7775)
+NN_CONNECT to (tcp://209.58.183.199:7775)
+NN_CONNECT to (tcp://149.202.65.200:7775)
+NN_CONNECT to (tcp://27.100.36.201:7775)
+NN_CONNECT to (tcp://173.208.184.202:7775)
+NN_CONNECT to (tcp://94.102.63.208:7775)
+NN_CONNECT to (tcp://5.9.109.208:7775)
+NN_CONNECT to (tcp://94.102.63.209:7775)
+NN_CONNECT to (tcp://197.189.248.210:7775)
+NN_CONNECT to (tcp://149.56.19.212:7775)
+NN_CONNECT to (tcp://46.165.243.214:7775)
+NN_CONNECT to (tcp://45.64.168.216:7775)
+NN_CONNECT to (tcp://94.102.63.217:7775)
+NN_CONNECT to (tcp://192.99.233.217:7775)
+NN_CONNECT to (tcp://27.50.68.219:7775)
+NN_CONNECT to (tcp://167.114.227.223:7775)
+NN_CONNECT to (tcp://94.102.63.227:7775)
+NN_CONNECT to (tcp://176.9.0.233:7775)
+NN_CONNECT to (tcp://27.50.93.252:7775)*/
+
 void dex_init(struct supernet_info *myinfo)
 {
-    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "149.56.29.163", "191.235.80.138", "94.102.63.226", "129.232.225.202", "104.255.64.3" };
+    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "149.56.29.163", "191.235.80.138", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200" };
     OS_randombytes((void *)&i,sizeof(i));
     srand(i);
     for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
     {
         while ( 1 )
         {
-            j = rand() % (sizeof(seeds)/sizeof(*seeds));
+            j = i == 0 ? i : (rand() % (sizeof(seeds)/sizeof(*seeds)));
             if ( ((1 << j) & mask) == 0 )
                 break;
         }
         mask |= (1 << j);
+        printf("seed.[%d] <- %s\n",i,seeds[j]);
         strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
         myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
     }
@@ -296,7 +355,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            //printf("req returned.[%d]\n",recvbytes);
+            printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
@@ -348,7 +407,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
         else
         {
             //retval = -2;
-            //printf("no rep return? recvbytes.%d\n",recvbytes);
+            printf("no rep return? recvbytes.%d\n",recvbytes);
         }
         //printf("DEXREQ.[%d] crc32.%08x datalen.%d sent.%d recv.%d timestamp.%u\n",size,dexp->crc32,datalen,sentbytes,recvbytes,dexp->timestamp);
         free(dexp);
@@ -451,6 +510,10 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
                 }
+            }
+            else if ( dexreq.func == 'C' )
+            {
+                //retstr = dpow_checkaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
             }
             else if ( dexreq.func == 'A' )
             {
@@ -667,12 +730,28 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol)
 
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
 {
-    struct dex_request dexreq;
+    struct dex_request dexreq; char *retstr,*pubkeystr; cJSON *retjson,*array,*item; int32_t i,n;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'N';
     dexreq.intarg = -1;
-    return(_dex_sendrequest(myinfo,&dexreq,1,""));
+    if ( (retstr= _dex_sendrequest(myinfo,&dexreq,1,"")) != 0 )
+    {
+        if ( myinfo->numnotaries <= 0 && (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (myinfo->numnotaries= jint(retjson,"numnotaries")) != 0 && (array= jarray(&n,retjson,"notaries")) != 0 && n == myinfo->numnotaries )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(array,i);
+                    if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 33*2 )
+                        decode_hex(myinfo->notaries[i],33,pubkeystr);
+                }
+            }
+            free_json(retjson);
+        }
+    }
+    return(retstr);
 }
 
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
@@ -729,6 +808,15 @@ char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
     return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
+}
+
+char *_dex_checkaddress(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'C';
+    return(_dex_sendrequeststr(myinfo,&dexreq,address,3,"address"));
 }
 
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address)
