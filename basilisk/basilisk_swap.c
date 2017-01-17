@@ -1156,7 +1156,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
         printf("neither src nor dest error\n");
         return(0);
     }
-    if ( bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash) != swap->I.iambob )
+    if ( (bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash)+1)/2 != swap->I.iambob )
     {
         printf("error iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(myinfo,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
         return(0);
