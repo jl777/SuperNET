@@ -1016,8 +1016,8 @@ void basilisk_rawtx_setparms(char *name,struct supernet_info *myinfo,struct basi
     if ( rawtx->I.vouttype <= 1 && rawtx->I.destaddr[0] != 0 )
     {
         rawtx->I.spendlen = bitcoin_standardspend(rawtx->spendscript,0,rawtx->I.rmd160);
-        //printf("%s spendlen.%d %s <- %.8f\n",name,rawtx->spendlen,rawtx->destaddr,dstr(rawtx->amount));
-    } //else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->vouttype,rawtx->destaddr);
+        printf("%s spendlen.%d %s <- %.8f\n",name,rawtx->I.spendlen,rawtx->I.destaddr,dstr(rawtx->I.amount));
+    } else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->I.vouttype,rawtx->I.destaddr);
 }
 
 int32_t bitcoin_coinptrs(struct supernet_info *myinfo,struct iguana_info **bobcoinp,struct iguana_info **alicecoinp,char *src,char *dest,bits256 srchash,bits256 desthash)
@@ -1865,7 +1865,6 @@ void basilisk_swaploop(void *_swap)
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration)
 {
     int32_t i,m,n; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
-    printf("basilisk_thread_start\n");
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -1875,6 +1874,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         }
     if ( i == myinfo->numswaps && i < sizeof(myinfo->swaps)/sizeof(*myinfo->swaps) )
     {
+        printf("basilisk_thread_start request.%u\n",rp->requestid);
         swap = calloc(1,sizeof(*swap));
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
@@ -1883,7 +1883,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
         if ( bitcoin_swapinit(myinfo,swap,optionduration) != 0 )
         {
             starttime = (uint32_t)time(NULL);
-            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+30 )
+            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+60 )
             {
                 m = n = 0;
                 dpow_nanomsg_update(myinfo);
@@ -1913,7 +1913,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,struct 
             {
                 //for (i=0; i<sizeof(swap->I.req); i++)
                 //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
-                //fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
+                fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     
