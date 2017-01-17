@@ -1100,13 +1100,13 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,struct basil
                     swap->I.bobsatoshis = swap->I.req.destamount;
                     swap->alicecoin = iguana_coinfind(swap->I.req.src);
                     swap->I.alicesatoshis = swap->I.req.srcamount;
-                }
-            }
-        }
+                } else printf("neither coin handles ctlv %s %s\n",swap->I.req.src,swap->I.req.dest);
+            } else printf("cant find src or dest coin.(%s %s)\n",swap->I.req.src,swap->I.req.dest);
+        } else printf("cant find src coin.(%s)\n",swap->I.req.src);
     }
     if ( swap->bobcoin == 0 || swap->alicecoin == 0 )
     {
-        printf("missing BTC.%p or missing alicecoin.%p\n",swap->bobcoin,swap->alicecoin);
+        printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,iguana_coinfind(swap->I.req.src),iguana_coinfind(swap->I.req.dest));
         free(swap);
         return(0);
     }

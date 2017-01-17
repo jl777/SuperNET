@@ -566,10 +566,8 @@ STRING_ARG(InstantDEX,available,source)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(unspents,i);
-                        //if ( jobj(item,"unspent") != 0 )
-                        {
+                        //if ( is_cJSON_True(jobj(item,"spendable")) != 0 )
                             total += jdouble(item,"amount") * SATOSHIDEN;
-                        }
                         //printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                     }
                 }
