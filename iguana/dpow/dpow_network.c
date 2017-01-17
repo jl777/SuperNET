@@ -903,6 +903,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 int32_t dex_subsock_poll(struct supernet_info *myinfo)
 {
     int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
+    fprintf(stderr,"subsock\n");
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
         if ( dexp != 0 )
@@ -910,7 +911,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
             printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 dex_packet(myinfo,dexp,size);
-        }
+        } else printf("size.%d\n",size);
         if ( freeptr != 0 )
             nn_freemsg(freeptr), dexp = 0, freeptr = 0;
     }
