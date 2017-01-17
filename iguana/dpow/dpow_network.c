@@ -672,11 +672,25 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     }
     else
     {
+#define DEX_LESSTHAN_RETSTR "{\"error\":\"less than required responses\"}"
         for (i=0; i<j; i++)
             free(retstrs[i]);
-        retstrs[0] = clonestr("{\"error\":\"less than required responses\"}");
+        retstrs[0] = clonestr(DEX_LESSTHAN_RETSTR);
     }
     return(retstrs[0]);
+}
+
+char *_dex_arrayreturn(char *retstr)
+{
+    if ( retstr != 0 )
+    {
+        if ( strcmp(retstr,DEX_LESSTHAN_RETSTR) == 0 )
+        {
+            free(retstr);
+            retstr = clonestr("[]");
+        }
+    }
+    return(retstr);
 }
 
 char *_dex_sendrequest(struct supernet_info *myinfo,struct dex_request *dexreq,int32_t M,char *field)
@@ -783,7 +797,7 @@ char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = '*';
-    return(_dex_sendrequest(myinfo,&dexreq,1,""));
+    return(_dex_arrayreturn(_dex_sendrequest(myinfo,&dexreq,1,"")));
 }
 
 char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2)
@@ -857,7 +871,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
+    return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,1,"")));
 }
 
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
@@ -868,7 +882,7 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     dexreq.intarg = skip;
     dexreq.shortarg = count;
     dexreq.func = 'L';
-    return(_dex_sendrequeststr(myinfo,&dexreq,address,1,""));
+    return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,1,"")));
 }
 
 int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
