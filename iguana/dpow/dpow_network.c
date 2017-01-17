@@ -177,7 +177,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                     if ( memcmp(pubkey33,notaries[i],33) == 0 )
                     {
                         *(void **)packetp = (void **)((uint64_t)sigpacket + sizeof(*sigpacket));
-                        printf("got signed packet from notary.%d\n",i);
+                        //printf("got signed packet from notary.%d\n",i);
                         *freeptrp = sigpacket;
                         return((int32_t)(recvbytes - sizeof(*sigpacket)));
                     }
@@ -194,7 +194,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                 printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
-    } else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
+    } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
     //printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
     if ( sigpacket != 0 )
         nn_freemsg(sigpacket), sigpacket = 0;
