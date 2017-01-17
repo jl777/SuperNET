@@ -758,6 +758,8 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
         {
             for (i=0; i<3; i++)
             {
+                if ( swap->bobpayment.txbytes != 0 && swap->bobpayment.I.spendlen != 0 )
+                    break;
                 basilisk_rawtx_gen("payment",myinfo,swap,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->chain->txfee,1,0);
                 if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.I.spendlen == 0 )
                 {
@@ -787,6 +789,8 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
         {
             for (i=0; i<3; i++)
             {
+                if ( swap->bobdeposit.txbytes != 0 && swap->bobdeposit.I.spendlen != 0 )
+                    break;
                 basilisk_rawtx_gen("deposit",myinfo,swap,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->chain->txfee,1,0);
                 if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.I.spendlen == 0 )
                 {
@@ -1810,6 +1814,8 @@ void basilisk_swaploop(void *_swap)
             {
                 for (i=0; i<3; i++)
                 {
+                    if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen != 0 )
+                        break;
                     basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
                     if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.I.spendlen == 0 )
                     {
