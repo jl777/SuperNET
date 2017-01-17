@@ -181,5 +181,6 @@ char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol);
 int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
+cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 
 #endif

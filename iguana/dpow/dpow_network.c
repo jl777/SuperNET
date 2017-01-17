@@ -513,7 +513,11 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'C' )
             {
-                //retstr = dpow_checkaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
+                if ( (retjson= dpow_checkaddress(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
             }
             else if ( dexreq.func == 'A' )
             {
