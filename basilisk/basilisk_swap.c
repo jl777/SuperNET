@@ -1732,8 +1732,8 @@ void basilisk_swaploop(void *_swap)
         if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
             break;
         sleep(1);
-        //dpow_nanomsg_update(myinfo);
-        //dex_updateclient(myinfo);
+        dpow_nanomsg_update(myinfo);
+        dex_updateclient(myinfo);
     }
     while ( (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
@@ -1747,8 +1747,8 @@ void basilisk_swaploop(void *_swap)
             break;
         }
         sleep(3 + (swap->I.iambob == 0)*1);
-        //dpow_nanomsg_update(myinfo);
-        //dex_updateclient(myinfo);
+        dpow_nanomsg_update(myinfo);
+        dex_updateclient(myinfo);
     }
     if ( time(NULL) >= expiration )
         retval = -1;
@@ -1756,8 +1756,8 @@ void basilisk_swaploop(void *_swap)
     printf("C r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
     while ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
     {
-        //dpow_nanomsg_update(myinfo);
-        //dex_updateclient(myinfo);
+        dpow_nanomsg_update(myinfo);
+        dex_updateclient(myinfo);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( swap->myfee.txbytes == 0 )
@@ -1849,8 +1849,8 @@ void basilisk_swaploop(void *_swap)
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( time(NULL) > swap->I.expiration )
             break;
-        //dpow_nanomsg_update(myinfo);
-        //dex_updateclient(myinfo);
+        dpow_nanomsg_update(myinfo);
+        dex_updateclient(myinfo);
     }
     printf("end of atomic swap\n");
     if ( swap->I.iambob != 0 && swap->bobdeposit.txbytes != 0 )
