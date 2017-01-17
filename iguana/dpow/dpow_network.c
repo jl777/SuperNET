@@ -21,6 +21,27 @@ struct signed_nnpacket
     uint8_t packet[];
 } PACKED;
 
+void dex_init(struct supernet_info *myinfo)
+{
+    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "149.56.29.163", "191.235.80.138", "94.102.63.226", "129.232.225.202", "104.255.64.3" };
+    OS_randombytes((void *)&i,sizeof(i));
+    srand(i);
+    for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
+    {
+        while ( 1 )
+        {
+            j = rand() % (sizeof(seeds)/sizeof(*seeds));
+            if ( ((1 << j) & mask) == 0 )
+                break;
+        }
+        mask |= (1 << j);
+        strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
+        myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
+    }
+    myinfo->numdexipbits = i;
+    portable_mutex_init(&myinfo->dexmutex);
+}
+
 int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
     int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket;
@@ -151,14 +172,6 @@ int32_t dex_rwrequest(int32_t rwflag,uint8_t *serialized,struct dex_request *dex
     return(len);
 }
 
-void dex_init(struct supernet_info *myinfo)
-{
-    strcpy(myinfo->dexseed_ipaddr,"78.47.196.146");
-    myinfo->dexipbits[0] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddr);
-    myinfo->numdexipbits = 1;
-    portable_mutex_init(&myinfo->dexmutex);
-}
-
 char *nanomsg_tcpname(struct supernet_info *myinfo,char *str,char *ipaddr,uint16_t port)
 {
     if ( myinfo != 0 ) // bind path)
@@ -214,12 +227,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
     reqsock = myinfo->reqsock;
     if ( reqsock < 0 && (reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
-        if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,REP_SOCK)) < 0 )
-        {
-            nn_close(reqsock);
-            reqsock = -1;
-        }
-        else
+        for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
+            if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],REP_SOCK)) < 0 )
+            {
+                nn_close(reqsock);
+                reqsock = -1;
+                break;
+            }
+        if ( reqsock >= 0 )
         {
             timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
@@ -228,14 +243,16 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
             //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
             {
-                if ( nn_connect(subsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddr,PUB_SOCK)) < 0 )
-                {
-                    nn_close(reqsock);
-                    reqsock = -1;
-                    nn_close(subsock);
-                    subsock = -1;
-                }
-                else
+                for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
+                    if ( nn_connect(subsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],PUB_SOCK)) < 0 )
+                    {
+                        nn_close(reqsock);
+                        reqsock = -1;
+                        nn_close(subsock);
+                        subsock = -1;
+                        break;
+                    }
+                if ( reqsock >= 0 && subsock >= 0 )
                 {
                     timeout = 100;
                     nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
@@ -319,7 +336,8 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
                         }
                     }
                     nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
-                    //nn_connect(myinfo->reqsock,str);
+                    if ( (rand() % 100) < 42 )
+                        nn_connect(myinfo->reqsock,str);
                     printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                 }
             }
