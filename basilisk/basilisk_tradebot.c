@@ -315,8 +315,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     }
     // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
-    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,(double)maxamount/SATOSHIDEN)) > 0. )
+    double retvals[4],refprice=0.,profitmargin,aveprice; cJSON *retjson; char *retstr;
+    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,(double)maxamount/SATOSHIDEN)) > 0. || refprice != 0.) )
     {
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
