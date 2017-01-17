@@ -394,10 +394,12 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int3
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                     if ( (rand() % 100) < 4 )
+                    {
+                        nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
-                    printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
+                        printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
+                    }
                 }
             }
             if ( freeptr != 0 )

@@ -297,19 +297,19 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
             numiters = 0;
-            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
+            /*while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
             {
                 printf("didnt get back what was sent\n");
                 sleep(3);
                 basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
                 numiters++;
             }
-            if ( crc != 0 )
+            if ( crc != 0 )*/
             {
-                printf("crc.%08x -> basilisk_starta\n",crc);
+                //printf("crc.%08x -> basilisk_starta\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
-            } else printf("couldnt accept offer\n");
+            } // else printf("couldnt accept offer\n");
         }
         else //if ( issueR.quoteid == 0 )
         {
