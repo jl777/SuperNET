@@ -332,11 +332,11 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         }
         else //if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx) quoteid.%u\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid,issueR.quoteid);
             dex_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen); //INSTANTDEX_LOCKTIME*2
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
