@@ -340,8 +340,13 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
         {
             memcpy(dexp->packet,key,keylen);
             memcpy(&dexp->packet[keylen],data,datalen);
-        } else memcpy(dexp->packet,data,datalen);
-        dexp->crc32 = calc_crc32(0,data,datalen);
+            dexp->crc32 = calc_crc32(calc_crc32(0,key,keylen),data,datalen);
+        }
+        else
+        {
+            memcpy(dexp->packet,data,datalen);
+            dexp->crc32 = calc_crc32(0,data,datalen);
+        }
         for (i=0; i<100; i++)
         {
             struct nn_pollfd pfd;
