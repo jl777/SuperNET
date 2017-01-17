@@ -316,16 +316,15 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
     double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
-    if ( maxi >= 0 && myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[maxi].src,list[maxi].dest,(double)maxamount/SATOSHIDEN)) > 0. )
+    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,(double)maxamount/SATOSHIDEN)) > 0. )
     {
-        printf("maxi.%d profitmargin %f\n",maxi,profitmargin);
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
         printf("avebid %f bidvol %f, aveask %f askvol %f\n",retvals[0],retvals[1],retvals[2],retvals[3]);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
-        destamount = (1.0 - profitmargin) * retvals[0] * list[0].srcamount;
+        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -350,7 +349,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
     {
-        if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
+        if ( minamount != 0 && maxamount >= minamount && time(NULL) > list[0].timestamp+BASILISK_AUCTION_DURATION )
         {
             *issueR = list[maxi];
             for (i=0; i<sizeof(*issueR); i++)

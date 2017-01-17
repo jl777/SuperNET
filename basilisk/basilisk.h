@@ -27,6 +27,7 @@
 #define BASILISK_DEFAULTDIFF 0x1effffff
 #define BASILISK_DEXDURATION 180
 #define BASILISK_MSGDURATION 60
+#define BASILISK_AUCTION_DURATION 20
 
 #define BASILISK_MAXFUTUREBLOCK 60
 #define BASILISK_HDROFFSET ((int32_t)(sizeof(bits256)+sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
