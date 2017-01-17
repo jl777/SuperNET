@@ -1016,7 +1016,6 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
             continue;
         }
-        printf(">>>>>>>> %s %s/%s [%d] dir.%d vs %s/%s\n",exchange,base,rel,i,dir,refli.base,refli.rel);
         if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
         {
             if ( refli.profit != 0. )
@@ -1025,6 +1024,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
                 *refpricep = refli.bid;
             else if ( dir < 0 )
                 *refpricep = refli.ask;
+            printf(">>>>>>>> %s %s/%s [%d] dir.%d vs %s/%s -> %.8f margin %f\n",exchange,base,rel,i,dir,refli.base,refli.rel,*refpricep,refli.profit);
             return(refli.profit);
         }
         break;
