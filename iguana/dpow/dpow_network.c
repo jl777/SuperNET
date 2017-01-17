@@ -153,7 +153,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     {
         //for (i=0; i<recvbytes; i++)
         //    printf("%02x",((uint8_t *)sigpacket)[i]);
-        //printf(" <- RECV.%d\n",recvbytes);
+        printf(" <- RECV.%d\n",recvbytes);
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
@@ -905,7 +905,7 @@ int32_t dex_subsock_poll(struct supernet_info *myinfo)
     int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
-        //printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
+        printf("SUBSOCK.%08x recv.%d datalen.%d\n",dexp->crc32,size,dexp->datalen);
         if ( dexp != 0 && dex_packetcheck(myinfo,dexp,size) == 0 )
         {
             //printf("SUBSOCK.%08x ",dexp->crc32);
@@ -1775,7 +1775,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                 dex_packet(myinfo,dexp,size);
             }
-            //printf("GOT DEX bus PACKET.%d\n",size);
+            printf("GOT DEX bus PACKET.%d\n",size);
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }

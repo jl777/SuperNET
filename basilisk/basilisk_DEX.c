@@ -307,6 +307,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
             if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
            /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
@@ -336,6 +338,8 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
             dex_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen); //INSTANTDEX_LOCKTIME*2
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
             if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
             /*crcs[0] = crcs[1] = 0;
