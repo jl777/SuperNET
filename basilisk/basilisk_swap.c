@@ -1762,7 +1762,7 @@ void basilisk_swaploop(void *_swap)
     if ( time(NULL) >= expiration )
         retval = -1;
     myinfo->DEXactive = swap->I.expiration;
-    printf("C r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
+    printf("C r%u/q%u swapstate.%x retval.%d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,retval);
     while ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
     {
         dpow_nanomsg_update(myinfo);
