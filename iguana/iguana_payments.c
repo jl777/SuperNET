@@ -403,16 +403,46 @@ uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,
 
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V,int32_t maxmode)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; uint64_t avail,total,change; struct iguana_outpoint *unspents = 0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; char *coinaddr; int32_t allocflag=0,max,i,j,m,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *vins=0,*array,*item; uint64_t value,avail=0,total,change; struct iguana_outpoint *unspents = 0;
     *vinsp = 0;
-    max = 10000;
+    max = 0;//10000;
     satoshis += burnamount;
-    unspents = calloc(max,sizeof(*unspents));
+    if ( (n= cJSON_GetArraySize(addresses)) == 0 )
+        return(0);
+    for (i=0; i<n; i++)
+    {
+        coinaddr = jstri(addresses,i);
+        if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
+        {
+            printf("unspents.(%s)\n",jprint(array,0));
+            if ( (m= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (j=0; j<m; j++)
+                {
+                    item = jitem(array,j);
+                    if ( coin->FULLNODE != 0 && is_cJSON_False(jobj(item,"spendable")) != 0 )
+                        continue;
+                    if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
+                    {
+                        printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                        continue;
+                    }
+                    unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
+                    value = jdouble(item,"amount") * SATOSHIDEN;
+                    iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
+                    avail += value;
+                }
+            }
+            free_json(array);
+        }
+    }
+    num = max;
+    /*unspents = calloc(max,sizeof(*unspents));
     if ( (num= iguana_RTunspentslists(myinfo,coin,&avail,unspents,max,satoshis+txfee,minconf,addresses,remoteaddr)) <= 0 )
     {
         free(unspents);
         return(0);
-    }
+    }*/
     printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {

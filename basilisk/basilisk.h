@@ -142,5 +142,6 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp);
 int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay);
 int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash);
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
 
 #endif

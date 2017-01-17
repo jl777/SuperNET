@@ -558,10 +558,9 @@ ZERO_ARGS(InstantDEX,allcoins)
     return(jprint(retjson,1));
 }
 
-cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin)
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *unspents=0,*array=0; char *retstr,coinaddr[64];
-    bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    cJSON *unspents=0,*array=0; char *retstr;
     if ( coin->FULLNODE > 0 )
     {
         array = cJSON_CreateArray();
@@ -583,12 +582,13 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin)
 
 STRING_ARG(InstantDEX,available,source)
 {
-    uint64_t total = 0; int32_t i,n=0; cJSON *item,*unspents,*retjson = 0;
+    uint64_t total = 0; int32_t i,n=0; char coinaddr[64]; cJSON *item,*unspents,*retjson = 0;
     if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
         {
-            if ( (unspents= basilisk_unspents(myinfo,coin)) != 0 )
+            bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+            if ( (unspents= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
             {
                 //printf("available.(%s)\n",jprint(unspents,0));
                 if ( (n= cJSON_GetArraySize(unspents)) > 0 )
