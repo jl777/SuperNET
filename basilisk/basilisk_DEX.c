@@ -336,7 +336,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                     free(retstr);
             } // else printf("couldnt accept offer\n");*/
         }
-        else //if ( issueR.quoteid == 0 )
+        else if ( issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
         {
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
