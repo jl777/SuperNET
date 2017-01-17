@@ -314,9 +314,18 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         } else noquoteflag++;
     }
     // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
-    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    double retvals[4],refprice=0.,profitmargin,aveprice; cJSON *retjson; char *retstr;
-    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,(double)maxamount/SATOSHIDEN)) > 0. || refprice != 0.) )
+    double retvals[4],refprice=0.,profitmargin,aveprice,destvolume; cJSON *retjson; char *retstr;
+    destvolume = dstr(maxamount);
+    if ( fabs(destvolume) < SMALLVAL )
+    {
+        if ( (destvolume= dstr(minamount)) == 0 )
+        {
+            aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount));
+            destvolume = aveprice * dstr(list[0].srcamount);
+        }
+    }
+    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
+    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
     {
         if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;

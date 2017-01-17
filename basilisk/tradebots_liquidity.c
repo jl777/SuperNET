@@ -997,11 +997,10 @@ int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *l
     else return(-1);
 }
 
-double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume)
+double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double destvolume)
 {
     int32_t i,dir; struct liquidity_info refli;
     *refpricep = 0.;
-    printf("_default_liquidity_active %s %s/%s\n",exchange,base,rel);
     for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
     {
         refli = myinfo->linfos[i];
@@ -1017,7 +1016,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
             continue;
         }
-        if ( _default_volume_ok(myinfo,&refli,dir,volume) == 0 )
+        if ( _default_volume_ok(myinfo,&refli,dir,destvolume) == 0 )
         {
             if ( refli.profit != 0. )
                 *refpricep = refli.refprice;
