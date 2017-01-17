@@ -514,7 +514,7 @@ ZERO_ARGS(InstantDEX,allcoins)
             jaddistr(native,coin->symbol);
         else if ( coin->virtualchain != 0 )
             jaddistr(virtual,coin->symbol);
-        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+        else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
             jaddistr(full,coin->symbol);
         else if ( coin->notarychain >= 0 )
             jaddistr(notarychains,coin->symbol);
