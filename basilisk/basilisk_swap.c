@@ -758,8 +758,8 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
         {
             for (i=0; i<3; i++)
             {
-                if ( swap->bobpayment.txbytes != 0 && swap->bobpayment.I.spendlen != 0 )
-                    break;
+                //if ( swap->bobpayment.txbytes != 0 && swap->bobpayment.I.spendlen != 0 )
+                //    break;
                 basilisk_rawtx_gen("payment",myinfo,swap,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->chain->txfee,1,0);
                 if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.I.spendlen == 0 )
                 {
@@ -777,6 +777,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                     printf(" <- GENERATED BOB PAYMENT.%d\n",swap->bobpayment.I.datalen);
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobpayment.vins);
                     basilisk_bobpayment_reclaim(myinfo,swap,swap->I.callduration);
+                    printf("bobscripts set completed\n");
                     return(0);
                 }
             }
@@ -789,8 +790,8 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
         {
             for (i=0; i<3; i++)
             {
-                if ( swap->bobdeposit.txbytes != 0 && swap->bobdeposit.I.spendlen != 0 )
-                    break;
+                //if ( swap->bobdeposit.txbytes != 0 && swap->bobdeposit.I.spendlen != 0 )
+                //    break;
                 basilisk_rawtx_gen("deposit",myinfo,swap,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->chain->txfee,1,0);
                 if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.I.spendlen == 0 )
                 {
@@ -808,6 +809,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                     //printf("GENERATED BOB DEPOSIT\n");
                     iguana_unspents_mark(myinfo,swap->bobcoin,swap->bobdeposit.vins);
                     basilisk_bobdeposit_refund(myinfo,swap,swap->I.putduration);
+                    printf("bobscripts set completed\n");
                     return(0);
                 }
             }
@@ -1536,7 +1538,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
     }
     while ( retval == 0 && time(NULL) < swap->I.expiration )  // both sides have setup required data and paid txfee
     {
-        if ( (rand() % 30) == 0 )
+        //if ( (rand() % 30) == 0 )
             printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits);
         if ( swap->I.iambob != 0 )
         {
@@ -1767,8 +1769,11 @@ void basilisk_swaploop(void *_swap)
     {
         dpow_nanomsg_update(myinfo);
         dex_updateclient(myinfo);
+        printf("sendstate.%x\n",swap->I.statebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
+        printf("swapget\n");
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
+        printf("after swapget\n");
         if ( swap->myfee.txbytes == 0 )
         {
             /*for (i=0; i<20; i++)
@@ -1804,6 +1809,7 @@ void basilisk_swaploop(void *_swap)
             basilisk_txlog(myinfo,swap,0,-1);
             if ( swap->I.iambob != 0 )
             {
+                printf("bobscripts set\n");
                 if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
                 {
                     sleep(3);
@@ -1814,8 +1820,8 @@ void basilisk_swaploop(void *_swap)
             {
                 for (i=0; i<3; i++)
                 {
-                    if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen != 0 )
-                        break;
+                    //if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen != 0 )
+                    //    break;
                     basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
                     if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.I.spendlen == 0 )
                     {
