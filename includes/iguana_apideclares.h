@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -13,10 +13,43 @@
  *                                                                            *
  ******************************************************************************/
 
+STRING_ARG(dpow,pending,fiat);
+ZERO_ARGS(dpow,notarychains);
+STRING_ARG(dpow,active,maskhex);
+TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
+ZERO_ARGS(dpow,cancelratify);
+STRING_ARG(dpow,bindaddr,ipaddr);
+STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
+
+ZERO_ARGS(passthru,paxfiats);
+
+
+
+TWO_STRINGS(dex,send,hex,handler);
+HASH_AND_STRING(dex,gettransaction,txid,symbol);
+STRING_ARG(dex,getinfo,symbol);
+STRING_ARG(dex,getnotaries,symbol);
+STRING_ARG(dex,alladdresses,symbol);
+STRING_ARG(dex,getbestblockhash,symbol);
+STRING_AND_INT(dex,getblockhash,symbol,height);
+HASH_AND_STRING(dex,getblock,hash,symbol);
+TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
+HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
+TWO_STRINGS(dex,importaddress,symbol,address);
+TWO_STRINGS(dex,validateaddress,symbol,address);
+TWO_STRINGS(dex,listunspent,symbol,address);
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
+
+TWO_STRINGS(zcash,passthru,function,hex);
+TWO_STRINGS(komodo,passthru,function,hex);
+
 ZERO_ARGS(pax,start);
-INT_AND_ARRAY(iguana,rates,unused,quotes);
-TWO_STRINGS(iguana,rate,base,rel);
-THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
+ZERO_ARGS(tradebot,amlp);
+ZERO_ARGS(tradebot,notlp);
+TWO_STRINGS(tradebot,gensvm,base,rel);
+ZERO_ARGS(tradebot,openliquidity);
+
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
@@ -26,14 +59,14 @@ INT_ARG(InstantDEX,incoming,requestid);
 INT_ARG(InstantDEX,automatched,requestid);
 
 TWO_INTS(InstantDEX,accept,requestid,quoteid);
-TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
+//TWO_INTS(InstantDEX,swapstatus,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
-
+ZERO_ARGS(basilisk,paxfiats);
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
-//HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
+HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);
@@ -50,12 +83,14 @@ HASH_ARRAY_STRING(basilisk,subscribe,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,forward,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,mailbox,hash,vals,hexstr);
 
-HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
+/*HASH_ARRAY_STRING(basilisk,VPNcreate,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNjoin,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNbroadcast,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNreceive,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,VPNlogout,hash,vals,hexstr);
+
+HASH_ARRAY_STRING(basilisk,vote,hash,vals,hexstr);*/
 
 ZERO_ARGS(bitcoinrpc,getinfo);
 ZERO_ARGS(bitcoinrpc,getblockcount);
@@ -75,7 +110,6 @@ STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
-ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
 
@@ -128,7 +162,17 @@ ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
+
+THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag);
+ZERO_ARGS(iguana,makekeypair);
+INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+STRING_AND_INT(iguana,snapshot,symbol,height);
+INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
+THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(iguana,initfastfind,activecoin);
+TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
@@ -139,6 +183,7 @@ STRING_ARG(iguana,startcoin,activecoin);
 STRING_ARG(iguana,pausecoin,activecoin);
 STRING_ARG(iguana,stopcoin,activecoin);
 TWO_STRINGS(iguana,addnode,activecoin,ipaddr);
+STRING_ARG(iguana,addnotary,ipaddr);
 TWO_STRINGS(iguana,persistent,activecoin,ipaddr);
 TWO_STRINGS(iguana,removenode,activecoin,ipaddr);
 TWO_STRINGS(iguana,oneshot,activecoin,ipaddr);
@@ -189,7 +234,8 @@ TWO_STRINGS(tradebot,pause,exchange,botid);
 TWO_STRINGS(tradebot,stop,exchange,botid);
 TWO_STRINGS(tradebot,resume,exchange,botid);
 
-HASH_ARG(pangea,call,tablehash);
+#ifndef WIN32
+/*HASH_ARG(pangea,call,tablehash);
 HASH_AND_INT(pangea,raise,tablehash,numchips);
 HASH_AND_INT(pangea,bet,tablehash,numchips);
 HASH_ARG(pangea,check,tablehash);
@@ -203,7 +249,8 @@ INT_AND_ARRAY(pangea,host,minplayers,params);
 ZERO_ARGS(pangea,lobby);
 HASH_AND_STRING(pangea,join,tablehash,handle);
 HASH_AND_INT(pangea,buyin,tablehash,numchips);
-HASH_ARG(pangea,start,tablehash);
+HASH_ARG(pangea,start,tablehash);*/
+#endif
 
 ZERO_ARGS(SuperNET,help);
 STRING_ARG(SuperNET,utime2utc,utime);
