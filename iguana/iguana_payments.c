@@ -341,7 +341,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,uint64_t value)
 {
     char *retstr; int32_t height; cJSON *retjson; struct iguana_txid T,*tx;
-    int32_t minutes; uint64_t numerator,denominator,interest = 0;
+    int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
     if ( coin->FULLNODE < 0 ) // komodod is running
     {
         if ( (retjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
@@ -376,7 +376,7 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
                     numerator = (value / 20); // assumes 5%!
                     interest = (numerator / denominator);
                 }
-                else
+                else if ( value >= 10*SATOSHIDEN )
                 {
                     numerator = (value * KOMODO_INTEREST);
                     interest = (numerator / denominator) / SATOSHIDEN;
