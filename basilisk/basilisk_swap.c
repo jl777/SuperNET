@@ -1363,7 +1363,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
     uint8_t sendbuf[32768]; int32_t sendlen;
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
-        if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->actualtxid) == 0 )
+        if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
         {
             char str[65],str2[65];
             rawtx->I.actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->I.datalen);
