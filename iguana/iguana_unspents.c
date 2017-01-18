@@ -133,7 +133,7 @@ char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coi
     if ( coinaddr == 0 )
         coinaddr = _coinaddr;
     spentp->hdrsi = -1;
-    printf("%s RTinputaddress.(%s).%d %d\n",coin->symbol,jprint(vinobj,0),coin->FULLNODE,coin->notarychain);
+    //printf("%s RTinputaddress.(%s).%d %d\n",coin->symbol,jprint(vinobj,0),coin->FULLNODE,coin->notarychain);
     if ( jobj(vinobj,"txid") != 0 && jobj(vinobj,"vout") != 0 )
     {
         txid = jbits256(vinobj,"txid");
@@ -142,7 +142,7 @@ char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coi
         {
             if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
             {
-                printf("dexgetO.(%s)\n",retstr);
+                //printf("dexgetO.(%s)\n",retstr);
                 if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (array= jarray(&n,txoutjson,"addresses")) != 0 )

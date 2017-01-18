@@ -170,7 +170,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     {
         if ( (atx_value= unspents[i].value) <= 0 )
         {
-            printf("illegal value.%d\n",i);
+            //printf("illegal value.%d\n",i);
             continue;
         }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
@@ -217,7 +217,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     *abovep = above;
     *belowip = belowi;
     *belowp = below;
-    printf("above.%d below.%d\n",abovei,belowi);
+    //printf("above.%d below.%d\n",abovei,belowi);
     return(abovei >= 0 ? abovei : belowi);
 }
 
@@ -418,7 +418,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         coinaddr = jstri(addresses,i);
         if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
         {
-            printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
             if ( (m= cJSON_GetArraySize(array)) > 0 )
             {
                 for (j=0; j<m; j++)

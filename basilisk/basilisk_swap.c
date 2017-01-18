@@ -658,7 +658,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
         {
             if ( lockinputs != 0 )
             {
-                printf("lockinputs\n");
+                //printf("lockinputs\n");
                 iguana_RTunspentslock(myinfo,rawtx->coin,vins);
                 if ( (n= cJSON_GetArraySize(vins)) != 0 )
                 {
@@ -786,7 +786,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
     else
     {
         swap->bobdeposit.I.spendlen = basilisk_bobscript(swap->bobdeposit.I.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.I.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.I.locktime,&swap->bobdeposit.I.secretstart,&swap->I,1);
-        if ( genflag != 0 )
+        if ( genflag != 0 && (swap->bobdeposit.txbytes == 0 || swap->bobrefund.txbytes == 0) )
         {
             for (i=0; i<3; i++)
             {
@@ -813,6 +813,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                     return(0);
                 }
             }
+            return(0);
         }
         //for (i=0; i<swap->bobdeposit.redeemlen; i++)
         //    printf("%02x",swap->bobdeposit.redeemscript[i]);
@@ -1813,6 +1814,7 @@ void basilisk_swaploop(void *_swap)
                 if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
                 {
                     sleep(3);
+                    printf("bobscripts set error\n");
                     continue;
                 }
             }
@@ -1840,14 +1842,16 @@ void basilisk_swaploop(void *_swap)
                     }
                 }
             }
+            printf("generate fee\n");
             if ( basilisk_rawtx_gen("myfee",myinfo,swap,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
             {
+                printf("done generate fee\n");
                 swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40);
                 iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
                 basilisk_txlog(myinfo,swap,&swap->myfee,-1);
                 for (i=0; i<swap->myfee.I.spendlen; i++)
                     printf("%02x",swap->myfee.txbytes[i]);
-                printf(" alice fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+                printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
                 swap->I.statebits |= 0x40;
                 if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen > 0 )
                     break;
