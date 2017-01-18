@@ -128,13 +128,33 @@ int32_t iguana_unspentindfind(struct supernet_info *myinfo,struct iguana_info *c
 
 char *iguana_RTinputaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,struct iguana_outpoint *spentp,cJSON *vinobj)
 {
-    bits256 txid; int32_t vout,checkind,height;
+    bits256 txid; int32_t vout,checkind,height,n; cJSON *txoutjson,*array; char *retstr,_coinaddr[64];
     memset(spentp,0,sizeof(*spentp));
+    if ( coinaddr == 0 )
+        coinaddr = _coinaddr;
     spentp->hdrsi = -1;
+    //printf("%s RTinputaddress.(%s).%d %d\n",coin->symbol,jprint(vinobj,0),coin->FULLNODE,coin->notarychain);
     if ( jobj(vinobj,"txid") != 0 && jobj(vinobj,"vout") != 0 )
     {
         txid = jbits256(vinobj,"txid");
         vout = jint(vinobj,"vout");
+        if ( coin->FULLNODE == 0 && coin->notarychain >= 0 )
+        {
+            if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
+            {
+                //printf("dexgetO.(%s)\n",retstr);
+                if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (array= jarray(&n,txoutjson,"addresses")) != 0 )
+                        safecopy(coinaddr,jstri(array,0),64);
+                    spentp->value = jdouble(txoutjson,"value") * SATOSHIDEN;
+                    free_json(txoutjson);
+                }
+                free(retstr);
+                return(coinaddr);
+            } else printf("dexgettxout null retstr\n");
+            return(0);
+        }
         height = jint(vinobj,"height");
         checkind = jint(vinobj,"checkind");
         if ( (height != 0 && checkind != 0) || iguana_RTunspentindfind(myinfo,coin,spentp,coinaddr,0,0,0,&height,txid,vout,coin->bundlescount-1,0) == 0 )

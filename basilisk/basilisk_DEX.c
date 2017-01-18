@@ -126,7 +126,7 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_request *rp)
 {
     uint8_t serialized[256]; int32_t len; struct queueitem *item;
-    printf(" basilisk_request_enqueue\n");
+    //printf(" basilisk_request_enqueue\n");
     len = basilisk_rwDEXquote(1,serialized+1,rp);
     if ( (item= calloc(1,sizeof(*item) + len + 1)) != 0 )
     {
@@ -135,7 +135,7 @@ uint32_t basilisk_request_enqueue(struct supernet_info *myinfo,struct basilisk_r
         portable_mutex_lock(&myinfo->DEX_mutex);
         DL_APPEND(myinfo->DEX_quotes,item);
         portable_mutex_unlock(&myinfo->DEX_mutex);
-        printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
+        //printf("ENQUEUE.%u calc.%u\n",rp->requestid,basilisk_requestid(rp));
         return(rp->requestid);
     }
     return(0);
@@ -231,18 +231,38 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 
 char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
-    cJSON *retjson; struct basilisk_request *rp;
+    cJSON *retjson; struct basilisk_request *rp=0; int32_t i;
+    if ( _rp->requestid == myinfo->lastdexrequestid )
+    {
+        //printf("filter duplicate r%u\n",_rp->requestid);
+        return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
+    }
     if ( (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
-        rp = calloc(1,sizeof(*rp));
-        *rp = *_rp;
-        printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
-        if ( basilisk_thread_start(myinfo,rp,statebits,optionduration) != 0 )
+        for (i=0; i<myinfo->numswaps; i++)
+            if ( myinfo->swaps[i]->I.req.requestid == _rp->requestid )
+            {
+                printf("basilisk_thread_start error trying to start requestid.%u which is already started\n",rp->requestid);
+                break;
+            }
+        if ( i == myinfo->numswaps )
         {
-            basilisk_request_enqueue(myinfo,rp);
-            return(clonestr("{\"result\":\"started atomic swap thread\"}"));
+            rp = calloc(1,sizeof(*rp));
+            *rp = *_rp;
+            printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
+            myinfo->lastdexrequestid = rp->requestid;
+            if ( basilisk_thread_start(myinfo,rp,statebits,optionduration) != 0 )
+            {
+                basilisk_request_enqueue(myinfo,rp);
+                return(clonestr("{\"result\":\"started atomic swap thread\"}"));
+            }
+            else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
         }
-        else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
+        else
+        {
+            printf("trying to start already pending swap.r%u\n",rp->requestid);
+            return(clonestr("{\"error\":\"cant start pending swap\"}"));
+        }
     }
     else if ( myinfo->IAMLP != 0 )
     {
@@ -255,7 +275,7 @@ char *basilisk_start(struct supernet_info *myinfo,struct basilisk_request *_rp,u
 void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768],buf[4096]; cJSON *outerarray,*retjson; uint32_t msgid,crcs[2],crc,channel; int32_t datalen,i,n,numiters; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
     if ( time(NULL) < lastpoll+3 )
         return;
     lastpoll = (uint32_t)time(NULL);
@@ -292,11 +312,16 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
             free(retstr);*/
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
-            if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
+            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
+            if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+           /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
             printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
-            numiters = 0;
+            numiters = crc = 0;
             while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
             {
                 printf("didnt get back what was sent\n");
@@ -309,16 +334,21 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 printf("crc.%08x -> basilisk_starta\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
-            } else printf("couldnt accept offer\n");
+            } // else printf("couldnt accept offer\n");*/
         }
-        else //if ( issueR.quoteid == 0 )
+        else if ( issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
         {
-            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx)\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid);
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;
             datalen = basilisk_rwDEXquote(1,data,&issueR);
             msgid = (uint32_t)time(NULL);
-            crcs[0] = crcs[1] = 0;
+            printf("other req hwm %f >>>>>>>>>>> send response (%llx -> %llx) last.%u r.%u quoteid.%u\n",hwm,(long long)issueR.desthash.txid,(long long)issueR.srchash.txid,myinfo->lastdexrequestid,issueR.requestid,issueR.quoteid);
+            dex_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen); //INSTANTDEX_LOCKTIME*2
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
+            if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+            /*crcs[0] = crcs[1] = 0;
             numiters = 0;
             basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
             while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
@@ -333,7 +363,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 printf("crc.%08x -> basilisk_start\n",crc);
                 if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
                     free(retstr);
-            }
+            }*/
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
 }
@@ -502,36 +532,63 @@ THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume)
 
 ZERO_ARGS(InstantDEX,allcoins)
 {
-    struct iguana_info *tmp; cJSON *notarychains,*basilisk,*virtual,*full,*retjson = cJSON_CreateObject();
+    struct iguana_info *tmp; cJSON *native,*notarychains,*basilisk,*virtual,*full,*retjson = cJSON_CreateObject();
     full = cJSON_CreateArray();
+    native = cJSON_CreateArray();
     basilisk = cJSON_CreateArray();
     virtual = cJSON_CreateArray();
     notarychains = cJSON_CreateArray();
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
-        if ( coin->virtualchain != 0 )
-            jaddistr(virtual,coin->symbol);
-        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+        if ( coin->FULLNODE < 0 )
+            jaddistr(native,coin->symbol);
+        //else if ( coin->virtualchain != 0 )
+        //    jaddistr(virtual,coin->symbol);
+        else if ( coin->FULLNODE > 0 )//|| coin->VALIDATENODE > 0 )
             jaddistr(full,coin->symbol);
-        else if ( coin->notarychain >= 0 )
-            jaddistr(notarychains,coin->symbol);
+        //else if ( coin->notarychain >= 0 )
+        //    jaddistr(notarychains,coin->symbol);
         else jaddistr(basilisk,coin->symbol);
     }
+    jadd(retjson,"native",native);
     jadd(retjson,"basilisk",basilisk);
     jadd(retjson,"full",full);
-    jadd(retjson,"virtual",virtual);
-    jadd(retjson,"notarychains",notarychains);
+    //jadd(retjson,"virtual",virtual);
+    //jadd(retjson,"notarychains",notarychains);
     return(jprint(retjson,1));
+}
+
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
+{
+    cJSON *unspents=0,*array=0; char *retstr;
+    if ( coin->FULLNODE > 0 )
+    {
+        array = cJSON_CreateArray();
+        jaddistr(array,coinaddr);
+        unspents = iguana_listunspents(myinfo,coin,array,0,0,"");
+        free_json(array);
+    }
+    else if ( coin->FULLNODE == 0 )
+    {
+        if ( (retstr= _dex_listunspent(myinfo,coin->symbol,coinaddr)) != 0 )
+        {
+            unspents = cJSON_Parse(retstr);
+            free(retstr);
+        }
+    }
+    else unspents = dpow_listunspent(myinfo,coin,coinaddr);
+    return(unspents);
 }
 
 STRING_ARG(InstantDEX,available,source)
 {
-    uint64_t total = 0; int32_t i,n=0; cJSON *item,*unspents,*retjson = 0;
+    uint64_t total = 0; int32_t i,n=0; char coinaddr[64]; cJSON *item,*unspents,*retjson = 0;
     if ( source != 0 && source[0] != 0 && (coin= iguana_coinfind(source)) != 0 )
     {
         if ( myinfo->expiration != 0 )
         {
-            if ( (unspents= iguana_listunspents(myinfo,coin,0,0,0,remoteaddr)) != 0 )
+            bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+            if ( (unspents= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
             {
                 //printf("available.(%s)\n",jprint(unspents,0));
                 if ( (n= cJSON_GetArraySize(unspents)) > 0 )
@@ -539,10 +596,8 @@ STRING_ARG(InstantDEX,available,source)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(unspents,i);
-                        //if ( jobj(item,"unspent") != 0 )
-                        {
+                        //if ( is_cJSON_True(jobj(item,"spendable")) != 0 )
                             total += jdouble(item,"amount") * SATOSHIDEN;
-                        }
                         //printf("(%s) -> %.8f\n",jprint(item,0),dstr(total));
                     }
                 }

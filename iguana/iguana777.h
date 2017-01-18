@@ -107,7 +107,7 @@ struct supernet_info
     void (*liquidity_command)(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals);
     double (*liquidity_active)(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume);
     int32_t maxdelay,IAMRELAY,IAMNOTARY,IAMLP,publicRPC,basilisk_busy,genesisresults,remoteorigin;
-    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,dexcrcs[1024];
+    uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,lastdexrequestid,dexcrcs[1024];
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
@@ -131,7 +131,7 @@ struct supernet_info
     struct liquidity_info linfos[512];
     struct komodo_notaries NOTARY;
     char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t notarymutex,dpowmutex;
-    char dexseed_ipaddr[64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
+    char dexseed_ipaddrs[1][64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;
     // compatibility
     bits256 pangea_category,instantdex_category;
     uint8_t logs[256],exps[510];

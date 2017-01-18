@@ -984,7 +984,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
         {
             userpass = jstr(argjson,"userpass");
-            printf("userpass.(%s)\n",userpass);
+            //printf("userpass.(%s)\n",userpass);
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
                 if ( n > 1 )

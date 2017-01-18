@@ -169,10 +169,13 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     for (above=below=i=0; i<numunspents; i++)
     {
         if ( (atx_value= unspents[i].value) <= 0 )
+        {
+            //printf("illegal value.%d\n",i);
             continue;
+        }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -214,6 +217,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
     *abovep = above;
     *belowip = belowi;
     *belowp = below;
+    //printf("above.%d below.%d\n",abovei,belowi);
     return(abovei >= 0 ? abovei : belowi);
 }
 
@@ -295,7 +299,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
     if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
     {
-        if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
+        if ( coin->FULLNODE < 0 )
             str = dpow_sendrawtransaction(myinfo,coin,signedtx);
         else str = _dex_sendrawtransaction(myinfo,coin->symbol,signedtx);
         if ( str != 0 )
@@ -337,7 +341,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
 uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,uint64_t value)
 {
     char *retstr; int32_t height; cJSON *retjson; struct iguana_txid T,*tx;
-    int32_t minutes; uint64_t numerator,denominator,interest = 0;
+    int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
     if ( coin->FULLNODE < 0 ) // komodod is running
     {
         if ( (retjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
@@ -372,7 +376,7 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
                     numerator = (value / 20); // assumes 5%!
                     interest = (numerator / denominator);
                 }
-                else
+                else if ( value >= 10*SATOSHIDEN )
                 {
                     numerator = (value * KOMODO_INTEREST);
                     interest = (numerator / denominator) / SATOSHIDEN;
@@ -403,16 +407,48 @@ uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,
 
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V,int32_t maxmode)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,num,spendlen; char *rawtx=0; bits256 txid; cJSON *vins=0; uint64_t avail,total,change; struct iguana_outpoint *unspents = 0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; char *coinaddr; int32_t allocflag=0,max,i,j,m,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *vins=0,*array,*item; uint64_t value,avail=0,total,change; struct iguana_outpoint *unspents = 0;
     *vinsp = 0;
-    max = 10000;
+    max = 0;//10000;
     satoshis += burnamount;
-    unspents = calloc(max,sizeof(*unspents));
+    if ( (n= cJSON_GetArraySize(addresses)) == 0 )
+        return(0);
+    for (i=0; i<n; i++)
+    {
+        coinaddr = jstri(addresses,i);
+        if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
+        {
+            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            if ( (m= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (j=0; j<m; j++)
+                {
+                    item = jitem(array,j);
+                    if ( coin->FULLNODE != 0 && is_cJSON_False(jobj(item,"spendable")) != 0 )
+                        continue;
+                    if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
+                    {
+                        printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                        continue;
+                    }
+                    unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
+                    value = jdouble(item,"amount") * SATOSHIDEN;
+                    iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
+                    avail += value;
+                }
+            }
+            free_json(array);
+        }
+    }
+    if ( unspents == 0 )
+        return(0);
+    num = max;
+    /*unspents = calloc(max,sizeof(*unspents));
     if ( (num= iguana_RTunspentslists(myinfo,coin,&avail,unspents,max,satoshis+txfee,minconf,addresses,remoteaddr)) <= 0 )
     {
         free(unspents);
         return(0);
-    }
+    }*/
     printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {

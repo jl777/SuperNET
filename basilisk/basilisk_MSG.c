@@ -217,7 +217,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
     portable_mutex_unlock(&myinfo->messagemutex);
-    //printf("add message keylen.%d [%d]\n",msg->keylen,datalen);
+//printf("add message keylen.%d [%d]\n",msg->keylen,datalen);
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
     if ( sendping != 0 )
@@ -329,7 +329,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
-        jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+        jaddnum(valsobj,"fanout",1);//MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddnum(valsobj,"timeout",1000);
@@ -380,7 +380,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
     jaddnum(valsobj,"timeout",BASILISK_TIMEOUT);
-    jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+    jaddnum(valsobj,"fanout",1);//MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
     jaddbits256(valsobj,"srchash",srchash);
     jaddbits256(valsobj,"desthash",desthash);

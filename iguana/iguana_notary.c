@@ -643,6 +643,11 @@ TWO_STRINGS(dex,importaddress,symbol,address)
     return(_dex_importaddress(myinfo,symbol,address));
 }
 
+TWO_STRINGS(dex,checkaddress,symbol,address)
+{
+    return(_dex_checkaddress(myinfo,symbol,address));
+}
+
 TWO_STRINGS(dex,validateaddress,symbol,address)
 {
     return(_dex_validateaddress(myinfo,symbol,address));
