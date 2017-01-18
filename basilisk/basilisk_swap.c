@@ -782,6 +782,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 }
             }
         }
+        return(0);
     }
     else
     {
@@ -813,8 +814,8 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                     return(0);
                 }
             }
-            return(0);
         }
+        return(0);
         //for (i=0; i<swap->bobdeposit.redeemlen; i++)
         //    printf("%02x",swap->bobdeposit.redeemscript[i]);
         //printf(" <- bobdeposit.%d\n",i);

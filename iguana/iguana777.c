@@ -884,7 +884,8 @@ void iguana_coinloop(void *arg)
     n = (int32_t)(long)coins[0];
     coins++;
     coin = coins[0];
-    coin->notarychain = iguana_isnotarychain(coin->symbol);
+    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
+        coin->VALIDATENODE = 0;
     printf("begin coinloop[%d] %s notarychain.%d\n",n,coin->symbol,coin->notarychain);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )

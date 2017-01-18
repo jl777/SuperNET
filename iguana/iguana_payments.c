@@ -299,7 +299,7 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     txid = bits256_doublesha256(0,&serialized[sizeof(struct iguana_msghdr)],len);
     if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
     {
-        if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
+        if ( coin->FULLNODE < 0 )
             str = dpow_sendrawtransaction(myinfo,coin,signedtx);
         else str = _dex_sendrawtransaction(myinfo,coin->symbol,signedtx);
         if ( str != 0 )
