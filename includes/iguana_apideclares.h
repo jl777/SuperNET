@@ -14,19 +14,16 @@
  ******************************************************************************/
 
 STRING_ARG(dpow,pending,fiat);
-TWO_STRINGS(iguana,dpow,symbol,pubkey);
+ZERO_ARGS(dpow,notarychains);
 STRING_ARG(dpow,active,maskhex);
 TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified);
 ZERO_ARGS(dpow,cancelratify);
-THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
-ZERO_ARGS(dpow,notarychains);
-INT_ARG(passthru,paxfiats,mask);
-INT_ARG(basilisk,paxfiats,mask);
-INT_ARG(iguana,paxfiats,mask);
-STRING_AND_INT(iguana,snapshot,symbol,height);
-INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
+
+ZERO_ARGS(passthru,paxfiats);
+
+
 
 TWO_STRINGS(dex,send,hex,handler);
 HASH_AND_STRING(dex,gettransaction,txid,symbol);
@@ -39,7 +36,6 @@ HASH_AND_STRING(dex,getblock,hash,symbol);
 TWO_STRINGS(dex,sendrawtransaction,symbol,signedtx);
 HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout);
 TWO_STRINGS(dex,importaddress,symbol,address);
-TWO_STRINGS(dex,checkaddress,symbol,address);
 TWO_STRINGS(dex,validateaddress,symbol,address);
 TWO_STRINGS(dex,listunspent,symbol,address);
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
@@ -54,9 +50,6 @@ ZERO_ARGS(tradebot,notlp);
 TWO_STRINGS(tradebot,gensvm,base,rel);
 ZERO_ARGS(tradebot,openliquidity);
 
-INT_AND_ARRAY(iguana,rates,unused,quotes);
-TWO_STRINGS(iguana,rate,base,rel);
-THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
@@ -70,7 +63,7 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
-
+ZERO_ARGS(basilisk,paxfiats);
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
@@ -117,10 +110,8 @@ STRING_AND_INT(bitcoinrpc,decoderawtransaction,rawtx,suppress);
 STRING_AND_INT(bitcoinrpc,validaterawtransaction,rawtx,suppress);
 ARRAY_OBJ_INT(bitcoinrpc,createrawtransaction,vins,vouts,locktime);
 
-ZERO_ARGS(iguana,makekeypair);
 STRING_ARG(bitcoinrpc,validatepubkey,pubkey);
 STRING_ARG(bitcoinrpc,validateaddress,address);
-THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag);
 
 ZERO_ARGS(bitcoinrpc,walletlock);
 TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout);
@@ -171,7 +162,17 @@ ZERO_ARGS(bitcoinrpc,gettxoutsetinfo);
 ZERO_ARGS(bitcoinrpc,getrawchangeaddress);
 SS_D_I_S(bitcoinrpc,move,fromaccount,toaccount,amount,minconf,comment);
 
+
+THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag);
+ZERO_ARGS(iguana,makekeypair);
+INT_AND_ARRAY(iguana,rates,unused,quotes);
+TWO_STRINGS(iguana,rate,base,rel);
+THREE_STRINGS_AND_THREE_INTS(iguana,prices,exchange,base,rel,period,start,end);
+STRING_AND_INT(iguana,snapshot,symbol,height);
+INT_ARRAY_STRING(iguana,dividends,height,vals,symbol);
+THREE_STRINGS(iguana,passthru,asset,function,hex);
 STRING_ARG(iguana,initfastfind,activecoin);
+TWO_STRINGS(iguana,dpow,symbol,pubkey);
 STRING_ARG(iguana,peers,activecoin);
 STRING_AND_INT(iguana,maxpeers,activecoin,max);
 STRING_ARG(iguana,getconnectioncount,activecoin);
