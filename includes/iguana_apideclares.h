@@ -21,7 +21,7 @@ ZERO_ARGS(dpow,cancelratify);
 STRING_ARG(dpow,bindaddr,ipaddr);
 STRING_AND_INT(dpow,fundnotaries,symbol,numblocks);
 
-ZERO_ARGS(passthru,paxfiats);
+INT_ARG(passthru,paxfiats,mask);
 
 
 
@@ -63,7 +63,7 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
-ZERO_ARGS(basilisk,paxfiats);
+INT_ARG(basilisk,paxfiats,mask);
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
