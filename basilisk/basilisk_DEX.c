@@ -580,6 +580,26 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,c
     return(unspents);
 }
 
+char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
+{
+    char *retstr,buf[65]; bits256 txid;
+    if ( coin->FULLNODE > 0 )
+    {
+        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+        if ( bits256_nonz(txid) )
+        {
+            bits256_str(buf,txid);
+            retstr = clonestr(buf);
+        } else retstr = clonestr("{\"error\":\"couldnt validate or send signedtx\"}");
+    }
+    else if ( coin->FULLNODE == 0 )
+    {
+        retstr = _dex_sendrawtransaction(myinfo,coin->symbol,signedtx);
+    }
+    else retstr = dpow_sendrawtransaction(myinfo,coin,signedtx);
+    return(retstr);
+}
+
 STRING_ARG(InstantDEX,available,source)
 {
     uint64_t total = 0; int32_t i,n=0; char coinaddr[64]; cJSON *item,*unspents,*retjson = 0;

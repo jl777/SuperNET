@@ -18,7 +18,7 @@
 // more better LP commands
 
 // depends on just three external functions:
-//     - iguana_sendrawtransaction(myinfo,coin,signedtx);
+//     - basilisk_sendrawtransaction(myinfo,coin,signedtx);
 //     - basilisk_value(myinfo,rawtx->coin,0,0,myinfo->myaddr.persistent,argjson,0)
 //      basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)
 
@@ -279,7 +279,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_rawtx 
 
 bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
 {
-    bits256 txid; char *signedtx;
+    bits256 txid; char *signedtx,*retstr;
     memset(txid.bytes,0,sizeof(txid));
     if ( data != 0 && datalen != 0 )
     {
@@ -291,8 +291,20 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 #endif
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
-        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-        printf("sendrawtransaction %s.(%s)\n",name,bits256_str(str,txid));
+        if ( (retstr= basilisk_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
+        {
+            if ( is_hexstr(retstr,0) == 64 )
+            {
+                decode_hex(txid.bytes,32,retstr);
+                free(retstr);
+                printf("sendrawtransaction %s.(%s)\n",name,bits256_str(str,txid));
+            }
+            else
+            {
+                printf("sendrawtransaction %s error.(%s)\n",name,retstr);
+                free(retstr);
+            }
+        } else printf("sendrawtransaction %s got null return\n",name);
         free(signedtx);
     }
     return(txid);
@@ -674,7 +686,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
             rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
             rawtx->txbytes = calloc(1,rawtx->I.datalen);
             decode_hex(rawtx->txbytes,rawtx->I.datalen,signedtx);
-            //printf("SIGNEDTX.(%s)\n",signedtx);
+            printf("%s SIGNEDTX.(%s)\n",rawtx->name,signedtx);
             free(signedtx);
             retval = 0;
         } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
@@ -1367,7 +1379,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
         {
             char str[65],str2[65];
             rawtx->I.actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->I.datalen);
-            if ( bits256_nonz(rawtx->I.actualtxid) == 0 )
+            if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
                 printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
