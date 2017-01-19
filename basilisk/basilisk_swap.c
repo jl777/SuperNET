@@ -674,7 +674,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
             rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
             rawtx->txbytes = calloc(1,rawtx->I.datalen);
             decode_hex(rawtx->txbytes,rawtx->I.datalen,signedtx);
-            //printf("SIGNEDTX.(%s)\n",signedtx);
+            printf("%s SIGNEDTX.(%s)\n",rawtx->name,signedtx);
             free(signedtx);
             retval = 0;
         } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
