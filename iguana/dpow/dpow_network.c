@@ -62,7 +62,6 @@ NN_CONNECT to (tcp://69.12.77.197:7775)
 NN_CONNECT to (tcp://192.157.238.198:7775)
 NN_CONNECT to (tcp://209.58.183.199:7775)
 NN_CONNECT to (tcp://149.202.65.200:7775)
-NN_CONNECT to (tcp://27.100.36.201:7775)
 NN_CONNECT to (tcp://173.208.184.202:7775)
 NN_CONNECT to (tcp://94.102.63.208:7775)
 NN_CONNECT to (tcp://5.9.109.208:7775)
@@ -868,11 +867,15 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
 {
-    struct dex_request dexreq;
+    struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'U';
-    return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,1,"")));
+    if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,1,"")) != 0 )
+    {
+        //printf("UNSPENTS.(%s)\n",retstr);
+    }
+    return(_dex_arrayreturn(retstr));
 }
 
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
