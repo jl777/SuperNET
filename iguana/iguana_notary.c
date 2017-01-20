@@ -490,7 +490,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                 if ( (val= vals[j]) > 0. )
                 {
                     bitcoin_address(coinaddr,60,pubkeys[j],33);
-                    sprintf(cmd,"bicoin-cli sendtoaddress %s %f\n",coinaddr,val);
+                    sprintf(cmd,"bitcoin-cli sendtoaddress %s %f\n",coinaddr,val);
                     if ( sendflag != 0 && system(cmd) != 0 )
                         printf("ERROR with (%s)\n",cmd);
                     else
@@ -512,9 +512,10 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             for (j=0; j<n; j++)
             {
                 bitcoin_address(coinaddr,60,pubkeys[j],33);
-                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f\n",NOTARY_CURRENCIES[i],coinaddr,val);
+                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f",NOTARY_CURRENCIES[i],coinaddr,val);
                 if ( system(cmd) != 0 )
                     printf("ERROR with (%s)\n",cmd);
+                else printf("%s\n",cmd);
             }
         }
     }
