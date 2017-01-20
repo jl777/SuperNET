@@ -489,7 +489,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             {
                 if ( (val= vals[j]) > 0. )
                 {
-                    bitcoin_address(coinaddr,60,pubkeys[j],33);
+                    bitcoin_address(coinaddr,0,pubkeys[j],33);
                     sprintf(cmd,"bitcoin-cli sendtoaddress %s %f\n",coinaddr,val);
                     if ( sendflag != 0 && system(cmd) != 0 )
                         printf("ERROR with (%s)\n",cmd);
