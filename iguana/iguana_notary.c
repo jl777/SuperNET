@@ -495,7 +495,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                         printf("ERROR with (%s)\n",cmd);
                     else
                     {
-                        printf("(%d %f) ",j,val);
+                        printf("%s\n",cmd);
                         sum += val;
                     }
                 }
