@@ -509,6 +509,8 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,NOTARY_CURRENCIES[i]) == 0 )
         {
+            if ( symbol != 0 && strcmp(symbol,"KV") == 0 )
+                val = 100;
             for (j=0; j<n; j++)
             {
                 bitcoin_address(coinaddr,60,pubkeys[j],33);
@@ -517,6 +519,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                     printf("ERROR with (%s)\n",cmd);
                 else printf("%s\n",cmd);
             }
+            break;
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
