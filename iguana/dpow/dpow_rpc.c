@@ -410,6 +410,42 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     }
 }
 
+cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\", \"%s\", \"%d\"]",key,value,flags);
+        //printf("KVUPDATE.%s\n",params);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvupdate",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\"]",key);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvsearch",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
     bits256 txid; cJSON *json,*array; char *paramstr,*retstr;

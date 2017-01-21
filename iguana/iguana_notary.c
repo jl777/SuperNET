@@ -436,7 +436,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP", "WIRELESS" };
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP", "WIRELESS", "KV" };
 
 ZERO_ARGS(dpow,notarychains)
 {
@@ -495,7 +495,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                         printf("ERROR with (%s)\n",cmd);
                     else
                     {
-                        printf("(%d %f) ",j,val);
+                        printf("%s\n",cmd);
                         sum += val;
                     }
                 }
@@ -509,6 +509,8 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,NOTARY_CURRENCIES[i]) == 0 )
         {
+            if ( symbol != 0 && strcmp(symbol,"KV") == 0 )
+                val = 100;
             for (j=0; j<n; j++)
             {
                 bitcoin_address(coinaddr,60,pubkeys[j],33);
@@ -517,6 +519,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
                     printf("ERROR with (%s)\n",cmd);
                 else printf("%s\n",cmd);
             }
+            break;
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -668,6 +671,33 @@ STRING_ARG(dex,getnotaries,symbol)
 {
     return(_dex_getnotaries(myinfo,symbol));
 }
+
+TWO_STRINGS(dex,kvsearch,symbol,key)
+{
+    if ( key == 0 || key[0] == 0 )
+        return(clonestr("{\"error\":\"kvsearch parameter error\"}"));
+    return(_dex_kvsearch(myinfo,symbol,key));
+}
+
+THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
+{
+    // need to have some micropayments between client/server, otherwise receiving server incurs costs
+    if ( key == 0 || key[0] == 0 || value == 0 || value[0] == 0 )
+        return(clonestr("{\"error\":\"kvupdate parameter error\"}"));
+    if ( strcmp(symbol,"KV") == 0 )
+    {
+        if ( flags > 1 )
+            return(clonestr("{\"error\":\"only single duration updates via remote access\"}"));
+        else if ( strlen(key) > 64 || strlen(value) > 256 )
+            return(clonestr("{\"error\":\"only keylen <=64 and valuesize <= 256 allowed via remote access\"}"));
+        else
+        {
+            //printf("call _dex_kvupdate.(%s) -> (%s) flags.%d\n",key,value,flags);
+            return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+        }
+    } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
+}
+
 
 #include "../includes/iguana_apiundefs.h"
 
