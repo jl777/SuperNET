@@ -671,15 +671,26 @@ STRING_ARG(dex,getnotaries,symbol)
 
 TWO_STRINGS(dex,kvsearch,symbol,key)
 {
+    if ( key == 0 || key[0] == 0 )
+        return(clonestr("{\"error\":\"kvsearch parameter error\"}"));
     return(_dex_kvsearch(myinfo,symbol,key));
 }
 
-/*THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
+THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
 {
-    return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+    // need to have some micropayments between client/server, otherwise receiving server incurs costs
+    if ( key == 0 || key[0] == 0 || value == 0 || value[0] == 0 )
+        return(clonestr("{\"error\":\"kvupdate parameter error\"}"));
+    if ( strcmp(symbol,"KV") == 0 )
+    {
+        if ( flags > 1 )
+            return(clonestr("{\"error\":\"only single duration updates via remote access\"}"));
+        else if ( strlen(key) > 64 || strlen(value) > 256 )
+            return(clonestr("{\"error\":\"only keylen <=64 and valuesize <= 256 allowed via remote access\"}"));
+        else return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+    } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
 }
- need to have some micropayments between client/server, otherwise receiving server incurs costs
- */
+
 
 #include "../includes/iguana_apiundefs.h"
 
