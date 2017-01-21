@@ -498,6 +498,26 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == 'k' )
+            {
+                if ( strcmp(coin->symbol,"BTC") == 0 || strcmp(coin->symbol,"ZEC") == 0 || coin->chain->zcash == 0 )
+                    retstr = clonestr("{\"error\":\"only komodod chains support KV\"}");
+                else if ( (retjson= dpow_kvsearch(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'K' )
+            {
+                if ( strcmp(coin->symbol,"BTC") == 0 || strcmp(coin->symbol,"ZEC") == 0 || coin->chain->zcash == 0 )
+                    retstr = clonestr("{\"error\":\"only komodod chains support KV\"}");
+                else if ( (retjson= dpow_kvupdate(myinfo,coin,(char *)&dexp->packet[datalen],(char *)&dexp->packet[datalen+dexreq.shortarg],dexreq.intarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 'U' )
             {
                 if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
@@ -739,6 +759,30 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     dexreq.shortarg = vout;
     dexreq.func = 'O';
     return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
+}
+
+char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags)
+{
+    struct dex_request dexreq; char keyvalue[IGUANA_MAXSCRIPTSIZE]; int32_t keylen,valuesize;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'K';
+    dexreq.intarg = flags;
+    keylen = (int32_t)strlen(key);
+    memcpy(keyvalue,key,keylen+1);
+    valuesize = (int32_t)strlen(value);
+    dexreq.shortarg = keylen+1;
+    memcpy(&keyvalue[dexreq.shortarg],value,valuesize+1);
+    return(_dex_sendrequeststr(myinfo,&dexreq,keyvalue,1,""));
+}
+
+char *_dex_kvsearch(struct supernet_info *myinfo,char *symbol,char *key)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'k';
+    return(_dex_sendrequeststr(myinfo,&dexreq,key,1,""));
 }
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol)

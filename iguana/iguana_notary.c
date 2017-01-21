@@ -669,6 +669,16 @@ STRING_ARG(dex,getnotaries,symbol)
     return(_dex_getnotaries(myinfo,symbol));
 }
 
+TWO_STRINGS(dex,kvsearch,symbol,key)
+{
+    return(_dex_kvsearch(myinfo,symbol,key));
+}
+
+THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
+{
+    return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+}
+
 #include "../includes/iguana_apiundefs.h"
 
 
