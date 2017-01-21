@@ -416,6 +416,7 @@ cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char 
     if ( coin->FULLNODE < 0 )
     {
         sprintf(params,"[\"%s\", \"%s\", \"%d\"]",key,value,flags);
+        printf("KVUPDATE.%s\n",params);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvupdate",params);
         if ( (retjson= cJSON_Parse(retstr)) == 0 )
         {
