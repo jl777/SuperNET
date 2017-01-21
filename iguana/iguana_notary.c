@@ -674,10 +674,12 @@ TWO_STRINGS(dex,kvsearch,symbol,key)
     return(_dex_kvsearch(myinfo,symbol,key));
 }
 
-THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
+/*THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
 {
     return(_dex_kvupdate(myinfo,symbol,key,value,flags));
 }
+ need to have some micropayments between client/server, otherwise receiving server incurs costs
+ */
 
 #include "../includes/iguana_apiundefs.h"
 

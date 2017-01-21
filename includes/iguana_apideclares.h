@@ -40,7 +40,7 @@ TWO_STRINGS(dex,validateaddress,symbol,address);
 TWO_STRINGS(dex,listunspent,symbol,address);
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip);
 TWO_STRINGS(dex,kvsearch,symbol,key);
-THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb);
+//THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);
