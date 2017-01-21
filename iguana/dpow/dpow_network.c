@@ -774,7 +774,7 @@ char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *va
     valuesize = (int32_t)strlen(value);
     dexreq.shortarg = keylen+1;
     memcpy(&keyvalue[dexreq.shortarg],value,valuesize+1);
-    printf("_DEX.(%s) -> (%s) flags.%d\n",key,value,flags);
+    //printf("_DEX.(%s) -> (%s) flags.%d\n",key,value,flags);
     return(_dex_sendrequeststr(myinfo,&dexreq,keyvalue,keylen+valuesize+2,1,""));
 }
 

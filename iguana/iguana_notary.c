@@ -690,7 +690,11 @@ THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
             return(clonestr("{\"error\":\"only single duration updates via remote access\"}"));
         else if ( strlen(key) > 64 || strlen(value) > 256 )
             return(clonestr("{\"error\":\"only keylen <=64 and valuesize <= 256 allowed via remote access\"}"));
-        else return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+        else
+        {
+            //printf("call _dex_kvupdate.(%s) -> (%s) flags.%d\n",key,value,flags);
+            return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+        }
     } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
 }
 
