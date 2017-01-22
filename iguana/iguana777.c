@@ -903,7 +903,7 @@ void iguana_coinloop(void *arg)
                     if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 )
                         init_alladdresses(myinfo,coin);
                 }
-                if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )//(coin->notarychain >= 0 && coin->FULLNODE == 0) )
+                if ( coin->FULLNODE < 0 )//|| (coin->notarychain >= 0 && coin->FULLNODE == 0) )
                 {
                     continue;
                 }
@@ -960,7 +960,7 @@ void iguana_coinloop(void *arg)
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
-                if ( coin->started != 0 && coin->active != 0 )
+                if ( coin->started != 0 && coin->active != 0 && (coin->notarychain < 0 || coin->FULLNODE == 0) )
                 {
                     //printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
@@ -1211,7 +1211,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
         coins = mycalloc('A',1+1,sizeof(*coins));
         if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json,virtcoin)) != 0 )
         {
-            if ( iguana_isnotarychain(coin->symbol) < 0 )//|| coin->FULLNODE != 0 )
+            if ( iguana_isnotarychain(coin->symbol) < 0 || coin->FULLNODE >= 0 )
             {
                 coins[0] = (void *)((long)1);
                 coins[1] = coin;
