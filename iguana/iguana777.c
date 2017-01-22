@@ -886,6 +886,8 @@ void iguana_coinloop(void *arg)
     coin = coins[0];
     if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
         coin->VALIDATENODE = 0;
+    //if ( coin->FULLNODE > 0 )
+    //    coin->notarychain = -1;
     printf("begin coinloop[%d] %s notarychain.%d\n",n,coin->symbol,coin->notarychain);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
@@ -901,7 +903,7 @@ void iguana_coinloop(void *arg)
                     if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 )
                         init_alladdresses(myinfo,coin);
                 }
-                if ( coin->FULLNODE < 0 || (coin->notarychain >= 0 && coin->FULLNODE == 0) )
+                if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )//(coin->notarychain >= 0 && coin->FULLNODE == 0) )
                 {
                     continue;
                 }
@@ -1209,7 +1211,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
         coins = mycalloc('A',1+1,sizeof(*coins));
         if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json,virtcoin)) != 0 )
         {
-            if ( iguana_isnotarychain(coin->symbol) < 0 || coin->FULLNODE != 0 )
+            if ( iguana_isnotarychain(coin->symbol) < 0 )//|| coin->FULLNODE != 0 )
             {
                 coins[0] = (void *)((long)1);
                 coins[1] = coin;
