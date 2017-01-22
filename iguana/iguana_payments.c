@@ -605,6 +605,8 @@ STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
     cJSON *retjson = cJSON_CreateObject(); bits256 txid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_sendrawtransaction(myinfo,coin->symbol,rawtx));
     txid = iguana_sendrawtransaction(myinfo,coin,rawtx);
     jaddbits256(retjson,"result",txid);
     return(jprint(retjson,1));
@@ -764,6 +766,8 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin != 0 )
     {
+        if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+            return(_dex_gettxout(myinfo,coin->symbol,txid,vout));
         if ( (value= _RTgettxout(coin,&ptr,&height,&scriptlen,script,rmd160,coinaddr,txid,vout,mempool)) > 0 )
         {
             jaddbits256(retjson,"bestblock",coin->blocks.hwmchain.RO.hash2);
@@ -958,6 +962,8 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len=0,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_RTtxid *RTptr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_getrawtransaction(myinfo,coin->symbol,txid));
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
     if ( RTptr != 0 && RTptr->rawtxbytes != 0 && RTptr->txlen > 0 )
     {
