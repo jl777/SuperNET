@@ -854,7 +854,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; struct iguana_info *coin = 0;
     char symbol[64],buf[4096],*originstr,*fieldstr,*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+//printf("rpcparse.(%s)\n",urlstr);
     if ( myinfo->remoteorigin == 0 )
     {
         for (iter=0; iter<2; iter++)

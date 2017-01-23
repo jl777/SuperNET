@@ -716,6 +716,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
         jaddstr(retjson,"error","couldnt get all pubkeys");
         free_json(pkjson);
     }
+    printf("CREATEMULTISIG.(%s)\n",jprint(retjson,0));
     return(jprint(retjson,1));
 }
 
@@ -729,7 +730,6 @@ INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account) //
     myinfo->expiration++;
     if ( (retstr= bitcoinrpc_createmultisig(IGUANA_CALLARGS,M,pubkeys,account)) != 0 )
     {
-        //printf("CREATEMULTISIG.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (msigaddr= jstr(retjson,"address")) != 0 )
