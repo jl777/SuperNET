@@ -605,6 +605,8 @@ STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
     cJSON *retjson = cJSON_CreateObject(); bits256 txid;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_sendrawtransaction(myinfo,coin->symbol,rawtx));
     txid = iguana_sendrawtransaction(myinfo,coin,rawtx);
     jaddbits256(retjson,"result",txid);
     return(jprint(retjson,1));
@@ -678,6 +680,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
     if ( n < 0 || n > 16 || M < 0 || M > n )
         return(clonestr("{\"error\":\"illegal number of pubkeys\"}"));
     memset(&V,0,sizeof(V));
+    printf("create M.%d of N.%d (%s)\n",M,n,jprint(pubkeys,0));
     V.M = M, V.N = n;
     pkjson = cJSON_CreateArray();
     addresses = cJSON_CreateArray();
@@ -714,6 +717,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
         jaddstr(retjson,"error","couldnt get all pubkeys");
         free_json(pkjson);
     }
+    printf("CREATEMULTISIG.(%s)\n",jprint(retjson,0));
     return(jprint(retjson,1));
 }
 
@@ -727,7 +731,6 @@ INT_ARRAY_STRING(bitcoinrpc,addmultisigaddress,M,pubkeys,account) //
     myinfo->expiration++;
     if ( (retstr= bitcoinrpc_createmultisig(IGUANA_CALLARGS,M,pubkeys,account)) != 0 )
     {
-        //printf("CREATEMULTISIG.(%s)\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (msigaddr= jstr(retjson,"address")) != 0 )
@@ -764,6 +767,8 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
         return(clonestr("{\"error\":\"no remote\"}"));
     if ( coin != 0 )
     {
+        if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+            return(_dex_gettxout(myinfo,coin->symbol,txid,vout));
         if ( (value= _RTgettxout(coin,&ptr,&height,&scriptlen,script,rmd160,coinaddr,txid,vout,mempool)) > 0 )
         {
             jaddbits256(retjson,"bestblock",coin->blocks.hwmchain.RO.hash2);
@@ -958,6 +963,8 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     struct iguana_txid *tx,T; char *txbytes; bits256 checktxid; int32_t len=0,height,extralen=65536; cJSON *retjson,*txobj; uint8_t *extraspace; struct iguana_RTtxid *RTptr;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_getrawtransaction(myinfo,coin->symbol,txid));
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
     if ( RTptr != 0 && RTptr->rawtxbytes != 0 && RTptr->txlen > 0 )
     {
