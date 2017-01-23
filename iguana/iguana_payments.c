@@ -680,6 +680,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
     if ( n < 0 || n > 16 || M < 0 || M > n )
         return(clonestr("{\"error\":\"illegal number of pubkeys\"}"));
     memset(&V,0,sizeof(V));
+    printf("create M.%d of N.%d (%s)\n",M,n,jprint(pubkeys,0));
     V.M = M, V.N = n;
     pkjson = cJSON_CreateArray();
     addresses = cJSON_CreateArray();
