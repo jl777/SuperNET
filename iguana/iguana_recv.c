@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -823,7 +823,7 @@ void iguana_gotblockM(struct supernet_info *myinfo,struct iguana_info *coin,stru
         block->bundlei = bundlei;
         block->height = bp->hdrsi*coin->chain->bundlesize + bundlei;
         block->txvalid = block->valid = 1;
-        block->RO.txn_count = origtxdata->zblock.RO.txn_count;
+        block->RO = origtxdata->zblock.RO;
         if ( block->fpipbits != 0 && block->fpos >= 0 )
         {
             static int32_t numredundant; static double redundantsize; static uint32_t lastdisp;
@@ -1291,31 +1291,33 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
                 iguana_bundlespeculate(coin,bp,bundlei,hash2,1);
         }
         prevbp = 0, prevbundlei = -2;
-        iguana_bundlefind(coin,&prevbp,&prevbundlei,prevhash2);
-        //if ( 0 && block->blockhashes != 0 )
-        //    fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
-        if ( prevbp != 0 && prevbundlei >= 0 && (prevblock= iguana_blockfind("bundleset2",coin,prevhash2)) != 0 )
-        {
-            if ( prevbundlei < coin->chain->bundlesize )
-            {
-                if ( prevbp->hdrsi+1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize-1 )
-                {
-                    printf("%s AUTOCREATE.%d\n",coin->symbol,prevbp->bundleheight + coin->chain->bundlesize);
-                    if ( (bp= iguana_bundlecreate(coin,bundleip,prevbp->bundleheight + coin->chain->bundlesize,hash2,zero,0)) != 0 )
-                    {
-                        if ( bp->queued == 0 )
-                            iguana_bundleQ(myinfo,coin,bp,1000);
-                    }
-                }
-                if ( prevbundlei < coin->chain->bundlesize-1 )
-                {
-                    //printf("bundlehash2add next %d\n",prevbundlei);
-                    iguana_bundlehash2add(coin,0,prevbp,prevbundlei+1,hash2);
-                }
-                if ( 1 && strcmp("BTC",coin->symbol) != 0 )
-                    iguana_bundlespeculate(coin,prevbp,prevbundlei,prevhash2,2);
-            }
-        }
+		if (bits256_nonz(prevhash2)) {
+			iguana_bundlefind(coin, &prevbp, &prevbundlei, prevhash2);
+			//if ( 0 && block->blockhashes != 0 )
+			//    fprintf(stderr,"has blockhashes bp.%p[%d] prevbp.%p[%d]\n",bp,bundlei,prevbp,prevbundlei);
+			if (prevbp != 0 && prevbundlei >= 0 && (prevblock = iguana_blockfind("bundleset2", coin, prevhash2)) != 0)
+			{
+				if (prevbundlei < coin->chain->bundlesize)
+				{
+					if (prevbp->hdrsi + 1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize - 1)
+					{
+						printf("%s AUTOCREATE.%d\n", coin->symbol, prevbp->bundleheight + coin->chain->bundlesize);
+						if ((bp = iguana_bundlecreate(coin, bundleip, prevbp->bundleheight + coin->chain->bundlesize, hash2, zero, 0)) != 0)
+						{
+							if (bp->queued == 0)
+								iguana_bundleQ(myinfo, coin, bp, 1000);
+						}
+					}
+					if (prevbundlei < coin->chain->bundlesize - 1)
+					{
+						//printf("bundlehash2add next %d\n",prevbundlei);
+						iguana_bundlehash2add(coin, 0, prevbp, prevbundlei + 1, hash2);
+					}
+					if (1 && strcmp("BTC", coin->symbol) != 0)
+						iguana_bundlespeculate(coin, prevbp, prevbundlei, prevhash2, 2);
+				}
+			}
+		}
     } else printf("iguana_bundleset: error adding blockhash\n");
     bp = 0, *bundleip = -2;
     return(iguana_bundlefind(coin,&bp,bundleip,hash2));

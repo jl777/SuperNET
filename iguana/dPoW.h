@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -19,13 +19,13 @@
 #define DPOW_FIRSTRATIFY 1000
 
 #define DPOW_CHECKPOINTFREQ 10
-#define DPOW_MINSIGS 13      //((height < 90000) ? 7 : 11)
+#define DPOW_MINSIGS 17
 //#define DPOW_M(bp) ((bp)->minsigs)  // (((bp)->numnotaries >> 1) + 1)
 #define DPOW_MODIND(bp,offset) (((((bp)->height / DPOW_CHECKPOINTFREQ) % (bp)->numnotaries) + (offset)) % (bp)->numnotaries)
-#define DPOW_VERSION 0x0770
+#define DPOW_VERSION 0x0781
 #define DPOW_UTXOSIZE 10000
 #define DPOW_MINOUTPUT 6000
-#define DPOW_DURATION 300
+#define DPOW_DURATION 600
 #define DPOW_RATIFYDURATION (3600 * 24)
 
 //#define DPOW_ENTRIESCHANNEL ('e' | ('n' << 8) | ('t' << 16) | ('r' << 24))
@@ -45,11 +45,13 @@
 #define DPOW_MAXRELAYS 64
 #define DPOW_MAXSIGLEN 128
 
-#define DEX_VERSION 0x0101
+#define DEX_VERSION 0x0105
 #define DPOW_SOCK 7775
 #define DEX_SOCK 7774
 #define PUB_SOCK 7773
 #define REP_SOCK 7772
+
+#define DPOW_EPOCHDURATION 600
 
 struct dpow_coinentry
 {
@@ -70,7 +72,7 @@ struct dpow_entry
 {
     bits256 commit,beacon,ratifysrcutxo,ratifydestutxo;
     uint64_t masks[2][DPOW_MAXRELAYS],recvmask,othermask,bestmask,ratifyrecvmask,ratifybestmask;
-    int32_t height; uint32_t pendingcrcs[2];
+    int32_t height; uint32_t pendingcrcs[2],paxwdcrc;
     uint16_t ratifysrcvout,ratifydestvout;
     int8_t bestk,ratifybestk;
     uint8_t pubkey[33],ratifysigs[2][DPOW_MAXSIGLEN],ratifysiglens[2];
@@ -106,7 +108,7 @@ struct dpow_block
     uint64_t destsigsmasks[DPOW_MAXRELAYS],srcsigsmasks[DPOW_MAXRELAYS];
     uint64_t recvmask,bestmask,ratifybestmask,ratifyrecvmask,pendingbestmask,pendingratifybestmask,ratifysigmasks[2];
     struct dpow_entry notaries[DPOW_MAXRELAYS];
-    uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch;
+    uint32_t state,starttime,timestamp,waiting,sigcrcs[2],txidcrcs[2],utxocrcs[2],lastepoch,paxwdcrc;
     int32_t rawratifiedlens[2],height,numnotaries,numerrors,completed,minsigs,duration,numratified,isratify,require0,scores[DPOW_MAXRELAYS];
     int8_t myind,bestk,ratifybestk,pendingbestk,pendingratifybestk;
     cJSON *ratified;
@@ -134,10 +136,58 @@ struct dpow_info
     uint32_t SRCREALTIME,destupdated,srcconfirms,numdesttx,numsrctx,lastsplit,cancelratify;
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;
-    portable_mutex_t mutex;
+    portable_mutex_t paxmutex,dexmutex;
     uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
+uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp);
+void dex_updateclient(struct supernet_info *myinfo);
+char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field);
+char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen,int32_t sendping,uint32_t duration);
+int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32_t *blocktimep,bits256 *txs,uint32_t *numtxp,struct iguana_info *coin);
+void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen);
+int32_t dpow_nanomsg_update(struct supernet_info *myinfo);
+int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,int32_t *voutp,char *coinaddr);
+void komodo_assetcoins(int32_t fullnode,uint64_t mask);
+int32_t iguana_isnotarychain(char *symbol);
 
+cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin);
+cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid);
+cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash);
+bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height);
+bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *coin);
+char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
+cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout);
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
+cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
+char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
+cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags);
+cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key);
+void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
+
+char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
+char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
+char *_dex_getblock(struct supernet_info *myinfo,char *symbol,bits256 hash2);
+char *_dex_getblockhash(struct supernet_info *myinfo,char *symbol,int32_t height);
+char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol);
+char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx);
+char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout);
+char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *coinaddr,int32_t count,int32_t skip);
+char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol);
+int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
+char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
+char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags);
+char *_dex_kvsearch(struct supernet_info *myinfo,char *symbol,char *key);
+
+int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
+cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
+
+void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen);
 
 #endif

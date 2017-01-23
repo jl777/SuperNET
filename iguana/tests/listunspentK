@@ -1,0 +1,2 @@
+#!/bin/bash
+curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"KMD\",\"method\":\"listunspent\",\"params\":[1, 9999999, []]}"

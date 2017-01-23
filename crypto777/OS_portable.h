@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -219,6 +219,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
 int32_t OS_conv_unixtime(struct tai *t,int32_t *secondsp,time_t timestamp);
 
 char *OS_compatible_path(char *str);
+FILE *OS_appendfile(char *origfname);
 
 int32_t OS_compare_files(char *fname,char *fname2);
 int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag);

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -1245,10 +1245,12 @@ cJSON *bitcoin_txinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_
     return(txobj);
 }
 
-cJSON *bitcoin_txcreate(int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp)
+cJSON *bitcoin_txcreate(char *symbol,int32_t isPoS,int64_t locktime,uint32_t txversion,uint32_t timestamp)
 {
     cJSON *json = cJSON_CreateObject();
     jaddnum(json,"version",txversion);
+    if ( locktime == 0 && strcmp(symbol,"KMD") == 0 )
+        locktime = (uint32_t)time(NULL);
     jaddnum(json,"locktime",locktime);
     if ( isPoS != 0 )
         jaddnum(json,"timestamp",timestamp == 0 ? time(NULL) : timestamp);
@@ -1356,7 +1358,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
     if ( M > N || N > 3 )
         return(clonestr("{\"error\":\"illegal M or N\"}"));
     memset(&V,0,sizeof(V));
-    txobj = bitcoin_txcreate(active->chain->isPoS,0,coin->chain->normal_txversion,0);
+    txobj = bitcoin_txcreate(active->symbol,active->chain->isPoS,0,coin->chain->normal_txversion,0);
     if ( destaddress[0] != 0 && destamount > 0. )
         bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
     if ( destaddress2[0] != 0 && destamount2 > 0. )

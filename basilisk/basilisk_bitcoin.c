@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -354,6 +354,7 @@ char *basilisk_valuestr(struct iguana_info *coin,char *coinaddr,uint64_t value,i
     jaddstr(retjson,"result","success");
     jaddstr(retjson,"address",coinaddr);
     jadd64bits(retjson,"satoshis",value);
+    jaddnum(retjson,"amount",dstr(value));
     jaddnum(retjson,"value",dstr(value));
     jaddnum(retjson,"height",height);
     jaddnum(retjson,"numconfirms",coin->blocks.hwmchain.height - height + 1);
@@ -447,7 +448,7 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
         return(clonestr("{\"error\":\"null valsobj\"}"));
     if ( (myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0) && strcmp(coin->symbol,"RELAY") != 0 )
         return(0);
-    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 )
+    if ( coin->VALIDATENODE > 0 || coin->FULLNODE > 0 || coin->notarychain >= 0 )
     {
         infojson = iguana_getinfo(myinfo,coin);
         Lptr->retstr = jprint(infojson,1);
@@ -549,7 +550,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
     bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-    if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,0,1,0)) != 0 )
+    if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )
             duplicates = 1;
@@ -584,8 +585,8 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
-    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
-        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
+    //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+    //    return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     vins = 0;
     changeaddr = jstr(valsobj,"changeaddr");
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
@@ -608,7 +609,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
     if ( coin != 0 )
     {
-        if ( (txobj= bitcoin_txcreate(coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,juint(valsobj,"timestamp"))) != 0 )
+        if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,locktime,locktime==0?coin->chain->normal_txversion:coin->chain->locktime_txversion,juint(valsobj,"timestamp"))) != 0 )
         {
             spendlen = (int32_t)strlen(spendscriptstr) >> 1;
             decode_hex(buf,spendlen,spendscriptstr);
@@ -882,11 +883,11 @@ cJSON *BTC_makeclaimfunc(struct supernet_info *myinfo,struct exchange_info *exch
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol; uint32_t basilisktag; struct basilisk_item *ptr,Lptr; int32_t timeoutmillis;
+    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
-    if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
-        return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
+    //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
+    //    return(clonestr("{\"error\":\"special relays only do OUT and MSG\"}"));
     //if ( coin == 0 )
     {
         if ( (symbol= jstr(vals,"symbol")) != 0 || (symbol= jstr(vals,"coin")) != 0 )
@@ -894,8 +895,38 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
     }
     if ( jobj(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(5,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+    txid = jbits256(vals,"txid");
+    vout = jint(vals,"vout");
     if ( coin != 0 )
     {
+        if ( coin->FULLNODE < 0 )
+        {
+            if ( (txoutjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
+            {
+                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= SATOSHIDEN*jdouble(txoutjson,"value")) != 0 )
+                {
+                    retjson = cJSON_CreateObject();
+                    jaddstr(retjson,"result","success");
+                    jaddstr(retjson,"address",coinaddr);
+                    jadd64bits(retjson,"satoshis",value);
+                    jaddnum(retjson,"value",dstr(value));
+                    jaddnum(retjson,"amount",dstr(value));
+                    height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
+                    jaddnum(retjson,"height",height);
+                    jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
+                    jaddbits256(retjson,"txid",txid);
+                    jaddnum(retjson,"vout",vout);
+                    jaddstr(retjson,"coin",coin->symbol);
+                }
+                else
+                {
+                    free_json(txoutjson);
+                    return(clonestr("{\"error\":\"return from gettxout missing fields\"}"));
+                }
+                free_json(txoutjson);
+                return(jprint(retjson,1));
+            } else return(clonestr("{\"error\":\"null return from gettxout\"}"));
+        }
         if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
             basilisktag = rand();
         if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
@@ -904,6 +935,52 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         {
             retstr = ptr->retstr, ptr->retstr = 0;
             ptr->finished = OS_milliseconds() + 10000;
+            return(retstr);
+        }
+    }
+    if ( myinfo->reqsock >= 0 )
+    {
+        if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
+        {
+            if ( (txoutjson= cJSON_Parse(retstr)) != 0 )
+            {
+                //printf("TX.(%s)\n",jprint(txoutjson,0));
+                retjson = cJSON_CreateObject();
+                jaddstr(retjson,"result","success");
+                jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
+                if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
+                {
+                    //printf("txjson.(%s)\n",jprint(txjson,0));
+                    if ( (value= jdouble(txjson,"value") * SATOSHIDEN) != 0 )
+                    {
+                        if ( (sobj= jobj(txjson,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 && (coinaddr= jstri(addrs,0)) != 0 )
+                            jaddstr(retjson,"address",coinaddr);
+                        jadd64bits(retjson,"satoshis",value);
+                        jaddnum(retjson,"value",dstr(value));
+                        if ( (infostr= _dex_getinfo(myinfo,symbol)) != 0 )
+                        {
+                            if ( (info= cJSON_Parse(infostr)) != 0 )
+                            {
+                                if ( (height= jint(info,"blocks")) > 0 )
+                                {
+                                    height -= jint(txoutjson,"confirmations");
+                                    jaddnum(retjson,"height",height);
+                                }
+                                free_json(info);
+                            }
+                            free(infostr);
+                        }
+                        jaddbits256(retjson,"txid",txid);
+                        jaddnum(retjson,"vout",vout);
+                        jaddstr(retjson,"coin",symbol);
+                        free(retstr);
+                        free_json(txoutjson);
+                        return(jprint(retjson,1));
+                    }
+                }
+                free_json(txoutjson);
+                return(jprint(retjson,1));
+            }
             return(retstr);
         }
     }

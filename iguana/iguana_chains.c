@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -303,8 +303,6 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
             chain->estblocktime = juint(argjson,"blocktime");
         if ( chain->estblocktime == 0 )
             chain->estblocktime = 60;
-        if ( chain->havecltv == 0 )
-            chain->havecltv = juint(argjson,"havecltv");
         path = jstr(argjson,"path");
         if ( jobj(argjson,"conf") == 0 )
             conf[0] = 0;
@@ -348,6 +346,8 @@ void iguana_chainparms(struct supernet_info *myinfo,struct iguana_chain *chain,c
                 chain->rpcport = 14632;
         }
         chain->zcash = juint(argjson,"zcash");
+        if ( chain->havecltv == 0 )
+            chain->havecltv = juint(argjson,"havecltv") || chain->zcash;
         chain->debug = juint(argjson,"debug");
         chain->fixit = juint(argjson,"fixit");
         if ( (chain->normal_txversion= juint(argjson,"normal_txversion")) == 0 )

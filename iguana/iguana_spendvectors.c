@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -631,8 +631,8 @@ int32_t iguana_volatilesinit(struct supernet_info *myinfo,struct iguana_info *co
         {
             if ( bp->startutxo == 0 )
                 bp->startutxo = (uint32_t)time(NULL) - 60;
-            if ( bp->utxofinish == 0 )
-                bp->utxofinish = (uint32_t)time(NULL);
+            //if ( bp->utxofinish == 0 )
+            //    bp->utxofinish = (uint32_t)time(NULL);
             n++;
         }
         if ( bp->utxofinish <= 1 || (i > 0 && bp->utxofinish <= 1) )

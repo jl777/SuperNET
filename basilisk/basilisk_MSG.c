@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -76,7 +76,7 @@ int32_t basilisk_msgcmp(struct basilisk_message *msg,int32_t width,uint32_t chan
         {
             while ( width >= 0 && n < 60 )
             {
-                if ( msgid == keymsgid && keychannel == channel )
+                if ( (keymsgid == 0 || msgid == keymsgid) && (keychannel == 0 || keychannel == channel) )
                     return(0);
                 msgid--;
                 n++;
@@ -216,10 +216,8 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     msg->expiration = (uint32_t)time(NULL) + duration;
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
-    //int32_t i; for (i=0; i<BASILISK_KEYSIZE; i++)
-    //    printf("%02x",key[i]);
-    //printf(" <- ADDMSG.[%d] exp %u %p (%p %p)\n",QUEUEITEMS,msg->expiration,msg,msg->hh.next,msg->hh.prev);
     portable_mutex_unlock(&myinfo->messagemutex);
+//printf("add message keylen.%d [%d]\n",msg->keylen,datalen);
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
     if ( sendping != 0 )
@@ -277,34 +275,47 @@ HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
         jdelete(vals,"msgid");
         jaddnum(vals,"msgid",msgid);
     }
-    if ( myinfo->NOTARY.RELAYID >= 0 )
+    if ( myinfo->NOTARY.RELAYID >= 0 || myinfo->dexsock >= 0 || myinfo->subsock >= 0 )
     {
         channel = juint(vals,"channel");
         width = juint(vals,"width");
         retstr = basilisk_iterate_MSG(myinfo,channel,msgid,jbits256(vals,"srchash"),jbits256(vals,"desthash"),width);
+        //printf("getmessage.(%s)\n",retstr);
         return(retstr);
     }
-    //printf("getmessage not relay.%d\n",myinfo->NOTARY.RELAYID);
+    //printf("getmessage not relay.%d dexsock.%d subsock.%d\n",myinfo->NOTARY.RELAYID,myinfo->dexsock,myinfo->subsock);
     return(basilisk_standardservice("MSG",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,1));
 }
 
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 {
-    int32_t keylen,datalen; uint8_t key[BASILISK_KEYSIZE],space[16384],*data,*ptr = 0; char *retstr=0;
-    if ( myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0 )
+    int32_t keylen,datalen,allocsize = 65536; uint8_t key[BASILISK_KEYSIZE],*space,*space2,*data,*ptr = 0; char *retstr=0;
+    space = calloc(1,allocsize);
+    space2 = calloc(1,allocsize);
+    data = get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,&space[BASILISK_KEYSIZE],allocsize-BASILISK_KEYSIZE,hexstr);
+    if ( myinfo->subsock >= 0 || myinfo->dexsock >= 0 || (myinfo->IAMNOTARY != 0 && myinfo->NOTARY.RELAYID >= 0) )
     {
         keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
-        if ( (data= get_dataptr(BASILISK_HDROFFSET,&ptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+        if ( data != 0 )
         {
             retstr = basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"));
         } else printf("no get_dataptr\n");
-        if ( ptr != 0 )
-            free(ptr);
         if ( retstr != 0 )
             free(retstr);
-    } else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
+    } //else printf("not notary.%d relayid.%d\n",myinfo->IAMNOTARY,myinfo->NOTARY.RELAYID);
     if ( vals != 0 && juint(vals,"fanout") == 0 )
         jaddnum(vals,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+    if ( BASILISK_KEYSIZE+datalen < allocsize )
+    {
+        memcpy(space2,key,BASILISK_KEYSIZE);
+        if ( data != 0 && datalen != 0 )
+            memcpy(&space2[BASILISK_KEYSIZE],data,datalen);
+        dex_reqsend(myinfo,"DEX",space2,datalen+BASILISK_KEYSIZE,1,"");
+    } else printf("sendmessage space too small error for %d\n",datalen);
+    free(space);
+    free(space2);
+    if ( ptr != 0 )
+        free(ptr);
     return(basilisk_standardservice("OUT",myinfo,0,jbits256(vals,"desthash"),vals,hexstr,0));
 }
 #include "../includes/iguana_apiundefs.h"
@@ -318,7 +329,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"channel",channel);
         if ( msgid == 0 )
             msgid = (uint32_t)time(NULL);
-        jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
+        jaddnum(valsobj,"fanout",1);//MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+2));
         jaddnum(valsobj,"msgid",msgid);
         jaddnum(valsobj,"duration",duration);
         jaddnum(valsobj,"timeout",1000);
@@ -369,7 +380,7 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
     jaddnum(valsobj,"msgid",msgid);
     jaddnum(valsobj,"width",width);
     jaddnum(valsobj,"timeout",BASILISK_TIMEOUT);
-    jaddnum(valsobj,"fanout",MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
+    jaddnum(valsobj,"fanout",1);//MAX(8,(int32_t)sqrt(myinfo->NOTARY.NUMRELAYS)+1));
     jaddnum(valsobj,"numrequired",1);
     jaddbits256(valsobj,"srchash",srchash);
     jaddbits256(valsobj,"desthash",desthash);
@@ -436,7 +447,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
     {
         for (i=0; i<numcrcs; i++)
         {
-            printf("%08x ",rawcrcs[i]);
+            //printf("%08x ",rawcrcs[i]);
             for (j=0; j<numcandidates; j++)
             {
                 if ( rawcrcs[i] == candidates[j] && datalens[i] == candlens[j] )
@@ -453,7 +464,7 @@ uint32_t basilisk_majority32(int32_t *datalenp,uint32_t rawcrcs[64],int32_t data
                 numcandidates++;
             }
         }
-        printf("n.%d -> numcandidates.%d\n",i,numcandidates);
+        //printf("n.%d -> numcandidates.%d\n",i,numcandidates);
         if ( numcandidates > 0 )
         {
             for (j=0; j<numcandidates; j++)
@@ -512,7 +523,6 @@ uint32_t basilisk_crcrecv(struct supernet_info *myinfo,int32_t width,uint8_t *ve
                         } else printf("not keystr.%p or no data.%p or bad datalen.%d\n",keystr,hexstr,datalen);
                     }
                 }
-                printf("(%s).%d ",jprint(item,0),i);
             }
             //printf("n.%d maxlen.%d\n",n,maxlen);
         }

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -14,60 +14,6 @@
  ******************************************************************************/
 
 // included from basilisk.c
-void basilisk_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
-{
-    // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    double price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64];
-    srcamount = swap->I.req.srcamount;
-    destamount = swap->I.req.destamount;
-    profitmargin = (double)swap->I.req.profitmargin / 1000000.;
-    if ( srcamount <= SMALLVAL || destamount <= SMALLVAL )
-    {
-        printf("illegal amount for balancing %f %f\n",srcamount,destamount);
-        return;
-    }
-    strcpy(rel,"BTC");
-    if ( strcmp(swap->I.req.src,"BTC") == 0 )
-    {
-        strcpy(base,swap->I.req.dest);
-        price = (srcamount / destamount);
-        volume = destamount / SATOSHIDEN;
-        dir = -1.;
-    }
-    else if ( strcmp(swap->I.req.dest,"BTC") == 0 )
-    {
-        strcpy(base,swap->I.req.src);
-        price = (destamount / srcamount);
-        volume = srcamount / SATOSHIDEN;
-        dir = 1.;
-    }
-    else
-    {
-        printf("only BTC trades can be balanced, not (%s/%s)\n",swap->I.req.src,swap->I.req.dest);
-        return;
-    }
-    if ( iambob != 0 )
-    {
-        if ( myinfo->IAMLP != 0 )
-        {
-            printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
-            if ( dir < 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-        }
-    }
-    else
-    {
-        if ( myinfo->IAMLP != 0 )
-        {
-            printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
-            if ( dir > 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-        }
-    }
-}
-
 
 cJSON *basilisk_rawtxobj(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
 {
@@ -170,12 +116,13 @@ struct basilisk_swap *basilisk_swapstore(struct supernet_info *myinfo,struct bas
 
 struct basilisk_swap *basilisk_swapload(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t requestid,uint32_t quoteid)
 {
-    return(swap);
+    // set swap fields and return it if found
+    return(0);
 }
 
 void basilisk_swapstart(struct supernet_info *myinfo) // scan saved tmpswap, purge if complete, else Q
 {
-    
+    // for resuming pending swaps
 }
 
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay)
@@ -329,51 +276,6 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
     } else return(0);
 }
 
-void tradebot_liquidity_command(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals)
-{
-    struct liquidity_info li,refli; int32_t i;
-    memset(&li,0,sizeof(li));
-    strcpy(li.base,base), strcpy(li.rel,"BTC");
-    li.profit = jdouble(vals,"profit");
-    li.refprice = jdouble(vals,"refprice");
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        refli = myinfo->linfos[i];
-        if ( strcmp(li.rel,refli.base) == 0 && strcmp(li.base,refli.rel) == 0 )
-        {
-            strcpy(li.base,refli.base);
-            strcpy(li.rel,refli.rel);
-            li.refprice = (1. / li.refprice);
-            printf("Set rev linfo[%d] (%s/%s) %.6f %.8f\n",i,li.base,li.rel,li.profit,li.refprice);
-            myinfo->linfos[i] = li;
-            return;
-        }
-        else if ( refli.base[0] == 0 || (strcmp(li.base,refli.base) == 0 && strcmp(li.rel,refli.rel) == 0) )
-        {
-            myinfo->linfos[i] = li;
-            printf("Set linfo[%d] (%s/%s) %.6f %.8f\n",i,li.base,li.rel,li.profit,li.refprice);
-            return;
-        }
-    }
-    printf("ERROR: too many linfos %d\n",i);
-}
-
-double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,char *base,char *rel)
-{
-    int32_t i; struct liquidity_info refli;
-    *refpricep = 0.;
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        refli = myinfo->linfos[i];
-        if ( (strcmp(base,refli.base) == 0 && strcmp(rel,refli.rel) == 0) || (strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 ))
-        {
-            *refpricep = refli.refprice;
-            return(refli.profit);
-        }
-    }
-    return(0.);
-}
-
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
     int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
@@ -410,17 +312,27 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             }
         } else noquoteflag++;
     }
-    //printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount));
-    double retvals[4],refprice,profitmargin,aveprice; cJSON *retjson; char *retstr;
-    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && (profitmargin= tradebot_liquidity_active(myinfo,&refprice,list[0].src,list[0].dest)) > 0. )
+    // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
+    double retvals[4],refprice=0.,profitmargin,aveprice,destvolume; cJSON *retjson; char *retstr;
+    destvolume = dstr(maxamount);
+    if ( fabs(destvolume) < SMALLVAL )
     {
-        if ( (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
+        if ( (destvolume= dstr(minamount)) == 0 )
+        {
+            aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount));
+            destvolume = aveprice * dstr(list[0].srcamount);
+        }
+    }
+    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
+    if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
+    {
+        if ( profitmargin == 0 || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
         printf("avebid %f bidvol %f, aveask %f askvol %f\n",retvals[0],retvals[1],retvals[2],retvals[3]);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
-        destamount = (1.0 - profitmargin) * retvals[0] * list[0].srcamount;
+        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -440,15 +352,16 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             issueR->destamount = destamount;
             issueR->quotetime = (uint32_t)time(NULL);
             issueR->profitmargin = (uint32_t)(profitmargin * 1000000);
-            printf("issueR set!\n");
         }
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
     {
-        if ( minamount != 0 && maxamount > minamount && time(NULL) > BASILISK_DEXDURATION/2 )
+        if ( minamount != 0 && maxamount >= minamount && time(NULL) > list[0].timestamp+BASILISK_AUCTION_DURATION )
         {
-            printf("automatch quoteid.%u triggered %.8f > %.8f\n",list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             *issueR = list[maxi];
+            for (i=0; i<sizeof(*issueR); i++)
+                printf("%02x",((uint8_t *)issueR)[i]);
+            printf(" automatch[%d] r.%u quoteid.%u triggered %.8f > %.8f\n",maxi,list[maxi].requestid,list[maxi].quoteid,dstr(maxamount),dstr(minamount));
             if ( minamount > 0 )
                 metric = (dstr(maxamount) / dstr(minamount)) - 1.;
             else metric = 1.;
@@ -489,6 +402,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
                             *issueR = tmpR;
                             hwm = metric;
                             refR = tmpR;
+                            printf("SET HWM\n");
                         }
                         m = 0;
                     }
@@ -504,7 +418,13 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
         //printf("process_results n.%d m.%d nonz.%d\n",n,m,nonz);
         if ( m > 0 && m < sizeof(list)/sizeof(*list) )
             if ( (metric= basilisk_request_listprocess(myinfo,&tmpR,list,m)) > hwm )
+            {
                 *issueR = tmpR, hwm = metric;
+                //printf("set hwm\n");
+                //for (i=0; i<sizeof(*issueR); i++)
+                //    printf("%02x",((uint8_t *)issueR)[i]);
+                //printf("\n");
+            }
     }
     return(hwm);
 }

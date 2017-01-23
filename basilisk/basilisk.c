@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "../iguana/iguana777.h"
+#include "../iguana/exchanges777.h"
 
 typedef char *basilisk_servicefunc(struct supernet_info *myinfo,char *CMD,void *addr,char *remoteaddr,uint32_t basilisktag,cJSON *valsobj,uint8_t *data,int32_t datalen,bits256 hash,int32_t from_basilisk);
 
@@ -209,10 +210,11 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
     }
     if ( basilisk_notarycmd(type) != 0 && myinfo->NOTARY.NUMRELAYS == 0 )
     {
-        printf("no notary nodes to send (%s) to\n",type);
+        //printf("no notary nodes to send (%s) to\n",type);
         return(-1);
     }
     //portable_mutex_lock(&myinfo->allcoins_mutex);
+    //dex_reqsend(myinfo,&data[-(int32_t)sizeof(struct iguana_msghdr)],datalen);
     alreadysent = calloc(IGUANA_MAXPEERS * IGUANA_MAXCOINS,sizeof(*alreadysent));
     HASH_ITER(hh,myinfo->allcoins,coin,tmp)
     {
@@ -481,6 +483,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "tradebots_liquidity.c"
 #include "basilisk_tradebot.c"
 #include "basilisk_swap.c"
 #include "basilisk_DEX.c"
@@ -874,33 +877,55 @@ void basilisks_loop(void *arg)
         if ( relay == 0 )
             relay = iguana_coinfind("RELAY");
         startmilli = OS_milliseconds();
+        endmilli = startmilli + 1000;
+        //fprintf(stderr,"A ");
         basilisk_issued_purge(myinfo,600000);
+        //fprintf(stderr,"B ");
         basilisk_p2pQ_process(myinfo,777);
-        if ( myinfo->NOTARY.RELAYID >= 0 )
+        //fprintf(stderr,"C ");
+        if ( myinfo->IAMNOTARY != 0 )
         {
             if ( relay != 0 )
+            {
+                //fprintf(stderr,"D ");
                 basilisk_ping_send(myinfo,relay);
+            }
             counter++;
-            if ( (counter % 10) == 0 && myinfo->numdpows == 1 )
+            //fprintf(stderr,"E ");
+            if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 500;
+                endmilli = startmilli + 100;
             }
             else if ( myinfo->numdpows > 1 )
             {
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
                 if ( (counter % myinfo->numdpows) != 0 )
+                {
+                    //fprintf(stderr,"F ");
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
-                endmilli = startmilli + 200;
+                }
+                endmilli = startmilli + 30;
             }
         }
-        else if ( myinfo->IAMLP != 0 )
-            endmilli = startmilli + 1000;
-        else endmilli = startmilli + 2000;
-        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,OS_milliseconds());
+        else
+        {
+            //fprintf(stderr,"G ");
+            dex_updateclient(myinfo);
+            if ( myinfo->IAMLP != 0 )
+                endmilli = startmilli + 500;
+            else endmilli = startmilli + 1000;
+        }
+        if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
+        {
+            //fprintf(stderr,"H ");
+            basilisk_requests_poll(myinfo);
+        }
+        //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )
             usleep(10000);
+        //printf("finished waiting numdpow.%d\n",myinfo->numdpows);
         iter++;
     }
 }
@@ -950,7 +975,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)
         timeoutmillis = BASILISK_TIMEOUT;
     if ( coin != 0 )
     {
-        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+        if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
         {
             if ( (ptr= basilisk_bitcoinbalances(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
             {
@@ -1019,4 +1044,27 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     return(jprint(retjson,1));
 }
 
+INT_ARG(passthru,paxfiats,mask)
+{
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(-1,mask);
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+INT_ARG(basilisk,paxfiats,mask)
+{
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(0,mask);
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
+INT_ARG(iguana,paxfiats,mask)
+{
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(1,mask);
+    return(clonestr("{\"result\":\"success\"}"));
+}
 #include "../includes/iguana_apiundefs.h"

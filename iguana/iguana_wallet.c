@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -1098,9 +1098,18 @@ double _max100(double val)
 
 cJSON *iguana_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
 {
-    int32_t i; struct iguana_peer *addr; cJSON *array,*retjson = cJSON_CreateObject();
+    int32_t i; char *retstr; struct iguana_peer *addr; cJSON *array,*retjson = cJSON_CreateObject();
     if ( coin != 0 )
     {
+        if ( coin->notarychain >= 0 )
+        {
+            if ( (retstr= _dex_getinfo(myinfo,coin->symbol)) != 0 )
+            {
+                retjson = cJSON_Parse(retstr);
+                free(retstr);
+                return(retjson);
+            } else return(cJSON_Parse("{\"error\":\"null return\"}"));
+        }
         jaddstr(retjson,"result","success");
         jaddnum(retjson,"protocolversion",PROTOCOL_VERSION);
         jaddnum(retjson,"kbfee",dstr(coin->txfee_perkb));
@@ -1146,7 +1155,7 @@ ZERO_ARGS(bitcoinrpc,getinfo)
     struct basilisk_item Lptr,*ptr; int32_t incr,i,j,m,n,longest; cJSON *valsobj,*getinfoobj=0,*array,*item,*fullnodes;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
-    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 || coin->notarychain >= 0 )
         return(jprint(iguana_getinfo(myinfo,coin),1));
     else
     {
@@ -1405,6 +1414,12 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             bitcoin_priv2wif(wifstr,waddr.privkey,128);
             jaddstr(retjson,"BTCwif",wifstr);
         }
+        /*if ( (dexstr= _dex_importaddress(myinfo,coin->symbol,waddr.coinaddr)) != 0 )
+        {
+            if ( (dexjson= cJSON_Parse(dexstr)) != 0 )
+                jadd(retjson,"deximport",dexjson);
+            free(dexstr);
+        }*/
         retstr = jprint(retjson,1);
     }
     //iguana_walletinitcheck(myinfo,coin);
@@ -1496,12 +1511,10 @@ TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
         {
             free(retstr);
             retstr = myinfo->decryptstr, myinfo->decryptstr = 0;
-            //printf("DECRYPT.(%s)\n",retstr);
             iguana_waddresscalc(myinfo,coin->chain->pubtype,coin->chain->wiftype,waddr,privkey);
             iguana_waccountswitch(myinfo,coin,account,waddr->coinaddr,0);
             waddr->privkey = privkey;
             retjson = iguana_walletadd(myinfo,0,coin,retstr,account,waddr,0,0);
-            //printf("AFTERADD.(%s)\n",jprint(retjson,0));
             if ( retstr != 0 )
                 scrubfree(retstr);
             return(jprint(retjson,1));

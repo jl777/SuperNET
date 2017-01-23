@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -15,11 +15,45 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
+cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char buf[128],*retstr=0; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        buf[0] = 0;
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(json);
+}
+
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
     int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
+        if ( height < 0 )
+        {
+            if ( (retjson= dpow_getinfo(SuperNET_MYINFO(0),coin)) != 0 )
+            {
+                height = jint(retjson,"blocks") - 1;
+                free_json(retjson);
+//printf("komodo_notaries height.%d\n",height);
+            }
+        }
         if ( coin->FULLNODE < 0 )
         {
             sprintf(params,"[\"%d\"]",height);
@@ -27,7 +61,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    //printf("%s\n",retstr);
+//printf("%s\n",retstr);
                     if ( (array= jarray(&num,retjson,"notaries")) != 0 )
                     {
                         if ( num > 64 )
@@ -50,6 +84,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             }
         }
     }
+    //printf("komodo_notaries returns.%d\n",num);
     return(num);
 }
 
@@ -86,9 +121,10 @@ bits256 dpow_getbestblockhash(struct supernet_info *myinfo,struct iguana_info *c
     return(blockhash);
 }
 
-int32_t dpow_paxpending(uint8_t *hex)
+int32_t dpow_paxpending(uint8_t *hex,uint32_t *paxwdcrcp)
 {
-    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0;
+    struct iguana_info *coin; char *retstr,*hexstr; cJSON *retjson; int32_t n=0; uint32_t paxwdcrc;
+    paxwdcrc = 0;
     if ( (coin= iguana_coinfind("KMD")) != 0 )
     {
         if ( coin->FULLNODE < 0 )
@@ -100,15 +136,19 @@ int32_t dpow_paxpending(uint8_t *hex)
                     if ( (hexstr= jstr(retjson,"withdraws")) != 0 && (n= is_hexstr(hexstr,0)) > 1 )
                     {
                         n >>= 1;
-                        printf("PAXPENDING.(%s)\n",retstr);
+                        //printf("PAXPENDING.(%s)\n",hexstr);
                         decode_hex(hex,n,hexstr);
+                        paxwdcrc = calc_crc32(0,hex,n) & 0xffffff00;
+                        paxwdcrc |= (n & 0xff);
                     }
                     free_json(retjson);
-                }
+                } else printf("dpow_paxpending: parse error.(%s)\n",retstr);
                 free(retstr);
             } else printf("dpow_paxpending: paxwithdraw null return\n");
         } else printf("dpow_paxpending: KMD FULLNODE.%d\n",coin->FULLNODE);
     } else printf("dpow_paxpending: cant find KMD\n");
+    if ( *paxwdcrcp != paxwdcrc )
+        *paxwdcrcp = paxwdcrc;
     return(n);
 }
 
@@ -168,9 +208,9 @@ cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    char buf[128],*retstr=0; cJSON *ismine,*json = 0; int32_t retval = -1;
+    char buf[128],*retstr=0; 
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"\"%s\"",address);
@@ -185,16 +225,7 @@ int32_t dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *co
     {
         return(0);
     }
-    if ( retstr != 0 )
-    {
-        json = cJSON_Parse(retstr);
-        if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
-            retval = 1;
-        else retval = 0;
-        free(retstr);
-        
-    }
-    return(retval);
+    return(retstr);
 }
 
 cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
@@ -249,14 +280,12 @@ char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info 
 
 cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
 {
-    char buf[128],str[65],*retstr=0,*rawtx=0; cJSON *json = 0;
+    char buf[128],str[65],*retstr=0; cJSON *json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        if ( (rawtx= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
         {
-            retstr = dpow_decoderawtransaction(myinfo,coin,rawtx);
-            free(rawtx);
         }
         usleep(10000);
     }
@@ -278,7 +307,7 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
 
 cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    char buf[128],*retstr; cJSON *json = 0;
+    char buf[128],*retstr; cJSON *array,*json = 0;
     if ( coin->FULLNODE < 0 )
     {
         sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
@@ -291,13 +320,35 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
     }
     else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
     {
-        json = iguana_listunspents(myinfo,coin,0,1,coin->longestchain,"");
+        array = cJSON_CreateArray();
+        jaddistr(array,coinaddr);
+        json = iguana_listunspents(myinfo,coin,array,1,coin->longestchain,"");
+        free_json(array);
     }
     else
     {
         return(0);
     }
     return(json);
+}
+
+cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
+{
+    char buf[128],*retstr; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        if ( count == 0 )
+            count = 100;
+        sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
+        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listtransactions",buf)) != 0 )
+        {
+            //printf("LIST.(%s)\n",retstr);
+            json = cJSON_Parse(retstr);
+            free(retstr);
+            return(json);
+        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
+    }
+    return(0);
 }
 
 char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
@@ -359,6 +410,42 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     }
 }
 
+cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\", \"%s\", \"%d\"]",key,value,flags);
+        //printf("KVUPDATE.%s\n",params);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvupdate",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\"]",key);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvsearch",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
     bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
@@ -368,7 +455,7 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
         jaddistr(array,signedtx);
         paramstr = jprint(array,1);
         retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s sendrawtransaction.(%s) -> %s\n",coin->symbol,paramstr,retstr);
+        //printf(">>>>>>>>>>> %s sendrawtransaction.(%s) -> %s\n",coin->symbol,paramstr,retstr);
         free(paramstr);
         return(retstr);
     }
@@ -382,6 +469,124 @@ char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     else
     {
         return(0);
+    }
+}
+
+char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr,fname[1024]; long filesize;
+    sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+    retstr = OS_filestr(&filesize,fname);
+    return(retstr);
+}
+
+void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    struct hashstr_item *hashstr,*tmp; cJSON *alljson; char *outstr,fname[1024]; int32_t saveflag = 0;
+    HASH_FIND(hh,coin->alladdresses,address,strlen(address),hashstr);
+    if ( hashstr == 0 )
+    {
+        hashstr = calloc(1,sizeof(*hashstr));
+        strncpy(hashstr->address,address,sizeof(hashstr->address));
+        HASH_ADD_KEYPTR(hh,coin->alladdresses,hashstr->address,strlen(address),hashstr);
+        saveflag = 1;
+    }
+    if ( saveflag != 0 )
+    {
+        FILE *fp;
+        alljson = cJSON_CreateArray();
+        HASH_ITER(hh,coin->alladdresses,hashstr,tmp)
+        {
+            jaddistr(alljson,hashstr->address);
+        }
+        outstr = jprint(alljson,0);
+        sprintf(fname,"%s/alladdresses.%s",GLOBAL_CONFSDIR,coin->symbol), OS_compatible_path(fname);
+        if ( (fp= fopen(fname,"wb")) != 0 )
+        {
+            fwrite(outstr,1,strlen(outstr)+1,fp);
+            fclose(fp);
+            printf("importaddress.(%s) -> alladdresses.%s\n",address,coin->symbol);
+        }
+        free(outstr);
+    }
+}
+
+cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    int32_t isvalid=0,doneflag=0; char *retstr; cJSON *validatejson,*retjson = cJSON_CreateObject();
+    if ( (retstr= dpow_validateaddress(myinfo,coin,address)) != 0 )
+    {
+        if ( (validatejson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+            {
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                    doneflag = 1;
+            }
+            free_json(validatejson);
+        }
+        free(retstr);
+        retstr = 0;
+    }
+    if ( isvalid == 0 )
+        jaddstr(retjson,"error","invalid address");
+    else if ( doneflag != 0 )
+    {
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddstr(retjson,"address",address);
+    }
+    return(retjson);
+}
+
+char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0;
+    if ( (retstr= dpow_validateaddress(myinfo,coin,address)) != 0 )
+    {
+        if ( (validatejson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+            {
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                    doneflag = 1;
+            }
+            free_json(validatejson);
+        }
+        free(retstr);
+        retstr = 0;
+    }
+    if ( isvalid == 0 )
+        return(clonestr("{\"isvalid\":false}"));
+    update_alladdresses(myinfo,coin,address);
+    if ( doneflag != 0 )
+        return(0); // success
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
+        printf("%s importaddress.(%s) -> (%s)\n",coin->symbol,address,retstr);
+        return(retstr);
+    }
+    else return(0);
+}
+
+void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *alladdresses,*retstr; cJSON *alljson; int32_t i,n;
+    if ( (alladdresses= dpow_alladdresses(myinfo,coin)) != 0 )
+    {
+        printf("(%s) ALL.(%s)\n",coin->symbol,alladdresses);
+        if ( (alljson= cJSON_Parse(alladdresses)) != 0 )
+        {
+            if ( is_cJSON_Array(alljson) != 0 && (n= cJSON_GetArraySize(alljson)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                    if ( (retstr= dpow_importaddress(myinfo,coin,jstri(alljson,i))) != 0 )
+                        free(retstr);
+            }
+            free_json(alljson);
+        }
+        free(alladdresses);
     }
 }
 
@@ -400,7 +605,7 @@ int32_t dpow_getchaintip(struct supernet_info *myinfo,bits256 *blockhashp,uint32
                 coin->lastbestheight = height;
                 if ( height > coin->longestchain )
                     coin->longestchain = height;
-                if ( (array= jarray(&n,json,"tx")) != 0 )
+                if ( txs != 0 && numtxp != 0 && (array= jarray(&n,json,"tx")) != 0 )
                 {
                     for (i=0; i<n&&i<maxtx; i++)
                         txs[i] = jbits256i(array,i);
@@ -456,7 +661,10 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             {
                 i = (r + j) % n;
                 item = jitem(unspents,i);
-                satoshis = SATOSHIDEN * jdouble(item,"amount");
+                if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
+                    continue;
+                if ( (satoshis= SATOSHIDEN * jdouble(item,"amount")) == 0 )
+                    satoshis= SATOSHIDEN * jdouble(item,"value");
                 if ( satoshis == DPOW_UTXOSIZE && (address= jstr(item,"address")) != 0 && strcmp(address,coinaddr) == 0 )
                 {
                     if ( (str= jstr(item,"scriptPubKey")) != 0 && is_hexstr(str,0) == sizeof(script)*2 )
@@ -517,7 +725,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
             }
             free_json(retjson);
         }
-        printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
+        //printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
     }
     return(satoshis);
 }
@@ -553,7 +761,7 @@ uint64_t PAX_fiatdest(uint64_t *seedp,int32_t tokomodo,char *destaddr,uint8_t pu
 {
     uint8_t shortflag=0; char base[4]; int32_t i; uint8_t addrtype,rmd160[20]; int64_t komodoshis=0;
     for (i=0; i<3; i++)
-        base[i] = toupper(origbase[i]);
+        base[i] = toupper((int32_t)origbase[i]);
     base[i] = 0;
     if ( strcmp(base,"KMD") == 0 )
         return(0);
@@ -612,7 +820,7 @@ cJSON *dpow_paxjson(struct pax_transaction *pax)
 uint64_t dpow_paxtotal(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; uint64_t total = 0;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     /*if ( dp->PAX != 0 )
     {
         tmp = 0;
@@ -630,25 +838,25 @@ uint64_t dpow_paxtotal(struct dpow_info *dp)
         if ( pax->marked == 0 )
             total += pax->komodoshis;
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(total);
 }
 
 struct pax_transaction *dpow_paxfind(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout)
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax != 0 )
         memcpy(space,pax,sizeof(*pax));
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(pax);
 }
 
 struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction *space,bits256 txid,uint16_t vout,int32_t mark)
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
@@ -665,14 +873,14 @@ struct pax_transaction *dpow_paxmark(struct dpow_info *dp,struct pax_transaction
         printf(" paxmark.ht %d vout%d\n",mark,vout);
         memcpy(space,pax,sizeof(*pax));
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(pax);
 }
 
 cJSON *dpow_withdraws_pending(struct dpow_info *dp)
 {
     struct pax_transaction *pax,*tmp; cJSON *retjson = cJSON_CreateArray();
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     /*if ( dp->PAX != 0 )
     {
         tmp = 0;
@@ -690,14 +898,14 @@ cJSON *dpow_withdraws_pending(struct dpow_info *dp)
         if ( pax->marked == 0 )
             jaddi(retjson,dpow_paxjson(pax));
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     return(retjson);
 }
 
 void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis,int32_t shortflag,char *symbol,uint64_t komodoshis,uint8_t *rmd160,bits256 txid,uint16_t vout,int32_t kmdheight,int32_t height) // assetchain context
 {
     struct pax_transaction *pax;
-    pthread_mutex_lock(&dp->mutex);
+    pthread_mutex_lock(&dp->paxmutex);
     HASH_FIND(hh,dp->PAX,&txid,sizeof(txid),pax);
     if ( pax == 0 )
     {
@@ -706,7 +914,7 @@ void dpow_issuer_withdraw(struct dpow_info *dp,char *coinaddr,uint64_t fiatoshis
         pax->vout = vout;
         HASH_ADD_KEYPTR(hh,dp->PAX,&pax->txid,sizeof(pax->txid),pax);
     }
-    pthread_mutex_unlock(&dp->mutex);
+    pthread_mutex_unlock(&dp->paxmutex);
     if ( coinaddr != 0 )
     {
         strcpy(pax->coinaddr,coinaddr);
@@ -895,7 +1103,7 @@ int32_t dpow_issuer_block(struct dpow_info *dp,struct iguana_info *coin,int32_t 
 
 int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int32_t height,uint32_t *isrealtimep)
 {
-    char *retstr; int32_t i,kmdheight; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
+    char *retstr; int32_t i,currentheight=0; cJSON *infoobj,*result; uint16_t port = coin->chain->rpcport;
     if ( height <= 0 )
         height = 1;
     *isrealtimep = 0;
@@ -903,9 +1111,9 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     {
         if ( (infoobj= cJSON_Parse(retstr)) != 0 )
         {
-            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (kmdheight= jint(result,(char *)"blocks")) != 0 )
+            if ( (result= jobj(infoobj,(char *)"result")) != 0 && (currentheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<1000 && height<=kmdheight; i++,height++)
+                for (i=0; i<500 && height<=currentheight; i++,height++)
                 {
                     /*fprintf(stderr,"%s.%d ",coin->symbol,height);
                     if ( (height % 10) == 0 )
@@ -922,7 +1130,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
                     }
                     usleep(10000);
                 }
-                if ( height >= kmdheight )
+                if ( height >= currentheight )
                     *isrealtimep = (uint32_t)time(NULL);
             }
             free_json(infoobj);
@@ -932,9 +1140,10 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
     }
     else
     {
-        //printf("error from %s\n",coin->symbol);
-        sleep(3);
+        printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
+        usleep(100000);
     }
+    //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
 

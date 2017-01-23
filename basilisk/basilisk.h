@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -17,7 +17,7 @@
 #define H_BASILISK_H
 
 //#define BASILISK_DISABLESENDTX
-//#define BASILISK_DISABLEWAITTX
+#define BASILISK_DISABLEWAITTX
 
 #include "../iguana/iguana777.h"
 
@@ -25,8 +25,9 @@
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
-#define BASILISK_DEXDURATION 180
-#define BASILISK_MSGDURATION 60
+#define BASILISK_DEXDURATION 300
+#define BASILISK_MSGDURATION 30
+#define BASILISK_AUCTION_DURATION 5
 
 #define BASILISK_MAXFUTUREBLOCK 60
 #define BASILISK_HDROFFSET ((int32_t)(sizeof(bits256)+sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
@@ -79,6 +80,7 @@ struct basilisk_swapinfo
 struct basilisk_swap
 {
     struct supernet_info *myinfo; struct iguana_info *bobcoin,*alicecoin;
+    void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];
@@ -139,5 +141,8 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 cJSON *basilisk_requestjson(struct basilisk_request *rp);
 int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay);
+int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash);
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
+char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 
 #endif

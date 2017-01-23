@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -131,8 +131,13 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                             {
                                 sig[0] = 27 + recid + (fCompressed != 0 ? 4 : 0);
                                 retval = 64 + 1;
-                            }
-                            else printf("secpub mismatch\n");
+                                //size_t i,plen = 33; uint8_t pubkey[33];
+                                //secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&CHECKPUB,SECP256K1_EC_COMPRESSED);
+                                //for (i=0; i<33; i++)
+                                //    printf("%02x",pubkey[i]);
+                                //printf(" bitcoin_sign's pubkey\n");
+
+                            } else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
                     } else printf("recover error\n");
                 } else printf("secp256k1_ecdsa_sign_recoverable error\n");
@@ -151,18 +156,23 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
     return(retval);
 }
 
-int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 messagehash2,uint8_t *pubkey)
+int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messagehash2,uint8_t *pubkey,size_t plen)
 {
-    int32_t retval = -1; size_t plen; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
+    int32_t retval = -1; secp256k1_pubkey PUB; secp256k1_ecdsa_signature SIG; secp256k1_ecdsa_recoverable_signature rSIG;
     pubkey[0] = 0;
     SECP_ENSURE_CTX
     {
-        plen = (sig65[0] <= 31) ? 65 : 33;
-        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig65 + 1,0);
+        if ( plen == 0 )
+        {
+            plen = (sig[0] <= 31) ? 65 : 33;
+            sig++;
+        }
+        secp256k1_ecdsa_recoverable_signature_parse_compact(ctx,&rSIG,sig,0);
         secp256k1_ecdsa_recoverable_signature_convert(ctx,&SIG,&rSIG);
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
             plen = 33;
+            memset(pubkey,0,33);
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);//plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
             {
@@ -171,8 +181,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig65,bits256 mess
                     pubkey[0] = 2;
                 else if ( pubkey[0] != 2 )
                     pubkey[0] = 3;*/
-            }
-            else printf("secp256k1_ecdsa_verify error\n");
+            } else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
         ENDSECP_ENSURE_CTX
     }

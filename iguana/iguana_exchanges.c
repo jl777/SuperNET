@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -22,16 +22,20 @@
 
 //char *Exchange_names[] = { "poloniex", "bittrex", "btc38",  "huobi", "bitstamp", "bitfinex", "btce", "coinbase", "okcoin", "lakebtc", "quadriga", "truefx", "ecb", "instaforex", "fxcm", "yahoo" };
 
-int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes)
+int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_quote *sortbuf,int32_t n,int32_t max,int32_t ind,int32_t dir,struct exchange_quote *quotes,int32_t numquotes,double offset,double factor)
 {
     int32_t i; struct exchange_quote *quote;
-    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d\n",exchange->name,dir,numquotes);
+    //printf("instantdex_updatesources.%s update dir.%d numquotes.%d offset %.6f\n",exchange->name,dir,numquotes,offset);
     for (i=0; i<numquotes; i++)
     {
         quote = &quotes[i << 1];
-        //printf("n.%d ind.%d i.%d dir.%d price %.8f vol %.8f\n",n,ind,i,dir,quote->price,quote->volume);
         if ( quote->price > SMALLVAL )
         {
+            //printf("%s n.%d ind.%d i.%d dir.%d price %.8f vol %.8f offset %.6f\n",exchange->name,n,ind,i,dir,quote->price+offset,quote->volume,offset);
+            quote->price += offset;
+            quote->price /= factor;
+            quote->volume *= factor;
+            quote->satoshis = quote->price * SATOSHIDEN;
             sortbuf[n] = *quote;
             sortbuf[n].val = ind;
             sortbuf[n].exchangebits = exchange->exchangebits;
@@ -45,7 +49,7 @@ int32_t instantdex_updatesources(struct exchange_info *exchange,struct exchange_
 
 double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *sortbuf,int32_t max,double *totalvolp,char *base,char *rel,double basevolume,cJSON *argjson)
 {
-    char *str; double totalvol,pricesum; uint32_t timestamp;
+    char *str; double totalvol,pricesum,hblas[64][2],refbid,refask,factor = 1.; uint32_t timestamp;
     struct exchange_quote quote; int32_t i,n,dir,num,depth = 100;
     struct exchange_info *exchange; struct exchange_request *req,*active[64];
     if ( myinfo == 0 )
@@ -64,6 +68,10 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
     memset(sortbuf,0,sizeof(*sortbuf) * max);
     if ( base != 0 && rel != 0 && basevolume > SMALLVAL )
     {
+        if ( strcmp(base,"KMD") == 0 )
+            base = "BTCD", factor = 50;
+        else if ( strcmp(rel,"KMD") == 0 )
+            rel = "BTCD", factor = 0.02;
         for (i=num=0; i<myinfo->numexchanges && num < sizeof(active)/sizeof(*active); i++)
         {
             if ( (exchange= myinfo->tradingexchanges[i]) != 0 )
@@ -86,26 +94,55 @@ double instantdex_aveprice(struct supernet_info *myinfo,struct exchange_quote *s
                 }
             }
         }
+        memset(hblas,0,sizeof(hblas));
+        refbid = refask = 0.;
+        if ( strcmp(rel,"USD") == 0 )
+        {
+            for (i=0; i<num; i++)
+            {
+                if ( active[i]->numbids > 0 && active[i]->numasks > 0 )
+                {
+                    hblas[i][0] = active[i]->bidasks[0].price;
+                    hblas[i][1] = active[i]->bidasks[1].price;
+                    if ( active[i]->exchange != 0 && strcmp("poloniex",active[i]->exchange->name) == 0 )
+                        refbid = active[i]->bidasks[0].price, refask = active[i]->bidasks[1].price;
+                    //printf("(%6f %.6f) ",hblas[i][0],hblas[i][1]);
+                }
+            }
+            //printf(" refbid %.6f refask %.7f\n",refbid,refask);
+            if ( refbid != 0. && refask != 0. )
+            {
+                for (i=0; i<num; i++)
+                {
+                    if ( hblas[i][0] != 0. && hblas[i][1] != 0. )
+                        hblas[i][0] = (refbid - hblas[i][0]), hblas[i][1] = (refask - hblas[i][1]);
+                    else memset(hblas[i],0,sizeof(hblas[i]));
+                }
+            } else memset(hblas,0,sizeof(hblas));
+        }
         for (i=n=0; i<num; i++)
         {
             if ( dir < 0 && active[i]->numbids > 0 )
-                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,1,active[i]->bidasks,active[i]->numbids,hblas[i][0],factor);
             else if ( dir > 0 && active[i]->numasks > 0 )
-                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks);
+                n = instantdex_updatesources(active[i]->exchange,sortbuf,n,max,i,-1,&active[i]->bidasks[1],active[i]->numasks,hblas[i][1],factor);
         }
         //printf("numexchanges.%d dir.%d %s/%s numX.%d n.%d\n",myinfo->numexchanges,dir,base,rel,num,n);
         if ( dir < 0 )
             revsort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
         else sort64s(&sortbuf[0].satoshis,n,sizeof(*sortbuf));
+        //for (i=0; i<n; i++)
+        //    printf("%.6f ",sortbuf[i].price);
+        //printf("%d prices\n",n);
         for (totalvol=pricesum=i=0; i<n && totalvol < basevolume; i++)
         {
             quote = sortbuf[i];
-            //printf("n.%d i.%d price %.8f %.8f %.8f\n",n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
+            //printf("dir.%d n.%d i.%d price %.8f %.8f %.8f\n",dir,n,i,dstr(sortbuf[i].satoshis),sortbuf[i].price,quote.volume);
             if ( quote.satoshis != 0 )
             {
                 pricesum += (quote.price * quote.volume);
                 totalvol += quote.volume;
-                //printf("i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
+                //printf("dir.%d i.%d of %d %12.8f vol %.8f %s | aveprice %.8f total vol %.8f\n",dir,i,n,sortbuf[i].price,quote.volume,active[quote.val]->exchange->name,pricesum/totalvol,totalvol);
             }
         }
         if ( totalvol > 0. )
@@ -145,11 +182,6 @@ double instantdex_avehbla(struct supernet_info *myinfo,double retvals[4],char *_
     if ( avebid > SMALLVAL && aveask > SMALLVAL )
         return((avebid + aveask) * .5);
     else return(0);
-}
-
-void prices777_processprice(struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t maxdepth)
-{
-    
 }
 
 cJSON *exchanges777_allpairs(char *baserels[][2],int32_t num)
@@ -302,11 +334,11 @@ double exchange_setquote(struct exchange_quote *bidasks,int32_t *numbidsp,int32_
         }
         if ( commission != 0. )
         {
-            //printf("price %f fee %f -> ",price,prices->commission * price);
+            printf("price %f fee %f -> ",price,commission * price);
             if ( bidask == 0 )
                 price -= commission * price;
             else price += commission * price;
-            //printf("%f\n",price);
+            printf("%f\n",price);
         }
         quote = (bidask == 0) ? &bidasks[(*numbidsp)<<1] : &bidasks[((*numasksp)<<1) + 1];
         quote->price = price, quote->volume = volume, quote->timestamp = timestamp, quote->orderid = orderid, quote->offerNXT = offerNXT;
@@ -363,6 +395,7 @@ void exchanges777_json_quotes(struct exchange_info *exchange,double commission,c
                 if ( strcmp(exchange->name,"kraken") == 0 )
                     timestamp = juint(jitem(item,2),0);
                 else orderid = j64bits(jitem(item,2),0);
+                //printf("{%s} (%.8f %.8f) %f\n",jprint(item,0),price,volume,commission);
             }
             else
             {
@@ -419,7 +452,7 @@ double exchanges777_standardprices(struct exchange_info *exchange,double commiss
     if ( (jsonstr= issue_curl(url)) != 0 )
     {
         //if ( strcmp(exchangestr,"btc38") == 0 )
-        //printf("(%s) -> (%s)\n",url,jsonstr);
+        //printf("%f (%s) -> (%s)\n",commission,url,jsonstr);
         if ( (json= cJSON_Parse(jsonstr)) != 0 )
         {
             hbla = exchanges777_json_orderbook(exchange,commission,base,rel,quotes,maxdepth,json,field,"bids","asks",price,volume,invert);
@@ -821,8 +854,8 @@ void exchanges777_loop(void *ptr)
                         for (i=req->numasks=0; i<req->depth; i++)
                             if ( req->bidasks[(i << 1) + 1].price > SMALLVAL )
                                 req->numasks++;
-                        //printf("%-10s %s/%s numbids.%d numasks.%d\n",exchange->name,req->base,req->rel,req->numbids,req->numasks);
-                        prices777_processprice(exchange,req->base,req->rel,req->bidasks,req->depth);
+//printf("%-10s %s/%s numbids.%d numasks.%d\n",exchange->name,req->base,req->rel,req->numbids,req->numasks);
+                        tradebots_processprices(myinfo,exchange,req->base,req->rel,req->bidasks,req->numbids,req->numasks);
                     }
                     queue_enqueue("pricesQ",&exchange->pricesQ,&req->DL);
                 }
@@ -917,7 +950,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
     }
     if ( base[0] == 0 || rel[0] == 0 || (polarity= (*exchange->issue.supports)(exchange,base,rel,argjson)) == 0 )
     {
-        //printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
+        printf("%s invalid (%s) or (%s)\n",exchange->name,base,rel);
         return(clonestr("{\"error\":\"invalid base or rel\"}"));
     }
     if ( depth <= 0 )
@@ -940,7 +973,7 @@ char *exchanges777_Qprices(struct exchange_info *exchange,char *base,char *rel,i
         req->commission = exchange->commission;
     if ( monitor == 0 )
     {
-        printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
+        //printf("%s submit (%s) (%s)\n",exchange->name,base,rel);
         return(exchanges777_submit(exchange,req,'Q',maxseconds));
     }
     else
@@ -1141,6 +1174,7 @@ cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore)
 {

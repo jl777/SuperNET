@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -313,8 +313,21 @@ int32_t iguana_blockROsize(uint8_t zcash)
 void *iguana_blockzcopyRO(uint8_t zcash,struct iguana_blockRO *dest,int32_t desti,struct iguana_blockRO *src,int32_t srci)
 {
     int32_t bROsize = iguana_blockROsize(zcash);
+/**
+* The memory address calculation was done in a non-portable way using 
+* long value which has 4 bytes in 64bit windows (causing invalide memory address)
+* due to data truncation, 
+* the solution is to use portable way to calculate the address
+* in all platform sizeof(char) / sizeof(uchar) == 1
+* @author - fadedreamz@gmail.com
+*/
+#if defined(_M_X64)
+	dest = (void *)((unsigned char *)dest + desti*bROsize);
+	src = (void *)((unsigned char *)src + srci*bROsize);
+#else
     dest = (void *)((long)dest + desti*bROsize);
     src = (void *)((long)src + srci*bROsize);
+#endif
     memcpy(dest,src,bROsize);
     return(src);
 }
@@ -336,14 +349,14 @@ void iguana_blockzcopy(uint8_t zcash,struct iguana_block *dest,struct iguana_blo
 
 int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *coin,int32_t *validp,struct iguana_block *block,int32_t dispflag)
 {
-    bits256 hash2; uint8_t serialized[sizeof(struct iguana_msgblock) + 4096];
+    bits256 hash2; int32_t len; uint8_t serialized[sizeof(struct iguana_msgblock) + 32768];
     if ( coin->chain->debug != 0 || coin->chain->zcash != 0 )
     {
         *validp = 1;
         return(0);
     }
     *validp = 0;
-    if ( iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block) < 0 )
+    if ( (len= iguana_serialize_block(myinfo,coin->chain,&hash2,serialized,block)) < 0 )
         return(-1);
     *validp = (memcmp(hash2.bytes,block->RO.hash2.bytes,sizeof(hash2)) == 0);
     block->valid = *validp;
@@ -354,8 +367,10 @@ int32_t iguana_blockvalidate(struct supernet_info *myinfo,struct iguana_info *co
         if ( dispflag != 0 )
         {
             static uint32_t counter;
-            if ( (counter++ % 10000) == 9999 )
-                printf("iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
+            //for (i=0; i<len; i++)
+            //    printf("%02x",serialized[i]);
+            if ( (counter++ % 100) == 99 )
+                printf(" iguana_blockvalidate.%d: %s miscompare.%d (%s) vs (%s)\n",block->height,coin->symbol,counter,bits256_str(str,hash2),bits256_str(str2,block->RO.hash2));
             //getchar();
         }
         return(-1);
@@ -688,7 +703,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                             bp->hashes[bundlei] = block->RO.hash2;
                             iguana_bundlehash2add(coin,0,bp,bundlei,block->RO.hash2);
                         }
-                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 100) == 9) )
+                        if ( coin->started != 0 && bundlei == coin->minconfirms && (block->height > coin->longestchain-coin->chain->bundlesize*2 || ((block->height / coin->chain->bundlesize) % 10) == 9) )
                         {
                             //printf("savehdrs.[%d] ht.%d\n",bp->hdrsi,block->height);
                             iguana_savehdrs(coin);
@@ -709,9 +724,11 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                     iguana_RTnewblock(myinfo,coin,block);
                 block->hdrsi = hdrsi;
                 block->bundlei = bundlei;
-                bp = coin->bundles[hdrsi];
-                if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
-                    printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);
+                if ( 0 && (bp= coin->bundles[hdrsi]) != 0 )
+                {
+                    if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+                        printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);
+                }
                 return(block);
             }
         }

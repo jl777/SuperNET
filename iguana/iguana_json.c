@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2014-2016 The SuperNET Developers.                             *
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
  *                                                                            *
  * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
  * the top-level directory of this distribution for the individual copyright  *
@@ -128,6 +128,7 @@ cJSON *SuperNET_helpjson()
 #define IGUANA_HELP_HH(agent,name,hash,hash2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash")))
 #define IGUANA_HELP_HA(agent,name,hash,obj) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#obj,"array")))
 #define IGUANA_HELP_HS(agent,name,hash,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray2(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#str,"str")))
+#define IGUANA_HELP_HSI(agent,name,hash,str,val) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#str,"str"),helpitem(#val,"int")))
 #define IGUANA_HELP_HII(agent,name,hash,val,val2) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#val,"int"),helpitem(#val2,"int")))
 #define IGUANA_HELP_HHS(agent,name,hash,hash2,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#hash2,"hash"),helpitem(#str,"str")))
 #define IGUANA_HELP_HAS(agent,name,hash,obj,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray3(cJSON_CreateArray(),helpitem(#hash,"hash"),helpitem(#obj,"array"),helpitem(#str,"str")))
@@ -152,6 +153,7 @@ cJSON *SuperNET_helpjson()
 #define STRING_AND_INT IGUANA_HELP_SI
 #define STRING_AND_TWOINTS IGUANA_HELP_SII
 #define HASH_AND_STRING IGUANA_HELP_HS
+#define HASH_AND_STRING_AND_INT IGUANA_HELP_HSI
 #define HASH_AND_INT IGUANA_HELP_HI
 #define HASH_AND_TWOINTS IGUANA_HELP_HII
 #define DOUBLE_ARG IGUANA_HELP_D
@@ -263,7 +265,11 @@ int32_t template_emit(char *retbuf,int32_t maxsize,char *template,char *varname,
     varnamelen = (int32_t)strlen(varname);
     while ( (match= strstr(varname,&template[offset])) != 0 )
     {
+#if defined(_M_X64)
+		position = (int32_t)((uint64_t)match - (uint64_t)&template[offset]);
+#else
         position = (int32_t)((long)match - (long)&template[offset]);
+#endif
         printf("found match.(%s) at %d offset.%d\n",varname,position,offset);
         if ( size + (valuelen + position) > maxsize )
             return(-1);
@@ -561,6 +567,7 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 STRING_ARG(iguana,peers,activecoin)
 {
@@ -956,6 +963,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define IGUANA_DISPATCH_HH(agent,name,hash,hash2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2)))
 #define IGUANA_DISPATCH_HA(agent,name,hash,array) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jobj(json,#array)))
 #define IGUANA_DISPATCH_HS(agent,name,hash,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jstr(json,#str)))
+#define IGUANA_DISPATCH_HSI(agent,name,hash,str,val) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jstr(json,#str),jint(json,#val)))
 #define IGUANA_DISPATCH_HII(agent,name,hash,val,val2) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),juint(json,#val),juint(json,#val2)))
 #define IGUANA_DISPATCH_HHS(agent,name,hash,hash2,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jbits256(json,#hash2),jstr(json,#str)))
 #define IGUANA_DISPATCH_HAS(agent,name,hash,array,str) else if ( strcmp(#agent,agentstr) == 0 && strcmp(method,#name) == 0 ) return(agent ## _ ## name(IGUANA_ARGS,jbits256(json,#hash),jobj(json,#array),jstr(json,#str)))
@@ -981,6 +989,7 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_AND_TWOINTS IGUANA_DISPATCH_SII
 #define HASH_AND_INT IGUANA_DISPATCH_HI
 #define HASH_AND_STRING IGUANA_DISPATCH_HS
+#define HASH_AND_STRING_AND_INT IGUANA_DISPATCH_HSI
 #define HASH_AND_TWOINTS IGUANA_DISPATCH_HII
 #define DOUBLE_ARG IGUANA_DISPATCH_D
 #define STRING_AND_ARRAY IGUANA_DISPATCH_SA
