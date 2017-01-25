@@ -124,6 +124,7 @@ STRING_ARG(bitcoinrpc,backupwallet,filename);
 STRING_ARG(bitcoinrpc,importwallet,filename);
 STRING_ARG(bitcoinrpc,getnewaddress,account);
 TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan);
+TWOSTRINGS_AND_INT(bitcoinrpc,importaddress,address,account,rescan);
 STRING_ARG(bitcoinrpc,dumpprivkey,address);
 
 STRING_AND_THREEINTS(bitcoinrpc,listtransactions,account,count,skip,includewatchonly);

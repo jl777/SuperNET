@@ -398,6 +398,11 @@ static char *dumpprivkey(RPCARGS)
     return(sglue1(0,CALLGLUE,"bitcoinrpc","dumpprivkey","address",params[0]));
 }
 
+static char *importaddress(RPCARGS)
+{
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","importaddress","address",params[0],"account",params[1],"rescan",params[2]));
+}
+
 static char *importprivkey(RPCARGS)
 {
     return(sglue3(0,CALLGLUE,"bitcoinrpc","importprivkey","wif",params[0],"account",params[1],"rescan",params[2]));
@@ -612,6 +617,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "dumpwallet",             &dumpwallet,             true,   false },
     { "importwallet",           &importwallet,           false,  false },
     { "importprivkey",          &importprivkey,          false,  false },
+    { "importaddress",          &importaddress,          false,  false },
     { "getrawtransaction",      &getrawtransaction,      false,  false },
     { "createrawtransaction",   &createrawtransaction,   false,  false },
     { "validaterawtransaction", &validaterawtransaction,   false,  true },
