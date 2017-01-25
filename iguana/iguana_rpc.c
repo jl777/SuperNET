@@ -398,6 +398,11 @@ static char *dumpprivkey(RPCARGS)
     return(sglue1(0,CALLGLUE,"bitcoinrpc","dumpprivkey","address",params[0]));
 }
 
+static char *importaddress(RPCARGS)
+{
+    return(sglue3(0,CALLGLUE,"bitcoinrpc","importaddress","address",params[0],"account",params[1],"rescan",params[2]));
+}
+
 static char *importprivkey(RPCARGS)
 {
     return(sglue3(0,CALLGLUE,"bitcoinrpc","importprivkey","wif",params[0],"account",params[1],"rescan",params[2]));
@@ -612,6 +617,7 @@ struct RPC_info { char *name; char *(*rpcfunc)(RPCARGS); int32_t flag0,remotefla
     { "dumpwallet",             &dumpwallet,             true,   false },
     { "importwallet",           &importwallet,           false,  false },
     { "importprivkey",          &importprivkey,          false,  false },
+    { "importaddress",          &importaddress,          false,  false },
     { "getrawtransaction",      &getrawtransaction,      false,  false },
     { "createrawtransaction",   &createrawtransaction,   false,  false },
     { "validaterawtransaction", &validaterawtransaction,   false,  true },
@@ -854,7 +860,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
 {
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize; struct iguana_info *coin = 0;
     char symbol[64],buf[4096],*originstr,*fieldstr,*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
-    //printf("rpcparse.(%s)\n",urlstr);
+//printf("rpcparse.(%s)\n",urlstr);
     if ( myinfo->remoteorigin == 0 )
     {
         for (iter=0; iter<2; iter++)
@@ -984,7 +990,7 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
         {
             userpass = jstr(argjson,"userpass");
-            printf("userpass.(%s)\n",userpass);
+            //printf("userpass.(%s)\n",userpass);
             if ( (n= cJSON_GetArraySize(tokens)) > 0 )
             {
                 if ( n > 1 )

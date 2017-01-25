@@ -131,8 +131,13 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                             {
                                 sig[0] = 27 + recid + (fCompressed != 0 ? 4 : 0);
                                 retval = 64 + 1;
-                            }
-                            else printf("secpub mismatch\n");
+                                //size_t i,plen = 33; uint8_t pubkey[33];
+                                //secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&CHECKPUB,SECP256K1_EC_COMPRESSED);
+                                //for (i=0; i<33; i++)
+                                //    printf("%02x",pubkey[i]);
+                                //printf(" bitcoin_sign's pubkey\n");
+
+                            } else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
                     } else printf("recover error\n");
                 } else printf("secp256k1_ecdsa_sign_recoverable error\n");
@@ -167,6 +172,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messag
         if ( secp256k1_ecdsa_recover(ctx,&PUB,&rSIG,messagehash2.bytes) != 0 )
         {
             plen = 33;
+            memset(pubkey,0,33);
             secp256k1_ec_pubkey_serialize(ctx,pubkey,&plen,&PUB,SECP256K1_EC_COMPRESSED);//plen == 65 ? SECP256K1_EC_UNCOMPRESSED : SECP256K1_EC_COMPRESSED);
             if ( secp256k1_ecdsa_verify(ctx,&SIG,messagehash2.bytes,&PUB) != 0 )
             {
@@ -175,8 +181,7 @@ int32_t bitcoin_recoververify(void *ctx,char *symbol,uint8_t *sig,bits256 messag
                     pubkey[0] = 2;
                 else if ( pubkey[0] != 2 )
                     pubkey[0] = 3;*/
-            }
-            else printf("secp256k1_ecdsa_verify error\n");
+            } else printf("secp256k1_ecdsa_verify error\n");
         } else printf("secp256k1_ecdsa_recover error\n");
         ENDSECP_ENSURE_CTX
     }

@@ -1367,7 +1367,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
 
 THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
 {
-    char *retstr,buf[128],wifstr[128],*dexstr; cJSON *retjson,*dexjson; int32_t need_KMD = 0,need_BTC = 0;
+    char *retstr,buf[128],wifstr[128]; cJSON *retjson; int32_t need_KMD = 0,need_BTC = 0;
     if ( remoteaddr != 0 || coin == 0 )
         return(clonestr("{\"error\":\"no remote encrypt or no coin\"}"));
     iguana_walletlock(myinfo,coin);
@@ -1414,12 +1414,12 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             bitcoin_priv2wif(wifstr,waddr.privkey,128);
             jaddstr(retjson,"BTCwif",wifstr);
         }
-        if ( (dexstr= _dex_importaddress(myinfo,coin->symbol,waddr.coinaddr)) != 0 )
+        /*if ( (dexstr= _dex_importaddress(myinfo,coin->symbol,waddr.coinaddr)) != 0 )
         {
             if ( (dexjson= cJSON_Parse(dexstr)) != 0 )
                 jadd(retjson,"deximport",dexjson);
             free(dexstr);
-        }
+        }*/
         retstr = jprint(retjson,1);
     }
     //iguana_walletinitcheck(myinfo,coin);
@@ -1462,6 +1462,19 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
     if ( retstr == 0 )
         retstr = clonestr("{\"error\":\"need to call walletpassphrasechange again\"}");
     return(retstr);
+}
+
+TWOSTRINGS_AND_INT(bitcoinrpc,importaddress,address,account,rescan)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin != 0 && coin->notarychain >= 0 && coin->FULLNODE == 0 && address != 0 && account != 0 )
+    {
+        if ( strcmp(address,account) != 0 )
+            return(clonestr("{\"error\":\"only special account == address supported\"}"));
+        else return(_dex_importaddress(myinfo,coin->symbol,address));
+    }
+    return(0);
 }
 
 TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)

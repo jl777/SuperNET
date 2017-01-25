@@ -764,25 +764,23 @@ void iguana_helper(void *arg)
                                         if ( coin->bundles[i] == 0 || coin->bundles[i]->validated <= 1 )
                                             break;
                                     if ( i == j )
-                                    {
                                         iguana_bundlevalidate(myinfo,coin,bp,0);
-                                        if ( bp->validated > 1 )//&& coin->chain->zcash == 0 )
+                                }
+                                if ( bp->validated > 1 )//&& coin->chain->zcash == 0 )
+                                {
+                                    for (i=0; i<j; i++)
+                                        if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
+                                            break;
+                                    retval = 1;
+                                    if ( bp->utxofinish == 0 )
+                                    {
+                                        bp->startutxo = (uint32_t)time(NULL);
+                                        if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
                                         {
-                                            for (i=0; i<j; i++)
-                                                if ( coin->bundles[i] == 0 || coin->bundles[i]->utxofinish <= 1 )
-                                                    break;
-                                            retval = 1;
-                                            if ( bp->utxofinish == 0 )
+                                            if ( retval > 0 )
                                             {
-                                                bp->startutxo = (uint32_t)time(NULL);
-                                                if ( (retval= iguana_spendvectors(myinfo,coin,bp,&bp->ramchain,0,bp->n,1,0)) >= 0 )
-                                                {
-                                                    if ( retval > 0 )
-                                                    {
-                                                        printf("  GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
-                                                        bp->utxofinish = (uint32_t)time(NULL);
-                                                    }
-                                                }
+                                                printf("  GENERATED UTXO.%d for ht.%d duration %d seconds\n",bp->hdrsi,bp->bundleheight,(uint32_t)time(NULL) - bp->startutxo);
+                                                bp->utxofinish = (uint32_t)time(NULL);
                                             }
                                         }
                                     }
@@ -886,7 +884,11 @@ void iguana_coinloop(void *arg)
     n = (int32_t)(long)coins[0];
     coins++;
     coin = coins[0];
-    printf("begin coinloop[%d] %s\n",n,coin->symbol);
+    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
+        coin->VALIDATENODE = 0;
+    //if ( coin->FULLNODE > 0 )
+    //    coin->notarychain = -1;
+    printf("begin coinloop[%d] %s notarychain.%d\n",n,coin->symbol,coin->notarychain);
     memset(zero.bytes,0,sizeof(zero));
     while ( 1 )
     {
@@ -901,8 +903,10 @@ void iguana_coinloop(void *arg)
                     if ( coin->notarychain >= 0 && myinfo->IAMNOTARY != 0 )
                         init_alladdresses(myinfo,coin);
                 }
-                if ( coin->FULLNODE < 0 || coin->notarychain >= 0 )
+                if ( coin->FULLNODE < 0 )//|| (coin->notarychain >= 0 && coin->FULLNODE == 0) )
+                {
                     continue;
+                }
                 /*if ( strcmp(coin->symbol,"RELAY") == 0 )
                 {
                     if ( myinfo->expiration != 0 && (myinfo->IAMLP != 0 || myinfo->DEXactive > now) )
@@ -956,7 +960,7 @@ void iguana_coinloop(void *arg)
                 }
                 now = (uint32_t)time(NULL);
                 coin->idletime = 0;
-                if ( coin->started != 0 && coin->active != 0 )
+                if ( coin->started != 0 && coin->active != 0 && (coin->notarychain < 0 || coin->FULLNODE == 0) )
                 {
                     //printf("%s numranked.%d isRT.%d numsaved.%d M.%d L.%d numverified.%d hdrsi.%d\n",coin->symbol,coin->peers->numranked,coin->isRT,coin->numsaved,coin->blocks.hwmchain.height,coin->longestchain,coin->numverified,coin->current!=0?coin->current->hdrsi:-1);
                     if ( coin->peers->numranked > 4 && coin->isRT == 0 && now > coin->startutc+77 && coin->numsaved >= (coin->longestchain/coin->chain->bundlesize)*coin->chain->bundlesize && coin->blocks.hwmchain.height >= coin->longestchain-30 )
@@ -1126,6 +1130,7 @@ struct iguana_info *iguana_setcoin(char *symbol,void *launched,int32_t maxpeers,
         coin->startPEND =  coin->endPEND = 1;
 #endif
     } else coin->MAXPEERS = 0;
+    coin->notarychain = iguana_isnotarychain(coin->symbol);
     coin->myservices = services;
     coin->initialheight = initialheight;
     coin->mapflags = mapflags;
@@ -1206,7 +1211,7 @@ int32_t iguana_launchcoin(struct supernet_info *myinfo,char *symbol,cJSON *json,
         coins = mycalloc('A',1+1,sizeof(*coins));
         if ( (coin= iguana_setcoin(symbol,coins,maxpeers,maxrecvcache,services,initialheight,maphash,minconfirms,maxrequests,maxbundles,json,virtcoin)) != 0 )
         {
-            if ( iguana_isnotarychain(coin->symbol) < 0 )
+            if ( iguana_isnotarychain(coin->symbol) < 0 || coin->FULLNODE >= 0 )
             {
                 coins[0] = (void *)((long)1);
                 coins[1] = coin;

@@ -15,6 +15,7 @@
 
 #include "iguana777.h"
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 STRING_ARG(iguana,initfastfind,activecoin)
 {
@@ -113,7 +114,10 @@ STRING_ARG(iguana,removecoin,activecoin)
 
 INT_ARG(bitcoinrpc,getblockhash,height)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    cJSON *retjson;
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_getblockhash(myinfo,coin->symbol,height));
+    retjson = cJSON_CreateObject();
     jaddbits256(retjson,"result",iguana_blockhash(coin,height));
     return(jprint(retjson,1));
 }
@@ -121,6 +125,8 @@ INT_ARG(bitcoinrpc,getblockhash,height)
 HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
 {
     char *blockstr,*datastr; struct iguana_msgblock msg; struct iguana_block *block; cJSON *retjson; bits256 txid; int32_t len;
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_getblock(myinfo,coin->symbol,blockhash));
     retjson = cJSON_CreateObject();
     memset(&msg,0,sizeof(msg));
     if ( remoteonly == 0 && (block= iguana_blockfind("getblockRPC",coin,blockhash)) != 0 )
@@ -156,7 +162,10 @@ HASH_AND_TWOINTS(bitcoinrpc,getblock,blockhash,verbose,remoteonly)
 
 ZERO_ARGS(bitcoinrpc,getbestblockhash)
 {
-    cJSON *retjson = cJSON_CreateObject();
+    cJSON *retjson;
+    if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
+        return(_dex_getbestblockhash(myinfo,coin->symbol));
+    retjson = cJSON_CreateObject();
     char str[65]; jaddstr(retjson,"result",bits256_str(str,coin->blocks.hwmchain.RO.hash2));
     return(jprint(retjson,1));
 }

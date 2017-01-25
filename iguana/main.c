@@ -983,6 +983,7 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 STRING_ARG(SuperNET,addr2rmd160,address)
 {
@@ -1643,8 +1644,18 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
             iguana_appletests(myinfo);
 #endif
+            char *retstr;
+            if ( (retstr= _dex_getnotaries(myinfo,"KMD")) != 0 )
+            {
+                printf("INITIAL NOTARIES.(%s)\n",retstr);
+                free(retstr);
+            }
         }
-    } else basilisks_init(myinfo);
+    }
+    else
+    {
+        basilisks_init(myinfo);
+    }
     if ( 0 )
     {
         char *jsonstr = "[\"03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828\", \"02ebfc784a4ba768aad88d44d1045d240d47b26e248cafaf1c5169a42d7a61d344\", \"03750cf30d739cd7632f77c1c02812dd7a7181628b0558058d4755838117e05339\", \"0394f3529d2e8cc69ffa7a2b55f3761e7be978fa1896ef4c55dc9c275e77e5bf5e\", \"0243c1eeb3777af47187d542e5f8c84f0ac4b05cf5a7ad77faa8cb6d2d56db7823\", \"02bb298844175640a34e908ffdfa2839f77aba3d5edadefee16beb107826e00063\", \"02fa88e549b4b871498f892e527a5d57287916809f8cc3163f641d71c535e8df5a\", \"032f799e370f06476793a122fcd623db7804898fe5aef5572095cfee6353df34bf\", \"02c06fe5401faff4442ef87b7d1b56c2e5a214166615f9a2f2030c71b0cb067ae8\", \"038ac67ca49a8169bcc5de83fe020071095a2c3b2bc4d1c17386977329758956d5\"]";

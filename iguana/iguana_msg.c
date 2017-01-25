@@ -476,6 +476,8 @@ void iguana_gotping(struct supernet_info *myinfo,struct iguana_info *coin,struct
 int32_t iguana_send_ping(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_peer *addr)
 {
   	int32_t len; uint64_t nonce; uint8_t serialized[sizeof(struct iguana_msghdr) + sizeof(nonce)];
+    if ( coin->FULLNODE <= 0 )
+        return(0);
     if ( addr->msgcounts.verack == 0 )
     {
         if ( strcmp(addr->ipaddr,myinfo->ipaddr) != 0 )

@@ -293,7 +293,7 @@ void dpow_statemachinestart(void *ptr)
             //printf(" <= pubkey[%d]\n",i);
             memcpy(bp->notaries[i].pubkey,pubkeys[i],33);
             if ( strcmp("KMD",src->symbol) == 0 )
-                memcpy(myinfo->notaries[i].pubkey,pubkeys[i],33);
+                memcpy(myinfo->notaries[i],pubkeys[i],33);
             if ( memcmp(bp->notaries[i].pubkey,dp->minerkey33,33) == 0 )
             {
                 myind = i;

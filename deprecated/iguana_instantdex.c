@@ -1468,7 +1468,8 @@ void instantdex_update(struct supernet_info *myinfo)
 }
 
 /*
-#include "../includes/iguana_apidefs.h"
+ #include "../includes/iguana_apidefs.h"
+ #include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,maxaccept,base,rel,maxprice,basevolume)
 {

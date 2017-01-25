@@ -15,11 +15,45 @@
 
 #define issue_curl(cmdstr) bitcoind_RPC(0,"curl",cmdstr,0,0,0)
 
+cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char buf[128],*retstr=0; cJSON *json = 0;
+    if ( coin->FULLNODE < 0 )
+    {
+        buf[0] = 0;
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
+        usleep(10000);
+    }
+    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
+    {
+        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
+    }
+    else
+    {
+        return(0);
+    }
+    if ( retstr != 0 )
+    {
+        json = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(json);
+}
+
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
 {
     int32_t i,num=-1; struct iguana_info *coin; char params[256],*retstr,*pubkeystr; cJSON *retjson,*item,*array;
     if ( (coin= iguana_coinfind(symbol)) != 0 )
     {
+        if ( height < 0 )
+        {
+            if ( (retjson= dpow_getinfo(SuperNET_MYINFO(0),coin)) != 0 )
+            {
+                height = jint(retjson,"blocks") - 1;
+                free_json(retjson);
+//printf("komodo_notaries height.%d\n",height);
+            }
+        }
         if ( coin->FULLNODE < 0 )
         {
             sprintf(params,"[\"%d\"]",height);
@@ -27,7 +61,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
-                    //printf("%s\n",retstr);
+//printf("%s\n",retstr);
                     if ( (array= jarray(&num,retjson,"notaries")) != 0 )
                     {
                         if ( num > 64 )
@@ -50,6 +84,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
             }
         }
     }
+    //printf("komodo_notaries returns.%d\n",num);
     return(num);
 }
 
@@ -144,31 +179,6 @@ bits256 dpow_getblockhash(struct supernet_info *myinfo,struct iguana_info *coin,
         free(retstr);
     }
     return(blockhash);
-}
-
-cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
-{
-    char buf[128],*retstr=0; cJSON *json = 0;
-    if ( coin->FULLNODE < 0 )
-    {
-        buf[0] = 0;
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getinfo",buf);
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        retstr = bitcoinrpc_getinfo(myinfo,coin,0,0);
-    }
-    else
-    {
-        return(0);
-    }
-    if ( retstr != 0 )
-    {
-        json = cJSON_Parse(retstr);
-        free(retstr);
-    }
-    return(json);
 }
 
 cJSON *dpow_getblock(struct supernet_info *myinfo,struct iguana_info *coin,bits256 blockhash)
@@ -400,6 +410,42 @@ char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *c
     }
 }
 
+cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\", \"%s\", \"%d\"]",key,value,flags);
+        //printf("KVUPDATE.%s\n",params);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvupdate",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key)
+{
+    char params[IGUANA_MAXSCRIPTSIZE+256],*retstr; cJSON *retjson;
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\"]",key);
+        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"kvsearch",params);
+        if ( (retjson= cJSON_Parse(retstr)) == 0 )
+        {
+            free(retstr);
+            return(cJSON_Parse("{\"error\":\"couldnt parse kvupdate return\"}"));
+        }
+        free(retstr);
+        return(retjson);
+    } else return(cJSON_Parse("{\"error\":\"only native komodod supports KV\"}"));
+}
+
+
 char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
 {
     bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
@@ -463,6 +509,33 @@ void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,c
         }
         free(outstr);
     }
+}
+
+cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+{
+    int32_t isvalid=0,doneflag=0; char *retstr; cJSON *validatejson,*retjson = cJSON_CreateObject();
+    if ( (retstr= dpow_validateaddress(myinfo,coin,address)) != 0 )
+    {
+        if ( (validatejson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (isvalid= is_cJSON_True(jobj(validatejson,"isvalid")) != 0) != 0 )
+            {
+                if ( is_cJSON_True(jobj(validatejson,"iswatchonly")) != 0 || is_cJSON_True(jobj(validatejson,"ismine")) != 0 )
+                    doneflag = 1;
+            }
+            free_json(validatejson);
+        }
+        free(retstr);
+        retstr = 0;
+    }
+    if ( isvalid == 0 )
+        jaddstr(retjson,"error","invalid address");
+    else if ( doneflag != 0 )
+    {
+        jaddstr(retjson,"coin",coin->symbol);
+        jaddstr(retjson,"address",address);
+    }
+    return(retjson);
 }
 
 char *dpow_importaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
@@ -652,7 +725,7 @@ uint64_t dpow_paxprice(uint64_t *seedp,int32_t height,char *base,char *rel,uint6
             }
             free_json(retjson);
         }
-        printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
+        //printf("dpow_paxprice.(%s) -> %s %.8f\n",params,retstr,dstr(satoshis));
     }
     return(satoshis);
 }
@@ -1040,7 +1113,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         {
             if ( (result= jobj(infoobj,(char *)"result")) != 0 && (currentheight= jint(result,(char *)"blocks")) != 0 )
             {
-                for (i=0; i<100 && height<=currentheight; i++,height++)
+                for (i=0; i<500 && height<=currentheight; i++,height++)
                 {
                     /*fprintf(stderr,"%s.%d ",coin->symbol,height);
                     if ( (height % 10) == 0 )
@@ -1070,6 +1143,7 @@ int32_t dpow_issuer_iteration(struct dpow_info *dp,struct iguana_info *coin,int3
         printf("error from %s height.%d currentheight.%d\n",coin->symbol,height,currentheight);
         usleep(100000);
     }
+    //printf("[%s -> %s] %s ht.%d current.%d\n",dp->symbol,dp->dest,coin->symbol,height,currentheight);
     return(height);
 }
 

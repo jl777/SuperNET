@@ -25,8 +25,9 @@
 #define BASILISK_MINFANOUT 8
 #define BASILISK_MAXFANOUT 64
 #define BASILISK_DEFAULTDIFF 0x1effffff
-#define BASILISK_DEXDURATION 180
-#define BASILISK_MSGDURATION 60
+#define BASILISK_DEXDURATION 300
+#define BASILISK_MSGDURATION 30
+#define BASILISK_AUCTION_DURATION 5
 
 #define BASILISK_MAXFUTUREBLOCK 60
 #define BASILISK_HDROFFSET ((int32_t)(sizeof(bits256)+sizeof(struct iguana_msghdr)+sizeof(uint32_t)))
@@ -140,5 +141,8 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
 cJSON *basilisk_requestjson(struct basilisk_request *rp);
 int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t depositflag,int32_t genflag);
 void basilisk_txlog(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t delay);
+int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash);
+cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr);
+char *basilisk_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx);
 
 #endif

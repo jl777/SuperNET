@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"getblock\",\"hash\":\"0000000000000000033245c0bd104a80c2a7ed7e04330e034d4833f9928d18e7\",\"symbol\":\"BTC\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"getblock\",\"hash\":\"02faa3cb03cf4bad4522303877cfa23abe6ccd3c070176efd684f77ca2e56d95\",\"symbol\":\"SHARK\"}"

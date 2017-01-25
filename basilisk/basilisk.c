@@ -1044,21 +1044,27 @@ HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr)
     return(jprint(retjson,1));
 }
 
-ZERO_ARGS(passthru,paxfiats)
+INT_ARG(passthru,paxfiats,mask)
 {
-    komodo_assetcoins(-1);
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(-1,mask);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-ZERO_ARGS(basilisk,paxfiats)
+INT_ARG(basilisk,paxfiats,mask)
 {
-    komodo_assetcoins(0);
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(0,mask);
     return(clonestr("{\"result\":\"success\"}"));
 }
 
-ZERO_ARGS(iguana,paxfiats)
+INT_ARG(iguana,paxfiats,mask)
 {
-    komodo_assetcoins(1);
+    if ( mask == 0 )
+        mask = -1;
+    komodo_assetcoins(1,mask);
     return(clonestr("{\"result\":\"success\"}"));
 }
 #include "../includes/iguana_apiundefs.h"

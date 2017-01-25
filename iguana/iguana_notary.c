@@ -170,14 +170,14 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
             } else dpow_destupdate(myinfo,dp,height,blockhash,(uint32_t)time(NULL),blocktime);
         } // else printf("error getchaintip for %s\n",dp->dest);
         dp->numsrctx = sizeof(dp->srctx)/sizeof(*dp->srctx);
+        if ( strcmp(dp->dest,"KMD") == 0 && dp->SRCHEIGHT < src->longestchain )
+        {
+            //fprintf(stderr,"[I ");
+            dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
+            //fprintf(stderr," %d] ",dp->SRCHEIGHT);
+        }
         if ( (height= dpow_getchaintip(myinfo,&blockhash,&blocktime,dp->srctx,&dp->numsrctx,src)) != dp->last.blockhash.height && height >= 0 )
         {
-            if ( strcmp(dp->dest,"KMD") == 0 )
-            {
-                //fprintf(stderr,"[I ");
-                dp->SRCHEIGHT = dpow_issuer_iteration(dp,src,dp->SRCHEIGHT,&dp->SRCREALTIME);
-                //fprintf(stderr," %d] ",dp->SRCHEIGHT);
-            }
             char str[65]; printf("[%s].%d %s %s height.%d vs last.%d\n",dp->dest,dp->SRCHEIGHT,dp->symbol,bits256_str(str,blockhash),height,dp->last.blockhash.height);
             if ( dp->lastheight == 0 )
                 dp->lastheight = height-1;
@@ -223,6 +223,7 @@ void dpow_addresses()
 }
 
 #include "../includes/iguana_apidefs.h"
+#include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
@@ -435,7 +436,7 @@ STRING_ARG(iguana,addnotary,ipaddr)
 
 char NOTARY_CURRENCIES[][16] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK",
-    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP" };
+    "REVS", "SUPERNET", "DEX", "PANGEA", "JUMBLR", "BET", "CRYPTO", "HODL", "SHARK", "BOTS", "MGW", "MVP", "WIRELESS", "KV" };
 
 ZERO_ARGS(dpow,notarychains)
 {
@@ -463,7 +464,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     {
         if ( numblocks == 0 )
             numblocks = 10000;
-        else sendflag = 1;
+        //else sendflag = 1;
         memset(vals,0,sizeof(vals));
         if ( (coin= iguana_coinfind("BTC")) != 0 )
         {
@@ -488,13 +489,13 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
             {
                 if ( (val= vals[j]) > 0. )
                 {
-                    bitcoin_address(coinaddr,60,pubkeys[j],33);
+                    bitcoin_address(coinaddr,0,pubkeys[j],33); // fixed
                     sprintf(cmd,"bitcoin-cli sendtoaddress %s %f\n",coinaddr,val);
                     if ( sendflag != 0 && system(cmd) != 0 )
                         printf("ERROR with (%s)\n",cmd);
                     else
                     {
-                        printf("(%d %f) ",j,val);
+                        printf("%s\n",cmd);
                         sum += val;
                     }
                 }
@@ -508,13 +509,17 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     {
         if ( symbol == 0 || symbol[0] == 0 || strcmp(symbol,NOTARY_CURRENCIES[i]) == 0 )
         {
+            if ( symbol != 0 && strcmp(symbol,"KV") == 0 )
+                val = 100;
             for (j=0; j<n; j++)
             {
                 bitcoin_address(coinaddr,60,pubkeys[j],33);
-                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f\n",NOTARY_CURRENCIES[i],coinaddr,val);
+                sprintf(cmd,"./komodo-cli -ac_name=%s sendtoaddress %s %f",NOTARY_CURRENCIES[i],coinaddr,val);
                 if ( system(cmd) != 0 )
                     printf("ERROR with (%s)\n",cmd);
+                else printf("%s\n",cmd);
             }
+            break;
         }
     }
     return(clonestr("{\"result\":\"success\"}"));
@@ -642,6 +647,11 @@ TWO_STRINGS(dex,importaddress,symbol,address)
     return(_dex_importaddress(myinfo,symbol,address));
 }
 
+TWO_STRINGS(dex,checkaddress,symbol,address)
+{
+    return(_dex_checkaddress(myinfo,symbol,address));
+}
+
 TWO_STRINGS(dex,validateaddress,symbol,address)
 {
     return(_dex_validateaddress(myinfo,symbol,address));
@@ -656,6 +666,39 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
     return(_dex_listtransactions(myinfo,symbol,address,count,skip));
 }
+
+STRING_ARG(dex,getnotaries,symbol)
+{
+    return(_dex_getnotaries(myinfo,symbol));
+}
+
+TWO_STRINGS(dex,kvsearch,symbol,key)
+{
+    if ( key == 0 || key[0] == 0 )
+        return(clonestr("{\"error\":\"kvsearch parameter error\"}"));
+    return(_dex_kvsearch(myinfo,symbol,key));
+}
+
+THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
+{
+    // need to have some micropayments between client/server, otherwise receiving server incurs costs
+    if ( key == 0 || key[0] == 0 || value == 0 || value[0] == 0 )
+        return(clonestr("{\"error\":\"kvupdate parameter error\"}"));
+    if ( strcmp(symbol,"KV") == 0 )
+    {
+        if ( flags > 1 )
+            return(clonestr("{\"error\":\"only single duration updates via remote access\"}"));
+        else if ( strlen(key) > 64 || strlen(value) > 256 )
+            return(clonestr("{\"error\":\"only keylen <=64 and valuesize <= 256 allowed via remote access\"}"));
+        else
+        {
+            //printf("call _dex_kvupdate.(%s) -> (%s) flags.%d\n",key,value,flags);
+            return(_dex_kvupdate(myinfo,symbol,key,value,flags));
+        }
+    } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
+}
+
+
 #include "../includes/iguana_apiundefs.h"
 
 

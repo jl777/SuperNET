@@ -334,7 +334,7 @@ void iguana_parsebuf(struct supernet_info *myinfo,struct iguana_info *coin,struc
 int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp);
 int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag,int32_t iterate);
 int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct iguana_bundle *bp,int32_t startheight,int32_t endheight,int32_t startemit);
-struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp);
+struct iguana_utxoaddr *iguana_utxoaddrfind(int32_t createflag,struct iguana_info *coin,int16_t hdrsi,uint32_t pkind,uint8_t rmd160[20],struct iguana_utxoaddr **prevp,int32_t p2shflag);
 int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t forceflag);
 void iguana_validateQ(struct iguana_info *coin,struct iguana_bundle *bp);
 struct iguana_bloominds iguana_calcbloom(bits256 hash2);
