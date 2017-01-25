@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"symbol\":\"MVP\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"bXQu4vm7gJcBvBXDiNU3eyAVrhW44wzCYW\",\"symbol\":\"SHARK\"}"
