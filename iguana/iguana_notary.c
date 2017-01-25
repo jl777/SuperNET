@@ -464,7 +464,7 @@ STRING_AND_INT(dpow,fundnotaries,symbol,numblocks)
     {
         if ( numblocks == 0 )
             numblocks = 10000;
-        else sendflag = 1;
+        //else sendflag = 1;
         memset(vals,0,sizeof(vals));
         if ( (coin= iguana_coinfind("BTC")) != 0 )
         {

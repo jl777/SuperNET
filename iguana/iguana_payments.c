@@ -680,7 +680,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
     if ( n < 0 || n > 16 || M < 0 || M > n )
         return(clonestr("{\"error\":\"illegal number of pubkeys\"}"));
     memset(&V,0,sizeof(V));
-    printf("create M.%d of N.%d (%s)\n",M,n,jprint(pubkeys,0));
+    //printf("create M.%d of N.%d (%s)\n",M,n,jprint(pubkeys,0));
     V.M = M, V.N = n;
     pkjson = cJSON_CreateArray();
     addresses = cJSON_CreateArray();
@@ -717,7 +717,7 @@ INT_ARRAY_STRING(bitcoinrpc,createmultisig,M,pubkeys,ignore)
         jaddstr(retjson,"error","couldnt get all pubkeys");
         free_json(pkjson);
     }
-    printf("CREATEMULTISIG.(%s)\n",jprint(retjson,0));
+    //printf("CREATEMULTISIG.(%s)\n",jprint(retjson,0));
     return(jprint(retjson,1));
 }
 

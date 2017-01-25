@@ -1464,6 +1464,19 @@ FOUR_STRINGS(bitcoinrpc,walletpassphrasechange,oldpassword,newpassword,oldperman
     return(retstr);
 }
 
+TWOSTRINGS_AND_INT(bitcoinrpc,importaddress,address,account,rescan)
+{
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( coin != 0 && coin->notarychain >= 0 && coin->FULLNODE == 0 && address != 0 && account != 0 )
+    {
+        if ( strcmp(address,account) != 0 )
+            return(clonestr("{\"error\":\"only special account == address supported\"}"));
+        else return(_dex_importaddress(myinfo,coin->symbol,address));
+    }
+    return(0);
+}
+
 TWOSTRINGS_AND_INT(bitcoinrpc,importprivkey,wif,account,rescan)
 {
     bits256 privkey; char *retstr,*str; cJSON *retjson; struct iguana_waddress addr,*waddr; struct iguana_waccount *wacct = 0; uint8_t type,redeemScript[4096]; int32_t len; struct vin_info V; bits256 debugtxid;
