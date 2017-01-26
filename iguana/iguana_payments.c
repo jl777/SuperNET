@@ -1263,7 +1263,7 @@ cJSON *iguana_createvins(struct supernet_info *myinfo,struct iguana_info *coin,c
                                     {
                                         init_hexbytes_noT(pubkeystr,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
                                         jaddistr(pubkeys,pubkeystr);
-                                        printf("pubkeys[%d] <- (%s)\n",j,pubkeystr);
+                                        //printf("pubkeys[%d] <- (%s)\n",j,pubkeystr);
                                     }
                                 }
                             }
