@@ -525,7 +525,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 {
     uint8_t addrtype,spendscript[1024],rmd160[20]; int32_t completed; char *retstr,spendscriptstr[4096],*rawtx=0,*signedtx = 0; bits256 signedtxid,senttxid; cJSON *retjson,*vins,*addresses,*valsobj; uint32_t spendlen,locktime = 0; uint32_t basilisktag; struct vin_info *V = 0;
     //sendtoaddress	<bitcoinaddress> <amount> [comment] [comment-to]	<amount> is a real and is rounded to 8 decimal places. Returns the transaction ID <txid> if successful.	Y
-    if ( coin->RTheight == 0 )
+    if ( coin->RTheight == 0 && coin->FULLNODE != 0 )
         return(clonestr("{\"error\":\"need to get to realtime blocks to send transaction\"}"));
     if ( account == 0 || account[0] == 0 )
         account = "*";
