@@ -599,7 +599,7 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
             }
         }
     }
-    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
+    if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 && coin->FULLNODE == 0 )
     {
         printf("SET %s NOTARYCHAIN.%d\n",coin->symbol,coin->notarychain);
         return(coin);
@@ -665,6 +665,7 @@ struct iguana_info *iguana_coinstart(struct supernet_info *myinfo,struct iguana_
             //sprintf(fname,"confs/%s_%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
             //sprintf(fname,"tmp/%s/%s.txt",coin->symbol,(iter == 0) ? "peers" : "hdrs");
             OS_compatible_path(fname);
+            printf("check.(%s)\n",fname);
             if ( (fp= fopen(fname,"r")) != 0 )
             {
                 if ( coin->virtualchain == 0 || iter > 0 )
