@@ -1301,10 +1301,12 @@ struct iguana_bundle *iguana_bundleset(struct supernet_info *myinfo,struct iguan
 				{
 					if (prevbp->hdrsi + 1 == coin->bundlescount && prevbundlei == coin->chain->bundlesize - 1)
 					{
+                        if ( (prevbp->hdrsi % 10) == 9 )
+                            iguana_savehdrs(coin);
 						printf("%s AUTOCREATE.%d\n", coin->symbol, prevbp->bundleheight + coin->chain->bundlesize);
-						if ((bp = iguana_bundlecreate(coin, bundleip, prevbp->bundleheight + coin->chain->bundlesize, hash2, zero, 0)) != 0)
+						if ( (bp= iguana_bundlecreate(coin, bundleip, prevbp->bundleheight + coin->chain->bundlesize, hash2, zero, 0)) != 0)
 						{
-							if (bp->queued == 0)
+							if ( bp->queued == 0 )
 								iguana_bundleQ(myinfo, coin, bp, 1000);
 						}
 					}
