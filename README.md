@@ -251,4 +251,4 @@ Execute the OSX deploy script:
 ```
 ./osx_deploy.sh
 ```
-The iguana binary and its linked libraries are in ```/tmp/iguana```.
+The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
