@@ -223,7 +223,7 @@ Now things should be ready. To update and run notary node:
 pkill iguana; ./m_LP; tests/notaryinit
 
 
-##Building for OSX distribution##
+##Build for OSX distribution##
 Get OSX SDK 10.6 from https://github.com/ca333/MacOSX-SDKs/releases/tag/10.6
 
 Unpack & move the .sdk folder to Xcodes SDK folder:
