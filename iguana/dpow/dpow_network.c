@@ -697,6 +697,8 @@ M = 1;
             free(retstrs[i]);
         retstrs[0] = clonestr(DEX_LESSTHAN_RETSTR);
     }
+    if ( retstrs[0] != 0 && retstrs[0][strlen(retstrs[0])-1] == '\n' )
+        retstrs[0][strlen(retstrs[0])-1] = 0;
     return(retstrs[0]);
 }
 
