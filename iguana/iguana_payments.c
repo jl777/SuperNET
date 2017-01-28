@@ -280,6 +280,9 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
             if ( iguana_signrawtransaction(myinfo,coin,height,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
                 *completedp = 1;
             else printf("signrawtransaction incomplete\n");
+            //for (i=0; i<msgtx.tx_in; i++)
+            //    if ( msgtx.vins[i].redeemscript != 0 )
+            //        free(msgtx.vins[i].redeemscript), msgtx.vins[i].redeemscript = 0;
             if ( flagV != 0 )
                 free(V);
         }
