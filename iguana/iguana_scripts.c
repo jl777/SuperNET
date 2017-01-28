@@ -483,7 +483,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
     char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t *p2shscript;
     j = n = 0;
     *userdatap = 0;
-    *userdatalenp = *pubkeysizep = 0;
+    *userdatalenp = *pubkeysizep = *sigsizep = 0;
     *hashtypep = SIGHASH_ALL;
     while ( (siglen= scriptsig[n]) >= 70 && siglen <= 73 && n+siglen < len && j < 16 )
     {

@@ -62,7 +62,7 @@ char *sglue(GLUEARGS,char *agent,char *method)
                             jadd(tmpjson,"wallet",wallet);
                             if ( iguana_payloadupdate(myinfo,coin,jprint(tmpjson,1),0,0) == 0 )
                             {
-                                printf("wallet updated\n");
+                                //printf("wallet updated\n");
                                 myinfo->dirty = 0;
                             } else printf("iguana_payloadupdate error\n");
                         } else printf("error parsing decryptstr\n");
