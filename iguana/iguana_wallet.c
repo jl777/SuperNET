@@ -655,7 +655,7 @@ uint8_t iguana_waddrvalidate(struct supernet_info *myinfo,struct iguana_info *co
             //flag |= (5 << 0);
             //if ( repairflag > 0 )
             {
-                printf("waddrvalidate: need to manually setaccount to fix mismatch (%s:%s) <- (%s:%s)\n",checkwacct != 0 ? checkwacct->account : "",checkwaddr != 0 ? checkwaddr->coinaddr : "",wacct != 0 ? wacct->account : "",waddr->coinaddr);
+                //printf("waddrvalidate: need to manually setaccount to fix mismatch (%s:%s) <- (%s:%s)\n",checkwacct != 0 ? checkwacct->account : "",checkwaddr != 0 ? checkwaddr->coinaddr : "",wacct != 0 ? wacct->account : "",waddr->coinaddr);
             }
         }
         if ( waddr->scriptlen > 0 )
@@ -883,7 +883,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
                                     {
                                         iguana_waddressadd(myinfo,coin,wacct,&waddr,0);
                                         printf("(%s) ",waddr.coinaddr);
-                                    } else printf("walletinitcheck: error waddresscalc\n");
+                                    } //else printf("walletinitcheck: error waddresscalc\n");
                                 }
                             }
                         }

@@ -178,7 +178,7 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
     {
         if ( (ciphered= SuperNET_cipher(0,0,json,0,privkey,destpubkey,confstr)) != 0 )
         {
-            printf("ciphered.save (%s) <- (%s)\n",destfname,confstr);
+            //printf("ciphered.save (%s) <- (%s)\n",destfname,confstr);
             if ( (fp= fopen(destfname,"wb")) != 0 )
             {
                 if ( fwrite(ciphered,1,strlen(ciphered)+1,fp) == strlen(ciphered)+1 )
@@ -203,7 +203,9 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
     {
         char oldfname[1024]; int64_t fsize,dsize;
         if ( (fsize= OS_filesize(finalfname)) > (dsize= OS_filesize(destfname)) )
-            printf("skip replacing (%s) since new one is smaller %lld vs %lld\n",finalfname,(long long)fsize,(long long)dsize);
+        {
+            //printf("skip replacing (%s) since new one is smaller %lld vs %lld\n",finalfname,(long long)fsize,(long long)dsize);
+        }
         else
         {
             strcpy(oldfname,finalfname), strcat(oldfname,".old");
