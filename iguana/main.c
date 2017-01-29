@@ -1670,7 +1670,7 @@ void iguana_main(void *arg)
         komodo_REVS_merge(batchstr,batchstr2);
     }
     sprintf(fname,"batch%d.txt",batchid);
-    if ( (batchstr= OS_filestr(&batchsize,fname)) != 0 )
+    if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 )
     {
         if ( (batchjson= cJSON_Parse(batchstr)) != 0 )
         {
