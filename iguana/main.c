@@ -1569,14 +1569,89 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 
 #include "../includes/iguana_apiundefs.h"
 
-/*void iguana_relays_init(struct supernet_info *myinfo)
+void komodo_ICO_batch(cJSON *array,int32_t batchid)
 {
-    static char *ipaddrs[] = { "78.47.196.146", "5.9.102.210" };//"89.248.160.237", "89.248.160.238", "89.248.160.239", "89.248.160.240", "89.248.160.241", "89.248.160.242", "89.248.160.243", "89.248.160.244" };
-    char *str; int32_t i;
-    for (i=0; i<sizeof(ipaddrs)/sizeof(*ipaddrs); i++)
-        if ( (str= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(ipaddrs[i]),GENESIS_PUBKEY)) != 0 )
-            free(str);
-}*/
+    int32_t i,n,iter; cJSON *item; uint64_t kmdamount,revsamount; char *coinaddr,cmd[512]; double totalKMD,totalREVS;
+    if ( (n= cJSON_GetArraySize(array)) > 0 )
+    {
+        totalKMD = totalREVS = 0;
+        for (iter=0; iter<1; iter++)
+        for (i=0; i<n; i++)
+        {
+            item = jitem(array,i);
+            if ( (coinaddr= jstr(item,"kmd_address")) != 0 && (kmdamount= SATOSHIDEN * jdouble(item,"kmd_amount")) > 0 )
+            {
+                if ( (revsamount= SATOSHIDEN * jdouble(item,"revs_amount")) > 0 )
+                {
+                    printf("# %s KMD %.8f",coinaddr,dstr(kmdamount));
+                    printf(", REVS %.8f\n",dstr(revsamount));
+                    sprintf(cmd,"fiat/revs sendtoaddress %s %.8f",coinaddr,dstr(revsamount));
+                    if ( iter == 1 )
+                    {
+                        if ( dstr(revsamount) >= 1. )
+                        {
+                            printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",coinaddr,dstr(revsamount));
+                            printf("sleep 13\n");
+                        } else printf("sleep 1\n");
+                        //printf("%s\n",cmd);
+                        totalREVS += dstr(revsamount);
+                    }
+                }
+                else
+                {
+                    if ( iter == 1 )
+                        continue;
+                }
+                sprintf(cmd,"./komodo-cli sendtoaddress %s %.8f",coinaddr,dstr(kmdamount));
+                if ( iter == 0 )
+                {
+                    printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
+                    //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
+                    //printf("sleep 13\n");
+                    //printf("%s\n",cmd);
+                    printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                    printf("echo  \"%.8f <- expected amount %s\"\n\n",dstr(kmdamount),coinaddr);
+                    totalKMD += dstr(kmdamount);
+                }
+            }
+        }
+        printf("\n# total KMD %.8f REVS %.8f\n",totalKMD,totalREVS);
+    }
+    getchar();
+}
+
+void komodo_REVS_merge(char *str,char *str2)
+{
+    char line[1024],line2[1024],*coinaddr; int32_t i,n=0,m=0,k=0;
+    while ( 1 )
+    {
+        if ( str[n] == 0 || str2[m] == 0 )
+            break;
+        for (i=0; str[n]!='\n'; n++,i++)
+            line[i] = str[n];
+        line[i] = 0;
+        n++;
+        for (i=0; str2[m]!='\n'; m++,i++)
+            line2[i] = str2[m];
+        line2[i] = 0;
+        m++;
+        //if ( is_hexstr(line2,0) != 64 )
+        {
+            //printf("%d: (%s) (%s)\n",k,line,line2);
+            coinaddr = &line[strlen("fiat/revs sendtoaddress ")];
+            for (i=0; coinaddr[i]!=' '; i++)
+                ;
+            coinaddr[i] = 0;
+            if ( atof(&coinaddr[i+1]) > 1 )
+            {
+                printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",coinaddr,atof(coinaddr+i+1));
+                printf("sleep 3\n");
+            }
+            k++;
+        }
+    }
+    getchar();
+}
 
 void iguana_main(void *arg)
 {
@@ -1587,6 +1662,24 @@ void iguana_main(void *arg)
         printf("LITTLE ENDIAN arg.%p\n",arg);
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
+#ifdef __APPLE__
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 0;
+    sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
+    if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
+    {
+        komodo_REVS_merge(batchstr,batchstr2);
+    }
+    sprintf(fname,"batch%d.txt",batchid);
+    if ( (batchstr= OS_filestr(&batchsize,fname)) != 0 )
+    {
+        if ( (batchjson= cJSON_Parse(batchstr)) != 0 )
+        {
+            komodo_ICO_batch(batchjson,batchid);
+            free_json(batchjson);
+        }
+        free(batchstr);
+    }
+#endif
     decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
     decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
     iguana_ensuredirs();
