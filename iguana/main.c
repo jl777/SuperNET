@@ -1586,32 +1586,42 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f",coinaddr,dstr(kmdamount));
                     printf(", REVS %.8f\n",dstr(revsamount));
                     sprintf(cmd,"fiat/revs sendtoaddress %s %.8f",coinaddr,dstr(revsamount));
-                    if ( iter == 1 )
+                    if ( (iter>>1) == 1 )
                     {
-                        if ( dstr(revsamount) >= 1. )
+                        if ( dstr(revsamount) >= 1. && (iter & 1) == 0 )
                         {
                             printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"REVS\\\"}\" # %.8f\n",coinaddr,dstr(revsamount));
-                            printf("sleep 13\n");
+                            printf("sleep 3\n");
                         } else printf("sleep 1\n");
-                        //printf("%s\n",cmd);
-                        totalREVS += dstr(revsamount);
+                        if ( (iter & 1) != 0 )
+                        {
+                            printf("%s\n",cmd);
+                            totalREVS += dstr(revsamount);
+                        }
                     }
                 }
                 else
                 {
-                    if ( iter == 1 )
+                    if ( iter >= 2 )
                         continue;
                 }
                 sprintf(cmd,"./komodo-cli sendtoaddress %s %.8f",coinaddr,dstr(kmdamount));
-                if ( iter == 0 )
+                if ( (iter>>1) == 0 )
                 {
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
-                    //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
-                    //printf("sleep 13\n");
-                    //printf("%s\n",cmd);
-                    printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                    if ( (iter & 1) == 0 )
+                    {
+                        //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
+                        //printf("sleep 3\n");
+                        printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                    }
+                    else
+                    {
+                        printf("%s\n",cmd);
+                        totalKMD += dstr(kmdamount);
+                        printf("sleep 3\n");
+                    }
                     printf("echo  \"%.8f <- expected amount %s\"\n\n",dstr(kmdamount),coinaddr);
-                    totalKMD += dstr(kmdamount);
                 }
             }
         }
@@ -1663,14 +1673,14 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 0;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 2;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
         komodo_REVS_merge(batchstr,batchstr2);
     }
     sprintf(fname,"batch%d.txt",batchid);
-    if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 )
+    if ( 1 && (batchstr= OS_filestr(&batchsize,fname)) != 0 )
     {
         if ( (batchjson= cJSON_Parse(batchstr)) != 0 )
         {
