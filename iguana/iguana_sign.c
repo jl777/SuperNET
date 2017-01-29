@@ -194,7 +194,7 @@ int32_t iguana_scriptnum(uint8_t opcode)
 
 int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *serialized,int32_t maxsize,struct iguana_msgvin *vin,cJSON *vinobj,struct vin_info *V)
 {
-    struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte,spendscript[8192]; uint32_t tmp=0; int32_t i,n,starti,spendlen,suppress_pubkeys,siglen,plen,m,endi,rwflag=1,len = 0; char *userdata=0,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
+    struct iguana_outpoint outpt; struct iguana_waddress *waddr; struct iguana_waccount *wacct; uint8_t lastbyte,spendscript[8192]; uint32_t tmp=0; int32_t i,n,starti,spendlen,suppress_pubkeys,siglen,plen,m,endi,z,rwflag=1,len = 0; char *userdata=0,*pubkeystr,*hexstr = 0,*redeemstr = 0,*spendstr = 0; cJSON *scriptjson = 0,*obj,*pubkeysjson = 0;
     //printf("PARSEVIN.(%s) vin.%p\n",jprint(vinobj,0),vin);
     if ( V == 0 )
         memset(vin,0,sizeof(*vin));
@@ -257,7 +257,9 @@ int32_t iguana_parsevinobj(struct supernet_info *myinfo,struct iguana_info *coin
                 V->unspentind = outpt.unspentind;
                 if ( V->coinaddr[0] != 0 && (waddr= iguana_waddresssearch(myinfo,&wacct,V->coinaddr)) != 0 )
                 {
-                    memcpy(V->signers[0].pubkey,waddr->pubkey,bitcoin_pubkeylen(waddr->pubkey));
+                    plen = bitcoin_pubkeylen(waddr->pubkey);
+                    for (z=0; z<plen; z++)
+                        V->signers[0].pubkey[z] = waddr->pubkey[z];
                 }
                 //printf("V %.8f (%s) spendscript.[%d]\n",dstr(V->amount),V->coinaddr,V->spendlen);
             }
@@ -1406,7 +1408,7 @@ P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount
 
 int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
 {
-    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,maxsize,complete = 0,extralen = 65536; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
+    uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 65536; char *checkstr,*privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
     maxsize = 1000000;
     if ( rawtx != 0 && rawtx[0] != 0 && (len= (int32_t)strlen(rawtx)>>1) < maxsize )
     {
@@ -1485,13 +1487,15 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                             {
                                 if ( V->suppress_pubkeys == 0 )
                                 {
-                                    memcpy(V[i].signers[j].pubkey,mvin.signers[j].pubkey,33);
+                                    for (z=0; z<33; z++)
+                                        V[i].signers[j].pubkey[z] = mvin.signers[j].pubkey[z];
                                 }
                                 if ( flag != 0 && pubkeysize == 33 && mainvin.signers[0].siglen != 0 ) // jl777: need to generalize
                                 {
                                     if ( memcmp(mvin.signers[j].pubkey,mainvin.signers[0].pubkey,33) == 0 )
                                     {
-                                        memcpy(V[i].signers[j].sig,mainvin.signers[0].sig,mainvin.signers[0].siglen);
+                                        for (z=0; z<mainvin.signers[0].siglen; z++)
+                                            V[i].signers[j].sig[z] = mainvin.signers[0].sig[z];
                                         V[i].signers[j].siglen = mainvin.signers[j].siglen;
                                         printf("[%d].signer[%d] <- from mainvin.[0]\n",i,j);
                                     }
@@ -1502,7 +1506,10 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                                     {
                                         V[i].signers[j].privkey = privkeys[k];
                                         if ( V->suppress_pubkeys == 0 )
-                                            memcpy(V[i].signers[j].pubkey,pubkeys[k],33);
+                                        {
+                                            for (z=0; z<33; z++)
+                                                V[i].signers[j].pubkey[z] = pubkeys[k][z];
+                                        }
                                         printf("%s -> V[%d].signer.[%d] <- privkey.%d\n",mvin.signers[j].coinaddr,i,j,k);
                                         break;
                                     }
@@ -1515,10 +1522,14 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         V->signers[i].privkey = privkey;
                     if ( i < numinputs )
                         V[i].signers[0].privkey = privkey;
-                    if ( V->suppress_pubkeys == 0 && bitcoin_pubkeylen(V->signers[i].pubkey) <= 0 )
+                    plen = bitcoin_pubkeylen(V->signers[i].pubkey);
+                    if ( V->suppress_pubkeys == 0 && plen <= 0 )
                     {
                         if ( i < numinputs )
-                            memcpy(V[i].signers[0].pubkey,V->signers[i].pubkey,bitcoin_pubkeylen(V->signers[i].pubkey));
+                        {
+                            for (z=0; z<plen; z++)
+                                V[i].signers[0].pubkey[z] = V->signers[i].pubkey[z];
+                        }
                     }
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);

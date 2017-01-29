@@ -188,9 +188,9 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                         printf(" pubkey[%d]\n",i);
                     }
                 }
-                for (i=0; i<33; i++)
-                    printf("%02x",pubkey33[i]);
-                printf(" invalid pubkey33 n.%d\n",n);
+                //for (i=0; i<33; i++)
+                //    printf("%02x",pubkey33[i]);
+                //printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
@@ -626,7 +626,6 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
 char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32_t datalen,int32_t M,char *field)
 {
     char *retstrs[64],*origretstr0 = 0; cJSON *retjson; int32_t err,i,j,max = myinfo->numdexipbits;
-M = 1;
     memset(retstrs,0,sizeof(retstrs));
     for (i=j=0; i<=max; i++)
     {

@@ -482,7 +482,7 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin)
 
 void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
 {
-    struct hashstr_item *hashstr,*tmp; cJSON *alljson; char *outstr,fname[1024]; int32_t saveflag = 0;
+    struct hashstr_item *hashstr,*tmp; cJSON *alljson; char *outstr,*instr,fname[1024]; int32_t i,n,saveflag = 0;
     HASH_FIND(hh,coin->alladdresses,address,strlen(address),hashstr);
     if ( hashstr == 0 )
     {
@@ -494,6 +494,26 @@ void update_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin,c
     if ( saveflag != 0 )
     {
         FILE *fp;
+        if ( (instr= dpow_alladdresses(myinfo,coin)) != 0 )
+        {
+            if ( (alljson= cJSON_Parse(instr)) != 0 )
+            {
+                n = cJSON_GetArraySize(alljson);
+                for (i=0; i<n; i++)
+                {
+                    address = jstri(alljson,i);
+                    HASH_FIND(hh,coin->alladdresses,address,strlen(address),hashstr);
+                    if ( hashstr == 0 )
+                    {
+                        hashstr = calloc(1,sizeof(*hashstr));
+                        strncpy(hashstr->address,address,sizeof(hashstr->address));
+                        HASH_ADD_KEYPTR(hh,coin->alladdresses,hashstr->address,strlen(address),hashstr);
+                    }
+                }
+                free_json(alljson);
+            }
+            free(instr);
+        }
         alljson = cJSON_CreateArray();
         HASH_ITER(hh,coin->alladdresses,hashstr,tmp)
         {
