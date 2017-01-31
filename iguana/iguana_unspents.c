@@ -305,6 +305,8 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
             jaddstr(item,"scriptPubKey",scriptstr);
     }
     jaddnum(item,"amount",dstr(value));
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+        jaddnum(item,"interest",dstr(iguana_interest(myinfo,coin,txid,vout,value)));
     //jaddnum(item,"timestamp",T[up->txidind].timestamp);
     if ( iguana_RTunspentindfind(myinfo,coin,&outpt,0,0,0,0,&height,txid,vout,coin->bundlescount-1,0) == 0 )
     {

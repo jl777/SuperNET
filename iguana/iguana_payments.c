@@ -777,9 +777,13 @@ HASH_AND_TWOINTS(bitcoinrpc,gettxout,txid,vout,mempool)
             jaddbits256(retjson,"bestblock",coin->blocks.hwmchain.RO.hash2);
             jaddnum(retjson,"bestheight",coin->blocks.hwmchain.height);
             jaddnum(retjson,"height",height);
+            jaddbits256(retjson,"txid",txid);
+            jaddnum(retjson,"vout",vout);
             jaddnum(retjson,"confirmations",coin->blocks.hwmchain.height - height + 1);
             jaddnum(retjson,"value",dstr(value));
             jaddnum(retjson,"amount",dstr(value));
+            if ( strcmp(coin->symbol,"KMD") == 0 )
+                jaddnum(retjson,"interest",dstr(iguana_interest(myinfo,coin,txid,vout,value)));
             if ( (height % coin->chain->bundlesize) == 0 && vout == 0 )
                 jadd(retjson,"coinbase",jtrue());
             else jadd(retjson,"coinbase",jfalse());
