@@ -1575,7 +1575,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=1; iter<2; iter++)
+        for (iter=0; iter<1; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -1611,9 +1611,9 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
                     if ( (iter & 1) == 0 )
                     {
-                        printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
-                        printf("sleep 3\n");
-                        //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                        //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
+                        //printf("sleep 3\n");
+                        printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
                     }
                     else
                     {
