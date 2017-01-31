@@ -434,6 +434,7 @@ cJSON *iguana_RTunspentjson(struct supernet_info *myinfo,struct iguana_info *coi
 int32_t bitcoin_standardspend(uint8_t *script,int32_t n,uint8_t rmd160[20]);
 struct iguana_waddress *iguana_waddresssearch(struct supernet_info *myinfo,struct iguana_waccount **wacctp,char *coinaddr);
 cJSON *iguana_RTlistunspent(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *argarray,int32_t minconf,int32_t maxconf,char *remoteaddr,int32_t includespends);
+uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,uint64_t value);
 void calc_shares(struct supernet_info *myinfo,uint8_t *shares,uint8_t *secret,int32_t size,int32_t width,int32_t M,int32_t N,uint8_t *sharenrs,uint8_t *space,int32_t spacesize);
 //struct basilisk_spend *basilisk_addspend(struct supernet_info *myinfo,char *symbol,bits256 txid,uint16_t vout,int32_t addflag);
 //void iguana_wallet_Cclear(struct supernet_info *myinfo,char *symbol);
