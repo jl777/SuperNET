@@ -1,4 +1,2 @@
 #!/bin/bash
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"1Hgzt5xsnbfc8UTWqWKSTLRm5bEYHYBoCE\",\"symbol\":\"BTC\"}"
-#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"RRyBxbrAPRUBCUpiJgJZYrkxqrh8x5ta9Z\",\"symbol\":\"USD\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"bXQu4vm7gJcBvBXDiNU3eyAVrhW44wzCYW\",\"symbol\":\"SHARK\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"importaddress\",\"address\":\"RHSA9ocZc77tHiFvVQ2h26AJQFsionWAXK\",\"symbol\":\"KMD\"}"
