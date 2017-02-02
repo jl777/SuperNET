@@ -124,7 +124,7 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height)
         if ( height >= 180000 )
         {
             for (i=0; i<sizeof(Notaries_elected)/sizeof(*Notaries_elected); i++)
-                decode_hex(pubkeys[i],33,Notaries_elected[i]);
+                decode_hex(pubkeys[i],33,(char *)Notaries_elected[i][1]);
             return(i);
         }
         if ( coin->FULLNODE < 0 )
