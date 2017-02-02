@@ -1575,7 +1575,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=1; iter<2; iter++)
+        for (iter=2; iter<3; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -1673,7 +1673,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 3;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 5;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
