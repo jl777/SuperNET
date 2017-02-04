@@ -637,6 +637,8 @@ void gfshare_ctx_decextract(uint8_t *logs,uint8_t *exps,gfshare_ctx * /* ctx */,
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510]);
 int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n);
 void iguana_schnorr(struct supernet_info *myinfo);
+void iguana_fixsecp(struct supernet_info *myinfo);
+
 
 #include "../includes/iguana_api.h"
 
