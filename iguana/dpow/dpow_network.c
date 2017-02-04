@@ -115,7 +115,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
                 break;
         }
         bitcoin_pubkey33(ctx,signpubkey33,privkey);
-        for (j=0; j<10; j++)
+        for (j=0; j<33; j++)
         {
             if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
             {

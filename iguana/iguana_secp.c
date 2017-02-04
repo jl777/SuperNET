@@ -137,9 +137,9 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                                 //    printf("%02x",pubkey[i]);
                                 //printf(" bitcoin_sign's pubkey\n");
 
-                            } else printf("secpub mismatch\n");
+                            } //else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
-                    } else printf("recover error\n");
+                    } //else printf("recover error\n");
                 } else printf("secp256k1_ecdsa_sign_recoverable error\n");
             }
             else
