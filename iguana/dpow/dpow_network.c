@@ -632,7 +632,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,0,0,data,datalen)) != 0 )
         {
-            //printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
+            printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
             if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )
             {
                 if ( ++j == M )
@@ -1855,10 +1855,10 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( myinfo->repsock >= 0 ) // from clients
     {
-        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
+        while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
-            printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+            //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
@@ -1891,6 +1891,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
+            if ( num > 1000 )
+                break;
         }
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
