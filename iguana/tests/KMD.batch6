@@ -1,3 +1,4 @@
+sleep 99999
 # RAHPGb1w6XyVYD7WbiWBzr5yxEDdtP7zWk KMD 8908.50029425
 ./komodo-cli sendtoaddress RAHPGb1w6XyVYD7WbiWBzr5yxEDdtP7zWk 8908.50029425
 sleep 3
