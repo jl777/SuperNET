@@ -1727,7 +1727,9 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits >= 64 )
     {
-        printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
+        static int32_t counter;
+        if ( counter++ < 100 )
+            printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
         return;
     }
     n = dp->numipbits;
