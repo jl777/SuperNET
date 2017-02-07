@@ -1,0 +1,14 @@
+# RRtJZXkyye8CdgkiqqU2vDBzVL8br8v7qi KMD 19824.65353390, REVS 393.51044761
+sleep 1
+fiat/revs sendtoaddress RRtJZXkyye8CdgkiqqU2vDBzVL8br8v7qi 393.51044761
+# RFsV4VaRdzLLFHotqsxZbim2ARwP8VHxJH KMD 138721.51640953, REVS 2656.00000000
+sleep 1
+fiat/revs sendtoaddress RFsV4VaRdzLLFHotqsxZbim2ARwP8VHxJH 2656.00000000
+# RF11xHFssjxqa4UhUtZmReeb2w8ikmzkzL KMD 47.52053869, REVS 0.94300273
+sleep 1
+fiat/revs sendtoaddress RF11xHFssjxqa4UhUtZmReeb2w8ikmzkzL 0.94300273
+# RKmvo8crdpftFSPtJ8332KN82r1vZJaBKX KMD 7435.09663624, REVS 70.73874773
+sleep 1
+fiat/revs sendtoaddress RKmvo8crdpftFSPtJ8332KN82r1vZJaBKX 70.73874773
+
+# total KMD 0.00000000 REVS 3121.19219807
