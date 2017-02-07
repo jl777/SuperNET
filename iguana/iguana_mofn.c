@@ -238,6 +238,13 @@ int32_t gfshare_test(struct supernet_info *myinfo,int32_t M,int32_t N,int32_t da
     return ok!=1;
 }
 
+void iguana_fixsecp(struct supernet_info *myinfo)
+{
+    myinfo->ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    secp256k1_pedersen_context_initialize(myinfo->ctx);
+    secp256k1_rangeproof_context_initialize(myinfo->ctx);
+}
+
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510])
 {
     uint32_t i,x = 1;

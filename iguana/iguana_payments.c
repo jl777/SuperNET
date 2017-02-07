@@ -410,7 +410,7 @@ uint64_t iguana_interests(struct supernet_info *myinfo,struct iguana_info *coin,
 
 char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *addresses,int32_t minconf,uint8_t *opreturn,int32_t oplen,int64_t burnamount,char *remoteaddr,struct vin_info *V,int32_t maxmode)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; char *coinaddr; int32_t allocflag=0,max,i,j,m,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *vins=0,*array,*item; uint64_t value,avail=0,total,change; struct iguana_outpoint *unspents = 0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; char *coinaddr; int32_t allocflag=0,max,i,j,m,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *vins=0,*array,*item; uint64_t value,avail=0,total,change,interest; struct iguana_outpoint *unspents = 0;
     *vinsp = 0;
     max = 0;//10000;
     satoshis += burnamount;
@@ -436,6 +436,8 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     }
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
                     value = jdouble(item,"amount") * SATOSHIDEN;
+                    if ( jdouble(item,"interest") != 0 )
+                        printf("utxo has interest of %.8f\n",jdouble(item,"interest"));
                     iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
                     avail += value;
                 }
@@ -458,7 +460,13 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
         {
             if ( strcmp(coin->symbol,"KMD") == 0 )
-                total += iguana_interests(myinfo,coin,vins);
+            {
+                if ( (interest= iguana_interests(myinfo,coin,vins)) != 0 )
+                {
+                    total += interest;
+                    printf("boost total by interest %.8f\n",dstr(interest));
+                }
+            }
             if ( total < (satoshis + txfee) )
             {
                 free_json(vins);

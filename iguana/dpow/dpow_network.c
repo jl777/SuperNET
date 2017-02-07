@@ -100,7 +100,7 @@ void dex_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->dexmutex);
 }
 
-int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
+int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
     int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket;
     if ( (sigpacket= calloc(1,size + sizeof(*sigpacket))) != 0 )
@@ -115,7 +115,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
                 break;
         }
         bitcoin_pubkey33(ctx,signpubkey33,privkey);
-        for (j=0; j<10; j++)
+        for (j=0; j<33; j++)
         {
             if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
             {
@@ -138,6 +138,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             }
         }
         free(sigpacket);
+        iguana_fixsecp(myinfo);
         printf("error signing nnpacket\n");
     }
     return(-1);
@@ -1710,7 +1711,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,100) > 0 )
         {
-            sentbytes = signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
+            sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
         }
         usleep(1000);
@@ -1726,7 +1727,9 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits >= 64 )
     {
-        printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
+        static int32_t counter;
+        if ( counter++ < 100 )
+            printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
         return;
     }
     n = dp->numipbits;
@@ -1844,7 +1847,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 //printf("FROM BUS.%08x -> pub\n",dexp->crc32);
-                signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                 dex_packet(myinfo,dexp,size);
             }
             //printf("GOT DEX bus PACKET.%d\n",size);
@@ -1854,19 +1857,19 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     if ( myinfo->repsock >= 0 ) // from clients
     {
-        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
+        while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
             //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
-                signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
+                signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
                 //printf("send back[%ld]\n",strlen(retstr)+1);
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
                     printf("BROADCAST dexp request.[%d]\n",size);
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                 }
             }
             else
@@ -1874,13 +1877,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 if ( (m= myinfo->numdpowipbits) > 0 )
                 {
                     r = myinfo->dpowipbits[rand() % m];
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
                     //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                     //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 } else printf("failed dexpacketcheck\n");
@@ -1890,6 +1893,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
+            if ( num > 1000 )
+                break;
         }
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
