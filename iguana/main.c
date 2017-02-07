@@ -1778,3 +1778,6 @@ void iguana_main(void *arg)
     iguana_launchdaemons(myinfo);
 }
 
+// features
+// komodod convert passphrase to privkey
+// iguana init nanomsg in own thread
