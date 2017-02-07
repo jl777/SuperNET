@@ -1015,7 +1015,7 @@ struct dpow_nanomsghdr
 {
     bits256 srchash,desthash;
     struct dpow_nanoutxo ratify,notarize;
-    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[100];
+    uint32_t channel,height,size,datalen,crc32,myipbits,numipbits,ipbits[64];
     char symbol[16];
     uint8_t senderind,version0,version1,packet[];
 } PACKED;
@@ -1725,7 +1725,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
 void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *ipbits,int32_t numipbits,int32_t fromid,uint32_t senderipbits)
 {
     int32_t i,j,matched,missing,n; char ipaddr[64];
-    if ( numipbits > sizeof(dp->ipbits)/sizeof(*dp->ipbits) )
+    if ( numipbits >= 64 )
     {
         static int32_t counter;
         if ( counter++ < 100 )

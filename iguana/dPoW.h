@@ -137,7 +137,7 @@ struct dpow_info
     int32_t lastheight,maxblocks,SRCHEIGHT,SHORTFLAG,ratifying;
     struct pax_transaction *PAX;
     portable_mutex_t paxmutex,dexmutex;
-    uint32_t ipbits[100],numipbits;
+    uint32_t ipbits[64],numipbits;
     struct dpow_block **blocks;
 };
 uint64_t dpow_notarybestk(uint64_t refmask,struct dpow_block *bp,int8_t *lastkp);
