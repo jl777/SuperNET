@@ -240,19 +240,35 @@ int32_t kmd_height(struct iguana_info *coin)
     return(height);
 }
 
-cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr)
+cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent; uint8_t type_rmd160[21]; int32_t i,height; cJSON *array = cJSON_CreateArray();
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,height,counter=0; cJSON *array = cJSON_CreateArray();
     if ( (height= kmd_height(coin)) > coin->kmd_height+3 )
         return(cJSON_Parse("[]"));
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
     {
-        jaddi(array,kmd_transactionjson(ptr,"received"));
-        for (i=0; i<ptr->numvouts; i++)
+        while ( ptr != 0 )
         {
-            if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 && (spent= ptr->ptrs[(i<<1)+1]) != 0 )
-                jaddi(array,kmd_transactionjson(spent,"sent"));
+            if ( counter >= skip && counter < count+skip )
+                jaddi(array,kmd_transactionjson(ptr,"received"));
+            if ( ++counter >= count+skip )
+                break;
+            for (i=0; i<ptr->numvouts; i++)
+            {
+                if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 && (spent= ptr->ptrs[(i<<1)+1]) != 0 )
+                {
+                    if ( counter >= skip && counter < count+skip )
+                        jaddi(array,kmd_transactionjson(spent,"sent"));
+                    if ( ++counter >= count+skip )
+                        break;
+                    if ( ptr->ptrs[i << 1] != 0 )
+                        prev = ptr->ptrs[i << 1];
+                }
+            }
+            if ( counter >= count+skip )
+                break;
+            ptr = prev;
         }
     }
     return(array);

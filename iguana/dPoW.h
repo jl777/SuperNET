@@ -191,7 +191,7 @@ cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,c
 void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen);
 void kmd_bitcoinscan();
 struct iguana_info *iguana_coinfind(char *symbol);
-cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr);
+cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
 cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr);
 
 #endif

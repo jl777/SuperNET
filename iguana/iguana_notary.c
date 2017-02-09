@@ -612,6 +612,16 @@ HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
     return(_dex_gettxout(myinfo,symbol,txid,vout));
 }
 
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+}
+
 STRING_ARG(dex,getinfo,symbol)
 {
     return(_dex_getinfo(myinfo,symbol));
@@ -690,14 +700,30 @@ THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
 
 #include "kmd_lookup.h"
 
-TWO_STRINGS(dex,listunspent,symbol,address)
+TWO_STRINGS(dex,listunspent2,symbol,address)
 {
-    return(_dex_listunspent(myinfo,symbol,address));
+    cJSON *retjson;
+    if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+            return(clonestr("[]"));
+        if ( (retjson= kmd_listunspent(coin,address)) != 0 )
+            return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"listunspent2 null symbol, address or coin\"}"));
 }
 
-TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
 {
-    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+    cJSON *retjson;
+    if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+            return(clonestr("[]"));
+        if ( (retjson= kmd_listtransactions(coin,address,count,skip)) != 0 )
+            return(jprint(retjson,1));
+    }
+    return(clonestr("{\"error\":\"listunspent2 null symbol, address or coin\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"
