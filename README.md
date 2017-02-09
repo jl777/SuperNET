@@ -24,7 +24,7 @@ komodo: this is the top secret project I cant talk about publicly yet
 
 > #TL;DR#
 > 
-> ```sudo apt-get update; sudo apt-get install git libcurl4-openssl-dev build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
+> ```sudo apt-get update; sudo apt-get install git libcurl4-openssl-dev build-essential libnanomsg-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
 > 
 > The above one line gets SuperNET installed, built and launched for unix. 
 > 
@@ -44,6 +44,8 @@ The above two definitions need to be changed to match the mingw install on your 
 You need to make sure the nacl sdk is properly installed and you are able to build the examples.
 Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
 
+##For android##
+You have to build a native libnanomsg for android. This section is work in progress. Contact ca333@protonmail.ch for assistance on building latest iguana for android.
 
 #ONETIME#
 Now you are ready to build.
