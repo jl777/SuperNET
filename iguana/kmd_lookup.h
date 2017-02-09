@@ -363,7 +363,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                 for (i=0; i<numtxids; i++)
                 {
                     memset(&zero,0,sizeof(zero));
-                    sprintf(params,"[\"%s, 1\"]",bits256_str(str,jbits256(jitem(txids,i),0)));
+                    sprintf(params,"[\"%s\", 1]",bits256_str(str,jbits256(jitem(txids,i),0)));
                     if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
                     {
                         if ( (txjson= cJSON_Parse(curlstr)) != 0 )
