@@ -356,7 +356,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
             continue;
         }
         flag = 0;
-        if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
+        if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight+1)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
@@ -430,7 +430,10 @@ void kmd_bitcoinscan()
                 for (i=0; i<n; i++)
                 {
                     if ( (coin= iguana_coinfind(jstri(array,i))) != 0 && strcmp(coin->symbol,"BTC") != 0 )
-                        _kmd_bitcoinscan(coin);
+                    {
+                        if ( strcmp("KMD",coin->symbol) == 0 )
+                            _kmd_bitcoinscan(coin);
+                    }
                 }
             }
             free_json(array);
