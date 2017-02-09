@@ -189,5 +189,9 @@ int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
 cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);
 
 void dex_channelsend(struct supernet_info *myinfo,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen);
+void kmd_bitcoinscan();
+struct iguana_info *iguana_coinfind(char *symbol);
+cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr);
+cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr);
 
 #endif

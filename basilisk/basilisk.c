@@ -908,6 +908,7 @@ void basilisks_loop(void *arg)
                 }
                 endmilli = startmilli + 30;
             }
+            kmd_bitcoinscan();
         }
         else
         {

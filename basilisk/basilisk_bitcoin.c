@@ -22,36 +22,6 @@
 };*/
 
 #ifdef bitcoincancalculatebalances
-int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *coinaddr)
-{
-    char params[512],str[65]; char *curlstr; cJSON *txobj,*vouts,*item,*sobj,*addrs; int32_t j,m,n; int64_t value = 0;
-    sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
-    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
-    {
-        if ( (txobj= cJSON_Parse(curlstr)) != 0 )
-        {
-            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
-            {
-                item = jitem(vouts,vout);
-                if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 )
-                {
-                    for (j=0; j<m; j++)
-                    {
-                        if ( strcmp(jstri(addrs,j),coinaddr) == 0 )
-                        {
-                            value = SATOSHIDEN * jdouble(item,"satoshis");
-                            break;
-                        }
-                    }
-                }
-            }
-            free_json(txobj);
-        }
-        free(curlstr);
-    }
-    return(value);
-}
-
 char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight,int32_t minconf)
 {
     int32_t i,n,height,maxconf=1<<30; int64_t balance = 0; char params[512],*curlstr; cJSON *array,*retjson,*curljson;
@@ -82,6 +52,36 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
     }
     jaddnum(retjson,"balance",dstr(balance));
     return(jprint(retjson,1));
+}
+
+int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *coinaddr)
+{
+    char params[512],str[65]; char *curlstr; cJSON *txobj,*vouts,*item,*sobj,*addrs; int32_t j,m,n; int64_t value = 0;
+    sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
+    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
+    {
+        if ( (txobj= cJSON_Parse(curlstr)) != 0 )
+        {
+            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
+            {
+                item = jitem(vouts,vout);
+                if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 )
+                {
+                    for (j=0; j<m; j++)
+                    {
+                        if ( strcmp(jstri(addrs,j),coinaddr) == 0 )
+                        {
+                            value = SATOSHIDEN * jdouble(item,"satoshis");
+                            break;
+                        }
+                    }
+                }
+            }
+            free_json(txobj);
+        }
+        free(curlstr);
+    }
+    return(value);
 }
 
 char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)

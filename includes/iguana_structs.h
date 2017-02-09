@@ -536,6 +536,7 @@ struct iguana_info
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
     struct hashstr_item *alladdresses;
+    struct kmd_transactionhh *kmd_transactions; struct kmd_addresshh *kmd_addresses; portable_mutex_t kmdmutex; FILE *kmd_txidfp; int32_t kmd_didinit,kmd_height;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

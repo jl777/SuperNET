@@ -657,16 +657,6 @@ TWO_STRINGS(dex,validateaddress,symbol,address)
     return(_dex_validateaddress(myinfo,symbol,address));
 }
 
-TWO_STRINGS(dex,listunspent,symbol,address)
-{
-    return(_dex_listunspent(myinfo,symbol,address));
-}
-
-TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
-{
-    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
-}
-
 STRING_ARG(dex,getnotaries,symbol)
 {
     return(_dex_getnotaries(myinfo,symbol));
@@ -698,6 +688,17 @@ THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
     } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
 }
 
+#include "kmd_lookup.h"
+
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+}
 
 #include "../includes/iguana_apiundefs.h"
 
