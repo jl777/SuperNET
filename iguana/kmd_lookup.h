@@ -165,7 +165,7 @@ void kmd_flushfiles(struct iguana_info *coin)
 FILE *kmd_txidinit(struct iguana_info *coin)
 {
     int32_t i; FILE *fp; char fname[1024]; struct kmd_transactionhh *ptr; struct kmd_transaction T,*tx; struct kmd_voutinfo V; long lastpos=0;
-    sprintf(fname,"%s/%s/TRANSACTIONS",GLOBAL_DBDIR,coin->symbol);
+    sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
     if ( (fp= fopen(fname,"rb+")) != 0 )
     {
         while ( fread(&T,1,sizeof(T),fp) == sizeof(T) )
