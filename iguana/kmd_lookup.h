@@ -465,7 +465,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
-                for (iter=0; i<2; iter++)
+                for (iter=0; iter<2; iter++)
                 for (i=0; i<numtxids; i++)
                 {
                     memset(&zero,0,sizeof(zero));
