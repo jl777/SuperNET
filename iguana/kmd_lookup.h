@@ -511,7 +511,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&n,sobj,"addresses")) != 0 )
                                         {
                                             kmd_transactionvout(coin,ptr,j,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
-                                        } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); likely OP_RETURN
+                                        } else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
                                 }
@@ -527,9 +527,9 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         }
                                     }
                                 }
-                            }
+                            } else printf("incomplete at ht.%d i.%d %p %p\n",loadheight,i,ptr,tx);
                             free_json(txjson);
-                        }
+                        } else printf("parseerror.(%s)\n",curlstr);
                         free(curlstr);
                     }
                 }
