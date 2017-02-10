@@ -493,6 +493,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                             {
                                 if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
                                         ptr = kmd_transactionadd(coin,tx,numvouts);
+                                else printf("error init tx ptr.%p tx.%p\n",ptr,tx);
                             }
                             else
                             {
