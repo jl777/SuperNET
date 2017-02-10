@@ -395,7 +395,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"unspents",dstr(unspent));
     jaddnum(retjson,"spents",dstr(spent));
-    jaddnum(retjson,"balance",dstr(unspent - spent));
+    jaddnum(retjson,"balance",dstr(unspent) - dstr(spent));
     return(retjson);
 }
 
