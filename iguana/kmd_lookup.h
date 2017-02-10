@@ -98,7 +98,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         ptr->tx->vouts[vout].spendvini = vini;
         return(0);
     }
-    printf("vin error vout.%d vs ptr %p [%d] spent.%p\n",vout,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
+    char str[65]; printf("vin error %s vout.%d vs ptr %p [%d] spent.%p\n",bits256_str(str,txid),vout,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
     return(-1);
 }
 
@@ -431,7 +431,7 @@ cJSON *kmd_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *userp
 
 int32_t _kmd_bitcoinscan(struct iguana_info *coin)
 {
-    int32_t h,num=0,loadheight,i,n,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
+    int32_t h,num=0,loadheight,i,n,j,iter,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
     if ( coin->kmd_didinit == 0 )
     {
         if ( (coin->kmd_txidfp= kmd_txidinit(coin)) == 0 )
@@ -447,13 +447,14 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
+                for (iter=0; i<2; iter++)
                 for (i=0; i<numtxids; i++)
                 {
                     memset(&zero,0,sizeof(zero));
                     txid = jbits256(jitem(txids,i),0);
-                    if ( kmd_transaction(coin,txid) != 0 )
+                    if ( iter == 0 && kmd_transaction(coin,txid) != 0 )
                     {
-                        printf("already have txid.%s\n",bits256_str(str,txid));
+                        //printf("already have txid.%s\n",bits256_str(str,txid));
                         continue;
                     }
                     sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
@@ -466,28 +467,43 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                 printf("txid mismatch error ht.%d i.%d\n",loadheight,i);
                                 continue;
                             }
-                             vouts = jarray(&numvouts,txjson,"vout");
+                            vouts = jarray(&numvouts,txjson,"vout");
                             vins = jarray(&numvins,txjson,"vin");
-                            if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
+                            tx = 0;
+                            ptr = 0;
+                            if ( iter == 0 )
                             {
-                                if ( (ptr= kmd_transactionadd(coin,tx,numvouts)) != 0 )
+                                if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
+                                        ptr = kmd_transactionadd(coin,tx,numvouts);
+                            }
+                            else
+                            {
+                                if ( (ptr= kmd_transaction(coin,txid)) != 0 )
+                                    tx = ptr->tx;
+                            }
+                            if ( ptr != 0 && tx != 0 )
+                            {
+                                if ( iter == 0 )
                                 {
                                     sobj = addresses = 0;
-                                    for (i=0; i<numvouts; i++)
+                                    for (j=0; j<numvouts; j++)
                                     {
-                                        vout = jitem(vouts,i);
+                                        vout = jitem(vouts,j);
                                         if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&n,sobj,"addresses")) != 0 )
                                         {
-                                            kmd_transactionvout(coin,ptr,i,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
-                                        } else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0));
+                                            kmd_transactionvout(coin,ptr,j,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
+                                        } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
-                                    for (i=0; i<numvins; i++)
+                                }
+                                else
+                                {
+                                    for (j=0; j<numvins; j++)
                                     {
-                                        vin = jitem(vins,i);
-                                        if ( kmd_transactionvin(coin,txid,i,jbits256(vin,"txid"),jint(vin,"vout")) < 0 )
+                                        vin = jitem(vins,j);
+                                        if ( kmd_transactionvin(coin,txid,j,jbits256(vin,"txid"),jint(vin,"vout")) < 0 )
                                         {
-                                            printf("error i.%d of numvins.%d (%s)\n",i,numvins,jprint(vin,0));
+                                            printf("error i.%d of numvins.%d (%s)\n",j,numvins,jprint(vin,0));
                                             flag++;
                                         }
                                     }
