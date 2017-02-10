@@ -89,6 +89,8 @@ struct kmd_transactionhh *kmd_transaction(struct iguana_info *coin,bits256 txid)
 int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vini,bits256 txid,int32_t vout)
 {
     struct kmd_transactionhh *ptr,*spendptr;
+    if ( bits256_nonz(txid) == 0 || vout < 0 )
+        return(0); // coinbase must be
     if ( (ptr= kmd_transaction(coin,txid)) != 0 && vout < ptr->numvouts && (spendptr= kmd_transaction(coin,spendtxid)) != 0 )
     {
         ptr->ptrs[(vout<<1) + 1] = spendptr;
@@ -246,6 +248,7 @@ int32_t kmd_height(struct iguana_info *coin)
         if ( (curljson= cJSON_Parse(curlstr)) != 0 )
         {
             height = juint(curljson,"blocks");
+            printf("kmd_height.%d (%s)\n",height,jprint(curljson,0));
             free_json(curljson);
         }
         free(curlstr);
