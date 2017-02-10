@@ -141,10 +141,10 @@ struct kmd_transactionhh *kmd_transactionadd(struct iguana_info *coin,struct kmd
         ptr->numvouts = numvouts;
         ptr->tx = tx;
         portable_mutex_lock(&coin->kmdmutex);
-        char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,tx->height,tx->timestamp,bits256_str(str,tx->txid),numvouts);
+        //char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,tx->height,tx->timestamp,bits256_str(str,tx->txid),numvouts);
         HASH_ADD_KEYPTR(hh,coin->kmd_transactions,tx->txid.bytes,sizeof(tx->txid),ptr);
         portable_mutex_unlock(&coin->kmdmutex);
-    } else printf("warning adding already existing txid %s\n",bits256_str(str,tx->txid));
+    } // else printf("warning adding already existing txid %s\n",bits256_str(str,tx->txid));
     return(ptr);
 }
 
@@ -175,7 +175,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts)) != 0 )
             {
-                printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
+                //printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts)) != 0 )
                 {
                     for (i=0; i<T.numvouts; i++)
