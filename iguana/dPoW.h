@@ -193,5 +193,7 @@ void kmd_bitcoinscan();
 struct iguana_info *iguana_coinfind(char *symbol);
 cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip);
 cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr);
+cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr);
+cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout);
 
 #endif

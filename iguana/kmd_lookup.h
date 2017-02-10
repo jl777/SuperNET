@@ -310,21 +310,42 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
     return(cJSON_Parse("{\"error\":\"txid not found\"}"));
 }
 
-cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr)
+cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent; uint8_t type_rmd160[21]; int32_t i,height; cJSON *array = cJSON_CreateArray();
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,height; cJSON *array = cJSON_CreateArray();
     if ( (height= kmd_height(coin)) > coin->kmd_height+3 )
         return(cJSON_Parse("[]"));
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
     {
-        for (i=0; i<ptr->numvouts; i++)
+        while ( ptr != 0 )
         {
-            if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 && (spent= ptr->ptrs[(i<<1)+1]) == 0 )
-                jaddi(array,kmd_unspentjson(ptr->tx,i));
+            prev = 0;
+            for (i=0; i<ptr->numvouts; i++)
+            {
+                if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 )
+                {
+                    spent = ptr->ptrs[(i<<1) + 1];
+                    if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) )
+                        jaddi(array,kmd_unspentjson(ptr->tx,i));
+                    if ( ptr->ptrs[i<<1] != 0 )
+                        prev = ptr->ptrs[i<<1];
+                }
+            }
+            ptr = prev;
         }
     }
     return(array);
+}
+
+cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr)
+{
+    return(kmd_listaddress(coin,coinaddr,0));
+}
+
+cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
+{
+    return(kmd_listaddress(coin,coinaddr,1));
 }
 
 char *kmd_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
@@ -387,7 +408,6 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height )
     {
         flag = 0;
-        printf("load ht.%d\n",loadheight);
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
@@ -420,7 +440,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&n,sobj,"addresses")) != 0 )
                                         {
                                             kmd_transactionvout(coin,ptr,i,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
-                                        }
+                                        } else flag++;
                                     }
                                     for (i=0; i<numvins; i++)
                                     {
@@ -428,6 +448,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         if ( kmd_transactionvin(coin,txid,i,jbits256(vin,"txid"),jint(vin,"vout")) < 0 )
                                         {
                                             printf("error i.%d of numvins.%d\n",i,numvins);
+                                            flag++;
                                             break;
                                         }
                                     }
@@ -443,9 +464,9 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
             }
             free_json(blockjson);
         }
-        coin->kmd_height = loadheight++;
-        if ( flag == 0 || num > 100 )
+        if ( flag != 0 || num > 100 )
             break;
+        coin->kmd_height = loadheight++;
     }
     return(num);
 }

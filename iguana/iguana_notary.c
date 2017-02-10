@@ -726,6 +726,20 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
     return(clonestr("{\"error\":\"listunspent2 null symbol, address or coin\"}"));
 }
 
+HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout)
+{
+    if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        return(jprint(kmd_gettxin(coin,txid,vout),1));
+    return(clonestr("{\"error\":\"listspent null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS(dex,listspent,symbol,address)
+{
+    if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        return(jprint(kmd_listspent(coin,address),1));
+    return(clonestr("{\"error\":\"listspent null symbol, address or coin\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
 
 
