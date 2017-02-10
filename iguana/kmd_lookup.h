@@ -430,7 +430,6 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
 void kmd_bitcoinscan()
 {
     char *retstr; cJSON *array; int32_t i,n; struct iguana_info *coin;
-    return;
     if ( (retstr= dpow_notarychains(0,0,0,0)) != 0 )
     {
         if ( (array= cJSON_Parse(retstr)) != 0 )
