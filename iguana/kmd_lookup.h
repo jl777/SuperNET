@@ -487,7 +487,6 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         {
                                             printf("error i.%d of numvins.%d\n",i,numvins);
                                             flag++;
-                                            break;
                                         }
                                     }
                                 }
