@@ -350,7 +350,7 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *array,*retjson; int32_t iter; uint64_t spent=0,unspent=0,value;
+    cJSON *array,*retjson,*item; int32_t iter,i,n; uint64_t spent=0,unspent=0,value;
     for (iter=0; iter<2; iter++)
     {
         if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
@@ -359,7 +359,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             {
                 for (i=0; i<n; i++)
                 {
-                    item = jarray(array,i);
+                    item = jitem(array,i);
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
                         if ( iter == 0 )
