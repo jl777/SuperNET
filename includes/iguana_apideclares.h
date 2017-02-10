@@ -46,6 +46,7 @@ TWO_STRINGS(dex,listunspent2,symbol,address);
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip);
 HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout);
 TWO_STRINGS(dex,listspent,symbol,address);
+TWO_STRINGS(dex,getbalance,symbol,address);
 
 TWO_STRINGS(zcash,passthru,function,hex);
 TWO_STRINGS(komodo,passthru,function,hex);

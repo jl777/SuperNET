@@ -710,7 +710,7 @@ TWO_STRINGS(dex,listunspent2,symbol,address)
         if ( (retjson= kmd_listunspent(coin,address)) != 0 )
             return(jprint(retjson,1));
     }
-    return(clonestr("{\"error\":\"listunspent2 null symbol, address or coin\"}"));
+    return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
 }
 
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
@@ -723,21 +723,28 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
         if ( (retjson= kmd_listtransactions(coin,address,count,skip)) != 0 )
             return(jprint(retjson,1));
     }
-    return(clonestr("{\"error\":\"listunspent2 null symbol, address or coin\"}"));
+    return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
 }
 
 HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout)
 {
     if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         return(jprint(kmd_gettxin(coin,txid,vout),1));
-    return(clonestr("{\"error\":\"listspent null symbol, address or coin\"}"));
+    return(clonestr("{\"error\":\"dex listspent null symbol, address or coin\"}"));
 }
 
 TWO_STRINGS(dex,listspent,symbol,address)
 {
     if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         return(jprint(kmd_listspent(coin,address),1));
-    return(clonestr("{\"error\":\"listspent null symbol, address or coin\"}"));
+    return(clonestr("{\"error\":\"dex listspent null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS(dex,getbalance,symbol,address)
+{
+    if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        return(jprint(kmd_getbalance(coin,address),1));
+    return(clonestr("{\"error\":\"dex getbalance null symbol, address or coin\"}"));
 }
 
 #include "../includes/iguana_apiundefs.h"

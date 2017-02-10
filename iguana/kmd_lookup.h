@@ -348,6 +348,36 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
+cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
+{
+    cJSON *array,*retjson; int32_t iter; uint64_t spent=0,unspent=0,value;
+    for (iter=0; iter<2; iter++)
+    {
+        if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    item = jarray(array,i);
+                    if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
+                    {
+                        if ( iter == 0 )
+                            unspent += value;
+                        else spent += value;
+                    }
+                }
+            }
+        }
+    }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"result","success");
+    jaddnum(retjson,"unspents",dstr(unspent));
+    jaddnum(retjson,"spents",dstr(spent));
+    jaddnum(retjson,"balance",dstr(unspent - spent));
+    return(retjson);
+}
+
 char *kmd_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
 {
     char numstr[128],*blockhashstr=0; bits256 hash2; struct iguana_info *coin;
@@ -415,20 +445,23 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                 for (i=0; i<numtxids; i++)
                 {
                     memset(&zero,0,sizeof(zero));
-                    sprintf(params,"[\"%s\", 1]",bits256_str(str,jbits256(jitem(txids,i),0)));
+                    txid = jbits256(jitem(txids,i),0);
+                    if ( kmd_transaction(coin,txid) != 0 )
+                    {
+                        printf("already have txid.%s\n",bits256_str(str,txid));
+                        continue;
+                    }
+                    sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
                     if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
                     {
                         if ( (txjson= cJSON_Parse(curlstr)) != 0 )
                         {
-                            txid = jbits256(txjson,"txid");
-                            if ( kmd_transaction(coin,txid) != 0 )
+                            if ( bits256_cmp(txid,jbits256(txjson,"txid")) != 0 )
                             {
-                                printf("already have txid.%s\n",bits256_str(str,txid));
-                                free_json(txjson);
-                                free(curlstr);
+                                printf("txid mismatch error ht.%d i.%d\n",loadheight,i);
                                 continue;
                             }
-                            vouts = jarray(&numvouts,txjson,"vout");
+                             vouts = jarray(&numvouts,txjson,"vout");
                             vins = jarray(&numvins,txjson,"vin");
                             if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
                             {
@@ -464,7 +497,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
             }
             free_json(blockjson);
         }
-        if ( flag != 0 || num > 100 )
+        if ( flag != 0 || num > 1000 )
             break;
         coin->kmd_height = loadheight++;
     }
