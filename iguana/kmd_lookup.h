@@ -65,12 +65,12 @@ struct kmd_addresshh *_kmd_addressadd(struct iguana_info *coin,uint8_t type_rmd1
     struct kmd_addresshh *addr;
     addr = calloc(1,sizeof(*addr));
     memcpy(addr->type_rmd160,type_rmd160,21);
-    portable_mutex_lock(&coin->kmdmutex);
     {
         char coinaddr[64];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
         printf("%s NEW ADDRESS.(%s)\n",coin->symbol,coinaddr);
     }
+    portable_mutex_lock(&coin->kmdmutex);
     HASH_ADD_KEYPTR(hh,coin->kmd_addresses,addr->type_rmd160,21,addr);
     portable_mutex_unlock(&coin->kmdmutex);
     return(addr);
@@ -121,6 +121,7 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
             fwrite(tx,1,sizeof(*tx) + tx->numvouts*sizeof(*tx->vouts),coin->kmd_txidfp);
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
             addr = _kmd_addressadd(coin,type_rmd160);
+        printf("addr.%p\n",addr);
         if ( addr != 0 )
         {
             if ( addr->prev != ptr )
