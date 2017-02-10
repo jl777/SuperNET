@@ -51,7 +51,7 @@ struct kmd_addresshh *_kmd_address(struct iguana_info *coin,uint8_t type_rmd160[
     portable_mutex_lock(&coin->kmdmutex);
     HASH_FIND(hh,coin->kmd_addresses,type_rmd160,21,addr);
     portable_mutex_unlock(&coin->kmdmutex);
-    if ( addr != 0 )
+    if ( addr != 0 && 0 )
     {
         char coinaddr[64];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
@@ -111,7 +111,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
 void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,int32_t vout,uint64_t amount,uint8_t type_rmd160[21],bits256 spendtxid,int32_t spendvini)
 {
     struct kmd_addresshh *addr; struct kmd_transaction *tx = 0;
-    printf("ht.%d VOUT %d %.8f\n",ptr->tx->height,vout,dstr(amount));
+    //printf("ht.%d VOUT %d %.8f\n",ptr->tx->height,vout,dstr(amount));
     if ( vout < ptr->numvouts && (tx= ptr->tx) != 0 )
     {
         tx->vouts[vout].spendtxid = spendtxid;
@@ -122,7 +122,6 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
             fwrite(tx,1,sizeof(*tx) + tx->numvouts*sizeof(*tx->vouts),coin->kmd_txidfp);
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
             addr = _kmd_addressadd(coin,type_rmd160);
-        printf("addr.%p\n",addr);
         if ( addr != 0 )
         {
             if ( addr->prev != ptr )
