@@ -65,6 +65,7 @@ struct kmd_addresshh *_kmd_addressadd(struct iguana_info *coin,uint8_t type_rmd1
     struct kmd_addresshh *addr;
     addr = calloc(1,sizeof(*addr));
     memcpy(addr->type_rmd160,type_rmd160,21);
+    if ( 0 )
     {
         char coinaddr[64];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
