@@ -164,7 +164,7 @@ void kmd_flushfiles(struct iguana_info *coin)
 
 FILE *kmd_txidinit(struct iguana_info *coin)
 {
-    int32_t i; FILE *fp; char fname[1024]; struct kmd_transactionhh *ptr; struct kmd_transaction T,*tx; struct kmd_voutinfo V; long lastpos=0;
+    int32_t i; FILE *fp; char fname[1024],str[65]; struct kmd_transactionhh *ptr,*tmp; struct kmd_transaction T,*tx; struct kmd_voutinfo V,*vptr; long lastpos=0;
     sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
     if ( (fp= fopen(fname,"rb+")) != 0 )
     {
@@ -172,6 +172,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts)) != 0 )
             {
+                printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts)) != 0 )
                 {
                     for (i=0; i<T.numvouts; i++)
@@ -192,6 +193,18 @@ FILE *kmd_txidinit(struct iguana_info *coin)
             } else break;
         }
         fseek(fp,lastpos,SEEK_SET);
+        HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
+        {
+            for (i=0; i<ptr->numvouts; i++)
+            {
+                vptr = &ptr->tx->vouts[i];
+                if ( vptr->spendvini >= 0 && bits256_nonz(vptr->spendtxid) != 0 )
+                {
+                    if ( (ptr->ptrs[(i<<1) + 1]= kmd_transaction(coin,vptr->spendtxid)) == 0 )
+                        printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
+                }
+            }
+        }
     } else fp = fopen(fname,"wb");
     return(fp);
 }
@@ -347,16 +360,12 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
         coin->kmd_didinit = 1;
     }
     height = kmd_height(coin);
-    loadheight = coin->kmd_height;
+    loadheight = coin->kmd_height+1;
     while ( loadheight < height )
     {
-        if ( loadheight == 0 )
-        {
-            loadheight++;
-            continue;
-        }
         flag = 0;
-        if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight+1)) != 0 )
+        printf("load ht.%d\n",loadheight);
+        if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
             {
