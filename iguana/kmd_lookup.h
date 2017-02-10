@@ -124,7 +124,7 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
             }
             else
             {
-                printf("tricky case same address in different vouts, make sure backlink is right\n");
+                //printf("tricky case same address in different vouts, make sure backlink is right\n");
                 ptr->ptrs[vout<<1] = addr->lastprev;
             }
         } else printf("kmd_transactionvout unexpected null addr\n");
@@ -302,7 +302,11 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
             retjson = cJSON_CreateObject();
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"status","spent");
+            jaddnum(retjson,"height",tx->height);
+            jaddnum(retjson,"timestamp",tx->timestamp);
             jaddbits256(retjson,"txid",txid);
+            jaddnum(retjson,"vout",vout);
+            jaddnum(retjson,"value",dstr(tx->vouts[vout].amount));
             jaddbits256(retjson,"spendtxid",tx->vouts[vout].spendtxid);
             jaddnum(retjson,"vin",tx->vouts[vout].spendvini);
         } else return(cJSON_Parse("{\"result\":\"success\",\"status\":\"unspent\"}"));
@@ -473,7 +477,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&n,sobj,"addresses")) != 0 )
                                         {
                                             kmd_transactionvout(coin,ptr,i,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
-                                        } else flag++;
+                                        }
                                     }
                                     for (i=0; i<numvins; i++)
                                     {
