@@ -476,6 +476,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == 'x' )
+            {
+                if ( (retjson= dpow_gettxin(myinfo,coin,dexreq.hash,dexreq.shortarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 'H' )
             {
                 hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
@@ -486,6 +494,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'B' )
             {
                 if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'b' )
+            {
+                if ( (retjson= dpow_getbalance(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -522,6 +538,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'U' )
             {
                 if ( (retjson= dpow_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 's' )
+            {
+                if ( (retjson= dpow_listspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -764,6 +788,18 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
 }
 
+char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
+{
+    struct dex_request dexreq;
+    //char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.hash = txid;
+    dexreq.shortarg = vout;
+    dexreq.func = 'x';
+    return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
+}
+
 char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags)
 {
     struct dex_request dexreq; char keyvalue[IGUANA_MAXSCRIPTSIZE]; int32_t keylen,valuesize;
@@ -918,7 +954,33 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
-    dexreq.func = 'U';
+    dexreq.func = 's';
+    if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
+    {
+        //printf("UNSPENTS.(%s)\n",retstr);
+    }
+    return(_dex_arrayreturn(retstr));
+}
+
+char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; char *retstr;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 's';
+    if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
+    {
+        //printf("UNSPENTS.(%s)\n",retstr);
+    }
+    return(_dex_arrayreturn(retstr));
+}
+
+char *_dex_getbalance(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; char *retstr;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'b';
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
         //printf("UNSPENTS.(%s)\n",retstr);
