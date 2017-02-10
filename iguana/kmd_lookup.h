@@ -510,8 +510,9 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         vout = jitem(vouts,j);
                                         if ( (sobj= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&n,sobj,"addresses")) != 0 )
                                         {
+                                            bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],jstri(addresses,0));
                                             kmd_transactionvout(coin,ptr,j,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
-                                        } else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
+                                        } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
                                 }
