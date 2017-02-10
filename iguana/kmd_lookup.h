@@ -248,7 +248,7 @@ int32_t kmd_height(struct iguana_info *coin)
         if ( (curljson= cJSON_Parse(curlstr)) != 0 )
         {
             height = juint(curljson,"blocks");
-            printf("kmd_height.%d (%s)\n",height,jprint(curljson,0));
+            //printf("kmd_height.%d (%s)\n",height,jprint(curljson,0));
             free_json(curljson);
         }
         free(curlstr);
@@ -288,6 +288,26 @@ cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t coun
         }
     }
     return(array);
+}
+
+cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
+{
+    struct kmd_transactionhh *ptr,*spendptr; struct kmd_transaction *tx; cJSON *retjson;
+    if ( (ptr= kmd_transaction(coin,txid)) != 0 && (tx= ptr->tx) != 0 )
+    {
+        if ( vout >= ptr->numvouts )
+            return(cJSON_Parse("{\"error\":\"vout too big\"}"));
+        if ( (spendptr= ptr->ptrs[(vout << 1) + 1]) != 0 )
+        {
+            retjson = cJSON_CreateObject();
+            jaddstr(retjson,"result","success");
+            jaddstr(retjson,"status","spent");
+            jaddbits256(retjson,"txid",txid);
+            jaddbits256(retjson,"spendtxid",tx->vouts[vout].spendtxid);
+            jaddnum(retjson,"vin",tx->vouts[vout].spendvini);
+        } else return(cJSON_Parse("{\"result\":\"success\",\"status\":\"unspent\"}"));
+    }
+    return(cJSON_Parse("{\"error\":\"txid not found\"}"));
 }
 
 cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr)
@@ -390,7 +410,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                             }
                             vouts = jarray(&numvouts,txjson,"vout");
                             vins = jarray(&numvins,txjson,"vin");
-                            if ( (tx= kmd_transactionalloc(txid,loadheight-jint(txjson,"confirmations"),jint(txjson,"blocktime"),numvouts)) != 0 )
+                            if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
                             {
                                 if ( (ptr= kmd_transactionadd(coin,tx,numvouts)) != 0 )
                                 {
