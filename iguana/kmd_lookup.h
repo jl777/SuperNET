@@ -485,7 +485,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         vin = jitem(vins,i);
                                         if ( kmd_transactionvin(coin,txid,i,jbits256(vin,"txid"),jint(vin,"vout")) < 0 )
                                         {
-                                            printf("error i.%d of numvins.%d\n",i,numvins);
+                                            printf("error i.%d of numvins.%d (%s)\n",i,numvins,jprint(vin,0));
                                             flag++;
                                         }
                                     }
