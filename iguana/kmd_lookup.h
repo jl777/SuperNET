@@ -88,7 +88,7 @@ struct kmd_transactionhh *kmd_transaction(struct iguana_info *coin,bits256 txid)
 
 int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vini,bits256 txid,int32_t vout)
 {
-    struct kmd_transactionhh *ptr,*spendptr;
+    struct kmd_transactionhh *ptr,*spendptr=0;
     if ( bits256_nonz(txid) == 0 || vout < 0 )
         return(0); // coinbase must be
     if ( (ptr= kmd_transaction(coin,txid)) != 0 && vout < ptr->numvouts && (spendptr= kmd_transaction(coin,spendtxid)) != 0 )
@@ -98,6 +98,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         ptr->tx->vouts[vout].spendvini = vini;
         return(0);
     }
+    printf("vin error vout.%d vs ptr %p [%d] spent.%p\n",vout,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
     return(-1);
 }
 
