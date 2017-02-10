@@ -51,6 +51,12 @@ struct kmd_addresshh *_kmd_address(struct iguana_info *coin,uint8_t type_rmd160[
     portable_mutex_lock(&coin->kmdmutex);
     HASH_FIND(hh,coin->kmd_addresses,type_rmd160,21,addr);
     portable_mutex_unlock(&coin->kmdmutex);
+    if ( addr != 0 )
+    {
+        char coinaddr[64];
+        bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
+        printf("%s found (%s)\n",coin->symbol,coinaddr);
+    }
     return(addr);
 }
 
@@ -134,7 +140,7 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
 
 struct kmd_transactionhh *kmd_transactionadd(struct iguana_info *coin,struct kmd_transaction *tx,int32_t numvouts)
 {
-    struct kmd_transactionhh *ptr; char str[65];
+    struct kmd_transactionhh *ptr; //char str[65];
     if ( (ptr= kmd_transaction(coin,tx->txid)) == 0 )
     {
         ptr = calloc(1,sizeof(*ptr) + (sizeof(*ptr->ptrs)*numvouts*2));
@@ -447,6 +453,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height )
     {
         flag = 0;
+        if ( (loadheight % 1000) == 0 )
+            printf("loading ht.%d\n",loadheight);
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
