@@ -55,7 +55,7 @@ struct kmd_addresshh *_kmd_address(struct iguana_info *coin,uint8_t type_rmd160[
     {
         char coinaddr[64];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
-        printf("%s found (%s)\n",coin->symbol,coinaddr);
+        printf("%s found (%s) %02x\n",coin->symbol,coinaddr,type_rmd160[0]);
     }
     return(addr);
 }
@@ -68,7 +68,7 @@ struct kmd_addresshh *_kmd_addressadd(struct iguana_info *coin,uint8_t type_rmd1
     {
         char coinaddr[64];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
-        printf("%s NEW ADDRESS.(%s)\n",coin->symbol,coinaddr);
+        printf("%s NEW ADDRESS.(%s) %02x\n",coin->symbol,coinaddr,type_rmd160[0]);
     }
     portable_mutex_lock(&coin->kmdmutex);
     HASH_ADD_KEYPTR(hh,coin->kmd_addresses,addr->type_rmd160,21,addr);
