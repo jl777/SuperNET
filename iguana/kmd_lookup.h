@@ -183,7 +183,7 @@ void kmd_flushfiles(struct iguana_info *coin)
 
 FILE *kmd_txidinit(struct iguana_info *coin)
 {
-    int32_t i; FILE *fp; char fname[1024],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction T,*tx; struct kmd_voutinfo V; long lastpos=0;
+    int32_t i; FILE *fp; char fname[1024]; struct kmd_transactionhh *ptr; struct kmd_transaction T,*tx; struct kmd_voutinfo V; long lastpos=0;
     sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
     if ( (fp= fopen(fname,"rb+")) != 0 )
     {
@@ -191,7 +191,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
-                printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
+                //printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
@@ -463,7 +463,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             netbalance += dstr(r);
             netbalance -= dstr(s);
             if ( (r - s) > 100000*SATOSHIDEN )
-                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance+0.5);
+                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance+1./(SATOSHIDEN*2));
             received += r;
             sent += s;
         }
