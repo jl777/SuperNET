@@ -111,7 +111,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         }
         return(0);
     }
-    char str[65]; printf("vin error %s vout.%d vs ptr %p [%d] spent.%p\n",bits256_str(str,spendtxid),vout,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
+    char str[65]; printf("vin error %s vout.%d of %d vs ptr %p [%d] spent.%p\n",bits256_str(str,spendtxid),vout,ptr->numvouts,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
     return(-1);
 }
 
