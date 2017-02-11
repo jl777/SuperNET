@@ -421,6 +421,7 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *receive
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
     cJSON *retjson; int64_t s,r,sent=0,received=0,balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    retjson = cJSON_CreateObject();
     if ( strcmp(coinaddr,"*") == 0 )
     {
         HASH_ITER(hh,coin->kmd_addresses,addr,tmp)
@@ -432,8 +433,9 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             received += r;
             sent += s;
         }
+        if ( strcmp("KMD",coin->symbol) == 0 )
+            jaddnum(retjson,"interestpaid",dstr(balance)-dstr(coin->kmd_height*3));
     } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
-    retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
