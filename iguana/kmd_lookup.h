@@ -241,7 +241,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                         if ( kmd_transactionvin(coin,txid,i,spenttxid,spentvout) < 0 )
                         {
                             printf("error adding spend %s %d of %d\n",bits256_str(str,txid),i,numvins);
-                            break;
+                            //break;
                         }
                     } else break;
                 }
@@ -616,6 +616,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         vin = jitem(vins,j);
                                         spenttxid = jbits256(vin,"txid");
                                         spentvout = jint(vin,"vout");
+                                        if ( bits256_nonz(spenttxid) == 0 || spentvout < 0 )
+                                            printf("null spenttxid ht.%d j.%d spentvout.%d\n",loadheight,j,spentvout);
                                         if ( kmd_transactionvin(coin,txid,j,spenttxid,spentvout) < 0 )
                                         {
                                             printf("error i.%d of numvins.%d (%s)\n",j,numvins,jprint(vin,0));
