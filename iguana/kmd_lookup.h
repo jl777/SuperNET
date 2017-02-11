@@ -16,6 +16,8 @@
 #ifndef INCLUDE_KMDLOOKUP_H
 #define INCLUDE_KMDLOOKUP_H
 
+#define KMD_EXPLORER_LAG 3
+
 struct kmd_voutinfo
 {
     bits256 spendtxid;
@@ -234,7 +236,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 {
                     if ( (ptr->ptrs[(i<<1) + 1]= kmd_transaction(coin,vptr->spendtxid)) == 0 )
                         printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
-                    else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
+                    //else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
                 }
             }
         }
@@ -496,7 +498,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     }
     height = kmd_height(coin);
     loadheight = coin->kmd_height+1;
-    while ( loadheight < height )
+    while ( loadheight < height-KMD_EXPLORER_LAG )
     {
         flag = 0;
         if ( (loadheight % 1000) == 0 )
