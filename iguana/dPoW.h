@@ -179,9 +179,11 @@ char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_getbalance(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *coinaddr,int32_t count,int32_t skip);
+char *_dex_listtransactions2(struct supernet_info *myinfo,char *symbol,char *coinaddr,int32_t count,int32_t skip);
 char *_dex_alladdresses(struct supernet_info *myinfo,char *symbol);
 int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);

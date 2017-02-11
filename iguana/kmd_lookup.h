@@ -28,7 +28,7 @@ struct kmd_voutinfo
 
 struct kmd_transaction
 {
-    bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp,pad;
+    bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp;
     struct kmd_voutinfo vouts[];
 } PACKED;
 
@@ -44,8 +44,8 @@ struct kmd_transactionhh
 struct kmd_addresshh
 {
     UT_hash_handle hh;
-    uint8_t type_rmd160[21], pad;
     struct kmd_transactionhh *prev,*lastprev;
+    uint8_t type_rmd160[21], pad;
 };
 
 struct kmd_addresshh *_kmd_address(struct iguana_info *coin,uint8_t type_rmd160[21])
@@ -98,7 +98,7 @@ struct kmd_transactionhh *kmd_transaction(struct iguana_info *coin,bits256 txid)
 
 int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vini,bits256 txid,int32_t vout)
 {
-    struct kmd_transactionhh *ptr,*spendptr=0; long savepos; struct kmd_transaction T;
+    struct kmd_transactionhh *ptr,*spendptr=0;
     if ( bits256_nonz(txid) == 0 || vout < 0 )
         return(0); // coinbase must be
     if ( (ptr= kmd_transaction(coin,txid)) != 0 && vout < ptr->numvouts && (spendptr= kmd_transaction(coin,spendtxid)) != 0 )
@@ -108,7 +108,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         {
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
-            if ( coin->kmd_txidfp != 0 && 0 )
+            /*if ( coin->kmd_txidfp != 0 && 0 )
             {
                 char str[65],str2[65];
                 //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
@@ -121,7 +121,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
                     fflush(coin->kmd_txidfp);
                 } else printf("vin write validation error ht.%d vout.%d fpos.%ld %s vs %s [%d vs %d]\n",ptr->tx->height,vout,ptr->fpos,bits256_str(str,T.txid),bits256_str(str2,ptr->tx->txid),T.numvouts,ptr->tx->numvouts);
                 fseek(coin->kmd_txidfp,savepos,SEEK_SET);
-            }
+            }*/
         }
         return(0);
     }
@@ -232,15 +232,6 @@ FILE *kmd_txidinit(struct iguana_info *coin)
             } else break;
         }
         fseek(fp,lastpos,SEEK_SET);
-        /*HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
-        {
-            for (i=0; i<ptr->numvins; i++)
-            {
-                vptr = &ptr->tx->vouts[i];
-                if ( kmd_transactionvin(coin,ptr->tx->txid,i,ptr->tx->vins[i].txid,ptr->tx->vins[i].vout) < 0 )
-                    printf("error vini.%d ht.%d\n",i,ptr->tx->height);
-            }
-        }*/
         HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
         {
             //printf("scan for spends ht.%d\n",ptr->tx->height);
@@ -254,6 +245,47 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                         printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
                     }
                     //else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
+                }
+            }
+        }
+    } else fp = fopen(fname,"wb+");
+    return(fp);
+}
+
+FILE *kmd_spendinit(struct iguana_info *coin)
+{
+    int32_t i,numvins,spentvout; FILE *fp; char fname[1024],str[65]; bits256 txid,spenttxid; struct kmd_transactionhh *ptr,*tmp; struct kmd_voutinfo *vptr; long lastpos=0;
+    sprintf(fname,"%s/TRANSACTIONS/%s.spends",GLOBAL_DBDIR,coin->symbol);
+    if ( (fp= fopen(fname,"rb+")) != 0 )
+    {
+        while ( fread(&txid,1,sizeof(txid),fp) == sizeof(txid) )
+        {
+            if ( fread(&numvins,1,sizeof(numvins),fp) == sizeof(numvins) )
+            {
+                for (i=0; i<numvins; i++)
+                {
+                    if ( fread(&spenttxid,1,sizeof(spenttxid),fp) == sizeof(spenttxid) &&
+                        fread(&spentvout,1,sizeof(spentvout),fp) == sizeof(spentvout) )
+                    {
+                        if ( kmd_transactionvin(coin,txid,i,spenttxid,spentvout) < 0 )
+                            printf("error adding spend %s %d of %d\n",bits256_str(str,txid),i,numvins);
+                    }
+                }
+            }
+        }
+        fseek(fp,lastpos,SEEK_SET);
+        HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
+        {
+            //printf("scan for spends ht.%d\n",ptr->tx->height);
+            for (i=0; i<ptr->numvouts; i++)
+            {
+                vptr = &ptr->tx->vouts[i];
+                if ( vptr->spendvini >= 0 && bits256_nonz(vptr->spendtxid) != 0 )
+                {
+                    if ( ptr->ptrs[(i<<1) + 1] != kmd_transaction(coin,vptr->spendtxid) )
+                    {
+                        printf("mismatch %s spend.%d %p %p\n",bits256_str(str,vptr->spendtxid),i,ptr->ptrs[(i<<1) + 1],kmd_transaction(coin,vptr->spendtxid));
+                    }
                 }
             }
         }
@@ -446,7 +478,8 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
             s = r = 0;
             balance += _kmd_getbalance(coin,address,&r,&s);
-            printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
+            if ( (r - s) > 100000*SATOSHIDEN )
+                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
             received += r;
             sent += s;
         }
@@ -511,13 +544,10 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     int32_t h,num=0,loadheight,i,n,j,iter,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
     if ( coin->kmd_didinit == 0 )
     {
-        char fname[1024];
         if ( (coin->kmd_txidfp= kmd_txidinit(coin)) == 0 )
-            printf("error initializing %s.kmd lookups\n",coin->symbol);
-        sprintf(fname,"%s/TRANSACTIONS/%s.spends",GLOBAL_DBDIR,coin->symbol);
-        if ( (coin->kmd_spendfp= fopen(fname,"rb+")) != 0 )
-            fseek(coin->kmd_spendfp,0,SEEK_END);
-        else coin->kmd_spendfp = fopen(fname,"wb+");
+            printf("error initializing %s.kmd txid\n",coin->symbol);
+        else if ( (coin->kmd_spendfp= kmd_spendinit(coin)) == 0 )
+            printf("error initializing %s.kmd spend\n",coin->symbol);
         coin->kmd_didinit = 1;
     }
     height = kmd_height(coin);

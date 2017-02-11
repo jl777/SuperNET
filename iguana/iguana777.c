@@ -885,7 +885,10 @@ void iguana_coinloop(void *arg)
     coins++;
     coin = coins[0];
     if ( (coin->notarychain= iguana_isnotarychain(coin->symbol)) >= 0 )
+    {
         coin->VALIDATENODE = 0;
+        coin->DEXEXPLORER = myinfo->DEXEXPLORER;
+    }
     //if ( coin->FULLNODE > 0 )
     //    coin->notarychain = -1;
     printf("begin coinloop[%d] %s notarychain.%d\n",n,coin->symbol,coin->notarychain);

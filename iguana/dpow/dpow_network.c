@@ -543,6 +543,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == 'u' )
+            {
+                if ( (retjson= kmd_listunspent(coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 's' )
             {
                 if ( (retjson= dpow_listspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
@@ -569,6 +577,15 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             {
                 //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
                 if ( (retjson= dpow_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == '2' )
+            {
+                //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
+                if ( (retjson= kmd_listtransactions(coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -949,17 +966,27 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     return(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,""));
 }
 
-char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
+char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *address,uint8_t arg)
 {
     struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
-    dexreq.func = 'U';
+    dexreq.func = arg;
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
         //printf("UNSPENTS.(%s)\n",retstr);
     }
     return(_dex_arrayreturn(retstr));
+}
+
+char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    return(_dex_listunspentarg(myinfo,symbol,address,'U'));
+}
+
+char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    return(_dex_listunspentarg(myinfo,symbol,address,'u'));
 }
 
 char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address)
@@ -996,6 +1023,17 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     dexreq.intarg = skip;
     dexreq.shortarg = count;
     dexreq.func = 'L';
+    return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")));
+}
+
+char *_dex_listtransactions2(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.intarg = skip;
+    dexreq.shortarg = count;
+    dexreq.func = '2';
     return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")));
 }
 
