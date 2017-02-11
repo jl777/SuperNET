@@ -110,6 +110,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             ptr->tx->vouts[vout].spendvini = vini;
             if ( coin->kmd_txidfp != 0 )
             {
+                char str[65],str2[65];
                 //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
                 savepos = ftell(coin->kmd_txidfp);
                 fseek(coin->kmd_txidfp,ptr->fpos,SEEK_SET);
@@ -118,7 +119,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
                     fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
                     fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
                     fflush(coin->kmd_txidfp);
-                } else printf("vin write validation error ht.%d vout.%d fpos.%ld\n",ptr->tx->height,vout,ptr->fpos);
+                } else printf("vin write validation error ht.%d vout.%d fpos.%ld %s vs %s [%d vs %d]\n",ptr->tx->height,vout,ptr->fpos,bits256_str(str,T.txid),bits256_str(str2,ptr->tx->txid),T.numvouts,ptr->tx->numvouts);
                 fseek(coin->kmd_txidfp,savepos,SEEK_SET);
             }
         }
