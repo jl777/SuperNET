@@ -198,7 +198,7 @@ void kmd_flushfiles(struct iguana_info *coin)
 
 FILE *kmd_txidinit(struct iguana_info *coin)
 {
-    int32_t i; FILE *fp; char fname[1024],str[65]; struct kmd_transactionhh *ptr,*tmp; struct kmd_transaction T,*tx; struct kmd_voutinfo V,*vptr; long lastpos=0;
+    int32_t i; FILE *fp; char fname[1024],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction T,*tx; struct kmd_voutinfo V; long lastpos=0;
     sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
     if ( (fp= fopen(fname,"rb+")) != 0 )
     {
@@ -231,23 +231,8 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 }
             } else break;
         }
+        printf("finished txidinit fpos %ld vs lastpos %ld\n",ftell(fp),lastpos);
         fseek(fp,lastpos,SEEK_SET);
-        HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
-        {
-            //printf("scan for spends ht.%d\n",ptr->tx->height);
-            for (i=0; i<ptr->numvouts; i++)
-            {
-                vptr = &ptr->tx->vouts[i];
-                if ( vptr->spendvini >= 0 && bits256_nonz(vptr->spendtxid) != 0 )
-                {
-                    if ( (ptr->ptrs[(i<<1) + 1]= kmd_transaction(coin,vptr->spendtxid)) == 0 )
-                    {
-                        printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
-                    }
-                    //else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
-                }
-            }
-        }
     } else fp = fopen(fname,"wb+");
     return(fp);
 }
@@ -268,11 +253,18 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                         fread(&spentvout,1,sizeof(spentvout),fp) == sizeof(spentvout) )
                     {
                         if ( kmd_transactionvin(coin,txid,i,spenttxid,spentvout) < 0 )
+                        {
                             printf("error adding spend %s %d of %d\n",bits256_str(str,txid),i,numvins);
-                    }
+                            break;
+                        }
+                    } else break;
                 }
-            }
+                if ( i == numvins )
+                    lastpos = ftell(fp);
+                else break;
+            } else break;
         }
+        printf("finished spendinit fpos %ld vs lastpos %ld\n",ftell(fp),lastpos);
         fseek(fp,lastpos,SEEK_SET);
         HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
         {
@@ -556,7 +548,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     {
         flag = 0;
         if ( (loadheight % 1000) == 0 )
-            printf("loading ht.%d\n",loadheight);
+            printf("loading ht.%d %s\n",loadheight,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
