@@ -200,7 +200,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts)) != 0 )
             {
-                //printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
+                printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts)) != 0 )
                 {
                     ptr->fpos = lastpos;
