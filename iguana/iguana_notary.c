@@ -707,6 +707,8 @@ TWO_STRINGS(dex,listunspent2,symbol,address)
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
             if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
                 return(clonestr("[]"));
             if ( (retjson= kmd_listunspent(coin,address)) != 0 )
@@ -725,6 +727,8 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
             if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
                 return(clonestr("[]"));
             if ( (retjson= kmd_listtransactions(coin,address,count,skip)) != 0 )
@@ -742,6 +746,8 @@ HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout)
     {
         if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_gettxin(coin,txid,vout),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
     if ( symbol != 0 )
         return(_dex_gettxin(myinfo,symbol,txid,vout));
@@ -754,6 +760,8 @@ TWO_STRINGS(dex,listspent,symbol,address)
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_listspent(coin,address),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
     if ( symbol != 0 && address != 0 )
         return(_dex_listspent(myinfo,symbol,address));
@@ -766,7 +774,8 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_getbalance(coin,address),1));
-        else printf("DEXEXPLORER.%d\n",coin->DEXEXPLORER);
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
     if ( symbol != 0 && address != 0 )
         return(_dex_getbalance(myinfo,symbol,address));
