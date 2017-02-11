@@ -766,6 +766,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_getbalance(coin,address),1));
+        else printf("DEXEXPLORER.%d\n",coin->DEXEXPLORER);
     }
     if ( symbol != 0 && address != 0 )
         return(_dex_getbalance(myinfo,symbol,address));
