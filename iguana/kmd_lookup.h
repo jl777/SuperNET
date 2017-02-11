@@ -540,8 +540,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height-KMD_EXPLORER_LAG )
     {
         flag = 0;
-        if ( (loadheight % 1000) == 0 )
-            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
+        if ( (loadheight % 10000) == 0 )
+            printf("loading ht.%d\n",loadheight,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
