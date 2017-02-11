@@ -330,10 +330,14 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
 cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
 {
     struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,height; cJSON *array = cJSON_CreateArray();
-    if ( (height= kmd_height(coin)) > coin->kmd_height+3 )
+    if ( time(NULL) > coin->kmd_lasttime+30 )
     {
-        printf("height.%d > kmd_height.%d\n",height,coin->kmd_height);
-        return(cJSON_Parse("[]"));
+        coin->kmd_lasttime = (uint32_t)time(NULL);
+        if ( (height= kmd_height(coin)) > coin->kmd_height+3 )
+        {
+            printf("height.%d > kmd_height.%d\n",height,coin->kmd_height);
+            return(cJSON_Parse("[]"));
+        }
     }
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
@@ -352,6 +356,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                         prev = ptr->ptrs[i<<1];
                 }
             }
+            printf("%s ht.%d prev.%p\n",coinaddr,ptr->tx->height,prev);
             ptr = prev;
         }
     }
