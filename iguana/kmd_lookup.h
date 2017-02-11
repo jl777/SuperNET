@@ -144,13 +144,14 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
     } else printf("vout.%d wont fit into numvouts.[%d] or null tx.%p\n",vout,ptr->numvouts,tx);
 }
 
-struct kmd_transactionhh *kmd_transactionadd(struct iguana_info *coin,struct kmd_transaction *tx,int32_t numvouts)
+struct kmd_transactionhh *kmd_transactionadd(struct iguana_info *coin,struct kmd_transaction *tx,int32_t numvouts,int32_t numvins)
 {
     struct kmd_transactionhh *ptr; //char str[65];
     if ( (ptr= kmd_transaction(coin,tx->txid)) == 0 )
     {
         ptr = calloc(1,sizeof(*ptr) + (sizeof(*ptr->ptrs)*numvouts*2));
         ptr->numvouts = numvouts;
+        ptr->numvins = numvins;
         ptr->tx = tx;
         portable_mutex_lock(&coin->kmdmutex);
         //char str[65]; printf("%s ht.%d u.%u NEW TXID.(%s) vouts.[%d]\n",coin->symbol,tx->height,tx->timestamp,bits256_str(str,tx->txid),numvouts);
@@ -190,12 +191,14 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
-                printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
-                if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts)) != 0 )
+                printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
+                if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
                         printf("ERROR: %p != %p for ht.%d\n",ptr,kmd_transaction(coin,tx->txid),tx->height);
                     ptr->fpos = lastpos;
+                    ptr->numvins = T.numvins;
+                    ptr->numvouts = T.numvouts;
                     for (i=0; i<T.numvouts; i++)
                     {
                         if ( fread(&V,1,sizeof(V),fp) == sizeof(V) )
@@ -573,7 +576,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                             if ( iter == 0 )
                             {
                                 if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts,numvins)) != 0 )
-                                        ptr = kmd_transactionadd(coin,tx,numvouts);
+                                        ptr = kmd_transactionadd(coin,tx,numvouts,numvins);
                                 else printf("error init tx ptr.%p tx.%p\n",ptr,tx);
                             }
                             else
