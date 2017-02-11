@@ -108,6 +108,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             ptr->tx->vouts[vout].spendvini = vini;
             if ( coin->kmd_txidfp != 0 )
             {
+                printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
                 fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
                 fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
             }
@@ -223,7 +224,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         fseek(fp,lastpos,SEEK_SET);
         HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
         {
-            printf("scan for spends ht.%d\n",ptr->tx->height);
+            //printf("scan for spends ht.%d\n",ptr->tx->height);
             for (i=0; i<ptr->numvouts; i++)
             {
                 vptr = &ptr->tx->vouts[i];
