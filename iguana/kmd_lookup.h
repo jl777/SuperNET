@@ -514,7 +514,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
         char fname[1024];
         if ( (coin->kmd_txidfp= kmd_txidinit(coin)) == 0 )
             printf("error initializing %s.kmd lookups\n",coin->symbol);
-        sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
+        sprintf(fname,"%s/TRANSACTIONS/%s.spends",GLOBAL_DBDIR,coin->symbol);
         if ( (coin->kmd_spendfp= fopen(fname,"rb+")) != 0 )
             fseek(coin->kmd_spendfp,0,SEEK_END);
         else coin->kmd_spendfp = fopen(fname,"wb+");
