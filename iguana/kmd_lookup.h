@@ -98,7 +98,7 @@ struct kmd_transactionhh *kmd_transaction(struct iguana_info *coin,bits256 txid)
 
 int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vini,bits256 txid,int32_t vout)
 {
-    struct kmd_transactionhh *ptr,*spendptr=0; long savepos;
+    struct kmd_transactionhh *ptr,*spendptr=0; long savepos; struct kmd_transaction T;
     if ( bits256_nonz(txid) == 0 || vout < 0 )
         return(0); // coinbase must be
     if ( (ptr= kmd_transaction(coin,txid)) != 0 && vout < ptr->numvouts && (spendptr= kmd_transaction(coin,spendtxid)) != 0 )
@@ -112,10 +112,14 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             {
                 //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
                 savepos = ftell(coin->kmd_txidfp);
-                fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
-                fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
+                fseek(coin->kmd_txidfp,ptr->fpos,SEEK_SET);
+                if ( fread(&T,1,sizeof(T),coin->kmd_txidfp) == sizeof(T) && bits256_cmp(T.txid,ptr->tx->txid) == 0 && T.numvouts == ptr->tx->numvouts )
+                {
+                    fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
+                    fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
+                    fflush(coin->kmd_txidfp);
+                } else printf("vin write validation error ht.%d vout.%d\n",ptr->tx->height,vout);
                 fseek(coin->kmd_txidfp,savepos,SEEK_SET);
-                fflush(coin->kmd_txidfp);
             }
         }
         return(0);
