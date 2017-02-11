@@ -132,8 +132,8 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
     {
         tx->vouts[vout].spendtxid = spendtxid;
         tx->vouts[vout].spendvini = spendvini;
-        if ( bits256_nonz(spendtxid) != 0 && spendvini >= 0 )
-            kmd_transactionvin(coin,spendtxid,spendvini,tx->txid,vout);
+        //if ( bits256_nonz(spendtxid) != 0 && spendvini >= 0 )
+        //    kmd_transactionvin(coin,spendtxid,spendvini,tx->txid,vout);
         tx->vouts[vout].amount = amount;
         memcpy(tx->vouts[vout].type_rmd160,type_rmd160,21);
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
@@ -243,7 +243,9 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 if ( vptr->spendvini >= 0 && bits256_nonz(vptr->spendtxid) != 0 )
                 {
                     if ( (ptr->ptrs[(i<<1) + 1]= kmd_transaction(coin,vptr->spendtxid)) == 0 )
+                    {
                         printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
+                    }
                     //else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
                 }
             }
