@@ -28,7 +28,7 @@ struct kmd_voutinfo
 
 struct kmd_transaction
 {
-    bits256 txid; int32_t height,numvouts; uint32_t timestamp,pad;
+    bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp,pad;
     struct kmd_voutinfo vouts[];
 };
 
@@ -37,7 +37,7 @@ struct kmd_transactionhh
     UT_hash_handle hh;
     struct kmd_transaction *tx;
     long fpos;
-    int32_t numvouts;
+    int32_t numvouts,numvins;
     struct kmd_transactionhh *ptrs[];
 };
 
@@ -134,11 +134,6 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
         tx->vouts[vout].spendvini = spendvini;
         tx->vouts[vout].amount = amount;
         memcpy(tx->vouts[vout].type_rmd160,type_rmd160,21);
-        if ( coin->kmd_didinit != 0 && coin->kmd_txidfp != 0 )
-        {
-            ptr->fpos = ftell(coin->kmd_txidfp);
-            fwrite(tx,1,sizeof(*tx) + tx->numvouts*sizeof(*tx->vouts),coin->kmd_txidfp);
-        }
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
             addr = _kmd_addressadd(coin,type_rmd160);
         if ( addr != 0 )
@@ -174,11 +169,12 @@ struct kmd_transactionhh *kmd_transactionadd(struct iguana_info *coin,struct kmd
     return(ptr);
 }
 
-struct kmd_transaction *kmd_transactionalloc(bits256 txid,int32_t height,uint32_t timestamp,int32_t numvouts)
+struct kmd_transaction *kmd_transactionalloc(bits256 txid,int32_t height,uint32_t timestamp,int32_t numvouts,int32_t numvins)
 {
     struct kmd_transaction *tx;
     tx = calloc(1,sizeof(*tx) + sizeof(struct kmd_voutinfo)*numvouts);
     tx->numvouts = numvouts;
+    tx->numvouts = numvins;
     tx->txid = txid;
     tx->height = height;
     tx->timestamp = timestamp;
@@ -199,7 +195,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
     {
         while ( fread(&T,1,sizeof(T),fp) == sizeof(T) )
         {
-            if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts)) != 0 )
+            if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
                 printf("INIT %s.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts)) != 0 )
@@ -227,6 +223,15 @@ FILE *kmd_txidinit(struct iguana_info *coin)
             } else break;
         }
         fseek(fp,lastpos,SEEK_SET);
+        /*HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
+        {
+            for (i=0; i<ptr->numvins; i++)
+            {
+                vptr = &ptr->tx->vouts[i];
+                if ( kmd_transactionvin(coin,ptr->tx->txid,i,ptr->tx->vins[i].txid,ptr->tx->vins[i].vout) < 0 )
+                    printf("error vini.%d ht.%d\n",i,ptr->tx->height);
+            }
+        }*/
         HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
         {
             //printf("scan for spends ht.%d\n",ptr->tx->height);
@@ -354,7 +359,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
     if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
-        if ( (height= kmd_height(coin)) > coin->kmd_height+3 )
+        if ( (height= kmd_height(coin)) > coin->kmd_height+KMD_EXPLORER_LAG )
         {
             printf("height.%d > kmd_height.%d\n",height,coin->kmd_height);
             return(cJSON_Parse("[]"));
@@ -536,7 +541,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                             ptr = 0;
                             if ( iter == 0 )
                             {
-                                if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts)) != 0 )
+                                if ( (tx= kmd_transactionalloc(txid,loadheight,jint(txjson,"blocktime"),numvouts,numvins)) != 0 )
                                         ptr = kmd_transactionadd(coin,tx,numvouts);
                                 else printf("error init tx ptr.%p tx.%p\n",ptr,tx);
                             }
@@ -560,9 +565,15 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
+                                    if ( coin->kmd_txidfp != 0 )
+                                    {
+                                        ptr->fpos = ftell(coin->kmd_txidfp);
+                                        fwrite(tx,1,sizeof(*tx) + tx->numvouts*sizeof(*tx->vouts),coin->kmd_txidfp);
+                                    }
                                 }
                                 else
                                 {
+                                    ptr->numvins = numvins;
                                     for (j=0; j<numvins; j++)
                                     {
                                         vin = jitem(vins,j);
