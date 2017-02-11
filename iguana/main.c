@@ -1710,6 +1710,7 @@ void iguana_main(void *arg)
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 1;
         }
     }
 #ifdef IGUANA_OSTESTS

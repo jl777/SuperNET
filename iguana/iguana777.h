@@ -137,7 +137,7 @@ struct supernet_info
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
     double *svmfeatures;
-    uint8_t notaries[64][33]; int32_t numnotaries;
+    uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
 };
 
 #include "../includes/iguana_funcs.h"

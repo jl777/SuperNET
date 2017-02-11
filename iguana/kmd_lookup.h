@@ -108,7 +108,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             ptr->tx->vouts[vout].spendvini = vini;
             if ( coin->kmd_txidfp != 0 )
             {
-                printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
+                //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
                 savepos = ftell(coin->kmd_txidfp);
                 fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
                 fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
@@ -368,7 +368,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                 if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 )
                 {
                     spent = ptr->ptrs[(i<<1) + 1];
-                    if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) )
+                    if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
                         jaddi(array,kmd_unspentjson(ptr->tx,i));
                     if ( ptr->ptrs[i<<1] != 0 )
                         prev = ptr->ptrs[i<<1];
@@ -390,10 +390,10 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
-int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *unspentp,int64_t *spentp)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *receivedp,int64_t *sentp)
 {
     int32_t iter,i,n; cJSON *array,*item; int64_t value;
-    for (iter=0; iter<2; iter++)
+    for (iter=1; iter<=2; iter++)
     {
         if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
         {
@@ -404,37 +404,37 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *unspent
                     item = jitem(array,i);
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
-                        if ( iter == 0 )
-                            *unspentp += value;
-                        else *spentp += value;
+                        if ( iter == 2 )
+                            *receivedp += value;
+                        else *sentp += value;
                     }
                 }
             }
             free_json(array);
         }
     }
-    return(*unspentp - *spentp);
+    return(*receivedp - *sentp);
 }
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *retjson; int64_t s,u,spent=0,unspent=0,balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    cJSON *retjson; int64_t s,r,sent=0,received=0,balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
     if ( strcmp(coinaddr,"*") == 0 )
     {
         HASH_ITER(hh,coin->kmd_addresses,addr,tmp)
         {
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
-            s = u = 0;
-            balance += _kmd_getbalance(coin,address,&u,&s);
-            printf("%s (%.8f - %.8f) %.8f -> %.8f\n",address,dstr(u),dstr(s),dstr(u)-dstr(s),dstr(balance));
-            unspent += u;
-            spent += s;
+            s = r = 0;
+            balance += _kmd_getbalance(coin,address,&r,&s);
+            printf("%s (%.8f - %.8f) %.8f -> %.8f\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
+            received += r;
+            sent += s;
         }
-    } else balance = _kmd_getbalance(coin,coinaddr,&unspent,&spent);
+    } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
-    jaddnum(retjson,"unspents",dstr(unspent));
-    jaddnum(retjson,"spents",dstr(spent));
+    jaddnum(retjson,"received",dstr(received));
+    jaddnum(retjson,"sent",dstr(sent));
     jaddnum(retjson,"balance",dstr(balance));
     return(retjson);
 }
@@ -588,7 +588,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
 
 void kmd_bitcoinscan()
 {
-    char *retstr; cJSON *array; int32_t i,n; struct iguana_info *coin;
+    char *retstr; cJSON *array; int32_t i,n; struct iguana_info *coin; // scan allcoins also
     if ( (retstr= dpow_notarychains(0,0,0,0)) != 0 )
     {
         if ( (array= cJSON_Parse(retstr)) != 0 )

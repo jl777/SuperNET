@@ -908,7 +908,6 @@ void basilisks_loop(void *arg)
                 }
                 endmilli = startmilli + 30;
             }
-            kmd_bitcoinscan();
         }
         else
         {
@@ -918,6 +917,8 @@ void basilisks_loop(void *arg)
                 endmilli = startmilli + 500;
             else endmilli = startmilli + 1000;
         }
+        if ( myinfo->DEXEXPLORER != 0 )
+            kmd_bitcoinscan();
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
         {
             //fprintf(stderr,"H ");

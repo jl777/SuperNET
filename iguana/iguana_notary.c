@@ -756,6 +756,17 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     } else return(_dex_getbalance(myinfo,symbol,address));
 }
 
+STRING_ARG(dex,explorer,symbol)
+{
+    if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        myinfo->DEXEXPLORER = 1;
+        coin->DEXEXPLORER = 1;
+        return(clonestr("{\"result\":\"success\"}"));
+    }
+    return(clonestr("{\"error\":\"coin not active\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
 
 
