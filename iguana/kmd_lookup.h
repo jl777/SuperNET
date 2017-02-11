@@ -108,20 +108,6 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         {
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
-            /*if ( coin->kmd_txidfp != 0 && 0 )
-            {
-                char str[65],str2[65];
-                //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
-                savepos = ftell(coin->kmd_txidfp);
-                fseek(coin->kmd_txidfp,ptr->fpos,SEEK_SET);
-                if ( fread(&T,1,sizeof(T),coin->kmd_txidfp) == sizeof(T) && bits256_cmp(T.txid,ptr->tx->txid) == 0 && T.numvouts == ptr->tx->numvouts )
-                {
-                    fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
-                    fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
-                    fflush(coin->kmd_txidfp);
-                } else printf("vin write validation error ht.%d vout.%d fpos.%ld %s vs %s [%d vs %d]\n",ptr->tx->height,vout,ptr->fpos,bits256_str(str,T.txid),bits256_str(str2,ptr->tx->txid),T.numvouts,ptr->tx->numvouts);
-                fseek(coin->kmd_txidfp,savepos,SEEK_SET);
-            }*/
         }
         return(0);
     }
@@ -433,9 +419,9 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
-int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *receivedp,int64_t *sentp)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp)
 {
-    int32_t iter,i,n; cJSON *array,*item; int64_t value;
+    int32_t iter,i,n; cJSON *array,*item; uint64_t value;
     for (iter=1; iter<=2; iter++)
     {
         if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
@@ -461,7 +447,7 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *receive
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *retjson; int64_t s,r,sent=0,received=0,balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    cJSON *retjson; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
     retjson = cJSON_CreateObject();
     if ( strcmp(coinaddr,"*") == 0 )
     {
