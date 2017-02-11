@@ -137,7 +137,7 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
         tx->vouts[vout].spendtxid = spendtxid;
         tx->vouts[vout].spendvini = spendvini;
         //if ( bits256_nonz(spendtxid) != 0 && spendvini >= 0 )
-        //    kmd_transactionvin(coin,spendtxid,spendvini,tx->txid,vout);
+        //    ptr->ptrs[(vout<<1) + 1] = kmd_transaction(coin,spendtxid);
         tx->vouts[vout].amount = amount;
         memcpy(tx->vouts[vout].type_rmd160,type_rmd160,21);
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
