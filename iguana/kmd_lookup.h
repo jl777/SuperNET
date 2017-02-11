@@ -356,7 +356,6 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                         prev = ptr->ptrs[i<<1];
                 }
             }
-            printf("%s ht.%d prev.%p\n",coinaddr,ptr->tx->height,prev);
             ptr = prev;
         }
     }
