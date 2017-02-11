@@ -132,6 +132,8 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
     {
         tx->vouts[vout].spendtxid = spendtxid;
         tx->vouts[vout].spendvini = spendvini;
+        if ( bits256_nonz(spendtxid) != 0 && spendvini >= 0 )
+            kmd_transactionvin(coin,spendtxid,spendvini,tx->txid,vout);
         tx->vouts[vout].amount = amount;
         memcpy(tx->vouts[vout].type_rmd160,type_rmd160,21);
         if ( (addr= _kmd_address(coin,type_rmd160)) == 0 )
@@ -246,7 +248,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 }
             }
         }
-    } else fp = fopen(fname,"wb");
+    } else fp = fopen(fname,"wb+");
     return(fp);
 }
 
@@ -435,7 +437,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
             s = r = 0;
             balance += _kmd_getbalance(coin,address,&r,&s);
-            printf("%s (%.8f - %.8f) %.8f -> %.8f\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
+            printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
             received += r;
             sent += s;
         }
