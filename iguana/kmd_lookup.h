@@ -419,7 +419,7 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
-int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp,double *fbalancep)
 {
     int32_t iter,i,n; cJSON *array,*item; uint64_t value;
     for (iter=1; iter<=2; iter++)
@@ -434,8 +434,8 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
                         if ( iter == 2 )
-                            *receivedp += value;
-                        else *sentp += value;
+                            *receivedp += value, *fbalancep += dstr(value);
+                        else *sentp += value, *fbalancep -= dstr(value);
                     }
                 }
             }
@@ -447,27 +447,31 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *retjson; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    cJSON *retjson; double netbalance=0.,fbalance; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
     retjson = cJSON_CreateObject();
+    fbalance = 0.;
     if ( strcmp(coinaddr,"*") == 0 )
     {
         HASH_ITER(hh,coin->kmd_addresses,addr,tmp)
         {
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
             s = r = 0;
-            balance += _kmd_getbalance(coin,address,&r,&s);
-            if ( (r - s) > 100000*SATOSHIDEN )
+            balance += _kmd_getbalance(coin,address,&r,&s,&fbalance);
+            if ( (r - s) > 1000000*SATOSHIDEN )
                 printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
             received += r;
             sent += s;
+            netbalance += fbalance;
         }
         if ( strcmp("KMD",coin->symbol) == 0 )
             jaddnum(retjson,"interestpaid",dstr(balance) - 100000000*SATOSHIDEN - (coin->kmd_height*3));
-    } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
+    } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent,&netbalance);
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
-    jaddnum(retjson,"balance",dstr(balance));
+    if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
+        jaddnum(retjson,"balance",netbalance);
+    else jaddnum(retjson,"balance",dstr(balance));
     jaddnum(retjson,"height",coin->kmd_height);
     if ( strcmp("KMD",coin->symbol) == 0 )
         jaddnum(retjson,"mined",coin->kmd_height*3);
@@ -537,7 +541,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     {
         flag = 0;
         if ( (loadheight % 1000) == 0 )
-            printf("loading ht.%d %s\n",loadheight,jprint(kmd_getbalance(coin,"*"),1));
+            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
