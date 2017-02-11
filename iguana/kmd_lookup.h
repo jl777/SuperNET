@@ -607,7 +607,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                     ptr->numvins = numvins;
                                     if ( coin->kmd_spendfp != 0 )
                                     {
-                                        fwrite(&tx->txid,1,sizeof(tx->txid),coin->kmd_spendfp);
+                                        fwrite(&txid,1,sizeof(txid),coin->kmd_spendfp);
                                         fwrite(&numvins,1,sizeof(numvins),coin->kmd_spendfp);
                                     }
                                     for (j=0; j<numvins; j++)
@@ -616,8 +616,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         vin = jitem(vins,j);
                                         spenttxid = jbits256(vin,"txid");
                                         spentvout = jint(vin,"vout");
-                                        if ( bits256_nonz(spenttxid) == 0 || spentvout < 0 )
-                                            printf("null spenttxid ht.%d j.%d spentvout.%d\n",loadheight,j,spentvout);
+                                        //if ( bits256_nonz(spenttxid) == 0 || spentvout < 0 )
+                                        //    printf("null spenttxid ht.%d j.%d spentvout.%d\n",loadheight,j,spentvout);
                                         if ( kmd_transactionvin(coin,txid,j,spenttxid,spentvout) < 0 )
                                         {
                                             printf("error i.%d of numvins.%d (%s)\n",j,numvins,jprint(vin,0));
