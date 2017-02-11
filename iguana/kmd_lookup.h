@@ -463,7 +463,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             netbalance += dstr(r);
             netbalance -= dstr(s);
             if ( (r - s) > 100000*SATOSHIDEN )
-                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance+1./(SATOSHIDEN*2));
+                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance);
             received += r;
             sent += s;
         }
@@ -479,7 +479,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
     //if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
-        jaddnum(retjson,"balancef",netbalance);
+        jaddnum(retjson,"balancef",netbalance+1./(SATOSHIDEN*2));
     //else
         jaddnum(retjson,"balance",dstr(balance));
     jaddnum(retjson,"height",height);
