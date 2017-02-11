@@ -108,7 +108,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         {
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
-            if ( coin->kmd_txidfp != 0 )
+            if ( coin->kmd_txidfp != 0 && 0 )
             {
                 char str[65],str2[65];
                 //printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
