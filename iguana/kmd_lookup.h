@@ -450,7 +450,7 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *retjson; double netbalance=0.,fbalance; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    cJSON *retjson; double netbalance=0.,fbalance; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64]; int32_t height = coin->kmd_height+1;
     retjson = cJSON_CreateObject();
     fbalance = 0.;
     if ( strcmp(coinaddr,"*") == 0 )
@@ -460,14 +460,14 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
             s = r = 0;
             balance += _kmd_getbalance(coin,address,&r,&s,&fbalance);
+            netbalance += fbalance;
             if ( (r - s) > 1000000*SATOSHIDEN )
                 printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance));
             received += r;
             sent += s;
-            netbalance += fbalance;
         }
         if ( strcmp("KMD",coin->symbol) == 0 )
-            jaddnum(retjson,"interestpaid",dstr(balance) - 100000000*SATOSHIDEN - (coin->kmd_height*3));
+            jaddnum(retjson,"interestpaid",dstr(balance) - 100000000 - (height*3));
     } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent,&netbalance);
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
@@ -475,9 +475,9 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
         jaddnum(retjson,"balance",netbalance);
     else jaddnum(retjson,"balance",dstr(balance));
-    jaddnum(retjson,"height",coin->kmd_height);
+    jaddnum(retjson,"height",height);
     if ( strcmp("KMD",coin->symbol) == 0 )
-        jaddnum(retjson,"mined",coin->kmd_height*3);
+        jaddnum(retjson,"mined",height*3);
     return(retjson);
 }
 
