@@ -217,6 +217,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 {
                     if ( (ptr->ptrs[(i<<1) + 1]= kmd_transaction(coin,vptr->spendtxid)) == 0 )
                         printf("cant find %s spend.%d\n",bits256_str(str,vptr->spendtxid),i);
+                    else printf("set spent.%p ht.%d vout.%d\n",ptr->ptrs[(i<<1)+1],ptr->tx->height,i);
                 }
             }
         }
