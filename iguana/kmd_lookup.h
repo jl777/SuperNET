@@ -111,7 +111,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         }
         return(0);
     }
-    char str[65]; printf("vin error %s vout.%d of %d vs ptr %p [%d] spent.%p\n",bits256_str(str,spendtxid),vout,ptr->numvouts,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
+    char str[65]; printf("vin error %s vout.%d of %d vs ptr %p [%d] spent.%p\n",bits256_str(str,txid),vout,ptr->numvouts,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
     return(-1);
 }
 
@@ -166,7 +166,7 @@ struct kmd_transaction *kmd_transactionalloc(bits256 txid,int32_t height,uint32_
     struct kmd_transaction *tx;
     tx = calloc(1,sizeof(*tx) + sizeof(struct kmd_voutinfo)*numvouts);
     tx->numvouts = numvouts;
-    tx->numvouts = numvins;
+    tx->numvins = numvins;
     tx->txid = txid;
     tx->height = height;
     tx->timestamp = timestamp;
@@ -607,7 +607,6 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                 }
                                 else
                                 {
-                                    ptr->numvins = numvins;
                                     if ( coin->kmd_spendfp != 0 )
                                     {
                                         fwrite(&txid,1,sizeof(txid),coin->kmd_spendfp);
