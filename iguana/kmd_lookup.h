@@ -192,6 +192,8 @@ void kmd_flushfiles(struct iguana_info *coin)
 {
     if ( coin->kmd_txidfp != 0 )
         fflush(coin->kmd_txidfp);
+    if ( coin->kmd_spendfp != 0 )
+        fflush(coin->kmd_spendfp);
 }
 
 FILE *kmd_txidinit(struct iguana_info *coin)
@@ -509,8 +511,13 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     int32_t h,num=0,loadheight,i,n,j,iter,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
     if ( coin->kmd_didinit == 0 )
     {
+        char fname[1024];
         if ( (coin->kmd_txidfp= kmd_txidinit(coin)) == 0 )
             printf("error initializing %s.kmd lookups\n",coin->symbol);
+        sprintf(fname,"%s/TRANSACTIONS/%s",GLOBAL_DBDIR,coin->symbol);
+        if ( (coin->kmd_spendfp= fopen(fname,"rb+")) != 0 )
+            fseek(coin->kmd_spendfp,0,SEEK_END);
+        else coin->kmd_spendfp = fopen(fname,"wb+");
         coin->kmd_didinit = 1;
     }
     height = kmd_height(coin);
@@ -583,13 +590,26 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                 else
                                 {
                                     ptr->numvins = numvins;
+                                    if ( coin->kmd_spendfp != 0 )
+                                    {
+                                        fwrite(&tx->txid,1,sizeof(tx->txid),coin->kmd_spendfp);
+                                        fwrite(&numvins,1,sizeof(numvins),coin->kmd_spendfp);
+                                    }
                                     for (j=0; j<numvins; j++)
                                     {
+                                        bits256 spenttxid; int32_t spentvout;
                                         vin = jitem(vins,j);
-                                        if ( kmd_transactionvin(coin,txid,j,jbits256(vin,"txid"),jint(vin,"vout")) < 0 )
+                                        spenttxid = jbits256(vin,"txid");
+                                        spentvout = jint(vin,"vout");
+                                        if ( kmd_transactionvin(coin,txid,j,spenttxid,spentvout) < 0 )
                                         {
                                             printf("error i.%d of numvins.%d (%s)\n",j,numvins,jprint(vin,0));
                                             flag++;
+                                        }
+                                        if ( coin->kmd_spendfp != 0 )
+                                        {
+                                            fwrite(&spenttxid,1,sizeof(spenttxid),coin->kmd_spendfp);
+                                            fwrite(&spentvout,1,sizeof(spentvout),coin->kmd_spendfp);
                                         }
                                     }
                                 }
