@@ -96,7 +96,7 @@ struct kmd_transactionhh *kmd_transaction(struct iguana_info *coin,bits256 txid)
 
 int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vini,bits256 txid,int32_t vout)
 {
-    struct kmd_transactionhh *ptr,*spendptr=0;
+    struct kmd_transactionhh *ptr,*spendptr=0; long savepos;
     if ( bits256_nonz(txid) == 0 || vout < 0 )
         return(0); // coinbase must be
     if ( (ptr= kmd_transaction(coin,txid)) != 0 && vout < ptr->numvouts && (spendptr= kmd_transaction(coin,spendtxid)) != 0 )
@@ -109,8 +109,10 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             if ( coin->kmd_txidfp != 0 )
             {
                 printf("write out spent ht.%d vout.%d\n",ptr->tx->height,vout);
+                savepos = ftell(coin->kmd_txidfp);
                 fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
                 fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
+                fseek(coin->kmd_txidfp,savepos,SEEK_SET);
             }
         }
         return(0);
