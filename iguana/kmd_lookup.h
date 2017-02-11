@@ -106,6 +106,8 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         ptr->ptrs[(vout<<1) + 1] = spendptr;
         if ( bits256_cmp(ptr->tx->vouts[vout].spendtxid,spendtxid) != 0 || ptr->tx->vouts[vout].spendvini != vini )
         {
+            if ( bits256_nonz(ptr->tx->vouts[vout].spendtxid) != 0 )
+                printf("ht.%d vout.%d overwriting nonz spend\n",ptr->tx->height,vout);
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
         }
@@ -400,10 +402,17 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                 if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 )
                 {
                     spent = ptr->ptrs[(i<<1) + 1];
+                    if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
+                        printf("[%d] %s ht.%d amount %.8f spent.%p\n",coin->kmd_height,coinaddr,ptr->tx->height,dstr(ptr->tx->vouts[i].amount),spent);
                     if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
                         jaddi(array,kmd_unspentjson(ptr->tx,i));
                     if ( ptr->ptrs[i<<1] != 0 )
-                        prev = ptr->ptrs[i<<1];
+                    {
+                        if ( prev == 0 )
+                            prev = ptr->ptrs[i<<1];
+                        else if ( prev != ptr->ptrs[i<<1] )
+                            printf("%s ht.%d prev.%p != %p\n",coinaddr,ptr->tx->height,prev,ptr->ptrs[i<<1]);
+                    }
                 }
             }
             ptr = prev;
@@ -479,7 +488,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
     //if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
-        jaddnum(retjson,"balancef",netbalance+1./(SATOSHIDEN*2));
+        jaddnum(retjson,"balancef",netbalance+1./(SATOSHIDEN*2)-SMALLVAL);
     //else
         jaddnum(retjson,"balance",dstr(balance));
     jaddnum(retjson,"height",height);
@@ -551,7 +560,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     {
         flag = 0;
         if ( (loadheight % 10000) == 0 )
-            printf("loading ht.%d %s\n",loadheight,jprint(kmd_getbalance(coin,"*"),1));
+            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
