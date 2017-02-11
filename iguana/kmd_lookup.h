@@ -472,9 +472,10 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
-    if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
-        jaddnum(retjson,"balance",netbalance);
-    else jaddnum(retjson,"balance",dstr(balance));
+    //if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
+        jaddnum(retjson,"balancef",netbalance);
+    //else
+        jaddnum(retjson,"balance",dstr(balance));
     jaddnum(retjson,"height",height);
     if ( strcmp("KMD",coin->symbol) == 0 )
         jaddnum(retjson,"mined",height*3);
