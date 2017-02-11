@@ -422,7 +422,7 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
-int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp,double *fbalancep)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp)
 {
     int32_t iter,i,n; cJSON *array,*item; uint64_t value;
     for (iter=1; iter<=2; iter++)
@@ -437,8 +437,8 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
                         if ( iter == 2 )
-                            *receivedp += value, *fbalancep += dstr(value);
-                        else *sentp += value, *fbalancep -= dstr(value);
+                            *receivedp += value;
+                        else *sentp += value;
                     }
                 }
             }
@@ -459,16 +459,22 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
         {
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
             s = r = 0;
-            balance += _kmd_getbalance(coin,address,&r,&s,&fbalance);
-            netbalance += fbalance;
+            balance += _kmd_getbalance(coin,address,&r,&s);
+            netbalance += dstr(r);
+            netbalance -= dstr(s);
             if ( (r - s) > 100000*SATOSHIDEN )
-                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance);
+                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance+0.5);
             received += r;
             sent += s;
         }
         if ( strcmp("KMD",coin->symbol) == 0 )
             jaddnum(retjson,"interestpaid",dstr(balance) - 100000000 - (height*3));
-    } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent,&netbalance);
+    }
+    else
+    {
+        balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
+        netbalance = dstr(balance);
+    }
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
