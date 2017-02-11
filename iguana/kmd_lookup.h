@@ -368,14 +368,13 @@ cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
     return(kmd_listaddress(coin,coinaddr,1));
 }
 
-cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,int64_t *unspentp,int64_t *spentp)
 {
-    cJSON *array,*retjson,*item; int32_t iter,i,n; uint64_t spent=0,unspent=0,value;
+    int32_t iter,i,n; cJSON *array,*item; int64_t value;
     for (iter=0; iter<2; iter++)
     {
         if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
         {
-            fprintf(stderr,"%s ",jprint(array,0));
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
                 for (i=0; i<n; i++)
@@ -384,18 +383,37 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
                         if ( iter == 0 )
-                            unspent += value;
-                        else spent += value;
+                            *unspentp += value;
+                        else *spentp += value;
                     }
                 }
             }
+            free_json(array);
         }
     }
+    return(*unspentp - *spentp);
+}
+
+cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
+{
+    cJSON *retjson; int64_t s,u,spent=0,unspent=0,balance=0; struct kmd_addresshh *addr,*tmp; char address[64];
+    if ( strcmp(coinaddr,"*") == 0 )
+    {
+        HASH_ITER(hh,coin->kmd_addresses,addr,tmp)
+        {
+            bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
+            s = u = 0;
+            balance += _kmd_getbalance(coin,address,&u,&s);
+            printf("%s (%.8f - %.8f) %.8f -> %.8f\n",address,dstr(u),dstr(s),dstr(u)-dstr(s),dstr(balance));
+            unspent += u;
+            spent += s;
+        }
+    } else balance = _kmd_getbalance(coin,coinaddr,&unspent,&spent);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"unspents",dstr(unspent));
     jaddnum(retjson,"spents",dstr(spent));
-    jaddnum(retjson,"balance",dstr(unspent) - dstr(spent));
+    jaddnum(retjson,"balance",dstr(balance));
     return(retjson);
 }
 
