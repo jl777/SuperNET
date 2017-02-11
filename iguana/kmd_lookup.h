@@ -30,7 +30,7 @@ struct kmd_transaction
 {
     bits256 txid; int32_t height,numvouts,numvins; uint32_t timestamp,pad;
     struct kmd_voutinfo vouts[];
-};
+} PACKED;
 
 struct kmd_transactionhh
 {
@@ -118,7 +118,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
                     fseek(coin->kmd_txidfp,ptr->fpos + sizeof(*ptr->tx) + sizeof(*ptr->tx->vouts)*vout,SEEK_SET);
                     fwrite(&ptr->tx->vouts[vout],1,sizeof(ptr->tx->vouts[vout]),coin->kmd_txidfp);
                     fflush(coin->kmd_txidfp);
-                } else printf("vin write validation error ht.%d vout.%d\n",ptr->tx->height,vout);
+                } else printf("vin write validation error ht.%d vout.%d fpos.%ld\n",ptr->tx->height,vout,ptr->fpos);
                 fseek(coin->kmd_txidfp,savepos,SEEK_SET);
             }
         }
