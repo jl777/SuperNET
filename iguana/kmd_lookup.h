@@ -476,12 +476,15 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             sent += s;
         }
         if ( strcmp("KMD",coin->symbol) == 0 )
-            jaddnum(retjson,"interestpaid",dstr(balance)-dstr(coin->kmd_height*3));
+            jaddnum(retjson,"interestpaid",dstr(balance) - 100000000*SATOSHIDEN - (coin->kmd_height*3));
     } else balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
     jaddstr(retjson,"result","success");
     jaddnum(retjson,"received",dstr(received));
     jaddnum(retjson,"sent",dstr(sent));
     jaddnum(retjson,"balance",dstr(balance));
+    jaddnum(retjson,"height",coin->kmd_height);
+    if ( strcmp("KMD",coin->symbol) == 0 )
+        jaddnum(retjson,"mined",coin->kmd_height*3);
     return(retjson);
 }
 
