@@ -402,7 +402,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                 if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 )
                 {
                     spent = ptr->ptrs[(i<<1) + 1];
-                    if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
+                    //if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
                         printf("[%d] %s ht.%d amount %.8f spent.%p\n",coin->kmd_height,coinaddr,ptr->tx->height,dstr(ptr->tx->vouts[i].amount),spent);
                     if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
                         jaddi(array,kmd_unspentjson(ptr->tx,i));
