@@ -954,7 +954,7 @@ char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
     struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
-    dexreq.func = 's';
+    dexreq.func = 'U';
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
         //printf("UNSPENTS.(%s)\n",retstr);

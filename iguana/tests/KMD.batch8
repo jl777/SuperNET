@@ -1,3 +1,4 @@
+sleep 999999
 # REbMisMicS8W7LUqBPJwkVfYHxNfSeW7d8 KMD 11472.96269487
 ./komodo-cli sendtoaddress REbMisMicS8W7LUqBPJwkVfYHxNfSeW7d8 11472.96269487
 sleep 3
