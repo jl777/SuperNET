@@ -400,9 +400,9 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                                 jaddi(array,kmd_spentjson(ptr->tx,i));
                             else if ( mode == 2 )
                             {
+                                jaddi(array,kmd_unspentjson(ptr->tx,i));
                                 if ( spent != 0 )
                                     jaddi(array,kmd_spentjson(ptr->tx,i));
-                                else jaddi(array,kmd_unspentjson(ptr->tx,i));
                             }
                         }
                         else if ( flag == 0 )
@@ -410,12 +410,12 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                             if ( mode == 0 )
                                 jaddi(array,kmd_transactionjson(ptr,"received"));
                             else if ( mode == 1 )
-                                jaddi(array,kmd_transactionjson(ptr,"sent"));
+                                jaddi(array,kmd_transactionjson(spent,"sent"));
                             else if ( mode == 2 )
                             {
                                 jaddi(array,kmd_transactionjson(ptr,"received"));
                                 if ( spent != 0 )
-                                    jaddi(array,kmd_transactionjson(ptr,"sent"));
+                                    jaddi(array,kmd_transactionjson(spent,"sent"));
                             }
                             flag = 1;
                         }
