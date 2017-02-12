@@ -62,8 +62,9 @@
 #define IGUANA_LOG2MAXPEERS 11 // cant exceed 13 bits as ramchain unspents has bitfield
 
 #define IGUANA_MAXPEERS (1 << IGUANA_LOG2MAXPEERS)
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
-
+#endif
 //#define IGUANA_MAXFILEITEMS 8192
 #define IGUANA_RECENTPEER (3600 * 24 * 7)
 

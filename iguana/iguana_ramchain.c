@@ -2188,9 +2188,6 @@ void iguana_bundlemapfree(struct iguana_info *coin,struct OS_memspace *mem,struc
     {
         for (j=starti; j<=endi; j++)
         {
-            //printf("R[%d]\n",j);
-            R[j].fileptr = 0;
-            R[j].filesize = 0;
             iguana_ramchain_free(coin,&R[j],1);
         }
         myfree(R,n * sizeof(*R));

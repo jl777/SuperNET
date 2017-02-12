@@ -365,8 +365,12 @@ void escape_code(char *escaped,char *str);
 void SaM_PrepareIndices();
 
 // iguana_serdes.c
+#ifndef IGUANA_LOG2PACKETSIZE
 #define IGUANA_LOG2PACKETSIZE 22
+#endif
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
+#endif
 struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } PACKED;
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);

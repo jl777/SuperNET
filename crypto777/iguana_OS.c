@@ -658,7 +658,11 @@ int64_t OS_copyfile(char *src,char *dest,int32_t cmpflag)
     {
         if ( (destfp= fopen(OS_compatible_path(dest),"wb")) != 0 )
         {
+#ifdef WIN32
+			allocsize = 1024 * 1024 * 8L;
+#else
             allocsize = 1024 * 1024 * 128L;
+#endif
             buf = mycalloc('F',1,allocsize);
             while ( (len= fread(buf,1,allocsize,srcfp)) > 0 )
                 if ( (long)fwrite(buf,1,len,destfp) != len )
