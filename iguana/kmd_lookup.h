@@ -330,11 +330,14 @@ cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t coun
     struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,counter=0; cJSON *array = cJSON_CreateArray();
     //if ( (height= kmd_height(coin)) > coin->kmd_height+KMD_EXPLORER_LAG )
     //    return(cJSON_Parse("[]"));
+    if ( count == 0 )
+        count = 100;
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
     {
         while ( ptr != 0 )
         {
+            prev = 0;
             if ( counter >= skip && counter < count+skip )
                 jaddi(array,kmd_transactionjson(ptr,"received"));
             if ( ++counter >= count+skip )
