@@ -612,6 +612,16 @@ HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
     return(_dex_gettxout(myinfo,symbol,txid,vout));
 }
 
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+}
+
 STRING_ARG(dex,getinfo,symbol)
 {
     return(_dex_getinfo(myinfo,symbol));
@@ -657,16 +667,6 @@ TWO_STRINGS(dex,validateaddress,symbol,address)
     return(_dex_validateaddress(myinfo,symbol,address));
 }
 
-TWO_STRINGS(dex,listunspent,symbol,address)
-{
-    return(_dex_listunspent(myinfo,symbol,address));
-}
-
-TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
-{
-    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
-}
-
 STRING_ARG(dex,getnotaries,symbol)
 {
     return(_dex_getnotaries(myinfo,symbol));
@@ -698,6 +698,100 @@ THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
     } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
 }
 
+#include "kmd_lookup.h"
+
+TWO_STRINGS(dex,listunspent2,symbol,address)
+{
+    cJSON *retjson;
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+            if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
+                return(clonestr("[]"));
+            if ( (retjson= kmd_listunspent(coin,address)) != 0 )
+                return(jprint(retjson,1));
+        }
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listunspent2(myinfo,symbol,address));
+    else return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
+{
+    cJSON *retjson;
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+            if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
+                return(clonestr("[]"));
+            if ( (retjson= kmd_listtransactions(coin,address,count,skip)) != 0 )
+                return(jprint(retjson,1));
+        }
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listtransactions2(myinfo,symbol,address,count,skip));
+    else return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
+}
+
+HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_gettxin(coin,txid,vout),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 )
+        return(_dex_gettxin(myinfo,symbol,txid,vout));
+    else return(clonestr("{\"error\":\"dex gettxin null symbolor coin\"}"));
+}
+
+TWO_STRINGS(dex,listspent,symbol,address)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_listspent(coin,address),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listspent(myinfo,symbol,address));
+    else return(clonestr("{\"error\":\"dex listspent null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS(dex,getbalance,symbol,address)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_getbalance(coin,address),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_getbalance(myinfo,symbol,address));
+    else return(clonestr("{\"error\":\"dex getbalance null symbol, address or coin\"}"));
+}
+
+STRING_ARG(dex,explorer,symbol)
+{
+    if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        myinfo->DEXEXPLORER = 1;
+        coin->DEXEXPLORER = 1;
+        return(clonestr("{\"result\":\"success\"}"));
+    }
+    return(clonestr("{\"error\":\"coin not active\"}"));
+}
 
 #include "../includes/iguana_apiundefs.h"
 

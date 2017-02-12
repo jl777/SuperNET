@@ -77,6 +77,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     {
         sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,coin->symbol), OS_portable_path(dirname);
         portable_mutex_init(&coin->RTmutex);
+        portable_mutex_init(&coin->kmdmutex);
         portable_mutex_init(&coin->peers_mutex);
         portable_mutex_init(&coin->blocks_mutex);
         portable_mutex_init(&coin->special_mutex);
