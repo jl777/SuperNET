@@ -327,7 +327,7 @@ int32_t kmd_height(struct iguana_info *coin)
 
 cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,height,counter=0; cJSON *array = cJSON_CreateArray();
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,counter=0; cJSON *array = cJSON_CreateArray();
     //if ( (height= kmd_height(coin)) > coin->kmd_height+KMD_EXPLORER_LAG )
     //    return(cJSON_Parse("[]"));
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
@@ -395,6 +395,8 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
             return(cJSON_Parse("[]"));
         }
     }*/
+    if ( strcmp("1111111111111111111114oLvT2",coinaddr) == 0 ) // null rmd160 from coinbase
+        return(cJSON_Parse("[]"));
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
     {
