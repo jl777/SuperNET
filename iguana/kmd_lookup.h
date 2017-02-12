@@ -320,10 +320,12 @@ cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout,struct kmd_transact
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","sent");
+    jaddnum(item,"height",tx->height);
+    jaddnum(item,"timestamp",tx->timestamp);
     jaddbits256(item,"txid",tx->txid);
     jaddnum(item,"vout",vout);
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
-    jaddbits256(item,"spentdtxid",tx->vouts[vout].spendtxid);
+    jaddbits256(item,"spendtxid",tx->vouts[vout].spendtxid);
     jaddnum(item,"vin",tx->vouts[vout].spendvini);
     if ( spent != 0 )
     {
