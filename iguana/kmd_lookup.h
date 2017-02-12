@@ -400,9 +400,9 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                                 jaddi(array,kmd_spentjson(ptr->tx,i));
                             else if ( mode == 2 )
                             {
-                                jaddi(array,kmd_unspentjson(ptr->tx,i));
                                 if ( spent != 0 )
                                     jaddi(array,kmd_spentjson(ptr->tx,i));
+                                else jaddi(array,kmd_unspentjson(ptr->tx,i));
                             }
                         }
                         else if ( flag == 0 )
