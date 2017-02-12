@@ -414,8 +414,8 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                             else if ( mode == 2 )
                             {
                                 jaddi(array,kmd_transactionjson(ptr,"received"));
-                                //if ( spent != 0 )
-                                jaddi(array,kmd_transactionjson(spent,"sent"));
+                                if ( spent != 0 )
+                                    jaddi(array,kmd_transactionjson(spent,"sent"));
                             }
                             flag = 1;
                         }
