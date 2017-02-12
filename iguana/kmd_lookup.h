@@ -111,7 +111,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
             uint8_t type_rmd160[21]; char str[65];
             bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],"RR5yAkzaxJeCVTwvpgCGsNcSPAZjeq3av4");
             if ( memcmp(type_rmd160,ptr->tx->vouts[vout].type_rmd160,21) == 0 )
-                printf("RR5yAkzaxJeCVTwvpgCGsNcSPAZjeq3av4 spend %.8f by %s/%d\n",dstr(ptr->tx->vouts[vout].amount),bits256_str(str,spendtxid),vini);
+                printf("RR5yAkzaxJeCVTwvpgCGsNcSPAZjeq3av4 spend %.8f by %s/%d %p\n",dstr(ptr->tx->vouts[vout].amount),bits256_str(str,spendtxid),vini,spendptr);
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
         }
@@ -398,6 +398,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
     bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
     if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
     {
+        printf("addr->prev %p\n",ptr);
         while ( ptr != 0 )
         {
             prev = 0;
@@ -406,7 +407,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                 if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 )
                 {
                     spent = ptr->ptrs[(i<<1) + 1];
-                    if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
+                    //if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
                         printf("[%d] %s ht.%d amount %.8f spent.%p\n",coin->kmd_height,coinaddr,ptr->tx->height,dstr(ptr->tx->vouts[i].amount),spent);
                     if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
                         jaddi(array,kmd_unspentjson(ptr->tx,i));
@@ -421,7 +422,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
             }
             ptr = prev;
         }
-    }
+    } else printf("no valid entry for (%s)\n",coinaddr);
     return(array);
 }
 
