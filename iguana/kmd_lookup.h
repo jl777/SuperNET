@@ -308,6 +308,8 @@ cJSON *kmd_unspentjson(struct kmd_transaction *tx,int32_t vout)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","received");
+    jaddnum(item,"height",tx->height);
+    jaddnum(item,"timestamp",tx->timestamp);
     jaddbits256(item,"txid",tx->txid);
     jaddnum(item,"vout",vout);
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
