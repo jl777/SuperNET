@@ -453,7 +453,6 @@ cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t coun
     if ( count == 0 )
         count = 100;
     array = kmd_listaddress(coin,coinaddr,2,0,1);
-    array = kmd_listaddress(coin,coinaddr,1,array,1);
     return(array);
 }
 
