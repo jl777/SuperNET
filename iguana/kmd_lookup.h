@@ -285,7 +285,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
     return(fp);
 }
 
-cJSON *kmd_transactionjson(struct kmd_transactionhh *ptr,char *typestr)
+cJSON *kmd_transactionjson(int32_t height,struct kmd_transactionhh *ptr,char *typestr)
 {
     int32_t i; char coinaddr[64]; cJSON *item,*array,*obj = cJSON_CreateObject();
     array = cJSON_CreateArray();
@@ -304,7 +304,7 @@ cJSON *kmd_transactionjson(struct kmd_transactionhh *ptr,char *typestr)
     return(obj);
 }
 
-cJSON *kmd_unspentjson(struct kmd_transaction *tx,int32_t vout)
+cJSON *kmd_unspentjson(int32_t height,struct kmd_transaction *tx,int32_t vout)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","received");
@@ -316,10 +316,11 @@ cJSON *kmd_unspentjson(struct kmd_transaction *tx,int32_t vout)
     return(item);
 }
 
-cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout,struct kmd_transactionhh *spent)
+cJSON *kmd_spentjson(int32_t height,struct kmd_transaction *tx,int32_t vout,struct kmd_transactionhh *spent)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","sent");
+    jaddnum(item,"confirmations",height - tx->height);
     jaddnum(item,"height",tx->height);
     jaddnum(item,"timestamp",tx->timestamp);
     jaddbits256(item,"txid",tx->txid);
@@ -329,7 +330,7 @@ cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout,struct kmd_transact
     jaddnum(item,"vin",tx->vouts[vout].spendvini);
     if ( spent != 0 )
     {
-        jadd(item,"paid",kmd_transactionjson(spent,"paid"));
+        jadd(item,"paid",kmd_transactionjson(height,spent,"paid"));
     }
     return(item);
 }
@@ -409,30 +410,30 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                         if ( fulltx == 0 )
                         {
                             if ( mode == 0 )
-                                jaddi(array,kmd_unspentjson(ptr->tx,i));
+                                jaddi(array,kmd_unspentjson(coin->kmd_height,ptr->tx,i));
                             else if ( mode == 1 )
-                                jaddi(array,kmd_spentjson(ptr->tx,i,spent));
+                                jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
                             else if ( mode == 2 )
                             {
                                 if ( spent != 0 )
-                                    jaddi(array,kmd_spentjson(ptr->tx,i,spent));
-                                else jaddi(array,kmd_unspentjson(ptr->tx,i));
+                                    jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
+                                else jaddi(array,kmd_unspentjson(coin->kmd_height,ptr->tx,i));
                             }
                         }
                         else if ( flag == 0 )
                         {
                             if ( mode == 0 )
-                                jaddi(array,kmd_transactionjson(ptr,"received"));
+                                jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"received"));
                             else if ( mode == 1 )
                             {
-                                jaddi(array,kmd_transactionjson(ptr,"received"));
-                                jaddi(array,kmd_transactionjson(spent,"sent"));
+                                jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"received"));
+                                jaddi(array,kmd_transactionjson(coin->kmd_height,spent,"sent"));
                             }
                             else if ( mode == 2 )
                             {
                                 if ( spent != 0 )
-                                    jaddi(array,kmd_transactionjson(ptr,"spent"));
-                                else jaddi(array,kmd_transactionjson(ptr,"received"));
+                                    jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"spent"));
+                                else jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"received"));
                             }
                             flag = 1;
                         }
