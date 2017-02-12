@@ -108,6 +108,10 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         {
             if ( bits256_nonz(ptr->tx->vouts[vout].spendtxid) != 0 )
                 printf("ht.%d vout.%d overwriting nonz spend\n",ptr->tx->height,vout);
+            uint8_t type_rmd160[21]; char str[65];
+            bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],"RR5yAkzaxJeCVTwvpgCGsNcSPAZjeq3av4");
+            if ( memcmp(type_rmd160,ptr->tx->vouts[vout].type_rmd160,21) == 0 )
+                printf("RR5yAkzaxJeCVTwvpgCGsNcSPAZjeq3av4 spend %.8f by %s/%d\n",dstr(ptr->tx->vouts[vout].amount),bits256_str(str,spendtxid),vini);
             ptr->tx->vouts[vout].spendtxid = spendtxid;
             ptr->tx->vouts[vout].spendvini = vini;
         }
@@ -471,7 +475,7 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
             balance += _kmd_getbalance(coin,address,&r,&s);
             netbalance += dstr(r);
             netbalance -= dstr(s);
-            if ( 1 || (r - s) > 100000*SATOSHIDEN )
+            if ( (r - s) > 100000*SATOSHIDEN )
                 printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance);
             received += r;
             sent += s;
