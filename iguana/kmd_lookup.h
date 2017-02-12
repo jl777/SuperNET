@@ -124,7 +124,12 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
 void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,int32_t vout,uint64_t amount,uint8_t type_rmd160[21],bits256 spendtxid,int32_t spendvini)
 {
     struct kmd_addresshh *addr; struct kmd_transaction *tx = 0;
-    //printf("ht.%d VOUT %d %.8f\n",ptr->tx->height,vout,dstr(amount));
+    {
+        char coinaddr[64],str[65];
+        bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
+        if ( strcmp(coinaddr,"") == 0 )
+            printf("%s ht.%d %s VOUT %d %.8f\n",coinaddr,ptr->tx->height,bits256_str(str,ptr->tx->txid),vout,dstr(amount));
+    }
     if ( vout < ptr->numvouts && (tx= ptr->tx) != 0 )
     {
         tx->vouts[vout].spendtxid = spendtxid;
