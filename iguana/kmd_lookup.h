@@ -308,6 +308,18 @@ cJSON *kmd_unspentjson(struct kmd_transaction *tx,int32_t vout)
     return(item);
 }
 
+cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddstr(item,"type","sent");
+    jaddbits256(item,"txid",tx->txid);
+    jaddnum(item,"vout",vout);
+    jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
+    jaddbits256(item,"spentdtxid",tx->vouts[vout].spendtxid);
+    jaddnum(item,"vin",tx->vouts[vout].spendvini);
+    return(item);
+}
+
 int32_t kmd_height(struct iguana_info *coin)
 {
     char params[64],*curlstr; cJSON *curljson; int32_t height = 0;
@@ -323,43 +335,6 @@ int32_t kmd_height(struct iguana_info *coin)
         free(curlstr);
     }
     return(height);
-}
-
-cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
-{
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,counter=0; cJSON *array = cJSON_CreateArray();
-    //if ( (height= kmd_height(coin)) > coin->kmd_height+KMD_EXPLORER_LAG )
-    //    return(cJSON_Parse("[]"));
-    if ( count == 0 )
-        count = 100;
-    bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],coinaddr);
-    if ( (addr= _kmd_address(coin,type_rmd160)) != 0 && (ptr= addr->prev) != 0 && ptr->tx != 0 )
-    {
-        while ( ptr != 0 )
-        {
-            prev = 0;
-            if ( counter >= skip && counter < count+skip )
-                jaddi(array,kmd_transactionjson(ptr,"received"));
-            if ( ++counter >= count+skip )
-                break;
-            for (i=0; i<ptr->numvouts; i++)
-            {
-                if ( memcmp(ptr->tx->vouts[i].type_rmd160,type_rmd160,21) == 0 && (spent= ptr->ptrs[(i<<1)+1]) != 0 )
-                {
-                    if ( counter >= skip && counter < count+skip )
-                        jaddi(array,kmd_transactionjson(spent,"sent"));
-                    if ( ++counter >= count+skip )
-                        break;
-                    if ( ptr->ptrs[i << 1] != 0 )
-                        prev = ptr->ptrs[i << 1];
-                }
-            }
-            if ( counter >= count+skip )
-                break;
-            ptr = prev;
-        }
-    }
-    return(array);
 }
 
 cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
@@ -386,9 +361,11 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
     return(cJSON_Parse("{\"error\":\"txid not found\"}"));
 }
 
-cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
+cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i; cJSON *array = cJSON_CreateArray();
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
+    if ( array == 0 )
+        array = cJSON_CreateArray();
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
@@ -414,7 +391,18 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
                     //if ( strcmp("RFpYbieWuKm2ZsTaKeWkrrEdeSkVzhqX8x",coinaddr) == 0 )
                     //    printf("mode.%d [%d] %s ht.%d amount %.8f spent.%p\n",mode,coin->kmd_height,coinaddr,ptr->tx->height,dstr(ptr->tx->vouts[i].amount),spent);
                     if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
-                        jaddi(array,kmd_unspentjson(ptr->tx,i));
+                    {
+                        if ( mode == 0 )
+                            jaddi(array,kmd_unspentjson(ptr->tx,i));
+                        else if ( mode == 1 )
+                            jaddi(array,kmd_spentjson(ptr->tx,i));
+                        else if ( mode == 2 )
+                        {
+                            if ( spent != 0 )
+                                jaddi(array,kmd_spentjson(ptr->tx,i));
+                            else jaddi(array,kmd_unspentjson(ptr->tx,i));
+                        }
+                    }
                     if ( ptr->ptrs[i<<1] != 0 )
                     {
                         if ( prev == 0 )
@@ -432,12 +420,24 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode)
 
 cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr)
 {
-    return(kmd_listaddress(coin,coinaddr,0));
+    return(kmd_listaddress(coin,coinaddr,0,0));
 }
 
 cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
 {
-    return(kmd_listaddress(coin,coinaddr,1));
+    return(kmd_listaddress(coin,coinaddr,1,0));
+}
+
+cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
+{
+    cJSON *array = cJSON_CreateArray();
+    //if ( (height= kmd_height(coin)) > coin->kmd_height+KMD_EXPLORER_LAG )
+    //    return(cJSON_Parse("[]"));
+    if ( count == 0 )
+        count = 100;
+    array = kmd_listaddress(coin,coinaddr,2,0);
+    array = kmd_listaddress(coin,coinaddr,1,array);
+    return(array);
 }
 
 int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp)
@@ -445,7 +445,7 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
     int32_t iter,i,n; cJSON *array,*item; uint64_t value;
     for (iter=1; iter<=2; iter++)
     {
-        if ( (array= kmd_listaddress(coin,coinaddr,iter)) != 0 )
+        if ( (array= kmd_listaddress(coin,coinaddr,iter,0)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
