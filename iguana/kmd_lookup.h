@@ -127,7 +127,7 @@ void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,
     {
         char coinaddr[64],str[65];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
-        if ( strcmp(coinaddr,"") == 0 )
+        if ( strcmp(coinaddr,"RCsKEQ3r5Xxw4ZtK4CH9VzvfGpTFMdPpsh") == 0 )
             printf("%s ht.%d %s VOUT %d %.8f\n",coinaddr,ptr->tx->height,bits256_str(str,ptr->tx->txid),vout,dstr(amount));
     }
     if ( vout < ptr->numvouts && (tx= ptr->tx) != 0 )
@@ -415,12 +415,15 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                             if ( mode == 0 )
                                 jaddi(array,kmd_transactionjson(ptr,"received"));
                             else if ( mode == 1 )
-                                jaddi(array,kmd_transactionjson(ptr,"sent"));
-                            else if ( mode == 2 )
                             {
                                 jaddi(array,kmd_transactionjson(ptr,"received"));
+                                jaddi(array,kmd_transactionjson(spent,"sent"));
+                            }
+                            else if ( mode == 2 )
+                            {
                                 if ( spent != 0 )
-                                    jaddi(array,kmd_transactionjson(spent,"sent"));
+                                    jaddi(array,kmd_transactionjson(ptr,"spent"));
+                                else jaddi(array,kmd_transactionjson(ptr,"received"));
                             }
                             flag = 1;
                         }
