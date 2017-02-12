@@ -313,7 +313,7 @@ cJSON *kmd_unspentjson(struct kmd_transaction *tx,int32_t vout)
     return(item);
 }
 
-cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout)
+cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout,struct kmd_transactionhh *spent)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","sent");
@@ -322,6 +322,10 @@ cJSON *kmd_spentjson(struct kmd_transaction *tx,int32_t vout)
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
     jaddbits256(item,"spentdtxid",tx->vouts[vout].spendtxid);
     jaddnum(item,"vin",tx->vouts[vout].spendvini);
+    if ( spent != 0 )
+    {
+        jadd(item,"paid",kmd_transactionjson(spent,"paid"));
+    }
     return(item);
 }
 
@@ -402,11 +406,11 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                             if ( mode == 0 )
                                 jaddi(array,kmd_unspentjson(ptr->tx,i));
                             else if ( mode == 1 )
-                                jaddi(array,kmd_spentjson(ptr->tx,i));
+                                jaddi(array,kmd_spentjson(ptr->tx,i,spent));
                             else if ( mode == 2 )
                             {
                                 if ( spent != 0 )
-                                    jaddi(array,kmd_spentjson(ptr->tx,i));
+                                    jaddi(array,kmd_spentjson(ptr->tx,i,spent));
                                 else jaddi(array,kmd_unspentjson(ptr->tx,i));
                             }
                         }
