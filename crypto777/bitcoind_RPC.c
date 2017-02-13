@@ -206,7 +206,7 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 3 )
+        else if ( numretries >= 4 )
         {
             printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
