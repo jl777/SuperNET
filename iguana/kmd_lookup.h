@@ -703,7 +703,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
             }
             free_json(blockjson);
         }
-        if ( flag != 0 || num > 1000 )
+        if ( flag != 0 || num > 500 )
             break;
         coin->kmd_height = loadheight++;
     }
