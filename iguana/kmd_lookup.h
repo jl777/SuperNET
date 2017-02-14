@@ -723,7 +723,7 @@ void kmd_bitcoinscan()
                 {
                     if ( (coin= iguana_coinfind(jstri(array,i))) != 0 && strcmp(coin->symbol,"BTC") != 0 )
                     {
-                        if ( strcmp("KMD",coin->symbol) == 0 )
+                        //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
                     }
                 }
