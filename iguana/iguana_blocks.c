@@ -411,7 +411,7 @@ double PoW_from_compact(uint32_t nBits,uint8_t unitval) // NOT consensus safe, b
     nbytes = (nBits >> 24) & 0xFF;
     nbits = (8 * (nbytes - 3));
     PoW = (nBits & 0xFFFFFF);
-    if ( 0 && nbytes > unitval )
+    if ( (0) && nbytes > unitval )
     {
         printf("illegal nBits.%x unitval.%02x\n",nBits,unitval);
         return(0.);
@@ -590,7 +590,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
             if ( bits256_nonz(prev->RO.hash2) == 0 || (prev->valid == 0 && iguana_blockvalidate(myinfo,coin,&valid,prev,0) < 0)  )
             {
                 char str[65];
-                if ( 0 && bits256_nonz(prev->RO.hash2) != 0 )
+                if ( (0) && bits256_nonz(prev->RO.hash2) != 0 )
                     printf("(%s) notready v.%d m.%d h.%d\n",bits256_str(str,prev->RO.hash2),prev->valid,prev->mainchain,prev->height);
                 return(0);
             } else prev->valid = 1;
@@ -645,7 +645,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                 else str2[0] = 0;
                 if ( coin->blocks.maxblocks > coin->longestchain )
                     coin->longestchain = coin->blocks.maxblocks;
-                if ( 0 && (block->height % coin->chain->bundlesize) == 0 )
+                if ( (0) && (block->height % coin->chain->bundlesize) == 0 )
                 {
                     printf("EXTENDMAIN %s %d <- (%s) n.%u max.%u PoW %f numtx.%d valid.%d\n",str,block->height,str2,hwmchain->height+1,coin->blocks.maxblocks,block->PoW,block->RO.txn_count,block->valid);
                     //iguana_walkchain(coin);
@@ -724,7 +724,7 @@ struct iguana_block *_iguana_chainlink(struct supernet_info *myinfo,struct iguan
                     iguana_RTnewblock(myinfo,coin,block);
                 block->hdrsi = hdrsi;
                 block->bundlei = bundlei;
-                if ( 0 && (bp= coin->bundles[hdrsi]) != 0 )
+                if ( (0) && (bp= coin->bundles[hdrsi]) != 0 )
                 {
                     if ( bp->blocks[bundlei] != block || bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
                         printf("new hwm [%d:%d] mismatched bundle block\n",hdrsi,bundlei);

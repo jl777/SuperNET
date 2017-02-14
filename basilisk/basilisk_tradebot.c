@@ -374,6 +374,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
 {
     cJSON *array,*item; uint8_t *hexdata,*allocptr,hexspace[32768]; char *hexstr; int32_t i,hexlen,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
+    memset(&R,0,sizeof(R));
 //printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {

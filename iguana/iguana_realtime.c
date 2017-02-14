@@ -170,7 +170,7 @@ void iguana_RTcoinaddr(struct iguana_info *coin,struct iguana_RTtxid *RTptr,stru
         }
     }
     //printf("%s %.8f [%.8f - %.8f] -> %.8f\n",coinaddr,dstr(value),dstr(coin->RTcredits),dstr(coin->RTdebits),dstr(coin->histbalance)+dstr(coin->RTcredits)-dstr(coin->RTdebits));
-    if ( 0 && strcmp("BTC",coin->symbol) != 0 && strcmp("LTC",coin->symbol) != 0 && strcmp("DOGE",coin->symbol) != 0 )
+    if ( (0) && strcmp("BTC",coin->symbol) != 0 && strcmp("LTC",coin->symbol) != 0 && strcmp("DOGE",coin->symbol) != 0 )
         printf("%lld %s %.8f h %.8f, cr %.8f deb %.8f [%.8f] numunspents.%d %p\n",(long long)polarity,coinaddr,dstr(value),dstr(RTaddr->histbalance),dstr(RTaddr->credits),dstr(RTaddr->debits),dstr(RTaddr->credits)-dstr(RTaddr->debits)+dstr(RTaddr->histbalance),RTaddr->numunspents,unspent);
 }
 
@@ -352,7 +352,7 @@ struct iguana_RTtxid *iguana_RTtxid_create(struct iguana_info *coin,struct iguan
         }
         HASH_ADD_KEYPTR(hh,coin->RTdataset,RTptr->txid.bytes,sizeof(RTptr->txid),RTptr);
         bits256_str(str,txid);
-        if ( 0 && strcmp("BTC",coin->symbol) != 0 )
+        if ( (0) && strcmp("BTC",coin->symbol) != 0 )
             printf("%s.%d txid.(%s) vouts.%d vins.%d version.%d lock.%u t.%u %lld\n",coin->symbol,block->height,str,numvouts,numvins,version,locktime,timestamp,(long long)polarity);
     }
     else if ( RTptr->txn_count != txn_count || RTptr->numvouts != numvouts || RTptr->numvins != numvins )
@@ -630,7 +630,7 @@ void *iguana_RTrawdata(struct iguana_info *coin,bits256 hash2,uint8_t *data,int3
                     return(&ptr[sizeof(*recvlenp) + sizeof(checknumtx)]);
                 } else printf("checklen.%d vs %d, checknumtx %d vs %d\n",checklen,(int32_t)(filesize - sizeof(checklen) - sizeof(checknumtx)),checknumtx,*numtxp);
             }
-            else if ( 0 )
+            else if ( (0) )
             {
                 OS_removefile(fname,0);
                 printf("(%s) removed to suppress errors\n",fname);
@@ -701,7 +701,7 @@ int32_t iguana_RTiterate(struct supernet_info *myinfo,struct iguana_info *coin,i
                     {
                         num++;
                         iguana_blockQ("RTiterate",coin,0,-1,block->RO.hash2,1);
-                        if ( 0 && coin->peers != 0 && (n= coin->peers->numranked) > 0 )
+                        if ( (0) && coin->peers != 0 && (n= coin->peers->numranked) > 0 )
                         {
                             if ( (addr= coin->peers->ranked[rand() % n]) != 0 )
                                 iguana_sendblockreqPT(coin,addr,0,-1,block->RO.hash2,1);
@@ -809,7 +809,7 @@ void iguana_RTnewblock(struct supernet_info *myinfo,struct iguana_info *coin,str
      }*/
     if ( block->height < coin->firstRTheight || block->height >= coin->firstRTheight+sizeof(coin->RTblocks)/sizeof(*coin->RTblocks) )
     {
-        if ( 0 && coin->firstRTheight > 0 )
+        if ( (0) && coin->firstRTheight > 0 )
             printf("iguana_RTnewblock illegal blockheight.%d\n",block->height);
         return;
     }

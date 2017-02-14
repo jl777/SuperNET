@@ -333,9 +333,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         if ( (plen= vp->spendscript[2]+5) != vp->spendlen )
         {
             return(IGUANA_SCRIPT_STRANGE);
-            while ( plen < vp->spendlen )
+            /*while ( plen < vp->spendlen )
                 if ( vp->spendscript[plen++] != 0x61 ) // nop
-                    return(IGUANA_SCRIPT_STRANGE);
+                    return(IGUANA_SCRIPT_STRANGE);*/
         }
         return(IGUANA_SCRIPT_76A988AC);
     }

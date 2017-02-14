@@ -655,9 +655,9 @@ int32_t iguana_schnorr_test(void *ctx)
         {
             sigs[i] = sig64[i];
             continue;
-            for (j=0; j<64; j++)
-                printf("%02x",sig64[i][j]);
-            printf(" sig[%d]\n",i);
+            //for (j=0; j<64; j++)
+            //    printf("%02x",sig64[i][j]);
+            //printf(" sig[%d]\n",i);
         }
         for (i=0; i<N; i++)
         {

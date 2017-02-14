@@ -233,7 +233,7 @@ uint32_t iguana_updatemetrics(struct supernet_info *myinfo,struct iguana_info *c
                 {
                     expand_ipbits(ipaddr,(uint32_t)addr->ipbits);
                     fprintf(fp,"%s\n",ipaddr);
-                    if ( 0 && addr->msgcounts.verack == 0 )
+                    if ( (0) && addr->msgcounts.verack == 0 )
                     {
                         printf("iguana_sendblockreq (%s) addrind.%d hasn't verack'ed yet\n",addr->ipaddr,addr->addrind);
                         iguana_send_version(coin,addr,coin->myservices);
@@ -274,7 +274,7 @@ void iguana_emitQ(struct iguana_info *coin,struct iguana_bundle *bp)
 void iguana_bundleQ(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t timelimit)
 {
     struct iguana_helper *ptr; struct iguana_bundle *tmp; int32_t i,n = 0;
-    if ( 0 && bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
+    if ( (0) && bp->queued == 0 && bp->emitfinish <= 1 && iguana_bundleready(myinfo,coin,bp,0) == bp->n )
         printf("bundle.[%d] is ready\n",bp->hdrsi);
     if ( bp->queued != 0 )
         return;
@@ -637,7 +637,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
         isRT *= (coin->RTheight > 0);
         if ( coin->peers != 0 )
             *numpeersp += coin->peers->numranked;
-        if ( 0 && (rand() % 10) == 0 )
+        if ( (0) && (rand() % 10) == 0 )
             printf("%s main.%u vs %u, svs %u %d vs %d\n",coin->symbol,(uint32_t)time(NULL),coin->startutc+10,coin->spendvectorsaved ,coin->blocks.hwmchain.height/coin->chain->bundlesize,(coin->longestchain-coin->minconfirms)/coin->chain->bundlesize);
         if ( time(NULL) > coin->startutc+60 )
         {
@@ -682,7 +682,7 @@ int32_t iguana_coin_mainiter(struct supernet_info *myinfo,struct iguana_info *co
         }
         if ( (bp= coin->current) != 0 && coin->stucktime != 0 && coin->isRT == 0 && coin->RTheight == 0 && (time(NULL) - coin->stucktime) > coin->MAXSTUCKTIME )
         {
-            if ( 0 )
+            if ( (0) )
             {
                 printf("%s is stuck too long, restarting due to %d\n",coin->symbol,bp->hdrsi);
                 if ( coin->started != 0 )

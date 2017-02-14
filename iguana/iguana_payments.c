@@ -565,7 +565,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
         jaddnum(valsobj,"basilisktag",basilisktag);
         jaddnum(valsobj,"locktime",locktime);
         jaddnum(valsobj,"timeout",30000);
-        if ( 0 && comment != 0 && is_hexstr(comment,0) > 0 )
+        if ( (0) && comment != 0 && is_hexstr(comment,0) > 0 )
             jaddstr(valsobj,"opreturn",comment);
         if ( (retstr= basilisk_bitcoinrawtx(myinfo,coin,remoteaddr,basilisktag,jint(valsobj,"timeout"),valsobj,V)) != 0 )
         {
@@ -981,6 +981,7 @@ HASH_AND_INT(bitcoinrpc,getrawtransaction,txid,verbose)
     if ( coin->notarychain >= 0 && coin->FULLNODE == 0 )
         return(_dex_getrawtransaction(myinfo,coin->symbol,txid));
     HASH_FIND(hh,coin->RTdataset,txid.bytes,sizeof(txid),RTptr);
+    memset(checktxid.bytes,0,sizeof(checktxid));
     if ( RTptr != 0 && RTptr->rawtxbytes != 0 && RTptr->txlen > 0 )
     {
         checktxid = RTptr->txid;
@@ -1069,7 +1070,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
         if ( (txobj= bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&msgtx->txid,msgtx,rawtx,extraspace,extralen,0,0,suppress_pubkeys)) != 0 )
         {
             //printf("txobj.(%s)\n",jprint(txobj,0));
-            if ( 0 && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
+            if ( (0) && (checkstr= bitcoin_json2hex(myinfo,coin,&txid,txobj,0)) != 0 )
             {
                 // no guarantee byte for byte identical tx is recreated
                 if ( strcmp(rawtx,checkstr) != 0 )
@@ -1082,7 +1083,7 @@ char *iguana_validaterawtx(struct supernet_info *myinfo,struct iguana_info *coin
                             break;
                     jaddnum(retjson,"mismatch position",i);
                     jadd(retjson,"origtx",txobj);
-                    if ( 0 && (txobj= bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&txid,msgtx,checkstr,extraspace,extralen,0,0,suppress_pubkeys)) != 0 )
+                    if ( (0) && (txobj= bitcoin_hex2json(coin,coin->blocks.hwmchain.height,&txid,msgtx,checkstr,extraspace,extralen,0,0,suppress_pubkeys)) != 0 )
                         jadd(retjson,"checktx",txobj);
                     free(checkstr);
                     return(jprint(retjson,1));

@@ -182,7 +182,7 @@ void calc_OP_HASH160(char hexstr[41],uint8_t rmd160[20],char *pubkey)
     }
     decode_hex(buf,len,pubkey);
     calc_rmd160_sha256(rmd160,buf,len);
-    if ( 0 )
+    if ( (0) )
     {
         int i;
         for (i=0; i<20; i++)
@@ -436,9 +436,9 @@ char *clonestr(char *str)
     if ( str == 0 || str[0] == 0 )
     {
         printf("warning cloning nullstr.%p\n",str);
-#ifdef __APPLE__
-        while ( 1 ) sleep(1);
-#endif
+//#ifdef __APPLE__
+//        while ( 1 ) sleep(1);
+//#endif
         str = (char *)"<nullstr>";
     }
     clone = (char *)malloc(strlen(str)+16);

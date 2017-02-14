@@ -265,6 +265,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
+                    val = 0;
                     //fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
                     //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
@@ -462,7 +463,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = OS_milliseconds() + 10000;
     }
-    if ( 0 && strcmp("MSG",CMD) == 0 )
+    if ( (0) && strcmp("MSG",CMD) == 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
@@ -793,10 +794,10 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
         else
         {
             len += iguana_rwnum(0,ptr->data,sizeof(basilisktag),&basilisktag);
-            if ( 0 && myinfo->IAMLP == 0 )
+            if ( (0) && myinfo->IAMLP == 0 )
                 printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,ptr->datalen,ptr->type,senderip,basilisktag);
             basilisk_msgprocess(myinfo,ptr->addr,ptr->ipbits,ptr->type,basilisktag,&ptr->data[len],ptr->datalen - len);
-            if ( 0 && myinfo->IAMLP == 0 )
+            if ( (0) && myinfo->IAMLP == 0 )
                 printf("processed.%s from %s\n",ptr->type,senderip);
         }
         free(ptr);

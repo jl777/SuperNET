@@ -373,7 +373,7 @@ uint64_t _calc_ipbits(char *ip_port)
     port = parse_ipaddr(ipaddr,ip_port);
     memset(&addr,0,sizeof(addr));
     portable_pton(ip_port[0] == '[' ? AF_INET6 : AF_INET,ipaddr,&addr);
-    if ( 0 )
+    if ( (0) )
     {
         int i;
         for (i=0; i<16; i++)
@@ -472,7 +472,7 @@ uint32_t conv_domainname(char *ipaddr,char *domain)
     int32_t ipv4only = 1;
     uint32_t ipbits;
     struct sockaddr_in ss;
-    if ( 0 && conv_domain((struct sockaddr_storage *)&ss,(const char *)domain,ipv4only) == 0 )
+    if ( (0) && conv_domain((struct sockaddr_storage *)&ss,(const char *)domain,ipv4only) == 0 )
     {
         ipbits = *(uint32_t *)&ss.sin_addr;
         expand_ipbits(ipaddr,ipbits);

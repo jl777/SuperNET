@@ -401,8 +401,8 @@ void disp_yval(register int32_t color,register float yval,register uint32_t *bit
 	//if ( pixelwt(color) > pixelwt(bitmap[y*rowwidth + x]) )
 	bitmap[y*rowwidth + x] = pixel_blend(bitmap[y*rowwidth + x],color);
 	return;
-	if ( is_primary_color(color) != 0 || (is_primary_color(bitmap[y*rowwidth+x]) == 0 && pixelwt(color) > pixelwt(bitmap[y*rowwidth + x])) )
-		bitmap[y*rowwidth + x] = color;
+	//if ( is_primary_color(color) != 0 || (is_primary_color(bitmap[y*rowwidth+x]) == 0 && pixelwt(color) > pixelwt(bitmap[y*rowwidth + x])) )
+	//	bitmap[y*rowwidth + x] = color;
 }
 
 void disp_yvalsum(register int32_t color,register float yval,register uint32_t *bitmap,register int32_t x,register int32_t rowwidth,register int32_t height)
@@ -509,7 +509,7 @@ void output_line(int32_t calclogflag,double ave,float *buf,int32_t n,int32_t col
     double src[1024],dest[1024]; int32_t i;
     memset(src,0,sizeof(src));
     memset(dest,0,sizeof(dest));
-    if ( 1 )
+    if ( (1) )
     {
         for (i=0; i<1024; i++)
             src[1023-i] = dest[1023-i] = buf[i];
@@ -1085,7 +1085,7 @@ void iguana_bitmapbundle(struct iguana_info *coin,uint8_t *rect,int32_t rowwidth
 
 struct iguana_bitmap *iguana_bitmapfind(char *name)
 {
-    struct iguana_info *coin; int32_t width,height,n,hdrsi,x,y;
+    struct iguana_info *coin; int32_t width=1,height=1,n,hdrsi,x,y;
     if ( ((coin= iguana_coinfind(name)) != 0 || (coin= iguana_coinfind("BTCD")) != 0) && coin->screen != 0 )
     {
         strcpy(coin->screen->name,coin->symbol);

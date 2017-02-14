@@ -238,7 +238,7 @@ uint8_t *cards777_encode(struct supernet_info *myinfo,bits256 *encoded,bits256 *
     init_sharenrs(sharenrs,0,N,N);
     cards777_calcmofn(myinfo,allshares,myshares,sharenrs,M,xoverz,numcards,N);
     memcpy(ciphers,shuffled,numcards * N * sizeof(bits256));
-    if ( 0 )
+    if ( (0) )
     {
         /*{
             init_hexbytes_noT(nrs,dp->hand.sharenrs,dp->N);

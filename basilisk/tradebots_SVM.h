@@ -332,7 +332,7 @@ static inline double validate_ocas_model(register struct ocas_vars *vars,registe
 {
     register svmtype *features;
     register double y,pred,perc,answer=0.,feature;
-    register int i,j,pos,neg,good,bad,oldcuts,training_errors,weekind,nonz,posA,negA;
+    register int i,j,pos,neg,good,bad,oldcuts,training_errors,weekind,nonz=0,posA,negA;
     for (i=pos=neg=good=bad=oldcuts=training_errors=posA=negA=0; i<numdocs; i++)
     {
         weekind = (weekinds == 0) ? i : weekinds[i];
@@ -539,9 +539,9 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
 
 static inline double ocas_splx_solver(register int *nonzalphap,register int maxlhs,register double *d,register double *activeH,register double *diag_H,register double *f,register double C,register double *alpha,register int n,register int MaxIter,register double TolAbs,register double TolRel,register double QP_TH)
 {
-    register double *col_u,*col_v;
-    register double QP,QD,lastQD,tmp,diff,distA,distB,etaA,etaB,improv,tmp_num,delta,x_neq0,xval,dval,diagval,tmp_den,tau;
-    register int u=0,v=0,i,j,iter,nonzalpha,unlikely = 0;
+    register double *col_u=0,*col_v=0;
+    register double QP,QD,lastQD,tmp,diff,distA,distB,etaA,etaB,improv,tmp_num,delta,x_neq0,xval,dval,diagval=0.,tmp_den,tau=0.;
+    register int u=0,v=0,i,j,iter,nonzalpha=0,unlikely = 0;
     QP = distA = distB = OCAS_PLUS_INF;	lastQD = QD = OCAS_NEG_INF;
     x_neq0 = C;
     etaA = etaB = 0.;
@@ -838,7 +838,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
     int inactives[81];
     register struct ocas_CLbuffers *ptr;
     register double netcuts,startmilli,y,psum,pcount,nosum;
-    register int i,numfeatures,cutlen,lastanswerind,lwm,numactive,numthreads,answerind,*weekinds;
+    register int i,numfeatures,cutlen,lastanswerind,lwm=(1<<20),numactive,numthreads,answerind,*weekinds;
     numactive = 0;
     if ( (numfeatures= vars->numfeatures) > MAX_OCAS_FEATURES )
     {

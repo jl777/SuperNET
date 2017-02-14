@@ -449,7 +449,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     expand_ipbits(ipaddr,ipbits);
     if ( port != 0 )
         sprintf(ipport,"%s:%d",ipaddr,port);
-    if ( 0 )
+    if ( (0) )
     {
         int32_t i;
         printf("{{");
@@ -459,7 +459,7 @@ void iguana_gotaddr(struct iguana_info *coin,struct iguana_peer *addr,struct igu
     }
     if ( strcmp(coin->symbol,"BTC") != 0 || (rand() % 10) == 0 )
         iguana_possible_peer(coin,ipport);
-    if ( 0 && strcmp("TAZ",coin->symbol) == 0 )
+    if ( (0) && strcmp("TAZ",coin->symbol) == 0 )
         printf("iguana_gotaddr: %s from %s\n",ipaddr,addr->ipaddr);
 }
 
@@ -713,7 +713,7 @@ int32_t iguana_rwtx(struct supernet_info *myinfo,uint8_t zcash,int32_t rwflag,st
                 memcpy(joinsplitsig,&serialized[len],64), len += 64;
             }
         }
-        if ( 0 )
+        if ( (0) )
         {
             *txidp = bits256_doublesha256(txidstr,txstart,len);
             char str[65];
@@ -955,7 +955,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
     }
     if ( addr != 0 )
     {
-        if ( 0 && addr->msgcounts.verack == 0 )
+        if ( (0) && addr->msgcounts.verack == 0 )
             printf("iguana_msgparser verack.%d from (%s) parse.(%s) len.%d\n",addr->msgcounts.verack,addr->ipaddr,H->command,recvlen);
         //iguana_peerblockrequest(coin,addr->blockspace,IGUANA_MAXPACKETSIZE,addr,iguana_blockhash(coin,100),0);
         addr->lastcontact = (uint32_t)time(NULL);
@@ -1010,7 +1010,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                 else
                 {
                     intvectors = 'I', addr->msgcounts.inv++;
-                    if ( 0 && strcmp(H->command,"inv2") == 0 )
+                    if ( (0) && strcmp(H->command,"inv2") == 0 )
                         printf("GOT INV2.%d\n",recvlen);
                     len = iguana_intvectors(coin,addr,1,data,recvlen); // indirectly issues getdata
                 }
@@ -1056,7 +1056,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                                 }
                                 len += iguana_rwvarint32(0,&data[len],&tmp);
                                 char str[65],str2[65];
-                                if ( 0 && coin->chain->auxpow != 0 )
+                                if ( (0) && coin->chain->auxpow != 0 )
                                     printf("%d %d of %d: %s %s v.%08x numtx.%d cmp.%d\n",len,i,n,bits256_str(str,hash2),bits256_str(str2,zmsg.zH.prev_block),zmsg.zH.version,tmp,bits256_cmp(prevhash2,zmsg.zH.prev_block));
                             }
                             else len += iguana_rwblock(myinfo,coin->chain->symbol,coin->chain->zcash,coin->chain->auxpow,coin->chain->hashalgo,0,&hash2,&data[len],(void *)&zmsg,recvlen);
@@ -1151,7 +1151,7 @@ int32_t iguana_msgparser(struct supernet_info *myinfo,struct iguana_info *coin,s
                     len = 0;
                     if ( (sendlen= iguana_peeraddrrequest(coin,addr,&addr->blockspace[sizeof(H)],IGUANA_MAXPACKETSIZE)) > 0 )
                     {
-                        if ( 0 )
+                        if ( (0) )
                         {
                             int32_t checklen; uint32_t checkbits; char checkaddr[64];
                             checklen = iguana_rwvarint(0,&addr->blockspace[sizeof(H)],&x);

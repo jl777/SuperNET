@@ -734,7 +734,7 @@ int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeya
         if ( (retval= (bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
         {
         }
-        if ( 0 )
+        if ( (0) )
         {
             int32_t i; char str[65];
             for (i=0; i<siglen; i++)
@@ -1000,7 +1000,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
     struct bitcoin_opcode *op; cJSON *array = 0; struct iguana_interpreter STACKS,*stacks = &STACKS;
     struct iguana_stackdata args[MAX_PUBKEYS_PER_MULTISIG];
     uint8_t databuf[MAX_SCRIPT_ELEMENT_SIZE]; char *asmstr,*str,*hexstr; cJSON *item;
-    int32_t c,numops,dlen,plen,numvars,numused,numargs=0,i,j,k,n,len,datalen,errs=0; int64_t val;
+    int32_t c,numops,dlen,plen,numvars,numused,numargs=0,i,j,k,n=0,len,datalen,errs=0; int64_t val;
     iguana_optableinit(coin);
     if ( (asmstr= jstr(interpreter,"interpreter")) == 0 || asmstr[0] == 0 )
         return(0);
@@ -1438,6 +1438,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_STACKFLAG) != 0 )
                 {
+                    val = 0;
                     if ( op->opcode == IGUANA_OP_PICK || op->opcode == IGUANA_OP_ROLL )
                     {
                         if ( interpret != 0 && stacks->stackdepth < (val= iguana_num(args[0])) )
@@ -1505,7 +1506,7 @@ int32_t bitcoin_assembler(struct iguana_info *coin,cJSON *logarray,uint8_t scrip
                 }
                 else if ( (op->flags & IGUANA_MATHFLAG) != 0 )
                 {
-                    int64_t numA,numB,numC;
+                    int64_t numA=0,numB=0,numC=0;
                     for (i=0; i<op->stackitems; i++)
                     {
                         if ( args[i].size != sizeof(int32_t) )

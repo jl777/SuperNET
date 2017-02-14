@@ -1129,7 +1129,7 @@ struct exchange_info *exchanges777_info(char *exchangestr,int32_t sleepflag,cJSO
                 sleep(sleepflag);
         }
     }
-    if ( 0 && exchange != 0 )
+    if ( (0) && exchange != 0 )
         printf("found exchange.(%s) %p %p %p\n",exchange->name,exchange->issue.supports,exchange->issue.price,exchange->issue.allpairs);
     return(exchange);
 }

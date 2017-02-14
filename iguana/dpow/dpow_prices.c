@@ -1635,7 +1635,7 @@ void _crypto_update(double cryptovols[2][9][2],struct PAX_data *dp,int32_t selec
 void PAX_RTupdate(double cryptovols[2][9][2],double RTmetals[4],double *RTprices,struct PAX_data *dp)
 {
     char *cryptostrs[9] = { "btc", "nxt", "unity", "eth", "etc", "kmd", "xmr", "bts", "xcp" };
-    int32_t iter,i,c,baserel,basenum,relnum; double cnyusd,btcusd,kmdbtc,bid,ask,price,vol,prices[8][2],volumes[8][2];
+    int32_t iter,i,c,baserel,basenum,relnum; double cnyusd,btcusd,kmdbtc,bid=0.,ask=0.,price,vol,prices[8][2],volumes[8][2];
     char base[16],rel[16];
     PAX_update(dp,&btcusd,&kmdbtc);
     memset(prices,0,sizeof(prices));

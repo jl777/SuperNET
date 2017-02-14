@@ -320,16 +320,19 @@ void datachain_update_spend(struct supernet_info *myinfo,int32_t ordered,struct 
 
 int64_t datachain_update(struct supernet_info *myinfo,int32_t ordered,struct iguana_info *coin,uint32_t timestamp,struct iguana_bundle *bp,uint8_t rmd160[20],int64_t crypto777_payment,uint8_t type,int32_t height,uint64_t hdrsi_unspentind,int64_t value,uint32_t fileid,uint64_t scriptpos,int32_t scriptlen,bits256 txid,int32_t vout)
 {
-    return(0);
-    if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
+    if ( (0) )
     {
-        crypto777_payment += value;
-        //printf("datachain_update crypto777 %.8f += %.8f\n",dstr(crypto777_payment),dstr(value));
+        if ( memcmp(rmd160,CRYPTO777_RMD160,20) == 0 )
+        {
+            crypto777_payment += value;
+            //printf("datachain_update crypto777 %.8f += %.8f\n",dstr(crypto777_payment),dstr(value));
+        }
+        else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
+        {
+            //printf("datachain_update opreturn\n");
+            iguana_opreturn(myinfo,ordered,coin,timestamp,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
+        } else datachain_update_spend(myinfo,ordered,coin,timestamp,bp,height,txid,vout,rmd160,value);
+        return(crypto777_payment);
     }
-    else if ( crypto777_payment != 0 && (type == IGUANA_SCRIPT_OPRETURN || type == IGUANA_SCRIPT_3of3 || type == IGUANA_SCRIPT_2of2 || type == IGUANA_SCRIPT_1of1) )
-    {
-        //printf("datachain_update opreturn\n");
-        iguana_opreturn(myinfo,ordered,coin,timestamp,bp,crypto777_payment,height,hdrsi_unspentind,value,fileid,scriptpos,scriptlen);
-    } else datachain_update_spend(myinfo,ordered,coin,timestamp,bp,height,txid,vout,rmd160,value);
-    return(crypto777_payment);
+    return(0);
 }

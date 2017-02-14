@@ -21,6 +21,7 @@ static uint16_t iguana_primes[] = { 65353, 65357, 65371, 65381, 65393, 65407, 65
 struct iguana_bloominds iguana_calcbloom(bits256 hash2)
 {
     int32_t i,j,k; struct iguana_bloominds bit;
+    memset(&bit,0,sizeof(bit));
     k = (int32_t)(sizeof(bit)/sizeof(uint16_t)) - 1;
     j = 15;
     for (i=0; i<sizeof(bit)/sizeof(uint16_t); i++,j--,k--)
@@ -158,7 +159,7 @@ int32_t iguana_hash2set(struct iguana_info *coin,char *debugstr,struct iguana_bu
         {
            // printf("bloomset (%s) -> [%d:%d]\n",bits256_str(str,newhash2),bp->hdrsi,bundlei);
             iguana_bloomset(coin,&bp->bloom,0,bit);
-            if ( 0 )
+            if ( (0) )
             {
                 int32_t i;
                 if ( iguana_bloomfind(coin,&bp->bloom,0,bit) < 0 )
@@ -245,7 +246,7 @@ int32_t iguana_bundlehash2add(struct iguana_info *coin,struct iguana_block **blo
                 return(-1);
             }
         }
-        if ( 0 && bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
+        if ( (0) && bits256_nonz(bp->hashes[bundlei]) != 0 && bits256_cmp(bp->hashes[bundlei],block->RO.hash2) != 0 )
         {
             //char str[65],str2[65];
             //printf("B bp.[%d]->hashes[%d] mismatch %s != %s%s\n",bp->hdrsi,bundlei,bits256_str(str,bp->hashes[bundlei]),bits256_str(str2,block->RO.hash2),block->mainchain?".main":"");
@@ -461,7 +462,7 @@ char *iguana_bundleaddrs(struct iguana_info *coin,int32_t hdrsi)
     uint8_t *PKbits; struct iguana_pkhash *P; uint32_t pkind,numpkinds; struct iguana_bundle *bp; struct iguana_ramchain *ramchain; struct iguana_ramchaindata *rdata; cJSON *retjson; char rmdstr[41];
     if ( (bp= coin->bundles[hdrsi]) != 0 )
     {
-        if ( 0 && coin->RTramchain_busy != 0 )
+        if ( (0) && coin->RTramchain_busy != 0 )
         {
             printf("iguana_bundleaddrs: unexpected access when RTramchain_busy\n");
             return(0);
@@ -520,7 +521,7 @@ void iguana_bundlepurgefiles(struct iguana_info *coin,struct iguana_bundle *bp)
         sprintf(fname,"%s/%s/%d/%d",GLOBAL_TMPDIR,coin->symbol,subdir,bp->bundleheight), OS_remove_directory(fname);
         //printf("purged hdrsi.[%d] subdir.%d lag.%ld\n",bp->hdrsi,subdir,time(NULL) - bp->emitfinish);
         bp->purgetime = (uint32_t)time(NULL);
-        if ( 0 )
+        if ( (0) )
         {
             for (i=subdir*IGUANA_SUBDIRDIVISOR; i<(subdir+1)*IGUANA_SUBDIRDIVISOR; i++)
             {
@@ -692,14 +693,14 @@ int32_t iguana_bundleissuemissing(struct supernet_info *myinfo,struct iguana_inf
                     queue_enqueue("missing",&coin->priorityQ,&req->DL);
                     bp->issued[i] = 1;
                     n++;
-                    if ( 0 && bp == coin->current )
+                    if ( (0) && bp == coin->current )
                         printf("%s issuemissing.[%d:%d]\n",bits256_str(str,hash2),bp->hdrsi,i);
                } //else printf("[z%d] ",i);
             } //else printf("%d ",now - (bp->issued[i]+lag));
         }
         if ( firsti >= 0 )//&& bp == coin->current )
         {
-            if ( 0 && bp == coin->current )
+            if ( (0) && bp == coin->current )
                 printf("%s [%d] first missing.%d of %d\n",bits256_str(str,hash2),bp->hdrsi,firsti,nonz);
             iguana_bundleblock(coin,&hash2,bp,firsti);
             if ( bits256_nonz(hash2) != 0 )
@@ -773,7 +774,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
     int32_t i,ready,valid; char fname[1024]; struct iguana_block *block; int32_t sum[0x100],counts[0x100]; struct iguana_blockRO *B; struct iguana_bundle *nextbp; void *ptr; long filesize; struct iguana_ramchain R; bits256 prevhash2;
     memset(sum,0,sizeof(sum));
     memset(counts,0,sizeof(counts));
-    if ( 0 && bp->queued == 0 )
+    if ( (0) && bp->queued == 0 )
     {
         for (i=ready=0; i<bp->n; i++)
             if ( (block= bp->blocks[i]) == 0 )
@@ -825,7 +826,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
                 char str[65];
                 if ( requiredflag != 0 )
                     printf(">>>>>>> block contents error at ht.%d [%d:%d]\n",bp->bundleheight+i,bp->hdrsi,i);
-                if ( 0 && bits256_nonz(block->RO.hash2) != 0 )
+                if ( (0) && bits256_nonz(block->RO.hash2) != 0 )
                     printf("patch.%d and reissue prev.%s  %d\n",bp->bundleheight+i,bits256_str(str,block->RO.prev_block),i);
                 iguana_blockunmark(coin,block,bp,i,1);
             }
@@ -845,11 +846,11 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
                     }
                     fclose(fp);
                 }
-                else if ( 0 )
+                else if ( (0) )
 //#endif
                 {
                     iguana_blockunmark(coin,block,bp,i,1);
-                    if ( 0 && requiredflag != 0 )
+                    if ( (0) && requiredflag != 0 )
                         printf("not ready altpath.(%d %d %d %d %d) [%d:%d]\n",block->txvalid == 0,block->fpipbits == 0 ,block->fpos < 0,(bp->bundleheight+i > 0 && bits256_nonz(block->RO.prev_block) == 0),iguana_blockvalidate(myinfo,coin,&valid,block,1) < 0,bp->hdrsi,i);
                 }
                 else
@@ -877,7 +878,7 @@ int32_t iguana_bundleready(struct supernet_info *myinfo,struct iguana_info *coin
 int32_t iguana_bundlehdr(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,int32_t starti)
 {
     int32_t i,dist,counter=0; char str[65];
-    if ( 0 && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
+    if ( (0) && bp->isRT == 0 && (bp->hdrsi == coin->bundlescount-1 || bp == coin->current) )
         printf("hdr ITERATE.%d bundle.%d vs %d: h.%d n.%d r.%d s.%d c.%d finished.%d spec.%p[%d]\n",bp->hdrsi,bp->bundleheight,coin->longestchain-coin->chain->bundlesize,bp->numhashes,bp->n,bp->numrecv,bp->numsaved,bp->numcached,bp->emitfinish,bp->speculative,bp->numspec);
     dist = 30 + (coin->current != 0 ? bp->hdrsi - coin->current->hdrsi : 0);
     if ( bp == coin->current )
@@ -976,7 +977,7 @@ int64_t iguana_bundlecalcs(struct supernet_info *myinfo,struct iguana_info *coin
                         datasize += block->RO.recvlen;
                     }
                 }
-                else if ( 0 && bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
+                else if ( (0) && bits256_nonz(block->RO.hash2) != 0 && bits256_nonz(bp->hashes[bundlei]) != 0 )
                 {
                     printf("hash mismatch [%d:%d]\n",bp->hdrsi,bundlei);
                     iguana_blockunmark(coin,block,bp,bundlei,1);
@@ -996,7 +997,7 @@ int64_t iguana_bundlecalcs(struct supernet_info *myinfo,struct iguana_info *coin
         }
     }
     bp->numcached = numcached;
-    if ( 0 && bp->numcached != numsaved )
+    if ( (0) && bp->numcached != numsaved )
         printf("[%d] emit.%u ramchain.%p numcached.%d vs numsaved.%d numhashes.%d\n",bp->hdrsi,bp->emitfinish,bp->ramchain.H.data,bp->numcached,numsaved,numhashes);
     bp->datasize = datasize;
     bp->numhashes = numhashes;
@@ -1126,7 +1127,7 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     iguana_bundlecalcs(myinfo,coin,bp,lag);
     if ( coin->blockdepth == 0 && coin->blockdepth == 0 && bp->hdrsi == coin->bundlescount-1 )
         iguana_autoextend(myinfo,coin,bp);
-    if ( 0 && bp->hdrsi == 0 )
+    if ( (0) && bp->hdrsi == 0 )
         printf("ITER utxo.%u now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",bp->utxofinish,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     bp->nexttime = (uint32_t)time(NULL) + ((bp->hdrsi > starti) ? 0 : -2);
     if ( bp->hdrsi == coin->bundlescount-1 || (bp->numhashes < bp->n && bp->bundleheight < coin->longestchain-coin->chain->bundlesize) )
@@ -1144,10 +1145,10 @@ int32_t iguana_bundleiters(struct supernet_info *myinfo,struct iguana_info *coin
     {
         max = bp->n;
         counter = iguana_bundleissuemissing(myinfo,coin,bp,1,3.);
-        if ( 0 && counter > 0 )
+        if ( (0) && counter > 0 )
             printf("starti.%d range.%d now.%u spec.%-4d bundle.%-4d h.%-4d r.%-4d s.%-4d F.%d T.%d issued.%d mb.%d/%d\n",starti,range,(uint32_t)time(NULL),bp->numspec,bp->bundleheight/coin->chain->bundlesize,bp->numhashes,bp->numrecv,bp->numsaved,bp->emitfinish,timelimit,counter,coin->MAXBUNDLES,coin->bundlescount);
     } else bp->nexttime++;
-    if ( 0 && bp->emitfinish <= 1 )
+    if ( (0) && bp->emitfinish <= 1 )
         iguana_bundleQ(myinfo,coin,bp,1000);
     else
     {
@@ -1417,7 +1418,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
                     //sortbuf[m*2] = bp->metric;
                     //sortbuf[m*2 + 1] = i;
                     m++;
-                    if ( 0 && lastpending == 0 )
+                    if ( (0) && lastpending == 0 )
                         printf("%d ",bp->numsaved);
                 }
             }
@@ -1552,7 +1553,7 @@ void iguana_bundlestats(struct supernet_info *myinfo,struct iguana_info *coin,ch
             myallocated(0,0);
         coin->lastdisp = (uint32_t)time(NULL);
     }
-    if ( 0 && (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
+    if ( (0) && (bp= coin->current) != 0 && coin->RTheight >= bp->bundleheight && coin->RTheight < bp->bundleheight+bp->n )
     {
         for (i=coin->RTheight-bp->bundleheight; i<bp->n; i++)
         {

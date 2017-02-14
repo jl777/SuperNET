@@ -818,7 +818,7 @@ cJSON *iguana_walletiterate(struct supernet_info *myinfo,struct iguana_info *coi
             }
             printf("persistent address not found in wallet, autoadd.(%s)\n",coinaddr);
         }
-        else if ( persistent_flag != 0 && 0 )
+        else if ( persistent_flag != 0 && (0) )
             printf("found persistent address in wallet\n");
     }
     portable_mutex_unlock(&myinfo->bu_mutex);
@@ -1593,7 +1593,7 @@ STRING_ARG(bitcoinrpc,dumpwallet,filename)
                     {
                         if ( (walletobj= jobj(strobj,"wallet")) != 0 )
                             jadd(retjson,"wallet",jduplicate(walletobj));
-                        if ( 0 && (walletobj= iguana_walletjson(myinfo)) != 0 )
+                        if ( (0) && (walletobj= iguana_walletjson(myinfo)) != 0 )
                             jadd(retjson,"memory",walletobj);
                         free_json(strobj);
                     }
