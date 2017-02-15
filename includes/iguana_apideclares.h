@@ -77,6 +77,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 TWO_STRINGS(basilisk,refresh,symbol,address);
+STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr);

@@ -518,6 +518,80 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     return(rawtx);
 }
 
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode)
+{
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,i,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *sobj,*vins=0,*item; uint64_t value,avail=0,total,change,interests; struct iguana_outpoint *unspents = 0;
+    *vinsp = 0;
+    max = 0;
+    interests = 0;
+    if ( (n= cJSON_GetArraySize(utxos)) == 0 )
+        return(0);
+    for (i=0; i<n; i++)
+    {
+        item = jitem(utxos,i);
+        if ( (sobj= jobj(item,"scriptPubKey")) == 0 || (spendscriptstr= jstr(sobj,"hex")) == 0 )
+        {
+            printf("no spendscript (%s)\n",jprint(item,0));
+            continue;
+        }
+        unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
+        value = jdouble(item,"value") * SATOSHIDEN;
+        interests += SATOSHIDEN * jdouble(item,"interest");
+        iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
+        avail += value;
+    }
+    if ( unspents == 0 )
+        return(0);
+    num = max;
+    printf("avail %.8f interests %.8f satoshis %.8f, txfee %.8f vin0.scriptlen %d\n",dstr(avail),dstr(interests),dstr(satoshis),dstr(txfee),unspents[0].spendlen);
+    if ( txobj != 0 && avail >= satoshis+txfee )
+    {
+        if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
+        {
+            if ( total < (satoshis + txfee) )
+            {
+                free_json(vins);
+                free(unspents);
+                printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
+                return(0);
+            }
+            total += interests;
+            if ( (change= (total - (satoshis + txfee))) > 10000 && (changeaddr == 0 || changeaddr[0] == 0) )
+            {
+                printf("no changeaddr for %.8f\n",dstr(change));
+                free_json(vins);
+                free(unspents);
+                return(0);
+            }
+            iguana_createvins(myinfo,coin,txobj,vins);
+            if ( change > 10000 )
+            {
+                if ( iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
+                {
+                    free_json(vins);
+                    free(unspents);
+                    printf("illegal destination address.(%s)\n",changeaddr);
+                    return(0);
+                }
+                bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+                spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+                bitcoin_txoutput(txobj,spendscript,spendlen,change);
+            }
+            if ( vins != 0 && V == 0 )
+            {
+                V = calloc(cJSON_GetArraySize(vins),sizeof(*V)), allocflag = 1;
+                //iguana_vinprivkeys(myinfo,coin,V,vins);
+            }
+            rawtx = bitcoin_json2hex(myinfo,coin,&txid,txobj,V);
+            if ( allocflag != 0 )
+                free(V);
+        }
+    }
+    free(unspents);
+    *vinsp = vins;
+    return(rawtx);
+}
+
 void iguana_RTunspentslock(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
     struct iguana_outpoint spentpt; char coinaddr[64]; int32_t i,RTspentflag,num,spentheight,lockedflag;

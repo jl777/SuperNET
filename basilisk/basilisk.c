@@ -1115,7 +1115,7 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
                         break;
                 if ( i == n )
                 {
-                    printf("FOUND NEW %s\n",jprint(item2,0));
+                    //printf("FOUND NEW %s\n",jprint(item2,0));
                     jaddi(array3,jduplicate(item2));
                 }
             }
@@ -1138,7 +1138,10 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
                     {
                         if ( jdouble(item2,"value") > 0 )
                         {
-                            //printf("%s, ",jprint(item2,0));
+                            jaddbits256(item2,"txid",txid);
+                            jaddnum(item2,"vout",vout);
+                            jaddnum(item2,"amount",jdouble(item2,"value"));
+                            //printf("%s\n",jprint(item2,0));
                             jaddi(array3,item2);
                         }
                         else free_json(item2);
@@ -1152,4 +1155,21 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
     }
     return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
 }
+
+STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
+{
+    char *destaddr,*changeaddr; uint64_t satoshis,txfee; int32_t completed,sendflag;
+    sendflag = jint(vals,"sendflag");
+    satoshis = jdouble(vals,"amount") * SATOSHIDEN;
+    destaddr = jstr(vals,"destaddr");
+    changeaddr = jstr(vals,"changeaddr");
+    if ( destaddr != 0 && changeaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        if ( (txfee= jdouble(vals,"txfee") * SATOSHIDEN) == 0 )
+            txfee = coin->txfee;
+        return(iguana_utxorawtx(myinfo,coin,destaddr,changeaddr,satoshis,txfee,&completed,sendflag,utxos));
+    }
+    return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"

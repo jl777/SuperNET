@@ -639,6 +639,7 @@ int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n);
 void iguana_schnorr(struct supernet_info *myinfo);
 void iguana_fixsecp(struct supernet_info *myinfo);
 
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
 
 #include "../includes/iguana_api.h"
 
