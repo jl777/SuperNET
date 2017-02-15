@@ -1174,6 +1174,6 @@ STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
 }
 
 
-int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timelocked,char *destaddr,bits256 txid,int32_t vout)
+//int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timelocked,char *destaddr,bits256 txid,int32_t vout)
 
 #include "../includes/iguana_apiundefs.h"
