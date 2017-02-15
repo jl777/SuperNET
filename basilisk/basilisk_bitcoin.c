@@ -633,6 +633,8 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         else
         {
             timelocked = (uint32_t)(time(NULL)+timelock);
+            if ( (timelocked % 3600) != 0 )
+                timelocked += (3600 - (timelocked % 3600));
             p2shlen = bitcoin_timelockspend(p2shscript,0,rmd160,timelocked);
             calc_rmd160(0,rmd160,p2shscript,p2shlen);
             spendlen = bitcoin_p2shspend(script,0,rmd160);
