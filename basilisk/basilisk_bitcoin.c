@@ -610,7 +610,7 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cha
                     {
                         //printf("send signedtx.(%s)\n",signedtx);
                         txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-                        jaddbits256(retjson,"sentflag",txid);
+                        jaddbits256(retjson,"sent",txid);
                     }
                 }
             } else printf("error signing raw utxoduplicates tx\n");
