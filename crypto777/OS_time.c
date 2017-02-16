@@ -552,7 +552,7 @@ uint32_t OS_conv_datenum(int32_t datenum,int32_t hour,int32_t minute,int32_t sec
 
 int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // gmtime -> datenum + number of seconds
 {
-    struct tm tm,*ptr; int32_t datenum; uint32_t checktime; char buf[64]; struct tai t; struct taitime ct;
+    struct tai t; struct taitime ct;
     if ( 1 )
     {
         *tp = t = utc2tai((uint32_t)timestamp);
@@ -560,8 +560,9 @@ int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // g
         *secondsp = (ct.hour*3600 + ct.minute*60 + ct.second);
         return(calc_datenum(ct.date.year,ct.date.month,ct.date.day));
     }
-    else
+    /*else
     {
+        struct tm tm,*ptr; int32_t datenum; uint32_t checktime; char buf[64];
         if ( (ptr= gmtime(&timestamp)) != 0 )
             tm = *ptr;;
         strftime(buf,sizeof(buf), "%Y-%m-%dT%H:%M:%SZ",&tm); //printf("%s\n",buf);
@@ -572,7 +573,7 @@ int32_t OS_conv_unixtime(struct tai *tp,int32_t *secondsp,time_t timestamp) // g
             return(-1);
         }
         return(datenum);
-    }
+    }*/
 }
 
 int32_t conv_date(int32_t *secondsp,char *date)

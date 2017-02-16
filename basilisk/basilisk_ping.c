@@ -107,7 +107,7 @@ int32_t basilisk_ping_genvirts(struct supernet_info *myinfo,uint8_t *data,int32_
 
 int32_t basilisk_ping_processMSG(struct supernet_info *myinfo,uint32_t senderipbits,uint8_t *data,int32_t datalen)
 {
-    int32_t i,msglen,len=0; uint8_t num,keylen,*message,*key; uint32_t duration;
+    int32_t i,msglen=0,len=0; uint8_t num,keylen,*message,*key; uint32_t duration;
     if ( (num= data[len++]) > 0 )
     {
         //printf("processMSG num.%d datalen.%d\n",num,datalen);

@@ -231,7 +231,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 }
             } else break;
         }
-        printf("finished txidinit fpos %ld vs lastpos %ld\n",ftell(fp),lastpos);
+        printf("%s finished txidinit fpos %ld vs lastpos %ld\n",coin->symbol,ftell(fp),lastpos);
         fseek(fp,lastpos,SEEK_SET);
     } else fp = fopen(fname,"wb+");
     return(fp);
@@ -264,7 +264,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                 else break;
             } else break;
         }
-        printf("finished spendinit fpos %ld vs lastpos %ld\n",ftell(fp),lastpos);
+        printf("%s finished spendinit fpos %ld vs lastpos %ld\n",coin->symbol,ftell(fp),lastpos);
         fseek(fp,lastpos,SEEK_SET);
         HASH_ITER(hh,coin->kmd_transactions,ptr,tmp)
         {
@@ -723,7 +723,7 @@ void kmd_bitcoinscan()
                 {
                     if ( (coin= iguana_coinfind(jstri(array,i))) != 0 && strcmp(coin->symbol,"BTC") != 0 )
                     {
-                        if ( strcmp("KMD",coin->symbol) == 0 )
+                        //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
                     }
                 }

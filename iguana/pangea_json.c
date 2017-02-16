@@ -227,6 +227,7 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
         jaddi64bits(array,tp->active[i]!=0?tp->active[i]->nxt64bits:0);
     jadd(json,"addrs",array);*/
     total = 0;
+    str = "error";
     for (iter=0; iter<6; iter++)
     {
         array = cJSON_CreateArray();
@@ -243,22 +244,23 @@ cJSON *pangea_tablestatus(struct supernet_info *myinfo,struct table_info *tp)
                     case 3: val = p->betstatus; str = "status"; break;
                     case 4: val = p->bets; str = "bets"; break;
                     case 5: val = p->won; str = "won"; break;
+                    default: str = "error"; break;
                 }
             }
             if ( iter == 5 )
                 won[i] = val;
             else
             {
-            if ( iter == 3 )
-                jaddistr(array,pangea_statusstr((int32_t)val));
-            else
-            {
-                if ( iter == 4 )
-                    total += val, bets[i] = val;
-                else if ( iter == 2 )
-                    snapshot[i] = val;
-                jaddinum(array,val);
-            }
+                if ( iter == 3 )
+                    jaddistr(array,pangea_statusstr((int32_t)val));
+                else
+                {
+                    if ( iter == 4 )
+                        total += val, bets[i] = val;
+                    else if ( iter == 2 )
+                        snapshot[i] = val;
+                    jaddinum(array,val);
+                }
             }
         }
         jadd(json,str,array);

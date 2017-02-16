@@ -811,7 +811,7 @@ int32_t pangea_lastman(struct supernet_info *myinfo,struct table_info *tp)
             printf("DUPLICATE LASTMAN!\n");
             return(1);
         }
-        if ( 0 && tp->priv.myind == activej && tp->priv.automuck == 0 )
+        if ( (0) && tp->priv.myind == activej && tp->priv.automuck == 0 )
         {
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[0].bytes,sizeof(tp->priv.holecards[0]),tp->priv.cardis[0],tp->priv.cardis[0] != 0xff);
             pangea_sendcmd(myinfo,tp,"faceup",-1,tp->priv.holecards[1].bytes,sizeof(tp->priv.holecards[1]),tp->priv.cardis[1],tp->priv.cardis[1] != 0xff);

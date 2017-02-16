@@ -138,7 +138,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     else specialcase = 0;
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
-    if ( specialcase != 0 && 0 )
+    if ( specialcase != 0 && (0) )
         printf("<<<<<<<<<<< bitcoind_RPC: debug.(%s) url.(%s) command.(%s) params.(%s)\n",debugstr,url,command,params);
 try_again:
     if ( retstrp != 0 )
@@ -235,7 +235,7 @@ try_again:
         }
         else
         {
-            if ( 0 && specialcase != 0 )
+            if ( (0) && specialcase != 0 )
                 fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,s.ptr);
             count2++;
             elapsedsum2 += (OS_milliseconds() - starttime);
@@ -244,9 +244,9 @@ try_again:
             return(s.ptr);
         }
     }
-    printf("bitcoind_RPC: impossible case\n");
-    free(s.ptr);
-    return(0);
+    //printf("bitcoind_RPC: impossible case\n");
+    //free(s.ptr);
+    //return(0);
 }
 
 /************************************************************************

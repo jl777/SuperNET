@@ -681,7 +681,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     } else printf("error creating request\n");
     if ( datalen > 0 )
     {
-        uint32_t msgid,crc,crcs[2],numiters = 0; uint8_t buf[4096];
+        uint32_t msgid,crc=0,crcs[2],numiters = 0; uint8_t buf[4096];
         memset(hash.bytes,0,sizeof(hash));
         msgid = (uint32_t)time(NULL);
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);

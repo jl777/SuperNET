@@ -200,7 +200,7 @@ cJSON *SuperNET_helpjson()
 
 int32_t agentform(FILE *fp,char *form,int32_t max,char *agent,cJSON *methoditem)
 {
-    cJSON *item,*fieldsarray; int32_t j,m,width,size = 0;
+    cJSON *item,*fieldsarray; int32_t j,m,width=1,size = 0;
     char *methodstr,*typestr,outstr[2048],outstr2[2048],fields[8192],str[2],agent_method[256],*fieldname;
     form[0] = 0;
     if ( (methodstr= jstr(methoditem,"method")) == 0 )
@@ -293,7 +293,7 @@ int32_t templates_emit(char *retbuf,int32_t maxsize,char *template,char *agent,c
 
 int32_t pretty_form(FILE *fp,char *formheader,char *formfooter,char *fieldtemplate,char *agent,cJSON *methoditem,cJSON *helpitem,char *suffix)
 {
-    cJSON *item,*fieldsarray; int32_t j,m,formsize,fieldsize,iter,width,size = 0;
+    cJSON *item,*fieldsarray; int32_t j,m,formsize,fieldsize,iter,width=1,size = 0;
     char *methodstr,*typestr,*fieldname,*helpstr,*curlstr,*urlstr,*itemhelp;
     char outstr[2048],outstr2[2048],str[2],widthstr[16],both[512];
     if ( (methodstr= jstr(methoditem,"method")) == 0 )

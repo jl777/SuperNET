@@ -309,8 +309,8 @@ int32_t tradebots_calcpreds(float *RTpreds,struct tradebot_arbpair *pair,double 
 void tradebots_calcanswers(struct tradebot_arbpair *pair)
 {
     double highbid,lowask,futurebid,futureask,ave,vol,bidaves[TRADEBOTS_NUMDECAYS],askaves[TRADEBOTS_NUMDECAYS],bidslopes[TRADEBOTS_NUMDECAYS],askslopes[TRADEBOTS_NUMDECAYS];
-    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin,futuremax,minval,maxval,*hblas = 0;
-    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi;
+    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin=0,futuremax=0,minval=0,maxval=0,*hblas = 0;
+    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi=0;
     OCAS_PLUS_INF = _OCAS_PLUS_INF; OCAS_NEG_INF = -_OCAS_PLUS_INF;
     if ( pair->fp != 0 )
     {
@@ -1143,7 +1143,7 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 
 void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t numbids,int32_t numasks)
 {
-    double price,profitmargin,volume; struct tradebot_arbpair *pair;
+    double price,profitmargin=0.,volume; struct tradebot_arbpair *pair;
     if ( strcmp(rel,"NXT") == 0 && strcmp(base,"BTC") != 0 && (base= NXT_assetnamefind(base)) == 0 )
     {
         //printf("reject %s %s/%s\n",exchange,base,rel);

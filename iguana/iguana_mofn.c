@@ -262,7 +262,7 @@ void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _ex
     for (i=255; i<510; i++)
         _exps[i] = _exps[i % 255];
     _logs[0] = 0; // can't log(0) so just set it neatly to 0
-    if ( 0 )
+    if ( (0) )
     {
         void test_mofn(struct supernet_info *myinfo);
         gfshare_test(myinfo,6,11,32);
@@ -602,7 +602,7 @@ void test_mofn(struct supernet_info *myinfo)
         {
             if ( memcmp(secret.bytes,recover.bytes,sizeof(secret)) != 0 )
                 printf("FAILED m.%d M.%d N.%d\n",m,M,N);
-            else if ( 0 )
+            else if ( (0) )
             {
                 char str[65];
                 printf("%s PASSED m.%d M.%d N.%d\n",bits256_str(str,recover),m,M,N);
@@ -658,6 +658,7 @@ int32_t iguana_schnorr_peersign(void *ctx,uint8_t *allpub33,uint8_t *partialsig6
 bits256 iguana_schnorr_noncepair(void *ctx,bits256 *pubkey,uint8_t odd_even,bits256 msg256,bits256 privkey,int32_t maxj)
 {
     bits256 privnonce; int32_t j; uint8_t pubkey33[33];
+    memset(privnonce.bytes,0,sizeof(privnonce));
     for (j=0; j<maxj; j++)
     {
         privnonce = bitcoin_schnorr_noncepair(ctx,pubkey33,msg256,privkey);
@@ -780,7 +781,7 @@ void iguana_schnorr(struct supernet_info *myinfo)
             printf("error combining k.%d sig64 iter.%d\n",k,iter);
         else if ( bitcoin_schnorr_verify(myinfo->ctx,sig64,msg256,allpub2,33) < 0 )
             printf("allpub2 error verifying combined sig k.%d\n",k);
-        else if ( 0 ) // doesnt replicate with subsets
+        else if ( (0) ) // doesnt replicate with subsets
         {
             if ( bitcoin_pubkey_combine(myinfo->ctx,allpub,0,pubkeys,n,0,0) == 0 )
             {
