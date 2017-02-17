@@ -380,7 +380,7 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
 
 cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
     if ( array == 0 )
         array = cJSON_CreateArray();
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
