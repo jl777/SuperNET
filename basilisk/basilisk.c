@@ -484,6 +484,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "tradebots_marketmaker.c"
 #include "tradebots_liquidity.c"
 #include "basilisk_tradebot.c"
 #include "basilisk_swap.c"

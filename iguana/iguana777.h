@@ -88,6 +88,8 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
+
 struct liquidity_info
 {
     char base[16],rel[16],exchange[16];
@@ -128,7 +130,7 @@ struct supernet_info
     // fadedreamz
 	struct peggy_info *PEGS;
     void *PAXDATA;
-    struct liquidity_info linfos[512];
+    struct liquidity_info linfos[512]; cJSON *liquidity_currencies; struct pending_trade *trades; portable_mutex_t pending_mutex;
     struct komodo_notaries NOTARY;
     char seedipaddr[64]; uint32_t dpowipbits[128]; int32_t numdpowipbits; portable_mutex_t notarymutex,dpowmutex;
     char dexseed_ipaddrs[2][64]; uint32_t dexipbits[128]; int32_t numdexipbits; portable_mutex_t dexmutex;

@@ -1056,7 +1056,7 @@ struct liquidity_info *_default_lifind(struct supernet_info *myinfo,int32_t *dir
 void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
     // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir;
+    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir; char *tradestr=0; cJSON *tradejson;
     srcamount = swap->I.req.srcamount;
     destamount = swap->I.req.destamount;
     profitmargin = (double)swap->I.req.profitmargin / 1000000.;
@@ -1101,8 +1101,8 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
             if ( dir < 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
         }
     }
     else
@@ -1111,9 +1111,19 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
             if ( dir > 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
         }
+    }
+    if ( tradestr != 0 )
+    {
+        if ( (tradejson= cJSON_Parse(tradestr)) != 0 )
+        {
+            if ( jobj(tradejson,"error") == 0 ) // balancing is opposite trade
+                tradebot_pendingadd(myinfo,tradejson,swap->I.req.dest,destamount,swap->I.req.src,srcamount);
+            else free_json(tradejson);
+        }
+        free(tradestr);
     }
 }
 

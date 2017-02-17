@@ -341,10 +341,32 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     return(txid);
 }
 
+uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,uint64_t value)
+{
+    int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
+    if ( (minutes= ((uint32_t)time(NULL) - 60 - txlocktime) / 60) >= 60 )
+    {
+        denominator = (((uint64_t)365 * 24 * 60) / minutes);
+        if ( denominator == 0 )
+            denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
+        if ( value > 25000LL*SATOSHIDEN && chainheight > 155949 )
+        {
+            numerator = (value / 20); // assumes 5%!
+            interest = (numerator / denominator);
+        }
+        else if ( value >= 10*SATOSHIDEN )
+        {
+            numerator = (value * KOMODO_INTEREST);
+            interest = (numerator / denominator) / SATOSHIDEN;
+        }
+        fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
+    }
+    return(interest);
+}
+
 uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,uint64_t value)
 {
-    char *retstr; int32_t height; cJSON *retjson; struct iguana_txid T,*tx;
-    int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
+    char *retstr; int32_t height; cJSON *retjson; struct iguana_txid T,*tx; uint64_t interest=0;
     if ( coin->FULLNODE < 0 ) // komodod is running
     {
         if ( (retjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
@@ -367,25 +389,9 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
     }
     else // we have it local
     {
-        if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount)) != 0 && tx->locktime >LOCKTIME_THRESHOLD )
+        if ( (tx= iguana_txidfind(coin,&height,&T,txid,coin->bundlescount)) != 0 && tx->locktime > LOCKTIME_THRESHOLD )
         {
-            if ( (minutes= ((uint32_t)time(NULL) - 60 - tx->locktime) / 60) >= 60 )
-            {
-                denominator = (((uint64_t)365 * 24 * 60) / minutes);
-                if ( denominator == 0 )
-                    denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
-                if ( value > 25000LL*SATOSHIDEN && height > 155949 )
-                {
-                    numerator = (value / 20); // assumes 5%!
-                    interest = (numerator / denominator);
-                }
-                else if ( value >= 10*SATOSHIDEN )
-                {
-                    numerator = (value * KOMODO_INTEREST);
-                    interest = (numerator / denominator) / SATOSHIDEN;
-                }
-                fprintf(stderr,"komodo_interest %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",(long long)value,(double)value/SATOSHIDEN,tx->locktime,(uint32_t)time(NULL),minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
-            }
+            interest = _iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->locktime,value);
         }
     }
     char str[65]; printf("interest for %s.v%d %.8f %.8f\n",bits256_str(str,txid),vout,dstr(value),dstr(interest));
