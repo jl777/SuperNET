@@ -451,7 +451,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
             }
             ptr = prev;
         }
-    } else printf("no valid entry for (%s)\n",coinaddr);
+    } else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
     return(array);
 }
 
