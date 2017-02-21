@@ -617,10 +617,17 @@ TWO_STRINGS(dex,listunspent,symbol,address)
 {
     if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
     {
-        char url[1024],*retstr;
+        char url[1024],*retstr; int32_t n; cJSON *retjson,*data;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
         if ( (retstr= issue_curl(url)) != 0 )
         {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                data = jarray(&n,retjson,"data");
+                free(retstr);
+                retstr = jprint(data,0);
+                free_json(retjson);
+            }
             return(retstr);
         }
     }
@@ -631,7 +638,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
     if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
     {
-        char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3; int32_t i,n;
+        char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3,*data,*data2; int32_t i,n;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/transactions?api_key=%s",address,myinfo->blocktrail_apikey);
         if ( (retstr= issue_curl(url)) != 0 )
         {
@@ -640,11 +647,13 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 && (retjson2= cJSON_Parse(retstr2)) != 0 )
                 {
-                    retjson3 = jduplicate(retjson);
-                    if ( (n= cJSON_GetArraySize(retjson2)) > 0 )
+                    data = jarray(&n,retjson,"data");
+                    data2 = jarray(&n,retjson2,"data");
+                    retjson3 = jduplicate(data);
+                    if ( n > 0 )
                     {
                         for (i=0; i<n; i++)
-                            jaddi(retjson3,jduplicate(jitem(retjson2,i)));
+                            jaddi(retjson3,jduplicate(jitem(data2,i)));
                     }
                     printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
                     free(retstr);
