@@ -1904,7 +1904,7 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             pvals[4] = PAX_val32(dp->btcusd * .001);
             pvals[5] = PAX_val32(dp->CNYUSD);
             if ( dispflag != 0 )
-                printf("KMD %f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
+                printf("KMD %.8f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
             sprintf(fname,"/%s/.komodo/komodofeed",userhome);
             if ( (fp= fopen(fname,"wb")) != 0 )
             {
