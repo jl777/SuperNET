@@ -125,3 +125,7 @@ iguana/tmp/KMD/0/0/.tmpmarker
 iguana/tmp/KMD/peers.txt
 
 iguana/tmp/KMD/RT/.tmpmarker
+
+*.xcworkspacedata
+
+*.xcuserstate
