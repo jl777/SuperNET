@@ -210,7 +210,7 @@ char *ORDERSTATUS(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson
 
 char *CANCELORDER(struct exchange_info *exchange,uint64_t quoteid,cJSON *argjson)
 {
-    char payload[1024],*orderstr,orderbuf[512],*retstr = 0; cJSON *json;
+    char payload[1024],*orderstr=0,orderbuf[512],*retstr = 0; cJSON *json;
     if ( argjson != 0 )
         orderstr = jstr(argjson,"uuid");//, printf("cancel.(%s)\n",jprint(argjson,0));
     if ( orderstr == 0 )

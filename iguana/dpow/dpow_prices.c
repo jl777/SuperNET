@@ -1884,41 +1884,44 @@ int32_t PAX_idle(struct supernet_info *myinfo)//struct PAX_data *argdp,int32_t i
             PAX_RTupdate(dp->cryptovols,dp->RTmetals,dp->RTprices,dp);
             PAX_emitprices(pvals,dp);
         }
-        PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
         timestamp = (uint32_t)time(NULL);
-        int32_t dispflag = ((rand() % 100) == 0);
-        for (i=0; i<MAX_CURRENCIES; i++)
+        int32_t dispflag = ((rand() % 64) == 0);
+        if ( dp->kmdbtc == 0 || dispflag != 0 )
         {
-            splineval = PAX_splineval(&dp->splines[i],timestamp,0);
-            pvals[6+i] = PAX_val32(splineval);
+            PAX_update(dp,&dp->btcusd,&dp->kmdbtc);
+            for (i=0; i<MAX_CURRENCIES; i++)
+            {
+                splineval = PAX_splineval(&dp->splines[i],timestamp,0);
+                pvals[6+i] = PAX_val32(splineval);
+                if ( dispflag != 0 )
+                    printf("%u ",pvals[6+i]);
+            }
+            if ( pvals[6+CNY] != 0 && pvals[6+USD] != 0 )
+                dp->CNYUSD = ((double)pvals[6 + CNY] / pvals[6 + USD]) * MINDENOMS[USD] / MINDENOMS[CNY];
+            pvals[1] = timestamp;
+            pvals[2] = MAX_CURRENCIES + 3;
+            pvals[3] = PAX_val32(dp->kmdbtc * 1000);
+            pvals[4] = PAX_val32(dp->btcusd * .001);
+            pvals[5] = PAX_val32(dp->CNYUSD);
             if ( dispflag != 0 )
-                printf("%u ",pvals[6+i]);
-        }
-        if ( pvals[6+CNY] != 0 && pvals[6+USD] != 0 )
-            dp->CNYUSD = ((double)pvals[6 + CNY] / pvals[6 + USD]) * MINDENOMS[USD] / MINDENOMS[CNY];
-        pvals[1] = timestamp;
-        pvals[2] = MAX_CURRENCIES + 3;
-        pvals[3] = PAX_val32(dp->kmdbtc * 1000);
-        pvals[4] = PAX_val32(dp->btcusd * .001);
-        pvals[5] = PAX_val32(dp->CNYUSD);
-        if ( dispflag != 0 )
-            printf("KMD %f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
-        sprintf(fname,"/%s/.komodo/komodofeed",userhome);
-        if ( (fp= fopen(fname,"wb")) != 0 )
-        {
-            for (i=1; i<MAX_CURRENCIES+6; i++)
-                iguana_rwnum(1,&data[i*sizeof(uint32_t)],sizeof(*pvals),(void *)&pvals[i]);
-            pvals[0] = calc_crc32(0,(void *)&data[sizeof(uint32_t)],(MAX_CURRENCIES+5)*sizeof(*pvals));
-            iguana_rwnum(1,data,sizeof(*pvals),(void *)&pvals[0]);
-            if ( fwrite(data,sizeof(*pvals),MAX_CURRENCIES+6,fp) != MAX_CURRENCIES+6 )
-                printf("error writing pvals to (%s)\n",fname);
-            fclose(fp);
-        }
-        if ( dispflag != 0 )
-        {
-            for (i=0; i<6; i++)
-                printf("%u ",pvals[i]);
-            printf("pvals -> %s\n",fname);
+                printf("KMD %f BTC %f CNY %f (%f)\n",dp->kmdbtc,dp->btcusd,dp->CNYUSD,1./dp->CNYUSD);
+            sprintf(fname,"/%s/.komodo/komodofeed",userhome);
+            if ( (fp= fopen(fname,"wb")) != 0 )
+            {
+                for (i=1; i<MAX_CURRENCIES+6; i++)
+                    iguana_rwnum(1,&data[i*sizeof(uint32_t)],sizeof(*pvals),(void *)&pvals[i]);
+                pvals[0] = calc_crc32(0,(void *)&data[sizeof(uint32_t)],(MAX_CURRENCIES+5)*sizeof(*pvals));
+                iguana_rwnum(1,data,sizeof(*pvals),(void *)&pvals[0]);
+                if ( fwrite(data,sizeof(*pvals),MAX_CURRENCIES+6,fp) != MAX_CURRENCIES+6 )
+                    printf("error writing pvals to (%s)\n",fname);
+                fclose(fp);
+            }
+            if ( dispflag != 0 )
+            {
+                for (i=0; i<6; i++)
+                    printf("%u ",pvals[i]);
+                printf("pvals -> %s\n",fname);
+            }
         }
     }
     return(0);
