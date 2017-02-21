@@ -995,6 +995,7 @@ char *exchanges777_Qrequest(struct exchange_info *exchange,int32_t func,char *ba
     safecopy(req->rel,rel,sizeof(req->rel));
     req->retstrp = calloc(1,sizeof(void *));
     req->orderid = orderid;
+    req->argjson = jduplicate(argjson);
     //printf("Qrequest\n");
     return(exchanges777_submit(exchange,req,func,maxseconds));
 }
@@ -1244,26 +1245,42 @@ TWO_STRINGS(InstantDEX,balance,exchange,base)
 
 TWO_STRINGS(InstantDEX,orderstatus,exchange,orderid)
 {
-    struct exchange_info *ptr;
+    struct exchange_info *ptr; cJSON *argjson; char *retstr; uint64_t num = 0;
     if ( remoteaddr == 0 )
     {
         if ( myinfo->expiration == 0 )
             return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
+        {
+            argjson = cJSON_CreateObject();
+            jaddstr(argjson,"uuid",orderid);
+            if ( is_decimalstr(orderid) != 0 )
+                num = calc_nxt64bits(orderid);
+            retstr = exchanges777_Qrequest(ptr,'P',0,0,juint(json,"maxseconds"),num,0,0,argjson);
+            free_json(argjson);
+            return(retstr);
+        }
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
     } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }
 
 TWO_STRINGS(InstantDEX,cancelorder,exchange,orderid)
 {
-    struct exchange_info *ptr;
+    struct exchange_info *ptr; cJSON *argjson; char *retstr; uint64_t num = 0;
     if ( remoteaddr == 0 )
     {
         if ( myinfo->expiration == 0 )
             return(clonestr("{\"error\":\"need to unlock wallet\"}"));
         if ( (ptr= exchanges777_info(exchange,1,json,remoteaddr)) != 0 )
-            return(exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),calc_nxt64bits(orderid),0,0,json));
+        {
+            argjson = cJSON_CreateObject();
+            jaddstr(argjson,"uuid",orderid);
+            if ( is_decimalstr(orderid) != 0 )
+                num = calc_nxt64bits(orderid);
+            retstr = exchanges777_Qrequest(ptr,'C',0,0,juint(json,"maxseconds"),num,0,0,argjson);
+            free_json(argjson);
+            return(retstr);
+        }
         else return(clonestr("{\"error\":\"cant find or create exchange\"}"));
     } else return(clonestr("{\"error\":\"no remote for this API\"}"));
 }

@@ -1,0 +1,1 @@
+./marketmaker "{\"passphrase\":\"<yourstrongpassphrasehere>\",\"base\":\"KMD\",\"rel\":\"BTC\",\"name\":\"komodo\",\"exchange\":\"bittrex\",\"apikey\":\"<yourbittrexapikey>\",\"apisecret\":\"<yourbittrexapisecret>\",\"profitmargin\":0.001,\"maxexposure\":0.1,\"lotratio\":0.02,\"start_rel\":0.1,\"start_base\":1000}"

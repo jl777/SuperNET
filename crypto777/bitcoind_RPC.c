@@ -109,6 +109,8 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
  *
  ************************************************************************/
 
+static int32_t USE_JAY;
+
 char *Jay_NXTrequest(char *command,char *params)
 {
     char *retstr = 0;
@@ -127,7 +129,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
     }
-    if ( USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0) )
+    if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {
         if ( (databuf= Jay_NXTrequest(command,params)) != 0 )
             return(databuf);
@@ -177,9 +179,12 @@ try_again:
                 bracket0 = (char *)"[";
                 bracket1 = (char *)"]";
             }
-            
+            char agentstr[64];
             databuf = (char *)malloc(256 + strlen(command) + strlen(params));
-            sprintf(databuf,"{\"id\":\"jl777\",\"method\":\"%s\",\"params\":%s%s%s}",command,bracket0,params,bracket1);
+            if ( debugstr[0] != 0 )
+                sprintf(agentstr,"\"agent\":\"%s\",",debugstr);
+            else agentstr[0] = 0;
+            sprintf(databuf,"{\"id\":\"jl777\",%s\"method\":\"%s\",\"params\":%s%s%s}",agentstr,command,bracket0,params,bracket1);
             //printf("url.(%s) userpass.(%s) databuf.(%s)\n",url,userpass,databuf);
             //
         } //else if ( specialcase != 0 ) fprintf(stderr,"databuf.(%s)\n",params);

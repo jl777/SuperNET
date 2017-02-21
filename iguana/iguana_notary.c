@@ -771,6 +771,7 @@ TWO_STRINGS(dex,listspent,symbol,address)
 
 TWO_STRINGS(dex,getbalance,symbol,address)
 {
+    char url[512],*retstr; cJSON *retjson; uint64_t val;
     if ( myinfo->DEXEXPLORER != 0 )
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
@@ -779,8 +780,48 @@ TWO_STRINGS(dex,getbalance,symbol,address)
             coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
     if ( symbol != 0 && address != 0 )
+    {
+        if ( strcmp(symbol,"BTC") == 0 )
+        {
+            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s?api_key=e5ddfdceb58fa6c1bf9411aaeff4b6ee28cbc370",address);
+            if ( (retstr= issue_curl(url)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (val= j64bits(retjson,"balance")) != 0 )
+                    {
+                        jdelete(retjson,"balance");
+                        jaddnum(retjson,"balance",dstr(val));
+                    }
+                    if ( (val= j64bits(retjson,"sent")) != 0 )
+                    {
+                        jdelete(retjson,"sent");
+                        jaddnum(retjson,"sent",dstr(val));
+                    }
+                    if ( (val= j64bits(retjson,"received")) != 0 )
+                    {
+                        jdelete(retjson,"received");
+                        jaddnum(retjson,"received",dstr(val));
+                    }
+                    if ( (val= j64bits(retjson,"unconfirmed_sent")) != 0 )
+                    {
+                        jdelete(retjson,"unconfirmed_sent");
+                        jaddnum(retjson,"unconfirmed_sent",dstr(val));
+                    }
+                    if ( (val= j64bits(retjson,"unconfirmed_received")) != 0 )
+                    {
+                        jdelete(retjson,"unconfirmed_received");
+                        jaddnum(retjson,"unconfirmed_received",dstr(val));
+                    }
+                    //printf("(%s) -> (%s)\n",retstr,jprint(retjson,0));
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            return(retstr);
+        }
         return(_dex_getbalance(myinfo,symbol,address));
-    else return(clonestr("{\"error\":\"dex getbalance null symbol, address or coin\"}"));
+    } else return(clonestr("{\"error\":\"dex getbalance null symbol, address or coin\"}"));
 }
 
 STRING_ARG(dex,explorer,symbol)

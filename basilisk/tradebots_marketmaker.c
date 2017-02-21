@@ -180,24 +180,15 @@ ZERO_ARGS(tradebot,portfolio)
     else return(jprint(portfolio,1));
 }
 
-/*li.profit = jdouble(vals,"profit");
-li.refprice = jdouble(vals,"refprice");
-li.bid = jdouble(vals,"bid");
-li.ask = jdouble(vals,"ask");
-if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
-li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.001;
-if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
-li.maxvol = li.minvol;*/
-
 ARRAY_OBJ_INT(tradebot,goals,currencies,vals,targettime)
 {
     static bits256 zero; char *targetcoin; int32_t i,n;
     if ( currencies != 0 && vals != 0 )
     {
-    // init things so automatically updates refli.bid and refli.ask
-    // volume range with margin
-    // currency percentage value in BTC? target distribution, max percentage, min percentage`
-    // min price to sell, max price to buy, max volume
+        // init things so automatically updates refli.bid and refli.ask
+        // volume range with margin
+        // currency percentage value in BTC? target distribution, max percentage, min percentage`
+        // min price to sell, max price to buy, max volume
         n = cJSON_GetArraySize(currencies);
         for (i=0; i<n; i++)
         {

@@ -1100,11 +1100,18 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         }
         else
         {
-            //printf("ARGJSON.(%s)\n",jprint(argjson,0));
-            coin = iguana_coinchoose(myinfo,symbol,argjson,port);
-            if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
-                jaddstr(argjson,"userpass",userpass);
-            retstr = SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port);
+            cJSON *arg;
+            if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
+            {
+                arg = jobj(argjson,"params");
+                if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
+                    arg = jitem(arg,0);
+            } else arg = argjson;
+            //printf("ARGJSON.(%s)\n",jprint(arg,0));
+            coin = iguana_coinchoose(myinfo,symbol,arg,port);
+            if ( userpass != 0 && jstr(arg,"userpass") == 0 )
+                jaddstr(arg,"userpass",userpass);
+            retstr = SuperNET_JSON(myinfo,coin,arg,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);
