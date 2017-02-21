@@ -220,7 +220,7 @@ THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 //TWOSTRINGS_AND_TWOHASHES_AND_TWOINTS(InstantDEX,confirm,reference,message,basetxid,reltxid,baseheight,relheight);
 
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin);
-ZERO_ARGS(tradebot,amlp);
+STRING_ARG(tradebot,amlp,blocktrail);
 ZERO_ARGS(tradebot,notlp);
 TWO_STRINGS(tradebot,gensvm,base,rel);
 ZERO_ARGS(tradebot,openliquidity);

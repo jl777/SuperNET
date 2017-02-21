@@ -127,7 +127,7 @@ struct supernet_info
     struct delayedPoW_info dPoW;
     struct basilisk_spend *spends; int32_t numspends;
     char bindaddr[64];
-    // fadedreamz
+    char blocktrail_apikey[256];
 	struct peggy_info *PEGS;
     void *PAXDATA;
     struct liquidity_info linfos[512]; cJSON *liquidity_currencies; struct pending_trade *trades; portable_mutex_t pending_mutex;

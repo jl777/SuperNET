@@ -615,11 +615,47 @@ HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
 
 TWO_STRINGS(dex,listunspent,symbol,address)
 {
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    {
+        char url[1024],*retstr;
+        sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
+        if ( (retstr= issue_curl(url)) != 0 )
+        {
+            return(retstr);
+        }
+    }
     return(_dex_listunspent(myinfo,symbol,address));
 }
 
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    {
+        char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3; int32_t i,n;
+        sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/transactions?api_key=%s",address,myinfo->blocktrail_apikey);
+        if ( (retstr= issue_curl(url)) != 0 )
+        {
+            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unconfirmed-transactions?api_key=%s",address,myinfo->blocktrail_apikey);
+            if ( (retstr2= issue_curl(url)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 && (retjson2= cJSON_Parse(retstr2)) != 0 )
+                {
+                    retjson3 = jduplicate(retjson);
+                    if ( (n= cJSON_GetArraySize(retjson2)) > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                            jaddi(retjson3,jduplicate(jitem(retjson2,i)));
+                    }
+                    printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
+                    free(retstr);
+                    free(retstr2);
+                    free_json(retjson);
+                    free_json(retjson2);
+                    return(jprint(retjson3,1));
+                }
+            }
+        }
+    }
     return(_dex_listtransactions(myinfo,symbol,address,count,skip));
 }
 
@@ -781,9 +817,9 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     }
     if ( symbol != 0 && address != 0 )
     {
-        if ( strcmp(symbol,"BTC") == 0 )
+        if ( strcmp(symbol,"BTC") == 0 && myinfo->IAMLP != 0 )
         {
-            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s?api_key=e5ddfdceb58fa6c1bf9411aaeff4b6ee28cbc370",address);
+            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s?api_key=%s",address,myinfo->blocktrail_apikey);
             if ( (retstr= issue_curl(url)) != 0 )
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )

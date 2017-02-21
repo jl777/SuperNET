@@ -129,3 +129,5 @@ iguana/tmp/KMD/RT/.tmpmarker
 *.xcworkspacedata
 
 *.xcuserstate
+
+includes/iguana_apideclares copy.h
