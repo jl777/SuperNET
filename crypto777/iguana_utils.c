@@ -1168,22 +1168,22 @@ double calc_theoretical(double weighted,double CMC_average,double changes[3])
     if ( weighted > SMALLVAL && CMC_average > SMALLVAL )
     {
         theoretical = (weighted + CMC_average) * 0.5;
-        if ( changes[0] > SMALLVAL && changes[1] > SMALLVAL && changes[2] > SMALLVAL )
+        /*if ( changes[0] > SMALLVAL && changes[1] > SMALLVAL && changes[2] > SMALLVAL )
         {
             if ( changes[0] > changes[1] && changes[1] > changes[2] ) // breakout
             {
                 adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
             }
         }
-        else if ( changes[1] < -SMALLVAL && changes[2] < -SMALLVAL ) //changes[0] < -SMALLVAL &&
+        else if ( changes[0] < -SMALLVAL && changes[1] < -SMALLVAL && changes[2] < -SMALLVAL ) //
         {
-            if ( (1) )//&& changes[0] < changes[1] && changes[1] < changes[2] ) // waterfall
+            if ( changes[0] < changes[1] && changes[1] < changes[2] ) // waterfall
             {
                 adjusted = theoretical * (1. - (changes[0] + changes[1]) * .005);
             }
         }
         if ( adjusted != 0. && theoretical != 0. )
-            theoretical = (theoretical + adjusted) * 0.5;
+            theoretical = (theoretical + adjusted) * 0.5;*/
     }
     printf("adjusted %.8f theoretical %.8f (%.8f + wt %.8f)\n",adjusted,theoretical,CMC_average,weighted);
     return(theoretical);

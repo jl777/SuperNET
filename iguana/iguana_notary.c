@@ -867,26 +867,31 @@ TWO_STRINGS(dex,getbalance,symbol,address)
             {
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
+                    //printf("balance\n");
                     if ( (val= j64bits(retjson,"balance")) != 0 )
                     {
                         jdelete(retjson,"balance");
                         jaddnum(retjson,"balance",dstr(val));
                     }
+                    //printf("sent\n");
                     if ( (val= j64bits(retjson,"sent")) != 0 )
                     {
                         jdelete(retjson,"sent");
                         jaddnum(retjson,"sent",dstr(val));
                     }
+                    //printf("received\n");
                     if ( (val= j64bits(retjson,"received")) != 0 )
                     {
                         jdelete(retjson,"received");
                         jaddnum(retjson,"received",dstr(val));
                     }
+                    //printf("unconfirmed_sent\n");
                     if ( (val= j64bits(retjson,"unconfirmed_sent")) != 0 )
                     {
                         jdelete(retjson,"unconfirmed_sent");
                         jaddnum(retjson,"unconfirmed_sent",dstr(val));
                     }
+                    //printf("unconfirmed_received\n");
                     if ( (val= j64bits(retjson,"unconfirmed_received")) != 0 )
                     {
                         jdelete(retjson,"unconfirmed_received");

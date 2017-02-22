@@ -274,7 +274,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
-        if ( (tag= j64bits(json,"tag")) == 0 )
+        if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
         {
             OS_randombytes((uint8_t *)&tag,sizeof(tag));
             jadd64bits(json,"tag",tag);
@@ -304,7 +304,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( is_cJSON_Array(retjson) == 0 )
                 {
-                    if ( j64bits(retjson,"tag") != tag )
+                    if ( jobj(retjson,"tag") == 0 || j64bits(retjson,"tag") != tag )
                     {
                         if ( jobj(retjson,"tag") != 0 )
                             jdelete(retjson,"tag");
@@ -346,7 +346,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
         timestamp = (uint32_t)time(NULL);
         jaddnum(json,"timestamp",timestamp);
     }
-    if ( (tag= j64bits(json,"tag")) == 0 )
+    if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);

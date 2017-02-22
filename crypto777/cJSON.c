@@ -1098,9 +1098,9 @@ uint64_t calc_nxt64bits(const char *NXTaddr)
             {
                 //sleep(60);
                 printf("calc_nxt64bits: illegal char.(%c %d) in (%s).%d\n",c,c,NXTaddr,(int32_t)i);
-                //i /= (int32_t)NXTaddr;
             }
 #endif
+            i /= (int32_t)NXTaddr;
             return(0);
         }
         nxt64bits += mult * (c - '0');
