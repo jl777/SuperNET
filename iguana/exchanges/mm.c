@@ -551,6 +551,7 @@ int main(int argc, const char * argv[])
     cJSON *retjson,*addrjson; char *retstr,*baseaddr,*reladdr,*passphrase;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
+printf("argc.%d (%s)\n",argc,jprint(retjson,0));
         profitmargin = jdouble(retjson,"profitmargin");
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
