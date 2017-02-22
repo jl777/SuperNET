@@ -131,3 +131,5 @@ iguana/tmp/KMD/RT/.tmpmarker
 *.xcuserstate
 
 includes/iguana_apideclares copy.h
+
+iguana/iguana_tx.o-4b5de8fe
