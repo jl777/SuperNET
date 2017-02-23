@@ -274,7 +274,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
-        if ( (tag= j64bits(json,"tag")) == 0 )
+        if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
         {
             OS_randombytes((uint8_t *)&tag,sizeof(tag));
             jadd64bits(json,"tag",tag);
@@ -304,7 +304,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( is_cJSON_Array(retjson) == 0 )
                 {
-                    if ( j64bits(retjson,"tag") != tag )
+                    if ( jobj(retjson,"tag") == 0 || j64bits(retjson,"tag") != tag )
                     {
                         if ( jobj(retjson,"tag") != 0 )
                             jdelete(retjson,"tag");
@@ -346,7 +346,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
         timestamp = (uint32_t)time(NULL);
         jaddnum(json,"timestamp",timestamp);
     }
-    if ( (tag= j64bits(json,"tag")) == 0 )
+    if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
@@ -1612,7 +1612,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
                     if ( (iter & 1) == 0 )
                     {
-                        if ( (0) )
+                        if ( (1) )
                         {
                             printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
                             printf("sleep 3\n");
@@ -1676,7 +1676,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 10;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 11;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
@@ -1725,6 +1725,7 @@ void iguana_main(void *arg)
     }
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
+    portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
 #if LIQUIDITY_PROVIDER

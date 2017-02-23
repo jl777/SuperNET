@@ -570,6 +570,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
             for (i=0; i<swap->alicespend.I.datalen; i++)
                 printf("%02x",swap->alicespend.txbytes[i]);
             printf(" <- alicespend\n\n");
+            swap->I.alicespent = 1;
             basilisk_txlog(myinfo,swap,&swap->alicespend,-1);
             return(retval);
         }
@@ -587,6 +588,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
         for (i=0; i<dest->I.datalen; i++)
             printf("%02x",dest->txbytes[i]);
         printf(" <- msigspend\n\n");
+        swap->I.bobspent = 1;
         basilisk_txlog(myinfo,swap,dest,0); // bobspend or alicereclaim
         return(retval);
     }
@@ -1738,6 +1740,19 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
     return(retval);
 }
 
+int32_t swapcompleted(struct supernet_info *myinfo,struct basilisk_swap *swap)
+{
+    if ( swap->I.iambob != 0 )
+        return(swap->I.bobspent);
+    else return(swap->I.alicespent);
+}
+
+cJSON *swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap)
+{
+    cJSON *retjson = cJSON_CreateObject();
+    return(retjson);
+}
+
 void basilisk_swaploop(void *_swap)
 {
     uint8_t *data; uint32_t expiration; uint32_t channel; int32_t retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
@@ -1906,6 +1921,12 @@ void basilisk_swaploop(void *_swap)
                 data[datalen++] = swap->I.privBn.bytes[j];
             basilisk_swapsend(myinfo,swap,0x40000000,data,datalen,0x40000000,swap->I.crcs_mypriv);
         }
+    }
+    if ( swapcompleted(myinfo,swap) > 0 ) // only if swap completed
+    {
+        if ( swap->I.iambob != 0 )
+            tradebot_pendingadd(myinfo,swapjson(myinfo,swap),swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount));
+        else tradebot_pendingadd(myinfo,swapjson(myinfo,swap),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.src,dstr(swap->I.req.srcamount));
     }
     printf("%s swap finished statebits %x\n",swap->I.iambob!=0?"BOB":"ALICE",swap->I.statebits);
     basilisk_swap_purge(myinfo,swap);

@@ -304,7 +304,7 @@ cJSON *kmd_transactionjson(int32_t height,struct kmd_transactionhh *ptr,char *ty
     return(obj);
 }
 
-cJSON *kmd_unspentjson(int32_t height,struct kmd_transaction *tx,int32_t vout)
+cJSON *kmd_unspentjson(struct iguana_info *coin,int32_t height,struct kmd_transaction *tx,int32_t vout)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"type","received");
@@ -313,6 +313,8 @@ cJSON *kmd_unspentjson(int32_t height,struct kmd_transaction *tx,int32_t vout)
     jaddbits256(item,"txid",tx->txid);
     jaddnum(item,"vout",vout);
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+        jaddnum(item,"interest",dstr(_iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->timestamp,tx->vouts[vout].amount)));
     return(item);
 }
 
@@ -376,9 +378,9 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
     return(cJSON_Parse("{\"error\":\"txid not found\"}"));
 }
 
-cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array,int32_t fulltx)
+cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i,flag = 0;
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
     if ( array == 0 )
         array = cJSON_CreateArray();
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
@@ -407,20 +409,20 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                     //    printf("mode.%d [%d] %s ht.%d amount %.8f spent.%p\n",mode,coin->kmd_height,coinaddr,ptr->tx->height,dstr(ptr->tx->vouts[i].amount),spent);
                     if ( (mode == 0 && spent == 0) || (mode == 1 && spent != 0) || mode == 2 )
                     {
-                        if ( fulltx == 0 )
+                        //if ( fulltx == 0 )
                         {
                             if ( mode == 0 )
-                                jaddi(array,kmd_unspentjson(coin->kmd_height,ptr->tx,i));
+                                jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i));
                             else if ( mode == 1 )
                                 jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
                             else if ( mode == 2 )
                             {
                                 if ( spent != 0 )
                                     jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
-                                else jaddi(array,kmd_unspentjson(coin->kmd_height,ptr->tx,i));
+                                else jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i));
                             }
                         }
-                        else if ( flag == 0 )
+                        /*else if ( flag == 0 )
                         {
                             if ( mode == 0 )
                                 jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"received"));
@@ -436,7 +438,7 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                                 else jaddi(array,kmd_transactionjson(coin->kmd_height,ptr,"received"));
                             }
                             flag = 1;
-                        }
+                        }*/
                     }
                     if ( ptr->ptrs[i<<1] != 0 )
                     {
@@ -449,18 +451,18 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
             }
             ptr = prev;
         }
-    } else printf("no valid entry for (%s)\n",coinaddr);
+    } else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
     return(array);
 }
 
 cJSON *kmd_listunspent(struct iguana_info *coin,char *coinaddr)
 {
-    return(kmd_listaddress(coin,coinaddr,0,0,0));
+    return(kmd_listaddress(coin,coinaddr,0,0));
 }
 
 cJSON *kmd_listspent(struct iguana_info *coin,char *coinaddr)
 {
-    return(kmd_listaddress(coin,coinaddr,1,0,0));
+    return(kmd_listaddress(coin,coinaddr,1,0));
 }
 
 cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
@@ -470,17 +472,17 @@ cJSON *kmd_listtransactions(struct iguana_info *coin,char *coinaddr,int32_t coun
     //    return(cJSON_Parse("[]"));
     if ( count == 0 )
         count = 100;
-    array = kmd_listaddress(coin,coinaddr,0,0,0);
-    array = kmd_listaddress(coin,coinaddr,1,array,0);
+    array = kmd_listaddress(coin,coinaddr,0,0);
+    array = kmd_listaddress(coin,coinaddr,1,array);
     return(array);
 }
 
-int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp)
+int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receivedp,uint64_t *sentp,uint64_t *interestp)
 {
     int32_t iter,i,n; cJSON *array,*item; uint64_t value;
     for (iter=1; iter<=2; iter++)
     {
-        if ( (array= kmd_listaddress(coin,coinaddr,iter,0,0)) != 0 )
+        if ( (array= kmd_listaddress(coin,coinaddr,iter,0)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
@@ -490,8 +492,10 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
                     if ( (value= jdouble(item,"amount")*SATOSHIDEN) != 0 || (value= jdouble(item,"value")*SATOSHIDEN) != 0 )
                     {
                         if ( iter == 2 )
+                        {
                             *receivedp += value;
-                        else *sentp += value;
+                            *interestp += jdouble(item,"interest") * SATOSHIDEN;
+                        } else *sentp += value;
                     }
                 }
             }
@@ -503,29 +507,31 @@ int64_t _kmd_getbalance(struct iguana_info *coin,char *coinaddr,uint64_t *receiv
 
 cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *retjson; double netbalance=0.,fbalance; uint64_t s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64]; int32_t height = coin->kmd_height+1;
+    cJSON *retjson; double netbalance=0.,fbalance; uint64_t interest,i,s,r,sent=0,received=0; int64_t balance=0; struct kmd_addresshh *addr,*tmp; char address[64]; int32_t height = coin->kmd_height+1;
     retjson = cJSON_CreateObject();
     fbalance = 0.;
+    interest = 0;
     if ( strcmp(coinaddr,"*") == 0 )
     {
         HASH_ITER(hh,coin->kmd_addresses,addr,tmp)
         {
             bitcoin_address(address,addr->type_rmd160[0],&addr->type_rmd160[1],20);
-            s = r = 0;
-            balance += _kmd_getbalance(coin,address,&r,&s);
+            s = r = i = 0;
+            balance += _kmd_getbalance(coin,address,&r,&s,&i);
             netbalance += dstr(r);
             netbalance -= dstr(s);
             if ( (r - s) > 100000*SATOSHIDEN )
-                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance);
+                printf("{\"address\":\"%s\",\"received\":%.8f,\"sent\":%.8f,\"balance\":%.8f,\"supply\":%.8f,\"supplyf\":%.8f,\"interest\":%.8f}\n",address,dstr(r),dstr(s),dstr(r)-dstr(s),dstr(balance),netbalance,dstr(interest));
             received += r;
             sent += s;
+            interest += i;
         }
         if ( strcmp("KMD",coin->symbol) == 0 )
             jaddnum(retjson,"interestpaid",dstr(balance) - 100000000 - (height*3));
     }
     else
     {
-        balance = _kmd_getbalance(coin,coinaddr,&received,&sent);
+        balance = _kmd_getbalance(coin,coinaddr,&received,&sent,&interest);
         netbalance = dstr(balance);
     }
     jaddstr(retjson,"result","success");
@@ -534,7 +540,8 @@ cJSON *kmd_getbalance(struct iguana_info *coin,char *coinaddr)
     //if ( fabs(netbalance*SATOSHIDEN - balance) > 1 )
         jaddnum(retjson,"balancef",netbalance+1./(SATOSHIDEN*2)-SMALLVAL);
     //else
-        jaddnum(retjson,"balance",dstr(balance));
+    jaddnum(retjson,"balance",dstr(balance));
+    jaddnum(retjson,"interest",dstr(interest));
     jaddnum(retjson,"height",height);
     if ( strcmp("KMD",coin->symbol) == 0 )
         jaddnum(retjson,"mined",height*3);
@@ -550,7 +557,7 @@ char *kmd_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int3
     hash2 = bits256_conv(blockhashstr);
     if ( blockhashstr == 0 || blockhashstr[0] == 0 || bits256_nonz(hash2) == 0 )
     {
-        printf("couldnt get blockhash for %u, probably curl is disabled\n",height);
+        printf("%s couldnt get blockhash for %u, probably curl is disabled %p\n",coinstr,height,blockhashstr);
         if ( blockhashstr != 0 )
             free(blockhashstr);
         if ( height == 0 )

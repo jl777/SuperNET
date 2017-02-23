@@ -1,0 +1,8 @@
+# RF4jZsF5BUckQqX5hsS68kjQMYSba8Fypm KMD 40223.19497203, REVS 101.00000000
+sleep 1
+fiat/revs sendtoaddress RF4jZsF5BUckQqX5hsS68kjQMYSba8Fypm 101.00000000
+# RGQmMzmUfa6R5dZvvL5wvy2vxPLEcgkkyC KMD 137.73071692, REVS 2.73426759
+sleep 1
+fiat/revs sendtoaddress RGQmMzmUfa6R5dZvvL5wvy2vxPLEcgkkyC 2.73426759
+
+# total KMD 0.00000000 REVS 103.73426759

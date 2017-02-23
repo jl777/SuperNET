@@ -977,7 +977,7 @@ char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *addres
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
 {
-    return(_dex_listunspentarg(myinfo,symbol,address,'U'));
+    return(_dex_listunspentarg(myinfo,symbol,address,'u')); // 'U' old variant
 }
 
 char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address)
@@ -1018,7 +1018,7 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.intarg = skip;
     dexreq.shortarg = count;
-    dexreq.func = 'L';
+    dexreq.func = '2';//'L';
     return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")));
 }
 
