@@ -137,3 +137,7 @@ iguana/iguana_tx.o-4b5de8fe
 iguana/confs/c6faccf6b625bbb826f47b77c3274e985db7b0a47d435f32bea2f7f3724cdd17
 
 iguana/confs/c6faccf6b625bbb826f47b77c3274e985db7b0a47d435f32bea2f7f3724cdd17.old
+
+iguana/marketmaker
+
+iguana/secp256k1.o-501dfbfe

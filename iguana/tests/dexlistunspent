@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"19rjYdJtRN3qoammX3r1gxy9bvh8p8DmRc\",\"symbol\":\"BTC\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"listunspent2\",\"address\":\"RDKb3QykRJNfLKWLcbbv9z7xqbtxwB54GC\",\"symbol\":\"KMD\"}"

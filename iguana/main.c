@@ -484,6 +484,8 @@ void mainloop(struct supernet_info *myinfo)
             }
             usleep(30000);
         }
+        if ( myinfo->DEXEXPLORER != 0 )
+            kmd_bitcoinscan();
         //pangea_queues(SuperNET_MYINFO(0));
         //if ( flag == 0 )
         //    usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
@@ -1612,7 +1614,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
                     if ( (iter & 1) == 0 )
                     {
-                        if ( (1) )
+                        if ( (0) )
                         {
                             printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
                             printf("sleep 3\n");
@@ -1676,7 +1678,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 11;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 12;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {

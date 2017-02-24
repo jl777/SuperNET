@@ -1259,7 +1259,7 @@ double weighted_orderbook(double *avebidp,double *aveaskp,double *highbidp,doubl
     return(weighted);
 }
 
-double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel)
+double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep)
 {
     static int32_t counter;
     char *cmcstr; cJSON *cmcjson,*item; double weighted,theoretical = 0.;
@@ -1272,6 +1272,7 @@ double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *
                 item = cmcjson;
             else item = jitem(cmcjson,0);
             *CMC_averagep = jdouble(item,"price_btc");
+            *USD_averagep = jdouble(item,"price_usd");
             changes[0] = jdouble(item,"percent_change_1h");
             changes[1] = jdouble(item,"percent_change_24h");
             changes[2] = jdouble(item,"percent_change_7d");

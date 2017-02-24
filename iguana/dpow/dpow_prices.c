@@ -1154,6 +1154,7 @@ cJSON *url_json2(char *url)
 double PAX_yahoo(char *metal)
 {
     // http://finance.yahoo.com/webservice/v1/symbols/allcurrencies/quote?format=json
+    // http://finance.yahoo.com/webservice/v1/symbols/EUR=USD/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XAU=X/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XAG=X/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XPT=X/quote?format=json
@@ -1450,7 +1451,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
     }
     if ( 1 )
     {
-        double avebid,aveask,bidvol,askvol,highbid,lowask,CMC_average,changes[3]; //struct exchange_quote sortbuf[512]; struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
+        double USD_average,avebid,aveask,bidvol,askvol,highbid,lowask,CMC_average,changes[3]; //struct exchange_quote sortbuf[512]; struct supernet_info *myinfo = SuperNET_MYINFO(0); cJSON *argjson = cJSON_Parse("{}");
         //aveask = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&askvol,"KMD","BTC",1,argjson);
         //avebid = instantdex_aveprice(myinfo,sortbuf,(int32_t)(sizeof(sortbuf)/sizeof(*sortbuf)),&bidvol,"KMD","BTC",-1,argjson);
         if ( 0 && avebid > SMALLVAL && aveask > SMALLVAL )
@@ -1460,7 +1461,7 @@ void PAX_update(struct PAX_data *dp,double *btcusdp,double *kmdbtcp)
             printf("set KMD price %f\n",price);
             dp->KMDBTC = price;
         }
-        else if ( (dp->KMDBTC= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC")) > SMALLVAL )
+        else if ( (dp->KMDBTC= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average)) > SMALLVAL )
             *kmdbtcp = dp->KMDBTC;
         else
         {
