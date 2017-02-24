@@ -294,8 +294,9 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
             timeout = 100;
             nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
             timeout = 3000;
-            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+            timeout = 5000;
+            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
             {
                 for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
@@ -1970,7 +1971,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                printf("send back[%ld]\n",strlen(retstr)+1);
+                printf("send back[%s]\n",retstr);//strlen(retstr)+1);
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
