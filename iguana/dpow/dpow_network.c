@@ -399,7 +399,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-                    if ( (rand() % 100) < 40 )
+                    if ( 0 && (rand() % 100) < 40 )
                     {
                         nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
@@ -881,6 +881,16 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
                     if ( (pubkeystr= jstr(item,"pubkey")) != 0 && strlen(pubkeystr) == 33*2 )
                         decode_hex(myinfo->notaries[i],33,pubkeystr);
                 }
+            }
+            else
+            {
+                extern const char *Notaries_elected[][2];
+                myinfo->numnotaries = 64;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
+                for (i=0; i<myinfo->numnotaries; i++)
+                {
+                    decode_hex(myinfo->notaries[i],33,(char *)Notaries_elected[i][1]);
+                }
+                printf("default to elected.%d\n",myinfo->numnotaries);
             }
             free_json(retjson);
         }

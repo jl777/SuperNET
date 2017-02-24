@@ -484,6 +484,8 @@ void mainloop(struct supernet_info *myinfo)
             }
             usleep(30000);
         }
+        if ( myinfo->DEXEXPLORER != 0 )
+            kmd_bitcoinscan();
         //pangea_queues(SuperNET_MYINFO(0));
         //if ( flag == 0 )
         //    usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
