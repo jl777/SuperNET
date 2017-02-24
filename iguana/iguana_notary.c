@@ -147,7 +147,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
     //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
-    if ( strcmp(dp->symbol,"KMD") == 0 )
+    //if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         num = dpow_nanomsg_update(myinfo);
         //fprintf(stderr,"%d ",num);
