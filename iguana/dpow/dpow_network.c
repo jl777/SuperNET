@@ -149,7 +149,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     {
         //for (i=0; i<recvbytes; i++)
         //    printf("%02x",((uint8_t *)sigpacket)[i]);
-        printf(" <- RECV.%d crc.%08x cmp.%d\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes),sigpacket->packetlen == recvbytes-sizeof(*sigpacket));
+        //printf(" <- RECV.%d crc.%08x cmp.%d\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes),sigpacket->packetlen == recvbytes-sizeof(*sigpacket));
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
@@ -369,7 +369,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            printf("req returned.[%d]\n",recvbytes);
+            //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
