@@ -1154,6 +1154,7 @@ cJSON *url_json2(char *url)
 double PAX_yahoo(char *metal)
 {
     // http://finance.yahoo.com/webservice/v1/symbols/allcurrencies/quote?format=json
+    // http://finance.yahoo.com/webservice/v1/symbols/EUR=USD/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XAU=X/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XAG=X/quote?format=json
     // http://finance.yahoo.com/webservice/v1/symbols/XPT=X/quote?format=json

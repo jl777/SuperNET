@@ -35,6 +35,11 @@ int32_t Num_Pending;
 
 #define IGUANA_URL "http://127.0.0.1:7778"
 
+char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
+    "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
+};
+double PAXPRICES[sizeof(CURRENCIES)/sizeof(*CURRENCIES)];
+
 char *DEX_amlp(char *blocktrail)
 {
     char url[512],postdata[1024];
@@ -160,6 +165,78 @@ double dex_balance(char *base,char *coinaddr)
         free(retstr);
     }
     return(balance);
+}
+
+int32_t komodo_baseid(char *base)
+{
+    int32_t i;
+    for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+        if ( strcmp(base,CURRENCIES[i]) == 0 )
+            return(i);
+    return(-1);
+}
+
+cJSON *yahoo_allcurrencies()
+{
+    char *retstr; cJSON *retjson = 0;
+    if ( (retstr= issue_curl("http://finance.yahoo.com/webservice/v1/symbols/allcurrencies/quote?format=json")) != 0 )
+    {
+        retjson = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(retjson);
+}
+
+void _marketmaker_fiatupdate(int32_t baseid,double price)
+{
+    PAXPRICES[baseid] = price * PAXPRICES[0];
+    printf("%.6f %s per USD, %.8f %s per KMD\n",price,CURRENCIES[baseid],PAXPRICES[baseid],CURRENCIES[baseid]);
+}
+
+uint32_t marketmaker_fiatupdate(cJSON *fiatjson)
+{
+    int32_t i,n,baseid; cJSON *item,*array; double price; char *name; uint64_t mask = 0;
+    fiatjson = jobj(fiatjson,"list");
+    if ( fiatjson != 0 && (array= jarray(&n,fiatjson,"resources")) > 0 )
+    {
+        for (i=0; i<n; i++)
+        {
+            /*
+            "resource" : {
+                "classname" : "Quote",
+                "fields" : {
+                    "name" : "USD/BRX",
+                    "price" : "3.063200",
+                    "symbol" : "BRX=X",
+                    "ts" : "1487866204",
+                    "type" : "currency",
+                    "utctime" : "2017-02-23T16:10:04+0000",
+                    "volume" : "0"
+                }
+           */
+            item = jitem(array,i);
+            if ( (item= jobj(item,"resource")) != 0 )
+                item = jobj(item,"fields");
+            if ( item != 0 )
+            {
+                price = jdouble(item,"price");
+                if ( price > SMALLVAL && (name= jstr(item,"name")) != 0 && strncmp(name,"USD/",4) == 0 )
+                {
+                    if ( (baseid= komodo_baseid(name+4)) >= 0 && baseid < 32 )
+                    {
+                        if ( ((1LL << baseid) & mask) == 0 )
+                        {
+                            _marketmaker_fiatupdate(baseid,price);
+                            mask |= (1LL << baseid);
+                        } else if ( fabs(price*PAXPRICES[0] - PAXPRICES[baseid]) > SMALLVAL )
+                            printf("DUPLICATE PRICE? %s %.8f vs %.8f\n",name+4,price*PAXPRICES[0],PAXPRICES[baseid]);
+                    }
+                }
+            }
+        }
+    }
+    printf("pax mask.%x\n",(uint32_t)mask);
+    return((uint32_t)mask);
 }
 
 void marketmaker_cancel(struct mmpending_order *ptr)
@@ -384,7 +461,7 @@ void marketmaker_volumeset(double *bidincrp,double *askincrp,double incr,double 
 
 int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double bidvol,double ask,double askvol,double separation)
 {
-    int32_t nearflags[2],i,n = 0; struct mmpending_order *ptr; cJSON *retjson,*vals; char *retstr,postdata[1024],url[128];
+    int32_t nearflags[2],i,n = 0; struct mmpending_order *ptr; cJSON *retjson,*vals; char *retstr,postdata[1024],url[128]; double vol,spread_ratio;
     memset(nearflags,0,sizeof(nearflags));
     if ( strcmp("DEX",exchange) != 0 )
     {
@@ -405,7 +482,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
     //printf("spread.%s (%.8f %.6f) (%.8f %.6f)\n",exchange,bid,bidvol,ask,askvol);
     if ( bid > SMALLVAL && bidvol > SMALLVAL && nearflags[0] == 0 )
     {
-        if ( strcmp("DEX",exchange) == 0 )
+        if ( strcmp("DEX",exchange) == 0 && strcmp(base,"KMD") == 0 && strcmp(rel,"BTC") == 0 )
         {
             if ( ask > SMALLVAL && askvol > SMALLVAL )
             {
@@ -422,15 +499,35 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 jaddstr(vals,"rel","BTC");
                 jaddnum(vals,"bid",bid);
                 jaddnum(vals,"ask",ask);
-                jaddnum(vals,"maxvol",bidvol > askvol ? askvol : bidvol);
-                jaddnum(vals,"minvol",(bidvol > askvol ? askvol : bidvol) * 0.1);
+                vol = bidvol > askvol ? askvol : bidvol;
+                jaddnum(vals,"maxvol",vol);
+                jaddnum(vals,"minvol",vol * 0.1);
                 sprintf(url,"%s/?",IGUANA_URL);
                 sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}",base,jprint(vals,1));
-                printf("call liquidity\n");
                 if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
                 {
                     //printf("(%s) -> (%s)\n",postdata,retstr);
                     free(retstr);
+                }
+                spread_ratio = (ask - bid) / (bid + ask);
+                for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
+                {
+                    if ( PAXPRICES[i] > SMALLVAL )
+                    {
+                        vals = cJSON_CreateObject();
+                        jaddstr(vals,"rel",CURRENCIES[i]);
+                        jaddnum(vals,"bid",PAXPRICES[i] * (1. - spread_ratio));
+                        jaddnum(vals,"ask",PAXPRICES[i] * (1. + spread_ratio));
+                        jaddnum(vals,"maxvol",vol * PAXPRICES[i]);
+                        jaddnum(vals,"minvol",vol * 0.1 * PAXPRICES[i]);
+                        sprintf(url,"%s/?",IGUANA_URL);
+                        sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}","KMD",jprint(vals,1));
+                        if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
+                        {
+                            //printf("(%s) -> (%s)\n",postdata,retstr);
+                            free(retstr);
+                        }
+                    }
                 }
             } else printf("unsupported ask only for DEX %s/%s\n",base,rel);
         }
@@ -461,18 +558,19 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
     return(n);
 }
 
-void marketmaker(char *baseaddr,char *reladdr,double start_BASE,double start_REL,double profitmargin,double maxexposure,double ratioincr,char *exchange,char *name,char *base,char *rel)
+void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double start_BASE,double start_REL,double profitmargin,double maxexposure,double ratioincr,char *exchange,char *name,char *base,char *rel)
 {
-    double start_DEXbase,start_DEXrel,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,CMC_average,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
+    static uint32_t counter;
+    cJSON *fiatjson; double start_DEXbase,start_DEXrel,USD_average=0.,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,usdprice=0.,CMC_average=0.,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
     incr = maxexposure * ratioincr;
     buyvol = sellvol = 0.;
     start_DEXbase = dex_balance(base,baseaddr);
     start_DEXrel = dex_balance(rel,reladdr);
     while ( 1 )
     {
-        if ( time(NULL) > lasttime+60 )
+        if ( time(NULL) > lasttime+300 )
         {
-            if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel)) != 0. )
+            if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel,&USD_average)) != 0. )
             {
                 if ( theoretical == 0. )
                 {
@@ -485,6 +583,20 @@ void marketmaker(char *baseaddr,char *reladdr,double start_BASE,double start_REL
                         incr += 0.777;
                     }
                 } else theoretical = (theoretical + val) * 0.5;
+                if ( (counter++ % 12) == 0 )
+                {
+                    if ( USD_average > SMALLVAL && CMC_average > SMALLVAL && theoretical > SMALLVAL )
+                    {
+                        usdprice = USD_average * (theoretical / CMC_average);
+                        printf("USD %.4f <- (%.6f * (%.8f / %.8f))\n",usdprice,USD_average,theoretical,CMC_average);
+                        PAXPRICES[0] = usdprice;
+                        if ( (fiatjson= yahoo_allcurrencies()) != 0 )
+                        {
+                            marketmaker_fiatupdate(fiatjson);
+                            free_json(fiatjson);
+                        }
+                    }
+                }
             }
             if ( strcmp(exchange,"bittrex") == 0 )
             {
@@ -518,9 +630,9 @@ void marketmaker(char *baseaddr,char *reladdr,double start_BASE,double start_REL
             printf("(%.8f %.8f) ",mmbid,mmask);
             if ( (1) )
             {
-                if ( mmbid >= lowask ) //mmbid < highbid ||
+                if ( mmbid >= lowask || (maxbid > SMALLVAL && mmbid > maxbid) ) //mmbid < highbid ||
                     mmbid = 0.;
-                if ( mmask <= highbid ) // mmask > lowask ||
+                if ( mmask <= highbid || (minask > SMALLVAL && mmask < minask) ) // mmask > lowask ||
                     mmask = 0.;
             }
             marketmaker_volumeset(&bidincr,&askincr,incr,buyvol,pendingbids,sellvol,pendingasks,maxexposure);
@@ -529,15 +641,20 @@ void marketmaker(char *baseaddr,char *reladdr,double start_BASE,double start_REL
             if ( (pendingbids + buyvol) > (pendingasks + sellvol) )
             {
                 bidincr *= (double)(pendingasks + sellvol) / ((pendingbids + buyvol) + (pendingasks + sellvol));
+                if ( bidincr < 0.1*incr )
+                    bidincr = 0.1*incr;
                 if ( bidincr > 1. )
                     bidincr = (int32_t)bidincr + 0.777;
             }
             if ( (pendingbids + buyvol) < (pendingasks + sellvol) )
             {
                 askincr *= (double)(pendingbids + buyvol) / ((pendingbids + buyvol) + (pendingasks + sellvol));
+                if ( askincr < 0.1*incr )
+                    askincr = 0.1*incr;
                 if ( askincr > 1. )
                     askincr = (int32_t)askincr + 0.777;
             }
+            //printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
             marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
             sleep(60);
         }
@@ -547,11 +664,12 @@ void marketmaker(char *baseaddr,char *reladdr,double start_BASE,double start_REL
 int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail;
-    double profitmargin,maxexposure,incrratio,start_rel,start_base;
+    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid;
     cJSON *retjson,*addrjson; char *retstr,*baseaddr,*reladdr,*passphrase;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
-printf("argc.%d (%s)\n",argc,jprint(retjson,0));
+        minask = jdouble(retjson,"minask");
+        maxbid = jdouble(retjson,"maxbid");
         profitmargin = jdouble(retjson,"profitmargin");
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
@@ -586,7 +704,7 @@ printf("argc.%d (%s)\n",argc,jprint(retjson,0));
                     printf("%s.%s %s\n",base,baseaddr,DEX_balance("DEX",base,baseaddr));
                     printf("%s.%s %s\n",rel,reladdr,DEX_balance("DEX",rel,reladdr));
                     // initialize state using DEX_pendingorders, etc.
-                    marketmaker(baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
+                    marketmaker(minask,maxbid,baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
                 }
                 free_json(addrjson);
             }
