@@ -1091,7 +1091,7 @@ void dex_updateclient(struct supernet_info *myinfo)
     int32_t i;
     if ( myinfo->IAMNOTARY == 0 )
     {
-        for (i=0; i<100; i++)
+        for (i=0; i<1000; i++)
             if ( dex_subsock_poll(myinfo) <= 0 )
                 break;
     }
@@ -1882,7 +1882,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             break;
         usleep(1000);
     }*/
-    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 100 )
+    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 1000 )
     {
         num++;
         if ( size > 0 )
@@ -1936,10 +1936,10 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     n = 0;
     if ( myinfo->dexsock >= 0 ) // from servers
     {
-        if ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
+        while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 && n < 1000 )
         {
             //fprintf(stderr,"%d ",size);
-            num++;
+            n++;
             if ( dex_packetcheck(myinfo,dexp,size) == 0 )
             {
                 //printf("FROM BUS.%08x -> pub\n",dexp->crc32);
