@@ -316,9 +316,9 @@ cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
     if ( strcmp(coin->symbol,"KMD") == 0 )
         jaddnum(item,"interest",dstr(_iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->timestamp,tx->vouts[vout].amount)));
-    if ( coin->FULLNODE < 0 && is_listunspent != 0 )
+    if ( is_listunspent != 0 )
     {
-        //char str[65]; printf("get spendscriptstr for %s/v%d\n",bits256_str(str,tx->txid),vout);
+        char str[65]; printf("get spendscriptstr for %s/v%d\n",bits256_str(str,tx->txid),vout);
         if ( (txout= dpow_gettxout(myinfo,coin,tx->txid,vout)) != 0 )
         {
             if ( (script= jstr(txout,"scriptPubKey")) != 0 )
