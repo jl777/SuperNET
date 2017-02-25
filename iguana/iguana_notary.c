@@ -791,7 +791,7 @@ TWO_STRINGS(dex,listunspent2,symbol,address)
                 coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
             if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
                 return(clonestr("[]"));
-            if ( (retjson= kmd_listunspent(coin,address)) != 0 )
+            if ( (retjson= kmd_listunspent(myinfo,coin,address)) != 0 )
                 return(jprint(retjson,1));
         }
     }
@@ -811,7 +811,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
                 coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
             if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
                 return(clonestr("[]"));
-            if ( (retjson= kmd_listtransactions(coin,address,count,skip)) != 0 )
+            if ( (retjson= kmd_listtransactions(myinfo,coin,address,count,skip)) != 0 )
                 return(jprint(retjson,1));
         }
     }
@@ -839,7 +839,7 @@ TWO_STRINGS(dex,listspent,symbol,address)
     if ( myinfo->DEXEXPLORER != 0 )
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
-            return(jprint(kmd_listspent(coin,address),1));
+            return(jprint(kmd_listspent(myinfo,coin,address),1));
         if ( coin != 0 )
             coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
@@ -854,7 +854,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     if ( myinfo->DEXEXPLORER != 0 )
     {
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
-            return(jprint(kmd_getbalance(coin,address),1));
+            return(jprint(kmd_getbalance(myinfo,coin,address),1));
         if ( coin != 0 )
             coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
     }
