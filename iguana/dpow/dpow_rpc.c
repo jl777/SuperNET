@@ -324,7 +324,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         json = cJSON_Parse(retstr);
         free(retstr);
     }
-    printf("dpow_gettxout.(%s)\n",retstr);
+    //printf("dpow_gettxout.(%s)\n",retstr);
     return(json);
 }
 
