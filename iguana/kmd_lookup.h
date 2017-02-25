@@ -124,6 +124,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
 void kmd_transactionvout(struct iguana_info *coin,struct kmd_transactionhh *ptr,int32_t vout,uint64_t amount,uint8_t type_rmd160[21],bits256 spendtxid,int32_t spendvini)
 {
     struct kmd_addresshh *addr; struct kmd_transaction *tx = 0;
+    if ( 0 )
     {
         char coinaddr[64],str[65];
         bitcoin_address(coinaddr,type_rmd160[0],&type_rmd160[1],20);
@@ -304,9 +305,9 @@ cJSON *kmd_transactionjson(int32_t height,struct kmd_transactionhh *ptr,char *ty
     return(obj);
 }
 
-cJSON *kmd_unspentjson(struct iguana_info *coin,int32_t height,struct kmd_transaction *tx,int32_t vout)
+cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,struct kmd_transaction *tx,int32_t vout,int32_t is_listunspent)
 {
-    cJSON *item = cJSON_CreateObject();
+    char *script; cJSON *txout,*item = cJSON_CreateObject();
     jaddstr(item,"type","received");
     jaddnum(item,"height",tx->height);
     jaddnum(item,"timestamp",tx->timestamp);
@@ -315,6 +316,16 @@ cJSON *kmd_unspentjson(struct iguana_info *coin,int32_t height,struct kmd_transa
     jaddnum(item,"amount",dstr(tx->vouts[vout].amount));
     if ( strcmp(coin->symbol,"KMD") == 0 )
         jaddnum(item,"interest",dstr(_iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->timestamp,tx->vouts[vout].amount)));
+    if ( coin->FULLNODE < 0 && is_listunspent != 0 )
+    {
+        //char str[65]; printf("get spendscriptstr for %s/v%d\n",bits256_str(str,tx->txid),vout);
+        if ( (txout= dpow_gettxout(myinfo,coin,tx->txid,vout)) != 0 )
+        {
+            if ( (script= jstr(txout,"scriptPubKey")) != 0 )
+                jaddstr(item,"scriptPubKey",script);
+            free_json(txout);
+        }
+    }
     return(item);
 }
 
@@ -412,14 +423,14 @@ cJSON *kmd_listaddress(struct iguana_info *coin,char *coinaddr,int32_t mode,cJSO
                         //if ( fulltx == 0 )
                         {
                             if ( mode == 0 )
-                                jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i));
+                                jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i,1));
                             else if ( mode == 1 )
                                 jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
                             else if ( mode == 2 )
                             {
                                 if ( spent != 0 )
                                     jaddi(array,kmd_spentjson(coin->kmd_height,ptr->tx,i,spent));
-                                else jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i));
+                                else jaddi(array,kmd_unspentjson(coin,coin->kmd_height,ptr->tx,i,0));
                             }
                         }
                         /*else if ( flag == 0 )

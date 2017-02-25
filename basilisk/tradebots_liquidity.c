@@ -1010,7 +1010,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             dir = 1;
         else if ( strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 )
             dir = -1;
-        else dir = 0;
+        else continue;
         if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
         {
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
@@ -1164,7 +1164,7 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         //printf("reject %s %s/%s\n",exchange,base,rel);
         return;
     }
-    //printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
+    printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
     if ( numbids > 0 && (volume= bidasks[0].volume) > 0. && (profitmargin=
                          tradebot_liquidity_active(myinfo,&price,exchange->name,base,rel,volume)) > 0. )
     {
