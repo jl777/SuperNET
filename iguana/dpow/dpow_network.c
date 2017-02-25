@@ -556,6 +556,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
+                    //printf("RETURN.(%s)\n",retstr);
                 }
             }
             else if ( dexreq.func == 's' )
@@ -821,7 +822,7 @@ char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_
     dexreq.hash = txid;
     dexreq.shortarg = vout;
     dexreq.func = 'x';
-    return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
 }
 
 char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags)
@@ -991,7 +992,7 @@ char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *addres
     dexreq.func = arg;
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
-        printf("UNSPENTS.(%s)\n",retstr);
+        //printf("UNSPENTS.(%s)\n",retstr);
     }
     return(_dex_arrayreturn(retstr));
 }
