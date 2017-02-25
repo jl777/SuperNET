@@ -991,7 +991,7 @@ char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *addres
     dexreq.func = arg;
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
-        //printf("UNSPENTS.(%s)\n",retstr);
+        printf("UNSPENTS.(%s)\n",retstr);
     }
     return(_dex_arrayreturn(retstr));
 }
