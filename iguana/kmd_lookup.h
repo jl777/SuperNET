@@ -468,7 +468,10 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
 
 cJSON *kmd_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    return(kmd_listaddress(myinfo,coin,coinaddr,0,0));
+    cJSON *retjson;
+    retjson = kmd_listaddress(myinfo,coin,coinaddr,0,0);
+    printf("KMD utxos.(%s)\n",jprint(retjson,0));
+    return(retjson);
 }
 
 cJSON *kmd_listspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
