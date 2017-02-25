@@ -596,7 +596,7 @@ cJSON *kmd_blockjson(int32_t *heightp,char *coinstr,char *serverport,char *userp
 
 int32_t _kmd_bitcoinscan(struct iguana_info *coin)
 {
-    int32_t h,num=0,loadheight,i,n,j,iter,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
+    int32_t h,num=0,loadheight,lag,i,n,j,iter,numtxids,numvins,numvouts,flag=0,height=-1; cJSON *txjson,*vouts,*vins,*blockjson,*txids,*vout,*vin,*sobj,*addresses; bits256 zero,txid; char *curlstr,params[128],str[65]; struct kmd_transactionhh *ptr; struct kmd_transaction *tx; uint8_t type_rmd160[21];
     if ( coin->kmd_didinit == 0 )
     {
         if ( (coin->kmd_txidfp= kmd_txidinit(coin)) == 0 )
@@ -607,7 +607,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     }
     height = kmd_height(coin);
     loadheight = coin->kmd_height+1;
-    while ( loadheight < height-KMD_EXPLORER_LAG )
+    lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 1);
+    while ( loadheight < height-lag )
     {
         flag = 0;
         if ( (loadheight % 10000) == 0 )
