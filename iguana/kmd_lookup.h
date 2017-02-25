@@ -307,7 +307,7 @@ cJSON *kmd_transactionjson(int32_t height,struct kmd_transactionhh *ptr,char *ty
 
 cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,struct kmd_transaction *tx,int32_t vout,int32_t is_listunspent)
 {
-    char *script; cJSON *txout,*item = cJSON_CreateObject();
+    char *script; cJSON *sobj,*txout,*item = cJSON_CreateObject();
     jaddstr(item,"type","received");
     jaddnum(item,"height",tx->height);
     jaddnum(item,"timestamp",tx->timestamp);
@@ -321,7 +321,7 @@ cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int
         char str[65]; printf("get spendscriptstr for %s/v%d\n",bits256_str(str,tx->txid),vout);
         if ( (txout= dpow_gettxout(myinfo,coin,tx->txid,vout)) != 0 )
         {
-            if ( (script= jstr(txout,"scriptPubKey")) != 0 )
+            if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && (script= jstr(txout,"hex")) != 0 )
                 jaddstr(item,"scriptPubKey",script);
             free_json(txout);
         }

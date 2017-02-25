@@ -359,7 +359,7 @@ uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,u
             numerator = (value * KOMODO_INTEREST);
             interest = (numerator / denominator) / SATOSHIDEN;
         }
-        fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
+        //fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
     }
     return(interest);
 }
