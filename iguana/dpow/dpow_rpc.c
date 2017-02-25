@@ -408,7 +408,7 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
 cJSON *dpow_listspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     if ( myinfo->DEXEXPLORER != 0 )
-        return(kmd_listspent(coin,coinaddr));
+        return(kmd_listspent(myinfo,coin,coinaddr));
     else
     {
         return(0);
@@ -418,7 +418,7 @@ cJSON *dpow_listspent(struct supernet_info *myinfo,struct iguana_info *coin,char
 cJSON *dpow_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     if ( myinfo->DEXEXPLORER != 0 )
-        return(kmd_getbalance(coin,coinaddr));
+        return(kmd_getbalance(myinfo,coin,coinaddr));
     else
     {
         return(0);

@@ -550,7 +550,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             }
             else if ( dexreq.func == 'u' )
             {
-                if ( (retjson= kmd_listunspent(coin,(char *)&dexp->packet[datalen])) != 0 )
+                if ( (retjson= kmd_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -590,7 +590,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == '2' )
             {
                 //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
-                if ( (retjson= kmd_listtransactions(coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                if ( (retjson= kmd_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
