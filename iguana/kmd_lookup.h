@@ -321,7 +321,8 @@ cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int
         //char str[65]; printf("get spendscriptstr for %s/v%d\n",bits256_str(str,tx->txid),vout);
         if ( (txout= dpow_gettxout(myinfo,coin,tx->txid,vout)) != 0 )
         {
-            if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && (script= jstr(txout,"hex")) != 0 )
+            //printf("got.(%s)\n",jprint(txout,0));
+            if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && (script= jstr(sobj,"hex")) != 0 )
                 jaddstr(item,"scriptPubKey",script);
             free_json(txout);
         }
