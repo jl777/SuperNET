@@ -960,6 +960,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
 {
     struct dex_request dexreq;
+return(clonestr("{\"error\":\"importaddress deprecated\"}"));
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
@@ -1262,12 +1263,12 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    timeout = 500;
+                                    timeout = 100;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     timeout = 10;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                                    timeout = 500;
+                                    timeout = 10;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     maxsize = 1024 * 1024;
                                     printf("RCVBUF.%d\n",nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -1986,8 +1987,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
-                    printf("BROADCAST dexp request.[%d]\n",size);
-                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                    //printf("BROADCAST dexp request.[%d]\n",size);
+                    //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                 }
             }
             else
