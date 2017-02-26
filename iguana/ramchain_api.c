@@ -82,7 +82,7 @@ STRING_ARG(iguana,removecoin,activecoin)
     {
         coin->active = 0;
         coin->started = 0;
-        if ( 0 )
+        if ( (0) )
         {
             for (i=0; i<IGUANA_MAXPEERS; i++)
             {

@@ -77,6 +77,13 @@ int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
     return(n);
 }
 
+int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint32_t timestamp)
+{
+    n = bitcoin_checklocktimeverify(script,n,timestamp);
+    n = bitcoin_standardspend(script,n,rmd160);
+    return(n);
+}
+
 int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp)
 {
     int32_t i,plen;
@@ -333,9 +340,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         if ( (plen= vp->spendscript[2]+5) != vp->spendlen )
         {
             return(IGUANA_SCRIPT_STRANGE);
-            while ( plen < vp->spendlen )
+            /*while ( plen < vp->spendlen )
                 if ( vp->spendscript[plen++] != 0x61 ) // nop
-                    return(IGUANA_SCRIPT_STRANGE);
+                    return(IGUANA_SCRIPT_STRANGE);*/
         }
         return(IGUANA_SCRIPT_76A988AC);
     }

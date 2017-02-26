@@ -285,7 +285,7 @@ int32_t SaM_test()
         memset(histo,0,sizeof(histo));
         for (i=0; i<5; i++)
         {
-            if ( 0 && (i % 100) == 99 )
+            if ( (0) && (i % 100) == 99 )
             {
                 for (j=0; j<32; j++)
                     seed.bytes[j] = rand() >> 8;
@@ -340,6 +340,7 @@ bits384 SaM_encrypt(uint8_t *dest,uint8_t *src,int32_t len,bits384 password,uint
 {
     bits384 xorpad; int32_t i;  struct SaM_info XORpad;
     SaM_Initialize(&XORpad), SaM_Absorb(&XORpad,password.bytes,sizeof(password),(void *)&timestamp,sizeof(timestamp));
+    memset(xorpad.bytes,0,sizeof(xorpad));
     while ( len >= 0 )
     {
         SaM_emit(&XORpad);

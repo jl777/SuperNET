@@ -365,8 +365,12 @@ void escape_code(char *escaped,char *str);
 void SaM_PrepareIndices();
 
 // iguana_serdes.c
+#ifndef IGUANA_LOG2PACKETSIZE
 #define IGUANA_LOG2PACKETSIZE 22
+#endif
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
+#endif
 struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } PACKED;
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
@@ -400,6 +404,7 @@ int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);
 bits256 bits256_sha256(bits256 data);
 void bits256_rmd160(uint8_t rmd160[20],bits256 data);
 void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
+double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

@@ -4416,6 +4416,7 @@ void mpz_from_bits256(mpz_t bn,bits256 x)
 bits256 mpz_to_bits256(mpz_t bn)
 {
     bits256 x,rev; size_t count; int32_t i;
+    memset(x.bytes,0,sizeof(x));
     mpz_export(rev.bytes,&count,1,sizeof(uint64_t),1,0,bn);
     for (i=0; i<32; i++)
         x.bytes[i] = rev.bytes[31-i];

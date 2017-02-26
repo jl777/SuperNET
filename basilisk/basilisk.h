@@ -67,7 +67,7 @@ struct basilisk_swapinfo
     char bobstr[64],alicestr[64];
     bits256 myhash,otherhash,orderhash;
     uint32_t statebits,otherstatebits,started,expiration,finished,dead,reftime,putduration,callduration;
-    int32_t bobconfirms,aliceconfirms,iambob,reclaimed;
+    int32_t bobconfirms,aliceconfirms,iambob,reclaimed,bobspent,alicespent;
     uint64_t alicesatoshis,bobsatoshis,bobinsurance,aliceinsurance;
     
     bits256 myprivs[2],mypubs[2],otherpubs[2],pubA0,pubA1,pubB0,pubB1,privAm,pubAm,privBn,pubBn;

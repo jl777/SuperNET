@@ -99,7 +99,7 @@ int32_t fxcm_setcontracts()
     {
         if ( (json= cJSON_Parse(xmlstr)) != 0 )
         {
-            /*<Rate Symbol="USDJPY">
+            /* <Rate Symbol="USDJPY">
              <Bid>123.763</Bid>
              <Ask>123.786</Ask>
              <High>123.956</High>
@@ -153,6 +153,7 @@ int32_t fxcm_ensure()
 char *ALLPAIRS(struct exchange_info *exchange,cJSON *argjson)
 {
     int32_t i,c,n; char base[32],rel[32]; cJSON *json,*item,*array = cJSON_CreateArray();
+    n = 0;
     if ( fxcm_ensure() == 0 )
     {
         for (i=0; i<num_FXCM; i++)

@@ -290,6 +290,7 @@ struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana
     ptr = spend->inputs;
     for (i=0; i<maxinputs; i++,ptr++)
     {
+        up = 0;
         for (mode=1; mode>=0; mode--)
             if ( (up= iguana_bestfit(coin,ups,totalunspents,remains,mode)) != 0 )
                 break;

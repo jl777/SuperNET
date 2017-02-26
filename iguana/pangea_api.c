@@ -530,7 +530,7 @@ char *pangea_hexmsg(struct supernet_info *myinfo,struct gecko_chain *cat,void *d
             }
         }
     }
-    else if ( 0 )
+    else if ( (0) )
     {
         for (i=0; i<datalen; i++)
             printf("%02x",serialized[i]);

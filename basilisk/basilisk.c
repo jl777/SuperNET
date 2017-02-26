@@ -265,6 +265,7 @@ int32_t basilisk_sendcmd(struct supernet_info *myinfo,char *destipaddr,char *typ
                     }
                 if ( s == n && valid == 1 && (destipaddr == 0 || strcmp(addr->ipaddr,destipaddr) == 0) )
                 {
+                    val = 0;
                     //fprintf(stderr,">>> (%s).%u ",addr->ipaddr,coin->chain->portp2p);
                     //printf("n.%d/fanout.%d i.%d l.%d [%s].tag%u send %s [%x] datalen.%d addr->supernet.%u basilisk.%u to (%s).%d destip.%s\n",n,fanout,i,l,cmd,*(uint32_t *)data,type,*(int32_t *)&data[datalen-4],datalen,addr->supernet,addr->basilisk,addr->ipaddr,addr->A.port,destipaddr!=0?destipaddr:"broadcast");
                     if ( encryptflag != 0 && bits256_nonz(addr->pubkey) != 0 )
@@ -462,7 +463,7 @@ char *basilisk_standardservice(char *CMD,struct supernet_info *myinfo,void *_add
         }
         ptr->finished = OS_milliseconds() + 10000;
     }
-    if ( 0 && strcmp("MSG",CMD) == 0 )
+    if ( (0) && strcmp("MSG",CMD) == 0 )
         printf("%s.(%s) -> (%s)\n",CMD,jprint(valsobj,0),retstr!=0?retstr:"");
     return(retstr);
 }
@@ -483,6 +484,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_lisk.c"
 
 #include "basilisk_MSG.c"
+#include "tradebots_marketmaker.c"
 #include "tradebots_liquidity.c"
 #include "basilisk_tradebot.c"
 #include "basilisk_swap.c"
@@ -793,10 +795,10 @@ int32_t basilisk_p2pQ_process(struct supernet_info *myinfo,int32_t maxiters)
         else
         {
             len += iguana_rwnum(0,ptr->data,sizeof(basilisktag),&basilisktag);
-            if ( 0 && myinfo->IAMLP == 0 )
+            if ( (0) && myinfo->IAMLP == 0 )
                 printf("RELAYID.%d ->received.%d basilisk_p2p.(%s) from %s tag.%u\n",myinfo->NOTARY.RELAYID,ptr->datalen,ptr->type,senderip,basilisktag);
             basilisk_msgprocess(myinfo,ptr->addr,ptr->ipbits,ptr->type,basilisktag,&ptr->data[len],ptr->datalen - len);
-            if ( 0 && myinfo->IAMLP == 0 )
+            if ( (0) && myinfo->IAMLP == 0 )
                 printf("processed.%s from %s\n",ptr->type,senderip);
         }
         free(ptr);
@@ -901,13 +903,14 @@ void basilisks_loop(void *arg)
             {
                 dp = &myinfo->DPOWS[counter % myinfo->numdpows];
                 iguana_dPoWupdate(myinfo,dp);
-                if ( (counter % myinfo->numdpows) != 0 )
+                //if ( (counter % myinfo->numdpows) != 0 )
                 {
                     //fprintf(stderr,"F ");
                     iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
                 }
                 endmilli = startmilli + 30;
             }
+            //fprintf(stderr,"F ");
         }
         else
         {
@@ -1067,4 +1070,110 @@ INT_ARG(iguana,paxfiats,mask)
     komodo_assetcoins(1,mask);
     return(clonestr("{\"result\":\"success\"}"));
 }
+
+int32_t utxocmp(cJSON *utxo,cJSON *utxo2)
+{
+    bits256 txid,txid2; int32_t vout=-1,vout2=-1;
+    //printf("cmp (%s) vs (%s)\n",jprint(utxo,0),jprint(utxo2,0));
+    txid = jbits256(utxo,"txid");
+    vout = jint(utxo,"vout");
+    txid2 = jbits256(utxo2,"txid");
+    vout2 = jint(utxo2,"vout");
+    if ( bits256_cmp(txid,txid2) == 0 && vout == vout2 )
+        return(0);
+    else return(-1);
+}
+
+TWO_STRINGS(basilisk,refresh,symbol,address)
+{
+    cJSON *array=0,*array2=0,*array3,*item,*item2; char *retstr; int32_t i,j,n,m,vout; bits256 txid;
+    if ( symbol != 0 && iguana_isnotarychain(symbol) >= 0 && address != 0 && address[0] != 0 )
+    {
+        if ( (retstr= _dex_listunspent(myinfo,symbol,address)) != 0 )
+        {
+            array = cJSON_Parse(retstr);
+            free(retstr);
+        }
+        if ( (retstr= _dex_listunspent2(myinfo,symbol,address)) != 0 )
+        {
+            if ( array == 0 )
+                array = cJSON_Parse(retstr);
+            else array2 = cJSON_Parse(retstr);
+            free(retstr);
+        }
+        if ( array != 0 && array2 != 0 ) // merge
+        {
+            m = cJSON_GetArraySize(array2);
+            array3 = jduplicate(array);
+            n = cJSON_GetArraySize(array3);
+            //printf("MERGE %s and %s\n",jprint(array,0),jprint(array2,0));
+            for (j=0; j<m; j++)
+            {
+                item2 = jitem(array2,j);
+                for (i=0; i<n; i++)
+                    if ( utxocmp(jitem(array,i),item2) == 0 )
+                        break;
+                if ( i == n )
+                {
+                    //printf("FOUND NEW %s\n",jprint(item2,0));
+                    jaddi(array3,jduplicate(item2));
+                }
+            }
+            free_json(array);
+            free_json(array2), array2 = 0;
+            array = array3, array3 = 0;
+        }
+        if ( array != 0 ) // gettxout
+        {
+            n = cJSON_GetArraySize(array);
+            array3 = cJSON_CreateArray();
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                txid = jbits256(item,"txid");
+                vout = jint(item,"vout");
+                if ( (retstr= _dex_gettxout(myinfo,symbol,txid,vout)) != 0 )
+                {
+                    if ( (item2= cJSON_Parse(retstr)) != 0 )
+                    {
+                        if ( jdouble(item2,"value") > 0 )
+                        {
+                            jaddbits256(item2,"txid",txid);
+                            jaddnum(item2,"vout",vout);
+                            jaddnum(item2,"amount",jdouble(item2,"value"));
+                            //printf("%s\n",jprint(item2,0));
+                            jaddi(array3,item2);
+                        }
+                        else free_json(item2);
+                    }
+                    free(retstr);
+                }
+            }
+            free_json(array);
+            return(jprint(array3,1));
+        } else return(clonestr("[]"));
+    }
+    return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
+}
+
+STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
+{
+    char *destaddr,*changeaddr; uint64_t satoshis,txfee; int32_t completed,sendflag,timelock;
+    timelock = jint(vals,"timelock");
+    sendflag = jint(vals,"sendflag");
+    satoshis = jdouble(vals,"amount") * SATOSHIDEN;
+    destaddr = jstr(vals,"destaddr");
+    changeaddr = jstr(vals,"changeaddr");
+    if ( destaddr != 0 && changeaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        if ( (txfee= jdouble(vals,"txfee") * SATOSHIDEN) == 0 )
+            txfee = coin->txfee;
+        return(iguana_utxorawtx(myinfo,coin,timelock,destaddr,changeaddr,satoshis,txfee,&completed,sendflag,utxos));
+    }
+    return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
+}
+
+
+//int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timelocked,char *destaddr,bits256 txid,int32_t vout)
+
 #include "../includes/iguana_apiundefs.h"

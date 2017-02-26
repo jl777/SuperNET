@@ -20,16 +20,14 @@
 //#include <dispatch/dispatch.h>
 
 typedef float svmtype;
-#ifdef WIN32
+
 // fadedreamz@gmail.com - added for successful compilation, however, for MSVC probably require a particular OpenCL SDK
 // to work with it (e,g nvidia or amd SDK)
-typedef struct fake_opencl_double {
+typedef struct fake_opencl_double { //use a struct for double2 typedefinition on all OS - ca333@protonmail.ch
 	double x;
 	double y;
 }double2;
-#else
-typedef double double2 __attribute__((ext_vector_type(2)));
-#endif
+
 #define MAX_VECTORS (1440 * 365 * 5)
 #define MAIN_MAXCORES 16
 #define c_to_refc(c) (c)
@@ -192,7 +190,7 @@ void ocas_purge(struct ocas_vars *vars)
  fatal("dot_expanded_features not implemented");
  return(0);
  }
- 
+
  static inline void add_expanded_features(register double *W,register double y,register int c,register int selector,register int numfeatures)
  {
  fatal("add_expanded_features not implemented");
@@ -226,7 +224,7 @@ static inline double calc_ocas_output(register struct ocas_vars *vars,register i
     // printf("%f ",sum);
     return(sum);
 }
-    
+
 static inline void add_ocas_output(register double y,register struct ocas_vars *vars,register int selector,register int c,register int weekind,register int answerind,register double *W,register double *new_a,register int numfeatures)
 {
     register int coeffi;
@@ -321,7 +319,7 @@ static inline double _dbufave(register double *buf,register int len)
         sum = 0.;
     return(sum);
 }
-    
+
 static inline void add_newcut_entry(register struct ocas_vars *vars,register int answerind,register int *new_cut,register int i,register int weekind,register double y)
 {
     weekind <<= 1;
@@ -334,7 +332,7 @@ static inline double validate_ocas_model(register struct ocas_vars *vars,registe
 {
     register svmtype *features;
     register double y,pred,perc,answer=0.,feature;
-    register int i,j,pos,neg,good,bad,oldcuts,training_errors,weekind,nonz,posA,negA;
+    register int i,j,pos,neg,good,bad,oldcuts,training_errors,weekind,nonz=0,posA,negA;
     for (i=pos=neg=good=bad=oldcuts=training_errors=posA=negA=0; i<numdocs; i++)
     {
         weekind = (weekinds == 0) ? i : weekinds[i];
@@ -403,7 +401,7 @@ static int _increasing_double(const void *a,const void *b)
 #undef double_a
 #undef double_b
 }
-    
+
 static inline void calc_ocas_strategy(register struct ocas_vars *vars,register int answerind,register double C,register int numfeatures,register int len,register int *weekinds,register int *new_cut,register double *W,register double *oldW,register double *output,register double *old_output,register double2 *hpfb)
 {
     double answermag;
@@ -541,9 +539,9 @@ static inline void calc_ocas_strategy(register struct ocas_vars *vars,register i
 
 static inline double ocas_splx_solver(register int *nonzalphap,register int maxlhs,register double *d,register double *activeH,register double *diag_H,register double *f,register double C,register double *alpha,register int n,register int MaxIter,register double TolAbs,register double TolRel,register double QP_TH)
 {
-    register double *col_u,*col_v;
-    register double QP,QD,lastQD,tmp,diff,distA,distB,etaA,etaB,improv,tmp_num,delta,x_neq0,xval,dval,diagval,tmp_den,tau;
-    register int u=0,v=0,i,j,iter,nonzalpha,unlikely = 0;
+    register double *col_u=0,*col_v=0;
+    register double QP,QD,lastQD,tmp,diff,distA,distB,etaA,etaB,improv,tmp_num,delta,x_neq0,xval,dval,diagval=0.,tmp_den,tau=0.;
+    register int u=0,v=0,i,j,iter,nonzalpha=0,unlikely = 0;
     QP = distA = distB = OCAS_PLUS_INF;	lastQD = QD = OCAS_NEG_INF;
     x_neq0 = C;
     etaA = etaB = 0.;
@@ -782,11 +780,11 @@ static void ocas_print(struct ocas_vars *vars,int answerind,int ishwm,double C)
     //printf("ocas_print.A%d\n",answerind);
     //printf("%s.A%02d %4d %8.2f | QP %9.3f QD %9.3f [%9.4f %7.3f] SV.%d %4d | M%9.6f (%9.6f max %8.1f %9.6f) %s.A%02d %9.6f%%\n",
     dispvals[0] = vars->Q_P[answerind]/1000000000.; dispvals[1] = (C * vars->Q_D[answerind])/1000000000.;
-    dispvals[2] = (vars->Q_P[answerind]-C * vars->Q_D[answerind]) / 1000000000; 
+    dispvals[2] = (vars->Q_P[answerind]-C * vars->Q_D[answerind]) / 1000000000;
     dispvals[3] = (vars->Q_P[answerind]-C * vars->Q_D[answerind]) / MAX(1,fabs(vars->Q_P[answerind]));
     printf("%3d %d.A%02d +%d -%d",vars->nohwm[answerind],vars->refc,answerind,vars->good[answerind],vars->bad[answerind]);
     printf(" %4d %8.2f |QP %9.3f QD %10.2f [%11.2f %9.1f] SV.%3d %3d |M%9.3f errs.%-6d %-8.0f %5.2f%% errs %6.5f A%9.6f W0%9.6f D%11.9f\n",//[%7.4f%%]\n",
-           vars->numIt[answerind],vars->ocas_time/1000,dispvals[0],dispvals[1],dispvals[2],dispvals[3], 
+           vars->numIt[answerind],vars->ocas_time/1000,dispvals[0],dispvals[1],dispvals[2],dispvals[3],
            vars->nNZAlpha[answerind], vars->numlhs[answerind],
            // PTRS->lastmetrics[answerind],PTRS->learningrates[answerind][0],PTRS->maxiters[answerind],PTRS->learningrates[answerind][1],
            vars->lastmetrics[answerind][0],vars->trn_err[answerind],vars->maxiters[answerind],vars->perc[answerind],
@@ -827,8 +825,8 @@ static inline void finish_ocasiter(register int answerind,register struct ocas_v
     vars->errperc[answerind] = (100 * (double)vars->trn_err[answerind])/(double)MAX(1,vars->len[answerind]);
     vars->Q_P[answerind] = 0.5*vars->sq_norm_W[answerind] + (C * vars->xi[answerind]);
     vars->ocas_time = (vars->output_time + vars->w_time + vars->add_time + vars->sort_time + vars->qp_solver_time);
-    ocas_print(vars,answerind,0,C);	
-}	
+    ocas_print(vars,answerind,0,C);
+}
 
 static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
 {
@@ -840,7 +838,7 @@ static inline int ocas_iter(struct ocas_vars *vars,int max_nohwm)
     int inactives[81];
     register struct ocas_CLbuffers *ptr;
     register double netcuts,startmilli,y,psum,pcount,nosum;
-    register int i,numfeatures,cutlen,lastanswerind,lwm,numactive,numthreads,answerind,*weekinds;
+    register int i,numfeatures,cutlen,lastanswerind,lwm=(1<<20),numactive,numthreads,answerind,*weekinds;
     numactive = 0;
     if ( (numfeatures= vars->numfeatures) > MAX_OCAS_FEATURES )
     {
@@ -947,8 +945,8 @@ static inline int init_ocas_vars(int numthreads,int selector,long answerindmask,
 {
     int answerind,lastanswerind,retval = 0;
     lastanswerind = TRADEBOTS_NUMANSWERS;
-    vars->maxlen = maxlen; 
-    vars->numthreads = numthreads; 
+    vars->maxlen = maxlen;
+    vars->numthreads = numthreads;
     vars->selector = selector;
     //printf("init_ocas_vars lastanswerind.%d\n",lastanswerind);
     for (answerind=0; answerind<lastanswerind; answerind++)
@@ -956,8 +954,8 @@ static inline int init_ocas_vars(int numthreads,int selector,long answerindmask,
         //printf("A%d.len_%d ",answerind,vars->len[answerind]);
         if ( vars->len[answerind] > 0 )//&& (answerindmask == -1L || ((1L<<answerind) & answerindmask) != 0) )
         {
-            vars->refc = c_to_refc(c); vars->c = c; vars->C = C; 
-            vars->numfeatures = numfeatures; vars->maxlhs = maxlhs; 
+            vars->refc = c_to_refc(c); vars->c = c; vars->C = C;
+            vars->numfeatures = numfeatures; vars->maxlhs = maxlhs;
             if ( vars->CLspaces[answerind] == 0 )
                 vars->CLspaces[answerind] = myaligned_alloc(sizeof(*vars->CLspaces[answerind]));
             vars->answerabsaves[answerind] = answerabsave[answerind];
@@ -972,7 +970,7 @@ static inline int init_ocas_vars(int numthreads,int selector,long answerindmask,
     //printf("mask.%lx init_ocas_vars selector.%d weekinds[0].%p\n",answerindmask,selector,vars->weekinds[0]);
     return(retval);
 }
-    
+
 void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
 {
     struct ocas_CLbuffers *ptr; struct ocas_lhsbuffers *lhs;
@@ -1061,7 +1059,7 @@ void ocas_init(struct ocas_vars *vars,int32_t c,int32_t numfeatures,int32_t star
     vars->output_time = vars->sort_time = vars->w_time = vars->qp_solver_time = vars->ocas_time = vars->add_time = 0;
     vars->startweekind = starti; vars->endweekind = endi;
 }
-    
+
 int32_t ocas_gen(int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
 {
     int32_t i; struct ocas_vars *vars = calloc(1,sizeof(*vars));
@@ -1072,4 +1070,3 @@ int32_t ocas_gen(int32_t c,int32_t numfeatures,int32_t starti,int32_t endi)
     return(0);
 }
 #endif
-

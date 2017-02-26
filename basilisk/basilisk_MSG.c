@@ -538,7 +538,7 @@ uint32_t basilisk_crcrecv(struct supernet_info *myinfo,int32_t width,uint8_t *ve
 
 uint32_t basilisk_crcsend(struct supernet_info *myinfo,int32_t width,uint8_t *verifybuf,int32_t maxlen,bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t crcs[2])
 {
-    uint32_t crc; int32_t recvlen;
+    uint32_t crc; int32_t recvlen=0;
     if ( crcs != 0 )
     {
         crc = calc_crc32(0,data,datalen);

@@ -44,7 +44,7 @@ int32_t iguana_scriptdata(struct iguana_info *coin, uint8_t *scriptspace, long f
                 memcpy(scriptspace,(void *)(fileptr[0] + (uint32_t)scriptpos),scriptlen);
                 return(retval);
             }
-            else if ( 0 )
+            else if ( (0) )
             {
                 printf("munmap (%s)\n",fname);
                 munmap((void *)fileptr[0],fileptr[1]);
@@ -350,7 +350,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         {
                             addr->lastsent = block->height;
                             printf("Sendlen.%d block.%d %s to %s\n",total,block->height,bits256_str(str,block->RO.hash2),addr->ipaddr);
-                            if ( 0 )
+                            if ( (0) )
                             {
                                 struct iguana_txblock txdata; int32_t checklen; static struct OS_memspace RAWMEM;
                                 if ( RAWMEM.ptr == 0 )

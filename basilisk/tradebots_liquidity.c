@@ -309,8 +309,8 @@ int32_t tradebots_calcpreds(float *RTpreds,struct tradebot_arbpair *pair,double 
 void tradebots_calcanswers(struct tradebot_arbpair *pair)
 {
     double highbid,lowask,futurebid,futureask,ave,vol,bidaves[TRADEBOTS_NUMDECAYS],askaves[TRADEBOTS_NUMDECAYS],bidslopes[TRADEBOTS_NUMDECAYS],askslopes[TRADEBOTS_NUMDECAYS];
-    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin,futuremax,minval,maxval,*hblas = 0;
-    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi;
+    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin=0,futuremax=0,minval=0,maxval=0,*hblas = 0;
+    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi=0;
     OCAS_PLUS_INF = _OCAS_PLUS_INF; OCAS_NEG_INF = -_OCAS_PLUS_INF;
     if ( pair->fp != 0 )
     {
@@ -982,7 +982,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
                 } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
             }
             myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.6f ask %.8f maxvol %.f ref %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.maxvol,li.refprice);
+            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
             return;
         }
     }
@@ -1010,7 +1010,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             dir = 1;
         else if ( strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 )
             dir = -1;
-        else dir = 0;
+        else continue;
         if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
         {
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
@@ -1056,7 +1056,7 @@ struct liquidity_info *_default_lifind(struct supernet_info *myinfo,int32_t *dir
 void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
     // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir;
+    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir; char *tradestr=0; cJSON *tradejson;
     srcamount = swap->I.req.srcamount;
     destamount = swap->I.req.destamount;
     profitmargin = (double)swap->I.req.profitmargin / 1000000.;
@@ -1101,8 +1101,8 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
             if ( dir < 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
         }
     }
     else
@@ -1111,9 +1111,19 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
             if ( dir > 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
         }
+    }
+    if ( tradestr != 0 )
+    {
+        if ( (tradejson= cJSON_Parse(tradestr)) != 0 )
+        {
+            if ( jobj(tradejson,"error") == 0 ) // balancing is opposite trade
+                tradebot_pendingadd(myinfo,tradejson,swap->I.req.dest,destamount,swap->I.req.src,srcamount);
+            else free_json(tradejson);
+        }
+        free(tradestr);
     }
 }
 
@@ -1143,7 +1153,7 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 
 void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t numbids,int32_t numasks)
 {
-    double price,profitmargin,volume; struct tradebot_arbpair *pair;
+    double price,profitmargin=0.,volume; struct tradebot_arbpair *pair;
     if ( strcmp(rel,"NXT") == 0 && strcmp(base,"BTC") != 0 && (base= NXT_assetnamefind(base)) == 0 )
     {
         //printf("reject %s %s/%s\n",exchange,base,rel);
@@ -1154,7 +1164,7 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         //printf("reject %s %s/%s\n",exchange,base,rel);
         return;
     }
-    //printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
+    printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
     if ( numbids > 0 && (volume= bidasks[0].volume) > 0. && (profitmargin=
                          tradebot_liquidity_active(myinfo,&price,exchange->name,base,rel,volume)) > 0. )
     {

@@ -330,9 +330,9 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
-        printf("avebid %f bidvol %f, aveask %f askvol %f\n",retvals[0],retvals[1],retvals[2],retvals[3]);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
         destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
+        printf("aveprice %f dest %.8f avebid %f bidvol %f, aveask %f askvol %f\n",aveprice,dstr(destamount),retvals[0],retvals[1],retvals[2],retvals[3]);
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -343,8 +343,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             free(retstr);
         }
         // BTC balance 0.00500000 destamount 0.00041951 aveprice 0.00421619 minamount 0.00020000
-        printf("%s balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(minamount));
-        if ( balance > destamount && (int64_t)destamount > 0 && destamount >= maxamount && destamount >= minamount )
+        printf("%s balance %.8f destamount %.8f aveprice %.8f maxamount %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(maxamount),dstr(minamount));
+        if ( balance > destamount && (int64_t)destamount > 0 && destamount >= minamount ) // max?
         {
             metric = 1.;
             *issueR = list[0];
@@ -374,6 +374,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
 {
     cJSON *array,*item; uint8_t *hexdata,*allocptr,hexspace[32768]; char *hexstr; int32_t i,hexlen,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
+    memset(&R,0,sizeof(R));
 //printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {

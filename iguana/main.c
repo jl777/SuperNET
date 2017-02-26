@@ -274,7 +274,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
     //char str[65]; printf("processJSON %p %s\n",&myinfo->privkey,bits256_str(str,myinfo->privkey));
     if ( json != 0 )
     {
-        if ( (tag= j64bits(json,"tag")) == 0 )
+        if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
         {
             OS_randombytes((uint8_t *)&tag,sizeof(tag));
             jadd64bits(json,"tag",tag);
@@ -304,7 +304,7 @@ char *SuperNET_processJSON(struct supernet_info *myinfo,struct iguana_info *coin
             {
                 if ( is_cJSON_Array(retjson) == 0 )
                 {
-                    if ( j64bits(retjson,"tag") != tag )
+                    if ( jobj(retjson,"tag") == 0 || j64bits(retjson,"tag") != tag )
                     {
                         if ( jobj(retjson,"tag") != 0 )
                             jdelete(retjson,"tag");
@@ -346,7 +346,7 @@ char *SuperNET_JSON(struct supernet_info *myinfo,struct iguana_info *coin,cJSON 
         timestamp = (uint32_t)time(NULL);
         jaddnum(json,"timestamp",timestamp);
     }
-    if ( (tag= j64bits(json,"tag")) == 0 )
+    if ( jobj(json,"tag") == 0 || (tag= j64bits(json,"tag")) == 0 )
     {
         OS_randombytes((uint8_t *)&tag,sizeof(tag));
         jadd64bits(json,"tag",tag);
@@ -484,6 +484,8 @@ void mainloop(struct supernet_info *myinfo)
             }
             usleep(30000);
         }
+        if ( myinfo->DEXEXPLORER != 0 )
+            kmd_bitcoinscan();
         //pangea_queues(SuperNET_MYINFO(0));
         //if ( flag == 0 )
         //    usleep(100000 + isRT*100000 + (numpeers == 0)*1000000);
@@ -543,7 +545,7 @@ void iguana_appletests(struct supernet_info *myinfo)
 {
     char *str;
     //iguana_chaingenesis(1,1403138561,0x1e0fffff,8359109,bits256_conv("fd1751cc6963d88feca94c0d01da8883852647a37a0a67ce254d62dd8c9d5b2b")); // BTCD
-    if ( 0 )
+    if ( (0) )
     {
     char genesisblock[1024];
     //iguana_chaingenesis("VPN",0,bits256_conv("00000ac7d764e7119da60d3c832b1d4458da9bc9ef9d5dd0d91a15f690a46d99"),genesisblock,"scrypt",1,1409839200,0x1e0fffff,64881664,bits256_conv("698a93a1cacd495a7a4fb3864ad8d06ed4421dedbc57f9aaad733ea53b1b5828")); // VPN
@@ -571,13 +573,13 @@ void iguana_appletests(struct supernet_info *myinfo)
             bitcoin_sharedsecret(myinfo->ctx,hash2,pubkey,33);
         printf("secp256k1 elapsed %.3f for %d iterations\n",OS_milliseconds() - startmillis,i);
        getchar();**/
-        if ( 0 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
+        if ( (0) && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"protover\":70002,\"RELAY\":1,\"VALIDATE\":1,\"portp2p\":14631,\"rpc\":14632,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":512,\"endpend\":512,\"services\":129,\"maxpeers\":8,\"newcoin\":\"BTCD\",\"active\":1,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
         {
             free(str);
             if ( 1 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTC"),cJSON_Parse("{\"portp2p\":8333,\"RELAY\":0,\"VALIDATE\":0,\"agent\":\"iguana\",\"method\":\"addcoin\",\"startpend\":1,\"endpend\":1,\"services\":128,\"maxpeers\":8,\"newcoin\":\"BTC\",\"active\":0,\"numhelpers\":1,\"poll\":100}"),0,myinfo->rpcport)) != 0 )
             {
                 free(str);
-                if ( 0 && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
+                if ( (0) && (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"alice\",\"password\":\"alice\",\"passphrase\":\"alice\"}"),0,myinfo->rpcport)) != 0 )
                 {
                     free(str);
                     if ( (str= SuperNET_JSON(myinfo,iguana_coinfind("BTCD"),cJSON_Parse("{\"agent\":\"SuperNET\",\"method\":\"login\",\"handle\":\"bob\",\"password\":\"bob\",\"passphrase\":\"bob\"}"),0,myinfo->rpcport)) != 0 )
@@ -641,7 +643,7 @@ int32_t iguana_commandline(struct supernet_info *myinfo,char *arg)
                         free(str);
             }
             free_json(argjson);
-            if ( 0 )
+            if ( (0) )
             {
                 uint32_t buf[81],c;
                 OS_randombytes((void *)buf,sizeof(buf));
@@ -670,6 +672,7 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s",GLOBAL_GENESISDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_CONFSDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/TRANSACTIONS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/purgeable",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_VALIDATEDIR), OS_ensure_directory(dirname);
@@ -1575,7 +1578,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=2; iter<3; iter++)
+        for (iter=3; iter<4; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -1611,9 +1614,11 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
                     if ( (iter & 1) == 0 )
                     {
-                        printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
-                        printf("sleep 3\n");
-                        //printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
+                        if ( (0) )
+                        {
+                            printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
+                            printf("sleep 3\n");
+                        } else printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"listunspent\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\"\n",coinaddr);
                     }
                     else
                     {
@@ -1673,9 +1678,9 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 5;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 12;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
-    if ( 0 && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
+    if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
         komodo_REVS_merge(batchstr,batchstr2);
     }
@@ -1707,6 +1712,7 @@ void iguana_main(void *arg)
         {
             myinfo->rpcport = IGUANA_NOTARYPORT;
             myinfo->IAMNOTARY = 1;
+            myinfo->DEXEXPLORER = 1;
         }
     }
 #ifdef IGUANA_OSTESTS
@@ -1721,6 +1727,7 @@ void iguana_main(void *arg)
     }
     strcpy(myinfo->rpcsymbol,"BTCD");
     iguana_urlinit(myinfo,ismainnet,usessl);
+    portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
 #if LIQUIDITY_PROVIDER
@@ -1759,7 +1766,7 @@ void iguana_main(void *arg)
     {
         basilisks_init(myinfo);
     }
-    if ( 0 )
+    if ( (0) )
     {
         char *jsonstr = "[\"03b7621b44118017a16043f19b30cc8a4cfe068ac4e42417bae16ba460c80f3828\", \"02ebfc784a4ba768aad88d44d1045d240d47b26e248cafaf1c5169a42d7a61d344\", \"03750cf30d739cd7632f77c1c02812dd7a7181628b0558058d4755838117e05339\", \"0394f3529d2e8cc69ffa7a2b55f3761e7be978fa1896ef4c55dc9c275e77e5bf5e\", \"0243c1eeb3777af47187d542e5f8c84f0ac4b05cf5a7ad77faa8cb6d2d56db7823\", \"02bb298844175640a34e908ffdfa2839f77aba3d5edadefee16beb107826e00063\", \"02fa88e549b4b871498f892e527a5d57287916809f8cc3163f641d71c535e8df5a\", \"032f799e370f06476793a122fcd623db7804898fe5aef5572095cfee6353df34bf\", \"02c06fe5401faff4442ef87b7d1b56c2e5a214166615f9a2f2030c71b0cb067ae8\", \"038ac67ca49a8169bcc5de83fe020071095a2c3b2bc4d1c17386977329758956d5\"]";
         
@@ -1778,3 +1785,7 @@ void iguana_main(void *arg)
     iguana_launchdaemons(myinfo);
 }
 
+// features
+// komodod convert passphrase to privkey
+// Z -> Z
+// iguana init nanomsg in own thread

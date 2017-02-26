@@ -594,7 +594,7 @@ int32_t iguana_send(struct iguana_info *coin,struct iguana_peer *addr,uint8_t *s
             }
     }
     addr->totalsent += len;
-    if ( 0 && addr->basilisk != 0 )
+    if ( (0) && addr->basilisk != 0 )
         printf("verack.%d (%s) sent.%d bytes to %s\n",addr->msgcounts.verack,cmdstr,len,addr->ipaddr);
     return(len);
 }
@@ -623,7 +623,7 @@ int32_t iguana_queue_send(struct iguana_peer *addr,int32_t delay,uint8_t *serial
         packet->embargo.millis += delay;
     }
     memcpy(packet->serialized,serialized,datalen);
-    if ( 0 && addr->supernet != 0 )
+    if ( (0) && addr->supernet != 0 )
         printf("%p queue send.(%s) %d to (%s)\n",packet,serialized+4,datalen,addr->ipaddr);
     queue_enqueue("sendQ",&addr->sendQ,&packet->DL);
     return(datalen);
@@ -1050,7 +1050,7 @@ int32_t iguana_pollsendQ(struct iguana_info *coin,struct iguana_peer *addr)
     struct iguana_packet *packet;
     if ( (packet= queue_dequeue(&addr->sendQ)) != 0 )
     {
-        if ( 0 && (addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0) )
+        if ( (0) && (addr->supernet != 0 || strcmp((char *)&packet->serialized[4],"SuperNET") == 0) )
             printf("%s: send.(%s).%d usock.%d dead.%u ready.%u supernet.%d\n",addr->ipaddr,packet->serialized+4,packet->datalen,addr->usock,addr->dead,addr->ready,addr->supernet);
         if ( strcmp((char *)&packet->serialized[4],"getdata") == 0 )
         {
@@ -1385,18 +1385,18 @@ void iguana_dedicatedloop(struct supernet_info *myinfo,struct iguana_info *coin,
         }
     }
     //printf(">>>>>>>>>>>>>> finish %s dedicatedloop.%s\n",coin->symbol,addr->ipaddr);
-    if ( 0 )
+    if ( (0) )
     {
         if ( addr->vinsfp != 0 )
             fclose(addr->vinsfp), addr->vinsfp = 0;
         if ( addr->voutsfp != 0 )
-            fclose(addr->voutsfp), addr->voutsfp = 0;
+         fclose(addr->voutsfp), addr->voutsfp = 0;
     }
     iguana_iAkill(coin,addr,addr->dead != 0);
     myfree(buf,bufsize);
     //if ( addr->filehash2 != 0 )
     //    myfree(addr->filehash2,addr->maxfilehash2*sizeof(*addr->filehash2)), addr->filehash2 = 0;
-    if ( 0 )
+    if ( (0) )
     {
         iguana_mempurge(&addr->RAWMEM);
         iguana_mempurge(&addr->TXDATA);

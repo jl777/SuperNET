@@ -637,6 +637,11 @@ void gfshare_ctx_decextract(uint8_t *logs,uint8_t *exps,gfshare_ctx * /* ctx */,
 void libgfshare_init(struct supernet_info *myinfo,uint8_t _logs[256],uint8_t _exps[510]);
 int32_t init_sharenrs(uint8_t sharenrs[255],uint8_t *orig,int32_t m,int32_t n);
 void iguana_schnorr(struct supernet_info *myinfo);
+void iguana_fixsecp(struct supernet_info *myinfo);
+int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint32_t timestamp);
+
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
+uint64_t _iguana_interest(uint32_t now,int32_t height,uint32_t txlocktime,uint64_t value);
 
 #include "../includes/iguana_api.h"
 
