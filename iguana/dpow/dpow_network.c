@@ -1900,7 +1900,8 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     num = num2 = n = 0;
     for (iter=0; iter<1000; iter++)
     {
-        if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 )
+        freeptr = 0;
+        if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 )
         {
             num++;
             if ( size > 0 )
@@ -1948,11 +1949,12 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     } else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
                 } //else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
             }
-            if ( freeptr != 0 )
-                nn_freemsg(freeptr), np = 0, freeptr = 0;
         } else flags |= 1;
+        if ( freeptr != 0 )
+            nn_freemsg(freeptr), np = 0, freeptr = 0;
         if ( myinfo->dexsock >= 0 ) // from servers
         {
+            freeptr = 0;
             if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
             {
                 //fprintf(stderr,"%d ",size);
@@ -1964,12 +1966,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     dex_packet(myinfo,dexp,size);
                 }
                 //printf("GOT DEX bus PACKET.%d\n",size);
-                if ( freeptr != 0 )
-                    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
             } else flags |= 2;
+            if ( freeptr != 0 )
+                nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }
         if ( myinfo->repsock >= 0 ) // from clients
         {
+            dexp = 0;
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
             {
                 num2++;
@@ -2004,11 +2007,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 //printf("GOT DEX rep PACKET.%d\n",size);
                 //if ( freeptr != 0 )
                 //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
-                if ( dexp != 0 )
-                    nn_freemsg(dexp), dexp = 0;
                 //if ( num > 1000 )
                 //    break;
             } else flags |= 4;
+            if ( dexp != 0 )
+                nn_freemsg(dexp), dexp = 0;
         }
         if ( (num + n + num2) != lastval )
         {
