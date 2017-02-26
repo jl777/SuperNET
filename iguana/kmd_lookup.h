@@ -207,7 +207,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
-                        printf("ERROR: %p != %p for ht.%d\n",ptr,kmd_transaction(coin,tx->txid),tx->height);
+                        printf("%s ERROR: %p != %p for ht.%d\n",coin->symbol,ptr,kmd_transaction(coin,tx->txid),tx->height);
                     ptr->fpos = lastpos;
                     ptr->numvins = T.numvins;
                     ptr->numvouts = T.numvouts;
@@ -219,7 +219,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                         }
                         else
                         {
-                            printf("error loading vout.%d ht.%d\n",i,T.height);
+                            printf("%s error loading vout.%d ht.%d\n",coin->symbol,i,T.height);
                             break;
                         }
                     }
@@ -255,7 +255,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                     {
                         if ( kmd_transactionvin(coin,txid,i,spenttxid,spentvout) < 0 )
                         {
-                            printf("error adding spend %s %d of %d\n",bits256_str(str,txid),i,numvins);
+                            printf("%s error adding spend %s %d of %d\n",coin->symbol,bits256_str(str,txid),i,numvins);
                             //break;
                         }
                     } else break;
@@ -277,7 +277,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                 {
                     if ( ptr->ptrs[(i<<1) + 1] != kmd_transaction(coin,vptr->spendtxid) )
                     {
-                        printf("mismatch %s spend.%d %p %p\n",bits256_str(str,vptr->spendtxid),i,ptr->ptrs[(i<<1) + 1],kmd_transaction(coin,vptr->spendtxid));
+                        printf("%s mismatch %s spend.%d %p %p\n",coin->symbol,bits256_str(str,vptr->spendtxid),i,ptr->ptrs[(i<<1) + 1],kmd_transaction(coin,vptr->spendtxid));
                     }
                 }
             }
