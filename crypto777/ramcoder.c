@@ -437,7 +437,7 @@ int32_t ramcoder_compress(uint8_t *bits,int32_t maxlen,uint8_t *data,int32_t dat
     if ( ramcoder_encoder(0,1,data,datalen,hp,0,&seed) < 0 )
         return(-1);
     numbits = hp->bitoffset;
-    if ( 0 )
+    if ( (0) )
     {
         void *malloc(size_t); void free(void *);
         int32_t i,checklen; uint8_t *checkbuf;

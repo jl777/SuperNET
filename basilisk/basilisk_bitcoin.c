@@ -22,36 +22,6 @@
 };*/
 
 #ifdef bitcoincancalculatebalances
-int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *coinaddr)
-{
-    char params[512],str[65]; char *curlstr; cJSON *txobj,*vouts,*item,*sobj,*addrs; int32_t j,m,n; int64_t value = 0;
-    sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
-    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
-    {
-        if ( (txobj= cJSON_Parse(curlstr)) != 0 )
-        {
-            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
-            {
-                item = jitem(vouts,vout);
-                if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 )
-                {
-                    for (j=0; j<m; j++)
-                    {
-                        if ( strcmp(jstri(addrs,j),coinaddr) == 0 )
-                        {
-                            value = SATOSHIDEN * jdouble(item,"satoshis");
-                            break;
-                        }
-                    }
-                }
-            }
-            free_json(txobj);
-        }
-        free(curlstr);
-    }
-    return(value);
-}
-
 char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight,int32_t minconf)
 {
     int32_t i,n,height,maxconf=1<<30; int64_t balance = 0; char params[512],*curlstr; cJSON *array,*retjson,*curljson;
@@ -82,6 +52,36 @@ char *bitcoin_balance(struct iguana_info *coin,char *coinaddr,int32_t lastheight
     }
     jaddnum(retjson,"balance",dstr(balance));
     return(jprint(retjson,1));
+}
+
+int64_t bitcoin_value(struct iguana_info *coin,bits256 txid,int16_t vout,char *coinaddr)
+{
+    char params[512],str[65]; char *curlstr; cJSON *txobj,*vouts,*item,*sobj,*addrs; int32_t j,m,n; int64_t value = 0;
+    sprintf(params,"[\"%s\", 1]",bits256_str(str,txid));
+    if ( (curlstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",params)) != 0 )
+    {
+        if ( (txobj= cJSON_Parse(curlstr)) != 0 )
+        {
+            if ( (vouts= jarray(&n,txobj,"vout")) != 0 && vout < n )
+            {
+                item = jitem(vouts,vout);
+                if ( (sobj= jobj(item,"scriptPubKey")) != 0 && (addrs= jarray(&m,sobj,"addresses")) != 0 )
+                {
+                    for (j=0; j<m; j++)
+                    {
+                        if ( strcmp(jstri(addrs,j),coinaddr) == 0 )
+                        {
+                            value = SATOSHIDEN * jdouble(item,"satoshis");
+                            break;
+                        }
+                    }
+                }
+            }
+            free_json(txobj);
+        }
+        free(curlstr);
+    }
+    return(value);
 }
 
 char *basilisk_bitcoinblockhashstr(char *coinstr,char *serverport,char *userpass,int32_t height)
@@ -578,6 +578,106 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
     if ( txobj != 0 )
         free_json(txobj);
     return(rawtx);
+}
+
+int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timelocked,char *destaddr,bits256 txid,int32_t vout)
+{
+    uint8_t script[35],script2[35],p2shscript[128],rmd160[20],addrtype; char *retstr,*spendscriptstr; int32_t p2shlen,spendlen; cJSON *sobj,*txout=0; int64_t value = 0;
+    bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
+    if ( addrtype != coin->chain->pubtype )
+        return(-1);
+    p2shlen = bitcoin_timelockspend(p2shscript,0,rmd160,timelocked);
+    calc_rmd160(0,rmd160,p2shscript,p2shlen);
+    spendlen = bitcoin_p2shspend(script,0,rmd160);
+    if ( coin->FULLNODE != 0 )
+        txout = dpow_gettxout(myinfo,coin,txid,vout);
+    else if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
+    {
+        txout = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    if ( txout != 0 )
+    {
+        if ( (sobj= jobj(txout,"scriptPubKey")) != 0 && (spendscriptstr= jstr(sobj,"hex")) == 0 )
+        {
+            if ( strlen(spendscriptstr) == spendlen*2 )
+            {
+                decode_hex(script2,spendlen,spendscriptstr);
+                if ( memcmp(script,script2,spendlen) != 0 )
+                    return(-2);
+                value = SATOSHIDEN * jdouble(txout,"value");
+            } else return(-4);
+        }
+        free_json(txout);
+        return(value);
+    } return(-2);
+}
+
+char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,uint64_t satoshis,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos)
+{
+    uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t p2shlen,spendlen; cJSON *retjson,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
+    *completedp = 0;
+    if ( iguana_addressvalidate(coin,&addrtype,destaddr) < 0 || iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
+        return(clonestr("{\"error\":\"invalid coin address\"}"));
+    bitcoin_addr2rmd160(&addrtype,rmd160,changeaddr);
+    if ( addrtype != coin->chain->pubtype )
+        return(clonestr("{\"error\":\"invalid changeaddr type\"}"));
+    bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
+    if ( addrtype != coin->chain->pubtype )
+        return(clonestr("{\"error\":\"invalid dest address type\"}"));
+    retjson = cJSON_CreateObject();
+    if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
+    {
+        if ( timelock == 0 )
+            spendlen = bitcoin_standardspend(script,0,rmd160);
+        else
+        {
+            timelocked = (uint32_t)(time(NULL)+timelock);
+            if ( (timelocked % 3600) != 0 )
+                timelocked += (3600 - (timelocked % 3600));
+            p2shlen = bitcoin_timelockspend(p2shscript,0,rmd160,timelocked);
+            calc_rmd160(0,rmd160,p2shscript,p2shlen);
+            spendlen = bitcoin_p2shspend(script,0,rmd160);
+            printf("timelock.%d spend timelocked %u\n",timelock,timelocked);
+        }
+        bitcoin_txoutput(txobj,script,spendlen,satoshis);
+        if ( (rawtx= iguana_calcutxorawtx(myinfo,coin,&vins,txobj,satoshis,changeaddr,txfee,utxos,"",0,0)) != 0 )
+        {
+            jaddstr(retjson,"rawtx",rawtx);
+            if ( (signedtx= iguana_signrawtx(myinfo,coin,0,&txid,completedp,vins,rawtx,0,0)) != 0 )
+            {
+                if ( *completedp != 0 )
+                {
+                    jaddbits256(retjson,"txid",txid);
+                    jaddstr(retjson,"signedtx",signedtx);
+                    if ( sendflag != 0 )
+                    {
+                        //printf("send signedtx.(%s)\n",signedtx);
+                        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+                        jaddbits256(retjson,"sent",txid);
+                    }
+                }
+            } else printf("error signing raw utxoduplicates tx\n");
+        }
+    }
+    if ( timelock != 0 )
+    {
+        jaddnum(retjson,"timelock",timelock);
+        jaddnum(retjson,"timelocked",timelocked);
+    }
+    jaddstr(retjson,"result","success");
+    if ( *completedp != 0 )
+        jadd(retjson,"completed",jtrue());
+    else jadd(retjson,"completed",jfalse());
+    if ( vins != 0 )
+        free_json(vins);
+    if ( txobj != 0 )
+        free_json(txobj);
+    if ( rawtx != 0 )
+        free(rawtx);
+    if ( signedtx != 0 )
+        free(signedtx);
+    return(jprint(retjson,1));
 }
 
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj,struct vin_info *V)

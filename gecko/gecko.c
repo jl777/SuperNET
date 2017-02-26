@@ -52,7 +52,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
         //iguana_update_balances(virt);
         //iguana_realtime_update(myinfo,virt);
     }
-    if ( 0 && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
+    if ( (0) && hwmhdrsi <= longesthdrsi )//&& virt->blocks.hwmchain.height < virt->longestchain-1 )
     {
         if ( time(NULL) > virt->hdrstime+3 )
         {
@@ -62,7 +62,7 @@ void gecko_iteration(struct supernet_info *myinfo,struct iguana_info *btcd,struc
             virt->hdrstime = (uint32_t)time(NULL);
         }
     }
-    if ( 0 && btcd->FULLNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
+    if ( (0) && btcd->FULLNODE != 0 )//&& virt->blocks.hwmchain.height >= virt->longestchain-virt->chain->bundlesize )
     {
         bitcoin_address(mineraddr,virt->chain->pubtype,myinfo->persistent_pubkey33,33);
         //fprintf(stderr,"mine.%s %s\n",virt->symbol,mineraddr);

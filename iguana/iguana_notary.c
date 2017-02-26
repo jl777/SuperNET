@@ -38,7 +38,7 @@ void dpow_fifoupdate(struct supernet_info *myinfo,struct dpow_checkpoint *fifo,s
     memset(newfifo,0,sizeof(newfifo));
     for (i=DPOW_FIFOSIZE-1; i>0; i--)
     {
-        if ( 0 && bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
+        if ( (0) && bits256_nonz(fifo[i-1].blockhash.hash) != 0 && (tip.blockhash.height - fifo[i-1].blockhash.height) != i )
             printf("(%d != %d) ",(tip.blockhash.height - fifo[i-1].blockhash.height),i);
         if ( (ind= (tip.blockhash.height - fifo[i-1].blockhash.height)) >= 0 && ind < DPOW_FIFOSIZE )
             newfifo[ind] = fifo[i-1];
@@ -147,7 +147,7 @@ void iguana_dPoWupdate(struct supernet_info *myinfo,struct dpow_info *dp)
 {
     int32_t height,num; uint32_t blocktime; bits256 blockhash; struct iguana_info *src,*dest;
     //fprintf(stderr,"dp.%p dPoWupdate (%s -> %s)\n",dp,dp!=0?dp->symbol:"",dp!=0?dp->dest:"");
-    if ( strcmp(dp->symbol,"KMD") == 0 )
+    //if ( strcmp(dp->symbol,"KMD") == 0 )
     {
         num = dpow_nanomsg_update(myinfo);
         //fprintf(stderr,"%d ",num);
@@ -228,6 +228,7 @@ void dpow_addresses()
 TWO_STRINGS(iguana,dpow,symbol,pubkey)
 {
     char *retstr,srcaddr[64],destaddr[64]; struct iguana_info *src,*dest; cJSON *ismine; int32_t i,srcvalid,destvalid; struct dpow_info *dp = &myinfo->DPOWS[myinfo->numdpows];
+    destvalid = srcvalid = 0;
     if ( myinfo->NOTARY.RELAYID < 0 )
     {
         if ( (retstr= basilisk_addrelay_info(myinfo,0,(uint32_t)calc_ipbits(myinfo->ipaddr),myinfo->myaddr.persistent)) != 0 )
@@ -612,6 +613,95 @@ HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
     return(_dex_gettxout(myinfo,symbol,txid,vout));
 }
 
+TWO_STRINGS(dex,listunspent,symbol,address)
+{
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    {
+        char url[1024],*retstr,*coinaddr,*script; int32_t i,n,vout; cJSON *retjson,*data,*item,*item3,*data3; bits256 txid; uint64_t val;
+        sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
+        if ( (retstr= issue_curl(url)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                data = jarray(&n,retjson,"data");
+                data3 = cJSON_CreateArray();
+                //[{"hash":"e0a40dac21103e92e0dc9311a0233640489afc5beb5ba3b009848a8e9151dc55","time":"2017-02-21T16:48:28+0000","confirmations":1,"is_coinbase":false,"value":4100000,"index":1,"address":"19rjYdJtRN3qoammX3r1gxy9bvh8p8DmRc","type":"pubkeyhash","multisig":null,"script":"OP_DUP OP_HASH160 6128e7459989d35d530bcd4066c9aaf1f925430a OP_EQUALVERIFY OP_CHECKSIG","script_hex":"76a9146128e7459989d35d530bcd4066c9aaf1f925430a88ac"}]
+                /*{
+                    "txid" : "e95d3083baf733dfda2fcd1110fe2937cb3580f8b1b237aad547528440dfa873",
+                    "vout" : 1,
+                    "address" : "RNgdefRo2iRLWqDXEogJrsTw35MgDPQP4R",
+                    "account" : "",
+                    "scriptPubKey" : "76a91493088c5f3546225e0ef6ba9c9c6a74d4c2df877388ac",
+                    "amount" : 150.00000000,
+                    "interest" : 0.30000000,
+                    "confirmations" : 20599,
+                    "spendable" : true
+                }*/
+                for (i=0; i<n; i++)
+                {
+                    item = jitem(data,i);
+                    txid = jbits256(item,"hash");
+                    vout = jint(item,"index");
+                    val = j64bits(item,"value");
+                    coinaddr = jstr(item,"address");
+                    script = jstr(item,"script_hex");
+                    item3 = cJSON_CreateObject();
+                    jaddbits256(item3,"txid",txid);
+                    jaddnum(item3,"vout",vout);
+                    jaddnum(item3,"amount",dstr(val));
+                    jaddnum(item3,"value",dstr(val));
+                    if ( coinaddr != 0 )
+                        jaddstr(item3,"address",coinaddr);
+                    if ( script != 0 )
+                        jaddstr(item3,"scriptPubKey",script);
+                    jaddnum(item3,"confirmations",jint(item,"confirmations"));
+                    jadd(item3,"spendable",jtrue());
+                    jaddi(data3,item3);
+                }
+                free(retstr);
+                retstr = jprint(data3,1);
+                free_json(retjson);
+            }
+            return(retstr);
+        }
+    }
+    return(_dex_listunspent(myinfo,symbol,address));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
+{
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    {
+        char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3,*data,*data2; int32_t i,n;
+        sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/transactions?api_key=%s",address,myinfo->blocktrail_apikey);
+        if ( (retstr= issue_curl(url)) != 0 )
+        {
+            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unconfirmed-transactions?api_key=%s",address,myinfo->blocktrail_apikey);
+            if ( (retstr2= issue_curl(url)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 && (retjson2= cJSON_Parse(retstr2)) != 0 )
+                {
+                    data = jarray(&n,retjson,"data");
+                    data2 = jarray(&n,retjson2,"data");
+                    retjson3 = jduplicate(data);
+                    if ( n > 0 )
+                    {
+                        for (i=0; i<n; i++)
+                            jaddi(retjson3,jduplicate(jitem(data2,i)));
+                    }
+                    printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
+                    free(retstr);
+                    free(retstr2);
+                    free_json(retjson);
+                    free_json(retjson2);
+                    return(jprint(retjson3,1));
+                }
+            }
+        }
+    }
+    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
+}
+
 STRING_ARG(dex,getinfo,symbol)
 {
     return(_dex_getinfo(myinfo,symbol));
@@ -657,16 +747,6 @@ TWO_STRINGS(dex,validateaddress,symbol,address)
     return(_dex_validateaddress(myinfo,symbol,address));
 }
 
-TWO_STRINGS(dex,listunspent,symbol,address)
-{
-    return(_dex_listunspent(myinfo,symbol,address));
-}
-
-TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
-{
-    return(_dex_listtransactions(myinfo,symbol,address,count,skip));
-}
-
 STRING_ARG(dex,getnotaries,symbol)
 {
     return(_dex_getnotaries(myinfo,symbol));
@@ -698,6 +778,146 @@ THREE_STRINGS_AND_THREE_INTS(dex,kvupdate,symbol,key,value,flags,unused,unusedb)
     } else return(clonestr("{\"error\":\"free updates only on KV chain\"}"));
 }
 
+#include "kmd_lookup.h"
+
+TWO_STRINGS(dex,listunspent2,symbol,address)
+{
+    cJSON *retjson;
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+            if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
+                return(clonestr("[]"));
+            if ( (retjson= kmd_listunspent(myinfo,coin,address)) != 0 )
+                return(jprint(retjson,1));
+        }
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listunspent2(myinfo,symbol,address));
+    else return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions2,symbol,address,count,skip)
+{
+    cJSON *retjson;
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            if ( coin != 0 )
+                coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+            if ( strcmp(coin->symbol,"BTC") == 0 || coin->DEXEXPLORER == 0 )
+                return(clonestr("[]"));
+            if ( (retjson= kmd_listtransactions(myinfo,coin,address,count,skip)) != 0 )
+                return(jprint(retjson,1));
+        }
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listtransactions2(myinfo,symbol,address,count,skip));
+    else return(clonestr("{\"error\":\"dex listunspent2 null symbol, address or coin\"}"));
+}
+
+HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_gettxin(coin,txid,vout),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 )
+        return(_dex_gettxin(myinfo,symbol,txid,vout));
+    else return(clonestr("{\"error\":\"dex gettxin null symbolor coin\"}"));
+}
+
+TWO_STRINGS(dex,listspent,symbol,address)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_listspent(myinfo,coin,address),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 && address != 0 )
+        return(_dex_listspent(myinfo,symbol,address));
+    else return(clonestr("{\"error\":\"dex listspent null symbol, address or coin\"}"));
+}
+
+TWO_STRINGS(dex,getbalance,symbol,address)
+{
+    char url[512],*retstr; cJSON *retjson; uint64_t val;
+    if ( myinfo->DEXEXPLORER != 0 )
+    {
+        if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
+            return(jprint(kmd_getbalance(myinfo,coin,address),1));
+        if ( coin != 0 )
+            coin->DEXEXPLORER = myinfo->DEXEXPLORER * myinfo->IAMNOTARY * (iguana_isnotarychain(coin->symbol) >= 0);
+    }
+    if ( symbol != 0 && address != 0 )
+    {
+        if ( strcmp(symbol,"BTC") == 0 && myinfo->IAMLP != 0 )
+        {
+            sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s?api_key=%s",address,myinfo->blocktrail_apikey);
+            if ( (retstr= issue_curl(url)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    //printf("balance\n");
+                    if ( (val= j64bits(retjson,"balance")) != 0 )
+                    {
+                        jdelete(retjson,"balance");
+                        jaddnum(retjson,"balance",dstr(val));
+                    }
+                    //printf("sent\n");
+                    if ( (val= j64bits(retjson,"sent")) != 0 )
+                    {
+                        jdelete(retjson,"sent");
+                        jaddnum(retjson,"sent",dstr(val));
+                    }
+                    //printf("received\n");
+                    if ( (val= j64bits(retjson,"received")) != 0 )
+                    {
+                        jdelete(retjson,"received");
+                        jaddnum(retjson,"received",dstr(val));
+                    }
+                    //printf("unconfirmed_sent\n");
+                    if ( (val= j64bits(retjson,"unconfirmed_sent")) != 0 )
+                    {
+                        jdelete(retjson,"unconfirmed_sent");
+                        jaddnum(retjson,"unconfirmed_sent",dstr(val));
+                    }
+                    //printf("unconfirmed_received\n");
+                    if ( (val= j64bits(retjson,"unconfirmed_received")) != 0 )
+                    {
+                        jdelete(retjson,"unconfirmed_received");
+                        jaddnum(retjson,"unconfirmed_received",dstr(val));
+                    }
+                    //printf("(%s) -> (%s)\n",retstr,jprint(retjson,0));
+                    free(retstr);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            return(retstr);
+        }
+        return(_dex_getbalance(myinfo,symbol,address));
+    } else return(clonestr("{\"error\":\"dex getbalance null symbol, address or coin\"}"));
+}
+
+STRING_ARG(dex,explorer,symbol)
+{
+    if ( symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+    {
+        myinfo->DEXEXPLORER = 1;
+        coin->DEXEXPLORER = 1;
+        return(clonestr("{\"result\":\"success\"}"));
+    }
+    return(clonestr("{\"error\":\"coin not active\"}"));
+}
 
 #include "../includes/iguana_apiundefs.h"
 

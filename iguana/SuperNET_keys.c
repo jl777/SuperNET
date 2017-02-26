@@ -220,7 +220,7 @@ int32_t SuperNET_savejsonfile(struct supernet_info *myinfo,char *finalfname,bits
 int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32_t fnamesize)
 {
     return(0);
-#ifndef __PNACL
+/*#ifndef __PNACL
     //if ( (bits256_nonz(*wallethashp) == 0 || bits256_cmp(*wallethashp,GENESIS_PRIVKEY) == 0) && (bits256_nonz(*wallet2privp) == 0 || bits256_cmp(*wallet2privp,GENESIS_PRIVKEY) == 0) )
     {
         sleep(1);
@@ -232,7 +232,7 @@ int32_t SuperNET_userkeys(char *passphrase,int32_t passsize,char *fname2fa,int32
         return(0);
     }
 #endif
-    return(-1);
+    return(-1);*/
 }
 
 cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,bits256 wallethash,char *fname2fa,int32_t fnamesize,bits256 wallet2priv)

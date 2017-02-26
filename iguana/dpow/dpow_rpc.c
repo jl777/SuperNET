@@ -324,6 +324,7 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
         json = cJSON_Parse(retstr);
         free(retstr);
     }
+    //printf("dpow_gettxout.(%s)\n",retstr);
     return(json);
 }
 
@@ -403,6 +404,36 @@ cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,ch
         return(0);
     }
     return(json);
+}
+
+cJSON *dpow_listspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+        return(kmd_listspent(myinfo,coin,coinaddr));
+    else
+    {
+        return(0);
+    }
+}
+
+cJSON *dpow_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+        return(kmd_getbalance(myinfo,coin,coinaddr));
+    else
+    {
+        return(0);
+    }
+}
+
+cJSON *dpow_gettxin(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
+{
+    if ( myinfo->DEXEXPLORER != 0 )
+        return(kmd_gettxin(coin,txid,vout));
+    else
+    {
+        return(0);
+    }
 }
 
 cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)

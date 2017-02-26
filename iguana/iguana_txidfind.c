@@ -18,7 +18,7 @@
 int32_t iguana_alloctxbits(struct iguana_info *coin,struct iguana_ramchain *ramchain)
 {
     static int64_t total; struct iguana_ramchaindata *rdata;
-    if ( 0 && ramchain->txbits == 0 && (rdata= ramchain->H.data) != 0 )
+    if ( (0) && ramchain->txbits == 0 && (rdata= ramchain->H.data) != 0 )
     {
         int32_t tlen; uint8_t *TXbits;
         TXbits = RAMCHAIN_PTR(rdata,TXoffset);
@@ -65,7 +65,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
         printf("iguana_sparseadd tablesize zero illegal\n");
         return(0);
     }
-    if ( 0 && setind == 0 )
+    if ( (0) && setind == 0 )
     {
         char str[65];
         for (i=n=0; i<tablesize; i++)
@@ -88,7 +88,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     //if ( setind == 0 )
     //    ramchain->sparsesearches++;
     //else ramchain->sparseadds++;
-    if ( 0 && (rdata= ramchain->H.data) != 0 && (ramchain->sparsesearches % 1000000) == 0 )
+    if ( (0) && (rdata= ramchain->H.data) != 0 && (ramchain->sparsesearches % 1000000) == 0 )
         printf("[%3d] %7d.[%-2d %8d] %5.3f adds.(%-10ld %10ld) search.(hits.%-10ld %10ld) %5.2f%% max.%ld\n",ramchain->height/rdata->numblocks,ramchain->height,width,tablesize,(double)(ramchain->sparseadditers + ramchain->sparsesearchiters)/(1+ramchain->sparsesearches+ramchain->sparseadds),ramchain->sparseadds,ramchain->sparseadditers,ramchain->sparsehits,ramchain->sparsesearches,100.*(double)ramchain->sparsehits/(1+ramchain->sparsesearches),ramchain->sparsemax+1);
     if ( width == 32 )
     {
@@ -123,7 +123,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
     else
     {
         bitoffset = (ind * width);
-        if ( 0 && setind == 0 )
+        if ( (0) && setind == 0 )
             printf("tablesize.%d width.%d bitoffset.%d\n",tablesize,width,(int32_t)bitoffset);
         for (i=0; i<tablesize; i++,ind++,bitoffset+=width)
         {
@@ -141,7 +141,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
             {
                 ptr = &bits[bitoffset >> 3];
                 modval = (bitoffset & 7);
-                if ( 0 && setind == 0 )
+                if ( (0) && setind == 0 )
                     printf("tablesize.%d width.%d bitoffset.%d modval.%d i.%d\n",tablesize,width,(int32_t)bitoffset,modval,i);
                 for (x=j=0; j<width; j++,modval++)
                 {
@@ -152,7 +152,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                 }
             }
             else x = bits[bitoffset >> 3];
-            if ( 0 && setind == 0 )
+            if ( (0) && setind == 0 )
                 printf("x.%d\n",x);
             if ( x == 0 )
             {
@@ -179,7 +179,7 @@ uint32_t iguana_sparseadd(uint8_t *bits,uint32_t ind,int32_t width,uint32_t tabl
                     }
                 }
                 else bits[bitoffset >> 3] = setind;
-                if ( 0 )
+                if ( (0) )
                 {
                     for (x=j=0; j<width; j++)
                     {
@@ -317,7 +317,7 @@ struct iguana_txid *iguana_txidfind(struct iguana_info *coin,int32_t *heightp,st
                     //printf("found txidind.%d\n",txidind);
                     if ( bits256_cmp(txid,T[txidind].txid) == 0 )
                     {
-                        if ( 0 )
+                        if ( (0) )
                         {
                             int32_t j; struct iguana_block *block;
                             for (j=0; j<bp->n; j++)
@@ -395,7 +395,7 @@ int32_t iguana_txidfastfind(struct iguana_info *coin,int32_t *heightp,bits256 tx
                         }
                         return(firstvout);
                     }
-                    else if ( 0 )
+                    else if ( (0) )
                     {
                         int32_t k;
                         for (k=-16; k<0; k++)
@@ -497,7 +497,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
             {
                 fprintf(stderr,".");
                 sorted = coin->fast[i];
-                if ( 0 )
+                if ( (0) )
                 {
                     coin->fast[i] = calloc(1,coin->fastsizes[i]);
                     memcpy(coin->fast[i],sorted,coin->fastsizes[i]);
@@ -509,7 +509,7 @@ uint32_t iguana_fastfindinit(struct iguana_info *coin)
                 if ( (num+1)*16 + tablesize*sizeof(*hashtable) == coin->fastsizes[i] )
                 {
                     hashtable = (int32_t *)((long)sorted + (1 + num)*16);
-                    if ( 0 )
+                    if ( (0) )
                     {
                         coin->fasttables[i] = calloc(tablesize,sizeof(*hashtable));
                         memcpy(coin->fasttables[i],hashtable,tablesize * sizeof(*hashtable));
