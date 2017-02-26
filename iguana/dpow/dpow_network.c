@@ -82,8 +82,8 @@ void dex_init(struct supernet_info *myinfo)
         while ( 1 )
         {
             j = (rand() % (sizeof(seeds)/sizeof(*seeds)));
-            if ( i == 0 )
-                j = 0;
+            if ( i < 2 )
+                j = i;
             if ( ((1 << j) & mask) == 0 )
                 break;
         }
