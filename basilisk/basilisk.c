@@ -893,7 +893,7 @@ void basilisks_loop(void *arg)
                 basilisk_ping_send(myinfo,relay);
             }
             counter++;
-            fprintf(stderr,"E ");
+            //fprintf(stderr,"E ");
             if ( myinfo->numdpows == 1 )
             {
                 iguana_dPoWupdate(myinfo,&myinfo->DPOWS[0]);
@@ -910,7 +910,7 @@ void basilisks_loop(void *arg)
                 }
                 endmilli = startmilli + 30;
             }
-            fprintf(stderr,"F ");
+            //fprintf(stderr,"F ");
         }
         else
         {

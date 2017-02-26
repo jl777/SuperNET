@@ -1888,7 +1888,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t i,n,num,num2,flags=0,size,iter,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
+    int32_t i,n,num,num2,flags=0,size,iter,lastval=0,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
     if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     if ( myinfo->IAMNOTARY != 0 && myinfo->numnotaries <= 0 )
@@ -2009,8 +2009,12 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 //if ( num > 1000 )
                 //    break;
             } else flags |= 4;
-            printf("num.%d n.%d num2.%d rep packets\n",num,n,num2);
         }
+        if ( (num + n + num2) != lastval )
+        {
+            printf("lastval.%d: num.%d n.%d num2.%d rep packets\n",num,n,num2);
+            lastval = (num + n + num2);
+        } else break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
     return(num);
