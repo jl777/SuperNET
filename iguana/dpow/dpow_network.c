@@ -287,9 +287,9 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
        {
            timeout = 1000;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-           timeout = 5000;
-           nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
-           timeout = 10000;
+           //timeout = 5000;
+           //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+           timeout = 1000;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
            for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
                if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],REP_SOCK)) < 0 )
@@ -318,8 +318,8 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                     nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                     printf("CLIENT sockets req.%d sub.%d\n",reqsock,subsock);
-                    timeout = 5000;
-                    nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+                    //timeout = 5000;
+                    //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
                     timeout = 10000;
                     nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
@@ -1266,6 +1266,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     timeout = 100;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                                    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     timeout = 10;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     timeout = 10;
@@ -1979,11 +1980,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         while ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
         {
             num++;
-            //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+            printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
             if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
             {
                 signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                //printf("send back[%ld]\n",strlen(retstr)+1);
+                printf("send back[%ld]\n",strlen(retstr)+1);
                 free(retstr);
                 if ( broadcastflag != 0 )
                 {
@@ -1997,13 +1998,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                 {
                     r = myinfo->dpowipbits[rand() % m];
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
-                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                 } else printf("illegal state without dpowipbits?\n");
                 if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                 {
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                    printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                     dex_packet(myinfo,dexp,size);
                 } else printf("failed dexpacketcheck\n");
             }
@@ -2015,6 +2016,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( num > 1000 )
                 break;
         }
+        printf("num.%d rep packets\n",num);
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
     return(num);
