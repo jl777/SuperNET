@@ -1267,9 +1267,9 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                                    timeout = 10;
+                                    timeout = 1;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                                    timeout = 10;
+                                    timeout = 1;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     maxsize = 1024 * 1024;
                                     printf("RCVBUF.%d\n",nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -1283,7 +1283,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             }
             myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
             myinfo->numdpowipbits = 1;
-            timeout = 10;
+            timeout = 1;
             nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -1898,7 +1898,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
     }
     portable_mutex_lock(&myinfo->dpowmutex);
     num = num2 = n = 0;
-    for (iter=0; iter<1000; iter++)
+    for (iter=0; iter<100; iter++)
     {
         freeptr = 0;
         if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 )
@@ -1976,16 +1976,16 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
             {
                 num2++;
-                printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+                //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
                 if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                    printf("send back[%ld]\n",strlen(retstr)+1);
+                    //printf("send back[%ld]\n",strlen(retstr)+1);
                     free(retstr);
                     if ( broadcastflag != 0 )
                     {
                         //printf("BROADCAST dexp request.[%d]\n",size);
-                        //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                     }
                 }
                 else
@@ -1994,13 +1994,13 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     {
                         r = myinfo->dpowipbits[rand() % m];
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
-                        printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                        //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
                     } else printf("illegal state without dpowipbits?\n");
                     if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                     {
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                        printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                        //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                         dex_packet(myinfo,dexp,size);
                     } else printf("failed dexpacketcheck\n");
                 }
