@@ -287,8 +287,8 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
        {
            timeout = 100;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-           timeout = 3000;
-           nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+           //timeout = 3000;
+           //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
            timeout = 3000;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
            for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
@@ -318,8 +318,8 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                     nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                     printf("CLIENT sockets req.%d sub.%d\n",reqsock,subsock);
-                    timeout = 3000;
-                    nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+                    //timeout = 3000;
+                    //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
                     timeout = 3000;
                     nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
