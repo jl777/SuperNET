@@ -1950,7 +1950,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             }
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), np = 0, freeptr = 0;
-        } else flag |= 1;
+        } else flags |= 1;
         if ( myinfo->dexsock >= 0 ) // from servers
         {
             if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
