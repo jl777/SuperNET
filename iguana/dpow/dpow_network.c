@@ -408,14 +408,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-#ifndef __APPLE__
+//#ifndef __APPLE__
                     if ( (rand() % 100) < 40 )
                     {
                         nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
                         printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                     }
-#endif
+//#endif
                 }
             }
             if ( freeptr != 0 )
