@@ -2015,7 +2015,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         }
         if ( (num + n + num2) != lastval )
         {
-            printf("lastval.%d: num.%d n.%d num2.%d rep packets\n",lastval,num,n,num2);
+            //printf("lastval.%d: num.%d n.%d num2.%d rep packets\n",lastval,num,n,num2);
             lastval = (num + n + num2);
         } else break;
     }
