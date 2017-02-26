@@ -82,8 +82,8 @@ void dex_init(struct supernet_info *myinfo)
         while ( 1 )
         {
             j = (rand() % (sizeof(seeds)/sizeof(*seeds)));
-            if ( i == 0 )
-                j = 0;
+            if ( i < 2 )
+                j = i;
             if ( ((1 << j) & mask) == 0 )
                 break;
         }
@@ -285,11 +285,11 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
     {
        if ( reqsock >= 0 )
        {
-           timeout = 100;
+           timeout = 1000;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-           timeout = 3000;
+           timeout = 5000;
            nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
-           timeout = 3000;
+           timeout = 10000;
            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
            for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
                if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],REP_SOCK)) < 0 )
@@ -318,9 +318,9 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                     nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                     printf("CLIENT sockets req.%d sub.%d\n",reqsock,subsock);
-                    timeout = 3000;
+                    timeout = 5000;
                     nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
-                    timeout = 3000;
+                    timeout = 10000;
                     nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
             }
