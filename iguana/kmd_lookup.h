@@ -203,7 +203,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
-                //printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
+                //char str[65]; printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
@@ -392,9 +392,24 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
 
 cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i; char *retstr; cJSON *retjson;
     if ( array == 0 )
         array = cJSON_CreateArray();
+    printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
+    if ( (retstr= bitcoinrpc_validateaddress(myinfo,coin,0,0,coinaddr)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( jobj(retjson,"error") != 0 && is_cJSON_False(jobj(retjson,"error")) == 0 )
+            {
+                printf("%s\n",retstr);
+                free(retstr);
+                return(retjson);
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
@@ -626,8 +641,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height-lag )
     {
         flag = 0;
-        if ( (loadheight % 10000) == 0 )
-            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
+        //if ( (loadheight % 10000) == 0 )
+            printf("loading %s ht.%d vs height.%d - lag.%d kmdheight.%d\n",coin->symbol,loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
@@ -748,6 +763,7 @@ void kmd_bitcoinscan()
                     {
                         //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
+                        usleep(250000);
                     }
                 }
             }
