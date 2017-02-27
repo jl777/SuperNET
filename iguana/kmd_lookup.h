@@ -203,7 +203,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
-                char str[65]; printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
+                //char str[65]; printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
@@ -626,8 +626,8 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height-lag )
     {
         flag = 0;
-        if ( (loadheight % 10000) == 0 )
-            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
+        //if ( (loadheight % 10000) == 0 )
+            printf("loading ht.%d vs height.%d - lag.%d kmdheight.%d\n",loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
