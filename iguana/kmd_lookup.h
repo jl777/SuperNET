@@ -398,13 +398,17 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
     printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
     if ( (retstr= bitcoinrpc_validateaddress(myinfo,coin,0,0,coinaddr)) != 0 )
     {
-        printf("%s\n",retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
+            if ( jobj(retjson,"error") != 0 && is_cJSON_False(jobj(retjson,"error")) == 0 )
+            {
+                printf("%s\n",retstr);
+                free(retstr);
+                return(retjson);
+            }
             free_json(retjson);
         }
-        if ( (0) )
-            return(cJSON_Parse("[{\"error\":\"illegal address\"}]"));
+        free(retstr);
     }
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
@@ -759,7 +763,7 @@ void kmd_bitcoinscan()
                     {
                         //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
-                        usleep(100000);
+                        usleep(250000);
                     }
                 }
             }
