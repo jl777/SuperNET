@@ -1,8 +1,7 @@
 #!/bin/bash
-pkill iguana
 while true
 do
-../../agents/iguana
-sleep 3
+./dexlistunspent
+./dexgetinfo
 done
 
