@@ -1984,7 +1984,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
             {
                 num2++;
-                printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+                //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
                 if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
