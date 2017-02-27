@@ -395,6 +395,7 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
     struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
     if ( array == 0 )
         array = cJSON_CreateArray();
+    printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
@@ -627,7 +628,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     {
         flag = 0;
         //if ( (loadheight % 10000) == 0 )
-            printf("loading ht.%d vs height.%d - lag.%d kmdheight.%d\n",loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
+            printf("loading %s ht.%d vs height.%d - lag.%d kmdheight.%d\n",coin->symbol,loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
