@@ -392,10 +392,20 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
 
 cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i; char *retstr; cJSON *retjson;
     if ( array == 0 )
         array = cJSON_CreateArray();
     printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
+    if ( (retstr= bitcoinrpc_validateaddress(myinfo,coin,0,0,coinaddr)) != 0 )
+    {
+        printf("%s\n",retstr);
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            free_json(retjson);
+        }
+        if ( (0) )
+            return(cJSON_Parse("[{\"error\":\"illegal address\"}]"));
+    }
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
