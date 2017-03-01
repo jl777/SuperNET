@@ -478,7 +478,6 @@ void mainloop(struct supernet_info *myinfo)
 {
     struct iguana_info *coin; int32_t counter=0,depth; double lastmilli = 0;
     sleep(3);
-    iguana_launch(0,"DEX_explorerloop",DEX_explorerloop,myinfo,IGUANA_PERMTHREAD);
     printf("mainloop\n");
     while ( 1 )
     {
@@ -761,6 +760,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
     if ( COMMANDLINE_ARGFILE == 0 )
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
     mainloop(myinfo);
 }
 
