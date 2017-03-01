@@ -394,7 +394,6 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
             interest = _iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->locktime,value);
         }
     }
-    char str[65]; printf("interest for %s.v%d %.8f %.8f (%s)\n",bits256_str(str,txid),vout,dstr(value),dstr(interest),retjson!=0?jprint(retjson,0):"");
     return(interest);
 }
 
