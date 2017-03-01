@@ -461,10 +461,24 @@ rm BTC.xz; mksquashfs DB/BTC BTC.xz -comp xz -b 1048576 -comp xz -Xdict-size 102
  https://github.com/vasi/squashfuse
 */
 
+void DEX_explorerloop(void *ptr)
+{
+    struct supernet_info *myinfo = ptr;
+    while ( 1 )
+    {
+        if ( myinfo->DEXEXPLORER != 0 )
+        {
+            kmd_bitcoinscan();
+        }
+        usleep(100000);
+    }
+}
+
 void mainloop(struct supernet_info *myinfo)
 {
     struct iguana_info *coin; int32_t counter=0,depth; double lastmilli = 0;
     sleep(3);
+    iguana_launch(0,"DEX_explorerloop",DEX_explorerloop,myinfo,IGUANA_PERMTHREAD);
     printf("mainloop\n");
     while ( 1 )
     {
@@ -483,11 +497,6 @@ void mainloop(struct supernet_info *myinfo)
                 lastmilli = OS_milliseconds();
             }
             usleep(30000);
-        }
-        if ( myinfo->DEXEXPLORER != 0 )
-        {
-            kmd_bitcoinscan();
-            usleep(100000);
         }
         //pangea_queues(SuperNET_MYINFO(0));
         //if ( flag == 0 )
