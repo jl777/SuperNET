@@ -277,7 +277,7 @@ void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t
 
 char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32_t keylen,uint8_t *data,int32_t datalen)
 {
-    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t prio,timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; void *freeptr; char *retstr = 0;
+    struct dex_nanomsghdr *dexp; cJSON *retjson; char ipaddr[64],str[128]; int32_t timeout,i,n,size,recvbytes,sentbytes = 0,reqsock,subsock; uint32_t *retptr,ipbits; void *freeptr; char *retstr = 0;
     portable_mutex_lock(&myinfo->dexmutex);
     subsock = myinfo->subsock;
     reqsock = myinfo->reqsock;
