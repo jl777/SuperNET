@@ -553,6 +553,14 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
         {
+            if ( strcmp(coin->symbol,"KMD") == 0 )
+            {
+                if ( (interests= iguana_interests(myinfo,coin,vins)) != 0 )
+                {
+                    total += interests;
+                    printf("boost total by interest %.8f\n",dstr(interests));
+                }
+            }
             if ( total < (satoshis + txfee) )
             {
                 free_json(vins);
@@ -560,7 +568,6 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
                 printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
                 return(0);
             }
-            total += interests;
             if ( (change= (total - (satoshis + txfee))) > 10000 && (changeaddr == 0 || changeaddr[0] == 0) )
             {
                 printf("no changeaddr for %.8f\n",dstr(change));
