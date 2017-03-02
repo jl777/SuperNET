@@ -534,7 +534,11 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     for (i=0; i<n; i++)
     {
         item = jitem(utxos,i);
-        if ( (sobj= jobj(item,"scriptPubKey")) == 0 || (spendscriptstr= jstr(sobj,"hex")) == 0 )
+        if ( (spendscriptstr= jstr(item,"scriptPubKey")) != 0 && is_hexstr(spendscriptstr,0) > 16 )
+        {
+            
+        }
+        else if ( (sobj= jobj(item,"scriptPubKey")) == 0 && (spendscriptstr= jstr(sobj,"hex")) == 0 )
         {
             printf("no spendscript (%s)\n",jprint(item,0));
             continue;

@@ -473,6 +473,23 @@ void *basilisk_getinfo(struct basilisk_item *Lptr,struct supernet_info *myinfo,s
     return(ptr);
 }
 
+int64_t iguana_getestimatedfee(struct supernet_info *myinfo,struct iguana_info *coin)
+{
+    char *retstr; cJSON *retjson; double x; int64_t txfeeperbyte = 200;
+    if ( (retstr= _dex_getinfo(myinfo,coin->symbol)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (x= jdouble(retjson,"estimatefee")) > SMALLVAL )
+                txfeeperbyte = 1 + (x * SATOSHIDEN) / 1024;
+            printf("SET txfeeperbyte %lld (%s)\n",(long long)txfeeperbyte,retstr);
+            free(retjson);
+        }
+        free(retstr);
+    }
+    return(txfeeperbyte);
+}
+
 int32_t basilisk_voutvin_validate(struct iguana_info *coin,char *rawtx,uint64_t inputsum,uint64_t amount,uint64_t txfee)
 {
     //static int counter;
@@ -543,13 +560,32 @@ int32_t basilisk_vins_validate(struct supernet_info *myinfo,struct iguana_info *
     return(retval);
 }
 
+int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins)
+{
+    int64_t txfee = 0;
+    if ( coin->estimatedfee == 0 )
+        coin->estimatedfee = iguana_getestimatedfee(myinfo,coin);
+    if ( signedtx != 0 )
+    {
+        txfee = coin->estimatedfee * (strlen(signedtx) + numvins);
+        free(signedtx);
+    }
+    else if ( rawtx != 0 )
+    {
+        txfee = coin->estimatedfee * (strlen(rawtx) + numvins * 110);
+        free(rawtx);
+    }
+    return(txfee);
+}
+
 char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t *pubkey33,uint64_t satoshis,int32_t duplicates,int32_t *completedp,bits256 *signedtxidp,int32_t sendflag,cJSON *addresses)
 {
-    uint8_t script[35]; int32_t i,spendlen; cJSON *txobj=0,*vins=0; char *rawtx=0,*signedtx,changeaddr[64];
+    uint8_t script[35]; int64_t txfee; int32_t i,spendlen; cJSON *txobj=0,*vins=0; char *rawtx=0,*signedtx=0,changeaddr[64];
     *completedp = 0;
     if ( signedtxidp != 0 )
         memset(signedtxidp,0,sizeof(*signedtxidp));
     bitcoin_address(changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+    txfee = 10 * (coin->txfee + duplicates*coin->txfee/5);
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
         if ( duplicates <= 0 )
@@ -557,19 +593,28 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         spendlen = bitcoin_pubkeyspend(script,0,pubkey33);
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
-        rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,coin->txfee + duplicates*coin->txfee/5,addresses,0,0,0,0,"127.0.0.1",0,1);
+        rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,txfee,addresses,0,0,0,0,"127.0.0.1",0,1);
+        if ( cJSON_GetArraySize(vins) > duplicates/4 )
+        {
+            free(rawtx);
+            rawtx = 0;
+            fprintf(stderr,"No point to recycle utxo when trying to create utxo duplicates, numvins.%d vs duplicates.%d\n",cJSON_GetArraySize(vins),duplicates);
+            free_json(vins);
+            return(rawtx);
+        }
         //printf("duplicatesTX.(%s)\n",rawtx);
         if ( signedtxidp != 0 )
         {
             if ( (signedtx= iguana_signrawtx(myinfo,coin,0,signedtxidp,completedp,vins,rawtx,0,0)) != 0 )
             {
-                free(rawtx);
-                if ( *completedp != 0 && sendflag != 0 )
+                if ( *completedp != 0 )
                 {
                     printf("splitfunds signedtx.(%s)\n",signedtx);
-                    iguana_sendrawtransaction(myinfo,coin,signedtx);
+                    if ( sendflag != 0 )
+                        iguana_sendrawtransaction(myinfo,coin,signedtx);
+                    free(rawtx);
+                    rawtx = signedtx, signedtx = 0;
                 }
-                rawtx = signedtx;
             } else printf("error signing raw utxoduplicates tx\n");
         }
     }
@@ -615,7 +660,7 @@ int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *c
 
 char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,uint64_t satoshis,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos)
 {
-    uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t p2shlen,spendlen; cJSON *retjson,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
+    uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t p2shlen,iter,spendlen; cJSON *retjson,*txcopy,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
     *completedp = 0;
     if ( iguana_addressvalidate(coin,&addrtype,destaddr) < 0 || iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
@@ -625,6 +670,8 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
     bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
     if ( addrtype != coin->chain->pubtype )
         return(clonestr("{\"error\":\"invalid dest address type\"}"));
+    if ( txfee == 0 && strcmp(coin->symbol,"BTC") != 0 && (txfee= coin->txfee) == 0 )
+        txfee = coin->chain->txfee;
     retjson = cJSON_CreateObject();
     if ( (txobj= bitcoin_txcreate(coin->symbol,coin->chain->isPoS,0,1,0)) != 0 )
     {
@@ -641,23 +688,42 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
             printf("timelock.%d spend timelocked %u\n",timelock,timelocked);
         }
         bitcoin_txoutput(txobj,script,spendlen,satoshis);
-        if ( (rawtx= iguana_calcutxorawtx(myinfo,coin,&vins,txobj,satoshis,changeaddr,txfee,utxos,"",0,0)) != 0 )
+        for (iter=0; iter<2; iter++)
         {
-            jaddstr(retjson,"rawtx",rawtx);
-            if ( (signedtx= iguana_signrawtx(myinfo,coin,0,&txid,completedp,vins,rawtx,0,0)) != 0 )
+            txcopy = jduplicate(txobj);
+            if ( (rawtx= iguana_calcutxorawtx(myinfo,coin,&vins,txobj,satoshis,changeaddr,txfee,utxos,"",0,0)) != 0 )
             {
-                if ( *completedp != 0 )
+                if ( iter == 1 || txfee != 0 )
+                    jaddstr(retjson,"rawtx",rawtx);
+                if ( (signedtx= iguana_signrawtx(myinfo,coin,0,&txid,completedp,vins,rawtx,0,0)) != 0 )
                 {
-                    jaddbits256(retjson,"txid",txid);
-                    jaddstr(retjson,"signedtx",signedtx);
-                    if ( sendflag != 0 )
+                    if ( (iter == 1 || txfee != 0) && *completedp != 0 )
                     {
-                        //printf("send signedtx.(%s)\n",signedtx);
-                        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-                        jaddbits256(retjson,"sent",txid);
+                        jaddbits256(retjson,"txid",txid);
+                        jaddstr(retjson,"signedtx",signedtx);
+                        if ( sendflag != 0 )
+                        {
+                            //printf("send signedtx.(%s)\n",signedtx);
+                            txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
+                            jaddbits256(retjson,"sent",txid);
+                        }
                     }
-                }
-            } else printf("error signing raw utxoduplicates tx\n");
+                } else printf("error signing raw utxorawtx tx\n");
+            } else printf("null rawtx from calcutxorawtx\n");
+            if ( txfee != 0 )
+            {
+                free_json(txcopy);
+                break;
+            }
+            else // must be BTC and txfee == 0
+            {
+                txfee = iguana_esttxfee(myinfo,coin,rawtx,signedtx,cJSON_GetArraySize(vins));
+                free_json(vins);
+                rawtx = signedtx = 0;
+                vins = 0;
+                *completedp = 0;
+                txobj = txcopy;
+            }
         }
     }
     if ( timelock != 0 )
