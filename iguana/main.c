@@ -756,7 +756,7 @@ void jumblr_loop(void *ptr)
         {
             jumblr_iteration(myinfo,coin,(t % 360) / 120,t % 120);
         }
-        printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
+        //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         sleep(20);
     }
 }
