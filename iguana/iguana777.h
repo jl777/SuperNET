@@ -90,6 +90,7 @@ struct supernet_address
 
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
 
+#define JUMBLR_DEPOSITPREFIX "deposit "
 struct jumblr_item
 {
     UT_hash_handle hh;

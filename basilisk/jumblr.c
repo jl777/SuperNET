@@ -32,7 +32,6 @@
 #define JUMBLR_ADDR "RGhxXpXSSBTBm9EvNsXnTQczthMCxHX91t"
 #define JUMBLR_BTCADDR "18RmTJe9qMech8siuhYfMtHo8RtcN1obC6"
 #define JUMBLR_FEE 0.001
-#define JUMBLR_DEPOSITPREFIX "deposit "
 
 struct jumblr_item *jumblr_opidfind(struct supernet_info *myinfo,char *opid)
 {
@@ -68,7 +67,7 @@ char *jumblr_zlistoperationids(struct supernet_info *myinfo,struct iguana_info *
 char *jumblr_zgetoperationresult(struct supernet_info *myinfo,struct iguana_info *coin,char *opid)
 {
     char params[1024];
-    sprintf(params,"[\"%s\"]",opid);
+    sprintf(params,"[[\"%s\"]]",opid);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getoperationresult",params));
 }
 
@@ -254,7 +253,7 @@ r = 0;
         printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
-            case 0: // public -> z
+            case 0: // public -> z, need to importprivkey
                 priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
@@ -356,8 +355,12 @@ ZERO_ARGS(jumblr,status)
         retjson = cJSON_CreateObject();
         step_t2z = step_z2z = step_z2t = deposited = finished = 0;
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        jaddstr(retjson,"BTCdeposit","notyet");
+        jaddstr(retjson,"KMDdeposit",KMDaddr);
         deposited = jumblr_receivedby(myinfo,coin,KMDaddr);
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        jaddstr(retjson,"BTCjumblr","notyet");
+        jaddstr(retjson,"KMDjumblr",KMDaddr);
         finished = jumblr_receivedby(myinfo,coin,KMDaddr);
         HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
         {
