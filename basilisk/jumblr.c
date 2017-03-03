@@ -75,7 +75,7 @@ char *jumblr_zgetoperationresult(struct supernet_info *myinfo,struct iguana_info
 char *jumblr_sendt_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *taddr,char *zaddr,double amount)
 {
     char params[1024]; double fee = (amount-3*JUMBLR_TXFEE) * JUMBLR_FEE;
-    sprintf(params,"[\"%s\", \"[{\"%s\":%.8f}, {\"%s\":%.8f}]\", 1, %.8f]",taddr,zaddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
+    sprintf(params,"[\"%s\", \"[{\\\"%s\\\":%.8f}, {\\\"%s\\\":%.8f}]\", 1, %.8f]",taddr,zaddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
 
