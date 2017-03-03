@@ -75,21 +75,21 @@ char *jumblr_zgetoperationresult(struct supernet_info *myinfo,struct iguana_info
 char *jumblr_sendt_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *taddr,char *zaddr,double amount)
 {
     char params[1024]; double fee = (amount-3*JUMBLR_TXFEE) * JUMBLR_FEE;
-    sprintf(params,"[\"%s\", [{\"%s\":%.8f}, {\"%s\":%.8f}]], 1, %.8f",taddr,zaddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
+    sprintf(params,"[\"%s\", \"[{\"%s\":%.8f}, {\"%s\":%.8f}]]\", 1, %.8f",taddr,zaddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
 
 char *jumblr_sendz_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *zaddrS,char *zaddrD,double amount)
 {
     char params[1024]; double fee = (amount-2*JUMBLR_TXFEE) * JUMBLR_FEE;
-    sprintf(params,"[\"%s\", [{\"%s\":%.8f}, {\"%s\":%.8f}], 1, %.8f]",zaddrS,zaddrD,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
+    sprintf(params,"[\"%s\", \"[{\"%s\":%.8f}, {\"%s\":%.8f}]\", 1, %.8f]",zaddrS,zaddrD,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
 
 char *jumblr_sendz_to_t(struct supernet_info *myinfo,struct iguana_info *coin,char *zaddr,char *taddr,double amount)
 {
     char params[1024]; double fee = (amount-JUMBLR_TXFEE) * JUMBLR_FEE;
-    sprintf(params,"[\"%s\", [{\"%s\":%.8f}, {\"%s\":%.8f}], 1, %.8f]",zaddr,taddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
+    sprintf(params,"[\"%s\", \"[{\"%s\":%.8f}, {\"%s\":%.8f}]\", 1, %.8f]",zaddr,taddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
 
@@ -249,7 +249,6 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
 r = 0;
-    printf("JUMBLR.%s %d selector.%d modval.%d r.%d\n",coin->symbol,coin->FULLNODE,selector,modval,r&7);
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
         printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
