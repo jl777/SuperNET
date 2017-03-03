@@ -99,11 +99,11 @@ char *jumblr_zlistreceivedbyaddress(struct supernet_info *myinfo,struct iguana_i
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_listreceivedbyaddress",params));
 }
 
-char *jumblr_listreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+char *jumblr_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
     sprintf(params,"[\"%s\", 1]",addr);
-    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listreceivedbyaddress",params));
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
 }
 
 char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
@@ -116,9 +116,9 @@ char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,c
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char *retstr; cJSON *retjson,*item; int32_t i,n; int64_t total = 0;
-    if ( (retstr= jumblr_listreceivedbyaddress(myinfo,coin,addr)) != 0 )
+    if ( (retstr= jumblr_getreceivedbyaddress(myinfo,coin,addr)) != 0 )
     {
-        printf("listreceivedbyaddress.(%s) -> (%s)\n",addr,retstr);
+        printf("jumblr_getreceivedbyaddress.(%s) -> (%s)\n",addr,retstr);
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
