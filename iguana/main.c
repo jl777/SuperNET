@@ -1452,7 +1452,7 @@ ZERO_ARGS(SuperNET,logout)
 
 ZERO_ARGS(SuperNET,activehandle)
 {
-    cJSON *retjson;
+    cJSON *retjson; char BTCaddr[64],KMDaddr[64];
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
     retjson = SuperNET_rosettajson(myinfo,myinfo->persistent_priv,0);
@@ -1468,6 +1468,15 @@ ZERO_ARGS(SuperNET,activehandle)
         jaddstr(retjson,"status","unlocked");
         jaddnum(retjson,"duration",myinfo->expiration - time(NULL));
     } else jaddstr(retjson,"status","locked");
+    if ( myinfo->jumblr_passphrase[0] != 0 )
+    {
+        jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        jaddstr(retjson,"BTCdeposit","notyet");
+        jaddstr(retjson,"KMDdeposit",KMDaddr);
+        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        jaddstr(retjson,"BTCjumblr","notyet");
+        jaddstr(retjson,"KMDjumblr",KMDaddr);
+    }
     SuperNET_MYINFOadd(myinfo);
     return(jprint(retjson,1));
 }
