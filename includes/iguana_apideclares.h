@@ -186,6 +186,9 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 STRING_AND_INT(iguana,PoSweights,activecoin,height);
 STRING_ARG(iguana,stakers,activecoin);
 
+STRING_ARG(jumblr,setpassphrase,passphrase);
+ZERO_ARGS(jumblr,status);
+
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);

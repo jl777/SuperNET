@@ -90,6 +90,14 @@ struct supernet_address
 
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
 
+struct jumblr_item
+{
+    UT_hash_handle hh;
+    int64_t amount,fee,txfee;
+    uint32_t spent;
+    char opid[65],src[65],dest[65],status;
+};
+
 struct liquidity_info
 {
     char base[16],rel[16],exchange[16];
@@ -104,7 +112,7 @@ struct supernet_info
     struct supernet_address myaddr;
     bits256 persistent_priv,privkey;
     uint8_t persistent_pubkey33[33];
-    char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024];
+    char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024],jumblr_passphrase[1024];
     char *decryptstr;
     void (*liquidity_command)(struct supernet_info *myinfo,char *base,bits256 hash,cJSON *vals);
     double (*liquidity_active)(struct supernet_info *myinfo,double *refpricep,char *exchange,char *base,char *rel,double volume);
@@ -112,6 +120,7 @@ struct supernet_info
     uint32_t expiration,dirty,DEXactive,DEXpoll,totalcoins,nanoinit,lastdexrequestid,dexcrcs[1024];
     uint16_t argport,rpcport;
     struct basilisk_info basilisks;
+    struct jumblr_item *jumblrs;
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;

@@ -614,6 +614,7 @@ uint64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *co
 int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,uint64_t *weights,int32_t numweights,bits256 *sortbuf);
 bits256 mpz_div64(bits256 hash,uint64_t divval);
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
+void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares

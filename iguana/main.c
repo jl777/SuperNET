@@ -745,6 +745,20 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
 }
 
+void jumblr_loop(void *ptr)
+{
+    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr;
+    while ( 1 )
+    {
+        t = (uint32_t)time(NULL);
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % 1200) < 60 )
+        {
+            jumblr_iteration(myinfo,coin,(t % 3600) / 1200,t % 1200);
+        }
+        sleep(20);
+    }
+}
+
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
@@ -761,6 +775,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
     mainloop(myinfo);
 }
 
