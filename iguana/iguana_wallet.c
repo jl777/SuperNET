@@ -1360,6 +1360,12 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     if ( coin != 0 )
     {
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+        if ( coin->FULLNODE < 0 )
+        {
+            char wifstr[64];
+            bitcoin_priv2wif(wifstr,myinfo->persistent_priv,coin->chain->wiftype);
+            jumblr_importprivkey(myinfo,coin,wifstr);
+        }
     }
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
