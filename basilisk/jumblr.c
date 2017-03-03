@@ -106,6 +106,13 @@ char *jumblr_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_inf
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
 }
 
+char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr)
+{
+    char params[1024];
+    sprintf(params,"[\"%s\", 0]",wifstr);
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importprivkey",params));
+}
+
 char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
@@ -115,11 +122,11 @@ char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    char *retstr; cJSON *retjson,*item; int32_t i,n; int64_t total = 0;
+    char *retstr; int64_t total = 0; //cJSON *retjson,*item; int32_t i,n;
     if ( (retstr= jumblr_getreceivedbyaddress(myinfo,coin,addr)) != 0 )
     {
         printf("jumblr_getreceivedbyaddress.(%s) -> (%s)\n",addr,retstr);
-        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        /*if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(retjson)) > 0 )
             {
@@ -130,7 +137,8 @@ int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,
                 }
             }
             free_json(retjson);
-        }
+        }*/
+        total = atof(retstr) * SATOSHIDEN;
         free(retstr);
     }
     return(total);
@@ -335,7 +343,7 @@ r = 0;
 
 STRING_ARG(jumblr,setpassphrase,passphrase)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64];
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64],wifstr[64]; bits256 privkey;
     if ( passphrase == 0 || passphrase[0] == 0 || (coin= iguana_coinfind("KMD")) == 0 || coin->FULLNODE >= 0 )
         return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
     else
@@ -343,10 +351,14 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         safecopy(myinfo->jumblr_passphrase,passphrase,sizeof(myinfo->jumblr_passphrase));
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
+        jumblr_importprivkey(myinfo,coin,wifstr);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
+        jumblr_importprivkey(myinfo,coin,wifstr);
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         return(jprint(retjson,1));
