@@ -71,6 +71,13 @@ char *jumblr_zgetoperationresult(struct supernet_info *myinfo,struct iguana_info
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getoperationresult",params));
 }
 
+char *jumblr_zgetoperationstatus(struct supernet_info *myinfo,struct iguana_info *coin,char *opid)
+{
+    char params[1024];
+    sprintf(params,"[[\"%s\"]]",opid);
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getoperationstatus",params));
+}
+
 char *jumblr_sendt_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *taddr,char *zaddr,double amount)
 {
     char params[1024]; double fee = (amount-3*JUMBLR_TXFEE) * JUMBLR_FEE;
@@ -212,7 +219,7 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
     char *retstr,*status; cJSON *retjson;
     if ( ptr->status == 0 )
     {
-        if ( (retstr= jumblr_zgetoperationresult(myinfo,coin,ptr->opid)) != 0 )
+        if ( (retstr= jumblr_zgetoperationstatus(myinfo,coin,ptr->opid)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
