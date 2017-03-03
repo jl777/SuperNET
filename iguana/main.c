@@ -751,9 +751,9 @@ void jumblr_loop(void *ptr)
     while ( 1 )
     {
         t = (uint32_t)time(NULL);
-        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % 1200) < 60 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % 120) < 6 )
         {
-            jumblr_iteration(myinfo,coin,(t % 3600) / 1200,t % 1200);
+            jumblr_iteration(myinfo,coin,(t % 360) / 120,t % 120);
         }
         sleep(20);
     }

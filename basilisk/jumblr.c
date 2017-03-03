@@ -238,6 +238,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     OS_randombytes(&r,sizeof(r));
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
+        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z
