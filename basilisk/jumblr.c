@@ -68,7 +68,7 @@ char *jumblr_zlistoperationids(struct supernet_info *myinfo,struct iguana_info *
 char *jumblr_zgetoperationresult(struct supernet_info *myinfo,struct iguana_info *coin,char *opid)
 {
     char params[1024];
-    sprintf(params,"[\"%s\"]",opid);
+    sprintf(params,"[[\"%s\"]]",opid);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getoperationresult",params));
 }
 
