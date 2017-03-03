@@ -538,7 +538,7 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
         {
             
         }
-        else if ( (sobj= jobj(item,"scriptPubKey")) == 0 && (spendscriptstr= jstr(sobj,"hex")) == 0 )
+        else if ( (sobj= jobj(item,"scriptPubKey")) == 0 || (spendscriptstr= jstr(sobj,"hex")) == 0 )
         {
             printf("no spendscript (%s)\n",jprint(item,0));
             continue;
