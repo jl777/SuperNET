@@ -262,9 +262,9 @@ r = 0;
                                 free(retstr);
                             }
                             free(zaddr);
-                        }
+                        } else printf("no zaddr from jumblr_zgetnewaddress\n");
                     }
-                }
+                } else printf("%s total %.8f vs %.8f\n",KMDaddr,dstr(total),(JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE)));
                 break;
             case 1: // z -> z
                 jumblr_opidsupdate(myinfo,coin);
