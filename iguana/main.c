@@ -748,6 +748,7 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 void jumblr_loop(void *ptr)
 {
     struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr;
+    printf("JUMBLR loop\n");
     while ( 1 )
     {
         t = (uint32_t)time(NULL);
@@ -755,6 +756,7 @@ void jumblr_loop(void *ptr)
         {
             jumblr_iteration(myinfo,coin,(t % 360) / 120,t % 120);
         }
+        printf("t.%u %p\n",t,coin);
         sleep(20);
     }
 }
