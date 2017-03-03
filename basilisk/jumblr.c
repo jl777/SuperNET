@@ -109,7 +109,7 @@ char *jumblr_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_inf
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 0]",wifstr);
+    sprintf(params,"[\"%s\", false]",wifstr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importprivkey",params));
 }
 
