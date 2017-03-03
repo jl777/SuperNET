@@ -745,6 +745,22 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
     else strcat(myinfo->NXTAPIURL,"6876/nxt");
 }
 
+void jumblr_loop(void *ptr)
+{
+    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr;
+    printf("JUMBLR loop\n");
+    while ( 1 )
+    {
+        t = (uint32_t)time(NULL);
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % 120) < 60 )
+        {
+            jumblr_iteration(myinfo,coin,(t % 360) / 120,t % 120);
+        }
+        //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
+        sleep(20);
+    }
+}
+
 void iguana_launchdaemons(struct supernet_info *myinfo)
 {
     int32_t i; char *helperargs,helperstr[512];
@@ -761,6 +777,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
         iguana_launch(0,"rpcloop",iguana_rpcloop,myinfo,IGUANA_PERMTHREAD); // limit to oneprocess
     printf("launch mainloop\n");
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
     mainloop(myinfo);
 }
 
@@ -1626,7 +1643,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
                     printf("# %s KMD %.8f\n",coinaddr,dstr(kmdamount));
                     if ( (iter & 1) == 0 )
                     {
-                        if ( (0) )
+                        if ( (1) )
                         {
                             printf("curl --url \"http://127.0.0.1:7778\" --data \"{\\\"agent\\\":\\\"dex\\\",\\\"method\\\":\\\"importaddress\\\",\\\"address\\\":\\\"%s\\\",\\\"symbol\\\":\\\"KMD\\\"}\" # %.8f\n",coinaddr,dstr(kmdamount));
                             printf("sleep 3\n");
@@ -1690,7 +1707,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 12;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 13;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
