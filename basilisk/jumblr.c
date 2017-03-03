@@ -329,7 +329,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
-        return(clonestr("{\"result\":\"success\"}"));
+        return(jprint(retjson,1));
     }
 }
 
