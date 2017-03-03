@@ -132,8 +132,20 @@ int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,
 
 int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    char *retstr; double val; int64_t balance = 0;
-    if ( (retstr= jumblr_zgetbalance(myinfo,coin,addr)) != 0 )
+    char *retstr; double val; cJSON *retjson; int64_t balance = 0;
+    if ( strlen(addr) < 40 )
+    {
+        if ( (retstr= _dex_getbalance(myinfo,coin->symbol,addr)) != 0 )
+        {
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                balance = jdouble(retjson,"balance") * SATOSHIDEN;
+                free_json(retjson);
+            }
+            free(retstr);
+        }
+    }
+    else if ( (retstr= jumblr_zgetbalance(myinfo,coin,addr)) != 0 )
     {
         if ( (val= atof(retstr)) > SMALLVAL )
             balance = val * SATOSHIDEN;
