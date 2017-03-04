@@ -27,7 +27,7 @@
  z_sendmany "fromaddress" [{"address":... ,"amount":..., "memo":"<hex>"},...] ( minconf ) ( fee )
  */
 
-#define JUMBLR_INCR 99
+#define JUMBLR_INCR 99.5
 #define JUMBLR_TXFEE 0.01
 #define JUMBLR_ADDR "RGhxXpXSSBTBm9EvNsXnTQczthMCxHX91t"
 #define JUMBLR_BTCADDR "18RmTJe9qMech8siuhYfMtHo8RtcN1obC6"
@@ -159,8 +159,8 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
                         balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
                 free_json(retjson);
             }
-            if ( balance == 0 )
-                printf("listunspent.(%s)\n",addr);
+            //if ( balance == 0 )
+            //    printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
@@ -189,7 +189,7 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
      }*/
     if ( (params= jobj(item,"params")) != 0 )
     {
-        printf("params.(%s)\n",jprint(params,0));
+        //printf("params.(%s)\n",jprint(params,0));
         if ( (from= jstr(params,"fromaddress")) != 0 )
             safecopy(ptr->src,from,sizeof(ptr->src));
         if ( (amounts= jarray(&n,params,"amounts")) != 0 )
@@ -227,6 +227,7 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
                 if ( cJSON_GetArraySize(retjson) == 1 )
                 {
                     item = jitem(retjson,0);
+                    printf("%s\n",jprint(item,0));
                     if ( (status= jstr(item,"status")) != 0 )
                     {
                         if ( strcmp(status,"success") == 0 )
