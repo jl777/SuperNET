@@ -426,7 +426,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         coinaddr = jstri(addresses,i);
         if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
         {
-            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
             if ( (m= cJSON_GetArraySize(array)) > 0 )
             {
                 for (j=0; j<m; j++)

@@ -276,7 +276,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
     char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
-    if ( time(NULL) < lastpoll+3 )
+    if ( time(NULL) < lastpoll+13 )
         return;
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
@@ -570,7 +570,7 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,c
     }
     else if ( coin->FULLNODE == 0 )
     {
-        if ( (retstr= _dex_listunspent(myinfo,coin->symbol,coinaddr)) != 0 )
+        if ( (retstr= dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr)) != 0 )
         {
             unspents = cJSON_Parse(retstr);
             free(retstr);

@@ -160,3 +160,5 @@ iguana/help.json
 iguana/index7778.html
 
 *.json
+
+iguana/DB/KMD/utxo.dat
