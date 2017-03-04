@@ -221,10 +221,9 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
     {
         if ( (retstr= jumblr_zgetoperationstatus(myinfo,coin,ptr->opid)) != 0 )
         {
-            printf("%s\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"pending") != 0 )
+                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"success") == 0 )
                     jumblr_itemset(ptr,retjson,status);
                 free_json(retjson);
             }
