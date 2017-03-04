@@ -173,7 +173,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
     return(balance);
 }
 
-void jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
+int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
 {
     cJSON *params,*amounts,*dest; char *from,*addr; int32_t i,n; int64_t amount;
     /*"params" : {
@@ -212,6 +212,7 @@ void jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
         }
         ptr->txfee = jdouble(params,"fee") * SATOSHIDEN;
     }
+    return(1);
 }
 
 void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
@@ -223,8 +224,17 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (status= jstr(retjson,"status")) != 0 && strcmp(status,"success") == 0 )
-                    jumblr_itemset(ptr,retjson,status);
+                if ( (status= jstr(retjson,"status")) != 0 )
+                {
+                    if ( strcmp(status,"success") == 0 )
+                        ptr->status = jumblr_itemset(ptr,retjson,status);
+                    else if ( strcmp(status,"failure") == 0 )
+                    {
+                        printf("%s failed\n",ptr->opid);
+                        free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+                        ptr->status = -1;
+                    }
+                }
                 free_json(retjson);
             }
             free(retstr);
