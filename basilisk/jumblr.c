@@ -369,7 +369,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
     static double kmdprice,pending; static uint32_t lasttime;
     double btcavail=0,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc; cJSON *vals; bits256 hash; char *retstr;
     coinbtc = iguana_coinfind("BTC");
-    if ( kmdprice == 0. || time(NULL) > lasttime+600 )
+    if ( kmdprice == 0. || time(NULL) > lasttime+60 )
     {
         kmdprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average);
         lasttime = (uint32_t)time(NULL);
