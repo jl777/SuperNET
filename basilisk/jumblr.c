@@ -296,7 +296,7 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
                         if ( ptr->status == 0 )
                             jumblr_opidupdate(myinfo,coin,ptr);
                         printf("%d: %s -> %s %.8f\n",ptr->status,ptr->src,ptr->dest,dstr(ptr->amount));
-                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && strcmp(ptr->dest,JUMBLR_ADDR) == 0 )
+                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 't' )
                             jumblr_prune(myinfo,coin,ptr);
                     }
                 }
