@@ -331,7 +331,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
-        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
+        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount * SATOSHIDEN;
         printf("aveprice %f dest %.8f avebid %f bidvol %f, aveask %f askvol %f\n",aveprice,dstr(destamount),retvals[0],retvals[1],retvals[2],retvals[3]);
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
