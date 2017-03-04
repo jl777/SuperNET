@@ -367,11 +367,13 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey)
 {
     static double kmdprice; static uint32_t lasttime;
-    double btcavail,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc = iguana_coinfind("BTC");
+    double btcavail=0,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc = iguana_coinfind("BTC");
+    printf("DEXcheck %p\n",coinbtc);
     if ( kmdprice == 0. || time(NULL) > lasttime+600 )
     {
         kmdprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average);
         lasttime = (uint32_t)time(NULL);
+        printf("KMD %.8f\n",kmdprice);
     }
     if ( kmdprice > SMALLVAL )
     {
@@ -379,7 +381,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
         if ( coinbtc != 0 && (btcavail= dstr(jumblr_balance(myinfo,coinbtc,BTCaddr))) > minbtc )
         {
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
-        }
+        } else printf("btcavail %.8f\n",btcavail);
     }
 }
 
