@@ -127,11 +127,11 @@ char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,c
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getbalance",params));
 }
 
-char *jumblr_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 3]",addr);
-    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
+    sprintf(params,"[3, 99999999, \"%s\"]",addr);
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params));
 }
 
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
@@ -160,13 +160,18 @@ int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,
 
 int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    char *retstr; double val; int64_t balance = 0;
+    char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
     if ( strlen(addr) < 40 )
     {
-        if ( (retstr= jumblr_getbalance(myinfo,coin,addr)) != 0 )
+        if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
         {
-            if ( (val= atof(retstr)) > SMALLVAL )
-                balance = val * SATOSHIDEN;
+            if ( (retjson= cJSON_Parse(retstr)) != 0 )
+            {
+                if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                    for (i=0; i<n; i++)
+                        balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
+                free_json(retjson);
+            }
             free(retstr);
         }
     }
@@ -388,12 +393,12 @@ ZERO_ARGS(jumblr,status)
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         received = jumblr_receivedby(myinfo,coin,KMDaddr);
-        deposited = SATOSHIDEN * jumblr_balance(myinfo,coin,KMDaddr);
+        deposited = jumblr_balance(myinfo,coin,KMDaddr);
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         finished = jumblr_receivedby(myinfo,coin,KMDaddr);
-        jumblred = SATOSHIDEN * jumblr_balance(myinfo,coin,KMDaddr);
+        jumblred = jumblr_balance(myinfo,coin,KMDaddr);
         HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
         {
             if ( strlen(ptr->src) >= 40 )
