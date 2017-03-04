@@ -207,7 +207,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
                 free(retstr);
             }
         }
-        else if ( (retstr= _dex_getbalance(myinfo,coin->symbol,addr)) != 0 )
+        else if ( (retstr= dex_getbalance(myinfo,coin,0,0,coin->symbol,addr)) != 0 )
         {
             printf("retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -476,13 +476,15 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         jaddstr(retjson,"result","success");
         privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
-        jumblr_importprivkey(myinfo,coin,wifstr);
+        if ( coin->FULLNODE < 0 )
+            jumblr_importprivkey(myinfo,coin,wifstr);
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         jaddstr(retjson,"BTCdeposit",BTCaddr);
         if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
         {
             bitcoin_priv2wif(wifstr,privkey,coinbtc->chain->wiftype);
-            jumblr_importprivkey(myinfo,coinbtc,wifstr);
+            if ( coinbtc->FULLNODE < 0 )
+                jumblr_importprivkey(myinfo,coinbtc,wifstr);
             jaddnum(retjson,"BTCdeposits",jumblr_balance(myinfo,coinbtc,BTCaddr));
         }
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
