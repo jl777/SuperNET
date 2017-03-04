@@ -457,7 +457,7 @@ int32_t basilisk_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,str
                 {
                     decode_hex(rawtx->spendscript,hexlen,hexstr);
                     rawtx->I.spendlen = hexlen;
-                    basilisk_txlog(myinfo,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
+                    basilisk_txlog(swap->myinfoptr,swap,rawtx,-1); // bobdeposit, bobpayment or alicepayment
                     retval = 0;
                 }
             } else printf("%s ERROR.(%s)\n",rawtx->name,jprint(txobj,0));
@@ -1783,7 +1783,7 @@ cJSON *swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap)
 void basilisk_swaploop(void *_swap)
 {
     uint8_t *data; uint32_t expiration; uint32_t channel; int32_t retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
-    myinfo = &swap->myinfo;
+    myinfo = swap->myinfoptr;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
@@ -1976,13 +1976,13 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         swap = calloc(1,sizeof(*swap));
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
-        swap->myinfo = *myinfo;
-        swap->myinfo.ctx = myinfo->ctx;
+        swap->myinfoptr = myinfo;
+        /*swap->myinfo.ctx = myinfo->ctx;
         bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
         pubkey25519 = curve25519(privkey,curve25519_basepoint9());
         swap->myinfo.persistent_priv = privkey;
         swap->myinfo.myaddr.persistent = pubkey25519;
-        memcpy(swap->myinfo.persistent_pubkey33,pubkey33,33);
+        memcpy(swap->myinfo.persistent_pubkey33,pubkey33,33);*/
         m = n = 0;
         if ( bitcoin_swapinit(myinfo->ctx,privkey,pubkey33,pubkey25519,swap,optionduration) != 0 )
         {

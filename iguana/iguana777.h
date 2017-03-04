@@ -154,7 +154,7 @@ struct supernet_info
 
 struct basilisk_swap
 {
-    struct supernet_info myinfo; struct iguana_info *bobcoin,*alicecoin;
+    struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
     void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
