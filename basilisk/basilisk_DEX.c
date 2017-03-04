@@ -276,7 +276,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
 {
     static uint32_t lastpoll;
     char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
-    if ( time(NULL) < lastpoll+13 )
+    if ( time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive == 0) )
         return;
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
