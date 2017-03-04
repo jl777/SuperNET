@@ -33,6 +33,15 @@
 #define JUMBLR_BTCADDR "18RmTJe9qMech8siuhYfMtHo8RtcN1obC6"
 #define JUMBLR_FEE 0.001
 
+int32_t jumblr_addresstype(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    if ( addr[0] == 'z' && addr[1] == 'c' && strlen(addr) >= 40 )
+        return('z');
+    else if ( strlen(addr) < 40 )
+        return('t');
+    else return(-1);
+}
+
 struct jumblr_item *jumblr_opidfind(struct supernet_info *myinfo,char *opid)
 {
     struct jumblr_item *ptr;
@@ -81,6 +90,8 @@ char *jumblr_zgetoperationstatus(struct supernet_info *myinfo,struct iguana_info
 char *jumblr_sendt_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *taddr,char *zaddr,double amount)
 {
     char params[1024]; double fee = (amount-3*JUMBLR_TXFEE) * JUMBLR_FEE;
+    if ( jumblr_addresstype(myinfo,coin,zaddr) != 'z' || jumblr_addresstype(myinfo,coin,taddr) != 't' )
+        return(clonestr("{\"error\":\"illegal address in t to z\"}"));
     sprintf(params,"[\"%s\", [{\"address\":\"%s\",\"amount\":%.8f}, {\"address\":\"%s\",\"amount\":%.8f}], 1, %.8f]",taddr,zaddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
@@ -88,6 +99,8 @@ char *jumblr_sendt_to_z(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *jumblr_sendz_to_z(struct supernet_info *myinfo,struct iguana_info *coin,char *zaddrS,char *zaddrD,double amount)
 {
     char params[1024]; double fee = (amount-2*JUMBLR_TXFEE) * JUMBLR_FEE;
+    if ( jumblr_addresstype(myinfo,coin,zaddrS) != 'z' || jumblr_addresstype(myinfo,coin,zaddrD) != 'z' )
+        return(clonestr("{\"error\":\"illegal address in z to z\"}"));
     sprintf(params,"[\"%s\", [{\"address\":\"%s\",\"amount\":%.8f}, {\"address\":\"%s\",\"amount\":%.8f}], 1, %.8f]",zaddrS,zaddrD,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
@@ -95,6 +108,8 @@ char *jumblr_sendz_to_z(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *jumblr_sendz_to_t(struct supernet_info *myinfo,struct iguana_info *coin,char *zaddr,char *taddr,double amount)
 {
     char params[1024]; double fee = (amount-JUMBLR_TXFEE) * JUMBLR_FEE;
+    if ( jumblr_addresstype(myinfo,coin,zaddr) != 'z' || jumblr_addresstype(myinfo,coin,taddr) != 't' )
+        return(clonestr("{\"error\":\"illegal address in z to t\"}"));
     sprintf(params,"[\"%s\", [{\"address\":\"%s\",\"amount\":%.8f}, {\"address\":\"%s\",\"amount\":%.8f}], 1, %.8f]",zaddr,taddr,amount-fee-JUMBLR_TXFEE,JUMBLR_ADDR,fee,JUMBLR_TXFEE);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_sendmany",params));
 }
@@ -148,7 +163,7 @@ int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,
 int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
-    if ( strlen(addr) < 40 )
+    if ( jumblr_addresstype(myinfo,coin,addr) == 't' )
     {
         if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
         {
@@ -259,8 +274,14 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
                 for (i=0; i<n; i++)
-                    if ( (ptr= jumblr_opidadd(myinfo,coin,jstri(array,i))) != 0 && ptr->status == 0 )
-                        jumblr_opidupdate(myinfo,coin,ptr);
+                {
+                    if ( (ptr= jumblr_opidadd(myinfo,coin,jstri(array,i))) != 0 )
+                    {
+                        if ( ptr->status == 0 )
+                            jumblr_opidupdate(myinfo,coin,ptr);
+                        printf("%d: %s -> %s %.8f\n",ptr->status,ptr->src,ptr->dest,dstr(ptr->amount));
+                    }
+                }
             }
             free_json(array);
         }
@@ -277,6 +298,22 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
     bitcoin_address(BTCaddr,0,pubkey33,33);
     bitcoin_address(KMDaddr,60,pubkey33,33);
     return(privkey);
+}
+
+void jumblr_prune(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
+{
+    struct jumblr_item *tmp; char oldsrc[128];
+    strcpy(oldsrc,ptr->src);
+    free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+    {
+        if ( strcmp(oldsrc,ptr->dest) == 0 )
+        {
+            printf("%s (%s -> %s) matched oldsrc\n",ptr->opid,ptr->src,ptr->dest);
+            free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+            strcpy(oldsrc,ptr->src);
+        }
+    }
 }
 
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
@@ -319,9 +356,8 @@ r = 0;
                 jumblr_opidsupdate(myinfo,coin);
                 HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
                 {
-                    if ( strlen(ptr->src) < 40 )
+                    if ( jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                     {
-                        printf("%s -> %s check for z to z\n",ptr->src,ptr->dest);
                         if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
@@ -343,9 +379,8 @@ r = 0;
                 jumblr_opidsupdate(myinfo,coin);
                 HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
                 {
-                    if ( strlen(ptr->src) >= 40 )
+                    if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                     {
-                        printf("%s -> %s check for z to t\n",ptr->src,ptr->dest);
                         if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
@@ -353,6 +388,7 @@ r = 0;
                             {
                                 printf("sendz_to_t.(%s)\n",retstr);
                                 free(retstr);
+                                jumblr_prune(myinfo,coin,ptr);
                             }
                             ptr->spent = (uint32_t)time(NULL);
                             break;
