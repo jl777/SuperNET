@@ -615,7 +615,7 @@ HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
 
 TWO_STRINGS(dex,listunspent,symbol,address)
 {
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->blocktrail_apikey[0] != 0 )
     {
         char url[1024],*retstr,*coinaddr,*script; int32_t i,n,vout; cJSON *retjson,*data,*item,*item3,*data3; bits256 txid; uint64_t val;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
@@ -670,7 +670,7 @@ TWO_STRINGS(dex,listunspent,symbol,address)
 
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->IAMLP != 0 )
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->blocktrail_apikey[0] != 0 )
     {
         char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3,*data,*data2; int32_t i,n;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/transactions?api_key=%s",address,myinfo->blocktrail_apikey);
@@ -860,7 +860,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     }
     if ( symbol != 0 && address != 0 )
     {
-        if ( strcmp(symbol,"BTC") == 0 && myinfo->IAMLP != 0 )
+        if ( strcmp(symbol,"BTC") == 0 && myinfo->blocktrail_apikey[0] != 0 )
         {
             sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s?api_key=%s",address,myinfo->blocktrail_apikey);
             if ( (retstr= issue_curl(url)) != 0 )
