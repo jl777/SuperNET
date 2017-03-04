@@ -747,16 +747,23 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; char BTCaddr[64],KMDaddr[64]; bits256 privkey; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
     while ( 1 )
     {
-        t = (uint32_t)time(NULL);
-        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 )
         {
-            jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+            privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+            // if BTC has arrived in deposit address, invoke DEX -> KMD
+            // if BTC has arrived in destination address, invoke DEX -> BTC
+            jumblr_DEXcheck(myinfo,coin,BTCaddr,KMDaddr,privkey);
+            t = (uint32_t)time(NULL);
+            if ( myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
+            {
+                jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+            }
+            //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         }
-        //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         sleep(55);
     }
 }
