@@ -384,7 +384,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","BTC");
             jaddstr(vals,"dest","KMD");
-            jaddnum(vals,"amount",btcavail*.95);
+            jaddnum(vals,"amount",btcavail*.85);
             jaddnum(vals,"minprice",kmdprice*.95);
             jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
