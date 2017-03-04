@@ -386,6 +386,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
             jaddstr(vals,"dest","KMD");
             jaddnum(vals,"amount",btcavail*.95);
             jaddnum(vals,"minprice",kmdprice*.95);
+            jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
             pending = btcavail;
             if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )

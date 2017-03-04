@@ -924,7 +924,7 @@ void basilisks_loop(void *arg)
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
         {
             //fprintf(stderr,"H ");
-            basilisk_requests_poll(myinfo);
+            basilisk_requests_poll(myinfo,myinfo->persistent_priv);
         }
         //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )

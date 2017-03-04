@@ -152,6 +152,17 @@ struct supernet_info
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
 };
 
+struct basilisk_swap
+{
+    struct supernet_info myinfo; struct iguana_info *bobcoin,*alicecoin;
+    void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
+    struct basilisk_swapinfo I;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint8_t verifybuf[65536];
+};
+
 #include "../includes/iguana_funcs.h"
 #include "../includes/iguana_globals.h"
 #include "../gecko/gecko.h"
