@@ -747,17 +747,17 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr;
+    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 1;
     printf("JUMBLR loop\n");
     while ( 1 )
     {
         t = (uint32_t)time(NULL);
-        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % 1200) < 60 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
         {
-            jumblr_iteration(myinfo,coin,(t % 3600) / 1200,t % 1200);
+            jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
         }
         //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
-        sleep(20);
+        sleep(55);
     }
 }
 
