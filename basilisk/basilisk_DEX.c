@@ -694,9 +694,9 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
             basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
             numiters++;
         }*/
-        if ( crc != 0 )//basilisk_channelsend(myinfo,R.srchash,R.desthash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
+        //if ( crc != 0 )//basilisk_channelsend(myinfo,R.srchash,R.desthash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
             return(clonestr("{\"result\":\"DEX message sent\"}"));
-        else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
+        //else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));
     }
     return(clonestr("{\"error\":\"DEX message not sent\"}"));
 }
