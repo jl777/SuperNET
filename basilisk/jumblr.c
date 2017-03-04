@@ -131,7 +131,7 @@ char *jumblr_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,ch
 {
     char params[1024];
     sprintf(params,"[\"%s\", 3]",addr);
-    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbalance",params));
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
 }
 
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
