@@ -370,7 +370,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
     if ( (kmdprice= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average)) != 0. )
     {
         minbtc = (kmdprice * 1.1) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
-        if ( coinbtc != 0 && (btcavail= jumblr_balance(myinfo,coinbtc,BTCaddr)) > minbtc )
+        if ( coinbtc != 0 && (btcavail= dstr(jumblr_balance(myinfo,coinbtc,BTCaddr))) > minbtc )
         {
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
         }
@@ -389,7 +389,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
 r = 0;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
-        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
+        //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
@@ -485,13 +485,13 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
             bitcoin_priv2wif(wifstr,privkey,coinbtc->chain->wiftype);
             if ( coinbtc->FULLNODE < 0 )
                 jumblr_importprivkey(myinfo,coinbtc,wifstr);
-            jaddnum(retjson,"BTCdeposits",jumblr_balance(myinfo,coinbtc,BTCaddr));
+            jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         }
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
         if ( coinbtc != 0 )
-            jaddnum(retjson,"BTCjumbled",jumblr_balance(myinfo,coinbtc,BTCaddr));
+            jaddnum(retjson,"BTCjumbled",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         return(jprint(retjson,1));
     }
 }
@@ -508,14 +508,14 @@ ZERO_ARGS(jumblr,status)
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         jaddstr(retjson,"BTCdeposit",BTCaddr);
         if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
-            jaddnum(retjson,"BTCdeposits",jumblr_balance(myinfo,coinbtc,BTCaddr));
+            jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         received = jumblr_receivedby(myinfo,coin,KMDaddr);
         deposited = jumblr_balance(myinfo,coin,KMDaddr);
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
         if ( coinbtc != 0 )
-            jaddnum(retjson,"BTCjumbled",jumblr_balance(myinfo,coinbtc,BTCaddr));
+            jaddnum(retjson,"BTCjumbled",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         finished = jumblr_receivedby(myinfo,coin,KMDaddr);
         jumblred = jumblr_balance(myinfo,coin,KMDaddr);
         HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
