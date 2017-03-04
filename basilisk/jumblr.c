@@ -193,7 +193,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
     char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
     if ( jumblr_addresstype(myinfo,coin,addr) == 't' )
     {
-        if ( jumblr_ismine(myinfo,coin,addr) > 0 )
+        if ( coin->FULLNODE < 0 && jumblr_ismine(myinfo,coin,addr) > 0 )
         {
             if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
             {
@@ -209,6 +209,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         }
         else if ( (retstr= _dex_getbalance(myinfo,coin->symbol,addr)) != 0 )
         {
+            printf("retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 balance = jdouble(retjson,"balance") * SATOSHIDEN;
