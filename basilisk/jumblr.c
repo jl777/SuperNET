@@ -528,7 +528,11 @@ ZERO_ARGS(jumblr,status)
         maxval = MAX(step_t2z,MAX(step_z2z,step_z2t));
         minval = MIN(step_t2z,MIN(step_z2z,step_z2t));
         if ( maxval > minval )
+        {
             pending = (maxval - minval);
+            if ( pending < finished*.1 )
+                pending = 0;
+        }
         jaddnum(retjson,"pending",dstr(pending));
         jaddnum(retjson,"jumbled",dstr(jumblred));
         jaddnum(retjson,"received",dstr(received));

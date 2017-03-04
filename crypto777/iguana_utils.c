@@ -1164,7 +1164,7 @@ char *bittrex_orderbook(char *base,char *rel,int32_t maxdepth)
 
 double calc_theoretical(double weighted,double CMC_average,double changes[3])
 {
-    double adjusted = 0.,theoretical = 0.;
+    double theoretical = 0.; //adjusted = 0.,
     if ( weighted > SMALLVAL && CMC_average > SMALLVAL )
     {
         theoretical = (weighted + CMC_average) * 0.5;
@@ -1185,7 +1185,7 @@ double calc_theoretical(double weighted,double CMC_average,double changes[3])
         if ( adjusted != 0. && theoretical != 0. )
             theoretical = (theoretical + adjusted) * 0.5;*/
     }
-    printf("adjusted %.8f theoretical %.8f (%.8f + wt %.8f)\n",adjusted,theoretical,CMC_average,weighted);
+    //printf("adjusted %.8f theoretical %.8f (%.8f + wt %.8f)\n",adjusted,theoretical,CMC_average,weighted);
     return(theoretical);
 }
 
