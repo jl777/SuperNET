@@ -322,6 +322,7 @@ r = 0;
                 {
                     if ( strlen(ptr->src) < 40 )
                     {
+                        printf("%s -> %s check for z to z\n",ptr->src,ptr->dest);
                         if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
@@ -345,6 +346,7 @@ r = 0;
                 {
                     if ( strlen(ptr->src) >= 40 )
                     {
+                        printf("%s -> %s check for z to t\n",ptr->src,ptr->dest);
                         if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
@@ -423,10 +425,10 @@ ZERO_ARGS(jumblr,status)
         jaddnum(retjson,"t_to_z",dstr(step_t2z));
         jaddnum(retjson,"z_to_z",dstr(step_z2z));
         jaddnum(retjson,"z_to_t",dstr(step_z2t));
-        jaddnum(retjson,"finished",dstr(finished));
-        jaddnum(retjson,"received",dstr(received));
-        jaddnum(retjson,"pending",dstr(received) - dstr(finished));
+        jaddnum(retjson,"pending",dstr(deposited) + dstr(step_t2z) + dstr(step_z2z) + dstr(step_z2t));
         jaddnum(retjson,"jumblred",dstr(jumblred));
+        jaddnum(retjson,"received",dstr(received));
+        jaddnum(retjson,"finished",dstr(finished));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
 }
