@@ -487,7 +487,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
-        if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
+        if ( coinbtc != 0 )
             jaddnum(retjson,"BTCjumbled",jumblr_balance(myinfo,coinbtc,BTCaddr));
         return(jprint(retjson,1));
     }
@@ -495,20 +495,24 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
 
 ZERO_ARGS(jumblr,status)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished,pending,maxval,minval;
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; struct iguana_info *coinbtc; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished,pending,maxval,minval;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
     {
         jumblr_opidsupdate(myinfo,coin);
         retjson = cJSON_CreateObject();
         step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
-        jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
+        jaddstr(retjson,"BTCdeposit",BTCaddr);
+        if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
+            jaddnum(retjson,"BTCdeposits",jumblr_balance(myinfo,coinbtc,BTCaddr));
         received = jumblr_receivedby(myinfo,coin,KMDaddr);
         deposited = jumblr_balance(myinfo,coin,KMDaddr);
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
-        jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
+        jaddstr(retjson,"BTCjumblr",BTCaddr);
+        if ( coinbtc != 0 )
+            jaddnum(retjson,"BTCjumbled",jumblr_balance(myinfo,coinbtc,BTCaddr));
         finished = jumblr_receivedby(myinfo,coin,KMDaddr);
         jumblred = jumblr_balance(myinfo,coin,KMDaddr);
         HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
