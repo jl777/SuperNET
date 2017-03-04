@@ -384,9 +384,9 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","BTC");
             jaddstr(vals,"dest","KMD");
-            jaddnum(vals,"amount",btcavail*.85);
+            jaddnum(vals,"amount",btcavail*.25);
             jaddnum(vals,"minprice",kmdprice*.95);
-            jaddnum(vals,"usejumblr",1);
+            //jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
             pending = btcavail;
             if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
@@ -401,7 +401,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
 
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
 {
-    static uint32_t lasttime;
+    //static uint32_t lasttime;
     char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
