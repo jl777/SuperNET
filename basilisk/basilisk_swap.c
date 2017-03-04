@@ -1977,12 +1977,12 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
         swap->myinfoptr = myinfo;
-        /*swap->myinfo.ctx = myinfo->ctx;
+        //swap->myinfo.ctx = myinfo->ctx;
         bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
         pubkey25519 = curve25519(privkey,curve25519_basepoint9());
-        swap->myinfo.persistent_priv = privkey;
-        swap->myinfo.myaddr.persistent = pubkey25519;
-        memcpy(swap->myinfo.persistent_pubkey33,pubkey33,33);*/
+        //swap->myinfo.persistent_priv = privkey;
+        //swap->myinfo.myaddr.persistent = pubkey25519;
+        //memcpy(swap->myinfo.persistent_pubkey33,pubkey33,33);
         m = n = 0;
         if ( bitcoin_swapinit(myinfo->ctx,privkey,pubkey33,pubkey25519,swap,optionduration) != 0 )
         {
