@@ -434,7 +434,7 @@ int32_t basilisk_process_retarray(struct supernet_info *myinfo,void *ptr,int32_t
             item = jitem(retarray,i);
             if ( jobj(item,"error") != 0 )
                 continue;
-            //printf("(%s).%d ",jprint(item,0),i);
+            printf("(%s).%d ",jprint(item,0),i);
             if ( (datalen= basilisk_message_returned(key,data,maxlen,item)) > 0 )
             {
                 duration = juint(item,"duration");
