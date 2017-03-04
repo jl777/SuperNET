@@ -45,7 +45,7 @@ You need to make sure the nacl sdk is properly installed and you are able to bui
 Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
 
 ##For android##
-You have to build a native libnanomsg for android. This section is work in progress. Contact ca333@protonmail.ch for assistance on building latest iguana for android.
+You have to build a native libnanomsg for android. This section is work in progress. Contact ca333@protonmail.com for assistance on building latest iguana for android.
 
 #ONETIME#
 Now you are ready to build.
@@ -86,6 +86,10 @@ To build just iguana, you can ```cd``` into SuperNET/iguana and do ```./m_unix``
 
 The native versions are command line applications: agents/iguana {JSON}
 The chrome app pexe requires that the chrome is launched with a command line parameter (tools/chrome.localhost) and then browse to *http://127.0.0.1:7777* to see the pexe
+
+#SuperNET API reference#
+
+The API reference and documentation which lists the available remote calls can be found at http://docs.supernet.org/ 
 
 #SUPERUGLYGUI#
 
