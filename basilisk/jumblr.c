@@ -366,9 +366,9 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
 
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey)
 {
-    static double kmdprice; static uint32_t lasttime;
-    double btcavail=0,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc = iguana_coinfind("BTC");
-    printf("DEXcheck %p\n",coinbtc);
+    static double kmdprice,pending; static uint32_t lasttime;
+    double btcavail=0,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc; cJSON *vals; bits256 hash; char *retstr;
+    coinbtc = iguana_coinfind("BTC");
     if ( kmdprice == 0. || time(NULL) > lasttime+600 )
     {
         kmdprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average);
@@ -378,9 +378,22 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
     if ( kmdprice > SMALLVAL )
     {
         minbtc = (kmdprice * 1.1) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
-        if ( coinbtc != 0 && (btcavail= dstr(jumblr_balance(myinfo,coinbtc,BTCaddr))) > minbtc )
+        if ( coinbtc != 0 && (btcavail= dstr(jumblr_balance(myinfo,coinbtc,BTCaddr))) > minbtc+pending )
         {
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
+            vals = cJSON_CreateObject();
+            jaddstr(vals,"source","BTC");
+            jaddstr(vals,"dest","KMD");
+            jaddnum(vals,"amount",btcavail*.95);
+            jaddnum(vals,"minprice",kmdprice*.95);
+            memset(hash.bytes,0,sizeof(hash));
+            pending = btcavail;
+            if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
+            {
+                printf("request.(%s) -> (%s)\n",jprint(vals,0),retstr);
+                free(retstr);
+            }
+            // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
         } else printf("btcavail %.8f\n",btcavail);
     }
 }
@@ -389,11 +402,11 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
 {
     static uint32_t lasttime;
     char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
-    // if BTC has arrived in deposit address, invoke DEX -> KMD
-    // if BTC has arrived in destination address, invoke DEX -> BTC
     privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
     if ( time(NULL) > lasttime+60 )
     {
+        // if BTC has arrived in deposit address, invoke DEX -> KMD
+        // if BTC has arrived in destination address, invoke DEX -> BTC
         jumblr_DEXcheck(myinfo,coin,BTCaddr,KMDaddr,privkey);
         lasttime = (uint32_t)time(NULL);
     }

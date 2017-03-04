@@ -617,6 +617,7 @@ void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coi
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
 bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,char *prefix);
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
+int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares

@@ -681,19 +681,19 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     } else printf("error creating request\n");
     if ( datalen > 0 )
     {
-        uint32_t msgid,crc=0,crcs[2],numiters = 0; uint8_t buf[4096];
+        uint32_t msgid,crc=0;//,crcs[2],numiters = 0; uint8_t buf[4096];
         memset(hash.bytes,0,sizeof(hash));
         msgid = (uint32_t)time(NULL);
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
         basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
         sleep(3);
-        while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
+        /*while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
         {
             //printf("didnt get back what was sent\n");
             sleep(3);
             basilisk_channelsend(myinfo,myinfo->myaddr.persistent,hash,DEX_channel,msgid,serialized,datalen,60);
             numiters++;
-        }
+        }*/
         if ( crc != 0 )//basilisk_channelsend(myinfo,R.srchash,R.desthash,DEX_channel,(uint32_t)time(NULL),serialized,datalen,30) == 0 )
             return(clonestr("{\"result\":\"DEX message sent\"}"));
         else return(clonestr("{\"error\":\"DEX message couldnt be sent\"}"));

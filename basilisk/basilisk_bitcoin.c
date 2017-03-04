@@ -567,12 +567,12 @@ int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,ch
         coin->estimatedfee = iguana_getestimatedfee(myinfo,coin);
     if ( signedtx != 0 )
     {
-        txfee = coin->estimatedfee * (strlen(signedtx) + numvins);
+        txfee = coin->estimatedfee * (strlen(signedtx)/2 + numvins);
         free(signedtx);
     }
     else if ( rawtx != 0 )
     {
-        txfee = coin->estimatedfee * (strlen(rawtx) + numvins * 110);
+        txfee = coin->estimatedfee * (strlen(rawtx)/2 + numvins * 110);
         free(rawtx);
     }
     return(txfee);
@@ -748,7 +748,7 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
 
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj,struct vin_info *V)
 {
-    uint8_t buf[4096]; int32_t oplen,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
+    uint8_t buf[4096]; int32_t oplen,len,offset,minconf,spendlen; cJSON *vins,*addresses,*txobj = 0; uint32_t locktime; char *opreturn,*spendscriptstr,*changeaddr,*rawtx = 0; int64_t amount,txfee,burnamount;
     if ( valsobj == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
@@ -798,7 +798,13 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                 } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
             rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
-            //printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
+            if ( txfee == 0 )
+            {
+                txfee = iguana_esttxfee(myinfo,coin,rawtx,0,vins != 0 ? cJSON_GetArraySize(vins): 0);
+                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
+                printf("new txfee %.8f\n",dstr(txfee));
+            }
+            printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
         }
         if ( rawtx != 0 )
         {
