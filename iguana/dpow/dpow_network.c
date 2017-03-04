@@ -1108,7 +1108,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
         if ( dexp->datalen == (size - sizeof(*dexp)) )
         {
             crc32 = calc_crc32(0,dexp->packet,dexp->datalen);//(void *)((long)dexp + sizeof(dexp->crc32)),(int32_t)(size - sizeof(dexp->crc32)));
-            if ( dexp->crc32 == crc32 && (firstz= dex_crc32find(myinfo,crc32)) >= 0 )
+            if ( dexp->crc32 == crc32 )//&& (firstz= dex_crc32find(myinfo,crc32)) >= 0 )
                 return(0);
             //else printf("dexp %08x != %08x || firstz.%d < 0\n",dexp->crc32,crc32,firstz);
         } else printf("datalen.%d != (%d - %ld)\n",dexp->datalen,size,sizeof(*dexp));
