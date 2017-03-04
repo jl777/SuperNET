@@ -159,8 +159,8 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
                         balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
                 free_json(retjson);
             }
-            //if ( balance == 0 )
-            //    printf("listunspent.(%s)\n",addr);
+            if ( balance == 0 )
+                printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
@@ -197,7 +197,7 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
             for (i=0; i<n; i++)
             {
                 dest = jitem(amounts,i);
-                printf("%s ",jprint(dest,0));
+                //printf("%s ",jprint(dest,0));
                 if ( (addr= jstr(dest,"address")) != 0 && (amount= jdouble(dest,"amount")*SATOSHIDEN) > 0 )
                 {
                     if ( strcmp(addr,JUMBLR_ADDR) == 0 )
@@ -254,7 +254,6 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
     char *retstr; cJSON *array; int32_t i,n; struct jumblr_item *ptr;
     if ( (retstr= jumblr_zlistoperationids(myinfo,coin)) != 0 )
     {
-        printf("%s\n",retstr);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
