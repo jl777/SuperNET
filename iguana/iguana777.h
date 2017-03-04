@@ -95,8 +95,8 @@ struct jumblr_item
 {
     UT_hash_handle hh;
     int64_t amount,fee,txfee;
-    uint32_t spent;
-    char opid[66],src[66],dest[66],status;
+    uint32_t spent,pad;
+    char opid[64],src[128],dest[128],status;
 };
 
 struct liquidity_info
