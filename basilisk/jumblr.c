@@ -227,14 +227,14 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
                 if ( cJSON_GetArraySize(retjson) == 1 )
                 {
                     item = jitem(retjson,0);
-                    printf("%s\n",jprint(item,0));
+                    //printf("%s\n",jprint(item,0));
                     if ( (status= jstr(item,"status")) != 0 )
                     {
                         if ( strcmp(status,"success") == 0 )
                         {
                             ptr->status = jumblr_itemset(ptr,item,status);
                         }
-                        else if ( strcmp(status,"failure") == 0 )
+                        else if ( strcmp(status,"failed") == 0 )
                         {
                             printf("%s failed\n",ptr->opid);
                             free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
