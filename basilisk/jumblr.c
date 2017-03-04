@@ -335,7 +335,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
 //r = 0;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
-        //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
+        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
@@ -428,7 +428,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
-        jumblr_importprivkey(myinfo,coin,wifstr);
+        // jumblr_importprivkey(myinfo,coin,wifstr); dont mix jumbled funds with normal!
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         return(jprint(retjson,1));
