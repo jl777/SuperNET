@@ -136,22 +136,9 @@ char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,c
 
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    char *retstr; int64_t total = 0; //cJSON *retjson,*item; int32_t i,n;
+    char *retstr; int64_t total = 0;
     if ( (retstr= jumblr_getreceivedbyaddress(myinfo,coin,addr)) != 0 )
     {
-        printf("jumblr_getreceivedbyaddress.(%s) -> (%s)\n",addr,retstr);
-        /*if ( (retjson= cJSON_Parse(retstr)) != 0 )
-        {
-            if ( (n= cJSON_GetArraySize(retjson)) > 0 )
-            {
-                for (i=0; i<n; i++)
-                {
-                    item = jitem(retjson,i);
-                    total += jdouble(item,"amount") * SATOSHIDEN;
-                }
-            }
-            free_json(retjson);
-        }*/
         total = atof(retstr) * SATOSHIDEN;
         free(retstr);
     }
@@ -172,6 +159,8 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
                         balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
                 free_json(retjson);
             }
+            if ( balance == 0 )
+                printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
@@ -200,6 +189,7 @@ void jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
      }*/
     if ( (params= jobj(item,"params")) != 0 )
     {
+        printf("params.(%s)\n",jprint(params,0));
         if ( (from= jstr(params,"fromaddress")) != 0 )
             safecopy(ptr->src,from,sizeof(ptr->src));
         if ( (amounts= jarray(&n,params,"amounts")) != 0 )
@@ -207,6 +197,7 @@ void jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
             for (i=0; i<n; i++)
             {
                 dest = jitem(amounts,i);
+                printf("%s ",jprint(dest,0));
                 if ( (addr= jstr(dest,"address")) != 0 && (amount= jdouble(dest,"amount")*SATOSHIDEN) > 0 )
                 {
                     if ( strcmp(addr,JUMBLR_ADDR) == 0 )
@@ -246,6 +237,7 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
     char *retstr; cJSON *array; int32_t i,n; struct jumblr_item *ptr;
     if ( (retstr= jumblr_zlistoperationids(myinfo,coin)) != 0 )
     {
+        printf("%s\n",retstr);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
