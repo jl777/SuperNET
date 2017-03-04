@@ -102,14 +102,14 @@ char *jumblr_sendz_to_t(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *jumblr_zlistreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 3]",addr);
+    sprintf(params,"[\"%s\", 1]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_listreceivedbyaddress",params));
 }
 
 char *jumblr_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 3]",addr);
+    sprintf(params,"[\"%s\", 1]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
 }
 
@@ -123,14 +123,14 @@ char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin
 char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 3]",addr);
+    sprintf(params,"[\"%s\", 1]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getbalance",params));
 }
 
 char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[3, 99999999, [\"%s\"]]",addr);
+    sprintf(params,"[1, 99999999, [\"%s\"]]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params));
 }
 
