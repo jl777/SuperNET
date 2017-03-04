@@ -27,7 +27,7 @@
  z_sendmany "fromaddress" [{"address":... ,"amount":..., "memo":"<hex>"},...] ( minconf ) ( fee )
  */
 
-#define JUMBLR_INCR 99.5
+#define JUMBLR_INCR 99.65
 #define JUMBLR_TXFEE 0.01
 #define JUMBLR_ADDR "RGhxXpXSSBTBm9EvNsXnTQczthMCxHX91t"
 #define JUMBLR_BTCADDR "18RmTJe9qMech8siuhYfMtHo8RtcN1obC6"
@@ -264,6 +264,22 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
     }
 }
 
+void jumblr_prune(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
+{
+    struct jumblr_item *tmp; char oldsrc[128];
+    strcpy(oldsrc,ptr->src);
+    free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+    {
+        if ( strcmp(oldsrc,ptr->dest) == 0 )
+        {
+            printf("prune %s (%s -> %s) matched oldsrc\n",ptr->opid,ptr->src,ptr->dest);
+            free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+            strcpy(oldsrc,ptr->src);
+        }
+    }
+}
+
 void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *retstr; cJSON *array; int32_t i,n; struct jumblr_item *ptr;
@@ -280,6 +296,8 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
                         if ( ptr->status == 0 )
                             jumblr_opidupdate(myinfo,coin,ptr);
                         printf("%d: %s -> %s %.8f\n",ptr->status,ptr->src,ptr->dest,dstr(ptr->amount));
+                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && strcmp(ptr->dest,JUMBLR_ADDR) == 0 )
+                            jumblr_prune(myinfo,coin,ptr);
                     }
                 }
             }
@@ -298,22 +316,6 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
     bitcoin_address(BTCaddr,0,pubkey33,33);
     bitcoin_address(KMDaddr,60,pubkey33,33);
     return(privkey);
-}
-
-void jumblr_prune(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
-{
-    struct jumblr_item *tmp; char oldsrc[128];
-    strcpy(oldsrc,ptr->src);
-    free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
-    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
-    {
-        if ( strcmp(oldsrc,ptr->dest) == 0 )
-        {
-            printf("%s (%s -> %s) matched oldsrc\n",ptr->opid,ptr->src,ptr->dest);
-            free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
-            strcpy(oldsrc,ptr->src);
-        }
-    }
 }
 
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
@@ -388,7 +390,6 @@ r = 0;
                             {
                                 printf("sendz_to_t.(%s)\n",retstr);
                                 free(retstr);
-                                jumblr_prune(myinfo,coin,ptr);
                             }
                             ptr->spent = (uint32_t)time(NULL);
                             break;
