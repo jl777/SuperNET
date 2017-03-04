@@ -63,6 +63,34 @@ struct jumblr_item *jumblr_opidadd(struct supernet_info *myinfo,struct iguana_in
     return(ptr);
 }
 
+char *jumblr_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    char params[1024];
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\"]",addr);
+        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"validateaddress",params));
+    } else return(_dex_validateaddress(myinfo,coin->symbol,addr));
+}
+
+int32_t jumblr_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    char params[1024],*retstr; cJSON *retjson,*obj; int32_t retval = -1;
+    sprintf(params,"[\"%s\"]",addr);
+    if ( (retstr= jumblr_validateaddress(myinfo,coin,addr)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (obj= jobj(retjson,"ismine")) != 0 && is_cJSON_True(obj) != 0 )
+                retval = 1;
+            else retval = 0;
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(retval);
+}
+
 char *jumblr_zgetnewaddress(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getnewaddress",""));
@@ -165,17 +193,27 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
     char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
     if ( jumblr_addresstype(myinfo,coin,addr) == 't' )
     {
-        if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
+        if ( jumblr_ismine(myinfo,coin,addr) > 0 )
+        {
+            if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                        for (i=0; i<n; i++)
+                            balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
+                    free_json(retjson);
+                }
+                free(retstr);
+            }
+        }
+        else if ( (retstr= _dex_getbalance(myinfo,coin->symbol,addr)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (n= cJSON_GetArraySize(retjson)) > 0 )
-                    for (i=0; i<n; i++)
-                        balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
+                balance = jdouble(retjson,"balance") * SATOSHIDEN;
                 free_json(retjson);
             }
-            //if ( balance == 0 )
-            //    printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
@@ -325,21 +363,31 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
     return(privkey);
 }
 
+void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey)
+{
+    double btcavail,minbtc; struct iguana_info *coinbtc = iguana_coinfind("BTC");
+    if ( coinbtc != 0 && (btcavail= jumblr_balance(myinfo,coinbtc,BTCaddr)) > minbtc )
+    {
+        
+    }
+}
+
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
 {
-    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 priv0; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
+    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
     // if BTC has arrived in deposit address, invoke DEX -> KMD
     // if BTC has arrived in destination address, invoke DEX -> BTC
+    privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+    jumblr_DEXcheck(myinfo,coin,BTCaddr,KMDaddr,privkey);
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
-//r = 0;
+r = 0;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
-        //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
+        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
-                priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
                     if ( (r & 1) == 0 )

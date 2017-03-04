@@ -747,7 +747,7 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 1;
     printf("JUMBLR loop\n");
     while ( 1 )
     {
