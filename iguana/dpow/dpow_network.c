@@ -416,14 +416,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-//#ifndef __APPLE__
+#ifndef __APPLE__
                     if ( (rand() % 100) < 40 )
                     {
                         nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
                         printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                     }
-//#endif
+#endif
                 }
             }
             if ( freeptr != 0 )
@@ -641,6 +641,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     free(retstr);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'M' )
+            {
+                if ( (retjson= dpow_getmessage(myinfo,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
                 }
             }
@@ -991,6 +999,15 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'V';
     return(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,""));
+}
+
+char *_dex_getmessage(struct supernet_info *myinfo,char *jsonstr)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,"KMD",sizeof(dexreq.name));
+    dexreq.func = 'M';
+    return(_dex_sendrequeststr(myinfo,&dexreq,jsonstr,0,1,""));
 }
 
 char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *address,uint8_t arg)
@@ -1992,8 +2009,9 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     free(retstr);
                     if ( broadcastflag != 0 )
                     {
-                        //printf("BROADCAST dexp request.[%d]\n",size);
+                        printf("BROADCAST dexp request.[%d]\n",size);
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                     }
                 }
                 else
@@ -2007,7 +2025,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                     if ( dex_packetcheck(myinfo,dexp,size) == 0 )
                     {
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
-                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                        //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                         //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                         dex_packet(myinfo,dexp,size);
                     } //else printf("failed dexpacketcheck\n");

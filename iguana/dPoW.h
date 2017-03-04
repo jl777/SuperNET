@@ -167,6 +167,7 @@ char *dpow_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *key,char *value,int32_t flags);
 cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key);
 void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
+cJSON *dpow_getmessage(struct supernet_info *myinfo,char *jsonstr);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -178,6 +179,7 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
 char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout);
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *address);
+char *_dex_getmessage(struct supernet_info *myinfo,char *jsonstr);
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address);
 char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address);

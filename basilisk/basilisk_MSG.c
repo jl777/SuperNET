@@ -263,6 +263,18 @@ char *basilisk_respond_MSG(struct supernet_info *myinfo,char *CMD,void *addr,cha
     return(retstr);
 }
 
+cJSON *dpow_getmessage(struct supernet_info *myinfo,char *jsonstr)
+{
+    cJSON *valsobj,*retjson = 0; char *retstr;
+    if ( (valsobj= cJSON_Parse(jsonstr)) != 0 )
+    {
+        retstr = basilisk_iterate_MSG(myinfo,juint(valsobj,"channel"),juint(valsobj,"msgid"),jbits256(valsobj,"srchash"),jbits256(valsobj,"desthash"),juint(valsobj,"width"));
+        retjson = cJSON_Parse(retstr);
+        free(retstr);
+    }
+    return(retjson);
+}
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
