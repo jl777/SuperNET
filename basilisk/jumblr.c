@@ -393,12 +393,12 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
 
 ZERO_ARGS(jumblr,status)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t pending,received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
     {
         jumblr_opidsupdate(myinfo,coin);
         retjson = cJSON_CreateObject();
-        step_t2z = step_z2z = step_z2t = deposited = finished = 0;
+        step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
@@ -416,15 +416,16 @@ ZERO_ARGS(jumblr,status)
                 if ( strlen(ptr->dest) >= 40 )
                     step_z2z += ptr->amount;
                 else step_z2t += ptr->amount;
-            }
-            else step_t2z += ptr->amount;
+            } else step_t2z += ptr->amount;
+            if ( ptr->spent == 0 )
+                pending += ptr->amount;
         }
         jaddstr(retjson,"result","success");
         jaddnum(retjson,"deposited",dstr(deposited));
         jaddnum(retjson,"t_to_z",dstr(step_t2z));
         jaddnum(retjson,"z_to_z",dstr(step_z2z));
         jaddnum(retjson,"z_to_t",dstr(step_z2t));
-        jaddnum(retjson,"pending",dstr(deposited) + dstr(step_t2z) + dstr(step_z2z) + dstr(step_z2t));
+        jaddnum(retjson,"pending",dstr(pending));
         jaddnum(retjson,"jumblred",dstr(jumblred));
         jaddnum(retjson,"received",dstr(received));
         jaddnum(retjson,"finished",dstr(finished));
