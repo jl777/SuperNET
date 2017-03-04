@@ -217,7 +217,11 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     HASH_ADD_KEYPTR(hh,myinfo->messagetable,msg->key,msg->keylen,msg);
     QUEUEITEMS++;
     portable_mutex_unlock(&myinfo->messagemutex);
-printf("add message keylen.%d [%d]\n",msg->keylen,datalen);
+    {
+        bits256 srchash,desthash; uint32_t channel,msgid;
+        basilisk_messagekeyread(key,&channel,&msgid,&srchash,&desthash);
+        printf("add message keylen.%d [%d] msgid.%x channel.%x\n",msg->keylen,datalen,msgid,channel);
+    }
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
     if ( sendping != 0 )
