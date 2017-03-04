@@ -103,7 +103,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
     {
         keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
         if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-            jaddi(array,item);//, printf("gotmsg0.(%s)\n",jprint(item,0));
+        {
+            jaddbits256(item,"src",srchash);
+            jaddbits256(item,"dest",desthash);
+            jaddi(array,item);
+        }
         //keylen = basilisk_messagekey(key,channel,msgid,desthash,srchash);
         //if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
         //    jaddi(array,item);//, printf("gotmsg0.(%s)\n",jprint(item,0));
@@ -113,7 +117,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             {
                 keylen = basilisk_messagekey(key,channel,msgid,zero,desthash);
                 if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);//, printf("gotmsg1.(%s)\n",jprint(item,0));
+                {
+                    jaddbits256(item,"src",srchash);
+                    jaddbits256(item,"dest",desthash);
+                    jaddi(array,item);
+                }
                 //keylen = basilisk_messagekey(key,channel,msgid,desthash,zero);
                 //if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
                 //    jaddi(array,item);//, printf("gotmsg1.(%s)\n",jprint(item,0));
@@ -122,7 +130,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             {
                 keylen = basilisk_messagekey(key,channel,msgid,srchash,zero);
                 if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);//, printf("gotmsg2.(%s)\n",jprint(item,0));
+                {
+                    jaddbits256(item,"src",srchash);
+                    jaddbits256(item,"dest",desthash);
+                    jaddi(array,item);
+                }
                 //keylen = basilisk_messagekey(key,channel,msgid,zero,srchash);
                 //if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
                 //    jaddi(array,item);//, printf("gotmsg2.(%s)\n",jprint(item,0));
@@ -131,7 +143,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             {
                 keylen = basilisk_messagekey(key,channel,msgid,zero,zero);
                 if ( (item= _basilisk_respond_getmessage(myinfo,key,keylen)) != 0 )
-                    jaddi(array,item);//, printf("gotmsg3.(%s)\n",jprint(item,0));
+                {
+                    jaddbits256(item,"src",srchash);
+                    jaddbits256(item,"dest",desthash);
+                    jaddi(array,item);
+                }
             }
         }
         msgid--;
@@ -143,7 +159,11 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
             if ( basilisk_msgcmp(msg,origwidth,channel,origmsgid,zero,zero) == 0 )
             {
                 if ( (msgjson= basilisk_msgjson(msg,msg->key,msg->keylen)) != 0 )
+                {
+                    jaddbits256(msgjson,"src",srchash);
+                    jaddbits256(msgjson,"dest",desthash);
                     jaddi(array,msgjson);
+                }
             }
         }
         if ( now > msg->expiration+60 )
@@ -404,8 +424,9 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
         retstr = basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0);
     else
     {
+        char str[65],str2[65];
         retstr = _dex_getmessage(myinfo,jprint(valsobj,0));
-        printf("channel.%u msgid.%u gotmessage.(%d) %s\n",channel,msgid,(int32_t)strlen(retstr),strlen(retstr) < 100 ? retstr : "(too long)");
+        printf("channel.%u msgid.%u gotmessage.(%d) %s %s %s\n",channel,msgid,(int32_t)strlen(retstr),strlen(retstr) < 100 ? retstr : "(too long)",bits256_str(str,srchash),bits256_str(str2,desthash));
     }
     if ( retstr != 0 )
     {
