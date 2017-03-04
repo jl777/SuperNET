@@ -174,8 +174,8 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
                         balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
                 free_json(retjson);
             }
-            if ( balance == 0 )
-                printf("listunspent.(%s)\n",addr);
+            //if ( balance == 0 )
+            //    printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
