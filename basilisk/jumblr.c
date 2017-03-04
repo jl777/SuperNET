@@ -374,7 +374,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
 
 ZERO_ARGS(jumblr,status)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t deposited,step_t2z,step_z2z,step_z2t,finished;
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
     {
         jumblr_opidsupdate(myinfo,coin);
@@ -383,11 +383,13 @@ ZERO_ARGS(jumblr,status)
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
-        deposited = jumblr_receivedby(myinfo,coin,KMDaddr);
+        received = jumblr_receivedby(myinfo,coin,KMDaddr);
+        deposited = SATOSHIDEN * jumblr_balance(myinfo,coin,KMDaddr);
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
         jaddstr(retjson,"BTCjumblr","notyet");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         finished = jumblr_receivedby(myinfo,coin,KMDaddr);
+        jumblred = SATOSHIDEN * jumblr_balance(myinfo,coin,KMDaddr);
         HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
         {
             if ( strlen(ptr->src) >= 40 )
@@ -404,7 +406,9 @@ ZERO_ARGS(jumblr,status)
         jaddnum(retjson,"z_to_z",dstr(step_z2z));
         jaddnum(retjson,"z_to_t",dstr(step_z2t));
         jaddnum(retjson,"finished",dstr(finished));
-        jaddnum(retjson,"pending",dstr(deposited) - dstr(finished));
+        jaddnum(retjson,"received",dstr(received));
+        jaddnum(retjson,"pending",dstr(received) - dstr(finished));
+        jaddnum(retjson,"jumblred",dstr(jumblred));
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
 }
