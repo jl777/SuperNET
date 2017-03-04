@@ -266,16 +266,23 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
 
 void jumblr_prune(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
 {
-    struct jumblr_item *tmp; char oldsrc[128];
+    struct jumblr_item *tmp; char oldsrc[128]; int32_t flag = 1;
+    printf("PRUNE %s\n",ptr->opid);
     strcpy(oldsrc,ptr->src);
     free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
-    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+    while ( flag != 0 )
     {
-        if ( strcmp(oldsrc,ptr->dest) == 0 )
+        flag = 0;
+        HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
         {
-            printf("prune %s (%s -> %s) matched oldsrc\n",ptr->opid,ptr->src,ptr->dest);
-            free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
-            strcpy(oldsrc,ptr->src);
+            if ( strcmp(oldsrc,ptr->dest) == 0 )
+            {
+                printf("prune %s (%s -> %s) matched oldsrc\n",ptr->opid,ptr->src,ptr->dest);
+                free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+                strcpy(oldsrc,ptr->src);
+                flag = 1;
+                break;
+            }
         }
     }
 }
@@ -335,7 +342,7 @@ r = 0;
                 priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
-                    if ( (r & 7) == 0 )
+                    if ( (r & 1) == 0 )
                     {
                         if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
                         {
@@ -352,7 +359,7 @@ r = 0;
                             free(zaddr);
                         } else printf("no zaddr from jumblr_zgetnewaddress\n");
                     }
-                } else printf("%s total %.8f vs %.8f\n",KMDaddr,dstr(total),(JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE)));
+                } //else printf("%s total %.8f vs %.8f\n",KMDaddr,dstr(total),(JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE)));
                 break;
             case 1: // z -> z
                 jumblr_opidsupdate(myinfo,coin);
@@ -360,7 +367,7 @@ r = 0;
                 {
                     if ( jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                     {
-                        if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
+                        if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             if ( (zaddr= jumblr_zgetnewaddress(myinfo,coin)) != 0 )
                             {
@@ -383,7 +390,7 @@ r = 0;
                 {
                     if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                     {
-                        if ( (r & 7) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
+                        if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
                             priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
                             if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
@@ -430,12 +437,12 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
 
 ZERO_ARGS(jumblr,status)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t pending,received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
     {
         jumblr_opidsupdate(myinfo,coin);
         retjson = cJSON_CreateObject();
-        step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
+        step_t2z = step_z2z = step_z2t = deposited = finished = 0;
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
@@ -454,15 +461,12 @@ ZERO_ARGS(jumblr,status)
                     step_z2z += ptr->amount;
                 else step_z2t += ptr->amount;
             } else step_t2z += ptr->amount;
-            if ( ptr->spent == 0 )
-                pending += ptr->amount;
         }
         jaddstr(retjson,"result","success");
-        jaddnum(retjson,"deposited",dstr(deposited));
+        jaddnum(retjson,"deposits",dstr(deposited));
         jaddnum(retjson,"t_to_z",dstr(step_t2z));
         jaddnum(retjson,"z_to_z",dstr(step_z2z));
         jaddnum(retjson,"z_to_t",dstr(step_z2t));
-        jaddnum(retjson,"pending",dstr(pending));
         jaddnum(retjson,"jumblred",dstr(jumblred));
         jaddnum(retjson,"received",dstr(received));
         jaddnum(retjson,"finished",dstr(finished));
