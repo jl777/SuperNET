@@ -130,7 +130,7 @@ char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,c
 char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[3, 99999999, \"%s\"]",addr);
+    sprintf(params,"[3, 99999999, [\"%s\"]]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params));
 }
 
