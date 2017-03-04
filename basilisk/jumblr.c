@@ -102,14 +102,14 @@ char *jumblr_sendz_to_t(struct supernet_info *myinfo,struct iguana_info *coin,ch
 char *jumblr_zlistreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 1]",addr);
+    sprintf(params,"[\"%s\", 3]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_listreceivedbyaddress",params));
 }
 
 char *jumblr_getreceivedbyaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 1]",addr);
+    sprintf(params,"[\"%s\", 3]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getreceivedbyaddress",params));
 }
 
@@ -123,8 +123,15 @@ char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin
 char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
     char params[1024];
-    sprintf(params,"[\"%s\", 1]",addr);
+    sprintf(params,"[\"%s\", 3]",addr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getbalance",params));
+}
+
+char *jumblr_getbalance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    char params[1024];
+    sprintf(params,"[\"%s\", 3]",addr);
+    return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getbalance",params));
 }
 
 int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
@@ -153,16 +160,13 @@ int64_t jumblr_receivedby(struct supernet_info *myinfo,struct iguana_info *coin,
 
 int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    char *retstr; double val; cJSON *retjson; int64_t balance = 0;
+    char *retstr; double val; int64_t balance = 0;
     if ( strlen(addr) < 40 )
     {
-        if ( (retstr= _dex_getbalance(myinfo,coin->symbol,addr)) != 0 )
+        if ( (retstr= jumblr_getbalance(myinfo,coin,addr)) != 0 )
         {
-            if ( (retjson= cJSON_Parse(retstr)) != 0 )
-            {
-                balance = jdouble(retjson,"balance") * SATOSHIDEN;
-                free_json(retjson);
-            }
+            if ( (val= atof(retstr)) > SMALLVAL )
+                balance = val * SATOSHIDEN;
             free(retstr);
         }
     }
