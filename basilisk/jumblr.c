@@ -217,22 +217,28 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
 
 void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
 {
-    char *retstr,*status; cJSON *retjson;
+    char *retstr,*status; cJSON *retjson,*item;
     if ( ptr->status == 0 )
     {
         if ( (retstr= jumblr_zgetoperationstatus(myinfo,coin,ptr->opid)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (status= jstr(retjson,"status")) != 0 )
+                if ( cJSON_GetArraySize(retjson) == 1 )
                 {
-                    if ( strcmp(status,"success") == 0 )
-                        ptr->status = jumblr_itemset(ptr,retjson,status);
-                    else if ( strcmp(status,"failure") == 0 )
+                    item = jitem(retjson,0);
+                    if ( (status= jstr(item,"status")) != 0 )
                     {
-                        printf("%s failed\n",ptr->opid);
-                        free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
-                        ptr->status = -1;
+                        if ( strcmp(status,"success") == 0 )
+                        {
+                            ptr->status = jumblr_itemset(ptr,item,status);
+                        }
+                        else if ( strcmp(status,"failure") == 0 )
+                        {
+                            printf("%s failed\n",ptr->opid);
+                            free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+                            ptr->status = -1;
+                        }
                     }
                 }
                 free_json(retjson);
