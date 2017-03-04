@@ -2010,7 +2010,7 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
                         signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
                         //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
                         dex_packet(myinfo,dexp,size);
-                    } else printf("failed dexpacketcheck\n");
+                    } //else printf("failed dexpacketcheck\n");
                 }
                 //printf("GOT DEX rep PACKET.%d\n",size);
                 //if ( freeptr != 0 )
