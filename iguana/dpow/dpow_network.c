@@ -620,7 +620,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 if ( retstr == 0 )
                 {
-                    *broadcastflagp = 1;
+                    //*broadcastflagp = 1;
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 }
                 else
