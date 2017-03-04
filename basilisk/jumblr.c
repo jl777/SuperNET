@@ -335,7 +335,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
 //r = 0;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
-        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
+        //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
@@ -437,12 +437,12 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
 
 ZERO_ARGS(jumblr,status)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished;
+    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished,pending,maxval,minval;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
     {
         jumblr_opidsupdate(myinfo,coin);
         retjson = cJSON_CreateObject();
-        step_t2z = step_z2z = step_z2t = deposited = finished = 0;
+        step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
         jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"BTCdeposit","notyet");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
@@ -467,7 +467,12 @@ ZERO_ARGS(jumblr,status)
         jaddnum(retjson,"t_to_z",dstr(step_t2z));
         jaddnum(retjson,"z_to_z",dstr(step_z2z));
         jaddnum(retjson,"z_to_t",dstr(step_z2t));
-        jaddnum(retjson,"jumblred",dstr(jumblred));
+        maxval = MAX(step_t2z,MAX(step_z2z,step_z2t));
+        minval = MIN(step_t2z,MIN(step_z2z,step_z2t));
+        if ( maxval > minval )
+            pending = (maxval - minval);
+        jaddnum(retjson,"pending",dstr(pending));
+        jaddnum(retjson,"jumbled",dstr(jumblred));
         jaddnum(retjson,"received",dstr(received));
         jaddnum(retjson,"finished",dstr(finished));
         return(jprint(retjson,1));
