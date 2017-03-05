@@ -564,7 +564,12 @@ ZERO_ARGS(jumblr,status)
         jaddnum(retjson,"received",dstr(received));
         jaddnum(retjson,"finished",dstr(finished));
         return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"jumblr status no passphrase or no native komodod\"}"));
+    }
+    else
+    {
+        printf("(%s) (%s) %d\n",coin->symbol,myinfo->jumblr_passphrase,coin->FULLNODE);
+        return(clonestr("{\"error\":\"jumblr status no passphrase or no native komodod\"}"));
+    }
 }
 
 #include "../includes/iguana_apiundefs.h"
