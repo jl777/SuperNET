@@ -949,7 +949,8 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             desthash.bytes[i] = ptr[offset++];
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
-        basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
+        if ( size > offset )
+            basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
@@ -980,9 +981,19 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         buf[offset++] = swap->I.otherhash.bytes[i];
     offset += iguana_rwnum(1,&buf[offset],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
     offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
-    memcpy(&buf[offset],data,datalen), offset += datalen;
+    if ( datalen > 0 )
+        memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
+    else
+    {
+        if ( msgbits == 0x80000000 )
+        {
+            for (i=0; i<4; i++)
+                printf("%02x ",data[i]);
+            printf("datalen.%d\n",datalen);
+        }
+    }
     free(buf);
     return(0);
 }
@@ -1061,7 +1072,7 @@ int32_t instantdex_pubkeyargs(void *ctx,struct basilisk_swap *swap,int32_t numpu
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(ctx,&privkey,pubkey,privkey,hash);
-        printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 )
