@@ -967,7 +967,12 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     {
         if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->persistent_pubkey) == 0 )
         {
-            //printf("matched %x datalen.%d\n",msgbits,swap->messages[i].datalen);
+            if ( swap->messages[i].datalen < 8 )
+            {
+                for (i=0; i<swap->messages[i].datalen; i++)
+                    printf("%02x",swap->messages[i].data[i]);
+                printf("matched %x datalen.%d\n",msgbits,swap->messages[i].datalen);
+            }
             retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
             break;
         }
