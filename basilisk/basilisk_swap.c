@@ -955,9 +955,9 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     }
     for (i=0; i<swap->nummessages; i++)
     {
-        if ( swap->messages[i].msgbits == msgbits )
+        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->persistent_pubkey) == 0 )
         {
-            printf("matched %x datalen.%d\n",msgbits,swap->messages[i].datalen);
+            //printf("matched %x datalen.%d\n",msgbits,swap->messages[i].datalen);
             retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
             break;
         }
@@ -1895,6 +1895,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
     }
     else
     {
+        printf("connected.%d\n",swap->connected);
         if ( (retstr= _dex_kvsearch(myinfo,"KV",keystr)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -1918,7 +1919,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
                 }
                 free_json(retjson);
             }
-            printf("KVsearch.(%s)\n",retstr);
+            printf("KVsearch.(%s) connected.%d\n",retstr,swap->connected);
             free(retstr);
         }
     }
