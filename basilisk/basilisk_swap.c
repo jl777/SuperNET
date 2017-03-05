@@ -908,6 +908,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         memset(srchash.bytes,0,sizeof(srchash));
         memset(desthash.bytes,0,sizeof(desthash));
         crc32 = calc_crc32(0,ptr,size);
+        printf("gotmsg.[%d] crc.%x\n",size,crc32);
         offset = 0;
         for (i=0; i<32; i++)
              srchash.bytes[i] = ptr[offset++];
