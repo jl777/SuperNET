@@ -1077,13 +1077,13 @@ void basilisk_rawtx_setparms(char *name,struct basilisk_swap *swap,struct basili
     } else printf("%s vouttype.%d destaddr.(%s)\n",name,rawtx->I.vouttype,rawtx->I.destaddr);
 }
 
-int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct iguana_info **alicecoinp,char *src,char *dest,bits256 srchash,bits256 desthash)
+int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct iguana_info **alicecoinp,char *src,char *dest,bits256 srchash,bits256 desthash,int32_t iambob)
 {
     struct iguana_info *coin = iguana_coinfind(src);
     if ( coin == 0 || iguana_coinfind(dest) == 0 )
         return(0);
     *bobcoinp = *alicecoinp = 0;
-    if ( strcmp("BTC",src) == 0 )
+    /*if ( strcmp("BTC",src) == 0 )
     {
         *bobcoinp = iguana_coinfind(src);
         *alicecoinp = iguana_coinfind(dest);
@@ -1103,7 +1103,9 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
         *bobcoinp = iguana_coinfind(dest);
         *alicecoinp = iguana_coinfind(src);
     }
-    else return(0);
+    else return(0);*/
+    *bobcoinp = iguana_coinfind(dest);
+    *alicecoinp = iguana_coinfind(src);
     if ( bits256_cmp(pubkey,srchash) == 0 )
     {
         if ( strcmp(src,(*bobcoinp)->symbol) == 0 )
@@ -1229,9 +1231,9 @@ struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey
         printf("neither src nor dest error\n");
         return(0);
     }*/
-    if ( (bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash)+1)/2 != swap->I.iambob )
+    if ( (bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash,swap->I.iambob)+1)/2 != swap->I.iambob )
     {
-        printf("error iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
+        printf("error iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash,swap->I.iambob));
         return(0);
     }
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
