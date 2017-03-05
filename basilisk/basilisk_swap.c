@@ -13,6 +13,8 @@
  *                                                                            *
  ******************************************************************************/
 
+#define DEX_SLEEP 1
+
 // Todo: monitor blockchains, ie complete extracting scriptsig
 // mode to autocreate required outputs
 // more better LP commands
@@ -779,7 +781,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 if ( swap->bobpayment.txbytes == 0 || swap->bobpayment.I.spendlen == 0 )
                 {
                     printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.I.spendlen);
-                    sleep(3);
+                    sleep(DEX_SLEEP);
                 }
                 else
                 {
@@ -812,7 +814,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 if ( swap->bobdeposit.txbytes == 0 || swap->bobdeposit.I.spendlen == 0 )
                 {
                     printf("error bob generating %p deposit.%d\n",swap->bobdeposit.txbytes,swap->bobdeposit.I.spendlen);
-                    sleep(3);
+                    sleep(DEX_SLEEP);
                 }
                 else
                 {
@@ -1628,7 +1630,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->I.otherstatebits & 0x80) != 0 && (swap->I.statebits & 0x80) != 0 )
             break;
-        sleep(13 + (swap->I.iambob == 0)*1);
+        sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->I.otherstatebits & 0x80) == 0 )
@@ -1689,7 +1691,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                             printf("bobspend confirmed\n");
                             swap->I.statebits |= 0x80000;
                             printf("Bob confirms spend of Alice's payment\n");
-                            sleep(10);
+                            sleep(DEX_SLEEP);
                         }
                         retval = 1;
                     }
@@ -1811,7 +1813,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         }
         if ( (rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
-        sleep(13 + (swap->I.iambob == 0));
+        sleep(DEX_SLEEP + (swap->I.iambob == 0));
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
@@ -1920,7 +1922,7 @@ void basilisk_swaploop(void *_swap)
             if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
                 break;
         }
-        sleep(10);
+        sleep(DEX_SLEEP);
         //dpow_nanomsg_update(myinfo);
         //dex_updateclient(myinfo);
     }
@@ -1940,7 +1942,7 @@ void basilisk_swaploop(void *_swap)
             swap->I.statebits |= 0x20;
             break;
         }
-        sleep(13 + (swap->I.iambob == 0)*1);
+        sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
         //dpow_nanomsg_update(myinfo);
         //dex_updateclient(myinfo);
     }
@@ -1955,11 +1957,11 @@ void basilisk_swaploop(void *_swap)
     {
         //dpow_nanomsg_update(myinfo);
         //dex_updateclient(myinfo);
-        printf("sendstate.%x\n",swap->I.statebits);
+        //printf("sendstate.%x\n",swap->I.statebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
-        printf("swapget\n");
+        //printf("swapget\n");
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
-        printf("after swapget\n");
+        //printf("after swapget\n");
         if ( swap->myfee.txbytes == 0 )
         {
             /*for (i=0; i<20; i++)
@@ -1998,7 +2000,7 @@ void basilisk_swaploop(void *_swap)
                 printf("bobscripts set\n");
                 if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
                 {
-                    sleep(3);
+                    sleep(DEX_SLEEP);
                     printf("bobscripts set error\n");
                     continue;
                 }
@@ -2013,7 +2015,7 @@ void basilisk_swaploop(void *_swap)
                     if ( swap->alicepayment.txbytes == 0 || swap->alicepayment.I.spendlen == 0 )
                     {
                         printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
-                        sleep(13);
+                        sleep(DEX_SLEEP);
                     }
                     else
                     {
@@ -2050,7 +2052,7 @@ void basilisk_swaploop(void *_swap)
     }
     while ( basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
-        sleep(13);
+        sleep(DEX_SLEEP);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( time(NULL) > swap->I.expiration )
@@ -2134,7 +2136,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                 m = n = 0;
                 //dpow_nanomsg_update(myinfo);
                 //dex_updateclient(myinfo);
-                sleep(3);
+                sleep(DEX_SLEEP);
                 printf("waiting for offer to be accepted\n");
                 channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
                 if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )

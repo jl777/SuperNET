@@ -92,7 +92,7 @@ cJSON *basilisk_swapobj(struct supernet_info *myinfo,struct basilisk_swap *swap)
     jaddnum(obj,"quoteid",swap->I.req.quoteid);
     jadd(obj,"req",basilisk_requestjson(&swap->I.req));
     jaddstr(obj,"info",hexstr);
-    printf("strlen(hexstr) swap->I %d vs %d\n",(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
+    //printf("strlen(hexstr) swap->I %d vs %d\n",(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
     return(obj);
 }
 
@@ -105,7 +105,7 @@ int32_t basilisk_swapconv(struct supernet_info *myinfo,struct basilisk_swap *swa
         if ( juint(obj,"requestid") == swap->I.req.requestid && juint(obj,"quoteid") == swap->I.req.quoteid )
             return(0);
         printf("swapconv mismatched req/quote %d %d, %d %d\n",juint(obj,"requestid"),swap->I.req.requestid,juint(obj,"quoteid"),swap->I.req.quoteid);
-    } else printf("no info field in swap obj.(%s) len.%d vs %d\n",jprint(obj,0),(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
+    } //else printf("no info field in swap obj.(%s) len.%d vs %d\n",jprint(obj,0),(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
     return(-1);
 }
 
