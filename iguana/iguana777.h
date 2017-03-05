@@ -158,6 +158,13 @@ struct supernet_info
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
 };
 
+struct basilisk_swapmessage
+{
+    bits256 srchash,desthash;
+    uint32_t crc32,msgbits,quoteid,datalen;
+    uint8_t *data;
+};
+
 struct basilisk_swap
 {
     struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
@@ -167,6 +174,7 @@ struct basilisk_swap
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     int32_t subsock,pushsock,connected;
+    struct basilisk_swapmessage *messages; int32_t nummessages;
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],pad[15],verifybuf[65536];
 

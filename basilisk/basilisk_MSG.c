@@ -448,9 +448,9 @@ cJSON *basilisk_channelget(struct supernet_info *myinfo,bits256 srchash,bits256 
         retstr = basilisk_getmessage(myinfo,0,0,0,desthash,valsobj,0);
     else
     {
-        char str[65],str2[65];
+        //char str[65],str2[65];
         retstr = _dex_getmessage(myinfo,jprint(valsobj,0));
-        printf("channel.%u msgid.%u gotmessage.(%d) %s %s %s\n",channel,msgid,(int32_t)strlen(retstr),strlen(retstr) < 100 ? retstr : "(too long)",bits256_str(str,srchash),bits256_str(str2,desthash));
+        //printf("channel.%u msgid.%u gotmessage.(%d) %s %s %s\n",channel,msgid,(int32_t)strlen(retstr),strlen(retstr) < 100 ? retstr : "(too long)",bits256_str(str,srchash),bits256_str(str2,desthash));
     }
     if ( retstr != 0 )
     {

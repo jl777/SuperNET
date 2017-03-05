@@ -879,9 +879,29 @@ int32_t basilisk_process_swapverify(struct supernet_info *myinfo,void *ptr,int32
     else return(0);
 }
 
+void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t crc32,bits256 srchash,bits256 desthash,uint32_t quoteid,uint32_t msgbits,uint8_t *data,int32_t datalen)
+{
+    int32_t i; struct basilisk_swapmessage *mp;
+    for (i=0; i<swap->nummessages; i++)
+        if ( crc32 == swap->messages[i].crc32 )
+            return;
+    printf("new message.[%d] datalen.%d Q.%x msg.%x\n",swap->nummessages,datalen,quoteid,msgbits);
+    swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
+    mp = &swap->messages[swap->nummessages++];
+    mp->crc32 = crc32;
+    mp->srchash = srchash;
+    mp->desthash = desthash;
+    mp->msgbits = msgbits;
+    mp->quoteid = quoteid;
+    mp->data = malloc(datalen);
+    memcpy(mp->data,data,datalen);
+    mp->datalen = datalen;
+}
+
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
-    cJSON *valsobj,*array,*item; int32_t i,n,datalen,retval = -1; char *retstr,*hexstr=0;
+    uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1;
+    /*cJSON *valsobj,*array,*item; int32_t i,n,datalen,retval = -1; char *retstr,*hexstr=0;
     //int32_t datalen; uint32_t crc;
     //if ( (crc= basilisk_crcrecv(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),&datalen,swap->I.otherhash,swap->I.myhash,swap->I.req.quoteid,msgbits)) != 0 )
     valsobj = cJSON_CreateObject();
@@ -916,17 +936,54 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             free_json(array);
         }
         free(retstr);
+    }*/
+    while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,0)) >= 0 )
+    {
+        memset(srchash.bytes,0,sizeof(srchash));
+        memset(desthash.bytes,0,sizeof(desthash));
+        crc32 = calc_crc32(0,ptr,size);
+        offset = 0;
+        for (i=0; i<32; i++)
+             srchash.bytes[i] = ptr[offset++];
+        for (i=0; i<32; i++)
+            desthash.bytes[i] = ptr[offset++];
+        offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
+        offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
+        basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
+        if ( ptr != 0 )
+            nn_freemsg(ptr), ptr = 0;
+    }
+    for (i=0; i<swap->nummessages; i++)
+    {
+        if ( swap->messages[i].msgbits == msgbits )
+        {
+            printf("matched %x datalen.%d\n",msgbits,swap->messages[i].datalen);
+            retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
+            break;
+        }
     }
     return(retval);
 }
 
 uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
+    uint8_t *buf; int32_t sentbytes,offset=0,i;
     //if ( (rand() % 10) == 0 )
     //    basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2);
     //if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
         //return(nextbits);
-    dex_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen); //INSTANTDEX_LOCKTIME*2
+    //dex_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen); //INSTANTDEX_LOCKTIME*2
+    buf = malloc(datalen) + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2;
+    for (i=0; i<32; i++)
+        buf[offset++] = swap->I.myhash.bytes[i];
+    for (i=0; i<32; i++)
+        buf[offset++] = swap->I.otherhash.bytes[i];
+    offset += iguana_rwnum(1,&buf[offset],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
+    offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
+    memcpy(&buf[offset],data,datalen), offset += datalen;
+    if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
+        printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
+    free(buf);
     return(0);
 }
 
@@ -1127,7 +1184,8 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
 
 struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits)
 {
-    struct iguana_info *bobcoin,*alicecoin; uint8_t *alicepub33=0,*bobpub33=0; int32_t x = -1;
+    //struct iguana_info *bobcoin,*alicecoin;
+    uint8_t *alicepub33=0,*bobpub33=0; int32_t x = -1;
     swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
     if ( optionduration < 0 )
         swap->I.putduration -= optionduration;
@@ -1285,6 +1343,7 @@ void basilisk_rawtx_purge(struct basilisk_rawtx *rawtx)
 
 void basilisk_swap_finished(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
+    int32_t i;
     swap->I.finished = (uint32_t)time(NULL);
     // save to permanent storage
     basilisk_rawtx_purge(&swap->bobdeposit);
@@ -1297,6 +1356,11 @@ void basilisk_swap_finished(struct supernet_info *myinfo,struct basilisk_swap *s
     basilisk_rawtx_purge(&swap->bobreclaim);
     basilisk_rawtx_purge(&swap->bobspend);
     basilisk_rawtx_purge(&swap->bobrefund);
+    for (i=0; i<swap->nummessages; i++)
+        if ( swap->messages[i].data != 0 )
+            free(swap->messages[i].data), swap->messages[i].data = 0;
+    free(swap->messages), swap->messages = 0;
+    swap->nummessages = 0;
 }
 
 void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap)
