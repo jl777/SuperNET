@@ -245,7 +245,9 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
     {
         //printf("params.(%s)\n",jprint(params,0));
         if ( (from= jstr(params,"fromaddress")) != 0 )
+        {
             safecopy(ptr->src,from,sizeof(ptr->src));
+        }
         if ( (amounts= jarray(&n,params,"amounts")) != 0 )
         {
             for (i=0; i<n; i++)
@@ -271,7 +273,7 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
 
 void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
 {
-    char *retstr,*status; cJSON *retjson,*item;
+    char *retstr,*status,KMDjumblr[64],KMDdeposit[64],BTCaddr[64]; cJSON *retjson,*item;
     if ( ptr->status == 0 )
     {
         if ( (retstr= jumblr_zgetoperationstatus(myinfo,coin,ptr->opid)) != 0 )
@@ -287,6 +289,15 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
                         if ( strcmp(status,"success") == 0 )
                         {
                             ptr->status = jumblr_itemset(ptr,item,status);
+                            jumblr_privkey(myinfo,BTCaddr,KMDdeposit,JUMBLR_DEPOSITPREFIX);
+                            jumblr_privkey(myinfo,BTCaddr,KMDjumblr,"");
+                            if ( (jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && strcmp(ptr->src,KMDdeposit) != 0) || (jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->src) == 't' && strcmp(ptr->dest,KMDjumblr) != 0) )
+                            {
+                                printf("a non-jumblr t->z pruned\n");
+                                free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+                                ptr->status = -1;
+                            }
+
                         }
                         else if ( strcmp(status,"failed") == 0 )
                         {
