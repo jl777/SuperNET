@@ -951,12 +951,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
         basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
         if ( ptr != 0 )
-        {
-            fprintf(stderr,"free ptr\n");
-            nn_freemsg(ptr);
-            ptr = 0;
-            fprintf(stderr,"freed ptr\n");
-        }
+            nn_freemsg(ptr), ptr = 0;
     }
     for (i=0; i<swap->nummessages; i++)
     {
@@ -978,7 +973,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     //if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
         //return(nextbits);
     //dex_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen); //INSTANTDEX_LOCKTIME*2
-    buf = malloc(datalen) + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2;
+    buf = malloc(datalen + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2);
     for (i=0; i<32; i++)
         buf[offset++] = swap->I.myhash.bytes[i];
     for (i=0; i<32; i++)
@@ -988,9 +983,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
-    fprintf(stderr,"free buf\n");
     free(buf);
-    fprintf(stderr,"freed buf\n");
     return(0);
 }
 
