@@ -231,13 +231,14 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 
 char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
-    cJSON *retjson; struct basilisk_request *rp=0; int32_t i;
+    cJSON *retjson; struct basilisk_request *rp=0; int32_t i,reqmatch;
     if ( _rp->requestid == myinfo->lastdexrequestid )
     {
         //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
-    if ( (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
+    reqmatch = (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->srchash,myinfo->jumblr_pubkey) == 0 || bits256_cmp(_rp->srchash,myinfo->jumblr_depositkey) == 0);
+    if ( (reqmatch != 0 || bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0) )
     {
         for (i=0; i<myinfo->numswaps; i++)
             if ( myinfo->swaps[i]->I.req.requestid == _rp->requestid )
