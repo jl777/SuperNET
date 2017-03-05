@@ -240,7 +240,7 @@ char *basilisk_respond_addmessage(struct supernet_info *myinfo,uint8_t *key,int3
     {
         bits256 srchash,desthash; uint32_t channel,msgid;
         basilisk_messagekeyread(key,&channel,&msgid,&srchash,&desthash);
-        printf("add message keylen.%d [%d] msgid.%x channel.%x\n",msg->keylen,datalen,msgid,channel);
+        //printf("add message keylen.%d [%d] msgid.%x channel.%x\n",msg->keylen,datalen,msgid,channel);
     }
     //if ( myinfo->NOTARY.RELAYID >= 0 )
     //    dpow_handler(myinfo,msg);
@@ -395,7 +395,7 @@ int32_t basilisk_channelsend(struct supernet_info *myinfo,bits256 srchash,bits25
         jaddnum(valsobj,"timeout",1000);
         jaddbits256(valsobj,"srchash",srchash);
         jaddbits256(valsobj,"desthash",desthash);
-        char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS);
+        //char str[65]; printf("sendmessage.[%d] channel.%u msgid.%x -> %s numrelays.%d\n",datalen,channel,msgid,bits256_str(str,desthash),myinfo->NOTARY.NUMRELAYS);
         if ( (retstr= basilisk_sendmessage(myinfo,0,0,0,desthash,valsobj,hexstr)) != 0 )
             free(retstr);
         free_json(valsobj);

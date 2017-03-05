@@ -1061,7 +1061,7 @@ int32_t instantdex_pubkeyargs(void *ctx,struct basilisk_swap *swap,int32_t numpu
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(ctx,&privkey,pubkey,privkey,hash);
-        //printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        printf("i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 )
@@ -1296,7 +1296,7 @@ struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey
     }*/
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
-        printf("couldnt generate privkeys %d\n",x);
+        char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
         return(0);
     }
     if ( swap->I.iambob != 0 )
