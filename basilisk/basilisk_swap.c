@@ -950,6 +950,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
+    else printf("send.[%d] %x\n",sentbytes,msgbits);
     free(buf);
     return(0);
 }
@@ -1491,7 +1492,7 @@ void basilisk_sendpubkeys(struct supernet_info *myinfo,struct basilisk_swap *swa
 {
     int32_t datalen;
     datalen = basilisk_swapdata_deck(myinfo,swap,data,maxlen);
-    //printf("send deck.%d\n",datalen);
+    printf("send deck.%d\n",datalen);
     swap->I.statebits |= basilisk_swapsend(myinfo,swap,0x02,data,datalen,0x01,swap->I.crcs_mypub);
 }
 
@@ -1566,7 +1567,7 @@ void basilisk_waitchoosei(struct supernet_info *myinfo,struct basilisk_swap *swa
                 revcalc_rmd160_sha256(swap->I.secretAm,swap->I.privAm);//.bytes,sizeof(swap->privAm));
                 vcalc_sha256(0,swap->I.secretAm256,swap->I.privAm.bytes,sizeof(swap->I.privAm));
                 swap->I.pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,swap->I.privAm);
-                //printf("set privAm.%s %s\n",bits256_str(str,swap->privAm),bits256_str(str2,*(bits256 *)swap->secretAm256));
+                char str[65],str2[65]; printf("set privAm.%s %s\n",bits256_str(str,swap->I.privAm),bits256_str(str2,*(bits256 *)swap->I.secretAm256));
                 //basilisk_bobscripts_set(myinfo,swap,0);
             }
         }
@@ -2050,7 +2051,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
     }
-    while ( basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
+    while ( retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
         sleep(DEX_SLEEP);
         basilisk_sendstate(myinfo,swap,data,maxlen);
