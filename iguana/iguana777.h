@@ -59,12 +59,14 @@
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
+#include "../crypto777/nanosrc/pipeline.h"
 #include "../crypto777/nanosrc/reqrep.h"
 #include "../crypto777/nanosrc/tcp.h"
 #else
 #include "/usr/local/include/nanomsg/nn.h"
 #include "/usr/local/include/nanomsg/bus.h"
 #include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/pipeline.h"
 #include "/usr/local/include/nanomsg/reqrep.h"
 #include "/usr/local/include/nanomsg/tcp.h"
 #endif
