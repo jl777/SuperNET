@@ -785,6 +785,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
     printf("launch mainloop\n");
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
 }
 
@@ -1749,6 +1750,7 @@ void iguana_main(void *arg)
     myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     dex_init(myinfo);
+    myinfo->psockport = 30000;
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
@@ -1775,6 +1777,7 @@ void iguana_main(void *arg)
     portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
+    portable_mutex_init(&myinfo->psockmutex);
 #if LIQUIDITY_PROVIDER
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("nxtae"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);

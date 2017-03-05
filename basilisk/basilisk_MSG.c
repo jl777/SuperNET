@@ -295,6 +295,30 @@ cJSON *dpow_getmessage(struct supernet_info *myinfo,char *jsonstr)
     return(retjson);
 }
 
+cJSON *dpow_addmessage(struct supernet_info *myinfo,char *jsonstr)
+{
+    cJSON *vals,*retjson=0; char *retstr=0,*datastr; int32_t datalen,keylen; uint8_t *data=0,key[BASILISK_KEYSIZE];
+    if ( (vals= cJSON_Parse(jsonstr)) != 0 )
+    {
+        keylen = basilisk_messagekey(key,juint(vals,"channel"),juint(vals,"msgid"),jbits256(vals,"srchash"),jbits256(vals,"desthash"));
+        if ( (datastr= jstr(vals,"data")) != 0 )
+        {
+            datalen = (int32_t)strlen(datastr) >> 1;
+            data = malloc(datalen);
+            decode_hex(data,datalen,datastr);
+            if ( (retstr= basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,juint(vals,"duration"))) != 0 )
+                retjson = cJSON_Parse(retstr);
+        }
+        if ( retstr != 0 )
+            free(retstr);
+        if ( data != 0 )
+            free(data);
+    }
+    if ( retjson == 0 )
+        retjson = cJSON_Parse("{\"error\":\"couldnt add message\"}");
+    return(retjson);
+}
+
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 

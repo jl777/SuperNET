@@ -90,6 +90,9 @@ struct supernet_address
 
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
 
+#define PSOCK_IDLETIMEOUT 600
+struct psock { uint32_t lasttime; int32_t pullsock,pubsock; uint16_t pushport,subport; };
+
 #define JUMBLR_DEPOSITPREFIX "deposit "
 struct jumblr_item
 {
@@ -149,6 +152,7 @@ struct supernet_info
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
     double *svmfeatures;
+    uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
 };
 

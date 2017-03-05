@@ -49,6 +49,8 @@ HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout);
 TWO_STRINGS(dex,listspent,symbol,address);
 TWO_STRINGS(dex,getbalance,symbol,address);
 STRING_ARG(dex,explorer,symbol);
+STRING_ARG(dex,getmessage,argstr);
+STRING_ARG(dex,psock,argstr);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);

@@ -747,6 +747,16 @@ TWO_STRINGS(dex,validateaddress,symbol,address)
     return(_dex_validateaddress(myinfo,symbol,address));
 }
 
+STRING_ARG(dex,getmessage,argstr)
+{
+    return(_dex_getmessage(myinfo,argstr));
+}
+
+STRING_ARG(dex,psock,argstr)
+{
+    return(_dex_psock(myinfo,argstr));
+}
+
 STRING_ARG(dex,getnotaries,symbol)
 {
     return(_dex_getnotaries(myinfo,symbol));

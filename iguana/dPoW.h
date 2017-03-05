@@ -168,6 +168,8 @@ cJSON *dpow_kvupdate(struct supernet_info *myinfo,struct iguana_info *coin,char 
 cJSON *dpow_kvsearch(struct supernet_info *myinfo,struct iguana_info *coin,char *key);
 void init_alladdresses(struct supernet_info *myinfo,struct iguana_info *coin);
 cJSON *dpow_getmessage(struct supernet_info *myinfo,char *jsonstr);
+cJSON *dpow_addmessage(struct supernet_info *myinfo,char *jsonstr);
+cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr);
 
 char *_dex_getinfo(struct supernet_info *myinfo,char *symbol);
 char *_dex_getrawtransaction(struct supernet_info *myinfo,char *symbol,bits256 txid);
@@ -191,6 +193,7 @@ int32_t _dex_getheight(struct supernet_info *myinfo,char *symbol);
 char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol);
 char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags);
 char *_dex_kvsearch(struct supernet_info *myinfo,char *symbol,char *key);
+char *_dex_psock(struct supernet_info *myinfo,char *jsonstr);
 
 int32_t komodo_notaries(char *symbol,uint8_t pubkeys[64][33],int32_t height);
 cJSON *dpow_checkaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address);

@@ -596,6 +596,7 @@ void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notar
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey);
+void dpow_psockloop(void *_ptr);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
