@@ -92,6 +92,7 @@ cJSON *basilisk_swapobj(struct supernet_info *myinfo,struct basilisk_swap *swap)
     jaddnum(obj,"quoteid",swap->I.req.quoteid);
     jadd(obj,"req",basilisk_requestjson(&swap->I.req));
     jaddstr(obj,"info",hexstr);
+    printf("strlen(hexstr) swap->I %d vs %d\n",(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
     return(obj);
 }
 
