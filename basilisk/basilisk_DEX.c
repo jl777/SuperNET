@@ -315,7 +315,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,myinfo->persistent_priv,&issueR,1,issueR.optionhours * 3600)) != 0 )
+            if ( (retstr= basilisk_start(myinfo,myinfo->jumblr_depositkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
         }
         else if ( bits256_cmp(myinfo->jumblr_pubkey,issueR.srchash) == 0 )
@@ -758,7 +758,7 @@ INT_ARG(InstantDEX,incoming,requestid)
     msgid = (uint32_t)time(NULL) + drift;
     if ( (retarray= basilisk_channelget(myinfo,zero,myinfo->myaddr.persistent,DEX_channel,msgid,width)) != 0 ) 
     {
-        printf("GOT.(%s)\n",jprint(retarray,0));
+        //printf("GOT.(%s)\n",jprint(retarray,0));
         if ( (retval= basilisk_process_retarray(myinfo,0,InstantDEX_process_channelget,data,sizeof(data),DEX_channel,msgid,retarray,InstantDEX_incoming_func)) > 0 )
         {
             jaddstr(retjson,"result","success");

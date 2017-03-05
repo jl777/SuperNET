@@ -1383,10 +1383,13 @@ void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 int32_t basilisk_verify_otherstatebits(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    struct basilisk_swap *swap = ptr;
+    int32_t retval; struct basilisk_swap *swap = ptr;
     if ( datalen == sizeof(swap->I.otherstatebits) )
-        return(iguana_rwnum(0,data,sizeof(swap->I.otherstatebits),&swap->I.otherstatebits));
-    else return(-1);
+    {
+        retval = iguana_rwnum(0,data,sizeof(swap->I.otherstatebits),&swap->I.otherstatebits);
+        printf("got sendstate.%x\n",swap->I.otherstatebits);
+        return(retval);
+    } else return(-1);
 }
                
 int32_t basilisk_verify_choosei(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
@@ -1540,6 +1543,7 @@ int32_t basilisk_checkdeck(struct supernet_info *myinfo,struct basilisk_swap *sw
 void basilisk_sendstate(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t datalen;
+    printf("sendstate.%x\n",swap->I.statebits);
     datalen = iguana_rwnum(1,data,sizeof(swap->I.statebits),&swap->I.statebits);
     basilisk_swapsend(myinfo,swap,0x80000000,data,datalen,0,0);
 }
