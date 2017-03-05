@@ -315,7 +315,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,myinfo->jumblr_depositkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
+            if ( (retstr= basilisk_start(myinfo,myinfo->persistent_priv,&issueR,1,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
         }
         else if ( bits256_cmp(myinfo->jumblr_pubkey,issueR.srchash) == 0 )
