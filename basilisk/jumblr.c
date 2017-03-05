@@ -383,6 +383,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","BTC");
+            jaddbits256(vals,"srchash",curve25519(privkey,curve25519_basepoint9()));
             jaddstr(vals,"dest","KMD");
             jaddnum(vals,"amount",btcavail*.3);
             jaddnum(vals,"minprice",kmdprice*.95);
@@ -494,6 +495,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        myinfo->jumblr_depositkey = curve25519(privkey,curve25519_basepoint9());
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
         if ( coin->FULLNODE < 0 )
             jumblr_importprivkey(myinfo,coin,wifstr);
@@ -506,7 +508,8 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
                 jumblr_importprivkey(myinfo,coinbtc,wifstr);
             jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         }
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        myinfo->jumblr_pubkey = curve25519(privkey,curve25519_basepoint9());
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
         if ( coinbtc != 0 )
