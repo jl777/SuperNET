@@ -312,6 +312,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
             free(retstr);*/
         if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
         {
+            printf("matched persistent\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
@@ -320,6 +321,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
         }
         else if ( bits256_cmp(myinfo->jumblr_pubkey,issueR.srchash) == 0 )
         {
+            printf("matched jumblr_pubkey\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
@@ -328,6 +330,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
         }
         else if ( bits256_cmp(myinfo->jumblr_depositkey,issueR.srchash) == 0 )
         {
+            printf("matched jumblr_depositkey\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
