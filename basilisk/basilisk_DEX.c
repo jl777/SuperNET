@@ -276,7 +276,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
 {
     static uint32_t lastpoll;
     char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
-    if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive == 0) )
+    if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
         return;
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
@@ -317,7 +317,23 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
             dex_updateclient(myinfo);
             if ( (retstr= basilisk_start(myinfo,myinfo->persistent_priv,&issueR,1,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
-           /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
+        }
+        else if ( bits256_cmp(myinfo->jumblr_pubkey,issueR.srchash) == 0 )
+        {
+            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
+            if ( (retstr= basilisk_start(myinfo,myinfo->jumblr_pubkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+        }
+        else if ( bits256_cmp(myinfo->jumblr_depositkey,issueR.srchash) == 0 )
+        {
+            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+            dpow_nanomsg_update(myinfo);
+            dex_updateclient(myinfo);
+            if ( (retstr= basilisk_start(myinfo,myinfo->jumblr_depositkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                free(retstr);
+          /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
                 free(retstr);
             printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
             basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);

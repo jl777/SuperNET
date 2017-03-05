@@ -290,6 +290,10 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     }
     if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
         myrequest = 1;
+    else if ( bits256_cmp(myinfo->jumblr_pubkey,list[0].srchash) == 0 ) // my request
+        myrequest = 1;
+    else if ( bits256_cmp(myinfo->jumblr_depositkey,list[0].srchash) == 0 ) // my request
+        myrequest = 1;
     for (i=0; i<n; i++)
     {
         if ( basilisk_request_cmpref(&list[0],&list[i]) != 0 )
@@ -297,6 +301,10 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         if ( list[i].quoteid != 0 )
         {
             if ( bits256_cmp(myinfo->myaddr.persistent,list[i].desthash) == 0 ) // my quoteid
+                myrequest |= 2;
+            else if ( bits256_cmp(myinfo->jumblr_pubkey,list[i].desthash) == 0 ) // my quoteid
+                myrequest |= 2;
+            else if ( bits256_cmp(myinfo->jumblr_depositkey,list[i].desthash) == 0 ) // my quoteid
                 myrequest |= 2;
             havequoteflag++;
             if ( pendingid == 0 )

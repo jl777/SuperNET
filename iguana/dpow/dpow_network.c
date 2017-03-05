@@ -303,6 +303,7 @@ cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr)
     subport = myinfo->psockport++;
     for (i=0; i<100; i++)
     {
+        pullsock = pubsock = -1;
         nanomsg_tcpname(myinfo,pushaddr,myinfo->ipaddr,pushport), pushport += 2;
         nanomsg_tcpname(myinfo,subaddr,myinfo->ipaddr,subport), subport += 2;
         if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
@@ -322,6 +323,10 @@ cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr)
                 jaddstr(retjson,"subaddr",subaddr);
                 break;
             }
+            if ( pullsock >= 0 )
+                nn_close(pullsock);
+            if ( pubsock >= 0 )
+                nn_close(pubsock);
         }
         if ( pushport < 1000 )
             pushport = 1001;
@@ -329,13 +334,7 @@ cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr)
             subport = 1001;
     }
     if ( i == 100 )
-    {
         jaddstr(retjson,"error","cant find psock ports");
-        if ( pullsock >= 0 )
-            nn_close(pullsock);
-        if ( pubsock >= 0 )
-            nn_close(pubsock);
-    }
     return(retjson);
 }
 
@@ -1139,6 +1138,8 @@ char *_dex_sendmessage(struct supernet_info *myinfo,char *jsonstr)
 char *_dex_psock(struct supernet_info *myinfo,char *jsonstr)
 {
     struct dex_request dexreq;
+    if ( jsonstr == 0 )
+        jsonstr = "{}";
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,"KMD",sizeof(dexreq.name));
     dexreq.func = 'Z';
