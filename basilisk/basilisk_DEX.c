@@ -661,8 +661,6 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     uint8_t serialized[512]; bits256 privkey; char buf[512],BTCaddr[64],KMDaddr[64]; struct basilisk_request R; int32_t iambob,optionhours; cJSON *reqjson; uint32_t datalen=0,DEX_channel; struct iguana_info *bobcoin,*alicecoin;
     myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT + 60;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN * SATOSHIDEN);
-    if ( jobj(vals,"srchash") == 0 )
-        jaddbits256(vals,"srchash",myinfo->myaddr.persistent);
     if ( jobj(vals,"desthash") == 0 )
         jaddbits256(vals,"desthash",hash);
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
@@ -673,6 +671,8 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     else privkey = myinfo->persistent_priv;
     hash = curve25519(privkey,curve25519_basepoint9());
     //hash = myinfo->myaddr.persistent;
+    if ( jobj(vals,"srchash") == 0 )
+        jaddbits256(vals,"srchash",hash);
     printf("service.(%s)\n",jprint(vals,0));
     memset(&R,0,sizeof(R));
     if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
