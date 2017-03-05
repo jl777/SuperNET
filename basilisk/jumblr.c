@@ -383,12 +383,13 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","BTC");
-            jaddbits256(vals,"srchash",curve25519(privkey,curve25519_basepoint9()));
+            hash = curve25519(privkey,curve25519_basepoint9());
+            jaddbits256(vals,"srchash",hash);
             jaddstr(vals,"dest","KMD");
             jaddnum(vals,"amount",btcavail*.3);
             jaddnum(vals,"minprice",kmdprice*.95);
-            //jaddnum(vals,"usejumblr",1);
-            memset(hash.bytes,0,sizeof(hash));
+            jaddnum(vals,"usejumblr",1);
+            //memset(hash.bytes,0,sizeof(hash));
             pending = btcavail;
             if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
             {
