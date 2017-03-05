@@ -923,7 +923,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     }
     for (i=0; i<swap->nummessages; i++)
     {
-        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->persistent_pubkey) == 0 )
+        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].srchash,swap->I.otherhash) == 0 )
         {
             retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
             break;
