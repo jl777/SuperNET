@@ -1914,8 +1914,8 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
                         subaddr = jstr(addrjson,"sub");
                         if ( pushaddr != 0 && subaddr != 0 )
                         {
-                            printf("KV decoded (%s and %s)\n",pushaddr,subaddr);
-                            if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
+                            printf("KV decoded (%s and %s) %d %d\n",pushaddr,subaddr,swap->pushsock,swap->subsock);
+                            if ( nn_connect(swap->pushsock,pushaddr) >= 0 && nn_connect(swap->subsock,subaddr) >= 0 )
                                 swap->connected = 1;
                         }
                         free_json(addrjson);
@@ -1923,7 +1923,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
                 }
                 free_json(retjson);
             }
-            printf("KVsearch.(%s) connected.%d\n",retstr,swap->connected);
+            printf("KVsearch.(%s) connected.%d socks.(%d %d)\n",retstr,swap->connected,swap->pushsock,swap->subsock);
             free(retstr);
         }
     }
