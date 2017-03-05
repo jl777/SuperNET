@@ -98,7 +98,7 @@ char *basilisk_iterate_MSG(struct supernet_info *myinfo,uint32_t channel,uint32_
    // char str[65],str2[65]; printf("MSGiterate (%s) -> (%s)\n",bits256_str(str,srchash),bits256_str(str2,desthash));
     array = cJSON_CreateArray();
     portable_mutex_lock(&myinfo->messagemutex);
-    //printf("iterate_MSG allflag.%d width.%d channel.%d msgid.%d src.%llx -> %llx\n",allflag,origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
+    printf("iterate_MSG width.%d channel.%d msgid.%d src.%llx -> %llx\n",origwidth,channel,msgid,(long long)srchash.txid,(long long)desthash.txid);
     for (i=0; i<width; i++)
     {
         keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);

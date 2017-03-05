@@ -889,7 +889,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     jaddnum(valsobj,"msgid",msgbits);
     jaddbits256(valsobj,"srchash",swap->I.otherhash);
     jaddbits256(valsobj,"desthash",swap->I.myhash);
-    jaddnum(valsobj,"width",0);
+    jaddnum(valsobj,"width",30);
     if ( (retstr= _dex_getmessage(myinfo,jprint(valsobj,1))) != 0 )
     {
         if ( (array= cJSON_Parse(retstr)) != 0 )
