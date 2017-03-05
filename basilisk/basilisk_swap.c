@@ -1818,9 +1818,9 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
     {
         if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
             swap->connected = 1;
-        sprintf(databuf,"{\"push\":\"%s\",\"sub\":\"%s\"}",pushaddr,subaddr);
-        datalen = (int32_t)strlen(databuf) + 1;
-        decode_hex(data,datalen,databuf);
+        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\"}",pushaddr,subaddr);
+        datalen = (int32_t)strlen((char *)data) + 1;
+        printf("datalen.%d (%s)\n",datalen,(char *)data);
         init_hexbytes_noT(databuf,data,datalen);
         printf("%s -> %s\n",keystr,databuf);
         if ( (retstr= _dex_kvupdate(myinfo,"KV",keystr,databuf,1)) != 0 )
