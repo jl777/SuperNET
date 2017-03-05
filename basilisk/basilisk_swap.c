@@ -921,15 +921,17 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
+    char str[65],str2[65];
     for (i=0; i<swap->nummessages; i++)
     {
-        //char str[65],str2[65]; printf("%s vs %s\n",bits256_str(str,swap->messages[i].srchash),bits256_str(str2,swap->I.otherhash));
-        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].srchash,swap->I.otherhash) == 0 )
+        printf("%d: %s vs %s\n",i,bits256_str(str,swap->messages[i].srchash),bits256_str(str2,swap->messages[i].desthash));
+        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->I.myhash) == 0 )
         {
             retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
             break;
         }
     }
+    printf("mine/other %s vs %s\n",bits256_str(str,swap->I.myhash),bits256_str(str2,swap->I.otherhash));
     return(retval);
 }
 
