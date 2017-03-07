@@ -231,14 +231,14 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 
 char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
-    cJSON *retjson; struct basilisk_request *rp=0; int32_t i,srcmatch,destmatch;
+    cJSON *retjson; bits256 tmpprivkey; struct basilisk_request *rp=0; int32_t i,srcmatch,destmatch;
     if ( _rp->requestid == myinfo->lastdexrequestid )
     {
         //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
-    srcmatch = smartaddress_pubkey(myinfo,&privkey,_rp->srchash) >= 0;
-    destmatch = smartaddress_pubkey(myinfo,&privkey,_rp->desthash) >= 0;
+    srcmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->srchash) >= 0;
+    destmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->desthash) >= 0;
     if ( srcmatch != 0 || destmatch != 0 )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -257,8 +257,7 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
             {
                 basilisk_request_enqueue(myinfo,rp);
                 return(clonestr("{\"result\":\"started atomic swap thread\"}"));
-            }
-            else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
+            } else return(clonestr("{\"error\":\"couldnt atomic swap thread\"}"));
         }
         else
         {
