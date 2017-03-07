@@ -27,7 +27,7 @@ int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *BTCa
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs++];
         ap->privkey = privkey;
         bitcoin_pubkey33(myinfo->ctx,ap->pubkey33,privkey);
-        calc_rmd160(0,ap->rmd160,ap->pubkey33,33);
+        calc_rmd160_sha256(ap->rmd160,ap->pubkey33,33);
         ap->pubkey = curve25519(privkey,curve25519_basepoint9());
         char coinaddr[64]; uint8_t addrtype,rmd160[20];
         bitcoin_address(coinaddr,0,ap->pubkey33,33);
