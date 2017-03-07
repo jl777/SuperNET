@@ -1368,7 +1368,7 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         }
     }
     if ( bits256_nonz(myinfo->persistent_priv) != 0 )
-        smartaddress_add(myinfo,myinfo->persistent_priv);
+        smartaddress_add(myinfo,myinfo->persistent_priv,"","");
 
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);

@@ -15,7 +15,7 @@
 
 // included from basilisk.c
 
-int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey)
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *BTCaddr,char *KMDaddr)
 {
     struct smartaddress *ap;
     int32_t i;
@@ -27,12 +27,12 @@ int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey)
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs++];
         ap->privkey = privkey;
         bitcoin_pubkey33(myinfo->ctx,ap->pubkey33,privkey);
-        ap->pubkey = curve25519(privkey,curve25519_basepoint9());
         calc_rmd160(0,ap->rmd160,ap->pubkey33,33);
-        char coinaddr[64]; bitcoin_address(coinaddr,0,ap->rmd160,20);
+        ap->pubkey = curve25519(privkey,curve25519_basepoint9());
+        char coinaddr[64]; bitcoin_address(coinaddr,0,ap->pubkey33,33);
         for (i=0; i<20; i++)
             printf("%02x",ap->rmd160[i]);
-        printf (" <- rmd160 for %d %s\n",myinfo->numsmartaddrs,coinaddr);
+        printf (" <- rmd160 for %d %s vs %s\n",myinfo->numsmartaddrs,coinaddr,BTCaddr);
         return(myinfo->numsmartaddrs);
     }
     printf("too many smartaddresses %d vs %d\n",myinfo->numsmartaddrs,(int32_t)(sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs)));
