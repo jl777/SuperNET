@@ -482,6 +482,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_ether.c"
 #include "basilisk_waves.c"
 #include "basilisk_lisk.c"
+#include "smartaddress.c"
 
 #include "basilisk_MSG.c"
 #include "tradebots_marketmaker.c"
@@ -924,7 +925,7 @@ void basilisks_loop(void *arg)
         if ( myinfo->expiration != 0 && (myinfo->dexsock >= 0 || myinfo->IAMLP != 0 || myinfo->DEXactive > time(NULL)) )
         {
             //fprintf(stderr,"H ");
-            basilisk_requests_poll(myinfo,myinfo->persistent_priv);
+            basilisk_requests_poll(myinfo);
         }
         //printf("RELAYID.%d endmilli %f vs now %f\n",myinfo->NOTARY.RELAYID,endmilli,startmilli);
         while ( OS_milliseconds() < endmilli )

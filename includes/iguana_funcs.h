@@ -595,8 +595,12 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits);
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
-void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey);
+void basilisk_requests_poll(struct supernet_info *myinfo);
 void dpow_psockloop(void *_ptr);
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey);
+int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinaddr);
+int32_t smartaddress_pubkey(struct supernet_info *myinfo,bits256 *privkeyp,bits256 pubkey);
+int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,uint8_t *pubkey33);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);

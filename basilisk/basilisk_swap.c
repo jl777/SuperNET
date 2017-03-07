@@ -13,6 +13,10 @@
  *                                                                            *
  ******************************************************************************/
 
+/*use external privkey to sign
+make sure to broadcast deposit before claiming refund, or to just skip it if neither is done
+*/
+
 #define DEX_SLEEP 1
 
 // Todo: monitor blockchains, ie complete extracting scriptsig
@@ -628,7 +632,7 @@ int32_t basilisk_verify_pubpair(int32_t *wrongfirstbytep,struct basilisk_swap *s
 
 cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid;
+    cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid,privkey;
     privkeyarray = cJSON_CreateArray();
     //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (n= cJSON_GetArraySize(vins)) > 0 )
@@ -657,7 +661,13 @@ cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *co
                     {
                         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,waddr->wifstr);
-                    } else printf("cant find (%s) in wallet\n",coinaddr);
+                    }
+                    else if ( smartaddress(myinfo,&privkey,coinaddr) > 0 )
+                    {
+                        bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
+                        jaddistr(privkeyarray,waddr->wifstr);
+                    }
+                    else printf("cant find (%s) in wallet\n",coinaddr);
                 } else printf("cant coinaddr from (%s).v%d\n",bits256_str(str,txid),vout);
             } else printf("invalid txid/vout %d of %d\n",i,n);
         }

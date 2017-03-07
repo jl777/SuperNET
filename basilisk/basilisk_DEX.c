@@ -237,8 +237,8 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
         //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
-    srcmatch = (bits256_cmp(_rp->srchash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->srchash,myinfo->jumblr_pubkey) == 0 || bits256_cmp(_rp->srchash,myinfo->jumblr_depositkey) == 0);
-    destmatch = (bits256_cmp(_rp->desthash,myinfo->myaddr.persistent) == 0 || bits256_cmp(_rp->desthash,myinfo->jumblr_pubkey) == 0 || bits256_cmp(_rp->desthash,myinfo->jumblr_depositkey) == 0);
+    srcmatch = smartaddress_pubkey(myinfo,&privkey,_rp->srchash) >= 0;
+    destmatch = smartaddress_pubkey(myinfo,&privkey,_rp->desthash) >= 0;
     if ( srcmatch != 0 || destmatch != 0 )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -274,10 +274,10 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
     } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
 
-void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
+void basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr,BTCaddr[64],KMDaddr[64]; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; double hwm = 0.;
+    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; bits256 privkey; double hwm = 0.;
     if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
         return;
     lastpoll = (uint32_t)time(NULL);
@@ -301,61 +301,15 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     if ( hwm > 0. )
     {
-        //printf("hwm %f\n",hwm);
-        //for (i=0; i<sizeof(issueR); i++)
-        //    printf("%02x",((uint8_t *)&issueR)[i]);
-        //printf("\n");
         myinfo->DEXaccept = issueR;
-        /*issueR.quoteid = basilisk_quoteid(&issueR);
-        datalen = basilisk_rwDEXquote(1,data,&issueR);
-        msgid = (uint32_t)time(NULL);
-        keylen = basilisk_messagekey(key,0,msgid,issueR.srchash,issueR.desthash);
-        if ( (retstr= basilisk_respond_addmessage(myinfo,key,keylen,data,datalen,0,BASILISK_DEXDURATION)) != 0 )
-            free(retstr);*/
-        if ( bits256_cmp(myinfo->myaddr.persistent,issueR.srchash) == 0 ) // my request
+        if ( smartaddress_pubkey(myinfo,&privkey,issueR.srchash) >= 0 )
         {
-            printf("matched persistent\n");
+            printf("matched dex_smartpubkey\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
             dpow_nanomsg_update(myinfo);
             dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,myinfo->persistent_priv,&issueR,1,issueR.optionhours * 3600)) != 0 )
+            if ( (retstr= basilisk_start(myinfo,privkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
-        }
-        else if ( bits256_cmp(myinfo->jumblr_pubkey,issueR.srchash) == 0 )
-        {
-            printf("matched jumblr_pubkey\n");
-            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
-            dpow_nanomsg_update(myinfo);
-            dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,jumblr_privkey(myinfo,BTCaddr,KMDaddr,""),&issueR,1,issueR.optionhours * 3600)) != 0 )
-                free(retstr);
-        }
-        else if ( bits256_cmp(myinfo->jumblr_depositkey,issueR.srchash) == 0 )
-        {
-            printf("matched jumblr_depositkey\n");
-            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
-            dpow_nanomsg_update(myinfo);
-            dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX),&issueR,1,issueR.optionhours * 3600)) != 0 )
-                free(retstr);
-          /*if ( (retstr= InstantDEX_accept(myinfo,0,0,0,issueR.requestid,issueR.quoteid)) != 0 )
-                free(retstr);
-            printf("my req hwm %f -> %u\n",hwm,issueR.requestid);
-            basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
-            numiters = crc = 0;
-            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),crcs)) == 0 )
-            {
-                printf("didnt get back what was sent\n");
-                sleep(3);
-                basilisk_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid),60);
-                numiters++;
-            }
-            if ( crc != 0 )
-            {
-                printf("crc.%08x -> basilisk_starta\n",crc);
-                if ( (retstr= basilisk_start(myinfo,&issueR,1,issueR.optionhours * 3600)) != 0 )
-                    free(retstr);
-            } // else printf("couldnt accept offer\n");*/
         }
         else if ( issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
         {
@@ -369,22 +323,6 @@ void basilisk_requests_poll(struct supernet_info *myinfo,bits256 privkey)
             dex_updateclient(myinfo);
             if ( (retstr= basilisk_start(myinfo,myinfo->persistent_priv,&issueR,0,issueR.optionhours * 3600)) != 0 )
                 free(retstr);
-            /*crcs[0] = crcs[1] = 0;
-            numiters = 0;
-            basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
-            while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),issueR.desthash,issueR.srchash,channel,msgid,data,datalen,crcs)) == 0 )
-            {
-                //printf("didnt get back what was sent\n");
-                sleep(3);
-                basilisk_channelsend(myinfo,issueR.desthash,issueR.srchash,channel,msgid,data,datalen,INSTANTDEX_LOCKTIME*2);
-                numiters++;
-            }
-            if ( crc != 0 )
-            {
-                printf("crc.%08x -> basilisk_start\n",crc);
-                if ( (retstr= basilisk_start(myinfo,&issueR,0,issueR.optionhours * 3600)) != 0 )
-                    free(retstr);
-            }*/
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
 }
@@ -658,7 +596,7 @@ STRING_ARG(InstantDEX,available,source)
 
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
 {
-    uint8_t serialized[512]; bits256 privkey; char buf[512],BTCaddr[64],KMDaddr[64]; struct basilisk_request R; int32_t iambob,optionhours; cJSON *reqjson; uint32_t datalen=0,DEX_channel; struct iguana_info *bobcoin,*alicecoin;
+    uint8_t serialized[512]; bits256 privkey; char buf[512],BTCaddr[64],KMDaddr[64]; struct basilisk_request R; int32_t jumblr,iambob,optionhours; cJSON *reqjson; uint32_t datalen=0,DEX_channel; struct iguana_info *bobcoin,*alicecoin;
     myinfo->DEXactive = (uint32_t)time(NULL) + 3*BASILISK_TIMEOUT + 60;
     jadd64bits(vals,"minamount",jdouble(vals,"minprice") * jdouble(vals,"amount") * SATOSHIDEN * SATOSHIDEN);
     if ( jobj(vals,"desthash") == 0 )
@@ -666,11 +604,10 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     jadd64bits(vals,"satoshis",jdouble(vals,"amount") * SATOSHIDEN);
     jadd64bits(vals,"destsatoshis",jdouble(vals,"destamount") * SATOSHIDEN);
     jaddnum(vals,"timestamp",time(NULL));
-    if ( jint(vals,"usejumblr") != 0 )
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+    if ( (jumblr= jint(vals,"usejumblr")) != 0 )
+        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,jumblr == 1 ? JUMBLR_DEPOSITPREFIX : "");
     else privkey = myinfo->persistent_priv;
     hash = curve25519(privkey,curve25519_basepoint9());
-    //hash = myinfo->myaddr.persistent;
     if ( jobj(vals,"srchash") == 0 )
         jaddbits256(vals,"srchash",hash);
     printf("service.(%s)\n",jprint(vals,0));

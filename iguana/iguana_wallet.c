@@ -1367,6 +1367,9 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
             jumblr_importprivkey(myinfo,coin,wifstr);
         }
     }
+    if ( bits256_nonz(myinfo->persistent_priv) != 0 )
+        smartaddress_add(myinfo,myinfo->persistent_priv);
+
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
 }

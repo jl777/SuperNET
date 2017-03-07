@@ -90,6 +90,12 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct smartaddress
+{
+    bits256 privkey,pubkey;
+    uint8_t pubkey33[33],rmd160[20];
+};
+
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
 
 #define PSOCK_IDLETIMEOUT 600
@@ -156,6 +162,7 @@ struct supernet_info
     double *svmfeatures;
     uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs;
 };
 
 struct basilisk_swapmessage
