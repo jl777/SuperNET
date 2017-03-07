@@ -30,7 +30,7 @@ int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey)
         ap->pubkey = curve25519(privkey,curve25519_basepoint9());
         calc_rmd160(0,ap->rmd160,ap->pubkey33,33);
     }
-    printf("too many smartaddresses\n");
+    printf("too many smartaddresses %d vs %d\n",myinfo->numsmartaddrs,(int32_t)(sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs)));
     return(-1);
 }
 
