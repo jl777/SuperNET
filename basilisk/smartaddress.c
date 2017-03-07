@@ -51,7 +51,9 @@ int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinad
             printf("MATCHED %s\n",coinaddr);
             return(i);
         }
-    printf("smartaddress cant find (%s) of %d\n",coinaddr,myinfo->numsmartaddrs);
+    for (i=0; i<20; i++)
+        printf("%02x",rmd160[i]);
+    printf(" <- rmd160 smartaddress cant find (%s) of %d\n",coinaddr,myinfo->numsmartaddrs);
     return(-1);
 }
 
