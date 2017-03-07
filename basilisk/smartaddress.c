@@ -44,8 +44,10 @@ int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinad
         if ( memcmp(myinfo->smartaddrs[i].rmd160,rmd160,20) == 0 )
         {
             *privkeyp = myinfo->smartaddrs[i].privkey;
+            printf("MATCHED %s\n",coinaddr);
             return(i);
         }
+    printf("smartaddress cant find (%s) of %d\n",coinaddr,myinfo->numsmartaddrs);
     return(-1);
 }
 
