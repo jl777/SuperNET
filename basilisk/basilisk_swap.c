@@ -662,10 +662,10 @@ cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *co
                         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,waddr->wifstr);
                     }
-                    else if ( smartaddress(myinfo,&privkey,coinaddr) > 0 )
+                    else if ( smartaddress(myinfo,&privkey,coinaddr) >= 0 )
                     {
-                        bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
-                        jaddistr(privkeyarray,waddr->wifstr);
+                        bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
+                        jaddistr(privkeyarray,wifstr);
                     }
                     else printf("cant find (%s) in wallet\n",coinaddr);
                 } else printf("cant coinaddr from (%s).v%d\n",bits256_str(str,txid),vout);
