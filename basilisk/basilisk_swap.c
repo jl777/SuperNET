@@ -899,7 +899,7 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
     for (i=0; i<swap->nummessages; i++)
         if ( crc32 == swap->messages[i].crc32 )
             return;
-    printf(" new message.[%d] datalen.%d Q.%x msg.%x [%x]\n",swap->nummessages,datalen,quoteid,msgbits,*(uint32_t *)data);
+    printf(" new message.[%d] datalen.%d Q.%x msg.%x [%llx]\n",swap->nummessages,datalen,quoteid,msgbits,*(long long *)data);
     swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
     mp = &swap->messages[swap->nummessages++];
     mp->crc32 = crc32;
@@ -942,11 +942,11 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             mp = &swap->messages[i];
             if ( msgbits != 0x80000000 )
                 break;
-            printf("set 80000000 -> %d\n",i);
+            printf("set 80000000 -> %d [%llx]\n",i,*(long long *)swap->messages[i].data);
         }
     }
     if ( mp != 0 )
-        retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
+        retval = (*basilisk_verify_func)(myinfo,swap,mp->data,mp->datalen);
     //printf("mine/other %s vs %s\n",bits256_str(str,swap->I.myhash),bits256_str(str2,swap->I.otherhash));
     return(retval);
 }
@@ -970,7 +970,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
-    //else printf("send.[%d] %x\n",sentbytes,msgbits);
+    else printf("send.[%d] %x [%llx]\n",sentbytes,msgbits,*(long long *)&buf[offset - datalen]);
     free(buf);
     return(0);
 }
