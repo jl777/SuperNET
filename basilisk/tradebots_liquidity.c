@@ -1131,6 +1131,8 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
+    printf("balancing trade\n");
+    return;
     if ( swap->balancingtrade == 0 )
         _default_swap_balancingtrade(myinfo,swap,iambob);
     else (*swap->balancingtrade)(myinfo,swap,iambob);
