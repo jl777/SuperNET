@@ -13,6 +13,9 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifndef _IGUANA_APIDEC_H_
+#define _IGUANA_APIDEC_H_
+
 STRING_ARG(dpow,pending,fiat);
 ZERO_ARGS(dpow,notarychains);
 STRING_ARG(dpow,active,maskhex);
@@ -356,3 +359,5 @@ TWO_STRINGS(hmac,md4,message,passphrase);
 TWO_STRINGS(hmac,md5,message,passphrase);
 TWO_STRINGS(hmac,tiger192_3,message,passphrase);
 TWO_STRINGS(hmac,whirlpool,message,passphrase);
+
+#endif
