@@ -912,7 +912,7 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
-    uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1;
+    uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1; struct basilisk_swapmessage *mp = 0;
     while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,0)) >= 0 )
     {
         memset(srchash.bytes,0,sizeof(srchash));
@@ -937,10 +937,13 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         //printf("%d: %s vs %s\n",i,bits256_str(str,swap->messages[i].srchash),bits256_str(str2,swap->messages[i].desthash));
         if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->I.myhash) == 0 )
         {
-            retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
-            break;
+            mp = &swap->messages[i];
+            if ( msgbits != 0x80000000 )
+                break;
         }
     }
+    if ( mp != 0 )
+        retval = (*basilisk_verify_func)(myinfo,swap,swap->messages[i].data,swap->messages[i].datalen);
     //printf("mine/other %s vs %s\n",bits256_str(str,swap->I.myhash),bits256_str(str2,swap->I.otherhash));
     return(retval);
 }
@@ -1365,10 +1368,11 @@ void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 int32_t basilisk_verify_otherstatebits(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    int32_t retval; struct basilisk_swap *swap = ptr;
-    if ( datalen == sizeof(swap->I.otherstatebits) )
+    int32_t retval; uint32_t t; struct basilisk_swap *swap = ptr;
+    if ( datalen == sizeof(swap->I.otherstatebits)+sizeof(t) )
     {
         retval = iguana_rwnum(0,data,sizeof(swap->I.otherstatebits),&swap->I.otherstatebits);
+        retval += iguana_rwnum(0,data,sizeof(t),&t);
         //printf("got sendstate.%x\n",swap->I.otherstatebits);
         return(retval);
     } else return(-1);
@@ -1524,9 +1528,10 @@ int32_t basilisk_checkdeck(struct supernet_info *myinfo,struct basilisk_swap *sw
 
 void basilisk_sendstate(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    int32_t datalen;
+    int32_t datalen; uint32_t t = (uint32_t)time(NULL);
     //printf("sendstate.%x\n",swap->I.statebits);
     datalen = iguana_rwnum(1,data,sizeof(swap->I.statebits),&swap->I.statebits);
+    datalen += iguana_rwnum(1,data,sizeof(t),&t);
     basilisk_swapsend(myinfo,swap,0x80000000,data,datalen,0,0);
 }
 
