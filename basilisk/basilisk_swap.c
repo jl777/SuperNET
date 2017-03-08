@@ -897,7 +897,7 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
 {
     int32_t i; struct basilisk_swapmessage *mp;
     for (i=0; i<swap->nummessages; i++)
-        if ( crc32 == swap->messages[i].crc32 )
+        if ( crc32 == swap->messages[i].crc32 && msgbits == swap->messages[i].msgbits && bits256_cmp(srchash,swap->messages[i].srchash) == 0 && bits256_cmp(desthash,swap->messages[i].desthash) == 0 )
             return;
     printf(" new message.[%d] datalen.%d Q.%x msg.%x [%llx]\n",swap->nummessages,datalen,quoteid,msgbits,*(long long *)data);
     swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
@@ -929,7 +929,10 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
         if ( size > offset )
+        {
+            printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
             basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
+        }
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
@@ -970,7 +973,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
-    else printf("send.[%d] %x [%llx]\n",sentbytes,msgbits,*(long long *)&buf[offset - datalen]);
+    else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
     return(0);
 }
