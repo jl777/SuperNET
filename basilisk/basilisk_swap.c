@@ -930,7 +930,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
         if ( size > offset )
         {
-            printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
+            //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
             basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
         }
         if ( ptr != 0 )
@@ -945,7 +945,6 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             mp = &swap->messages[i];
             if ( msgbits != 0x80000000 )
                 break;
-            printf("set 80000000 -> %d [%llx]\n",i,*(long long *)swap->messages[i].data);
         }
     }
     if ( mp != 0 )
@@ -957,11 +956,6 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
 uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
     uint8_t *buf; int32_t sentbytes,offset=0,i;
-    //if ( (rand() % 10) == 0 )
-    //    basilisk_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,INSTANTDEX_LOCKTIME*2);
-    //if ( basilisk_crcsend(myinfo,0,swap->verifybuf,sizeof(swap->verifybuf),swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen,crcs) != 0 )
-        //return(nextbits);
-    //dex_channelsend(myinfo,swap->I.myhash,swap->I.otherhash,swap->I.req.quoteid,msgbits,data,datalen); //INSTANTDEX_LOCKTIME*2
     buf = malloc(datalen + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2);
     for (i=0; i<32; i++)
         buf[offset++] = swap->I.myhash.bytes[i];
@@ -973,7 +967,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
-    else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
+    //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
     return(0);
 }
@@ -1131,27 +1125,6 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
     if ( coin == 0 || iguana_coinfind(dest) == 0 )
         return(0);
     *bobcoinp = *alicecoinp = 0;
-    /*if ( strcmp("BTC",src) == 0 )
-    {
-        *bobcoinp = iguana_coinfind(src);
-        *alicecoinp = iguana_coinfind(dest);
-    }
-    else if ( strcmp("BTC",dest) == 0 )
-    {
-        *bobcoinp = iguana_coinfind(dest);
-        *alicecoinp = iguana_coinfind(src);
-    }
-    else if ( (coin= iguana_coinfind(src)) != 0 && coin->chain->havecltv != 0 )
-    {
-        *bobcoinp = iguana_coinfind(src);
-        *alicecoinp = iguana_coinfind(dest);
-    }
-    else if ( (coin= iguana_coinfind(dest)) != 0 && coin->chain->havecltv != 0 )
-    {
-        *bobcoinp = iguana_coinfind(dest);
-        *alicecoinp = iguana_coinfind(src);
-    }
-    else return(0);*/
     *bobcoinp = iguana_coinfind(dest);
     *alicecoinp = iguana_coinfind(src);
     if ( bits256_cmp(pubkey,srchash) == 0 )
@@ -1175,7 +1148,6 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
 
 struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits)
 {
-    //struct iguana_info *bobcoin,*alicecoin;
     uint8_t *alicepub33=0,*bobpub33=0; int32_t x = -1;
     swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
     if ( optionduration < 0 )
@@ -1188,47 +1160,6 @@ struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey
     swap->alicecoin = iguana_coinfind(swap->I.req.src);
     swap->I.alicesatoshis = swap->I.req.srcamount;
     swap->I.aliceconfirms = swap->I.bobconfirms * 3;
-    /*if ( strcmp("BTC",swap->I.req.src) == 0 )
-    {
-        swap->bobcoin = iguana_coinfind("BTC");
-        swap->I.bobsatoshis = swap->I.req.srcamount;
-        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-        swap->alicecoin = iguana_coinfind(swap->I.req.dest);
-        swap->I.alicesatoshis = swap->I.req.destamount;
-        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
-    }
-    else if ( strcmp("BTC",swap->I.req.dest) == 0 )
-    {
-        swap->bobcoin = iguana_coinfind("BTC");
-        swap->I.bobsatoshis = swap->I.req.destamount;
-        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-        swap->alicecoin = iguana_coinfind(swap->I.req.src);
-        swap->I.alicesatoshis = swap->I.req.srcamount;
-        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
-    }
-    else
-    {
-        if ( (coin= iguana_coinfind(swap->I.req.src)) != 0 )
-        {
-            if ( coin->chain->havecltv != 0 )
-            {
-                swap->bobcoin = coin;
-                swap->I.bobsatoshis = swap->I.req.srcamount;
-                swap->alicecoin = iguana_coinfind(swap->I.req.dest);
-                swap->I.alicesatoshis = swap->I.req.destamount;
-            }
-            else if ( (coin= iguana_coinfind(swap->I.req.dest)) != 0 )
-            {
-                if ( coin->chain->havecltv != 0 )
-                {
-                    swap->bobcoin = coin;
-                    swap->I.bobsatoshis = swap->I.req.destamount;
-                    swap->alicecoin = iguana_coinfind(swap->I.req.src);
-                    swap->I.alicesatoshis = swap->I.req.srcamount;
-                } else printf("neither coin handles ctlv %s %s\n",swap->I.req.src,swap->I.req.dest);
-            } else printf("cant find src or dest coin.(%s %s)\n",swap->I.req.src,swap->I.req.dest);
-        } else printf("cant find src coin.(%s)\n",swap->I.req.src);
-    }*/
     if ( swap->bobcoin == 0 || swap->alicecoin == 0 )
     {
         printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,iguana_coinfind(swap->I.req.src),iguana_coinfind(swap->I.req.dest));
@@ -1263,28 +1194,6 @@ struct basilisk_swap *bitcoin_swapinit(void *ctx,bits256 privkey,uint8_t *pubkey
         swap->I.iambob = 1;
         swap->I.otherhash = swap->I.req.srchash;
     }
-    /*if ( bits256_cmp(swap->I.myhash,swap->I.req.srchash) == 0 )
-    {
-        swap->I.otherhash = swap->I.req.desthash;
-        if ( strcmp(swap->I.req.src,swap->I.bobstr) == 0 )
-            swap->I.iambob = 1;
-    }
-    else if ( bits256_cmp(swap->I.myhash,swap->I.req.desthash) == 0 )
-    {
-        swap->I.otherhash = swap->I.req.srchash;
-        if ( strcmp(swap->I.req.dest,swap->I.bobstr) == 0 )
-            swap->I.iambob = 1;
-    }
-    else
-    {
-        printf("neither src nor dest error\n");
-        return(0);
-    }
-    if ( (bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash)+1)/2 != swap->I.iambob )
-    {
-        printf("error iambob.%d != %d\n",swap->I.iambob,bitcoin_coinptrs(pubkey25519,&bobcoin,&alicecoin,swap->I.req.src,swap->I.req.dest,swap->I.req.srchash,swap->I.req.desthash));
-        return(0);
-    }*/
     if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
     {
         char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
@@ -1378,7 +1287,6 @@ int32_t basilisk_verify_otherstatebits(struct supernet_info *myinfo,void *ptr,ui
     if ( datalen == sizeof(swap->I.otherstatebits) )
     {
         retval = iguana_rwnum(0,data,sizeof(swap->I.otherstatebits),&swap->I.otherstatebits);
-        printf("got sendstate.%x\n",swap->I.otherstatebits);
         return(retval);
     } else return(-1);
 }
@@ -1534,7 +1442,6 @@ int32_t basilisk_checkdeck(struct supernet_info *myinfo,struct basilisk_swap *sw
 void basilisk_sendstate(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t datalen=0;
-    printf("sendstate.%x\n",swap->I.statebits);
     datalen = iguana_rwnum(1,data,sizeof(swap->I.statebits),&swap->I.statebits);
     basilisk_swapsend(myinfo,swap,0x80000000,data,datalen,0,0);
 }
