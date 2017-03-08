@@ -719,6 +719,8 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,struct basilis
         bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,swap->persistent_pubkey33,33);
         printf("set change address.(%s)\n",rawtx->coin->changeaddr);
     }
+    //if ( strcmp(rawtx->coin->symbol,"BTC") == 0 )
+    //    txfee = 0;
     init_hexbytes_noT(scriptstr,script,scriptlen);
     basilisktag = (uint32_t)rand();
     valsobj = cJSON_CreateObject();
@@ -1373,7 +1375,7 @@ int32_t basilisk_verify_otherstatebits(struct supernet_info *myinfo,void *ptr,ui
     {
         retval = iguana_rwnum(0,data,sizeof(swap->I.otherstatebits),&swap->I.otherstatebits);
         retval += iguana_rwnum(0,data,sizeof(t),&t);
-        //printf("got sendstate.%x\n",swap->I.otherstatebits);
+        printf("got sendstate.%x t.%u\n",swap->I.otherstatebits,t);
         return(retval);
     } else return(-1);
 }
@@ -1529,7 +1531,7 @@ int32_t basilisk_checkdeck(struct supernet_info *myinfo,struct basilisk_swap *sw
 void basilisk_sendstate(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t datalen; uint32_t t = (uint32_t)time(NULL);
-    //printf("sendstate.%x\n",swap->I.statebits);
+    printf("sendstate.%x\n",swap->I.statebits);
     datalen = iguana_rwnum(1,data,sizeof(swap->I.statebits),&swap->I.statebits);
     datalen += iguana_rwnum(1,data,sizeof(t),&t);
     basilisk_swapsend(myinfo,swap,0x80000000,data,datalen,0,0);
