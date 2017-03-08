@@ -899,7 +899,7 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
     for (i=0; i<swap->nummessages; i++)
         if ( crc32 == swap->messages[i].crc32 )
             return;
-    printf(" new message.[%d] datalen.%d Q.%x msg.%x\n",swap->nummessages,datalen,quoteid,msgbits);
+    printf(" new message.[%d] datalen.%d Q.%x msg.%x [%x]\n",swap->nummessages,datalen,quoteid,msgbits,*(uint32_t *)data);
     swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
     mp = &swap->messages[swap->nummessages++];
     mp->crc32 = crc32;
@@ -942,6 +942,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             mp = &swap->messages[i];
             if ( msgbits != 0x80000000 )
                 break;
+            printf("set 80000000 -> %d\n",i);
         }
     }
     if ( mp != 0 )
