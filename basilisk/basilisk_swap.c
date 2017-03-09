@@ -998,7 +998,7 @@ int32_t basilisk_process_swapverify(struct supernet_info *myinfo,void *ptr,int32
     else return(0);
 }
 
-void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t crc32,bits256 srchash,bits256 desthash,uint32_t quoteid,uint32_t msgbits,uint8_t *data,int32_t datalen)
+void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t crc32,bits256 srchash,bits256 desthash,uint32_t quoteid,uint32_t msgbits,uint8_t *data,int32_t datalen,int32_t reinit)
 {
     int32_t i; struct basilisk_swapmessage *mp;
     for (i=0; i<swap->nummessages; i++)
@@ -1013,18 +1013,80 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
     mp->msgbits = msgbits;
     mp->quoteid = quoteid;
     mp->data = malloc(datalen);
-    memcpy(mp->data,data,datalen);
     mp->datalen = datalen;
+    memcpy(mp->data,data,datalen);
+    if ( reinit == 0 && swap->fp != 0 )
+    {
+        fwrite(mp,1,sizeof(*mp),swap->fp);
+        fwrite(data,1,datalen,swap->fp);
+        fflush(swap->fp);
+    }
 }
 
-FILE *basilisk_swap_save(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
+FILE *basilisk_swap_save(struct supernet_info *myinfo,struct basilisk_swap *swap,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
     FILE *fp; char fname[512];
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,rp->requestid,rp->quoteid), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"rb+")) == 0 )
-        fp = fopen(fname,"wb+");
-    else fseek(fp,0,SEEK_END);
+    {
+        if ( (fp= fopen(fname,"wb+")) != 0 )
+        {
+            fwrite(privkey.bytes,1,sizeof(privkey),fp);
+            fwrite(rp,1,sizeof(*rp),fp);
+            fwrite(&statebits,1,sizeof(statebits),fp);
+            fwrite(&optionduration,1,sizeof(optionduration),fp);
+            fflush(fp);
+        }
+    }
+    else if ( reinit != 0 )
+    {
+    }
     return(fp);
+}
+
+struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit);
+
+void basilisk_swaps_init(struct supernet_info *myinfo)
+{
+    char fname[512]; uint32_t iter,swapcompleted,requestid,quoteid,optionduration,statebits; FILE *fp; bits256 privkey;struct basilisk_request R; struct basilisk_swapmessage M; struct basilisk_swap *swap = 0;
+    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+    if ( (myinfo->swapsfp= fopen(fname,"rb+")) != 0 )
+    {
+        while ( fread(&requestid,1,sizeof(requestid),myinfo->swapsfp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),myinfo->swapsfp) == sizeof(quoteid) )
+        {
+            sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+            if ( (fp= fopen(fname,"rb+")) != 0 ) // check to see if completed
+            {
+                memset(&M,0,sizeof(M));
+                swapcompleted = 0;
+                for (iter=0; iter<2; iter++)
+                {
+                    while ( fread(privkey.bytes,1,sizeof(privkey),fp) == sizeof(privkey) &&
+                            fread(&R,1,sizeof(R),fp) == sizeof(R) &&
+                            fread(&statebits,1,sizeof(statebits),fp) == sizeof(statebits) &&
+                            fread(&optionduration,1,sizeof(optionduration),fp) == sizeof(optionduration) &&
+                            fread(&M,1,sizeof(M),fp) == sizeof(M) )
+                    {
+                        if ( M.datalen < 100000 )
+                        {
+                            if ( M.data == 0 )
+                                M.data = malloc(M.datalen);
+                            fread(M.data,1,M.datalen,fp);
+                            if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
+                            {
+                                if ( iter == 1 && (swap= basilisk_thread_start(myinfo,privkey,&R,statebits,optionduration,1)) != 0 )
+                                    basilisk_swapgotdata(myinfo,swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
+                            }
+                            free(M.data), M.data = 0;
+                        }
+                    }
+                    if ( swapcompleted != 0 )
+                        break;
+                    rewind(fp);
+                }
+            }
+        }
+    }
 }
 
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
@@ -1046,7 +1108,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         if ( size > offset )
         {
             //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
-            basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset);
+            basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset,0);
         }
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
@@ -2207,7 +2269,26 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                 //for (i=0; i<sizeof(swap->I.req); i++)
                 //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
                 fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
-                swap->fp = basilisk_swap_save(myinfo,privkey,rp,statebits,optionduration,reinit);
+                if ( (swap->fp= basilisk_swap_save(myinfo,swap,privkey,rp,statebits,optionduration,reinit)) != 0 )
+                {
+                    if ( reinit == 0 )
+                    {
+                        if ( myinfo->swapsfp == 0 )
+                        {
+                            char fname[512];
+                            sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+                            if ( (myinfo->swapsfp= fopen(fname,"rb+")) == 0 )
+                                myinfo->swapsfp = fopen(fname,"wb+");
+                            else fseek(myinfo->swapsfp,0,SEEK_END);
+                        }
+                        if ( myinfo->swapsfp != 0 )
+                        {
+                            fwrite(&rp->requestid,1,sizeof(rp->requestid),myinfo->swapsfp);
+                            fwrite(&rp->quoteid,1,sizeof(rp->quoteid),myinfo->swapsfp);
+                            fflush(myinfo->swapsfp);
+                        }
+                    }
+                }
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     

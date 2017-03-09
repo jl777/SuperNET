@@ -373,7 +373,6 @@ THREE_STRINGS(iguana,passthru,asset,function,hex)
     else return(clonestr("{\"error\":\"assetchain not active, start in bitcoind mode\"}"));
 }
 
-
 TWO_STRINGS(dex,send,hex,handler)
 {
     uint8_t data[8192]; int32_t datalen; char *retstr;
