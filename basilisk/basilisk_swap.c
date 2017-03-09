@@ -1235,7 +1235,7 @@ int32_t instantdex_pubkeyargs(void *ctx,struct basilisk_swap *swap,int32_t numpu
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
         pubi = instantdex_derivekeypair(ctx,&privkey,pubkey,privkey,hash);
-        fprintf(stderr,"i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
+        //fprintf(stderr,"i.%d n.%d numpubs.%d %02x vs %02x\n",i,n,numpubs,pubkey[0],firstbyte);
         if ( pubkey[0] != firstbyte )
             continue;
         if ( n < 2 )
@@ -1378,9 +1378,13 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
             swap->I.aliceinsurance = 10000;
         fprintf(stderr,"D\n");
         strcpy(swap->I.bobstr,swap->bobcoin->symbol);
+        fprintf(stderr,"D2\n");
         strcpy(swap->I.alicestr,swap->alicecoin->symbol);
+        fprintf(stderr,"D3\n");
         swap->I.started = (uint32_t)time(NULL);
+        fprintf(stderr,"D4\n");
         swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
+        fprintf(stderr,"D5\n");
         OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
         if ( swap->I.choosei < 0 )
             swap->I.choosei = -swap->I.choosei;
