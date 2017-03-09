@@ -37,6 +37,7 @@
 #define INSTANTDEX_INSURANCEDIV 777
 #define INSTANTDEX_PUBKEY "03bc2c7ba671bae4a6fc835244c9762b41647b9827d4780a89a949b984a8ddcc06"
 #define INSTANTDEX_RMD160 "ca1e04745e8ca0c60d8c5881531d51bec470743f"
+#define JUMBLR_RMD160 "5177f8b427e5f47342a4b8ab5dac770815d4389e"
 #define TIERNOLAN_RMD160 "daedddd8dbe7a2439841ced40ba9c3d375f98146"
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
@@ -126,7 +127,7 @@ int32_t basilisk_update(char *symbol,uint32_t reftimestamp);
 void basilisk_seqresult(struct supernet_info *myinfo,char *retstr);
 struct iguana_info *basilisk_geckochain(struct supernet_info *myinfo,char *symbol,char *chainname,cJSON *valsobj);
 void basilisk_alicepayment(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,struct basilisk_rawtx *alicepayment,bits256 pubAm,bits256 pubBn);
-void basilisk_rawtx_setparms(char *name,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33);
+void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *rawtx,struct iguana_info *coin,int32_t numconfirms,int32_t vintype,uint64_t satoshis,int32_t vouttype,uint8_t *pubkey33,int32_t jumblrflag);
 void basilisk_setmyid(struct supernet_info *myinfo);
 int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_request *rp);
 cJSON *basilisk_requestjson(struct basilisk_request *rp);

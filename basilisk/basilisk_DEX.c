@@ -253,7 +253,7 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
             *rp = *_rp;
             printf("START thread to complete %u/%u for (%s %.8f) <-> (%s %.8f) q.%u\n",rp->requestid,rp->quoteid,rp->src,dstr(rp->srcamount),rp->dest,dstr(rp->destamount),rp->quoteid);
             myinfo->lastdexrequestid = rp->requestid;
-            if ( basilisk_thread_start(myinfo,privkey,rp,statebits,optionduration) != 0 )
+            if ( basilisk_thread_start(myinfo,privkey,rp,statebits,optionduration,0) != 0 )
             {
                 basilisk_request_enqueue(myinfo,rp);
                 return(clonestr("{\"result\":\"started atomic swap thread\"}"));

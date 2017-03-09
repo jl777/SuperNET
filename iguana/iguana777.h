@@ -162,7 +162,7 @@ struct supernet_info
     double *svmfeatures;
     uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
-    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh;
 };
 
 struct basilisk_swapmessage
@@ -177,6 +177,7 @@ struct basilisk_swap
     struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
     void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
     int32_t subsock,pushsock,connected;
+    FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;

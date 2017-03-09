@@ -683,6 +683,7 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s",GLOBAL_GENESISDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_CONFSDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/TRANSACTIONS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/purgeable",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
