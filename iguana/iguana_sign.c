@@ -1462,12 +1462,6 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         flag = (msgtx->vins[i].vinscript[0] == 0);
                         type = bitcoin_scriptget(coin,&hashtype,&sigsize,&pubkeysize,&userdata,&userdatalen,&mainvin,msgtx->vins[i].vinscript+flag,msgtx->vins[i].scriptlen-flag,0);
                         printf("i.%d flag.%d type.%d scriptlen.%d\n",i,flag,type,msgtx->vins[i].scriptlen);
-                        if ( flag != 0 && pubkeysize == 33 ) // jl777: need to generalize this
-                        {
-                            for (k=0; k<sigsize; k++)
-                                printf("%02x",mainvin.signers[0].sig[k]);
-                        }
-                        printf(" main vinscript type.%d sigsize.%d pubkeysize.%d\n",type,sigsize,pubkeysize);
                         if ( msgtx->vins[i].redeemscript != 0 )
                         {
                             //for (j=0; j<msgtx->vins[i].p2shlen; j++)
