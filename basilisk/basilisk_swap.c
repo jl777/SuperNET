@@ -1101,11 +1101,14 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
     }
 }
 
+void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,char *pushaddr,char *subaddr);
+
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
     uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1; struct basilisk_swapmessage *mp = 0;
     while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,0)) >= 0 )
     {
+        swap->lasttime = (uint32_t)time(NULL);
         memset(srchash.bytes,0,sizeof(srchash));
         memset(desthash.bytes,0,sizeof(desthash));
         //printf("gotmsg.[%d] crc.%x\n",size,crc32);
@@ -1124,6 +1127,15 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         }
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
+    }
+    if ( swap->I.iambob == 0 && time(NULL) > swap->lasttime+360 )
+    {
+        printf("nothing received for a while from Bob, try new sockets\n");
+        if ( swap->pushsock >= 0 )
+            nn_close(swap->pushsock), swap->pushsock = -1;
+        if ( swap->subsock >= 0 )
+            nn_close(swap->subsock), swap->subsock = -1;
+        basilisk_psockinit(myinfo,swap,0,0);
     }
     //char str[65],str2[65];
     for (i=0; i<swap->nummessages; i++)
@@ -1341,15 +1353,14 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
 struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,int32_t reinit)
 {
     FILE *fp; char fname[512]; uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag,x = -1;
-    sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid);
-    printf("swapfile.(%s)\n",fname);
     if ( reinit != 0 )
     {
-        fprintf(stderr,"Z\n");
+        sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             fread(&swap->I,1,sizeof(swap->I),fp);
             fread(swap->privkeys,1,sizeof(swap->privkeys),fp);
+            fread(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
             fread(swap->deck,1,sizeof(swap->deck),fp);
             fclose(fp);
         }
@@ -1393,13 +1404,6 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         {
             char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
             return(0);
-        }
-        if ( (fp= fopen(fname,"wb")) != 0 )
-        {
-            fwrite(&swap->I,1,sizeof(swap->I),fp);
-            fwrite(swap->privkeys,1,sizeof(swap->privkeys),fp);
-            fwrite(swap->deck,1,sizeof(swap->deck),fp);
-            fclose(fp);
         }
     }
     swap->bobcoin = iguana_coinfind(swap->I.req.dest);
@@ -2039,7 +2043,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration; char fname[512]; uint32_t channel; int32_t retval=0,i,j,datalen,maxlen; FILE *fp; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfoptr;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -2094,6 +2098,15 @@ void basilisk_swaploop(void *_swap)
         myinfo->DEXactive = 0;
     }
     printf("C r%u/q%u swapstate.%x retval.%d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,retval);
+    sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid);
+    if ( (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(&swap->I,1,sizeof(swap->I),fp);
+        fwrite(swap->privkeys,1,sizeof(swap->privkeys),fp);
+        fwrite(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
+        fwrite(swap->deck,1,sizeof(swap->deck),fp);
+        fclose(fp);
+    }
     while ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
     {
         //dpow_nanomsg_update(myinfo);
