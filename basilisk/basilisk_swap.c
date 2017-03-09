@@ -1230,7 +1230,7 @@ int32_t instantdex_pubkeyargs(void *ctx,struct basilisk_swap *swap,int32_t numpu
     {
         if ( swap->I.numpubs+2 >= numpubs )
             return(numpubs);
-        fprintf(stderr,">>>>>> start generating %s\n",buf);
+        //fprintf(stderr,">>>>>> start generating %s\n",buf);
     }
     for (i=n=m=0; i<numpubs*100 && n<numpubs; i++)
     {
@@ -1356,39 +1356,26 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
     }
     else
     {
-        fprintf(stderr,"A\n");
         swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
         if ( optionduration < 0 )
             swap->I.putduration -= optionduration;
         else if ( optionduration > 0 )
             swap->I.callduration += optionduration;
-        fprintf(stderr,"B\n");
         swap->I.bobsatoshis = swap->I.req.destamount;
         swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->I.alicesatoshis = swap->I.req.srcamount;
         swap->I.aliceconfirms = swap->I.bobconfirms * 3;
-        fprintf(stderr,"C\n");
-        if ( swap->I.bobconfirms == 0 )
-            swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
-        if ( swap->I.aliceconfirms == 0 )
-            swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;
         if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
             swap->I.bobinsurance = 10000;
         if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
             swap->I.aliceinsurance = 10000;
-        fprintf(stderr,"D\n");
-        strcpy(swap->I.bobstr,swap->bobcoin->symbol);
-        fprintf(stderr,"D2\n");
-        strcpy(swap->I.alicestr,swap->alicecoin->symbol);
-        fprintf(stderr,"D3\n");
+        strcpy(swap->I.bobstr,swap->I.req.dest);
+        strcpy(swap->I.alicestr,swap->I.req.src);
         swap->I.started = (uint32_t)time(NULL);
-        fprintf(stderr,"D4\n");
         swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
-        fprintf(stderr,"D5\n");
         OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
         if ( swap->I.choosei < 0 )
             swap->I.choosei = -swap->I.choosei;
-        fprintf(stderr,"E\n");
         swap->I.choosei %= INSTANTDEX_DECKSIZE;
         swap->I.otherchoosei = -1;
         swap->I.myhash = pubkey25519;
@@ -1402,13 +1389,11 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
             swap->I.iambob = 1;
             swap->I.otherhash = swap->I.req.srchash;
         }
-        fprintf(stderr,"F\n");
         if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(myinfo->ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
         {
             char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
             return(0);
         }
-        fprintf(stderr,"save swapfile.(%s)\n",fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
             fwrite(&swap->I,1,sizeof(swap->I),fp);
@@ -1425,6 +1410,10 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         free(swap);
         return(0);
     }
+    if ( swap->I.bobconfirms == 0 )
+        swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
+    if ( swap->I.aliceconfirms == 0 )
+        swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;
     jumblrflag = bits256_cmp(privkey,myinfo->persistent_priv) != 0;
     if ( swap->I.iambob != 0 )
     {
