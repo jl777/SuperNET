@@ -255,7 +255,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_swap *
 {
     cJSON *argjson,*valuearray=0; char *valstr; int32_t i,n,retval = -1;
 #ifdef BASILISK_DISABLEWAITTX
-    return(10);
+    return(100);
 #endif
     argjson = cJSON_CreateObject();
     jaddbits256(argjson,"txid",rawtx->I.actualtxid);
@@ -319,7 +319,6 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_t timestamp,uint32_t locktime,uint32_t sequenceid,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
     char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t needsig=1,retval = -1; struct vin_info *V;
-
     V = calloc(16,sizeof(*V));
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
@@ -333,7 +332,7 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
         bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
         jaddistr(privkeys,wifstr);
         V[0].N = V[0].M = 2;
-        //char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
+        char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
     } else V[0].N = V[0].M = 1;
     V[0].suppress_pubkeys = dest->I.suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
@@ -352,6 +351,7 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
         needsig = 0;
 #endif
     }
+    printf("rawtx B\n");
     if ( bits256_nonz(rawtx->I.actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->I.actualtxid);
     else jaddbits256(item,"txid",rawtx->I.signedtxid);
@@ -371,10 +371,11 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
-    //printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->locktime,dest->locktime,rawtx->name,hexstr,dest->name,dest->suppress_pubkeys);
+    printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->I.locktime,dest->I.locktime,rawtx->name,hexstr,dest->name,dest->I.suppress_pubkeys);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->I.spendlen,dest->I.amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->I.txid,txobj,V)) != 0 )
     {
+        printf("rawtx.(%s) vins.%p\n",rawtxbytes,vins);
         if ( needsig == 0 )
             signedtx = rawtxbytes;
         if ( signedtx != 0 || (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&dest->I.signedtxid,&dest->I.completed,vins,rawtxbytes,privkeys,V)) != 0 )
@@ -745,6 +746,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
     int32_t i,retval;
     printf("alicepayment_spend\n");
     swap->alicepayment.I.spendlen = basilisk_alicescript(swap->alicepayment.redeemscript,&swap->alicepayment.I.redeemlen,swap->alicepayment.spendscript,0,swap->alicepayment.I.destaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
+    printf("alicepayment_spend len.%d\n",swap->alicepayment.I.spendlen);
     if ( (retval= basilisk_rawtx_sign(myinfo,swap->alicecoin->longestchain,swap,dest,&swap->alicepayment,swap->I.privAm,&swap->I.privBn,0,0,1)) == 0 )
     {
         for (i=0; i<dest->I.datalen; i++)
@@ -1373,9 +1375,7 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         else if ( optionduration > 0 )
             swap->I.callduration += optionduration;
         swap->I.bobsatoshis = swap->I.req.destamount;
-        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
         swap->I.alicesatoshis = swap->I.req.srcamount;
-        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
         if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
             swap->I.bobinsurance = 10000;
         if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
@@ -1414,6 +1414,8 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         free(swap);
         return(0);
     }
+    swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
+    swap->I.aliceconfirms = swap->I.bobconfirms * 3;
     if ( swap->I.bobconfirms == 0 )
         swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
     if ( swap->I.aliceconfirms == 0 )
@@ -1800,7 +1802,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                 if ( basilisk_swapget(myinfo,swap,0x1000,data,maxlen,basilisk_verify_alicepaid) == 0 )
                 {
                     swap->I.statebits |= 0x1000;
-                    printf("got alicepayment\n");
+                    printf("got alicepayment aliceconfirms.%d\n",swap->I.aliceconfirms);
                 }
             }
             else if ( (swap->I.statebits & 0x2000) == 0 )
