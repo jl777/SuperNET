@@ -1431,10 +1431,9 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             memset(msgtx,0,sizeof(*msgtx));
-            printf("call rwmsgtx vin0.scriptlen %d\n",msgtx->vins[0].scriptlen);
             if ( iguana_rwmsgtx(coin,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins,V->suppress_pubkeys) > 0 && numinputs == msgtx->tx_in )
             {
-                printf("back rwmsgtx\n");
+                printf("back rwmsgtx vins.%p\n",msgtx->vins);
                 memset(pubkeys,0,sizeof(pubkeys));
                 memset(privkeys,0,sizeof(privkeys));
                 if ( (n= cJSON_GetArraySize(privkeysjson)) > 0 )
