@@ -1128,7 +1128,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
-    if ( swap->I.iambob == 0 && time(NULL) > swap->lasttime+360 )
+    if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
     {
         printf("nothing received for a while from Bob, try new sockets\n");
         if ( swap->pushsock >= 0 )
