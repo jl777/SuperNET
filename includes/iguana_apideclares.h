@@ -217,6 +217,7 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+ZERO_ARGS(InstantDEX,init);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);

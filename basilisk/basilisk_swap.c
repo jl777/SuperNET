@@ -1055,29 +1055,41 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
         while ( fread(&requestid,1,sizeof(requestid),myinfo->swapsfp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),myinfo->swapsfp) == sizeof(quoteid) )
         {
             sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+            printf("%s\n",fname);
             if ( (fp= fopen(fname,"rb+")) != 0 ) // check to see if completed
             {
                 memset(&M,0,sizeof(M));
                 swapcompleted = 0;
                 for (iter=0; iter<2; iter++)
                 {
-                    while ( fread(privkey.bytes,1,sizeof(privkey),fp) == sizeof(privkey) &&
+                    if ( fread(privkey.bytes,1,sizeof(privkey),fp) == sizeof(privkey) &&
                             fread(&R,1,sizeof(R),fp) == sizeof(R) &&
                             fread(&statebits,1,sizeof(statebits),fp) == sizeof(statebits) &&
-                            fread(&optionduration,1,sizeof(optionduration),fp) == sizeof(optionduration) &&
-                            fread(&M,1,sizeof(M),fp) == sizeof(M) )
+                            fread(&optionduration,1,sizeof(optionduration),fp) == sizeof(optionduration) )
                     {
-                        if ( M.datalen < 100000 )
+                        while ( fread(&M,1,sizeof(M),fp) == sizeof(M) )
                         {
-                            if ( M.data == 0 )
-                                M.data = malloc(M.datalen);
-                            fread(M.data,1,M.datalen,fp);
-                            if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
+                            M.data = 0;
+                            printf("entry iter.%d crc32.%x datalen.%d\n",iter,M.crc32,M.datalen);
+                            if ( M.datalen < 100000 )
                             {
-                                if ( iter == 1 && (swap= basilisk_thread_start(myinfo,privkey,&R,statebits,optionduration,1)) != 0 )
-                                    basilisk_swapgotdata(myinfo,swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
+                                M.data = malloc(M.datalen);
+                                fread(M.data,1,M.datalen,fp);
+                                if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
+                                {
+                                    if ( iter == 1 )
+                                    {
+                                        if ( swap == 0 )
+                                        {
+                                            swap = basilisk_thread_start(myinfo,privkey,&R,statebits,optionduration,1);
+                                            swap->I.choosei = swap->I.otherchoosei = -1;
+                                        }
+                                        if ( swap != 0 )
+                                            basilisk_swapgotdata(myinfo,swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
+                                    }
+                                } else printf("crc mismatch %x vs %x\n",calc_crc32(0,M.data,M.datalen),M.crc32);
+                                free(M.data), M.data = 0;
                             }
-                            free(M.data), M.data = 0;
                         }
                     }
                     if ( swapcompleted != 0 )
@@ -1096,7 +1108,6 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
     {
         memset(srchash.bytes,0,sizeof(srchash));
         memset(desthash.bytes,0,sizeof(desthash));
-        crc32 = calc_crc32(0,ptr,size);
         //printf("gotmsg.[%d] crc.%x\n",size,crc32);
         offset = 0;
         for (i=0; i<32; i++)
@@ -1105,6 +1116,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             desthash.bytes[i] = ptr[offset++];
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
+        crc32 = calc_crc32(0,&ptr[offset],size-offset);
         if ( size > offset )
         {
             //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
@@ -1326,57 +1338,80 @@ int32_t bitcoin_coinptrs(bits256 pubkey,struct iguana_info **bobcoinp,struct igu
     return(0);
 }
 
-struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits)
+struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,int32_t reinit)
 {
-    uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag,x = -1;
-    swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
-    if ( optionduration < 0 )
-        swap->I.putduration -= optionduration;
-    else if ( optionduration > 0 )
-        swap->I.callduration += optionduration;
+    FILE *fp; char fname[512]; uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag,x = -1;
+    sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid);
+    printf("swapfile.(%s)\n",fname);
+    if ( reinit != 0 )
+    {
+        if ( (fp= fopen(fname,"rb")) != 0 )
+        {
+            fread(&swap->I,1,sizeof(swap->I),fp);
+            fread(swap->privkeys,1,sizeof(swap->privkeys),fp);
+            fread(swap->deck,1,sizeof(swap->deck),fp);
+            fclose(fp);
+        }
+    }
+    else
+    {
+        swap->I.putduration = swap->I.callduration = INSTANTDEX_LOCKTIME;
+        if ( optionduration < 0 )
+            swap->I.putduration -= optionduration;
+        else if ( optionduration > 0 )
+            swap->I.callduration += optionduration;
+        swap->I.bobsatoshis = swap->I.req.destamount;
+        swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
+        swap->I.alicesatoshis = swap->I.req.srcamount;
+        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
+        if ( swap->I.bobconfirms == 0 )
+            swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
+        if ( swap->I.aliceconfirms == 0 )
+            swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;
+        if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
+            swap->I.bobinsurance = 10000;
+        if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
+            swap->I.aliceinsurance = 10000;
+        strcpy(swap->I.bobstr,swap->bobcoin->symbol);
+        strcpy(swap->I.alicestr,swap->alicecoin->symbol);
+        swap->I.started = (uint32_t)time(NULL);
+        swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
+        OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
+        if ( swap->I.choosei < 0 )
+            swap->I.choosei = -swap->I.choosei;
+        swap->I.choosei %= INSTANTDEX_DECKSIZE;
+        swap->I.otherchoosei = -1;
+        swap->I.myhash = pubkey25519;
+        if ( statebits != 0 )
+        {
+            swap->I.iambob = 0;
+            swap->I.otherhash = swap->I.req.desthash;
+        }
+        else
+        {
+            swap->I.iambob = 1;
+            swap->I.otherhash = swap->I.req.srchash;
+        }
+        if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(myinfo->ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
+        {
+            char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
+            return(0);
+        }
+        if ( (fp= fopen(fname,"wb")) != 0 )
+        {
+            printf("save swapfile\n");
+            fwrite(&swap->I,1,sizeof(swap->I),fp);
+            fwrite(swap->privkeys,1,sizeof(swap->privkeys),fp);
+            fwrite(swap->deck,1,sizeof(swap->deck),fp);
+            fclose(fp);
+        }
+    }
     swap->bobcoin = iguana_coinfind(swap->I.req.dest);
-    swap->I.bobsatoshis = swap->I.req.destamount;
-    swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
     swap->alicecoin = iguana_coinfind(swap->I.req.src);
-    swap->I.alicesatoshis = swap->I.req.srcamount;
-    swap->I.aliceconfirms = swap->I.bobconfirms * 3;
     if ( swap->bobcoin == 0 || swap->alicecoin == 0 )
     {
         printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",swap->bobcoin,swap->alicecoin,iguana_coinfind(swap->I.req.src),iguana_coinfind(swap->I.req.dest));
         free(swap);
-        return(0);
-    }
-    if ( swap->I.bobconfirms == 0 )
-        swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
-    if ( swap->I.aliceconfirms == 0 )
-        swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;
-    if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-        swap->I.bobinsurance = 10000;
-    if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-        swap->I.aliceinsurance = 10000;
-    strcpy(swap->I.bobstr,swap->bobcoin->symbol);
-    strcpy(swap->I.alicestr,swap->alicecoin->symbol);
-    swap->I.started = (uint32_t)time(NULL);
-    swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
-    OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
-    if ( swap->I.choosei < 0 )
-        swap->I.choosei = -swap->I.choosei;
-    swap->I.choosei %= INSTANTDEX_DECKSIZE;
-    swap->I.otherchoosei = -1;
-    swap->I.myhash = pubkey25519;
-    if ( statebits != 0 )
-    {
-        swap->I.iambob = 0;
-        swap->I.otherhash = swap->I.req.desthash;
-    }
-    else
-    {
-        swap->I.iambob = 1;
-        swap->I.otherhash = swap->I.req.srchash;
-    }
-    if ( bits256_nonz(privkey) == 0 || (x= instantdex_pubkeyargs(myinfo->ctx,swap,2 + INSTANTDEX_DECKSIZE,privkey,swap->I.orderhash,0x02+swap->I.iambob)) != 2 + INSTANTDEX_DECKSIZE )
-    {
-        char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
         return(0);
     }
     jumblrflag = bits256_cmp(privkey,myinfo->persistent_priv) != 0;
@@ -2207,21 +2242,21 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         }
     if ( i == myinfo->numswaps && i < sizeof(myinfo->swaps)/sizeof(*myinfo->swaps) )
     {
-        printf("basilisk_thread_start request.%u statebits.%d\n",rp->requestid,statebits);
         swap = calloc(1,sizeof(*swap));
         swap->subsock = swap->pushsock = -1;
         vcalc_sha256(0,swap->I.orderhash.bytes,(uint8_t *)rp,sizeof(*rp));
         swap->I.req = *rp;
         swap->myinfoptr = myinfo;
+        printf("basilisk_thread_start request.%u statebits.%d (%s/%s) reinit.%d\n",rp->requestid,statebits,rp->src,rp->dest,reinit);
         bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
         pubkey25519 = curve25519(privkey,curve25519_basepoint9());
         swap->persistent_pubkey = pubkey25519;
         swap->persistent_privkey = privkey;
         memcpy(swap->persistent_pubkey33,pubkey33,33);
         m = n = 0;
-        if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits) != 0 )
+        if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            if ( statebits == 0 )
+            if ( statebits == 0 )//&& (swap->subsock < 0 || swap->pushsock < 0) )
             {
                 if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
                 {
@@ -2234,67 +2269,77 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                     free(retstr);
                 }
             } else basilisk_psockinit(myinfo,swap,0,0);
-
-            starttime = (uint32_t)time(NULL);
-            printf("statebits.%x m.%d n.%d\n",statebits,m,n);
-            while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+BASILISK_MSGDURATION )
+            if ( reinit != 0 )
             {
-                m = n = 0;
-                //dpow_nanomsg_update(myinfo);
-                //dex_updateclient(myinfo);
-                sleep(DEX_SLEEP);
-                printf("waiting for offer to be accepted\n");
-                channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
-                if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
-                {
-                    if ( is_cJSON_Array(retarray) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
-                    {
-                        for (i=0; i<n; i++)
-                        {
-                            item = jitem(retarray,i);
-                            if ( (msgobj= jarray(&n,item,"messages")) != 0 && n > 0 )
-                            {
-                                item = jitem(msgobj,0);
-                                if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
-                                    m++;
-                                else printf("(%s)\n",jprint(item,0));
-                            } //else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
-                        }
-                    }
-                } else printf("no retarray\n");
-            }
-            printf("LAUNCH check.%d m.%d\n",statebits,m);
-            if ( statebits != 0 || m > 0 )//n/2 )
-            {
-                //for (i=0; i<sizeof(swap->I.req); i++)
-                //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
-                fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
-                if ( (swap->fp= basilisk_swap_save(myinfo,swap,privkey,rp,statebits,optionduration,reinit)) != 0 )
-                {
-                    if ( reinit == 0 )
-                    {
-                        if ( myinfo->swapsfp == 0 )
-                        {
-                            char fname[512];
-                            sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
-                            if ( (myinfo->swapsfp= fopen(fname,"rb+")) == 0 )
-                                myinfo->swapsfp = fopen(fname,"wb+");
-                            else fseek(myinfo->swapsfp,0,SEEK_END);
-                        }
-                        if ( myinfo->swapsfp != 0 )
-                        {
-                            fwrite(&rp->requestid,1,sizeof(rp->requestid),myinfo->swapsfp);
-                            fwrite(&rp->quoteid,1,sizeof(rp->quoteid),myinfo->swapsfp);
-                            fflush(myinfo->swapsfp);
-                        }
-                    }
-                }
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
                 {
                     
                 }
                 myinfo->swaps[myinfo->numswaps++] = swap;
-            } else printf("%u/%u offer wasnt accepted statebits.%d m.%d n.%d\n",rp->requestid,rp->quoteid,statebits,m,n);
+            }
+            else
+            {
+                starttime = (uint32_t)time(NULL);
+                printf("statebits.%x m.%d n.%d\n",statebits,m,n);
+                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+BASILISK_MSGDURATION )
+                {
+                    m = n = 0;
+                    //dpow_nanomsg_update(myinfo);
+                    //dex_updateclient(myinfo);
+                    sleep(DEX_SLEEP);
+                    printf("waiting for offer to be accepted\n");
+                    channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+                    if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
+                    {
+                        if ( is_cJSON_Array(retarray) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
+                        {
+                            for (i=0; i<n; i++)
+                            {
+                                item = jitem(retarray,i);
+                                if ( (msgobj= jarray(&n,item,"messages")) != 0 && n > 0 )
+                                {
+                                    item = jitem(msgobj,0);
+                                    if ( jobj(item,"data") != 0 && jobj(item,"key") != 0 )
+                                        m++;
+                                    else printf("(%s)\n",jprint(item,0));
+                                } //else printf("msgobj.%p m.%d n.%d\n",msgobj,m,n);
+                            }
+                        }
+                    } else printf("no retarray\n");
+                }
+                printf("LAUNCH check.%d m.%d\n",statebits,m);
+                if ( statebits != 0 || m > 0 )//n/2 )
+                {
+                    //for (i=0; i<sizeof(swap->I.req); i++)
+                    //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
+                    fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
+                    if ( (swap->fp= basilisk_swap_save(myinfo,swap,privkey,rp,statebits,optionduration,reinit)) != 0 )
+                    {
+                        if ( reinit == 0 )
+                        {
+                            if ( myinfo->swapsfp == 0 )
+                            {
+                                char fname[512];
+                                sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+                                if ( (myinfo->swapsfp= fopen(fname,"rb+")) == 0 )
+                                    myinfo->swapsfp = fopen(fname,"wb+");
+                                else fseek(myinfo->swapsfp,0,SEEK_END);
+                            }
+                            if ( myinfo->swapsfp != 0 )
+                            {
+                                fwrite(&rp->requestid,1,sizeof(rp->requestid),myinfo->swapsfp);
+                                fwrite(&rp->quoteid,1,sizeof(rp->quoteid),myinfo->swapsfp);
+                                fflush(myinfo->swapsfp);
+                            }
+                        }
+                    }
+                    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
+                    {
+                        
+                    }
+                    myinfo->swaps[myinfo->numswaps++] = swap;
+                } else printf("%u/%u offer wasnt accepted statebits.%d m.%d n.%d\n",rp->requestid,rp->quoteid,statebits,m,n);
+            }
         }
     }
     portable_mutex_unlock(&myinfo->DEX_swapmutex);

@@ -180,13 +180,12 @@ struct basilisk_swap
     int32_t subsock,pushsock,connected;
     FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
-    struct basilisk_swapinfo I;
-    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
-    bits256 privkeys[INSTANTDEX_DECKSIZE];
     struct basilisk_swapmessage *messages; int32_t nummessages;
-    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],pad[15],verifybuf[65536];
-
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    struct basilisk_swapinfo I;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
 };
 
 #include "../includes/iguana_funcs.h"

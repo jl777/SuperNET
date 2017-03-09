@@ -748,4 +748,11 @@ TWO_INTS(InstantDEX,accept,requestid,quoteid)
         return(retstr);
     }
 }
+
+ZERO_ARGS(InstantDEX,init)
+{
+    basilisk_swaps_init(myinfo);
+    return(clonestr("{\"result\":\"success\"}"));
+}
+
 #include "../includes/iguana_apiundefs.h"
