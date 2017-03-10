@@ -333,7 +333,7 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
         bitcoin_priv2wif(wifstr,*privkey2,rawtx->coin->chain->wiftype);
         jaddistr(privkeys,wifstr);
         V[0].N = V[0].M = 2;
-        char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
+        //char str[65]; printf("add second privkey.(%s) %s\n",jprint(privkeys,0),bits256_str(str,*privkey2));
     } else V[0].N = V[0].M = 1;
     V[0].suppress_pubkeys = dest->I.suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
@@ -372,11 +372,11 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
-    printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->I.locktime,dest->I.locktime,rawtx->name,hexstr,dest->name,dest->I.suppress_pubkeys);
+    //printf("basilisk_rawtx_sign locktime.%u/%u for %s spendscript.%s -> %s, suppress.%d\n",rawtx->I.locktime,dest->I.locktime,rawtx->name,hexstr,dest->name,dest->I.suppress_pubkeys);
     txobj = bitcoin_txoutput(txobj,dest->spendscript,dest->I.spendlen,dest->I.amount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,rawtx->coin,&dest->I.txid,txobj,V)) != 0 )
     {
-        printf("rawtx.(%s) vins.%p\n",rawtxbytes,vins);
+        //printf("rawtx.(%s) vins.%p\n",rawtxbytes,vins);
         if ( needsig == 0 )
             signedtx = rawtxbytes;
         if ( signedtx != 0 || (signedtx= iguana_signrawtx(myinfo,rawtx->coin,height,&dest->I.signedtxid,&dest->I.completed,vins,rawtxbytes,privkeys,V)) != 0 )
@@ -1216,7 +1216,7 @@ int32_t basilisk_privBn_extract(struct supernet_info *myinfo,struct basilisk_swa
 {
     if ( basilisk_priviextract(myinfo,swap->bobcoin,"privBn",&swap->I.privBn,swap->I.secretBn,swap->bobrefund.I.actualtxid,0) == 0 )
     {
-        
+        printf("extracted privBn from blockchain\n");
     }
     if ( basilisk_swapget(myinfo,swap,0x40000000,data,maxlen,basilisk_verify_privi) == 0 )
     {
@@ -1650,7 +1650,11 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                 //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 if ( suppress_swapsend == 0 )
                     return(basilisk_swapsend(myinfo,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs));
-                else return(0);
+                else
+                {
+                    printf("suppress swapsend %x\n",msgbits);
+                    return(0);
+                }
             }
         }
         return(nextbits);
@@ -2261,6 +2265,7 @@ void basilisk_swaploop(void *_swap)
     printf("end of atomic swap\n");
     if ( swap->I.iambob != 0 && swap->bobdeposit.txbytes != 0 )
     {
+        sleep(300); // wait for confirm of msig
         printf("BOB reclaims refund\n");
         basilisk_bobdeposit_refund(myinfo,swap,0);
         if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobrefund,0x40000000,0) == 0 ) // use secretBn
