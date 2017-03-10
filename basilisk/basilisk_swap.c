@@ -1103,7 +1103,7 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
     }
 }
 
-void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,char *pushaddr,char *subaddr);
+void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t amlp);
 
 int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen))
 {
@@ -1130,24 +1130,28 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
-    if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
-    {
-        printf("nothing received for a while from Bob, try new sockets\n");
-        if ( swap->pushsock >= 0 )
-            nn_close(swap->pushsock), swap->pushsock = -1;
-        if ( swap->subsock >= 0 )
-            nn_close(swap->subsock), swap->subsock = -1;
-        basilisk_psockinit(myinfo,swap,0,0);
-    }
     //char str[65],str2[65];
     for (i=0; i<swap->nummessages; i++)
     {
         //printf("%d: %s vs %s\n",i,bits256_str(str,swap->messages[i].srchash),bits256_str(str2,swap->messages[i].desthash));
-        if ( swap->messages[i].msgbits == msgbits && bits256_cmp(swap->messages[i].desthash,swap->I.myhash) == 0 )
+        if ( bits256_cmp(swap->messages[i].desthash,swap->I.myhash) == 0 )
         {
-            mp = &swap->messages[i];
-            if ( msgbits != 0x80000000 )
-                break;
+            if ( swap->messages[i].msgbits == msgbits )
+            {
+                if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
+                {
+                    printf("nothing received for a while from Bob, try new sockets\n");
+                    if ( swap->pushsock >= 0 )
+                        nn_close(swap->pushsock), swap->pushsock = -1;
+                    if ( swap->subsock >= 0 )
+                        nn_close(swap->subsock), swap->subsock = -1;
+                    swap->connected = 0;
+                    basilisk_psockinit(myinfo,swap,0);
+                }
+                mp = &swap->messages[i];
+                if ( msgbits != 0x80000000 )
+                    break;
+            }
         }
     }
     if ( mp != 0 )
@@ -1824,7 +1828,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             {
                 if ( basilisk_swapget(myinfo,swap,0x40000,data,maxlen,basilisk_verify_privi) == 0 || basilisk_privAm_extract(myinfo,swap) == 0 ) // divulges privAm
                 {
-                    printf("got privi spend alicepayment\n");
+                    printf("got privi spend alicepayment, dont divulge privBn until bobspend propagated\n");
                     basilisk_alicepayment_spend(myinfo,swap,&swap->bobspend);
                     if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->bobspend,0x40000) == 0 )
                         printf("Bob error spending alice payment\n");
@@ -1980,9 +1984,9 @@ cJSON *swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap)
     return(retjson);
 }
 
-void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,char *pushaddr,char *subaddr)
+void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t amlp)
 {
-    char keystr[64],databuf[1024],*retstr,*datastr; cJSON *retjson,*addrjson; uint8_t data[512]; int32_t datalen,timeout,pushsock = -1,subsock = -1;
+    char keystr[64],databuf[1024],*retstr,*retstr2,*datastr,*pushaddr=0,*subaddr=0; cJSON *retjson,*addrjson; uint8_t data[512]; int32_t datalen,timeout,pushsock = -1,subsock = -1;
     if ( swap->connected == 1 )
         return;
     if ( swap->pushsock < 0 && swap->subsock < 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -1995,49 +1999,66 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         swap->pushsock = pushsock;
         swap->subsock = subsock;
     }
-    sprintf(keystr,"%08x-%08x",swap->I.req.requestid,swap->I.req.quoteid);
-    if ( pushaddr != 0 && subaddr != 0 )
+    if ( swap->subsock < 0 || swap->pushsock < 0 )
     {
-        if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
-            swap->connected = 1;
-        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\"}",pushaddr,subaddr);
-        datalen = (int32_t)strlen((char *)data) + 1;
-        printf("datalen.%d (%s)\n",datalen,(char *)data);
-        init_hexbytes_noT(databuf,data,datalen);
-        printf("%s -> %s\n",keystr,databuf);
-        if ( (retstr= _dex_kvupdate(myinfo,"KV",keystr,databuf,1)) != 0 )
-        {
-            printf("KVupdate.(%s)\n",retstr);
-            free(retstr);
-        }
+        printf("error getting nn_sockets\n");
+        return;
     }
-    else
+    sprintf(keystr,"%08x-%08x",swap->I.req.requestid,swap->I.req.quoteid);
+    if ( (retstr= _dex_kvsearch(myinfo,"KV",keystr)) != 0 )
     {
-        printf("connected.%d\n",swap->connected);
-        if ( (retstr= _dex_kvsearch(myinfo,"KV",keystr)) != 0 )
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
+            if ( (datastr= jstr(retjson,"value")) != 0 )
+            {
+                datalen = (int32_t)strlen(datastr) >> 1;
+                decode_hex((uint8_t *)databuf,datalen,datastr);
+                if ( (addrjson= cJSON_Parse(databuf)) != 0 )
+                {
+                    pushaddr = jstr(addrjson,"push");
+                    subaddr = jstr(addrjson,"sub");
+                    if ( pushaddr != 0 && subaddr != 0 )
+                    {
+                        printf("KV decoded (%s and %s) %d %d\n",pushaddr,subaddr,swap->pushsock,swap->subsock);
+                        if ( nn_connect(swap->pushsock,pushaddr) >= 0 && nn_connect(swap->subsock,subaddr) >= 0 )
+                            swap->connected = 1;
+                    }
+                    free_json(addrjson);
+                }
+            }
+            free_json(retjson);
+        }
+        printf("KVsearch.(%s) connected.%d socks.(%d %d)\n",retstr,swap->connected,swap->pushsock,swap->subsock);
+        free(retstr);
+    }
+    if ( swap->connected == 0 && amlp != 0 )
+    {
+        if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
+        {
+            // {"result":"success","pushaddr":"tcp://5.9.102.210:30002","subaddr":"tcp://5.9.102.210:30003","randipbits":3606291758,"coin":"KMD","tag":"6952562460568228137"}
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (datastr= jstr(retjson,"value")) != 0 )
+                pushaddr = jstr(retjson,"pushaddr");
+                subaddr = jstr(retjson,"subaddr");
+                if ( pushaddr != 0 && subaddr != 0 )
                 {
-                    datalen = (int32_t)strlen(datastr) >> 1;
-                    decode_hex((uint8_t *)databuf,datalen,datastr);
-                    if ( (addrjson= cJSON_Parse(databuf)) != 0 )
+                    if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
                     {
-                        pushaddr = jstr(addrjson,"push");
-                        subaddr = jstr(addrjson,"sub");
-                        if ( pushaddr != 0 && subaddr != 0 )
+                        swap->connected = 1;
+                        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\"}",pushaddr,subaddr);
+                        datalen = (int32_t)strlen((char *)data) + 1;
+                        printf("datalen.%d (%s)\n",datalen,(char *)data);
+                        init_hexbytes_noT(databuf,data,datalen);
+                        printf("%s -> %s\n",keystr,databuf);
+                        if ( (retstr2= _dex_kvupdate(myinfo,"KV",keystr,databuf,1)) != 0 )
                         {
-                            printf("KV decoded (%s and %s) %d %d\n",pushaddr,subaddr,swap->pushsock,swap->subsock);
-                            if ( nn_connect(swap->pushsock,pushaddr) >= 0 && nn_connect(swap->subsock,subaddr) >= 0 )
-                                swap->connected = 1;
+                            printf("KVupdate.(%s)\n",retstr2);
+                            free(retstr2);
                         }
-                        free_json(addrjson);
                     }
                 }
                 free_json(retjson);
             }
-            printf("KVsearch.(%s) connected.%d socks.(%d %d)\n",retstr,swap->connected,swap->pushsock,swap->subsock);
             free(retstr);
         }
     }
@@ -2057,7 +2078,7 @@ void basilisk_swaploop(void *_swap)
     {
         dex_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid)); //,60);
         if ( swap->I.iambob == 0 && swap->connected == 0 )
-            basilisk_psockinit(myinfo,swap,0,0);
+            basilisk_psockinit(myinfo,swap,0);
         if ( swap->connected != 0 )
         {
             printf("A r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
@@ -2246,7 +2267,7 @@ void basilisk_swaploop(void *_swap)
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    int32_t i,m,n; char *retstr; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj,*retjson; struct basilisk_swap *swap = 0;
+    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
     // statebits 1 -> client, 0 -> LP
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
@@ -2271,19 +2292,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            if ( statebits == 0 )//&& (swap->subsock < 0 || swap->pushsock < 0) )
-            {
-                if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
-                {
-                    // {"result":"success","pushaddr":"tcp://5.9.102.210:30002","subaddr":"tcp://5.9.102.210:30003","randipbits":3606291758,"coin":"KMD","tag":"6952562460568228137"}
-                    if ( (retjson= cJSON_Parse(retstr)) != 0 )
-                    {
-                        basilisk_psockinit(myinfo,swap,jstr(retjson,"pushaddr"),jstr(retjson,"subaddr"));
-                        free_json(retjson);
-                    }
-                    free(retstr);
-                }
-            } else basilisk_psockinit(myinfo,swap,0,0);
+            basilisk_psockinit(myinfo,swap,statebits == 0);
             if ( reinit != 0 )
             {
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
