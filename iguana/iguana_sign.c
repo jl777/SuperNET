@@ -1344,68 +1344,6 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     return(0);
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-
-P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC)
-{
-    struct vin_info V; uint8_t p2sh_rmd160[20],serialized[2096],spendscript[32],pubkeys[3][65],*pubkeyptrs[3]; int32_t spendlen,height = 0;
-    char msigaddr[64],*retstr; cJSON *retjson,*txobj; struct iguana_info *active;
-    bits256 signedtxid; char *signedtx;
-    struct iguana_msgtx msgtx;
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    if ( (active= iguana_coinfind(activecoin)) == 0 )
-        return(clonestr("{\"error\":\"activecoin isnt active\"}"));
-    if ( M > N || N > 3 )
-        return(clonestr("{\"error\":\"illegal M or N\"}"));
-    memset(&V,0,sizeof(V));
-    txobj = bitcoin_txcreate(active->symbol,active->chain->isPoS,0,coin->chain->normal_txversion,0);
-    if ( destaddress[0] != 0 && destamount > 0. )
-        bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
-    if ( destaddress2[0] != 0 && destamount2 > 0. )
-        bitcoin_txaddspend(active,txobj,destaddress2,destamount2 * SATOSHIDEN);
-    if ( pubA[0] != 0 && (retstr= _setVsigner(active,&V,0,pubA,wifA)) != 0 )
-        return(retstr);
-    if ( N >= 2 && pubB[0] != 0 && (retstr= _setVsigner(active,&V,1,pubB,wifB)) != 0 )
-        return(retstr);
-    if ( N == 3 && pubC[0] != 0 && (retstr= _setVsigner(active,&V,2,pubC,wifC)) != 0 )
-        return(retstr);
-    V.M = M, V.N = N, V.type = IGUANA_SCRIPT_P2SH;
-    V.p2shlen = bitcoin_MofNspendscript(p2sh_rmd160,V.p2shscript,0,&V);
-    spendlen = bitcoin_p2shspend(spendscript,0,p2sh_rmd160);
-    if ( pubA[0] != 0 )
-    {
-        decode_hex(pubkeys[0],(int32_t)strlen(pubA)>>1,pubA);
-        pubkeyptrs[0] = pubkeys[0];
-    }
-    if ( pubB[0] != 0 )
-    {
-        decode_hex(pubkeys[1],(int32_t)strlen(pubB)>>1,pubB);
-        pubkeyptrs[1] = pubkeys[1];
-    }
-    if ( pubC[0] != 0 )
-    {
-        decode_hex(pubkeys[2],(int32_t)strlen(pubC)>>1,pubC);
-        pubkeyptrs[2] = pubkeys[2];
-    }
-    bitcoin_txinput(active,txobj,vintxid,vinvout,0xffffffff,spendscript,spendlen,V.p2shscript,V.p2shlen,pubkeyptrs,N,0,0);
-    bitcoin_address(msigaddr,active->chain->p2shtype,V.p2shscript,V.p2shlen);
-    retjson = cJSON_CreateObject();
-    if ( bitcoin_verifyvins(active,height,&signedtxid,&signedtx,&msgtx,serialized,sizeof(serialized),&V,SIGHASH_ALL,1,V.suppress_pubkeys) == 0 )
-    {
-        jaddstr(retjson,"result","msigtx");
-        if ( signedtx != 0 )
-            jaddstr(retjson,"signedtx",signedtx), free(signedtx);
-        jaddbits256(retjson,"txid",signedtxid);
-    } else jaddstr(retjson,"error","couldnt sign tx");
-    jaddstr(retjson,"msigaddr",msigaddr);
-    return(jprint(retjson,1));
-}
-
 int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
 {
     uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 65536; char *privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
@@ -1535,43 +1473,4 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     return(complete);
 }
 
-STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
-{
-    char *signedtx = 0; struct vin_info *V; bits256 signedtxid; int32_t complete,numinputs = 1; struct iguana_msgtx msgtx; cJSON *retjson; int uselessbitcoin_error = 0;
-    retjson = cJSON_CreateObject();
-    if ( remoteaddr != 0 )
-        return(clonestr("{\"error\":\"no remote\"}"));
-    if ( myinfo->expiration == 0 )
-        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
-    //printf("rawtx.(%s) vins.(%s) privkeys.(%s) sighash.(%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),sighash);
-    if ( sighash == 0 || sighash[0] == 0 )
-        sighash = "ALL";
-    if ( strcmp(sighash,"ALL") != 0 )
-        jaddstr(retjson,"error","only sighash all (ALL) supported for now");
-    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
-    {
-        V = calloc(numinputs,sizeof(*V));
-        memset(&msgtx,0,sizeof(msgtx));
-        if ( (complete= iguana_signrawtransaction(myinfo,coin,coin->blocks.hwmchain.height,&msgtx,&signedtx,&signedtxid,V,numinputs,rawtx,vins,privkeys)) >= 0 )
-        {
-            if ( signedtx != 0 )
-            {
-                jaddstr(retjson,"result",signedtx);
-                jadd(retjson,"complete",complete!=0?jtrue():jfalse());
-                free(signedtx);
-            } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no transaction from verifyvins");
-        }
-        else if ( complete == -2 )
-            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "hex2json -> json2hex error");
-        else if ( complete == -1 )
-            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "couldnt load serialized tx or mismatched numinputs");
-        free(V);
-        //for (i=0; i<msgtx.tx_in; i++)
-        //    if ( msgtx.vins[i].redeemscript != 0 )
-        //        free(msgtx.vins[i].redeemscript), msgtx.vins[i].redeemscript = 0;
-    } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no rawtx or rawtx too big");
-    return(jprint(retjson,1));
-}
-
-#include "../includes/iguana_apiundefs.h"
 

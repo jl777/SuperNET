@@ -1026,6 +1026,126 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+STRING_AND_TWOINTS(mouse,change,name,x,y)
+{
+    printf("mouse (%s) x.%d y.%d\n",name,x,y);
+    return(clonestr("{\"result\":\"changed\"}"));
+}
+
+STRING_ARG(mouse,leave,name)
+{
+    printf("mouse (%s) leave\n",name);
+    return(clonestr("{\"result\":\"left\"}"));
+}
+
+STRING_AND_TWOINTS(mouse,click,name,x,y)
+{
+    printf("mouse (%s) x.%d y.%d click\n",name,x,y);
+    return(clonestr("{\"result\":\"click\"}"));
+}
+
+STRING_AND_INT(keyboard,key,name,c)
+{
+    printf(" KEY.(%s) c.%d (%c)\n",name,c,c);
+    return(clonestr("{\"result\":\"key\"}"));
+}
+
+STRING_AND_TWOINTS(mouse,image,name,x,y)
+{
+    printf("mouse CREATE (%s) x.%d y.%d\n",name,x,y);
+    return(clonestr("{\"result\":\"opened\"}"));
+}
+
+STRING_ARG(mouse,close,name)
+{
+    printf("mouse CLOSE (%s)\n",name);
+    return(clonestr("{\"result\":\"closed\"}"));
+}
+
+HASH_ARRAY_STRING(basilisk,geckotx,hash,vals,hexstr)
+{
+    struct iguana_info *btcd; char *retstr=0,*symbol; uint8_t *data,*allocptr,space[4096]; int32_t datalen; bits256 txid;
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
+    {
+        if ( (data= get_dataptr(BASILISK_HDROFFSET,&allocptr,&datalen,space,sizeof(space),hexstr)) != 0 )
+        {
+            txid = bits256_doublesha256(0,data,datalen);
+            retstr = gecko_sendrawtransaction(myinfo,symbol,data,datalen,txid,vals,hexstr);
+        } else retstr = clonestr("{\"error\":\"no tx submitted\"}");
+        if ( allocptr != 0 )
+            free(allocptr);
+        if ( retstr == 0 )
+            retstr = clonestr("{\"error\":\"couldnt create geckotx\"}");
+        return(retstr);
+    } return(clonestr("{\"error\":\"need symbol and chain and BTCD to create new gecko tx\"}"));
+}
+
+HASH_ARRAY_STRING(basilisk,geckoblock,hash,vals,hexstr)
+{
+    return(clonestr("{\"error\":\"geckoblock is an internal reporting function\"}"));
+}
+
+HASH_ARRAY_STRING(basilisk,geckoheaders,hash,vals,hexstr)
+{
+    return(clonestr("{\"error\":\"geckoheaders is an internal reporting function\"}"));
+}
+
+HASH_ARRAY_STRING(basilisk,geckoget,hash,vals,hexstr)
+{
+    struct iguana_info *btcd,*virt; char *symbol;
+    if ( (btcd= iguana_coinfind("BTCD")) != 0 && (symbol= jstr(vals,"symbol")) != 0 )
+    {
+        if ( (virt= iguana_coinfind(symbol)) != 0 )
+        {
+            basilisk_wait(myinfo,virt);
+            return(basilisk_respond_geckoget(myinfo,"GET",&coin->internaladdr,remoteaddr,0,vals,0,0,hash,0));
+        } else return(clonestr("{\"error\":\"geckoget needs virtualchain\"}"));
+    }
+    return(clonestr("{\"error\":\"geckoget needs BTCD\"}"));
+}
+
+TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)
+{
+    char pass[8192],fname2[1023],destfname[1024]; cJSON *retjson; bits256 wallethash,wallet2priv;
+    safecopy(pass,password,sizeof(pass));
+    safecopy(fname2,permanentfile,sizeof(fname2));
+    wallethash = wallet2priv = GENESIS_PRIVKEY;
+    if ( strlen(pass) == sizeof(wallethash)*2 && is_hexstr(pass,(int32_t)sizeof(bits256)*2) > 0 )
+        wallethash = bits256_conv(pass);
+    if ( strlen(fname2) == sizeof(wallet2priv)*2 && is_hexstr(fname2,(int32_t)sizeof(bits256)*2) > 0 )
+        wallet2priv = bits256_conv(fname2);
+    if ( (retjson= SuperNET_decryptedjson(destfname,pass,sizeof(pass),wallethash,fname2,sizeof(fname2),wallet2priv)) != 0 )
+    {
+        //printf("decrypt pass.(%s) fname2.(%s) -> destfname.(%s)\n",pass,fname2,destfname);
+        //obj = jduplicate(jobj(retjson,"payload"));
+        //jdelete(retjson,"payload");
+        //jadd(retjson,"result",obj);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"couldnt decrypt json file\"}"));
+}
+
+THREE_STRINGS(SuperNET,encryptjson,password,permanentfile,payload)
+{
+    char destfname[4096],pass[8192],fname2[1023]; cJSON *argjson,*retjson = cJSON_CreateObject();
+    safecopy(pass,password,sizeof(pass));
+    safecopy(fname2,permanentfile,sizeof(fname2));
+    argjson = jduplicate(json);
+    //printf("argjson.(%s)\n",jprint(argjson,0));
+    jdelete(argjson,"agent");
+    jdelete(argjson,"method");
+    jdelete(argjson,"password");
+    jdelete(argjson,"permanentfile");
+    jdelete(argjson,"timestamp");
+    jdelete(argjson,"tag");
+    if ( _SuperNET_encryptjson(myinfo,destfname,pass,sizeof(pass),fname2,sizeof(fname2),argjson) == 0 )
+    {
+        jaddstr(retjson,"result","success");
+        jaddstr(retjson,"filename",destfname);
+    } else jaddstr(retjson,"error","couldnt encrypt json file");
+    free_json(argjson);
+    return(jprint(retjson,1));
+}
+
 
 STRING_ARG(SuperNET,addr2rmd160,address)
 {
