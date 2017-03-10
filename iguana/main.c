@@ -24,7 +24,6 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 
-int32_t EncryptWallet;
 
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char *retjsonstr; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
@@ -1587,7 +1586,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         free(myinfo->decryptstr);
         myinfo->decryptstr = 0;
     }
-    if ( passphrase != 0 && passphrase[0] != 0 && EncryptWallet != 0 )
+    if ( passphrase != 0 && passphrase[0] != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
         if ( myinfo->decryptstr != 0 && (argjson= cJSON_Parse(myinfo->decryptstr)) != 0 )

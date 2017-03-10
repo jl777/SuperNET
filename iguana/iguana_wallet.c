@@ -15,7 +15,6 @@
 
 #include "iguana777.h"
 #include "exchanges/bitcoin.h"
-extern int32_t EncryptWallet;
 
 void scrubfree(char *sensitivestr)
 {
@@ -1393,7 +1392,6 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     strcpy(myinfo->password,password);
     if ( permanentfile != 0 )
         strcpy(myinfo->permanentfile,permanentfile);
-    EncryptWallet = 1;
     retstr = SuperNET_login(IGUANA_CALLARGS,myinfo->handle,myinfo->secret,myinfo->permanentfile,myinfo->password);
     //myinfo->expiration = (uint32_t)time(NULL) + 3600*24;
     struct iguana_waddress waddr; struct iguana_waccount *wacct;
@@ -1436,7 +1434,6 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
     //iguana_walletinitcheck(myinfo,coin);
     myinfo->dirty = (uint32_t)time(NULL);
     myinfo->expiration = 0;
-    EncryptWallet = 0;
     return(retstr);
 }
 
