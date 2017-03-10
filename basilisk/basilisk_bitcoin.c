@@ -567,12 +567,12 @@ int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,ch
         coin->estimatedfee = iguana_getestimatedfee(myinfo,coin);
     if ( signedtx != 0 )
     {
-        txfee = coin->estimatedfee * (strlen(signedtx) + numvins);
+        txfee = coin->estimatedfee * (strlen(signedtx)/2 + numvins);
         free(signedtx);
     }
     else if ( rawtx != 0 )
     {
-        txfee = coin->estimatedfee * (strlen(rawtx) + numvins * 110);
+        txfee = coin->estimatedfee * (strlen(rawtx)/2 + numvins * 110);
         free(rawtx);
     }
     return(txfee);
@@ -769,7 +769,7 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         addresses = iguana_getaddressesbyaccount(myinfo,coin,"*");
         jadd(valsobj,"addresses",addresses);
     }
-    //printf("use addresses.(%s)\n",jprint(addresses,0));
+    printf("use addresses.(%s)\n",jprint(addresses,0));
     //printf("(%s) vals.(%s) change.(%s) spend.%s\n",coin->symbol,jprint(valsobj,0),changeaddr,spendscriptstr);
     if ( changeaddr == 0 || changeaddr[0] == 0 || spendscriptstr == 0 || spendscriptstr[0] == 0 )
         return(clonestr("{\"error\":\"invalid changeaddr or spendscript or addresses\"}"));
@@ -798,7 +798,13 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                 } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
             rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
-            //printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
+            if ( txfee == 0 )
+            {
+                txfee = iguana_esttxfee(myinfo,coin,rawtx,0,vins != 0 ? cJSON_GetArraySize(vins): 0);
+                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
+                printf("new txfee %.8f\n",dstr(txfee));
+            }
+            printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
         }
         if ( rawtx != 0 )
         {

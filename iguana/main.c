@@ -24,6 +24,8 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 
+int32_t EncryptWallet;
+
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char *retjsonstr; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
 uint16_t SuperNET_API2num(char *agent,char *method)
@@ -683,6 +685,7 @@ void iguana_ensuredirs()
     sprintf(dirname,"%s",GLOBAL_GENESISDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_CONFSDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_DBDIR), OS_ensure_directory(dirname);
+    sprintf(dirname,"%s/SWAPS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/TRANSACTIONS",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s/purgeable",GLOBAL_DBDIR), OS_ensure_directory(dirname);
     sprintf(dirname,"%s",GLOBAL_TMPDIR), OS_ensure_directory(dirname);
@@ -747,16 +750,23 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; char BTCaddr[64],KMDaddr[64]; bits256 privkey; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
     while ( 1 )
     {
-        t = (uint32_t)time(NULL);
-        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 )
         {
-            jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+            privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+            // if BTC has arrived in deposit address, invoke DEX -> KMD
+            // if BTC has arrived in destination address, invoke DEX -> BTC
+            jumblr_DEXcheck(myinfo,coin,BTCaddr,KMDaddr,privkey);
+            t = (uint32_t)time(NULL);
+            if ( myinfo->jumblr_passphrase[0] != 0 && (t % (120 * mult)) < 60 )
+            {
+                jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+            }
+            //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         }
-        //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         sleep(55);
     }
 }
@@ -778,6 +788,7 @@ void iguana_launchdaemons(struct supernet_info *myinfo)
     printf("launch mainloop\n");
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)DEX_explorerloop,(void *)myinfo);
     OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)jumblr_loop,(void *)myinfo);
+    OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)dpow_psockloop,(void *)myinfo);
     mainloop(myinfo);
 }
 
@@ -1576,7 +1587,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         free(myinfo->decryptstr);
         myinfo->decryptstr = 0;
     }
-    if ( passphrase != 0 && passphrase[0] != 0 )
+    if ( passphrase != 0 && passphrase[0] != 0 && EncryptWallet != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
         if ( myinfo->decryptstr != 0 && (argjson= cJSON_Parse(myinfo->decryptstr)) != 0 )
@@ -1604,7 +1615,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             free(str);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
-    } else return(clonestr("{\"error\":\"need passphrase\"}"));
+    } else return(clonestr("{\"error\":\"need passphrase or wallet doesnt exist\"}"));
     return(SuperNET_activehandle(IGUANA_CALLARGS));
 }
 
@@ -1742,6 +1753,7 @@ void iguana_main(void *arg)
     myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     dex_init(myinfo);
+    myinfo->psockport = 30000;
     if ( arg != 0 )
     {
         if ( strcmp((char *)arg,"OStests") == 0 )
@@ -1768,6 +1780,7 @@ void iguana_main(void *arg)
     portable_mutex_init(&myinfo->pending_mutex);
     portable_mutex_init(&myinfo->dpowmutex);
     portable_mutex_init(&myinfo->notarymutex);
+    portable_mutex_init(&myinfo->psockmutex);
 #if LIQUIDITY_PROVIDER
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("nxtae"),0);
     myinfo->tradingexchanges[myinfo->numexchanges++] = exchange_create(clonestr("bitcoin"),0);

@@ -49,6 +49,8 @@ HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout);
 TWO_STRINGS(dex,listspent,symbol,address);
 TWO_STRINGS(dex,getbalance,symbol,address);
 STRING_ARG(dex,explorer,symbol);
+STRING_ARG(dex,getmessage,argstr);
+STRING_ARG(dex,psock,argstr);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
@@ -57,6 +59,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 TWO_STRINGS(basilisk,refresh,symbol,address);
+ZERO_ARGS(basilisk,cancelrefresh);
 STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
@@ -214,6 +217,7 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+ZERO_ARGS(InstantDEX,init);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);

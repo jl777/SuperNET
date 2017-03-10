@@ -59,12 +59,14 @@
 #include "../crypto777/nanosrc/nn.h"
 #include "../crypto777/nanosrc/bus.h"
 #include "../crypto777/nanosrc/pubsub.h"
+#include "../crypto777/nanosrc/pipeline.h"
 #include "../crypto777/nanosrc/reqrep.h"
 #include "../crypto777/nanosrc/tcp.h"
 #else
 #include "/usr/local/include/nanomsg/nn.h"
 #include "/usr/local/include/nanomsg/bus.h"
 #include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/pipeline.h"
 #include "/usr/local/include/nanomsg/reqrep.h"
 #include "/usr/local/include/nanomsg/tcp.h"
 #endif
@@ -88,7 +90,16 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct smartaddress
+{
+    bits256 privkey,pubkey;
+    uint8_t pubkey33[33],rmd160[20];
+};
+
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
+
+#define PSOCK_IDLETIMEOUT 600
+struct psock { uint32_t lasttime; int32_t pullsock,pubsock; uint16_t pushport,subport; };
 
 #define JUMBLR_DEPOSITPREFIX "deposit "
 struct jumblr_item
@@ -111,7 +122,7 @@ struct message_info { int32_t msgcount; bits256 refhash,msghashes[64]; uint32_t 
 struct supernet_info
 {
     struct supernet_address myaddr;
-    bits256 persistent_priv,privkey;
+    bits256 persistent_priv,privkey,jumblr_pubkey,jumblr_depositkey;
     uint8_t persistent_pubkey33[33];
     char ipaddr[64],NXTAPIURL[512],secret[4096],password[4096],rpcsymbol[64],handle[1024],permanentfile[1024],jumblr_passphrase[1024];
     char *decryptstr;
@@ -149,7 +160,33 @@ struct supernet_info
     uint8_t logs[256],exps[510];
     struct message_info msgids[8192];
     double *svmfeatures;
+    uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
+    FILE *swapsfp;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh;
+};
+
+struct basilisk_swapmessage
+{
+    bits256 srchash,desthash;
+    uint32_t crc32,msgbits,quoteid,datalen;
+    uint8_t *data;
+};
+
+struct basilisk_swap
+{
+    struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
+    void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
+    int32_t subsock,pushsock,connected; uint32_t lasttime;
+    FILE *fp;
+    bits256 persistent_privkey,persistent_pubkey;
+    struct basilisk_swapinfo I;
+    struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
+    bits256 privkeys[INSTANTDEX_DECKSIZE];
+    struct basilisk_swapmessage *messages; int32_t nummessages;
+    uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
+    uint8_t persistent_pubkey33[33],pad[15],verifybuf[65536];
+
 };
 
 #include "../includes/iguana_funcs.h"

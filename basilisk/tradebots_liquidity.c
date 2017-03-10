@@ -932,6 +932,8 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     li.ask = jdouble(vals,"ask");
     if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
         li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.001;
+    if ( strcmp(li.base,"KMD") == 0 && strcmp(li.rel,"BTC") == 0 && li.minvol > 100. )
+        li.minvol = 100.;
     if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
         li.maxvol = li.minvol;
     if ( (li.totalvol= jdouble(vals,"total")) < li.maxvol )
@@ -1129,6 +1131,8 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
+    printf("balancing trade\n");
+    return;
     if ( swap->balancingtrade == 0 )
         _default_swap_balancingtrade(myinfo,swap,iambob);
     else (*swap->balancingtrade)(myinfo,swap,iambob);

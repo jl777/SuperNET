@@ -482,6 +482,7 @@ int32_t basilisk_relayid(struct supernet_info *myinfo,uint32_t ipbits)
 #include "basilisk_ether.c"
 #include "basilisk_waves.c"
 #include "basilisk_lisk.c"
+#include "smartaddress.c"
 
 #include "basilisk_MSG.c"
 #include "tradebots_marketmaker.c"
@@ -1085,9 +1086,16 @@ int32_t utxocmp(cJSON *utxo,cJSON *utxo2)
     else return(-1);
 }
 
+ZERO_ARGS(basilisk,cancelrefresh)
+{
+    myinfo->cancelrefresh = 1;
+    return(clonestr("{\"result\":\"refresh cancel started\"}"));
+}
+
 TWO_STRINGS(basilisk,refresh,symbol,address)
 {
     cJSON *array=0,*array2=0,*array3,*item,*item2; char *retstr; int32_t i,j,n,m,vout; bits256 txid;
+    myinfo->cancelrefresh = 0;
     if ( symbol != 0 && iguana_isnotarychain(symbol) >= 0 && address != 0 && address[0] != 0 )
     {
         if ( (retstr= _dex_listunspent(myinfo,symbol,address)) != 0 )
@@ -1110,6 +1118,8 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
             //printf("MERGE %s and %s\n",jprint(array,0),jprint(array2,0));
             for (j=0; j<m; j++)
             {
+                if ( myinfo->cancelrefresh != 0 )
+                    break;
                 item2 = jitem(array2,j);
                 for (i=0; i<n; i++)
                     if ( utxocmp(jitem(array,i),item2) == 0 )
@@ -1130,6 +1140,8 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
             array3 = cJSON_CreateArray();
             for (i=0; i<n; i++)
             {
+                if ( myinfo->cancelrefresh != 0 )
+                    break;
                 item = jitem(array,i);
                 txid = jbits256(item,"txid");
                 vout = jint(item,"vout");
@@ -1151,9 +1163,11 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
                 }
             }
             free_json(array);
+            myinfo->cancelrefresh = 0;
             return(jprint(array3,1));
         } else return(clonestr("[]"));
     }
+    myinfo->cancelrefresh = 0;
     return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
 }
 
