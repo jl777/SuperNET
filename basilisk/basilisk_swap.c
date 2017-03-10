@@ -1187,7 +1187,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     }
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
-    return(0);
+    return(nextbits);
 }
 
 int32_t basilisk_priviextract(struct supernet_info *myinfo,struct iguana_info *coin,char *name,bits256 *destp,uint8_t secret160[20],bits256 srctxid,int32_t srcvout)
@@ -1946,8 +1946,8 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                 {
                     for (j=datalen=0; j<32; j++)
                         data[datalen++] = swap->I.privAm.bytes[j];
-                    printf("send privAm\n");
                     swap->I.statebits |= basilisk_swapsend(myinfo,swap,0x40000,data,datalen,0x20000,swap->I.crcs_mypriv);
+                    printf("send privAm %x\n",swap->I.statebits);
                 }
             }
             else if ( (swap->I.statebits & 0x40000) == 0 )
