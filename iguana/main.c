@@ -1535,6 +1535,7 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
+    extern int32_t EncryptWallet;
     char *str,*decryptstr = 0; cJSON *argjson,*item,*walletitem;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));
@@ -1585,7 +1586,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
         free(myinfo->decryptstr);
         myinfo->decryptstr = 0;
     }
-    if ( passphrase != 0 && passphrase[0] != 0 )
+    if ( passphrase != 0 && passphrase[0] != 0 && EncryptWallet != 0 )
     {
         SuperNET_setkeys(myinfo,passphrase,(int32_t)strlen(passphrase),1);
         if ( myinfo->decryptstr != 0 && (argjson= cJSON_Parse(myinfo->decryptstr)) != 0 )
@@ -1613,7 +1614,7 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
             free(str);
         myinfo->expiration = (uint32_t)(time(NULL) + 3600);
         return(SuperNET_activehandle(IGUANA_CALLARGS));
-    } else return(clonestr("{\"error\":\"need passphrase\"}"));
+    } else return(clonestr("{\"error\":\"need passphrase or wallet doesnt exist\"}"));
     return(SuperNET_activehandle(IGUANA_CALLARGS));
 }
 
