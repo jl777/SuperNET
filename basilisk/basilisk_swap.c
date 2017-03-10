@@ -1173,7 +1173,11 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     if ( datalen > 0 )
         memcpy(&buf[offset],data,datalen), offset += datalen;
     if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
+    {
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
+        if ( sentbytes < 0 )
+            swap->connected = 0;
+    }
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
     return(0);
@@ -1767,6 +1771,8 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
     int32_t j,datalen,retval = 0;
     while ( ((swap->I.otherstatebits & 0x80) == 0 || (swap->I.statebits & 0x80) == 0) && retval == 0 && time(NULL) < swap->I.expiration )
     {
+        if ( swap->connected == 0 )
+            basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         printf("D r%u/q%u swapstate.%x otherstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits);
         if ( (swap->I.statebits & 0x80) == 0 ) // wait for fee
         {
@@ -1789,6 +1795,8 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
     }
     while ( retval == 0 && time(NULL) < swap->I.expiration )  // both sides have setup required data and paid txfee
     {
+        if ( swap->connected == 0 )
+            basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         //if ( (rand() % 30) == 0 )
             printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits);
         if ( swap->I.iambob != 0 )
@@ -2077,8 +2085,8 @@ void basilisk_swaploop(void *_swap)
     while ( (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
     {
         dex_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid)); //,60);
-        if ( swap->I.iambob == 0 && swap->connected == 0 )
-            basilisk_psockinit(myinfo,swap,0);
+        if ( swap->connected == 0 )
+            basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         if ( swap->connected != 0 )
         {
             printf("A r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
@@ -2101,6 +2109,8 @@ void basilisk_swaploop(void *_swap)
     }
     while ( retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
+        if ( swap->connected == 0 )
+            basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         printf("B r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_sendchoosei(myinfo,swap,data,maxlen);
@@ -2132,6 +2142,8 @@ void basilisk_swaploop(void *_swap)
     }
     while ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
     {
+        if ( swap->connected == 0 )
+            basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         //dpow_nanomsg_update(myinfo);
         //dex_updateclient(myinfo);
         //printf("sendstate.%x\n",swap->I.statebits);
