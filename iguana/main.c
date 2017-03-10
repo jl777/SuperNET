@@ -24,6 +24,8 @@
 #include "../pnacl_main.h"
 #include "iguana777.h"
 
+int32_t EncryptWallet;
+
 struct iguana_jsonitem { struct queueitem DL; struct supernet_info *myinfo; uint32_t fallback,expired,allocsize; char *retjsonstr; char remoteaddr[64]; uint16_t port; char jsonstr[]; };
 
 uint16_t SuperNET_API2num(char *agent,char *method)
@@ -1535,7 +1537,6 @@ struct supernet_info *SuperNET_accountfind(cJSON *json)
 
 FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 {
-    extern int32_t EncryptWallet;
     char *str,*decryptstr = 0; cJSON *argjson,*item,*walletitem;
     if ( remoteaddr != 0 )
         return(clonestr("{\"error\":\"no remote\"}"));

@@ -22,6 +22,7 @@
 #include "../includes/curve25519.h"
 #include "../includes/cJSON.h"
 
+extern int32_t EncryptWallet;
 
 /*
 if ( 0 )
@@ -364,7 +365,6 @@ void SuperNET_parsemyinfo(struct supernet_info *myinfo,cJSON *msgjson)
     SuperNET_setkeys(myinfo,myinfo->persistent_priv.bytes,sizeof(myinfo->persistent_priv),0);
 }
 
-int32_t Encryptwallet;
 char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
 {
     long allocsize; cJSON *msgjson,*json=0; uint32_t r; bits256 wallethash,wallet2priv; int32_t len,c;
@@ -377,7 +377,7 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
         SuperNET_parsemyinfo(myinfo,msgjson);
         free_json(msgjson);
     }
-    else if ( Encryptwallet != 0 )
+    else if ( EncryptWallet != 0 )
     {
         if ( bits256_nonz(myinfo->persistent_priv) == 0 )
         {
