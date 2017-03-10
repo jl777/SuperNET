@@ -1176,7 +1176,13 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     {
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
         if ( sentbytes < 0 )
+        {
+            if ( swap->pushsock >= 0 )
+                nn_close(swap->pushsock), swap->pushsock = -1;
+            if ( swap->subsock >= 0 )
+                nn_close(swap->subsock), swap->subsock = -1;
             swap->connected = 0;
+        }
     }
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
     free(buf);
