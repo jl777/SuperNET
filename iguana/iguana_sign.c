@@ -1361,14 +1361,14 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
-            //printf("back from bitcoin_hex2json\n");
+            printf("back from bitcoin_hex2json\n");
         } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
             memset(msgtx,0,sizeof(*msgtx));
             if ( iguana_rwmsgtx(coin,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins,V->suppress_pubkeys) > 0 && numinputs == msgtx->tx_in )
             {
-                //printf("back rwmsgtx vins.%p\n",msgtx->vins);
+                printf("back rwmsgtx vins.%p\n",msgtx->vins);
                 memset(pubkeys,0,sizeof(pubkeys));
                 memset(privkeys,0,sizeof(privkeys));
                 if ( (n= cJSON_GetArraySize(privkeysjson)) > 0 )
@@ -1385,7 +1385,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                             iguana_ensure_privkey(myinfo,coin,privkey);
                     }
                 }
-                //printf("after privkeys tx_in.%d\n",msgtx->tx_in);
+                printf("after privkeys tx_in.%d\n",msgtx->tx_in);
                 for (i=0; i<msgtx->tx_in; i++)
                 {
                     if ( msgtx->vins[i].p2shlen != 0 )
@@ -1453,6 +1453,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     }
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
+                printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     int32_t tmp; char str[65];
@@ -1461,7 +1462,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                         printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
                     } else printf("%s signed\n",bits256_str(str,*signedtxidp));
-                }
+                } else printf("complete.%d\n",complete);
             }
         } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
