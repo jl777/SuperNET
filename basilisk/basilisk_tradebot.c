@@ -69,12 +69,12 @@ int32_t basilisk_txitem(struct supernet_info *myinfo,struct basilisk_swap *swap,
         decode_hex((void *)&rawtx->I,sizeof(rawtx->I),hexstr);
         if ( (hexstr= jstr(obj,"txbytes")) != 0 && strlen(hexstr) == rawtx->I.datalen*2 )
         {
-            if ( rawtx->txbytes == 0 )
+            /*if ( rawtx->txbytes == 0 )
             {
                 printf("free (%s) txbytes\n",name);
                 free(rawtx->txbytes);
             }
-            rawtx->txbytes = calloc(1,rawtx->I.datalen);
+            rawtx->txbytes = calloc(1,rawtx->I.datalen);*/
             decode_hex((void *)rawtx->txbytes,rawtx->I.datalen,hexstr);
         }
         printf("PROCESS.(%s)\n",jprint(obj,0));

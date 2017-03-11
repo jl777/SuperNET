@@ -46,7 +46,7 @@ struct basilisk_swap;
 
 struct basilisk_rawtxinfo
 {
-    char destaddr[64];
+    char destaddr[64],coinstr[16];
     bits256 txid,signedtxid,actualtxid;
     uint64_t amount,change,inputsum;
     int32_t redeemlen,datalen,completed,vintype,vouttype,numconfirms,spendlen,secretstart,suppress_pubkeys;
@@ -60,8 +60,9 @@ struct basilisk_rawtx
     struct iguana_msgtx msgtx;
     struct basilisk_rawtxinfo I;
     struct iguana_info *coin;
+    char vinstr[4096];
     cJSON *vins;
-    uint8_t *txbytes,spendscript[512],redeemscript[1024],extraspace[1024];
+    uint8_t txbytes[8192],spendscript[512],redeemscript[1024],extraspace[1024];
 };
 
 struct basilisk_swapinfo
