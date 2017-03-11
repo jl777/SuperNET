@@ -713,6 +713,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
         }
         free(sigser);
         jadd(json,"vin",vinarray);
+        msg->tx_in = cJSON_GetArraySize(vinarray);
         jaddnum(json,"numvins",msg->tx_in);
     }
     if ( voutarray != 0 )
