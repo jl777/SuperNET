@@ -17,6 +17,8 @@
 #define H_IGUANAFUNCS_H
 #define SIGHASH_ALL 1
 
+cJSON *SuperNET_helpjson();
+
 // peers
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin);
