@@ -499,8 +499,8 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swaps
         bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,pubkey33,33);
         printf("set change address.(%s)\n",rawtx->coin->changeaddr);
     }
-    //if ( strcmp(rawtx->coin->symbol,"BTC") == 0 )
-    //    txfee = 0;
+    if ( strcmp(rawtx->coin->symbol,"BTC") == 0 )
+        txfee = 0;
     init_hexbytes_noT(scriptstr,script,scriptlen);
     basilisktag = (uint32_t)rand();
     valsobj = cJSON_CreateObject();
@@ -732,7 +732,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
         for (i=0; i<32; i++)
             revAm.bytes[i] = swap->I.privAm.bytes[31-i];
         len = basilisk_swapuserdata(userdata,revAm,0,swap->I.myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
-        char str[65],str2[65]; printf("bobpaid.(%s) (%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
+        char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
         if ( (retval= basilisk_rawtx_sign(myinfo,swap->bobcoin->longestchain,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1)) == 0 )
         {
             for (i=0; i<swap->bobpayment.I.datalen; i++)
