@@ -395,7 +395,7 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
     struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i; char *retstr; cJSON *retjson;
     if ( array == 0 )
         array = cJSON_CreateArray();
-    printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
+    //printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
     if ( (retstr= bitcoinrpc_validateaddress(myinfo,coin,0,0,coinaddr)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -478,7 +478,7 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
             }
             ptr = prev;
         }
-    } else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
+    } //else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
     return(array);
 }
 
