@@ -833,6 +833,7 @@ cJSON *bitcoin_data2json(struct iguana_info *coin,int32_t height,bits256 *txidp,
         jaddstr(txobj,"error","couldnt decode transaction");
         jaddstr(txobj,"coin",coin->symbol);
     }
+    printf("msgtx.(%s)\n",jprint(txobj,0));
     if ( n != len )
     {
         int32_t i;
