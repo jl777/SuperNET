@@ -88,8 +88,3 @@ int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,uin
     return(0);
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-
-#include "../includes/iguana_apiundefs.h"

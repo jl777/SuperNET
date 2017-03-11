@@ -191,7 +191,10 @@ cJSON *SuperNET_helpjson()
 
 #include "../includes/iguana_apideclares.h"
     
+#undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
+
     if ( array != 0 )
         jadd(json,"API",array);
     jadd(json,"agents",agents);
@@ -907,6 +910,7 @@ TWO_STRINGS(SuperNET,html,agentform,htmlfile)
 }
        
 #undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
 
 char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,cJSON *json,char *remoteaddr)
@@ -1025,8 +1029,9 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_ARRAY_OBJ_STRING IGUANA_DISPATCH_SAOS
 
 #include "../includes/iguana_apideclares.h"
-//#undef IGUANA_ARGS
     
+#undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
     char errstr[512];
     sprintf(errstr,"{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}",agentstr,method);

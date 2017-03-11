@@ -1207,35 +1207,3 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         }
     }
 }
-
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-TWO_STRINGS(tradebot,gensvm,base,rel)
-{
-#ifdef _WIN
-    return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
-#else
-    int32_t numfeatures = 317*61;
-    struct tradebot_arbpair *pair;
-    if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
-    {
-        tradebots_calcanswers(pair);
-        ocas_gen(pair->refc,numfeatures,0,(int32_t)(ftell(pair->fp) / sizeof(pair->rawfeatures)));
-        return(clonestr("{\"result\":\"success\"}"));
-    } else return(clonestr("{\"error\":\"cant find arbpair\"}"));
-#endif
-}
-
-ZERO_ARGS(tradebot,openliquidity)
-{
-    int32_t i; cJSON *array = cJSON_CreateArray();
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        if ( myinfo->linfos[i].base[0] != 0 )
-            jaddi(array,linfo_json(&myinfo->linfos[i]));
-    }
-    return(jprint(array,1));
-}
-
-#include "../includes/iguana_apiundefs.h"
