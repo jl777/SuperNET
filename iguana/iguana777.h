@@ -21,12 +21,16 @@
 #define iguana777_net_h
 
 #if defined(_WIN32) || defined(_WIN64)
+#ifndef WIN32
 #define WIN32
+#endif
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__)) && \
 !defined(WIN32) && !defined(__SYMBIAN32__)
+#ifndef WIN32
 #define WIN32
+#endif
 #endif
 
 #ifdef WIN32

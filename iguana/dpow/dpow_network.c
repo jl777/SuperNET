@@ -256,7 +256,7 @@ void dpow_psockloop(void *_ptr)
                     ptr->lasttime = now;
                     if ( (sentbytes= nn_send(ptr->pubsock,buf,size,0)) > 0 )
                     {
-                        printf("PSOCKS[%d] of %d (%u %u) -> %d/%d bytes\n",i,myinfo->numpsocks,ptr->pushport,ptr->subport,size,sentbytes);
+                        //printf("PSOCKS[%d] of %d (%u %u) -> %d/%d bytes\n",i,myinfo->numpsocks,ptr->pushport,ptr->subport,size,sentbytes);
                         nonz++;
                     }
                 }
