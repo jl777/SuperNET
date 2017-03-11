@@ -1037,9 +1037,9 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 FILE *basilisk_swap_save(struct supernet_info *myinfo,struct basilisk_swap *swap,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    FILE *fp; char fname[512];
+    FILE *fp=0; char fname[512];
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,rp->requestid,rp->quoteid), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"rb+")) == 0 )
+    if ( 0 && (fp= fopen(fname,"rb+")) == 0 )
     {
         if ( (fp= fopen(fname,"wb+")) != 0 )
         {
