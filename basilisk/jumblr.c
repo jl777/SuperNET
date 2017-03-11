@@ -407,7 +407,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,ch
                 free(retstr);
             }
             // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
-        } else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
+        } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
     } else printf("null kmdprice %.8f\n",kmdprice);
 }
 

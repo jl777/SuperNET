@@ -641,7 +641,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     while ( loadheight < height-lag )
     {
         flag = 0;
-        //if ( (loadheight % 10000) == 0 )
+        if ( (loadheight % 10000) == 0 )
             printf("loading %s ht.%d vs height.%d - lag.%d kmdheight.%d\n",coin->symbol,loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
