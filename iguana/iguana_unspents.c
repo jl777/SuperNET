@@ -913,7 +913,7 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                 {
                     if ( firstslot >= 0 )
                     {
-                        //printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
+                        printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
                         coin->markedunspents[firstslot] = txid;
                         coin->markedunspents[firstslot].ushorts[15] = vout;
                         if ( (0) && coin->utxofp == 0 )

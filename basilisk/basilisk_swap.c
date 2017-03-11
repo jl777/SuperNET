@@ -1785,11 +1785,13 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     if ( rawtx == &swap->alicepayment )
                     {
                         basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,triggertxid);
-                        basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim);
-                        basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
                     }
                     else if ( rawtx == &swap->alicespend )
+                    {
                         basilisk_dontforget(myinfo,swap,&swap->alicespend,0,triggertxid);
+                        //basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim);
+                        basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
+                    }
                 }
                 //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 if ( suppress_swapsend == 0 )
