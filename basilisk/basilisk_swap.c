@@ -522,7 +522,7 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swaps
     V = calloc(256,sizeof(*V));
     if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)) != 0 )
     {
-        //printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
+        printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
         flag = 0;
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
