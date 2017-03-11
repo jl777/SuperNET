@@ -1412,6 +1412,7 @@ int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoin
             rawtx->coin = iguana_coinfind(rawtx->I.coinstr);
             if ( rawtx->vinstr[0] != 0 )
                 rawtx->vins = cJSON_Parse(rawtx->vinstr);
+            printf("loaded.%s\n",rawtx->name);
             return(0);
         }
     }
@@ -1427,20 +1428,27 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
             fread(&swap->I,1,sizeof(swap->I),fp);
-            basilisk_swap_loadtx(&swap->bobdeposit,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->bobpayment,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->alicepayment,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->myfee,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->otherfee,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->aliceclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->alicespend,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->bobreclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->bobspend,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->bobrefund,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            basilisk_swap_loadtx(&swap->alicereclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
-            fread(swap->privkeys,1,sizeof(swap->privkeys),fp);
-            fread(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
-            fread(swap->deck,1,sizeof(swap->deck),fp);
+            if ( swap->bobcoin == 0 )
+                swap->bobcoin = iguana_coinfind(swap->I.req.dest);
+            if ( swap->alicecoin == 0 )
+                swap->alicecoin = iguana_coinfind(swap->I.req.src);
+            if ( swap->alicecoin != 0 && swap->bobcoin == 0 )
+            {
+                basilisk_swap_loadtx(&swap->bobdeposit,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->bobpayment,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->alicepayment,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->myfee,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->otherfee,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->aliceclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->alicespend,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->bobreclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->bobspend,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->bobrefund,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                basilisk_swap_loadtx(&swap->alicereclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
+                fread(swap->privkeys,1,sizeof(swap->privkeys),fp);
+                fread(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
+                fread(swap->deck,1,sizeof(swap->deck),fp);
+            } else printf("missing coins (%p %p)\n",swap->bobcoin,swap->alicecoin);
             fclose(fp);
         }
     }
@@ -1723,7 +1731,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
             }
         }
         return(nextbits);
-    } else printf("error from basilisk_swapdata_rawtx %p len.%d\n",rawtx->txbytes,rawtx->I.datalen);
+    } else printf("error from basilisk_swapdata_rawtx.%s %p len.%d\n",rawtx->name,rawtx->txbytes,rawtx->I.datalen);
     return(0);
 }
 
@@ -2183,6 +2191,7 @@ void basilisk_swaploop(void *_swap)
         printf("couldnt establish connection\n");
         retval = -1;
     }
+    basilisk_swap_saveupdate(myinfo,swap);
     while ( retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
         if ( swap->connected == 0 )
