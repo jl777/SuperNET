@@ -1162,7 +1162,6 @@ void iguana_bitmap(char *space,int32_t max,char *name)
     }
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 STRING_AND_TWOINTS(mouse,change,name,x,y)

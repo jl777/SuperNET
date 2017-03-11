@@ -1344,7 +1344,6 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     return(0);
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 

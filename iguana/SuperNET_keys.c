@@ -421,7 +421,6 @@ char *SuperNET_keysinit(struct supernet_info *myinfo,char *argjsonstr)
     return(coinargs);
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS(SuperNET,decryptjson,password,permanentfile)

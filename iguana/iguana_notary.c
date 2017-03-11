@@ -222,7 +222,6 @@ void dpow_addresses()
     printf("Numnotaries.%d\n",i);
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 TWO_STRINGS(iguana,dpow,symbol,pubkey)

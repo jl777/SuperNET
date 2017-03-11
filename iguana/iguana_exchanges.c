@@ -1174,7 +1174,6 @@ cJSON *iguana_pricesarray(struct supernet_info *myinfo,char *exchange,char *base
     return(array);
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 THREE_STRINGS_AND_THREE_INTS(InstantDEX,orderbook,exchange,base,rel,depth,allfields,ignore)

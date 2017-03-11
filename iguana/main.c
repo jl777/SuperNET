@@ -1022,7 +1022,6 @@ void SuperNET_parsepeers(struct supernet_info *myinfo,cJSON *array,int32_t n,int
     }
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 STRING_ARG(SuperNET,addr2rmd160,address)

@@ -951,7 +951,6 @@ void basilisks_init(struct supernet_info *myinfo)
     printf("Basilisk initialized\n");
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr)

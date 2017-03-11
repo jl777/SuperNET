@@ -1797,7 +1797,6 @@ void iguana_utxoaddrs_purge(struct iguana_info *coin)
     }
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 STRING_AND_INT(iguana,snapshot,symbol,height)

@@ -566,7 +566,6 @@ cJSON *iguana_peersjson(struct iguana_info *coin,int32_t addronly)
     else return(array);
 }
 
-#include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
 
 STRING_ARG(iguana,peers,activecoin)

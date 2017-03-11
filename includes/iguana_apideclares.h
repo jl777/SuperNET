@@ -16,6 +16,8 @@
 #ifndef _IGUANA_APIDEC_H_
 #define _IGUANA_APIDEC_H_
 
+#include "iguana_apidefs.h"
+
 STRING_ARG(dpow,pending,fiat);
 ZERO_ARGS(dpow,notarychains);
 STRING_ARG(dpow,active,maskhex);
