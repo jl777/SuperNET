@@ -110,7 +110,7 @@ int32_t tradebots_calcrawfeatures(struct tradebot_arbpair *pair)
     }
     if ( n > sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures) )
     {
-        printf("n.%d too many for rawfeatures %ld\n",n,sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures));
+        printf("n.%d too many for rawfeatures %d\n",n,(int32_t)(sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)));
         exit(-1);
     }
     return(n);
@@ -160,7 +160,7 @@ struct tradebot_arbpair *tradebots_arbpair_create(char *base,char *rel)
         pair->fp = OS_appendfile(fname);
         if ( (ftell(pair->fp) % sizeof(pair->rawfeatures)) != 0 )
         {
-            printf("misalinged rawfeatures %ld %ld\n",ftell(pair->fp),(ftell(pair->fp) % sizeof(pair->rawfeatures)));
+            printf("misalinged rawfeatures %d %d\n",(uint32_t)ftell(pair->fp),(uint32_t)(ftell(pair->fp) % sizeof(pair->rawfeatures)));
         }
         fseek(pair->fp,(ftell(pair->fp) / sizeof(pair->rawfeatures)) * sizeof(pair->rawfeatures) - sizeof(pair->rawfeatures),SEEK_SET);
         if ( fread(pair->rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
