@@ -274,7 +274,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         memset(&msgtx,0,sizeof(msgtx));
         if ( V == 0 )
             V = calloc(numinputs,sizeof(*V)), flagV = 1;
-        printf("SIGN.(%s) priv.(%s) %llx %llx V.%p\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid,V);
+        printf("SIGN.(%s) priv.(%s) %llx %llx (%s)\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid,rawtx);
         if ( V != 0 )
         {
             if ( iguana_signrawtransaction(myinfo,coin,height,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
