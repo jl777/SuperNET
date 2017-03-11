@@ -1706,18 +1706,18 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
-        printf("{\"name\":\"%s\"",rawtx->name);
+        fprintf(fp,"{\"name\":\"%s\"",rawtx->name);
         if ( rawtx->I.datalen > 0 )
         {
-            printf(",\"tx\":\"");
+            fprintf(fp,",\"tx\":\"");
             for (i=0; i<rawtx->I.datalen; i++)
-                printf("%02x",rawtx->txbytes[i]);
-            printf("\"");
+                fprintf(fp,"%02x",rawtx->txbytes[i]);
+            fprintf(fp,"\"");
         }
-        printf(",\"lock\":%u",locktime);
+        fprintf(fp,",\"lock\":%u",locktime);
         if ( bits256_nonz(triggertxid) != 0 )
-            printf(",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
-        printf("}\n");
+            fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
+        fprintf(fp,"}\n");
         fclose(fp);
     }
 }

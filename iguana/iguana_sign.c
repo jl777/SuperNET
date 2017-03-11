@@ -1430,7 +1430,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                                             for (z=0; z<33; z++)
                                                 V[i].signers[j].pubkey[z] = pubkeys[k][z];
                                         }
-                                        printf("%s -> V[%d].signer.[%d] <- privkey.%d\n",mvin.signers[j].coinaddr,i,j,k);
+                                        //printf("%s -> V[%d].signer.[%d] <- privkey.%d\n",mvin.signers[j].coinaddr,i,j,k);
                                         break;
                                     }
                                 }
