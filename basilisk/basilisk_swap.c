@@ -320,7 +320,7 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_t timestamp,uint32_t locktime,uint32_t sequenceid,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
     char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t needsig=1,retval = -1; struct vin_info *V;
-    V = calloc(16,sizeof(*V));
+    V = calloc(256,sizeof(*V));
     V[0].signers[0].privkey = privkey;
     bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
     privkeys = cJSON_CreateArray();
@@ -395,6 +395,7 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
     } else printf("error making rawtx\n");
     free_json(privkeys);
     free_json(txobj);
+    free(V);
     return(retval);
 }
 
