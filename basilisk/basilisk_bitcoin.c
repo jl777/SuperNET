@@ -759,11 +759,11 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
         amount = jdouble(valsobj,"value") * SATOSHIDEN;
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
     {
-        if ( strcmp(coin->symbol,"BTC") != 0 )
+        //if ( strcmp(coin->symbol,"BTC") != 0 )
         {
             txfee = coin->chain->txfee;
-            if ( txfee == 0 )
-                txfee = 10000;
+            if ( txfee < 50000 )
+                txfee = 50000;
         }
     }
     spendscriptstr = jstr(valsobj,"spendscript");

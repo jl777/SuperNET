@@ -426,7 +426,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         coinaddr = jstri(addresses,i);
         if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
         {
-            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
             if ( (m= cJSON_GetArraySize(array)) > 0 )
             {
                 for (j=0; j<m; j++)
@@ -459,7 +459,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         free(unspents);
         return(0);
     }*/
-    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
+    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d num.%d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen,num);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
