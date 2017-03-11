@@ -758,9 +758,14 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
         amount = jdouble(valsobj,"value") * SATOSHIDEN;
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
-        txfee = coin->chain->txfee;
-    if ( txfee == 0 )
-        txfee = 10000;
+    {
+        if ( strcmp(coin->symbol,"BTC") != 0 )
+        {
+            txfee = coin->chain->txfee;
+            if ( txfee == 0 )
+                txfee = 10000;
+        }
+    }
     spendscriptstr = jstr(valsobj,"spendscript");
     minconf = juint(valsobj,"minconf");
     locktime = jint(valsobj,"locktime");
