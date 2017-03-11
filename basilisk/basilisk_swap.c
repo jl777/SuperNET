@@ -582,7 +582,7 @@ int32_t basilisk_verify_otherfee(struct supernet_info *myinfo,void *ptr,uint8_t 
 
 int32_t basilisk_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr;
+    int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; bits256 txid;
     datalen = recvbuf[0];
     datalen += (int32_t)recvbuf[1] << 8;
     if ( datalen > 65536 )
@@ -609,6 +609,10 @@ int32_t basilisk_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,str
         printf("%s rawtx data compare error, len %d vs %d <<<<<<<<<< warning\n",rawtx->name,rawtx->I.datalen,datalen);
         return(-1);
     }
+    txid = bits256_doublesha256(0,data,datalen);
+    char str[65]; printf("rawtx.%s txid %s\n",rawtx->name,bits256_str(str,txid));
+    if ( bits256_cmp(txid,rawtx->I.actualtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
+        rawtx->I.actualtxid = txid;
     if ( (txobj= bitcoin_data2json(rawtx->coin,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->I.actualtxid = rawtx->I.signedtxid;
