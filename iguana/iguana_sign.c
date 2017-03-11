@@ -1378,7 +1378,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         extraspace = malloc(extralen);
         memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
-        printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
             printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
@@ -1387,10 +1387,8 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         {
             printf("numinputs.%d msgtx.%d\n",numinputs,msgtx->tx_in);
             memset(msgtx,0,sizeof(*msgtx));
-            iguana_rwmsgtx(coin,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins,V->suppress_pubkeys);
-            if ( numinputs == msgtx->tx_in )
+            if ( iguana_rwmsgtx(coin,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins,V->suppress_pubkeys) > 0 && numinputs == msgtx->tx_in )
             {
-                printf("back rwmsgtx vins.%p\n",msgtx->vins);
                 memset(pubkeys,0,sizeof(pubkeys));
                 memset(privkeys,0,sizeof(privkeys));
                 if ( (n= cJSON_GetArraySize(privkeysjson)) > 0 )

@@ -490,7 +490,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
     return(retval);
 }
 
-int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay)
+int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay)
 {
     char *retstr,*jsonstr,scriptstr[1024],coinaddr[64]; uint32_t basilisktag; int32_t flag,i,n,retval = -1; cJSON *addresses,*valsobj,*retarray=0; struct vin_info *V;
     //bitcoin_address(coinaddr,rawtx->coin->chain->pubtype,myinfo->persistent_pubkey33,33);
@@ -499,8 +499,6 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swaps
         bitcoin_address(rawtx->coin->changeaddr,rawtx->coin->chain->pubtype,pubkey33,33);
         printf("set change address.(%s)\n",rawtx->coin->changeaddr);
     }
-    if ( strcmp(rawtx->coin->symbol,"BTC") == 0 )
-        txfee = 0;
     init_hexbytes_noT(scriptstr,script,scriptlen);
     basilisktag = (uint32_t)rand();
     valsobj = cJSON_CreateObject();
@@ -555,6 +553,24 @@ int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swaps
     } else printf("error creating %s feetx\n",iambob != 0 ? "BOB" : "ALICE");
     free_json(valsobj);
     free(V);
+    return(retval);
+}
+
+int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay)
+{
+    int32_t retval,len; uint64_t newtxfee; struct iguana_info *coin;
+    retval = _basilisk_rawtx_gen(str,myinfo,swapstarted,pubkey33,iambob,lockinputs,rawtx,locktime,script,scriptlen,txfee,minconf,delay);
+    if ( (coin= rawtx->coin) == 0 || strcmp(coin->symbol,"BTC") != 0 )
+        return(retval);
+    len = rawtx->I.datalen;
+    if ( coin->estimatedfee == 0 )
+        coin->estimatedfee = iguana_getestimatedfee(myinfo,coin);
+    newtxfee = coin->estimatedfee * len;
+    if ( newtxfee > txfee )
+    {
+        retval = _basilisk_rawtx_gen(str,myinfo,swapstarted,pubkey33,iambob,lockinputs,rawtx,locktime,script,scriptlen,newtxfee,minconf,delay);
+        printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
+    }
     return(retval);
 }
 
