@@ -1701,18 +1701,17 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
 
 void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
 {
-    // bobrefund, bobreclaim, alicereclaim
     char fname[512],str[65]; FILE *fp; int32_t i;
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
-        fprintf(fp,"{\"name\":\"%s\"",rawtx->name);
+        fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->coin->symbol);
         if ( rawtx->I.datalen > 0 )
         {
             fprintf(fp,",\"tx\":\"");
             for (i=0; i<rawtx->I.datalen; i++)
                 fprintf(fp,"%02x",rawtx->txbytes[i]);
-            fprintf(fp,"\"");
+            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,rawtx->I.actualtxid));
         }
         fprintf(fp,",\"lock\":%u",locktime);
         if ( bits256_nonz(triggertxid) != 0 )
@@ -1766,6 +1765,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     if ( rawtx == &swap->alicepayment )
                     {
                         basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,triggertxid);
+                        basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim);
                         basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
                     }
                     else if ( rawtx == &swap->alicespend )
