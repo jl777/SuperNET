@@ -352,7 +352,7 @@ int32_t _basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,uint32_
         needsig = 0;
 #endif
     }
-    printf("rawtx B\n");
+    //printf("rawtx B\n");
     if ( bits256_nonz(rawtx->I.actualtxid) != 0 )
         jaddbits256(item,"txid",rawtx->I.actualtxid);
     else jaddbits256(item,"txid",rawtx->I.signedtxid);

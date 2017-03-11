@@ -175,7 +175,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
         }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -289,7 +289,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         if ( flag != 0 )
             free_json(privkeys);
     }
-    char str[65]; printf("completed.%d %s signed.(%s)\n",*completedp,bits256_str(str,*signedtxidp),signedtx!=0?signedtx:"");
+    //char str[65]; printf("completed.%d %s signed.(%s)\n",*completedp,bits256_str(str,*signedtxidp),signedtx!=0?signedtx:"");
     return(signedtx);
 }
 

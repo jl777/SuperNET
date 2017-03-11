@@ -687,7 +687,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             {
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
                 sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
-                printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
+                //printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
                 jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
                     msg->vins[i].spendscript = 0;
@@ -1013,13 +1013,13 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                 {
                     flag++;
                     numsigs++;
-                    int32_t z;
+                    /*int32_t z;
                     for (z=0; z<siglen-1; z++)
                         printf("%02x",sig[z]);
                     printf(" <- sig[%d]\n",j);
                     for (z=0; z<33; z++)
                         printf("%02x",vp->signers[j].pubkey[z]);
-                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);*/
                 }
             }
             if ( numsigs >= vp->M )
@@ -1435,7 +1435,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                                     }
                                 }
                             }
-                            printf("type.%d p2sh.[%d] -> %s M.%d N.%d\n",type,i,mvin.coinaddr,mvin.M,mvin.N);
+                            //printf("type.%d p2sh.[%d] -> %s M.%d N.%d\n",type,i,mvin.coinaddr,mvin.M,mvin.N);
                         }
                     }
                     if ( i < V->N )
