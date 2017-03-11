@@ -1715,7 +1715,7 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
             fprintf(fp,",\"tx\":\"");
             for (i=0; i<rawtx->I.datalen; i++)
                 fprintf(fp,"%02x",rawtx->txbytes[i]);
-            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,rawtx->I.actualtxid));
+            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
         }
         fprintf(fp,",\"lock\":%u",locktime);
         if ( bits256_nonz(triggertxid) != 0 )
