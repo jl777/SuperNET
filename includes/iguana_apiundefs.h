@@ -49,3 +49,5 @@
 #undef IGUANA_ARGS
 #undef IGUANA_CALLARGS
 
+#undef _IGUANA_APIDEC_H_
+
