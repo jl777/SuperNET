@@ -481,7 +481,7 @@ int32_t basilisk_rawtx_return(struct supernet_info *myinfo,int32_t height,struct
             rawtx->I.datalen = (int32_t)strlen(signedtx) >> 1;
             //rawtx->txbytes = calloc(1,rawtx->I.datalen);
             decode_hex(rawtx->txbytes,rawtx->I.datalen,signedtx);
-            printf("%s SIGNEDTX.(%s)\n",rawtx->name,signedtx);
+            //printf("%s SIGNEDTX.(%s)\n",rawtx->name,signedtx);
             free(signedtx);
             retval = 0;
         } else printf("error signrawtx\n"); //do a very short timeout so it finishes via local poll
@@ -559,9 +559,9 @@ int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swap
 int32_t basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swapstarted,uint8_t *pubkey33,int32_t iambob,int32_t lockinputs,struct basilisk_rawtx *rawtx,uint32_t locktime,uint8_t *script,int32_t scriptlen,int64_t txfee,int32_t minconf,int32_t delay)
 {
     int32_t retval,len; uint64_t newtxfee; struct iguana_info *coin;
-    retval = _basilisk_rawtx_gen(str,myinfo,swapstarted,pubkey33,iambob,lockinputs,rawtx,locktime,script,scriptlen,txfee,minconf,delay);
     if ( (coin= rawtx->coin) == 0 || strcmp(coin->symbol,"BTC") != 0 )
-        return(retval);
+        return(_basilisk_rawtx_gen(str,myinfo,swapstarted,pubkey33,iambob,lockinputs,rawtx,locktime,script,scriptlen,txfee,minconf,delay));
+    retval = _basilisk_rawtx_gen(str,myinfo,swapstarted,pubkey33,iambob,0,rawtx,locktime,script,scriptlen,txfee,minconf,delay);
     len = rawtx->I.datalen;
     if ( coin->estimatedfee == 0 )
         coin->estimatedfee = iguana_getestimatedfee(myinfo,coin);
