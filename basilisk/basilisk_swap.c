@@ -1343,8 +1343,8 @@ void basilisk_rawtx_setparms(char *name,uint32_t quoteid,struct basilisk_rawtx *
     rawtx->coin = coin;
     strcpy(rawtx->I.coinstr,coin->symbol);
     rawtx->I.numconfirms = numconfirms;
-    if ( (rawtx->I.amount= satoshis) < 10000 )
-        rawtx->I.amount = 10000;
+    if ( (rawtx->I.amount= satoshis) < 50000 )
+        rawtx->I.amount = 50000;
     rawtx->I.vintype = vintype; // 0 -> std, 2 -> 2of2, 3 -> spend bobpayment, 4 -> spend bobdeposit
     rawtx->I.vouttype = vouttype; // 0 -> fee, 1 -> std, 2 -> 2of2, 3 -> bobpayment, 4 -> bobdeposit
     if ( rawtx->I.vouttype == 0 )
@@ -1483,10 +1483,10 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
             swap->I.callduration += optionduration;
         swap->I.bobsatoshis = swap->I.req.destamount;
         swap->I.alicesatoshis = swap->I.req.srcamount;
-        if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-            swap->I.bobinsurance = 10000;
-        if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
-            swap->I.aliceinsurance = 10000;
+        if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
+            swap->I.bobinsurance = 50000;
+        if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
+            swap->I.aliceinsurance = 50000;
         strcpy(swap->I.bobstr,swap->I.req.dest);
         strcpy(swap->I.alicestr,swap->I.req.src);
         swap->I.started = (uint32_t)time(NULL);
@@ -2353,7 +2353,7 @@ void basilisk_swaploop(void *_swap)
                     else
                     {
                         retval = 0;
-                        for (i=0; i<swap->alicepayment.I.spendlen; i++)
+                        for (i=0; i<swap->alicepayment.I.datalen; i++)
                             printf("%02x",swap->alicepayment.txbytes[i]);
                         printf(" ALICE PAYMENT created\n");
                         iguana_unspents_mark(myinfo,swap->alicecoin,swap->alicepayment.vins);
