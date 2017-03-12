@@ -2401,13 +2401,22 @@ void basilisk_swaploop(void *_swap)
         }
     }
     if ( (swap->I.statebits & 0x40) == 0 )
+    {
+        printf("couldnt send fee\n");
         retval = -8;
+    }
     if ( retval == 0 )
     {
         if ( swap->I.iambob == 0 && (swap->myfee.I.datalen == 0 || swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.datalen == 0) )
+        {
+            printf("ALICE's error %d %d %d\n",swap->myfee.I.datalen,swap->alicepayment.I.datalen,swap->alicepayment.I.datalen);
             retval = -7;
+        }
         else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobpayment.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) )
+        {
+            printf("BOB's error %d %d %d\n",swap->myfee.I.datalen,swap->bobpayment.I.datalen,swap->bobdeposit.I.datalen);
             retval = -7;
+        }
     }
     while ( retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
@@ -2420,7 +2429,7 @@ void basilisk_swaploop(void *_swap)
     }
     if ( swap->I.iambob != 0 && swap->bobdeposit.I.datalen != 0 )
     {
-        printf("BOB waiting for confirm\n");
+        printf("BOB waiting for confirm state.%x\n",swap->I.statebits);
         sleep(60); // wait for confirm/propagation of msig
         printf("BOB reclaims refund\n");
         basilisk_bobdeposit_refund(myinfo,swap,0);
@@ -2489,7 +2498,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
             {
                 starttime = (uint32_t)time(NULL);
                 printf("statebits.%x m.%d n.%d\n",statebits,m,n);
-                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+BASILISK_MSGDURATION )
+                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+2*BASILISK_MSGDURATION )
                 {
                     m = n = 0;
                     sleep(DEX_SLEEP);
