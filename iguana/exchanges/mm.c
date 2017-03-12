@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "OS_portable.h"
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 struct mmpending_order
 {
@@ -501,15 +502,16 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 jaddnum(vals,"ask",ask);
                 vol = bidvol > askvol ? askvol : bidvol;
                 jaddnum(vals,"maxvol",vol);
-                jaddnum(vals,"minvol",vol * 0.1);
+                jaddnum(vals,"minvol",vol*0.1 > 100 ? 100 : vol * 0.1);
                 sprintf(url,"%s/?",IGUANA_URL);
                 sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}",base,jprint(vals,1));
+                printf("(%s)\n",postdata);
                 if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
                 {
                     //printf("(%s) -> (%s)\n",postdata,retstr);
                     free(retstr);
                 }
-                spread_ratio = (ask - bid) / (bid + ask);
+                spread_ratio = .5 * ((ask - bid) / (bid + ask));
                 for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
                 {
                     if ( PAXPRICES[i] > SMALLVAL )
@@ -519,7 +521,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                         jaddnum(vals,"bid",PAXPRICES[i] * (1. - spread_ratio));
                         jaddnum(vals,"ask",PAXPRICES[i] * (1. + spread_ratio));
                         jaddnum(vals,"maxvol",vol * PAXPRICES[i]);
-                        jaddnum(vals,"minvol",vol * 0.1 * PAXPRICES[i]);
+                        jaddnum(vals,"minvol",MAX(1,(int32_t)(vol * 0.01 * PAXPRICES[i])));
                         sprintf(url,"%s/?",IGUANA_URL);
                         sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}","KMD",jprint(vals,1));
                         if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
@@ -528,6 +530,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                             free(retstr);
                         }
                     }
+break;
                 }
             } else printf("unsupported ask only for DEX %s/%s\n",base,rel);
         }
@@ -561,7 +564,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
 void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double start_BASE,double start_REL,double profitmargin,double maxexposure,double ratioincr,char *exchange,char *name,char *base,char *rel)
 {
     static uint32_t counter;
-    cJSON *fiatjson; double start_DEXbase,start_DEXrel,USD_average=0.,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,usdprice=0.,CMC_average=0.,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
+    cJSON *fiatjson; double bid,ask,start_DEXbase,start_DEXrel,USD_average=0.,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,usdprice=0.,CMC_average=0.,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
     incr = maxexposure * ratioincr;
     buyvol = sellvol = 0.;
     start_DEXbase = dex_balance(base,baseaddr);
@@ -636,8 +639,11 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                     mmask = 0.;
             }
             marketmaker_volumeset(&bidincr,&askincr,incr,buyvol,pendingbids,sellvol,pendingasks,maxexposure);
-            printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f)\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel);
-            marketmaker_spread("DEX",base,rel,avebid - profitmargin*aveprice,incr,aveask + profitmargin*aveprice,incr,profitmargin*aveprice*0.5);
+            printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
+            if ( (aveask - avebid)/aveprice > 4*profitmargin )
+                bid = highbid * (1 - 4*profitmargin), ask = lowask *  (1 + 4*profitmargin);
+            else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
+            marketmaker_spread("DEX",base,rel,bid,incr,ask,incr,profitmargin*aveprice*0.5);
             if ( (pendingbids + buyvol) > (pendingasks + sellvol) )
             {
                 bidincr *= (double)(pendingasks + sellvol) / ((pendingbids + buyvol) + (pendingasks + sellvol));
@@ -655,8 +661,8 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                     askincr = (int32_t)askincr + 0.777;
             }
             //printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
-            marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
-            sleep(60);
+            //marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
+            sleep(6000);
         }
     }
 }
@@ -707,7 +713,7 @@ int main(int argc, const char * argv[])
                     marketmaker(minask,maxbid,baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
                 }
                 free_json(addrjson);
-            }
+            } else printf("ERROR parsing.(%s)\n",retstr);
             free(retstr);
         }
         free_json(retjson);

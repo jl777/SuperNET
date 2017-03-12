@@ -486,7 +486,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
         chain->unitval = 0x1d;
-        chain->txfee = 10000;
+        chain->txfee = 50000;
         chain->havecltv = 1;
     }
     else chain->txfee = 10000;

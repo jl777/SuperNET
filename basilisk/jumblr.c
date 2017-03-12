@@ -63,6 +63,34 @@ struct jumblr_item *jumblr_opidadd(struct supernet_info *myinfo,struct iguana_in
     return(ptr);
 }
 
+char *jumblr_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    char params[1024];
+    if ( coin->FULLNODE < 0 )
+    {
+        sprintf(params,"[\"%s\"]",addr);
+        return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"validateaddress",params));
+    } else return(_dex_validateaddress(myinfo,coin->symbol,addr));
+}
+
+int32_t jumblr_ismine(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+{
+    char params[1024],*retstr; cJSON *retjson,*obj; int32_t retval = -1;
+    sprintf(params,"[\"%s\"]",addr);
+    if ( (retstr= jumblr_validateaddress(myinfo,coin,addr)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (obj= jobj(retjson,"ismine")) != 0 && is_cJSON_True(obj) != 0 )
+                retval = 1;
+            else retval = 0;
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(retval);
+}
+
 char *jumblr_zgetnewaddress(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getnewaddress",""));
@@ -165,17 +193,28 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
     char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
     if ( jumblr_addresstype(myinfo,coin,addr) == 't' )
     {
-        if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
+        if ( coin->FULLNODE < 0 && jumblr_ismine(myinfo,coin,addr) > 0 )
         {
+            if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
+            {
+                if ( (retjson= cJSON_Parse(retstr)) != 0 )
+                {
+                    if ( (n= cJSON_GetArraySize(retjson)) > 0 )
+                        for (i=0; i<n; i++)
+                            balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
+                    free_json(retjson);
+                }
+                free(retstr);
+            }
+        }
+        else if ( (retstr= dex_getbalance(myinfo,coin,0,0,coin->symbol,addr)) != 0 )
+        {
+            //printf("retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
-                if ( (n= cJSON_GetArraySize(retjson)) > 0 )
-                    for (i=0; i<n; i++)
-                        balance += SATOSHIDEN * jdouble(jitem(retjson,i),"amount");
+                balance = jdouble(retjson,"balance") * SATOSHIDEN;
                 free_json(retjson);
             }
-            //if ( balance == 0 )
-            //    printf("listunspent.(%s)\n",addr);
             free(retstr);
         }
     }
@@ -206,7 +245,9 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
     {
         //printf("params.(%s)\n",jprint(params,0));
         if ( (from= jstr(params,"fromaddress")) != 0 )
+        {
             safecopy(ptr->src,from,sizeof(ptr->src));
+        }
         if ( (amounts= jarray(&n,params,"amounts")) != 0 )
         {
             for (i=0; i<n; i++)
@@ -232,7 +273,7 @@ int32_t jumblr_itemset(struct jumblr_item *ptr,cJSON *item,char *status)
 
 void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,struct jumblr_item *ptr)
 {
-    char *retstr,*status; cJSON *retjson,*item;
+    char *retstr,*status,KMDjumblr[64],KMDdeposit[64],BTCaddr[64]; cJSON *retjson,*item;
     if ( ptr->status == 0 )
     {
         if ( (retstr= jumblr_zgetoperationstatus(myinfo,coin,ptr->opid)) != 0 )
@@ -248,6 +289,15 @@ void jumblr_opidupdate(struct supernet_info *myinfo,struct iguana_info *coin,str
                         if ( strcmp(status,"success") == 0 )
                         {
                             ptr->status = jumblr_itemset(ptr,item,status);
+                            jumblr_privkey(myinfo,BTCaddr,KMDdeposit,JUMBLR_DEPOSITPREFIX);
+                            jumblr_privkey(myinfo,BTCaddr,KMDjumblr,"");
+                            if ( (jumblr_addresstype(myinfo,coin,ptr->src) == 't' && jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && strcmp(ptr->src,KMDdeposit) != 0) || (jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->src) == 't' && strcmp(ptr->dest,KMDjumblr) != 0) )
+                            {
+                                printf("a non-jumblr t->z pruned\n");
+                                free(jumblr_zgetoperationresult(myinfo,coin,ptr->opid));
+                                ptr->status = -1;
+                            }
+
                         }
                         else if ( strcmp(status,"failed") == 0 )
                         {
@@ -325,11 +375,46 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,
     return(privkey);
 }
 
+void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey)
+{
+    static double kmdprice,pending; static uint32_t lasttime;
+    double btcavail=0,minbtc,avebid,aveask,highbid,lowask,CMC_average,USD_average,changes[3]; struct iguana_info *coinbtc; cJSON *vals; bits256 hash; char *retstr;
+    coinbtc = iguana_coinfind("BTC");
+    if ( kmdprice == 0. || time(NULL) > lasttime+60 )
+    {
+        kmdprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,"komodo","KMD","BTC",&USD_average);
+        lasttime = (uint32_t)time(NULL);
+        printf("KMD %.8f\n",kmdprice);
+    }
+    if ( kmdprice > SMALLVAL )
+    {
+        minbtc = (kmdprice * 1.1) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
+        if ( coinbtc != 0 && (btcavail= dstr(jumblr_balance(myinfo,coinbtc,BTCaddr))) > minbtc+pending )
+        {
+            printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
+            vals = cJSON_CreateObject();
+            jaddstr(vals,"source","BTC");
+            //hash = curve25519(privkey,curve25519_basepoint9());
+            jaddstr(vals,"dest","KMD");
+            jaddnum(vals,"amount",btcavail*.3);
+            jaddnum(vals,"minprice",kmdprice*.95);
+            jaddnum(vals,"usejumblr",1);
+            memset(hash.bytes,0,sizeof(hash));
+            pending = btcavail;
+            if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
+            {
+                printf("request.(%s) -> (%s)\n",jprint(vals,0),retstr);
+                free(retstr);
+            }
+            // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
+        } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
+    } else printf("null kmdprice %.8f\n",kmdprice);
+}
+
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
 {
-    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 priv0; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
-    // if BTC has arrived in deposit address, invoke DEX -> KMD
-    // if BTC has arrived in destination address, invoke DEX -> BTC
+    //static uint32_t lasttime;
+    char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
 //r = 0;
@@ -339,7 +424,6 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
-                priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
                     if ( (r & 1) == 0 )
@@ -392,7 +476,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                     {
                         if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                         {
-                            priv0 = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+                            privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
                             if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
                             {
                                 printf("sendz_to_t.(%s)\n",retstr);
@@ -408,75 +492,3 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     }
 }
 
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-STRING_ARG(jumblr,setpassphrase,passphrase)
-{
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64],wifstr[64]; bits256 privkey;
-    if ( passphrase == 0 || passphrase[0] == 0 || (coin= iguana_coinfind("KMD")) == 0 || coin->FULLNODE >= 0 )
-        return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
-    else
-    {
-        safecopy(myinfo->jumblr_passphrase,passphrase,sizeof(myinfo->jumblr_passphrase));
-        retjson = cJSON_CreateObject();
-        jaddstr(retjson,"result","success");
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
-        bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
-        jumblr_importprivkey(myinfo,coin,wifstr);
-        jaddstr(retjson,"BTCdeposit","notyet");
-        jaddstr(retjson,"KMDdeposit",KMDaddr);
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
-        bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
-        // jumblr_importprivkey(myinfo,coin,wifstr); dont mix jumbled funds with normal!
-        jaddstr(retjson,"BTCjumblr","notyet");
-        jaddstr(retjson,"KMDjumblr",KMDaddr);
-        return(jprint(retjson,1));
-    }
-}
-
-ZERO_ARGS(jumblr,status)
-{
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished,pending,maxval,minval;
-    if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 && myinfo->jumblr_passphrase[0] != 0 )
-    {
-        jumblr_opidsupdate(myinfo,coin);
-        retjson = cJSON_CreateObject();
-        step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
-        jaddstr(retjson,"BTCdeposit","notyet");
-        jaddstr(retjson,"KMDdeposit",KMDaddr);
-        received = jumblr_receivedby(myinfo,coin,KMDaddr);
-        deposited = jumblr_balance(myinfo,coin,KMDaddr);
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
-        jaddstr(retjson,"BTCjumblr","notyet");
-        jaddstr(retjson,"KMDjumblr",KMDaddr);
-        finished = jumblr_receivedby(myinfo,coin,KMDaddr);
-        jumblred = jumblr_balance(myinfo,coin,KMDaddr);
-        HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
-        {
-            if ( strlen(ptr->src) >= 40 )
-            {
-                if ( strlen(ptr->dest) >= 40 )
-                    step_z2z += ptr->amount;
-                else step_z2t += ptr->amount;
-            } else step_t2z += ptr->amount;
-        }
-        jaddstr(retjson,"result","success");
-        jaddnum(retjson,"deposits",dstr(deposited));
-        jaddnum(retjson,"t_to_z",dstr(step_t2z));
-        jaddnum(retjson,"z_to_z",dstr(step_z2z));
-        jaddnum(retjson,"z_to_t",dstr(step_z2t));
-        maxval = MAX(step_t2z,MAX(step_z2z,step_z2t));
-        minval = MIN(step_t2z,MIN(step_z2z,step_z2t));
-        if ( maxval > minval )
-            pending = (maxval - minval);
-        jaddnum(retjson,"pending",dstr(pending));
-        jaddnum(retjson,"jumbled",dstr(jumblred));
-        jaddnum(retjson,"received",dstr(received));
-        jaddnum(retjson,"finished",dstr(finished));
-        return(jprint(retjson,1));
-    } else return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
-}
-
-#include "../includes/iguana_apiundefs.h"

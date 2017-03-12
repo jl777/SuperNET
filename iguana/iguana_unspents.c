@@ -913,10 +913,10 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
                 {
                     if ( firstslot >= 0 )
                     {
-                        printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
+                        //printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,txid),vout);
                         coin->markedunspents[firstslot] = txid;
                         coin->markedunspents[firstslot].ushorts[15] = vout;
-                        if ( coin->utxofp == 0 )
+                        if ( (0) && coin->utxofp == 0 )
                         {
                             sprintf(fname,"%s/%s/utxo.dat",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
                             if ( (coin->utxofp= fopen(fname,"rb+")) == 0 )
@@ -939,6 +939,7 @@ void iguana_unspents_mark(struct supernet_info *myinfo,struct iguana_info *coin,
 void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     char *filestr,fname[1024]; FILE *fp; long filesize; bits256 filetxid; cJSON *array,*item; int32_t i,filevout,n,firstslot;
+return;
     sprintf(fname,"%s/%s/utxo.dat",GLOBAL_DBDIR,coin->symbol), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"rb")) != 0 )
     {
@@ -948,7 +949,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
             {
                 if ( firstslot >= 0 )
                 {
-                    char str[65]; printf("%s slot.[%d] <- %s/v%d\n",fname,firstslot,bits256_str(str,filetxid),filevout);
+                    //char str[65]; printf("%s slot.[%d] <- %s/v%d\n",fname,firstslot,bits256_str(str,filetxid),filevout);
                     coin->markedunspents[firstslot] = filetxid;
                     coin->markedunspents[firstslot].ushorts[15] = filevout;
                 }
@@ -974,7 +975,7 @@ void iguana_unspents_markinit(struct supernet_info *myinfo,struct iguana_info *c
                     {
                         if ( firstslot >= 0 )
                         {
-                            char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
+                            //char str[65]; printf("slot.[%d] <- %s/v%d\n",firstslot,bits256_str(str,filetxid),filevout);
                             coin->markedunspents[firstslot] = filetxid;
                             coin->markedunspents[firstslot].ushorts[15] = filevout;
                         }
