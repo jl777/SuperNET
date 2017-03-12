@@ -1059,7 +1059,7 @@ FILE *basilisk_swap_save(struct supernet_info *myinfo,struct basilisk_swap *swap
 {
     FILE *fp=0; char fname[512];
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,rp->requestid,rp->quoteid), OS_compatible_path(fname);
-    if ( 0 && (fp= fopen(fname,"rb+")) == 0 )
+    if ( (fp= fopen(fname,"rb+")) == 0 )
     {
         if ( (fp= fopen(fname,"wb+")) != 0 )
         {
@@ -1074,6 +1074,22 @@ FILE *basilisk_swap_save(struct supernet_info *myinfo,struct basilisk_swap *swap
     {
     }
     return(fp);
+}
+
+int32_t basilisk_swap_load(uint32_t requestid,uint32_t quoteid,bits256 *privkeyp,struct basilisk_request *rp,uint32_t *statebitsp,int32_t *optiondurationp)
+{
+    FILE *fp=0; char fname[512]; int32_t retval = -1;
+    sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb+")) != 0 )
+    {
+        if ( fread(privkeyp,1,sizeof(*privkeyp),fp) == sizeof(*privkeyp) &&
+            fread(rp,1,sizeof(*rp),fp) == sizeof(*rp) &&
+            fread(statebitsp,1,sizeof(*statebitsp),fp) == sizeof(*statebitsp) &&
+            fread(optiondurationp,1,sizeof(*optiondurationp),fp) == sizeof(*optiondurationp) )
+            retval = 0;
+        fclose(fp);
+    }
+    return(retval);
 }
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit);
@@ -1091,7 +1107,7 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
             if ( (fp= fopen(fname,"rb+")) != 0 ) // check to see if completed
             {
                 memset(&M,0,sizeof(M));
-                swapcompleted = 0;
+                swapcompleted = 1;
                 for (iter=0; iter<2; iter++)
                 {
                     if ( fread(privkey.bytes,1,sizeof(privkey),fp) == sizeof(privkey) &&
@@ -1099,7 +1115,7 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
                             fread(&statebits,1,sizeof(statebits),fp) == sizeof(statebits) &&
                             fread(&optionduration,1,sizeof(optionduration),fp) == sizeof(optionduration) )
                     {
-                        while ( fread(&M,1,sizeof(M),fp) == sizeof(M) )
+                        while ( 0 && fread(&M,1,sizeof(M),fp) == sizeof(M) )
                         {
                             M.data = 0;
                             //printf("entry iter.%d crc32.%x datalen.%d\n",iter,M.crc32,M.datalen);
@@ -1401,7 +1417,7 @@ void basilisk_swap_saveupdate(struct supernet_info *myinfo,struct basilisk_swap 
 {
     FILE *fp; char fname[512];
     sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
-    if ( 0 && (fp= fopen(fname,"wb")) != 0 )
+    if ( (fp= fopen(fname,"wb")) != 0 )
     {
         fwrite(&swap->I,1,sizeof(swap->I),fp);
         /*fwrite(&swap->bobdeposit,1,sizeof(swap->bobdeposit),fp);
@@ -2527,3 +2543,27 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
     portable_mutex_unlock(&myinfo->DEX_swapmutex);
     return(swap);
 }
+
+char *basilisk_swaplist(struct supernet_info *myinfo)
+{
+    char fname[512]; FILE *fp; struct basilisk_request R; int32_t optionduration; uint32_t quoteid,requestid,statebits; cJSON *retjson,*array; bits256 privkey;
+    retjson = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
+        {
+            if ( basilisk_swap_load(requestid,quoteid,&privkey,&R,&statebits,&optionduration) == 0 )
+            {
+                jaddi(array,basilisk_requestjson(&R));
+            }
+        }
+        fclose(fp);
+    }
+    jaddstr(retjson,"result","success");
+    jadd(retjson,"swaps",array);
+    return(jprint(retjson,1));
+}
+
+

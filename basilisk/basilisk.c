@@ -1857,4 +1857,11 @@ ZERO_ARGS(InstantDEX,init)
     return(clonestr("{\"result\":\"success\"}"));
 }
 
+ZERO_ARGS(InstantDEX,getswaplist)
+{
+    return(basilisk_swaplist(myinfo));
+}
+
+
+
 #include "../includes/iguana_apiundefs.h"

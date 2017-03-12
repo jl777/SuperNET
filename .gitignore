@@ -184,3 +184,15 @@ iguana/DB/SWAPS/667293271-3414303895.swap
 iguana/DB/SWAPS/548227681-1452262678.swap
 
 iguana/DB/SWAPS/548227681-1452262678
+
+*.bobdeposit
+
+*.bobpayment
+
+*.bobreclaim
+
+*.bobrefund
+
+*.swap
+
+iguana/DB/SWAPS/1268007736-526212866
