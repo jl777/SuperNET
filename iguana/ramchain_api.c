@@ -18,6 +18,7 @@
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 
 STRING_ARG(iguana,peers,activecoin)
