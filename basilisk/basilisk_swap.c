@@ -948,7 +948,6 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 }
             }
         }
-        return(-1);
     }
     else
     {
@@ -981,12 +980,11 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 }
             }
         }
-        return(-1);
         //for (i=0; i<swap->bobdeposit.redeemlen; i++)
         //    printf("%02x",swap->bobdeposit.redeemscript[i]);
         //printf(" <- bobdeposit.%d\n",i);
     }
-    return(-1);
+    return(0);
 }
 
 int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
