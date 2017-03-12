@@ -700,6 +700,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 {
