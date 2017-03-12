@@ -424,6 +424,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
+                jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
                     if ( (r & 1) == 0 )
@@ -443,7 +444,7 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                             free(zaddr);
                         } else printf("no zaddr from jumblr_zgetnewaddress\n");
                     }
-                } //else printf("%s total %.8f vs %.8f\n",KMDaddr,dstr(total),(JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE)));
+                } else printf("%s total %.8f vs %.8f\n",KMDaddr,dstr(total),(JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE)));
                 break;
             case 1: // z -> z
                 jumblr_opidsupdate(myinfo,coin);
