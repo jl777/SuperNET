@@ -86,7 +86,6 @@ cJSON *SuperNET_helpjson()
     cJSON *array=0,*json,*agents;
     json = cJSON_CreateObject();
     agents = cJSON_CreateArray();
-#ifndef WIN32
 #define IGUANA_ARGS json,array,agents
 #define IGUANA_HELP0(agent,name) array = helpjson(IGUANA_ARGS,#agent,#name,0)
 #define IGUANA_HELP_S(agent,name,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#str,"string")))
@@ -195,7 +194,6 @@ cJSON *SuperNET_helpjson()
 #undef IGUANA_ARGS
 #undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
-#endif
     
     if ( array != 0 )
         jadd(json,"API",array);
@@ -498,6 +496,14 @@ char *SuperNET_htmlstr(char *fname,char *htmlstr,int32_t maxsize,char *agentstr)
     return(OS_filestr(&filesize,"index7778.html"));
 }
 
+#ifdef WIN32
+/**
+* workaround for MSVS compiler bug -
+* instead of going on if-else-if block split the if-else-if into two function
+*/
+char *SuperNET_parser2(struct supernet_info *myinfo, char *agentstr, char *method, cJSON *json, char *remoteaddr);
+#endif
+
 char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,cJSON *json,char *remoteaddr)
 {
     char *coinstr; struct iguana_info *coin = 0;
@@ -614,13 +620,31 @@ char *SuperNET_parser(struct supernet_info *myinfo,char *agentstr,char *method,c
 #define STRING_ARRAY_OBJ_STRING IGUANA_DISPATCH_SAOS
 
 #include "../includes/iguana_apideclares.h"
-    
+#ifdef WIN32
+return SuperNET_parser2(myinfo, agentstr, method, json, remoteaddr);
+#else
 #undef IGUANA_ARGS
 #undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
     char errstr[512];
     sprintf(errstr,"{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}",agentstr,method);
     return(clonestr(errstr));
+#endif
 }
 
 
+#ifdef WIN32
+char *SuperNET_parser2(struct supernet_info *myinfo, char *agentstr, char *method, cJSON *json, char *remoteaddr) {
+	char *coinstr; struct iguana_info *coin = 0;
+	if (remoteaddr != 0 && (remoteaddr[0] == 0 || strcmp(remoteaddr, "127.0.0.1") == 0))
+		remoteaddr = 0;
+#include "../includes/iguana_apideclares2.h"
+#undef IGUANA_ARGS
+#undef _IGUANA_APIDEC_H_
+#include "../includes/iguana_apiundefs.h"
+	char errstr[512];
+	sprintf(errstr, "{\"error\":\"unsupported call\",\"agent\":\"%s\",\"method\":\"%s\"}", agentstr, method);
+	return(clonestr(errstr));
+}
+
+#endif

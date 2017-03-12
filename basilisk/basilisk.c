@@ -953,6 +953,7 @@ void basilisks_init(struct supernet_info *myinfo)
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 TWO_STRINGS(tradebot,gensvm,base,rel)
 {

@@ -335,6 +335,8 @@ STRING_ARG(hash,base64_decode,message);
 STRING_ARG(hash,rmd160_sha256,message);
 STRING_ARG(hash,sha256_sha256,message);
 
+#ifndef WIN32
+
 STRING_ARG(hash,sha224,message);
 STRING_ARG(hash,sha256,message);
 STRING_ARG(hash,sha384,message);
@@ -364,5 +366,7 @@ TWO_STRINGS(hmac,md4,message,passphrase);
 TWO_STRINGS(hmac,md5,message,passphrase);
 TWO_STRINGS(hmac,tiger192_3,message,passphrase);
 TWO_STRINGS(hmac,whirlpool,message,passphrase);
+
+#endif
 
 #endif

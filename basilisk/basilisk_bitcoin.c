@@ -758,9 +758,14 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
     if ( (amount= j64bits(valsobj,"satoshis")) == 0 )
         amount = jdouble(valsobj,"value") * SATOSHIDEN;
     if ( (txfee= j64bits(valsobj,"txfee")) == 0 )
-        txfee = coin->chain->txfee;
-    if ( txfee == 0 )
-        txfee = 10000;
+    {
+        //if ( strcmp(coin->symbol,"BTC") != 0 )
+        {
+            txfee = coin->chain->txfee;
+            if ( txfee < 50000 )
+                txfee = 50000;
+        }
+    }
     spendscriptstr = jstr(valsobj,"spendscript");
     minconf = juint(valsobj,"minconf");
     locktime = jint(valsobj,"locktime");
@@ -797,14 +802,16 @@ char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coi
                     oplen = 0;
                 } else oplen = datachain_opreturnscript(coin,buf,opreturn,oplen);
             }
-            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
+            rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,1);
             if ( txfee == 0 )
             {
                 txfee = iguana_esttxfee(myinfo,coin,rawtx,0,vins != 0 ? cJSON_GetArraySize(vins): 0);
-                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,0);
-                printf("new txfee %.8f\n",dstr(txfee));
+                if ( vins != 0 )
+                    free_json(vins), vins = 0;
+                rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,amount,changeaddr,txfee,addresses,minconf,oplen!=0?buf:0,oplen+offset,burnamount,remoteaddr,V,1);
+                printf("new txfee %.8f (%s)\n",dstr(txfee),rawtx);
             }
-            printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
+            //printf("generated.(%s) vins.(%s)\n",rawtx!=0?rawtx:"",vins!=0?jprint(vins,0):"");
         }
         if ( rawtx != 0 )
         {

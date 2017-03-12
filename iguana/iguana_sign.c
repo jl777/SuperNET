@@ -568,6 +568,22 @@ void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript
     }
 }
 
+int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid)
+{
+    bits256 array_txid; cJSON *item; int32_t i,n = cJSON_GetArraySize(vinarray);
+    for (i=0; i<n; i++)
+    {
+        item = jitem(vinarray,i);
+        array_txid = jbits256(item,"txid");
+        if ( bits256_cmp(array_txid,txid) == 0 )
+        {
+            printf("vinarray.[%d] duplicate\n",i);
+            return(i);
+        }
+    }
+    return(-1);
+}
+
 int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJSON *json,uint8_t *serialized,int32_t maxsize,struct iguana_msgtx *msg,bits256 *txidp,char *vpnstr,uint8_t *extraspace,int32_t extralen,cJSON *vins,int32_t suppress_pubkeys)
 {
     int32_t i,n,len = 0,extraused=0; uint8_t spendscript[IGUANA_MAXSCRIPTSIZE],*txstart = serialized,*sigser=0; char txidstr[65]; cJSON *vinarray=0,*voutarray=0; bits256 sigtxid;
@@ -657,7 +673,7 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
             jaddi(voutarray,iguana_voutjson(coin,&msg->vouts[i],i,*txidp));
     }
     len += iguana_rwnum(rwflag,&serialized[len],sizeof(msg->lock_time),&msg->lock_time);
-    //printf("lock_time.%08x len.%d\n",msg->lock_time,len);
+//printf("lock_time.%08x len.%d\n",msg->lock_time,len);
     if ( strcmp(coin->symbol,"VPN") == 0 )
     {
         uint16_t ddosflag = 0;
@@ -688,13 +704,16 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
                 sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
                 //printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
-                jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
+                if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+                    jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
                     msg->vins[i].spendscript = 0;
-            } else jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
+            } else if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+                jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
         free(sigser);
         jadd(json,"vin",vinarray);
+        msg->tx_in = cJSON_GetArraySize(vinarray);
         jaddnum(json,"numvins",msg->tx_in);
     }
     if ( voutarray != 0 )
@@ -833,6 +852,7 @@ cJSON *bitcoin_data2json(struct iguana_info *coin,int32_t height,bits256 *txidp,
         jaddstr(txobj,"error","couldnt decode transaction");
         jaddstr(txobj,"coin",coin->symbol);
     }
+    //printf("msgtx.(%s)\n",jprint(txobj,0));
     if ( n != len )
     {
         int32_t i;
@@ -1361,14 +1381,14 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
-            //printf("back from bitcoin_hex2json\n");
+            //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
         } else fprintf(stderr,"no txobj from bitcoin_hex2json\n");
         if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
         {
+            //printf("numinputs.%d msgtx.%d\n",numinputs,msgtx->tx_in);
             memset(msgtx,0,sizeof(*msgtx));
             if ( iguana_rwmsgtx(coin,height,0,0,serialized,maxsize,msgtx,&txid,"",extraspace,65536,vins,V->suppress_pubkeys) > 0 && numinputs == msgtx->tx_in )
             {
-                //printf("back rwmsgtx vins.%p\n",msgtx->vins);
                 memset(pubkeys,0,sizeof(pubkeys));
                 memset(privkeys,0,sizeof(privkeys));
                 if ( (n= cJSON_GetArraySize(privkeysjson)) > 0 )
@@ -1430,7 +1450,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                                             for (z=0; z<33; z++)
                                                 V[i].signers[j].pubkey[z] = pubkeys[k][z];
                                         }
-                                        printf("%s -> V[%d].signer.[%d] <- privkey.%d\n",mvin.signers[j].coinaddr,i,j,k);
+                                        //printf("%s -> V[%d].signer.[%d] <- privkey.%d\n",mvin.signers[j].coinaddr,i,j,k);
                                         break;
                                     }
                                 }
@@ -1453,16 +1473,17 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                     }
                 }
                 finalized = iguana_vininfo_create(myinfo,coin,serialized2,maxsize,msgtx,vins,numinputs,V);
+                //printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     int32_t tmp; char str[65];
                     if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
-                        //printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
+                        printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
                     } else printf("%s signed\n",bits256_str(str,*signedtxidp));
-                }
-            }
+                } else printf("complete.%d\n",complete);
+            } else printf("rwmsgtx error\n");
         } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
         free(extraspace);
         free(serialized), free(serialized2), free(serialized3), free(serialized4);

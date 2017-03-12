@@ -175,7 +175,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
         }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -274,7 +274,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         memset(&msgtx,0,sizeof(msgtx));
         if ( V == 0 )
             V = calloc(numinputs,sizeof(*V)), flagV = 1;
-        //printf("SIGN.(%s) priv.(%s) %llx %llx V.%p\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid,V);
+        //printf("SIGN.(%s) priv.(%s) %llx %llx (%s)\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid,vins!=0?jprint(vins,0):"no vins");
         if ( V != 0 )
         {
             if ( iguana_signrawtransaction(myinfo,coin,height,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
@@ -459,7 +459,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         free(unspents);
         return(0);
     }*/
-    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
+    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d num.%d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen,num);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
@@ -700,6 +700,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 {
