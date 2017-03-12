@@ -424,6 +424,7 @@ r = 0;
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
+                jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
                 if ( (total= jumblr_balance(myinfo,coin,KMDaddr)) >= (JUMBLR_INCR + 3*(fee+JUMBLR_TXFEE))*SATOSHIDEN )
                 {
                     if ( (r & 1) == 0 )
