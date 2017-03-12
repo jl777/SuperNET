@@ -86,7 +86,6 @@ cJSON *SuperNET_helpjson()
     cJSON *array=0,*json,*agents;
     json = cJSON_CreateObject();
     agents = cJSON_CreateArray();
-#ifndef WIN32
 #define IGUANA_ARGS json,array,agents
 #define IGUANA_HELP0(agent,name) array = helpjson(IGUANA_ARGS,#agent,#name,0)
 #define IGUANA_HELP_S(agent,name,str) array = helpjson(IGUANA_ARGS,#agent,#name,helparray(cJSON_CreateArray(),helpitem(#str,"string")))
@@ -195,7 +194,6 @@ cJSON *SuperNET_helpjson()
 #undef IGUANA_ARGS
 #undef _IGUANA_APIDEC_H_
 #include "../includes/iguana_apiundefs.h"
-#endif
     
     if ( array != 0 )
         jadd(json,"API",array);
