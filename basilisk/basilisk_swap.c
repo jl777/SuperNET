@@ -948,7 +948,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 }
             }
         }
-        return(0);
+        return(-1);
     }
     else
     {
@@ -981,7 +981,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
                 }
             }
         }
-        return(0);
+        return(-1);
         //for (i=0; i<swap->bobdeposit.redeemlen; i++)
         //    printf("%02x",swap->bobdeposit.redeemscript[i]);
         //printf(" <- bobdeposit.%d\n",i);
@@ -2401,6 +2401,10 @@ void basilisk_swaploop(void *_swap)
             }
         }
     }
+    if ( swap->I.iambob == 0 && (swap->myfee.I.datalen == 0 || swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.datalen == 0) )
+        retval = -7;
+    else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobpayment.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) )
+        retval = -7;
     while ( retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
         sleep(DEX_SLEEP);
