@@ -2249,7 +2249,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t iters,retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfoptr;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -2302,7 +2302,8 @@ void basilisk_swaploop(void *_swap)
         myinfo->DEXactive = 0;
     }
     printf("C r%u/q%u swapstate.%x retval.%d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,retval);
-    if ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
+    iters = 0;
+    while ( retval == 0 && (swap->I.statebits & 0x40) == 0 && iters++ < 10 ) // send fee
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2351,7 +2352,7 @@ void basilisk_swaploop(void *_swap)
                 {
                     sleep(DEX_SLEEP);
                     printf("bobscripts set error\n");
-                    //continue;
+                    continue;
                 }
             }
             else
@@ -2389,8 +2390,8 @@ void basilisk_swaploop(void *_swap)
                     printf("%02x",swap->myfee.txbytes[i]);
                 printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
                 swap->I.statebits |= 0x40;
-                //if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
-                //    break;
+                if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
+                    break;
             }
             else
             {
