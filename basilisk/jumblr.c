@@ -417,10 +417,10 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
     char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
-//r = 0;
+r = 0;
     if ( strcmp(coin->symbol,"KMD") == 0 && coin->FULLNODE < 0 )
     {
-        //printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
+        printf("JUMBLR selector.%d modval.%d r.%d\n",selector,modval,r&7);
         switch ( selector )
         {
             case 0: // public -> z, need to importprivkey
