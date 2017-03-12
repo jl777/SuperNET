@@ -2302,7 +2302,7 @@ void basilisk_swaploop(void *_swap)
         myinfo->DEXactive = 0;
     }
     printf("C r%u/q%u swapstate.%x retval.%d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,retval);
-    while ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
+    if ( retval == 0 && (swap->I.statebits & 0x40) == 0 ) // send fee
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2351,7 +2351,7 @@ void basilisk_swaploop(void *_swap)
                 {
                     sleep(DEX_SLEEP);
                     printf("bobscripts set error\n");
-                    continue;
+                    //continue;
                 }
             }
             else
@@ -2389,8 +2389,8 @@ void basilisk_swaploop(void *_swap)
                     printf("%02x",swap->myfee.txbytes[i]);
                 printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
                 swap->I.statebits |= 0x40;
-                if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
-                    break;
+                //if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
+                //    break;
             }
             else
             {
@@ -2399,10 +2399,15 @@ void basilisk_swaploop(void *_swap)
             }
         }
     }
-    if ( swap->I.iambob == 0 && (swap->myfee.I.datalen == 0 || swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.datalen == 0) )
-        retval = -7;
-    else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobpayment.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) )
-        retval = -7;
+    if ( (swap->I.statebits & 0x40) == 0 )
+        retval = -8;
+    if ( retval == 0 )
+    {
+        if ( swap->I.iambob == 0 && (swap->myfee.I.datalen == 0 || swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.datalen == 0) )
+            retval = -7;
+        else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobpayment.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) )
+            retval = -7;
+    }
     while ( retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
         sleep(DEX_SLEEP);
