@@ -14,6 +14,7 @@
  ******************************************************************************/
 
 #include "OS_portable.h"
+#define LIQUIDITY_PROVIDER 1
 
 #if LIQUIDITY_PROVIDER
 #ifdef _WIN32

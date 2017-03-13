@@ -175,7 +175,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
         }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -441,7 +441,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     }
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
                     value = jdouble(item,"amount") * SATOSHIDEN;
-                    if ( jdouble(item,"interest") != 0 )
+                    if ( (0) && jdouble(item,"interest") != 0 )
                         printf("utxo has interest of %.8f\n",jdouble(item,"interest"));
                     iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
                     avail += value;
