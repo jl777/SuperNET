@@ -232,7 +232,9 @@ void set_coinconfname(char *fname,char *coinstr,char *userhome,char *coindir,cha
         sprintf(confname,"%s.conf",buf);
     }
     printf("userhome.(%s) coindir.(%s) confname.(%s)\n",userhome,coindir,confname);
-    sprintf(fname,"%s/%s/%s",userhome,coindir,confname);
+    if ( userhome != 0 && userhome[0] != 0 )
+        sprintf(fname,"%s/%s/%s",userhome,coindir,confname);
+    else sprintf(fname,"%s/%s",coindir,confname);
 }
 
 uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname)
