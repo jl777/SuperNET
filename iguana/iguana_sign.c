@@ -1378,7 +1378,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
         extraspace = malloc(extralen);
         memset(msgtx,0,sizeof(*msgtx));
         decode_hex(serialized,len,rawtx);
-        //printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
+        // printf("call hex2json.(%s) vins.(%s)\n",rawtx,jprint(vins,0));
         if ( (txobj= bitcoin_hex2json(coin,height,&txid,msgtx,rawtx,extraspace,extralen,serialized4,vins,V->suppress_pubkeys)) != 0 )
         {
             //printf("back from bitcoin_hex2json (%s)\n",jprint(vins,0));
