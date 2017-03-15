@@ -17,13 +17,8 @@
 #define LIQUIDITY_PROVIDER 1
 
 #if LIQUIDITY_PROVIDER
-#ifdef _WIN32
-#include <curl.h>
-#include <easy.h>
-#else
 #include <curl/curl.h>
 #include <curl/easy.h>
-#endif
 
 // return data from the server
 #define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
