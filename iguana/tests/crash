@@ -1,4 +1,4 @@
-coins/basilisk/kmd
+../coins/basilisk/kmd
 
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"bitcoinrpc\",\"method\":\"walletpassphrase\",\"password\":\"amount common obey erupt ensure salon shrug digital phone vacant provide word nurse legend shaft ritual strike black fiscal circle dove tone inmate plunge\",\"timeout\":864445678904}"
 
