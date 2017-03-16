@@ -346,18 +346,24 @@ uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,u
     int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
     if ( (minutes= ((uint32_t)time(NULL) - 60 - txlocktime) / 60) >= 60 )
     {
+        if ( minutes > 365 * 24 * 60 )
+            minutes = 365 * 24 * 60;
         denominator = (((uint64_t)365 * 24 * 60) / minutes);
         if ( denominator == 0 )
             denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
         if ( value > 25000LL*SATOSHIDEN && chainheight > 155949 )
         {
             numerator = (value / 20); // assumes 5%!
-            interest = (numerator / denominator);
+            if ( chainheight < 300000 )
+                interest = (numerator / denominator);
+            else interest = (numerator * minutes) / ((uint64_t)365 * 24 * 60);
         }
         else if ( value >= 10*SATOSHIDEN )
         {
             numerator = (value * KOMODO_INTEREST);
-            interest = (numerator / denominator) / SATOSHIDEN;
+            if ( chainheight < 300000 || numerator * minutes < 365 * 24 * 60 )
+                interest = (numerator / denominator) / SATOSHIDEN;
+            else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;
         }
         //fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
     }
