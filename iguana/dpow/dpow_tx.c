@@ -224,7 +224,7 @@ int32_t dpow_voutstandard(struct dpow_block *bp,uint8_t *serialized,int32_t m,in
         }
         printf("numvouts.%d len.%d RATIFY vouts\n",numvouts,len);
     }
-    if ( (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc)) > 0 )
+    if ( 0 && (src_or_dest == 0 || strcmp(bp->destcoin->symbol,"BTC") != 0) && (n= dpow_paxpending(extras,&paxwdcrc)) > 0 )
     {
         for (i=0; i<n; i++)
             printf("%02x",extras[i]);
