@@ -18,7 +18,7 @@
 // iguana_OS has functions that invoke system calls. Whenever possible stdio and similar functions are use and most functions are fully portable and in this file. For things that require OS specific, the call is routed to iguana_OS_portable_*  Usually, all but one OS can be handled with the same code, so iguana_OS_portable.c has most of this shared logic and an #ifdef iguana_OS_nonportable.c
 
 #ifdef __APPLE__
-#define LIQUIDITY_PROVIDER 1
+//#define LIQUIDITY_PROVIDER 1
 #endif
 
 #ifdef NATIVE_WINDOWS
