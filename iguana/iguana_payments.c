@@ -348,20 +348,22 @@ uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,u
     {
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
+        if ( chainheight >= 250000 )
+            minutes -= 59;
         denominator = (((uint64_t)365 * 24 * 60) / minutes);
         if ( denominator == 0 )
             denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
         if ( value > 25000LL*SATOSHIDEN && chainheight > 155949 )
         {
             numerator = (value / 20); // assumes 5%!
-            if ( chainheight < 300000 )
+            if ( chainheight < 250000 )
                 interest = (numerator / denominator);
             else interest = (numerator * minutes) / ((uint64_t)365 * 24 * 60);
         }
         else if ( value >= 10*SATOSHIDEN )
         {
             numerator = (value * KOMODO_INTEREST);
-            if ( chainheight < 300000 || numerator * minutes < 365 * 24 * 60 )
+            if ( chainheight < 250000 || numerator * minutes < 365 * 24 * 60 )
                 interest = (numerator / denominator) / SATOSHIDEN;
             else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;
         }
