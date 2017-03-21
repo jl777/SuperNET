@@ -15,6 +15,10 @@
 
 #ifndef H_IGUANAFUNCS_H
 #define H_IGUANAFUNCS_H
+#define SIGHASH_ALL 1
+
+cJSON *SuperNET_helpjson();
+
 // peers
 int32_t iguana_verifypeer(struct iguana_info *coin,void *key,void *value,int32_t itemind,int32_t itemsize);
 int32_t iguana_peermetrics(struct supernet_info *myinfo,struct iguana_info *coin);
@@ -316,6 +320,10 @@ int32_t bitcoin_changescript(struct iguana_info *coin,uint8_t *changescript,int3
 //cJSON *bitcoin_addinput(struct iguana_info *coin,cJSON *txobj,bits256 txid,int32_t vout,uint32_t sequenceid,uint8_t *spendscript,int32_t spendlen,uint8_t *redeemscript,int32_t p2shlen,uint8_t *pubkeys[],int32_t numpubkeys);
 int32_t bitcoin_verifytx(struct iguana_info *coin,bits256 *signedtxidp,char **signedtx,char *rawtxstr,struct vin_info *V,int32_t numinputs);
 int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uint8_t *pubkey,int32_t plen);
+cJSON *SuperNET_decryptedjson(char *destfname,char *passphrase,int32_t passsize,bits256 wallethash,char *fname2fa,int32_t fnamesize,bits256 wallet2priv);
+int32_t bitcoin_txaddspend(struct iguana_info *coin,cJSON *txobj,char *destaddress,uint64_t satoshis);
+char *_setVsigner(struct iguana_info *coin,struct vin_info *V,int32_t ind,char *pubstr,char *wifstr);
+
 char *bitcoin_json2hex(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *txidp,cJSON *txjson,struct vin_info *V);
 int32_t bitcoin_addr2rmd160(uint8_t *addrtypep,uint8_t rmd160[20],char *coinaddr);
 char *issue_startForging(struct supernet_info *myinfo,char *secret);
@@ -518,6 +526,7 @@ int32_t iguana_unspentind2txid(struct supernet_info *myinfo,struct iguana_info *
 int32_t iguana_RTunspent_check(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_outpoint outpt);
 char *basilisk_bitcoinrawtx(struct supernet_info *myinfo,struct iguana_info *coin,char *remoteaddr,uint32_t basilisktag,int32_t timeoutmillis,cJSON *valsobj,struct vin_info *V);
 int32_t iguana_markedunspents_find(struct iguana_info *coin,int32_t *firstslotp,bits256 txid,int32_t vout);
+void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin);
 
 char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t height,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtx,cJSON *privkey,struct vin_info *V);
 bits256 scrypt_blockhash(const void *input);
@@ -596,6 +605,11 @@ void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notar
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 void basilisk_requests_poll(struct supernet_info *myinfo);
+void dpow_psockloop(void *_ptr);
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *BTCaddr,char *KMDaddr);
+int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinaddr);
+int32_t smartaddress_pubkey(struct supernet_info *myinfo,bits256 *privkeyp,bits256 pubkey);
+int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,uint8_t *pubkey33);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
@@ -614,6 +628,11 @@ uint64_t *iguana_PoS_weights(struct supernet_info *myinfo,struct iguana_info *co
 int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *refrmd160,struct iguana_pkhash *refP,uint64_t *weights,int32_t numweights,bits256 *sortbuf);
 bits256 mpz_div64(bits256 hash,uint64_t divval);
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
+void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
+void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey);
+bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,char *prefix);
+char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
+int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares

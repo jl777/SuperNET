@@ -117,7 +117,7 @@ int32_t kmd_transactionvin(struct iguana_info *coin,bits256 spendtxid,int32_t vi
         }
         return(0);
     }
-    char str[65]; printf("vin error %s vout.%d of %d vs ptr %p [%d] spent.%p\n",bits256_str(str,txid),vout,ptr!=0?ptr->numvouts:-1,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
+    char str[65]; printf("%s.vin error %s vout.%d of %d vs ptr %p [%d] spent.%p\n",coin->symbol,bits256_str(str,txid),vout,ptr!=0?ptr->numvouts:-1,ptr,ptr!=0?ptr->numvouts:-1,spendptr);
     return(-1);
 }
 
@@ -203,11 +203,11 @@ FILE *kmd_txidinit(struct iguana_info *coin)
         {
             if ( (tx= kmd_transactionalloc(T.txid,T.height,T.timestamp,T.numvouts,T.numvins)) != 0 )
             {
-                //printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
+                //char str[65]; printf("INIT %s.[%d] vins.[%d] ht.%d %u\n",bits256_str(str,T.txid),T.numvouts,T.numvins,T.height,T.timestamp);
                 if ( (ptr= kmd_transactionadd(coin,tx,T.numvouts,T.numvins)) != 0 )
                 {
                     if ( ptr != kmd_transaction(coin,tx->txid) )
-                        printf("ERROR: %p != %p for ht.%d\n",ptr,kmd_transaction(coin,tx->txid),tx->height);
+                        printf("%s ERROR: %p != %p for ht.%d\n",coin->symbol,ptr,kmd_transaction(coin,tx->txid),tx->height);
                     ptr->fpos = lastpos;
                     ptr->numvins = T.numvins;
                     ptr->numvouts = T.numvouts;
@@ -219,7 +219,7 @@ FILE *kmd_txidinit(struct iguana_info *coin)
                         }
                         else
                         {
-                            printf("error loading vout.%d ht.%d\n",i,T.height);
+                            printf("%s error loading vout.%d ht.%d\n",coin->symbol,i,T.height);
                             break;
                         }
                     }
@@ -255,7 +255,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                     {
                         if ( kmd_transactionvin(coin,txid,i,spenttxid,spentvout) < 0 )
                         {
-                            printf("error adding spend %s %d of %d\n",bits256_str(str,txid),i,numvins);
+                            printf("%s error adding spend %s %d of %d\n",coin->symbol,bits256_str(str,txid),i,numvins);
                             //break;
                         }
                     } else break;
@@ -277,7 +277,7 @@ FILE *kmd_spendinit(struct iguana_info *coin)
                 {
                     if ( ptr->ptrs[(i<<1) + 1] != kmd_transaction(coin,vptr->spendtxid) )
                     {
-                        printf("mismatch %s spend.%d %p %p\n",bits256_str(str,vptr->spendtxid),i,ptr->ptrs[(i<<1) + 1],kmd_transaction(coin,vptr->spendtxid));
+                        printf("%s mismatch %s spend.%d %p %p\n",coin->symbol,bits256_str(str,vptr->spendtxid),i,ptr->ptrs[(i<<1) + 1],kmd_transaction(coin,vptr->spendtxid));
                     }
                 }
             }
@@ -392,9 +392,24 @@ cJSON *kmd_gettxin(struct iguana_info *coin,bits256 txid,int32_t vout)
 
 cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t mode,cJSON *array)
 {
-    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i;
+    struct kmd_addresshh *addr; struct kmd_transactionhh *ptr=0,*spent,*prev=0; uint8_t type_rmd160[21]; int32_t i; char *retstr; cJSON *retjson;
     if ( array == 0 )
         array = cJSON_CreateArray();
+    //printf("%s listaddress.(%s)\n",coin->symbol,coinaddr);
+    if ( (retstr= bitcoinrpc_validateaddress(myinfo,coin,0,0,coinaddr)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( jobj(retjson,"error") != 0 && is_cJSON_False(jobj(retjson,"error")) == 0 )
+            {
+                printf("%s\n",retstr);
+                free(retstr);
+                return(retjson);
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
     /*if ( time(NULL) > coin->kmd_lasttime+30 )
     {
         coin->kmd_lasttime = (uint32_t)time(NULL);
@@ -463,7 +478,7 @@ cJSON *kmd_listaddress(struct supernet_info *myinfo,struct iguana_info *coin,cha
             }
             ptr = prev;
         }
-    } else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
+    } //else printf("no valid entry for (%s) %p %p\n",coinaddr,addr,ptr);
     return(array);
 }
 
@@ -627,7 +642,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     {
         flag = 0;
         if ( (loadheight % 10000) == 0 )
-            printf("loading ht.%d\n",loadheight);//,jprint(kmd_getbalance(coin,"*"),1));
+            printf("loading %s ht.%d vs height.%d - lag.%d kmdheight.%d\n",coin->symbol,loadheight,height,lag,coin->kmd_height);//,jprint(kmd_getbalance(coin,"*"),1));
         if ( (blockjson= kmd_blockjson(&h,coin->symbol,coin->chain->serverport,coin->chain->userpass,0,loadheight)) != 0 )
         {
             if ( (txids= jarray(&numtxids,blockjson,"tx")) != 0 )
@@ -679,9 +694,11 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         {
                                             bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],jstri(addresses,0));
                                             kmd_transactionvout(coin,ptr,j,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
+                                            //fprintf(stderr,"%.8f ",jdouble(vout,"value"));
                                         } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
+                                    //fprintf(stderr,"numvouts.%d ht.%d %s\n",numvouts,height,coin->symbol);
                                     if ( coin->kmd_txidfp != 0 )
                                     {
                                         ptr->fpos = ftell(coin->kmd_txidfp);
@@ -748,6 +765,7 @@ void kmd_bitcoinscan()
                     {
                         //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
+                        usleep(250000);
                     }
                 }
             }

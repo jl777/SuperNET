@@ -175,7 +175,7 @@ int32_t iguana_RTbestunspent(struct supernet_info *myinfo,struct iguana_info *co
         }
         if ( iguana_RTunspent_check(myinfo,coin,unspents[i]) != 0 )
         {
-            printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
+            //printf("(%d u%d) %.8f already used\n",unspents[i].hdrsi,unspents[i].unspentind,dstr(atx_value));
             continue;
         }
         if ( maxmode == 0 )
@@ -274,7 +274,7 @@ char *iguana_signrawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
         memset(&msgtx,0,sizeof(msgtx));
         if ( V == 0 )
             V = calloc(numinputs,sizeof(*V)), flagV = 1;
-        //printf("SIGN.(%s) priv.(%s) %llx %llx\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid);
+        //printf("SIGN.(%s) priv.(%s) %llx %llx (%s)\n",jprint(vins,0),jprint(privkeys,0),(long long)V->signers[0].privkey.txid,(long long)V->signers[1].privkey.txid,vins!=0?jprint(vins,0):"no vins");
         if ( V != 0 )
         {
             if ( iguana_signrawtransaction(myinfo,coin,height,&msgtx,&signedtx,signedtxidp,V,numinputs,rawtx,vins,privkeys) > 0 )
@@ -346,18 +346,26 @@ uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,u
     int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
     if ( (minutes= ((uint32_t)time(NULL) - 60 - txlocktime) / 60) >= 60 )
     {
+        if ( minutes > 365 * 24 * 60 )
+            minutes = 365 * 24 * 60;
+        if ( chainheight >= 250000 )
+            minutes -= 59;
         denominator = (((uint64_t)365 * 24 * 60) / minutes);
         if ( denominator == 0 )
             denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
         if ( value > 25000LL*SATOSHIDEN && chainheight > 155949 )
         {
             numerator = (value / 20); // assumes 5%!
-            interest = (numerator / denominator);
+            if ( chainheight < 250000 )
+                interest = (numerator / denominator);
+            else interest = (numerator * minutes) / ((uint64_t)365 * 24 * 60);
         }
         else if ( value >= 10*SATOSHIDEN )
         {
             numerator = (value * KOMODO_INTEREST);
-            interest = (numerator / denominator) / SATOSHIDEN;
+            if ( chainheight < 250000 || numerator * minutes < 365 * 24 * 60 )
+                interest = (numerator / denominator) / SATOSHIDEN;
+            else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;
         }
         //fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
     }
@@ -394,7 +402,6 @@ uint64_t iguana_interest(struct supernet_info *myinfo,struct iguana_info *coin,b
             interest = _iguana_interest((uint32_t)time(NULL),coin->longestchain,tx->locktime,value);
         }
     }
-    char str[65]; printf("interest for %s.v%d %.8f %.8f (%s)\n",bits256_str(str,txid),vout,dstr(value),dstr(interest),retjson!=0?jprint(retjson,0):"");
     return(interest);
 }
 
@@ -442,7 +449,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                     }
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
                     value = jdouble(item,"amount") * SATOSHIDEN;
-                    if ( jdouble(item,"interest") != 0 )
+                    if ( (0) && jdouble(item,"interest") != 0 )
                         printf("utxo has interest of %.8f\n",jdouble(item,"interest"));
                     iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
                     avail += value;
@@ -460,7 +467,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         free(unspents);
         return(0);
     }*/
-    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen);
+    printf("avail %.8f satoshis %.8f, txfee %.8f burnamount %.8f vin0.scriptlen %d num.%d\n",dstr(avail),dstr(satoshis),dstr(txfee),dstr(burnamount),unspents[0].spendlen,num);
     if ( txobj != 0 && avail >= satoshis+txfee )
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
@@ -535,7 +542,11 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     for (i=0; i<n; i++)
     {
         item = jitem(utxos,i);
-        if ( (sobj= jobj(item,"scriptPubKey")) == 0 || (spendscriptstr= jstr(sobj,"hex")) == 0 )
+        if ( (spendscriptstr= jstr(item,"scriptPubKey")) != 0 && is_hexstr(spendscriptstr,0) > 16 )
+        {
+            
+        }
+        else if ( (sobj= jobj(item,"scriptPubKey")) == 0 || (spendscriptstr= jstr(sobj,"hex")) == 0 )
         {
             printf("no spendscript (%s)\n",jprint(item,0));
             continue;
@@ -554,6 +565,14 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     {
         if ( (vins= iguana_RTinputsjson(myinfo,coin,&total,satoshis + txfee,unspents,num,maxmode)) != 0 )
         {
+            if ( strcmp(coin->symbol,"KMD") == 0 )
+            {
+                if ( (interests= iguana_interests(myinfo,coin,vins)) != 0 )
+                {
+                    total += interests;
+                    printf("boost total by interest %.8f\n",dstr(interests));
+                }
+            }
             if ( total < (satoshis + txfee) )
             {
                 free_json(vins);
@@ -561,7 +580,6 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
                 printf("insufficient total %.8f vs (%.8f + %.8f)\n",dstr(total),dstr(satoshis),dstr(txfee));
                 return(0);
             }
-            total += interests;
             if ( (change= (total - (satoshis + txfee))) > 10000 && (changeaddr == 0 || changeaddr[0] == 0) )
             {
                 printf("no changeaddr for %.8f\n",dstr(change));
@@ -690,6 +708,7 @@ char *sendtoaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 STRING_AND_INT(bitcoinrpc,sendrawtransaction,rawtx,allowhighfees)
 {
@@ -1675,4 +1694,99 @@ THREE_INTS(iguana,splitfunds,satoshis,duplicates,sendflag)
     return(jprint(retjson,1));
 }
 
+P2SH_SPENDAPI(iguana,spendmsig,activecoin,vintxid,vinvout,destaddress,destamount,destaddress2,destamount2,M,N,pubA,wifA,pubB,wifB,pubC,wifC)
+{
+    struct vin_info V; uint8_t p2sh_rmd160[20],serialized[2096],spendscript[32],pubkeys[3][65],*pubkeyptrs[3]; int32_t spendlen,height = 0;
+    char msigaddr[64],*retstr; cJSON *retjson,*txobj; struct iguana_info *active;
+    bits256 signedtxid; char *signedtx;
+    struct iguana_msgtx msgtx;
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    if ( (active= iguana_coinfind(activecoin)) == 0 )
+        return(clonestr("{\"error\":\"activecoin isnt active\"}"));
+    if ( M > N || N > 3 )
+        return(clonestr("{\"error\":\"illegal M or N\"}"));
+    memset(&V,0,sizeof(V));
+    txobj = bitcoin_txcreate(active->symbol,active->chain->isPoS,0,coin->chain->normal_txversion,0);
+    if ( destaddress[0] != 0 && destamount > 0. )
+        bitcoin_txaddspend(active,txobj,destaddress,destamount * SATOSHIDEN);
+    if ( destaddress2[0] != 0 && destamount2 > 0. )
+        bitcoin_txaddspend(active,txobj,destaddress2,destamount2 * SATOSHIDEN);
+    if ( pubA[0] != 0 && (retstr= _setVsigner(active,&V,0,pubA,wifA)) != 0 )
+        return(retstr);
+    if ( N >= 2 && pubB[0] != 0 && (retstr= _setVsigner(active,&V,1,pubB,wifB)) != 0 )
+        return(retstr);
+    if ( N == 3 && pubC[0] != 0 && (retstr= _setVsigner(active,&V,2,pubC,wifC)) != 0 )
+        return(retstr);
+    V.M = M, V.N = N, V.type = IGUANA_SCRIPT_P2SH;
+    V.p2shlen = bitcoin_MofNspendscript(p2sh_rmd160,V.p2shscript,0,&V);
+    spendlen = bitcoin_p2shspend(spendscript,0,p2sh_rmd160);
+    if ( pubA[0] != 0 )
+    {
+        decode_hex(pubkeys[0],(int32_t)strlen(pubA)>>1,pubA);
+        pubkeyptrs[0] = pubkeys[0];
+    }
+    if ( pubB[0] != 0 )
+    {
+        decode_hex(pubkeys[1],(int32_t)strlen(pubB)>>1,pubB);
+        pubkeyptrs[1] = pubkeys[1];
+    }
+    if ( pubC[0] != 0 )
+    {
+        decode_hex(pubkeys[2],(int32_t)strlen(pubC)>>1,pubC);
+        pubkeyptrs[2] = pubkeys[2];
+    }
+    bitcoin_txinput(active,txobj,vintxid,vinvout,0xffffffff,spendscript,spendlen,V.p2shscript,V.p2shlen,pubkeyptrs,N,0,0);
+    bitcoin_address(msigaddr,active->chain->p2shtype,V.p2shscript,V.p2shlen);
+    retjson = cJSON_CreateObject();
+    if ( bitcoin_verifyvins(active,height,&signedtxid,&signedtx,&msgtx,serialized,sizeof(serialized),&V,SIGHASH_ALL,1,V.suppress_pubkeys) == 0 )
+    {
+        jaddstr(retjson,"result","msigtx");
+        if ( signedtx != 0 )
+            jaddstr(retjson,"signedtx",signedtx), free(signedtx);
+        jaddbits256(retjson,"txid",signedtxid);
+    } else jaddstr(retjson,"error","couldnt sign tx");
+    jaddstr(retjson,"msigaddr",msigaddr);
+    return(jprint(retjson,1));
+}
+
+STRING_ARRAY_OBJ_STRING(bitcoinrpc,signrawtransaction,rawtx,vins,privkeys,sighash)
+{
+    char *signedtx = 0; struct vin_info *V; bits256 signedtxid; int32_t complete,numinputs = 1; struct iguana_msgtx msgtx; cJSON *retjson; int uselessbitcoin_error = 0;
+    retjson = cJSON_CreateObject();
+    if ( remoteaddr != 0 )
+        return(clonestr("{\"error\":\"no remote\"}"));
+    if ( myinfo->expiration == 0 )
+        return(clonestr("{\"error\":\"need to unlock wallet\"}"));
+    //printf("rawtx.(%s) vins.(%s) privkeys.(%s) sighash.(%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),sighash);
+    if ( sighash == 0 || sighash[0] == 0 )
+        sighash = "ALL";
+    if ( strcmp(sighash,"ALL") != 0 )
+        jaddstr(retjson,"error","only sighash all (ALL) supported for now");
+    if ( (numinputs= cJSON_GetArraySize(vins)) > 0 )
+    {
+        V = calloc(numinputs,sizeof(*V));
+        memset(&msgtx,0,sizeof(msgtx));
+        if ( (complete= iguana_signrawtransaction(myinfo,coin,coin->blocks.hwmchain.height,&msgtx,&signedtx,&signedtxid,V,numinputs,rawtx,vins,privkeys)) >= 0 )
+        {
+            if ( signedtx != 0 )
+            {
+                jaddstr(retjson,"result",signedtx);
+                jadd(retjson,"complete",complete!=0?jtrue():jfalse());
+                free(signedtx);
+            } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no transaction from verifyvins");
+        }
+        else if ( complete == -2 )
+            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "hex2json -> json2hex error");
+        else if ( complete == -1 )
+            jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "couldnt load serialized tx or mismatched numinputs");
+        free(V);
+        //for (i=0; i<msgtx.tx_in; i++)
+        //    if ( msgtx.vins[i].redeemscript != 0 )
+        //        free(msgtx.vins[i].redeemscript), msgtx.vins[i].redeemscript = 0;
+    } else jaddstr(retjson,"error",uselessbitcoin_error != 0 ? "-22" : "no rawtx or rawtx too big");
+    return(jprint(retjson,1));
+}
 #include "../includes/iguana_apiundefs.h"

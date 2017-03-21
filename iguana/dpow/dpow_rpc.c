@@ -36,6 +36,16 @@ cJSON *dpow_getinfo(struct supernet_info *myinfo,struct iguana_info *coin)
     {
         json = cJSON_Parse(retstr);
         free(retstr);
+        if ( strcmp(coin->symbol,"BTC") == 0 )
+        {
+            sprintf(buf,"[%d]",2);
+            if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"estimatefee",buf)) != 0 )
+            {
+                if ( atof(retstr) > SMALLVAL )
+                    jaddnum(json,"estimatefee",atof(retstr));
+                free(retstr);
+            }
+        }
     }
     return(json);
 }

@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"getbalance\",\"address\":\"RU58D7nNLXwD29hgC2MPgtAF458gGxnPYS\",\"symbol\":\"KMD\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"getbalance\",\"address\":\"RAGhCfNvxpL55JFV7h2HQa5dSEK86Jg3ic\",\"symbol\":\"KMD\"}"
