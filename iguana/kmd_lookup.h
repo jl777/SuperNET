@@ -694,9 +694,11 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         {
                                             bitcoin_addr2rmd160(&type_rmd160[0],&type_rmd160[1],jstri(addresses,0));
                                             kmd_transactionvout(coin,ptr,j,jdouble(vout,"value")*SATOSHIDEN,type_rmd160,zero,-1);
+                                            //fprintf(stderr,"%.8f ",jdouble(vout,"value"));
                                         } // else printf("missing sobj.%p or addresses.%p (%s)\n",sobj,addresses,jprint(vout,0)); //likely OP_RETURN
                                         sobj = addresses = 0;
                                     }
+                                    //fprintf(stderr,"numvouts.%d ht.%d %s\n",numvouts,height,coin->symbol);
                                     if ( coin->kmd_txidfp != 0 )
                                     {
                                         ptr->fpos = ftell(coin->kmd_txidfp);
