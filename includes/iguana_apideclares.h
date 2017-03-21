@@ -13,6 +13,12 @@
  *                                                                            *
  ******************************************************************************/
 
+#ifdef _IGUANA_APIDEC_H_
+emit compiler error if recursively being included
+#endif
+#ifndef _IGUANA_APIDEC_H_
+#define _IGUANA_APIDEC_H_
+
 STRING_ARG(dpow,pending,fiat);
 ZERO_ARGS(dpow,notarychains);
 STRING_ARG(dpow,active,maskhex);
@@ -49,6 +55,8 @@ HASH_AND_STRING_AND_INT(dex,gettxin,txid,symbol,vout);
 TWO_STRINGS(dex,listspent,symbol,address);
 TWO_STRINGS(dex,getbalance,symbol,address);
 STRING_ARG(dex,explorer,symbol);
+STRING_ARG(dex,getmessage,argstr);
+STRING_ARG(dex,psock,argstr);
 
 HASH_ARRAY_STRING(basilisk,genesis_opreturn,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,history,hash,vals,hexstr);
@@ -57,6 +65,7 @@ HASH_ARRAY_STRING(basilisk,balances,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr);
 HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr);
 TWO_STRINGS(basilisk,refresh,symbol,address);
+ZERO_ARGS(basilisk,cancelrefresh);
 STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore);
 
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr);
@@ -186,6 +195,9 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 STRING_AND_INT(iguana,PoSweights,activecoin,height);
 STRING_ARG(iguana,stakers,activecoin);
 
+STRING_ARG(jumblr,setpassphrase,passphrase);
+ZERO_ARGS(jumblr,status);
+
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);
 HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr);
@@ -211,6 +223,8 @@ STRING_AND_INT(InstantDEX,pollgap,exchange,pollgap);
 ZERO_ARGS(InstantDEX,allexchanges);
 STRING_ARG(InstantDEX,allpairs,exchange);
 THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
+ZERO_ARGS(InstantDEX,init);
+ZERO_ARGS(InstantDEX,getswaplist);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
@@ -322,6 +336,8 @@ STRING_ARG(hash,base64_decode,message);
 STRING_ARG(hash,rmd160_sha256,message);
 STRING_ARG(hash,sha256_sha256,message);
 
+#ifndef WIN32
+
 STRING_ARG(hash,sha224,message);
 STRING_ARG(hash,sha256,message);
 STRING_ARG(hash,sha384,message);
@@ -351,3 +367,7 @@ TWO_STRINGS(hmac,md4,message,passphrase);
 TWO_STRINGS(hmac,md5,message,passphrase);
 TWO_STRINGS(hmac,tiger192_3,message,passphrase);
 TWO_STRINGS(hmac,whirlpool,message,passphrase);
+
+#endif
+
+#endif

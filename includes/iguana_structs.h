@@ -531,6 +531,7 @@ struct iguana_info
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     FILE *utxofp;
     bits256 markedunspents[1024];
+    uint64_t estimatedfee;
     char seedipaddr[64]; 
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];

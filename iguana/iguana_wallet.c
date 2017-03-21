@@ -995,6 +995,7 @@ cJSON *iguana_privkeysjson(struct supernet_info *myinfo,struct iguana_info *coin
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 int64_t iguana_addressreceived(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *json,char *remoteaddr,cJSON *txids,cJSON *vouts,cJSON *unspents,cJSON *spends,char *coinaddr,int32_t minconf,int32_t firstheight)
 {
@@ -1360,7 +1361,16 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     if ( coin != 0 )
     {
         bitcoin_address(coin->changeaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
+        if ( coin->FULLNODE < 0 )
+        {
+            char wifstr[64];
+            bitcoin_priv2wif(wifstr,myinfo->persistent_priv,coin->chain->wiftype);
+            jumblr_importprivkey(myinfo,coin,wifstr);
+        }
     }
+    if ( bits256_nonz(myinfo->persistent_priv) != 0 )
+        smartaddress_add(myinfo,myinfo->persistent_priv,"","");
+
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
 }
