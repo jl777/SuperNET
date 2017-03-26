@@ -2192,6 +2192,11 @@ void iguana_main(void *arg)
             myinfo->IAMNOTARY = 1;
             myinfo->DEXEXPLORER = 1;
         }
+        else if ( strncmp((char *)arg,"port=",5) == 0 )
+        {
+            myinfo->rpcport = atoi(&((char *)arg)[5]);
+            printf("OVERRIDE IGUANA port <- %u\n",myinfo->rpcport);
+        }
     }
 #ifdef IGUANA_OSTESTS
     do_OStests = 1;
