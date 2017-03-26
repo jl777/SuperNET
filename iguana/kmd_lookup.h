@@ -309,6 +309,7 @@ cJSON *kmd_unspentjson(struct supernet_info *myinfo,struct iguana_info *coin,int
 {
     char *script; cJSON *sobj,*txout,*item = cJSON_CreateObject();
     jaddstr(item,"type","received");
+    jaddnum(item,"confirmations",height - tx->height);
     jaddnum(item,"height",tx->height);
     jaddnum(item,"timestamp",tx->timestamp);
     jaddbits256(item,"txid",tx->txid);

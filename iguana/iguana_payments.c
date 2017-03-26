@@ -341,33 +341,47 @@ bits256 iguana_sendrawtransaction(struct supernet_info *myinfo,struct iguana_inf
     return(txid);
 }
 
-uint64_t _iguana_interest(uint32_t now,int32_t chainheight,uint32_t txlocktime,uint64_t value)
+uint64_t _iguana_interest(uint32_t now,int32_t txheight,uint32_t txlocktime,uint64_t value)
 {
-    int32_t minutes; uint64_t numerator=0,denominator=0,interest = 0;
+    int32_t minutes; uint64_t numerator=0,denominator=0,interest=0; uint32_t activation = 1491350400;
+
     if ( (minutes= ((uint32_t)time(NULL) - 60 - txlocktime) / 60) >= 60 )
     {
         if ( minutes > 365 * 24 * 60 )
             minutes = 365 * 24 * 60;
-        if ( chainheight >= 250000 )
+        if ( txheight >= 250000 )
             minutes -= 59;
         denominator = (((uint64_t)365 * 24 * 60) / minutes);
         if ( denominator == 0 )
             denominator = 1; // max KOMODO_INTEREST per transfer, do it at least annually!
-        if ( value > 25000LL*SATOSHIDEN && chainheight > 155949 )
+        if ( value > 25000LL*SATOSHIDEN && txheight > 155949 )
         {
             numerator = (value / 20); // assumes 5%!
-            if ( chainheight < 250000 )
+            if ( txheight < 250000 )
                 interest = (numerator / denominator);
             else interest = (numerator * minutes) / ((uint64_t)365 * 24 * 60);
         }
         else if ( value >= 10*SATOSHIDEN )
         {
-            numerator = (value * KOMODO_INTEREST);
-            if ( chainheight < 250000 || numerator * minutes < 365 * 24 * 60 )
+            /*numerator = (value * KOMODO_INTEREST);
+            if ( txheight < 250000 || numerator * minutes < 365 * 24 * 60 )
                 interest = (numerator / denominator) / SATOSHIDEN;
-            else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;
+            else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;*/
+            numerator = (value * KOMODO_INTEREST);
+            if ( txheight < 250000 || now < activation )
+            {
+                if ( txheight < 250000 || numerator * minutes < 365 * 24 * 60 )
+                    interest = (numerator / denominator) / SATOSHIDEN;
+                else interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60)) / SATOSHIDEN;
+            }
+            else
+            {
+                numerator = (value / 20); // assumes 5%!
+                interest = ((numerator * minutes) / ((uint64_t)365 * 24 * 60));
+                //fprintf(stderr,"interest %llu %.8f <- numerator.%llu minutes.%d\n",(long long)interest,(double)interest/COIN,(long long)numerator,(int32_t)minutes);
+            }
         }
-        //fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",chainheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
+        //fprintf(stderr,"komodo_interest.%d %lld %.8f nLockTime.%u tiptime.%u minutes.%d interest %lld %.8f (%llu / %llu)\n",txheight,(long long)value,(double)value/SATOSHIDEN,txlocktime,now,minutes,(long long)interest,(double)interest/SATOSHIDEN,(long long)numerator,(long long)denominator);
     }
     return(interest);
 }
