@@ -15,6 +15,7 @@
 
 /*
  adding assetchain coin: copy genCOIN to SuperNET/iguana/coins, make a _7776 variant with RELAY=-1 and VALIDATE=0
+ copy that into basilisk as coin, changing RELAY -> 0
  */
 
 #ifndef iguana777_net_h

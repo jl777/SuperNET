@@ -35,7 +35,8 @@ coins/crypto_7776
 coins/pangea_7776
 coins/mgw_7776
 coins/mvp_7776
-coins/wireless_7776
+coins/wlc_7776
+#coins/wireless_7776
 coins/kv_7776
 coins/ceal_7776
 coins/mesh_7776
