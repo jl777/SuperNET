@@ -39,7 +39,8 @@
 		border-radius: 4px;
 		border: solid 1px #C7CCD0;
 		padding: 10px 12px;
-		font-family: proxima-nova-semibold, sans-serif;
+		font-family: "Proxima Nova", sans-serif;
+		font-weight: 600;
 		font-size: 1.16em;
 	}
 	.passphrase-container {
@@ -48,7 +49,8 @@
 		background: #fff;
 		box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
 		padding: 40px 12px;
-		font-family: proxima-nova-semibold, sans-serif;
+		font-family: "Proxima Nova", sans-serif;
+		font-weight: 600;
 		font-size: 1.16em;
 	}
 	.passphrase-container .title {
@@ -59,28 +61,29 @@
 	.bi_interface-cross {
 		color: #fff;
 		font-size: 20px;
+		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 		position: relative;
 		top: 12px;
 		left: 10px;
-		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 	}
 	.bi_interface-arrow-left {
 		color: #fff;
 		font-size: 26px;
-		position: absolute;
-		z-index: 20;
 		margin-top: 8px;
 		margin-left: 10px;
 		text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+		position: absolute;
+		z-index: 20;
 	}
 	.form-header .title {
+		font-family: "Proxima Nova", sans-serif;
+		font-weight: 600;
+		font-size: 1.30em;
+		text-align: center;
+		color: #fff;
+		padding-top: 12px;
 		position: relative;
 		z-index: 10;
-		text-align: center;
-		font-family: proxima-nova-semibold, sans-serif;
-		color: #fff;
-		font-size: 1.30em;
-		padding-top: 12px;
 	}
 	textarea.error {
 		border: solid 1px #FF0000;
@@ -117,8 +120,9 @@
 		height: 50px;
 	}
 	.btn {
-		font-family: proxima-nova-semibold, sans-serif;
 		color: #fff;
+		font-family: "Proxima Nova", sans-serif;
+		font-weight: 600;
 		font-size: 1.20em;
 		height: 44px;
 	}
@@ -171,10 +175,10 @@
 	  border-color: #FE450D;
 	}
 	input[type="checkbox"]:checked + label .box:before {
-	  font-family: "budicon";
   	content: "\eb23";
-  	color: #fff;
+	  font-family: "budicon";
   	font-weight: bold;
+  	color: #fff;
   	position: relative;
   	top: -1px;
 	}

@@ -6,4 +6,547 @@
   body,
   html {
     background: #F5F8FB;
+    font-family: "Proxima Nova", sans-serif;
+  }
+  .dashboard .top {
+    margin-bottom: 32px;
+    height: 60px;
+    background: #0E101C;
+    box-shadow: 0 4px 5px 0px rgba(0, 0, 0, 0.2);
+    color: #fff;
+  }
+  .dashboard .top .left {
+    font-size: 1.6em;
+    font-weight: 600;
+    position: absolute;
+    top: 15px;
+    left: 30px;
+    display: inline-block;
+  }
+  .dashboard .center {
+    display: block;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+  }
+  .top-menu {
+    display: inline-block;
+    margin: 0 auto;
+    list-style: none;
+  }
+  /* radial like highlight effect */
+  .top-menu:before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    width: 350px;
+    margin-left: -13px;
+    opacity: 0.25;
+    border-radius: 25%;
+    position: absolute;
+    z-index: 50;
+
+    /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#000000+0,222539+0 */
+    background: rgb(0, 0, 0); /* Old browsers */
+    background: -moz-radial-gradient(top, ellipse cover, rgba(0, 0, 0, 1) 0%, rgba(34, 37, 57, 1) 0%); /* FF3.6-15 */
+    background: -webkit-radial-gradient(top, ellipse cover, rgba(0, 0, 0, 1) 0%,rgba(34, 37, 57, 1) 0%); /* Chrome10-25,Safari5.1-6 */
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 0%, rgba(34, 37, 57, 1) 0%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#000000', endColorstr='#222539', GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+  }
+  .top-menu .item {
+    display: inline-block;
+    font-size: 1.05em;
+    font-weight: 600;
+    margin: 0 5px;
+    position: relative;
+    top: 16px;
+    color: #8A8B93;
+    z-index: 100;
+  }
+  .top-menu .item .text {
+    padding: 0 17px;
+    height: 38px;
+    margin-top: 6px;
+  }
+  .top-menu .item .border {
+    width: 100%;
+    position: absolute;
+    top: 41px;
+    height: 3px;
+    border-radius: 4px;
+    padding: 0 22px;
+    background: transparent;
+  }
+  .top-menu .item.active .border {
+    background: #FE450D;
+    box-shadow: 0 -1px 1px 0 rgba(254, 69, 13, 0.5); // orange glow
+  }
+  .top-menu .item.active {
+    color: #fff;
+  }
+  .dashboard .top .right {
+    font-size: 1em;
+    font-weight: 600;
+    position: absolute;
+    right: 30px;
+    top: 20px;
+  }
+  .main-content {
+    margin: 0 40px;
+  }
+  .balance-block .label {
+    color: #95969F;
+    font-size: 0.92em;
+    font-weight: normal;
+    padding: 0;
+  }
+  .balance-block .balance {
+    font-size: 1.4em;
+    font-weight: 600;
+  }
+  .coins,
+  .transactions-unit {
+    margin-top: 18px;
+    float: left;
+  }
+  .coins {
+    width: 20%;
+  }
+  .account-coins-repeater .item {
+    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    background: #fff;
+    height: 85px;
+    font-weight: 600;
+    cursor: pointer;
+    cursor: hand;
+  }
+  .account-coins-repeater .item .balance {
+    padding-top: 25px;
+    padding-right: 18px;
+  }
+  .account-coins-repeater .item .balance .currency-value {
+    font-weight: normal;
+    font-size: 12px;
+    text-align: right;
+    position: relative;
+    top: -4px;
+  }
+  .account-coins-repeater .item .balance .coin-value {
+    font-size: 18px;
+  }
+  .account-coins-repeater .item .coin {
+    float: left;
+  }
+  .account-coins-repeater .item .coin i {
+    font-size: 2.5em;
+    margin: 25px 4px 0 12px;
+    display: inline-block;
+    color: #D3D3D4;
+  }
+  .account-coins-repeater .item .coin .name {
+    font-weight: normal;
+    color: #858690;
+    position: relative;
+    top: -10px;
+  }
+  .account-coins-repeater .item .balance {
+    float: right;
+  }
+  .account-coins-repeater .item.active .coin i,
+  .account-coins-repeater .item.active .coin .name {
+    color: #fff;
+  }
+  .account-coins-repeater .item.active {
+    cursor: default;
+    color: #fff;
+    box-shadow: 0 1px 6px 1px rgba(254, 69, 13, 0.5);
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+
+    /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#fe640d+8,fe640d+26,fe4b0d+77,fe450d+100 */
+    background: #fe640d; /* Old browsers */
+    background: -moz-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* FF3.6-15 */
+    background: -webkit-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* Chrome10-25,Safari5.1-6 */
+    background: linear-gradient(to bottom, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fe450d 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe640d', endColorstr='#fe450d', GradientType=0); /* IE6-9 */
+  }
+  .account-coins-repeater .item.active:after {
+    content: "\eb14";
+    color: #C8CCD0;
+    font-family: "budicon";
+    font-size: 2.0em;
+    font-weight: normal;
+    text-shadow: none;
+    position: absolute;
+    left: 23%;
+    padding-top: 25px;
+  }
+  .btn-add-coin {
+    font-weight: 600;
+    background: #fff;
+    color: #FE450D;
+    border-radius: 4px;
+    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    padding: 7px 0;
+  }
+  .btn-add-coin:hover {
+    color: #FE450D;
+  }
+  .transactions-unit {
+    width: 75%;
+    margin-left: 5%;
+    border-radius: 4px;
+    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+  }
+  .transactions-unit .top-bar {
+    font-weight: 600;
+    color: #fff;
+    height: 150px;
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 1px 6px 1px rgba(254, 69, 13, 0.5);
+
+    /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#fe640d+8,fe640d+26,fe4b0d+77,fc3600+100 */
+    background: #fe640d; /* Old browsers */
+    background: -moz-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fc3600 100%); /* FF3.6-15 */
+    background: -webkit-linear-gradient(top, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fc3600 100%); /* Chrome10-25,Safari5.1-6 */
+    background: linear-gradient(to bottom, #fe640d 8%, #fe640d 26%, #fe4b0d 77%, #fc3600 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fe640d', endColorstr='#fc3600', GradientType=0); /* IE6-9 */
+  }
+  .transactions-unit .action-buttons {
+    float: left;
+    padding-left: 30px;
+    padding-top: 18px;
+  }
+  .transactions-unit .action-buttons .btn {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #FE450D;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+    padding: 6px 35px 4px 35px;
+  }
+  .transactions-unit .action-buttons .btn:first-child {
+    margin-right: 15px;
+  }
+  .transactions-unit .action-buttons .btn:hover {
+    color: #FE450D;
+  }
+  .transactions-unit .info {
+    float: right;
+    padding-right: 30px;
+    position: relative;
+    top: -52px;
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  .transactions-list {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 0 0 4px 4px;
+  }
+  .transactions-list .title {
+    font-size: 1.2em;
+    color: #C7CCD0;
+    padding-bottom: 20px;
+  }
+  .transactions-list-repeater .item {
+    cursor: hand;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.2em;
+    background: #F5F8FB;
+    border-radius: 4px;
+    padding: 20px 35px 23px 35px;
+    margin-bottom: 25px;
+    transition: all 0.25s;
+  }
+  .transactions-list-repeater .item .status {
+    font-weight: normal;
+    font-size: 0.9em;
+    color: #858690;
+    text-transform: capitalize;
+    width: 100px;
+  }
+  .transactions-list-repeater .item .amount {
+    width: 126px;
+    text-align: right;
+  }
+  .transactions-list-repeater .item .hash {
+    width: 40%;
+    margin-left: 10%;
+  }
+  .transactions-list-repeater .item .in-out {
+    font-size: 0.8em;
+    margin-right: 2px;
+  }
+  .transactions-list-repeater .item.timestamp-single .timestamp.two-lines,
+  .transactions-list-repeater .item.timestamp-multi .timestamp {
+    display: none;
+  }
+  .transactions-list-repeater .item.timestamp-multi .timestamp.two-lines {
+    display: inherit;
+  }
+  .transactions-list-repeater .item .coin-name {
+    padding-left: 5px;
+  }
+  .transactions-list-repeater .item .timestamp {
+    float: right;
+    text-align: right;
+    color: #858690;
+    font-weight: normal;
+    font-size: 0.9em;
+    padding-top: 8px;
+  }
+  .transactions-list-repeater .item .timestamp .timestamp-date {
+    display: block;
+    font-size: 0.9em;
+  }
+  .transactions-list-repeater .item .timestamp.two-lines {
+    padding-top: 0;
+    margin-top: -2px;
+  }
+  .transactions-list-repeater .item .progress-status .icon:before {
+    font-family: "budicon";
+    font-size: 1.2em;
+    width: 70px;
+    height: 20px;
+    display: block;
+    font-style: normal;
+    font-weight: normal;
+    position: relative;
+    top: 2px;
+    padding-left: 27px;
+  }
+  .transactions-list-repeater .item.receive .progress-status .icon:before {
+    content: "\eb47";
+    color: #CBCFD3;
+    top: 4px;
+    font-size: 1.4em;
+  }
+  .transactions-list-repeater .item.send .progress-status .icon:before {
+    content: "\eb4b";
+    color: #CBCFD3;
+    top: 4px;
+    font-size: 1.4em;
+  }
+  .transactions-list-repeater .item.process .progress-status .icon:before {
+    content: "\ead6";
+    color: #2092FE;
+    font-weight: bold;
+  }
+  .transactions-list-repeater .item.process .progress-status .icon:after {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 10px;
+    background: #F5F8FB;
+    position: relative;
+    top: -15px;
+    left: 25px;
+    z-index: 40;
+  }
+  .transactions-list-repeater .item.process .amount {
+    color: #0082FF;
+  }
+  .transactions-list-repeater .item.receive .amount {
+    color: #27C26F;
+  }
+  .transactions-list-repeater .item:hover {
+    box-shadow: 0 2px 3px 1px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s;
+  }
+  .transactions-list-repeater .item div {
+    display: inline-block;
+  }
+  .active-coin-balance {
+    font-size: 1.7em;
+    font-weight: 700;
+    padding-left: 30px;
+    padding-top: 25px;
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  .active-coin-balance-currency {
+    font-size: 1.1em;
+    font-weight: 600;
+    padding-left: 30px;
+    position: relative;
+    top: -3px;
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Add coin modal */
+  .add-new-coin-form {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    opacity: 1;
+    transition: all 0.25s;
+  }
+  .add-new-coin-form.fade {
+    opacity: 0;
+    transition: all 0.25s;
+  }
+  .add-new-coin-form .modal-overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+  }
+  .modal {
+    width: 80%;
+    height: 80%;
+    margin: 0 auto;
+    display: block;
+    margin-top: 7%;
+    border-radius: 4px;
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.1);
+  }
+  .add-new-coin-form .form-content {
+    height: 100%;
+    background: #F5F8FB;
+    padding-top: 60px;
+  }
+  .add-new-coin-form .form-header {
+    height: 60px;
+    width: 100%;
+    position: absolute;
+    box-shadow: 0 1px 1px 0px rgba(0, 0, 0, 0.2);
+  }
+  .bi_interface-cross {
+    color: #fff;
+    font-size: 16px;
+    position: absolute;
+    top: 21px;
+    left: 20px;
+    text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.3);
+    z-index: 100;
+  }
+  .form-header .title {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    font-family: "Proxima Nova", sans-serif;
+    font-weight: 600;
+    color: #fff;
+    font-size: 1.30em;
+    padding-top: 19px;
+    z-index: 90;
+  }
+  .text-shadow {
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.15);
+  }
+  .coins-title {
+    font-size: 1.1em;
+    padding-top: 55px;
+    text-align: center;
+  }
+  .quick-search {
+    text-align: center;
+    padding-top: 34px;
+    padding-bottom: 14px;
+  }
+  .quick-search .input.text {
+    width: 300px;
+    height: 34px;
+    border: none;
+    padding-left: 40px;
+    border-radius: 4px;
+  }
+  .quick-search .input.text::-webkit-input-placeholder {
+    font-size: 1.1em;
+    padding-top: 1px;
+  }
+  .quick-search .input.text:-moz-placeholder { /* Firefox 18- */
+    font-size: 1.1em;
+    padding-top: 1px;
+  }
+  .quick-search .input.text::-moz-placeholder {  /* Firefox 19+ */
+    font-size: 1.1em;
+    padding-top: 1px;
+  }
+  .quick-search .input.text:-ms-input-placeholder {
+    font-size: 1.1em;
+    padding-top: 1px;
+  }
+  .quick-search i.icon {
+    color: #C7CCD0;
+    font-size: 1.2em;
+    position: absolute;
+    margin-top: 6px;
+    margin-left: 7px;
+  }
+  .supported-coins-repeater {
+    padding: 20px;
+    height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .supported-coins-repeater .coin {
+    cursor: hand;
+    cursor: pointer;
+    width: 180px;
+    height: 130px;
+    display: inline-block;
+    border-radius: 6px;
+    background: #fff;
+    margin: 13px;
+    text-align: center;
+    padding-top: 35px;
+    box-shadow: 0 2px 3px 2px rgba(0, 0, 0, 0.07);
+    opacity: 1;
+    transition: all 0.25s;
+  }
+  .supported-coins-repeater .coin.fade {
+    opacity: 0;
+    transition: all 0.25s;
+  }
+  .supported-coins-repeater .coin .icon {
+    font-size: 2em;
+    color: #fff;
+    padding: 11px;
+    border-radius: 50%;
+  }
+  .supported-coins-repeater .coin .name {
+    padding-top: 16px;
+    color: #878892;
+    font-size: 1.05em;
+  }
+  .supported-coins-repeater .coin.active {
+    box-shadow: inset 0 2px 10px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Icon colors */
+  .col-orange {
+    background: #FE760D;
+  }
+  .col-breeze {
+    background: #1ABC9C;
+  }
+  .col-yellow {
+    background: #F7D441;
+  }
+  .col-light-blue {
+    background: #73C7EF;
+  }
+  .modal .btn {
+    font-family: "Proxima Nova", sans-serif;
+    font-weight: 600;
+    color: #fff;
+    font-size: 1.20em;
+    height: 34px;
+    width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+  }
+  .text-shadow {
+    text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  .modal .btn:hover,
+  .modal .btn:focus {
+    color: #fff;
+    box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
   }
