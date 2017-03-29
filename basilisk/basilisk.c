@@ -1301,7 +1301,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         safecopy(myinfo->jumblr_passphrase,passphrase,sizeof(myinfo->jumblr_passphrase));
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
         smartaddress_add(myinfo,privkey,BTCaddr,KMDaddr);
         myinfo->jumblr_depositkey = curve25519(privkey,curve25519_basepoint9());
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
@@ -1316,7 +1316,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
                 jumblr_importprivkey(myinfo,coinbtc,wifstr);
             jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         }
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
         smartaddress_add(myinfo,privkey,BTCaddr,KMDaddr);
         myinfo->jumblr_pubkey = curve25519(privkey,curve25519_basepoint9());
         jaddstr(retjson,"KMDjumblr",KMDaddr);
@@ -1335,14 +1335,14 @@ ZERO_ARGS(jumblr,status)
         jumblr_opidsupdate(myinfo,coin);
         retjson = cJSON_CreateObject();
         step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         jaddstr(retjson,"BTCdeposit",BTCaddr);
         if ( (coinbtc= iguana_coinfind("BTC")) != 0 )
             jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         received = jumblr_receivedby(myinfo,coin,KMDaddr);
         deposited = jumblr_balance(myinfo,coin,KMDaddr);
-        jumblr_privkey(myinfo,BTCaddr,KMDaddr,"");
+        jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
         if ( coinbtc != 0 )
@@ -1706,7 +1706,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
     jadd64bits(vals,"destsatoshis",jdouble(vals,"destamount") * SATOSHIDEN);
     jaddnum(vals,"timestamp",time(NULL));
     if ( (jumblr= jint(vals,"usejumblr")) != 0 )
-        privkey = jumblr_privkey(myinfo,BTCaddr,KMDaddr,jumblr == 1 ? JUMBLR_DEPOSITPREFIX : "");
+        privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,jumblr == 1 ? JUMBLR_DEPOSITPREFIX : "");
     else privkey = myinfo->persistent_priv;
     hash = curve25519(privkey,curve25519_basepoint9());
     if ( jobj(vals,"srchash") == 0 )

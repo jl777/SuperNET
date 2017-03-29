@@ -466,6 +466,16 @@ struct iguana_RTtxid
 
 struct hashstr_item { UT_hash_handle hh; char address[40]; };
 
+struct DEXcoin_info
+{
+    bits256 deposit_privkey,jumblr_privkey;
+    struct iguana_info *coin;
+    cJSON *utxos,*spentutxos,*bigutxos,*normalutxos,*smallutxos,*feeutxos,*otherutxos;
+    double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,maxbid,minask,avail,KMDavail;
+    uint32_t lasttime;
+    char CMCname[32],symbol[16],depositaddr[64],KMDdepositaddr[64],KMDjumblraddr[64],jumblraddr[64];
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
@@ -534,6 +544,7 @@ struct iguana_info
     uint64_t estimatedfee;
     char seedipaddr[64]; 
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
+    struct DEXcoin_info DEXinfo;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
     struct hashstr_item *alladdresses;
