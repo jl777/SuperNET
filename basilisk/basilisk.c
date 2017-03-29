@@ -1603,7 +1603,7 @@ TWO_STRINGS(basilisk,refresh,symbol,address)
 
 STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
 {
-    char *destaddr,*changeaddr; uint64_t satoshis,txfee; int32_t completed,sendflag,timelock;
+    char *destaddr,*changeaddr; int64_t satoshis,txfee; int32_t completed,sendflag,timelock;
     timelock = jint(vals,"timelock");
     sendflag = jint(vals,"sendflag");
     satoshis = jdouble(vals,"amount") * SATOSHIDEN;
@@ -1612,7 +1612,7 @@ STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
     if ( destaddr != 0 && changeaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
     {
         txfee = jdouble(vals,"txfee") * SATOSHIDEN;
-        return(iguana_utxorawtx(myinfo,coin,timelock,destaddr,changeaddr,satoshis,txfee,&completed,sendflag,utxos));
+        return(iguana_utxorawtx(myinfo,coin,timelock,destaddr,changeaddr,&satoshis,1,txfee,&completed,sendflag,utxos));
     }
     return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
 }

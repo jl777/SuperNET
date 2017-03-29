@@ -658,9 +658,9 @@ int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *c
     } return(-2);
 }
 
-char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,uint64_t satoshis,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos)
+char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,int64_t *satoshis,int32_t numoutputs,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos)
 {
-    uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t p2shlen,iter,spendlen; cJSON *retjson,*txcopy,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
+    uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t i,p2shlen,iter,spendlen; cJSON *retjson,*txcopy,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
     *completedp = 0;
     if ( iguana_addressvalidate(coin,&addrtype,destaddr) < 0 || iguana_addressvalidate(coin,&addrtype,changeaddr) < 0 )
         return(clonestr("{\"error\":\"invalid coin address\"}"));
@@ -687,11 +687,13 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
             spendlen = bitcoin_p2shspend(script,0,rmd160);
             printf("timelock.%d spend timelocked %u\n",timelock,timelocked);
         }
-        bitcoin_txoutput(txobj,script,spendlen,satoshis);
+        for (i=0; i<numoutputs; i++)
+            if ( satoshis[i] > 0 )
+                bitcoin_txoutput(txobj,script,spendlen,satoshis[i]);
         for (iter=0; iter<2; iter++)
         {
             txcopy = jduplicate(txobj);
-            if ( (rawtx= iguana_calcutxorawtx(myinfo,coin,&vins,txobj,satoshis,changeaddr,txfee,utxos,"",0,0)) != 0 )
+            if ( (rawtx= iguana_calcutxorawtx(myinfo,coin,&vins,txobj,satoshis,numoutputs,changeaddr,txfee,utxos,"",0,0)) != 0 )
             {
                 if ( iter == 1 || txfee != 0 )
                     jaddstr(retjson,"rawtx",rawtx);

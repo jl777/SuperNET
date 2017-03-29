@@ -466,20 +466,22 @@ struct iguana_RTtxid
 
 struct hashstr_item { UT_hash_handle hh; char address[40]; };
 
+struct jumblr_pending { bits256 splittxid,txid; int32_t vout; };
+
 struct DEXcoin_info
 {
     bits256 deposit_privkey,jumblr_privkey;
     struct iguana_info *coin;
-    cJSON *utxos,*spentutxos,*bigutxos,*normalutxos,*smallutxos,*feeutxos,*otherutxos;
     double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,maxbid,minask,avail,KMDavail;
-    uint32_t lasttime;
+    uint32_t lasttime,numpending;
     char CMCname[32],symbol[16],depositaddr[64],KMDdepositaddr[64],KMDjumblraddr[64],jumblraddr[64];
+    struct jumblr_pending *pending;
 };
 
 struct iguana_info
 {
     UT_hash_handle hh;
-    char name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
+    char CMCname[64],name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers *peers; struct iguana_peer internaladdr;
     //basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     //basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
