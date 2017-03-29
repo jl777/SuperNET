@@ -23,11 +23,11 @@ iguana: most efficient bitcoin core implementation that can simultaneously be fu
 komodo: this is the top secret project I cant talk about publicly yet
 
 > #TL;DR#
-> 
-> ```sudo apt-get update; sudo apt-get install git libcurl4-openssl-dev build-essential; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
-> 
-> The above one line gets SuperNET installed, built and launched for unix. 
-> 
+>
+> ```sudo apt-get update; sudo apt-get install git libcurl4-openssl-dev build-essential libnanomsg-dev; git clone https://github.com/jl777/SuperNET; cd SuperNET; ./m_onetime m_unix;```
+>
+> The above one line gets SuperNET installed, built and launched for unix.
+>
 > After that ```./m_unix``` updates to latest.
 > *Continue below at "Running".*
 
@@ -44,6 +44,8 @@ The above two definitions need to be changed to match the mingw install on your 
 You need to make sure the nacl sdk is properly installed and you are able to build the examples.
 Now you will need to get the external libs, which can be built from scratch using naclports or there use the reference builds of libcurl.a and libz.a in the SuperNET/crypto777/pnacl_libs. You can just copy those over into $(NACL_SDK_ROOT)/<pepper_dir>/lib/pnacl.
 
+##For android##
+You have to build a native libnanomsg for android. This section is work in progress. Contact ca333@protonmail.ch for assistance on building latest iguana for android.
 
 #ONETIME#
 Now you are ready to build.
@@ -103,14 +105,14 @@ Internally, all paths convert the request into a standard SuperNET JSON request.
 Another approach is to use the bitcoin RPC syntax via:
  curl --url "http://127.0.0.1:7778" --data "{\"coin\":\"BTCD\",\"method\":\"getinfo\",\"params\":[]}"
 the params:[] array is where the standard bitcoin parameters go, the only change that is needed is to specify the coin
-alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin 
+alternatively {"agent":"SuperNET","method":"bitcoinrpc","coin":"BTCD"} will set the coin
 to use for bitcoin RPC calls. this will suffice in single coin environments
 
 curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"iguana",\"method\":\"test\"}"
 curl --url "http://127.0.0.1:7778/iguana/test" -> html page with results
 curl --url "http://127.0.0.1:7778/api/iguana/test" -> just json text
 http://127.0.0.1:7778 -> superugly GUI
-http://127.0.0.1:7778/iguana/test 
+http://127.0.0.1:7778/iguana/test
 http://127.0.0.1:7778/api/iguana/test
 postCall('{"agent":"iguana","method":"test"}'}
 iguana_JSON("{\"agent\":\"iguana",\"method\":\"test\"}"); -> direct C function call
@@ -124,7 +126,7 @@ iguana can be invoked with a command line argument. if it is a name of a file, i
 "exchanges" -> { "name":"<name of exchange>", ... }
     "apikey", "apisecret", "userid", "tradepassword" these are as expected
     "pollgap" -> gap between each access to exchange for getting prices
-    
+
 on OSX mksquashfs is not native, you will need to install fuse: https://osxfuse.github.io/ and a squashfs for mac: https://github.com/vasi/squashfuse
 
     **********
@@ -221,34 +223,3 @@ sudo service ntp start
 
 Now things should be ready. To update and run notary node:
 pkill iguana; ./m_LP; tests/notaryinit
-
-
-##Build for OSX distribution##
-Get OSX SDK 10.6 from https://github.com/ca333/MacOSX-SDKs/releases/tag/10.6
-
-Unpack & move the .sdk folder to Xcodes SDK folder:
-
-```cd DownloadDirectory```
-
-```mv MacOSX10.6.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/.```
-
-If you are using Xcode > 7.3 add the new SDK to XCode by changing MinimumSDKVersion in your Info.plist:
-
-```vi /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist```
-
-Change the value to:
-
-```
-<key>MinimumSDKVersion</key>
-<string>10.6</string>
-```
-Build crypto777 library and agents with OSX release makefile:
-
-```./m_onetime m_osx_release```
-
-Execute the OSX deploy script:
-
-```
-./osx_deploy.sh
-```
-The iguana binary and its linked libraries are in ```$HOME/tmp/iguana```.
