@@ -639,8 +639,9 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct iguana_info *kmdcoin;
-    if ( (kmdcoin= iguana_coinfind("KMD")) == 0 )
+    if ( (kmdcoin= iguana_coinfind("KMD")) == 0 || iguana_coinfind("BTC") == 0 )
         return;
+    printf("jumblr_DEXcheck\n");
     jumblr_DEXupdate(myinfo,kmdcoin,"KMD","komodo",0.,0.);
     if ( strcmp(coin->symbol,"KMD") != 0 && kmdcoin->DEXinfo.btcprice > 0. )
     {
