@@ -307,7 +307,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         char str[65],str2[65];
                         if ( counter++ < 100 )
                         {
-                            for (i=0; i<len; i++)
+                            for (i=0; i<len&&i<64; i++)
                                 printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
                             printf(" len.%d error getting txi.%d [%d:%d] cmp.%s %s\n",len,i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
                         }
