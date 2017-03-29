@@ -141,7 +141,7 @@ struct iguana_msgmerkle
     uint32_t branch_length;
     bits256 branch_hash[4096];
     uint32_t branch_side_mask;
-}PACKEDSTRUCT;
+}; //PACKEDSTRUCT;
 
 struct iguana_msgblock
 {
@@ -155,9 +155,9 @@ struct iguana_msgzblock
     uint32_t txn_count;
 } PACKEDSTRUCT;
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; }PACKEDSTRUCT;
+struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; }; //PACKEDSTRUCT;
 
-struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; }PACKEDSTRUCT;
+struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; }; //PACKEDSTRUCT;
 
 struct iguana_msgtx
 {
@@ -168,7 +168,7 @@ struct iguana_msgtx
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
     uint8_t *serialized;
-} PACKEDSTRUCT;
+};// PACKEDSTRUCT;
 
 struct iguana_msgjoinsplit
 {
