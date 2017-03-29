@@ -18,7 +18,7 @@
 // iguana_OS has functions that invoke system calls. Whenever possible stdio and similar functions are use and most functions are fully portable and in this file. For things that require OS specific, the call is routed to iguana_OS_portable_*  Usually, all but one OS can be handled with the same code, so iguana_OS_portable.c has most of this shared logic and an #ifdef iguana_OS_nonportable.c
 
 #ifdef __APPLE__
-#define LIQUIDITY_PROVIDER 1
+//#define LIQUIDITY_PROVIDER 1
 #endif
 
 #ifdef NATIVE_WINDOWS
@@ -365,8 +365,12 @@ void escape_code(char *escaped,char *str);
 void SaM_PrepareIndices();
 
 // iguana_serdes.c
+#ifndef IGUANA_LOG2PACKETSIZE
 #define IGUANA_LOG2PACKETSIZE 22
+#endif
+#ifndef IGUANA_MAXPACKETSIZE
 #define IGUANA_MAXPACKETSIZE (1 << IGUANA_LOG2PACKETSIZE)
+#endif
 struct iguana_msghdr { uint8_t netmagic[4]; char command[12]; uint8_t serdatalen[4],hash[4]; } PACKED;
 
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp);
@@ -400,6 +404,7 @@ int32_t revsort32(uint32_t *buf,uint32_t num,int32_t size);
 bits256 bits256_sha256(bits256 data);
 void bits256_rmd160(uint8_t rmd160[20],bits256 data);
 void bits256_rmd160_sha256(uint8_t rmd160[20],bits256 data);
+double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *lowaskp,double *CMC_averagep,double changes[3],char *name,char *base,char *rel,double *USD_averagep);
 
 extern char *Iguana_validcommands[];
 extern bits256 GENESIS_PUBKEY,GENESIS_PRIVKEY;

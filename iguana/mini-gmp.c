@@ -4394,7 +4394,7 @@ int32_t bitcoin_base58decode(uint8_t *data,char *coinaddr)
 	//memset(data,0,be_sz);
     //for (i=0; i<count; i++)
     //    data[i+zeroes] = revdata[count - 1 - i];
-    //printf("len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
+    //printf(" count.%d len.%d be_sz.%d zeroes.%d data[0] %02x %02x\n",(int32_t)count,be_sz+zeroes,be_sz,zeroes,data[0],data[1]);
     mpz_clear(bn), mpz_clear(bn58);
 	return(be_sz);
 }
@@ -4416,6 +4416,7 @@ void mpz_from_bits256(mpz_t bn,bits256 x)
 bits256 mpz_to_bits256(mpz_t bn)
 {
     bits256 x,rev; size_t count; int32_t i;
+    memset(x.bytes,0,sizeof(x));
     mpz_export(rev.bytes,&count,1,sizeof(uint64_t),1,0,bn);
     for (i=0; i<32; i++)
         x.bytes[i] = rev.bytes[31-i];

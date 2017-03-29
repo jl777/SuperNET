@@ -238,8 +238,8 @@ struct iguana_bundle *iguana_fastexternalspent(struct supernet_info *myinfo,stru
 int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coin,struct iguana_bundle *bp,struct iguana_ramchain *ramchain,int32_t starti,int32_t numblocks,int32_t convertflag,int32_t iterate)
 {
     static uint64_t total,emitted;
-    int32_t iter,spendind,n=0,txidind,errs=0,emit=0,i,j,k; double startmillis; bits256 prevhash;
-    uint32_t spent_unspentind,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
+    int32_t iter,spendind=0,n=0,txidind,errs=0,emit=0,i,j,k; double startmillis; bits256 prevhash;
+    uint32_t spent_unspentind=0,spent_pkind,now,starttime; struct iguana_ramchaindata *rdata;
     struct iguana_bundle *spentbp; struct iguana_blockRO *B; struct iguana_spendvector *ptr;
     struct iguana_unspent *u,*spentU;  struct iguana_txid *T; char str[65];
     struct iguana_spend *S,*s; //void *fastfind = 0;
@@ -270,7 +270,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
     ptr = mycalloc('x',sizeof(*ptr),n);
     total += n;
     startmillis = OS_milliseconds();
-    if ( 0 && strcmp(coin->symbol,"BTC") == 0 )
+    if ( (0) && strcmp(coin->symbol,"BTC") == 0 )
         printf("start UTXOGEN.%d max.%d ptr.%p millis.%.3f\n",bp->bundleheight,n,ptr,startmillis);
     starttime = (uint32_t)time(NULL);
     iguana_ramchain_prefetch(coin,&bp->ramchain,3);
@@ -383,7 +383,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
                                 ptr[emit].unspentind = spent_unspentind;
                                 ptr[emit].fromheight = bp->bundleheight + i;
                                 ptr[emit].tmpflag = 1;
-                                if ( 0 && bp == coin->current )
+                                if ( (0) && bp == coin->current )
                                     printf("fromht.%d spends [%d] TMPVECTOR u%d s%u\n",ptr[emit].fromheight,ptr[emit].hdrsi,ptr[emit].unspentind,spendind);
                                 emit++;
                             }
@@ -436,7 +436,7 @@ int32_t iguana_spendvectors(struct supernet_info *myinfo,struct iguana_info *coi
                 //printf("ALLOC tmpspends.[%d]\n",bp->hdrsi);
                 ptr = 0;
             }
-            if ( 0 && bp == coin->current )
+            if ( (0) && bp == coin->current )
                 printf("spendvectors.[%d]: tmpspends.%p[%d] after += emit.%d X.%p\n",bp->hdrsi,bp->tmpspends,bp->numtmpspends,emit,bp->ramchain.Xspendinds);
         } else errs = -iguana_spendvectorsave(coin,bp,ramchain,ptr!=0?ptr:bp->tmpspends,emit,n);
     }
@@ -486,12 +486,12 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
     spendind = B[starti].firstvin;
     unspentind = B[starti].firstvout;
     emit = startemit;
-    if ( 0 && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
+    if ( (0) && (coin->RTheight == 0 || bp->bundleheight+bp->n < coin->RTheight) )
         fprintf(stderr,"BALANCEGEN.[%d] %p[%d] starti.%d s%d <-> endi.%d s%d startemit.%d\n",bp->hdrsi,Xspendinds,numXspends,starti,spendind,endi,B[endi].firstvin+B[endi].numvins,startemit);
     for (i=starti; i<=endi; i++)
     {
         now = (uint32_t)time(NULL);
-        if ( 0 && bp == coin->current )
+        if ( (0) && bp == coin->current )
             printf("hdrs.[%d] B[%d] 1st txidind.%d txn_count.%d firstvin.%d firstvout.%d\n",bp->hdrsi,i,B[i].firsttxidind,B[i].txn_count,B[i].firstvin,B[i].firstvout);
         if ( txidind != B[i].firsttxidind || spendind != B[i].firstvin || unspentind != B[i].firstvout )
         {
@@ -506,7 +506,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 printf("balancegen: txidind %u != %u T[txidind].firsttxidind || spendind %u != %u T[txidind].firstvin errs.%d (%d %d)\n",txidind,(uint32_t)T[txidind].txidind,spendind,(uint32_t)T[txidind].firstvin,errs,unspentind,B[i].firstvout);
                 return(-1);
             }
-            if ( 0 && bp == coin->current )
+            if ( (0) && bp == coin->current )
                 printf("starti.%d txidind.%d txi.%d numvins.%d spendind.%d\n",i,txidind,j,T[txidind].numvins,spendind);
             /*if ( bp == coin->current )//ramchain == &coin->RTramchain )
             {
@@ -541,7 +541,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                         spent_hdrsi = spend->hdrsi;
                         h = spend->fromheight;
                     }
-                    if ( 0 && bp == coin->current )
+                    if ( (0) && bp == coin->current )
                         printf("external prevout.%d (emit.%d numX.%d) %p u%d p%d errs.%d spent_hdrsi.%d s%u\n",s->prevout,emit,numXspends,Xspendinds,spent_unspentind,spent_pkind,errs,spent_hdrsi,spendind);
                 }
                 else if ( s->prevout >= 0 )
@@ -567,7 +567,7 @@ int32_t iguana_balancegen(struct iguana_info *coin,int32_t incremental,struct ig
                 spentbp = 0;
                 if ( (spentbp= coin->bundles[spent_hdrsi]) != 0 && spent_unspentind > 0 && spent_pkind > 0 )
                 {
-                    if ( 0 && bp == coin->current )
+                    if ( (0) && bp == coin->current )
                         printf("[%d] spendind.%u -> [%d] u%d\n",bp->hdrsi,spendind,spent_hdrsi,spent_unspentind);
                     if ( iguana_volatileupdate(coin,incremental,&spentbp->ramchain,spent_hdrsi,spent_unspentind,spent_pkind,spent_value,spendind,h) < 0 ) //(spentbp == coin->current) ? &coin->RTramchain : 
                         errs++;
@@ -967,7 +967,7 @@ int32_t iguana_balanceflush(struct supernet_info *myinfo,struct iguana_info *coi
     }
     char str[65]; printf("BALANCES WRITTEN for %d orig.%d bundles %s\n",coin->balanceswritten,coin->origbalanceswritten,bits256_str(str,coin->balancehash));
     //iguana_utxoaddr_gen(myinfo,coin,(coin->balanceswritten - 1) * coin->chain->bundlesize);
-    if ( 0 && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
+    if ( (0) && coin->balanceswritten > coin->origbalanceswritten+10 ) // strcmp(coin->symbol,"BTC") == 0 &&
     {
         coin->active = 0;
         coin->started = 0;
@@ -1119,7 +1119,7 @@ int32_t iguana_convert(struct iguana_info *coin,int32_t helperid,struct iguana_b
         total[helperid % max] += converted;
         for (i=sum=0; i<max; i++)
             sum += total[i];
-        if ( 0 && converted != 0 && bp != coin->current )
+        if ( (0) && converted != 0 && bp != coin->current )
             printf("[%4d] millis %7.3f converted.%-7d balance calc.%-4d of %4d | total.%llu of %llu depth.%d\n",bp->hdrsi,OS_milliseconds()-startmillis,converted,m,n,(long long)sum,(long long)total_tmpspends,(int32_t)depth);
     }
     depth--;
@@ -1134,7 +1134,7 @@ int32_t iguana_bundlevalidate(struct supernet_info *myinfo,struct iguana_info *c
     if ( coin->chain->zcash != 0 )
     {
         static uint32_t counter;
-        if ( 0 && counter++ < 3 )
+        if ( (0) && counter++ < 3 )
             printf("need to process joinsplits before can validate.%s\n",coin->symbol);
         bp->validated = (uint32_t)time(NULL);
         forceflag = 1;

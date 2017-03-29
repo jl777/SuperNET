@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"gettxout\",\"vout\":0,\"txid\":\"cad09f4c3e23ef4cde4980cc0e2b296943f22cbaac183a30f86f49f7eccfedfd\",\"symbol\":\"BTC\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"gettxout\",\"vout\":1,\"txid\":\"4a1a2026718ac10bd11ccccbdd85f29faa5f0b7c3ab95a57dcf7040c5ca0420c\",\"symbol\":\"KMD\"}"

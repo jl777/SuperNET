@@ -14,15 +14,11 @@
  ******************************************************************************/
 
 #include "OS_portable.h"
+#define LIQUIDITY_PROVIDER 1
 
 #if LIQUIDITY_PROVIDER
-#ifdef _WIN32
-#include <curl.h>
-#include <easy.h>
-#else
 #include <curl/curl.h>
 #include <curl/easy.h>
-#endif
 
 // return data from the server
 #define CURL_GLOBAL_ALL (CURL_GLOBAL_SSL|CURL_GLOBAL_WIN32)
@@ -109,6 +105,8 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
  *
  ************************************************************************/
 
+static int32_t USE_JAY;
+
 char *Jay_NXTrequest(char *command,char *params)
 {
     char *retstr = 0;
@@ -127,7 +125,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
         didinit = 1;
         curl_global_init(CURL_GLOBAL_ALL); //init the curl session
     }
-    if ( USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0) )
+    if ( (0) && (USE_JAY != 0 && (strncmp(url,"http://127.0.0.1:7876/nxt",strlen("http://127.0.0.1:7876/nxt")) == 0 || strncmp(url,"https://127.0.0.1:7876/nxt",strlen("https://127.0.0.1:7876/nxt")) == 0)) )
     {
         if ( (databuf= Jay_NXTrequest(command,params)) != 0 )
             return(databuf);
@@ -138,7 +136,7 @@ char *bitcoind_RPC(char **retstrp,char *debugstr,char *url,char *userpass,char *
     else specialcase = 0;
     if ( url[0] == 0 )
         strcpy(url,"http://127.0.0.1:7776");
-    if ( specialcase != 0 && 0 )
+    if ( specialcase != 0 && (0) )
         printf("<<<<<<<<<<< bitcoind_RPC: debug.(%s) url.(%s) command.(%s) params.(%s)\n",debugstr,url,command,params);
 try_again:
     if ( retstrp != 0 )
@@ -177,9 +175,12 @@ try_again:
                 bracket0 = (char *)"[";
                 bracket1 = (char *)"]";
             }
-            
+            char agentstr[64];
             databuf = (char *)malloc(256 + strlen(command) + strlen(params));
-            sprintf(databuf,"{\"id\":\"jl777\",\"method\":\"%s\",\"params\":%s%s%s}",command,bracket0,params,bracket1);
+            if ( debugstr[0] != 0 )
+                sprintf(agentstr,"\"agent\":\"%s\",",debugstr);
+            else agentstr[0] = 0;
+            sprintf(databuf,"{\"id\":\"jl777\",%s\"method\":\"%s\",\"params\":%s%s%s}",agentstr,command,bracket0,params,bracket1);
             //printf("url.(%s) userpass.(%s) databuf.(%s)\n",url,userpass,databuf);
             //
         } //else if ( specialcase != 0 ) fprintf(stderr,"databuf.(%s)\n",params);
@@ -206,13 +207,13 @@ try_again:
             free(s.ptr);
             return(0);
         }
-        else if ( numretries >= 2 )
+        else if ( numretries >= 4 )
         {
+            printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
             //printf("Maximum number of retries exceeded!\n");
             free(s.ptr);
             return(0);
         }
-        printf( "curl_easy_perform() failed: %s %s.(%s %s), retries: %d\n",curl_easy_strerror(res),debugstr,url,command,numretries);
         free(s.ptr);
         sleep((1<<numretries));
         goto try_again;
@@ -235,7 +236,7 @@ try_again:
         }
         else
         {
-            if ( 0 && specialcase != 0 )
+            if ( (0) && specialcase != 0 )
                 fprintf(stderr,"<<<<<<<<<<< bitcoind_RPC: BTCD.(%s) -> (%s)\n",params,s.ptr);
             count2++;
             elapsedsum2 += (OS_milliseconds() - starttime);
@@ -244,9 +245,9 @@ try_again:
             return(s.ptr);
         }
     }
-    printf("bitcoind_RPC: impossible case\n");
-    free(s.ptr);
-    return(0);
+    //printf("bitcoind_RPC: impossible case\n");
+    //free(s.ptr);
+    //return(0);
 }
 
 /************************************************************************

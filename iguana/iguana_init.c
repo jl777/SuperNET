@@ -77,6 +77,7 @@ void iguana_initcoin(struct iguana_info *coin,cJSON *argjson)
     {
         sprintf(dirname,"%s/%s",GLOBAL_TMPDIR,coin->symbol), OS_portable_path(dirname);
         portable_mutex_init(&coin->RTmutex);
+        portable_mutex_init(&coin->kmdmutex);
         portable_mutex_init(&coin->peers_mutex);
         portable_mutex_init(&coin->blocks_mutex);
         portable_mutex_init(&coin->special_mutex);
@@ -268,7 +269,7 @@ int32_t iguana_bundleinitmap(struct supernet_info *myinfo,struct iguana_info *co
 
 void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int32_t iter,FILE *fp)
 {
-    int32_t j,k,m,c,flag,bundlei,lastheight,missing=0,height = -1; char checkstr[1024],line[1024];
+    int32_t j,k,m,c,flag,bundlei,lastheight=0,missing=0,height = -1; char checkstr[1024],line[1024];
     struct iguana_peer *addr; struct iguana_bundle *bp; bits256 allhash,hash2,hash1,zero,lastbundle;
     if ( coin->FULLNODE == 0 && coin->VALIDATENODE == 0 && iter > 0 )
         return;
@@ -317,7 +318,7 @@ void iguana_parseline(struct supernet_info *myinfo,struct iguana_info *coin,int3
         {
             if ( m < coin->MAXPEERS/2 )
             {
-                if ( 0 && m == 0 && coin->seedipaddr[0] != 0 )
+                if ( (0) && m == 0 && coin->seedipaddr[0] != 0 )
                 {
                     addr = &coin->peers->active[m++];
                     iguana_initpeer(coin,addr,(uint32_t)calc_ipbits(coin->seedipaddr));

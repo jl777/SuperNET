@@ -185,7 +185,7 @@ struct msgcounts { uint32_t version,verack,getaddr,addr,inv,getdata,notfound,get
 
 //struct iguana_fileitem { bits256 hash2; struct iguana_txdatabits txdatabits; };
 
-struct iguana_kvitem { UT_hash_handle hh; uint8_t keyvalue[]; }PACKEDSTRUCT;
+struct iguana_kvitem { UT_hash_handle hh; uint8_t keyvalue[]; };
 
 struct iguana_iAddr
 {
@@ -223,13 +223,13 @@ struct iguana_block
 {
     iguana_blockfields;
     struct iguana_zcashRO zRO[];
-} PACKEDSTRUCT;
+} ;
 
 struct iguana_zblock // mu
 {
     iguana_blockfields; // this is to minimize code needed to support both types
     struct iguana_zcashRO zRO; // if zRO is changed, the RO part must also be updated
-} PACKEDSTRUCT;
+} ;
 
 #define IGUANA_LHASH_BLOCKS 0
 #define IGUANA_LHASH_TXIDS 1 //
@@ -285,8 +285,8 @@ struct iguana_utxo { uint32_t fromheight:31,lockedflag:1,prevunspentind:31,spent
 #ifdef DEPRECATED_HHUTXO
 struct iguana_hhaccount { UT_hash_handle hh; uint64_t pval; struct iguana_account a; }PACKEDSTRUCT;
 #endif
-struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; }PACKEDSTRUCT;
-struct iguana_utxoaddr { UT_hash_handle hh; uint64_t histbalance; uint32_t pkind:30,p2sh:1,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; }PACKEDSTRUCT;
+struct iguana_hhutxo { UT_hash_handle hh; uint64_t uval; struct iguana_utxo u; };
+struct iguana_utxoaddr { UT_hash_handle hh; uint64_t histbalance; uint32_t pkind:30,p2sh:1,searchedhist:1; uint16_t hdrsi; uint8_t rmd160[20]; };
 
 // GLOBAL one zero to non-zero write (unless reorg)
 struct iguana_spendvector { uint64_t value; uint32_t pkind,unspentind; int32_t fromheight; uint16_t hdrsi:15,tmpflag:1; }PACKEDSTRUCT; // unspentind
@@ -531,11 +531,13 @@ struct iguana_info
     uint32_t utxoaddrlastcount,*utxoaddroffsets,lastunspentsupdate; uint8_t *utxoaddrtable; bits256 utxoaddrhash;
     FILE *utxofp;
     bits256 markedunspents[1024];
+    uint64_t estimatedfee;
     char seedipaddr[64]; 
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
     struct hashstr_item *alladdresses;
+    struct kmd_transactionhh *kmd_transactions; struct kmd_addresshh *kmd_addresses; portable_mutex_t kmdmutex; FILE *kmd_txidfp,*kmd_spendfp; int32_t kmd_didinit,kmd_height,DEXEXPLORER; uint32_t kmd_lasttime;
 };
 
 struct vin_signer { bits256 privkey; char coinaddr[64]; uint8_t siglen,sig[80],rmd160[20],pubkey[66]; };

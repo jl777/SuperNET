@@ -110,7 +110,7 @@ int32_t tradebots_calcrawfeatures(struct tradebot_arbpair *pair)
     }
     if ( n > sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures) )
     {
-        printf("n.%d too many for rawfeatures %ld\n",n,sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures));
+        printf("n.%d too many for rawfeatures %d\n",n,(int32_t)(sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)));
         exit(-1);
     }
     return(n);
@@ -160,7 +160,7 @@ struct tradebot_arbpair *tradebots_arbpair_create(char *base,char *rel)
         pair->fp = OS_appendfile(fname);
         if ( (ftell(pair->fp) % sizeof(pair->rawfeatures)) != 0 )
         {
-            printf("misalinged rawfeatures %ld %ld\n",ftell(pair->fp),(ftell(pair->fp) % sizeof(pair->rawfeatures)));
+            printf("misalinged rawfeatures %d %d\n",(uint32_t)ftell(pair->fp),(uint32_t)(ftell(pair->fp) % sizeof(pair->rawfeatures)));
         }
         fseek(pair->fp,(ftell(pair->fp) / sizeof(pair->rawfeatures)) * sizeof(pair->rawfeatures) - sizeof(pair->rawfeatures),SEEK_SET);
         if ( fread(pair->rawfeatures,1,sizeof(pair->rawfeatures),pair->fp) == sizeof(pair->rawfeatures) )
@@ -309,8 +309,8 @@ int32_t tradebots_calcpreds(float *RTpreds,struct tradebot_arbpair *pair,double 
 void tradebots_calcanswers(struct tradebot_arbpair *pair)
 {
     double highbid,lowask,futurebid,futureask,ave,vol,bidaves[TRADEBOTS_NUMDECAYS],askaves[TRADEBOTS_NUMDECAYS],bidslopes[TRADEBOTS_NUMDECAYS],askslopes[TRADEBOTS_NUMDECAYS];
-    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin,futuremax,minval,maxval,*hblas = 0;
-    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi;
+    float rawfeatures[sizeof(pair->rawfeatures)/sizeof(*pair->rawfeatures)],futuremin=0,futuremax=0,minval=0,maxval=0,*hblas = 0;
+    uint32_t timestamp,firsttime = 0; long fpos,savepos; int32_t flag,i,iter,j,ind,maxi=0;
     OCAS_PLUS_INF = _OCAS_PLUS_INF; OCAS_NEG_INF = -_OCAS_PLUS_INF;
     if ( pair->fp != 0 )
     {
@@ -932,6 +932,8 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     li.ask = jdouble(vals,"ask");
     if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
         li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.001;
+    if ( strcmp(li.base,"KMD") == 0 && strcmp(li.rel,"BTC") == 0 && li.minvol > 100. )
+        li.minvol = 100.;
     if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
         li.maxvol = li.minvol;
     if ( (li.totalvol= jdouble(vals,"total")) < li.maxvol )
@@ -982,7 +984,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
                 } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
             }
             myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.6f ask %.8f maxvol %.f ref %.8f\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.maxvol,li.refprice);
+            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
             return;
         }
     }
@@ -1010,7 +1012,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             dir = 1;
         else if ( strcmp(rel,refli.base) == 0 && strcmp(base,refli.rel) == 0 )
             dir = -1;
-        else dir = 0;
+        else continue;
         if ( exchange[0] != 0 && refli.exchange[0] != 0 && strcmp(exchange,refli.exchange) != 0 )
         {
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
@@ -1056,7 +1058,7 @@ struct liquidity_info *_default_lifind(struct supernet_info *myinfo,int32_t *dir
 void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
     // update balance, compare to target balance, issue balancing trade via central exchanges, if needed
-    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir;
+    struct liquidity_info *li; double vol,price,volume,srcamount,destamount,profitmargin,dir=0.,dotrade=1.; char base[64],rel[64]; int32_t idir; char *tradestr=0; cJSON *tradejson;
     srcamount = swap->I.req.srcamount;
     destamount = swap->I.req.destamount;
     profitmargin = (double)swap->I.req.profitmargin / 1000000.;
@@ -1101,8 +1103,8 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("BOB: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir < 0. ? "buy" : "sell",price + dir * price * profitmargin,100*profitmargin);
             if ( dir < 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
         }
     }
     else
@@ -1111,14 +1113,26 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         {
             printf("ALICE: price %f * vol %f -> %s newprice %f margin %.2f%%\n",price,volume,dir > 0. ? "buy" : "sell",price - dir * price * profitmargin,100*profitmargin);
             if ( dir > 0. )
-                InstantDEX_buy(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
-            else InstantDEX_sell(myinfo,0,0,0,"poloniex",base,rel,price,volume,dotrade);
+                tradestr = InstantDEX_buy(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
+            else tradestr = InstantDEX_sell(myinfo,0,0,0,"bittrex",base,rel,price,volume,dotrade);
         }
+    }
+    if ( tradestr != 0 )
+    {
+        if ( (tradejson= cJSON_Parse(tradestr)) != 0 )
+        {
+            if ( jobj(tradejson,"error") == 0 ) // balancing is opposite trade
+                tradebot_pendingadd(myinfo,tradejson,swap->I.req.dest,destamount,swap->I.req.src,srcamount);
+            else free_json(tradejson);
+        }
+        free(tradestr);
     }
 }
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
+    printf("balancing trade\n");
+    return;
     if ( swap->balancingtrade == 0 )
         _default_swap_balancingtrade(myinfo,swap,iambob);
     else (*swap->balancingtrade)(myinfo,swap,iambob);
@@ -1143,7 +1157,7 @@ double tradebot_liquidity_active(struct supernet_info *myinfo,double *refpricep,
 
 void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *exchange,char *base,char *rel,struct exchange_quote *bidasks,int32_t numbids,int32_t numasks)
 {
-    double price,profitmargin,volume; struct tradebot_arbpair *pair;
+    double price,profitmargin=0.,volume; struct tradebot_arbpair *pair;
     if ( strcmp(rel,"NXT") == 0 && strcmp(base,"BTC") != 0 && (base= NXT_assetnamefind(base)) == 0 )
     {
         //printf("reject %s %s/%s\n",exchange,base,rel);
@@ -1154,7 +1168,7 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         //printf("reject %s %s/%s\n",exchange,base,rel);
         return;
     }
-    //printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
+    printf("%s %s/%s bids.%d asks.%d\n",exchange->name,base,rel,numbids,numasks);
     if ( numbids > 0 && (volume= bidasks[0].volume) > 0. && (profitmargin=
                          tradebot_liquidity_active(myinfo,&price,exchange->name,base,rel,volume)) > 0. )
     {
@@ -1193,35 +1207,3 @@ void tradebots_processprices(struct supernet_info *myinfo,struct exchange_info *
         }
     }
 }
-
-#include "../includes/iguana_apidefs.h"
-#include "../includes/iguana_apideclares.h"
-
-TWO_STRINGS(tradebot,gensvm,base,rel)
-{
-#ifdef _WIN
-    return(clonestr("{\"error\":\"windows doesnt support SVM\"}"));
-#else
-    int32_t numfeatures = 317*61;
-    struct tradebot_arbpair *pair;
-    if ( base[0] != 0 && rel[0] != 0 && (pair= tradebots_arbpair_find(base,rel)) != 0 && pair->fp != 0 )
-    {
-        tradebots_calcanswers(pair);
-        ocas_gen(pair->refc,numfeatures,0,(int32_t)(ftell(pair->fp) / sizeof(pair->rawfeatures)));
-        return(clonestr("{\"result\":\"success\"}"));
-    } else return(clonestr("{\"error\":\"cant find arbpair\"}"));
-#endif
-}
-
-ZERO_ARGS(tradebot,openliquidity)
-{
-    int32_t i; cJSON *array = cJSON_CreateArray();
-    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
-    {
-        if ( myinfo->linfos[i].base[0] != 0 )
-            jaddi(array,linfo_json(&myinfo->linfos[i]));
-    }
-    return(jprint(array,1));
-}
-
-#include "../includes/iguana_apiundefs.h"

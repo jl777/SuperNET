@@ -69,6 +69,7 @@ void dpow_entry2utxo(struct dpow_utxoentry *up,struct dpow_block *bp,struct dpow
 int32_t dpow_datahandler(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_block *bp,uint8_t nn_senderind,uint32_t channel,uint32_t height,uint8_t *data,int32_t datalen)
 {
     int32_t i,src_or_dest,myind = -1; bits256 txid,srchash; struct iguana_info *coin; char str[65],str2[65];
+    memset(srchash.bytes,0,sizeof(srchash));
     dpow_notaryfind(myinfo,bp,height,&myind,dp->minerkey33);
     if ( myind < 0 )
     {
@@ -125,8 +126,8 @@ int32_t dpow_checkutxo(struct supernet_info *myinfo,struct dpow_info *dp,struct 
     int32_t haveutxo,completed,minutxo,n; bits256 signedtxid; cJSON *addresses; char *rawtx,*sendtx;
     if ( strcmp("BTC",coin->symbol) == 0 )
     {
-        minutxo = 9;
-        n = 50;
+        minutxo = 199;
+        n = 10;
     }
     else
     {

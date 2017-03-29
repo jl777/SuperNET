@@ -137,9 +137,9 @@ int32_t bitcoin_sign(void *ctx,char *symbol,uint8_t *sig,bits256 txhash2,bits256
                                 //    printf("%02x",pubkey[i]);
                                 //printf(" bitcoin_sign's pubkey\n");
 
-                            } else printf("secpub mismatch\n");
+                            } //else printf("secpub mismatch\n");
                         } else printf("pubkey create error\n");
-                    } else printf("recover error\n");
+                    } //else printf("recover error\n");
                 } else printf("secp256k1_ecdsa_sign_recoverable error\n");
             }
             else
@@ -566,9 +566,9 @@ int32_t iguana_schnorr_test(void *ctx)
         {
             sigs[i] = sig64[i];
             continue;
-            for (j=0; j<64; j++)
-                printf("%02x",sig64[i][j]);
-            printf(" sig[%d]\n",i);
+            //for (j=0; j<64; j++)
+            //    printf("%02x",sig64[i][j]);
+            //printf(" sig[%d]\n",i);
         }
         for (i=0; i<N; i++)
         {

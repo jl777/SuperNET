@@ -221,6 +221,7 @@ char *tradebot_control(struct supernet_info *myinfo,char *exchangestr,char *boti
 
 #include "../includes/iguana_apidefs.h"
 #include "../includes/iguana_apideclares.h"
+#include "../includes/iguana_apideclares2.h"
 
 HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
 {
@@ -228,9 +229,11 @@ HASH_ARRAY_STRING(tradebot,liquidity,hash,vals,targetcoin)
     return(clonestr("{\"result\":\"targetcoin updated\"}"));
 }
 
-ZERO_ARGS(tradebot,amlp)
+STRING_ARG(tradebot,amlp,blocktrail)
 {
     myinfo->IAMLP = 1;
+    if ( blocktrail != 0 )
+        safecopy(myinfo->blocktrail_apikey,blocktrail,sizeof(myinfo->blocktrail_apikey));
     return(clonestr("{\"result\":\"liquidity provider active\"}"));
 }
 

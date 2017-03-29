@@ -69,12 +69,12 @@ int32_t basilisk_txitem(struct supernet_info *myinfo,struct basilisk_swap *swap,
         decode_hex((void *)&rawtx->I,sizeof(rawtx->I),hexstr);
         if ( (hexstr= jstr(obj,"txbytes")) != 0 && strlen(hexstr) == rawtx->I.datalen*2 )
         {
-            if ( rawtx->txbytes == 0 )
+            /*if ( rawtx->txbytes == 0 )
             {
                 printf("free (%s) txbytes\n",name);
                 free(rawtx->txbytes);
             }
-            rawtx->txbytes = calloc(1,rawtx->I.datalen);
+            rawtx->txbytes = calloc(1,rawtx->I.datalen);*/
             decode_hex((void *)rawtx->txbytes,rawtx->I.datalen,hexstr);
         }
         printf("PROCESS.(%s)\n",jprint(obj,0));
@@ -92,6 +92,7 @@ cJSON *basilisk_swapobj(struct supernet_info *myinfo,struct basilisk_swap *swap)
     jaddnum(obj,"quoteid",swap->I.req.quoteid);
     jadd(obj,"req",basilisk_requestjson(&swap->I.req));
     jaddstr(obj,"info",hexstr);
+    //printf("strlen(hexstr) swap->I %d vs %d\n",(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
     return(obj);
 }
 
@@ -104,7 +105,7 @@ int32_t basilisk_swapconv(struct supernet_info *myinfo,struct basilisk_swap *swa
         if ( juint(obj,"requestid") == swap->I.req.requestid && juint(obj,"quoteid") == swap->I.req.quoteid )
             return(0);
         printf("swapconv mismatched req/quote %d %d, %d %d\n",juint(obj,"requestid"),swap->I.req.requestid,juint(obj,"quoteid"),swap->I.req.quoteid);
-    } else printf("no info field in swap obj\n");
+    } //else printf("no info field in swap obj.(%s) len.%d vs %d\n",jprint(obj,0),(int32_t)strlen(hexstr),(int32_t)sizeof(swap->I)*2);
     return(-1);
 }
 
@@ -278,7 +279,7 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; bits256 privkey; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
@@ -288,7 +289,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(0.);
         pendingid = active->I.req.quoteid;
     }
-    if ( bits256_cmp(myinfo->myaddr.persistent,list[0].srchash) == 0 ) // my request
+    if ( smartaddress_pubkey(myinfo,&privkey,list[0].srchash) >= 0 )
         myrequest = 1;
     for (i=0; i<n; i++)
     {
@@ -296,7 +297,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(-1);
         if ( list[i].quoteid != 0 )
         {
-            if ( bits256_cmp(myinfo->myaddr.persistent,list[i].desthash) == 0 ) // my quoteid
+            if ( smartaddress_pubkey(myinfo,&privkey,list[i].desthash) >= 0 )
                 myrequest |= 2;
             havequoteflag++;
             if ( pendingid == 0 )
@@ -330,9 +331,9 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
-        printf("avebid %f bidvol %f, aveask %f askvol %f\n",retvals[0],retvals[1],retvals[2],retvals[3]);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
-        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
+        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount * SATOSHIDEN;
+        printf("aveprice %f dest %.8f avebid %f bidvol %f, aveask %f askvol %f\n",aveprice,dstr(destamount),retvals[0],retvals[1],retvals[2],retvals[3]);
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -343,8 +344,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             free(retstr);
         }
         // BTC balance 0.00500000 destamount 0.00041951 aveprice 0.00421619 minamount 0.00020000
-        printf("%s balance %.8f destamount %.8f aveprice %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(minamount));
-        if ( balance > destamount && (int64_t)destamount > 0 && destamount >= maxamount && destamount >= minamount )
+        printf("%s balance %.8f destamount %.8f aveprice %.8f maxamount %.8f minamount %.8f\n",list[0].dest,dstr(balance),dstr(destamount),aveprice,dstr(maxamount),dstr(minamount));
+        if ( balance > destamount && (int64_t)destamount > 0 && destamount >= minamount ) // max?
         {
             metric = 1.;
             *issueR = list[0];
@@ -374,6 +375,7 @@ double basilisk_process_results(struct supernet_info *myinfo,struct basilisk_req
 {
     cJSON *array,*item; uint8_t *hexdata,*allocptr,hexspace[32768]; char *hexstr; int32_t i,hexlen,n,m,nonz; struct basilisk_request tmpR,R,refR,list[BASILISK_MAXRELAYS]; double metric=0.;
     memset(&refR,0,sizeof(refR));
+    memset(&R,0,sizeof(R));
 //printf("process.(%s)\n",jprint(retjson,0));
     if ( (array= jarray(&n,retjson,"messages")) != 0 )
     {

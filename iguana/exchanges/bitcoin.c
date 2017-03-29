@@ -107,17 +107,29 @@ int32_t base58encode_checkbuf(uint8_t addrtype,uint8_t *data,int32_t data_len)
 
 int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 {
-    int32_t len = -1; bits256 hash; uint8_t buf[64];
+    int32_t len = -1; bits256 hash; uint8_t buf[256];
+    memset(buf,0,sizeof(buf));
     if ( (len= bitcoin_base58decode(buf,wifstr)) >= 4 )
     {
         // validate with trailing hash, then remove hash
+        if ( len < 38 )
+            len = 38;
         hash = bits256_doublesha256(0,buf,len - 4);
         *addrtypep = *buf;
         memcpy(privkeyp,buf+1,32);
-        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] &&(buf[len - 1]&0xff) == hash.bytes[28] )
+        if ( (buf[len - 4]&0xff) == hash.bytes[31] && (buf[len - 3]&0xff) == hash.bytes[30] &&(buf[len - 2]&0xff) == hash.bytes[29] && (buf[len - 1]&0xff) == hash.bytes[28] )
         {
-            //printf("coinaddr.(%s) valid checksum\n",coinaddr);
+            //int32_t i; for (i=0; i<len; i++)
+            //    printf("%02x ",buf[i]);
+            //printf(" buf, hash.%02x %02x %02x %02x ",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
+            //printf("wifstr.(%s) valid len.%d\n",wifstr,len);
             return(32);
+        }
+        else
+        {
+            int32_t i; for (i=0; i<len; i++)
+                printf("%02x ",buf[i]);
+            printf(" buf, hash.%02x %02x %02x %02x\n",hash.bytes[28],hash.bytes[29],hash.bytes[30],hash.bytes[31]);
         }
     }
     return(-1);
@@ -290,6 +302,7 @@ struct bitcoin_spend *iguana_spendset(struct supernet_info *myinfo,struct iguana
     ptr = spend->inputs;
     for (i=0; i<maxinputs; i++,ptr++)
     {
+        up = 0;
         for (mode=1; mode>=0; mode--)
             if ( (up= iguana_bestfit(coin,ups,totalunspents,remains,mode)) != 0 )
                 break;

@@ -31,7 +31,8 @@ char *sglue(GLUEARGS,char *agent,char *method)
 //printf("userpass.(%s)\n",userpass);
     jaddstr(json,"agent",agent);
     jaddstr(json,"method",method);
-    jaddstr(json,"coin",coin->symbol);
+    if ( coin != 0 )
+        jaddstr(json,"coin",coin->symbol);
     if ( userpass != 0 )
         jaddstr(json,"userpass",userpass);
     if ( coin != 0 && coin->FULLNODE >= 0 && coin->chain->userpass[0] != 0 )
@@ -1100,11 +1101,18 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
         }
         else
         {
-            //printf("ARGJSON.(%s)\n",jprint(argjson,0));
-            coin = iguana_coinchoose(myinfo,symbol,argjson,port);
-            if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
-                jaddstr(argjson,"userpass",userpass);
-            retstr = SuperNET_JSON(myinfo,coin,argjson,remoteaddr,port);
+            cJSON *arg;
+            if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
+            {
+                arg = jobj(argjson,"params");
+                if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
+                    arg = jitem(arg,0);
+            } else arg = argjson;
+            //printf("ARGJSON.(%s)\n",jprint(arg,0));
+            coin = iguana_coinchoose(myinfo,symbol,arg,port);
+            if ( userpass != 0 && jstr(arg,"userpass") == 0 )
+                jaddstr(arg,"userpass",userpass);
+            retstr = SuperNET_JSON(myinfo,coin,arg,remoteaddr,port);
         }
         free_json(argjson);
         free_json(json);
@@ -1144,7 +1152,7 @@ void iguana_rpcloop(void *args)
 {
     static char *jsonbuf;
     uint16_t port; struct supernet_info *myinfo = args; char filetype[128],content_type[128];
-    int32_t recvlen,flag,bindsock,postflag,contentlen,sock,remains,numsent,jsonflag,hdrsize,len;
+    int32_t recvlen,flag,bindsock,postflag=0,contentlen,sock,remains,numsent,jsonflag=0,hdrsize,len;
     socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;//,*retbuf; ,n,i,m
     struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_WIDTH*IGUANA_HEIGHT*16 + 512;
     if ( (port= myinfo->argport) == 0 )

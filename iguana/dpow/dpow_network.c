@@ -70,24 +70,20 @@ NN_CONNECT to (tcp://197.189.248.210:7775)
 NN_CONNECT to (tcp://149.56.19.212:7775)
 NN_CONNECT to (tcp://46.165.243.214:7775)
 NN_CONNECT to (tcp://45.64.168.216:7775)
-NN_CONNECT to (tcp://94.102.63.217:7775)
-NN_CONNECT to (tcp://192.99.233.217:7775)
-NN_CONNECT to (tcp://27.50.68.219:7775)
-NN_CONNECT to (tcp://167.114.227.223:7775)
-NN_CONNECT to (tcp://94.102.63.227:7775)
-NN_CONNECT to (tcp://176.9.0.233:7775)
-NN_CONNECT to (tcp://27.50.93.252:7775)*/
+*/
 
 void dex_init(struct supernet_info *myinfo)
 {
-    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146" };
+    int32_t i,j,mask = 0; char *seeds[] = { "78.47.196.146", "5.9.102.210", "149.56.29.163", "191.235.80.138", "88.198.65.74", "94.102.63.226", "129.232.225.202", "104.255.64.3", "52.72.135.200", "149.56.28.84", "103.18.58.150", "221.121.144.140", "123.249.79.12", "103.18.58.146", "27.50.93.252", "176.9.0.233", "94.102.63.227", "167.114.227.223", "27.50.68.219", "192.99.233.217", "94.102.63.217", "45.64.168.216" };
     OS_randombytes((void *)&i,sizeof(i));
     srand(i);
     for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
     {
         while ( 1 )
         {
-            j = i == 0 ? i : (rand() % (sizeof(seeds)/sizeof(*seeds)));
+            j = (rand() % (sizeof(seeds)/sizeof(*seeds)));
+            if ( i < 2 )
+                j = i;
             if ( ((1 << j) & mask) == 0 )
                 break;
         }
@@ -100,7 +96,7 @@ void dex_init(struct supernet_info *myinfo)
     portable_mutex_init(&myinfo->dexmutex);
 }
 
-int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
+int32_t signed_nn_send(struct supernet_info *myinfo,void *ctx,bits256 privkey,int32_t sock,void *packet,int32_t size)
 {
     int32_t i,j,sentbytes,siglen = 0; uint8_t sig[65],pubkey33[33],signpubkey33[33]; struct signed_nnpacket *sigpacket;
     if ( (sigpacket= calloc(1,size + sizeof(*sigpacket))) != 0 )
@@ -115,7 +111,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
                 break;
         }
         bitcoin_pubkey33(ctx,signpubkey33,privkey);
-        for (j=0; j<10; j++)
+        for (j=0; j<33; j++)
         {
             if ( i < 10000 && (siglen= bitcoin_sign(ctx,"nnsend",sig,sigpacket->packethash,privkey,1)) > 0 && siglen == 65 )
             {
@@ -138,6 +134,7 @@ int32_t signed_nn_send(void *ctx,bits256 privkey,int32_t sock,void *packet,int32
             }
         }
         free(sigpacket);
+        iguana_fixsecp(myinfo);
         printf("error signing nnpacket\n");
     }
     return(-1);
@@ -152,7 +149,7 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
     {
         //for (i=0; i<recvbytes; i++)
         //    printf("%02x",((uint8_t *)sigpacket)[i]);
-        //printf(" <- RECV.%d crc.%08x\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes));
+        //printf(" <- RECV.%d crc.%08x cmp.%d\n",recvbytes,calc_crc32(0,(void *)sigpacket,recvbytes),sigpacket->packetlen == recvbytes-sizeof(*sigpacket));
     }
     if ( sigpacket != 0 && recvbytes > sizeof(*sigpacket) && sigpacket->packetlen == recvbytes-sizeof(*sigpacket) )
     {
@@ -193,7 +190,8 @@ int32_t signed_nn_recv(void **freeptrp,void *ctx,uint8_t notaries[64][33],int32_
                 //printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
-    } //else printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
+    } else if ( recvbytes > 0 )
+        printf("recvbytes.%d mismatched packetlen.%d + %ld\n",recvbytes,sigpacket!=0?sigpacket->packetlen:-1,sizeof(*sigpacket));
     //printf("free sigpacket.%p freeptrp.%p packetp.%p\n",sigpacket,*freeptrp,*(void **)packetp);
     if ( sigpacket != 0 )
         nn_freemsg(sigpacket), sigpacket = 0;
@@ -241,6 +239,105 @@ char *nanomsg_tcpname(struct supernet_info *myinfo,char *str,char *ipaddr,uint16
     return(str);
 }
 
+void dpow_psockloop(void *_ptr)
+{
+    int32_t i,nonz,size,sentbytes; uint32_t now; struct psock *ptr; void *buf; struct supernet_info *myinfo = _ptr;
+    while ( 1 )
+    {
+        now = (uint32_t)time(NULL);
+        for (i=nonz=0; i<myinfo->numpsocks; i++) // change to nn_poll!
+        {
+            portable_mutex_lock(&myinfo->psockmutex);
+            if ( i < myinfo->numpsocks )
+            {
+                ptr = &myinfo->PSOCKS[i];
+                if ( (size= nn_recv(ptr->pullsock,&buf,NN_MSG,0)) > 0 )
+                {
+                    ptr->lasttime = now;
+                    if ( (sentbytes= nn_send(ptr->pubsock,buf,size,0)) > 0 )
+                    {
+                        //printf("PSOCKS[%d] of %d (%u %u) -> %d/%d bytes\n",i,myinfo->numpsocks,ptr->pushport,ptr->subport,size,sentbytes);
+                        nonz++;
+                    }
+                }
+                else if ( now > ptr->lasttime+PSOCK_IDLETIMEOUT )
+                {
+                    printf("PSOCKS[%d] of %d (%u %u) lag.%d IDLETIMEOUT\n",i,myinfo->numpsocks,ptr->pushport,ptr->subport,now - ptr->lasttime);
+                    nn_close(ptr->pullsock);
+                    nn_close(ptr->pubsock);
+                    if ( myinfo->numpsocks > 1 )
+                    {
+                        myinfo->PSOCKS[i] = myinfo->PSOCKS[--myinfo->numpsocks];
+                        memset(&myinfo->PSOCKS[myinfo->numpsocks],0,sizeof(*ptr));
+                    } else myinfo->numpsocks = 0;
+                }
+                if ( buf != 0 )
+                    nn_freemsg(buf), buf = 0;
+            }
+            portable_mutex_unlock(&myinfo->psockmutex);
+        }
+        if ( nonz == 0 )
+            usleep(100000);
+    }
+}
+
+void dpow_psockadd(struct supernet_info *myinfo,int32_t pullsock,uint16_t pushport,int32_t pubsock,uint16_t subport)
+{
+    struct psock *ptr;
+    portable_mutex_lock(&myinfo->psockmutex);
+    myinfo->PSOCKS = realloc(myinfo->PSOCKS,sizeof(*myinfo->PSOCKS) * (myinfo->numpsocks + 1));
+    ptr = &myinfo->PSOCKS[myinfo->numpsocks++];
+    ptr->pullsock = pullsock;
+    ptr->pushport = pushport;
+    ptr->pubsock = pubsock;
+    ptr->subport = subport;
+    ptr->lasttime = (uint32_t)time(NULL);
+    portable_mutex_unlock(&myinfo->psockmutex);
+}
+
+cJSON *dpow_psock(struct supernet_info *myinfo,char *jsonstr)
+{
+    char pushaddr[128],subaddr[128]; uint16_t i,pushport,subport; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; cJSON *retjson=0;
+    retjson = cJSON_CreateObject();
+    pushport = myinfo->psockport++;
+    subport = myinfo->psockport++;
+    for (i=0; i<100; i++)
+    {
+        pullsock = pubsock = -1;
+        nanomsg_tcpname(myinfo,pushaddr,myinfo->ipaddr,pushport), pushport += 2;
+        nanomsg_tcpname(myinfo,subaddr,myinfo->ipaddr,subport), subport += 2;
+        if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
+        {
+            if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
+            {
+                timeout = 10;
+                nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                timeout = 1;
+                nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                timeout = 1;
+                maxsize = 1024 * 1024;
+                nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+                dpow_psockadd(myinfo,pullsock,pushport,pubsock,subport);
+                jaddstr(retjson,"result","success");
+                jaddstr(retjson,"pushaddr",pushaddr);
+                jaddstr(retjson,"subaddr",subaddr);
+                break;
+            }
+            if ( pullsock >= 0 )
+                nn_close(pullsock);
+            if ( pubsock >= 0 )
+                nn_close(pubsock);
+        }
+        if ( pushport < 1000 )
+            pushport = 1001;
+        if ( subport < 1000 )
+            subport = 1001;
+    }
+    if ( i == 100 )
+        jaddstr(retjson,"error","cant find psock ports");
+    return(retjson);
+}
+
 static int _increasing_ipbits(const void *a,const void *b)
 {
 #define uint32_a (*(uint32_t *)a)
@@ -256,24 +353,24 @@ static int _increasing_ipbits(const void *a,const void *b)
 
 void dex_packet(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    char *retstr; int32_t datalen; struct iguana_info *coin; struct dex_request dexreq;
+    char *retstr; int32_t datalen; struct dex_request dexreq; //struct iguana_info *coin;
     //for (i=0; i<size; i++)
     //    printf("%02x",((uint8_t *)dexp)[i]);
-    //printf(" uniq.%s DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",dexp->handler,size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
     if ( strcmp(dexp->handler,"DEX") == 0 && dexp->datalen > BASILISK_KEYSIZE )
     {
+        printf(" uniq.%s DEX_PACKET.[%d] crc.%x lag.%d (%d %d)\n",dexp->handler,size,calc_crc32(0,dexp->packet,dexp->datalen),(int32_t)(time(NULL)-dexp->timestamp),dexp->size,dexp->datalen);
         if ( (retstr= basilisk_respond_addmessage(myinfo,dexp->packet,BASILISK_KEYSIZE,&dexp->packet[BASILISK_KEYSIZE],dexp->datalen-BASILISK_KEYSIZE,0,BASILISK_DEXDURATION)) != 0 )
             free(retstr);
     }
     else if ( strcmp(dexp->handler,"request") == 0 )
     {
         datalen = dex_rwrequest(0,dexp->packet,&dexreq);
-        if ( myinfo->IAMNOTARY != 0 && dexreq.func == 'A' && (coin= iguana_coinfind(dexreq.name)) != 0 )
+        /*if ( myinfo->IAMNOTARY != 0 && dexreq.func == 'A' && (coin= iguana_coinfind(dexreq.name)) != 0 )
         {
             if ( (retstr= dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
                 free(retstr);
             printf("process broadcast importaddress.(%s) [%s]\n",(char *)&dexp->packet[datalen],dexreq.name);
-        }
+        }*/
     }
 }
 
@@ -285,20 +382,32 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
     reqsock = myinfo->reqsock;
     if ( reqsock < 0 && (reqsock= nn_socket(AF_SP,NN_REQ)) >= 0 )
     {
-        for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
-            if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],REP_SOCK)) < 0 )
-            {
-                nn_close(reqsock);
-                reqsock = -1;
-                break;
-            }
+       if ( reqsock >= 0 )
+       {
+           timeout = 1000;
+           nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+           //timeout = 1500;
+           //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+           timeout = 3000;
+           nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+           //prio = 1;
+           //nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDPRIO,&prio,sizeof(prio));
+           //nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVPRIO,&prio,sizeof(prio));
+           for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
+           {
+               if ( nn_connect(reqsock,nanomsg_tcpname(0,str,myinfo->dexseed_ipaddrs[i],REP_SOCK)) < 0 )
+               {
+                   nn_close(reqsock);
+                   reqsock = -1;
+                   break;
+               }
+           }
+           //prio = 8;
+           //nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDPRIO,&prio,sizeof(prio));
+           //nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVPRIO,&prio,sizeof(prio));
+        }
         if ( reqsock >= 0 )
         {
-            timeout = 100;
-            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-            timeout = 3000;
-            nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-            //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
             if ( myinfo->IAMNOTARY == 0 && subsock < 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
             {
                 for (i=0; i<sizeof(myinfo->dexseed_ipaddrs)/sizeof(*myinfo->dexseed_ipaddrs); i++)
@@ -316,6 +425,10 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                     nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                     nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                     printf("CLIENT sockets req.%d sub.%d\n",reqsock,subsock);
+                    //timeout = 5000;
+                    //nn_setsockopt(reqsock,NN_TCP,NN_RECONNECT_IVL,&timeout,sizeof(timeout));
+                    timeout = 10000;
+                    nn_setsockopt(reqsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                 }
             }
         }
@@ -402,12 +515,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
+#ifndef __APPLE__
                     if ( (rand() % 100) < 40 )
                     {
                         nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
                         printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                     }
+#endif
                 }
             }
             if ( freeptr != 0 )
@@ -475,6 +590,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == 'x' )
+            {
+                if ( (retjson= dpow_gettxin(myinfo,coin,dexreq.hash,dexreq.shortarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 'H' )
             {
                 hash2 = dpow_getblockhash(myinfo,coin,dexreq.intarg);
@@ -485,6 +608,14 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
             else if ( dexreq.func == 'B' )
             {
                 if ( (retjson= dpow_getblock(myinfo,coin,dexreq.hash)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'b' )
+            {
+                if ( (retjson= dpow_getbalance(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
@@ -526,6 +657,23 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == 'u' )
+            {
+                if ( (retjson= kmd_listunspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                    //printf("RETURN.(%s)\n",retstr);
+                }
+            }
+            else if ( dexreq.func == 's' )
+            {
+                if ( (retjson= dpow_listspent(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 'P' )
             {
                 hash2 = dpow_getbestblockhash(myinfo,coin);
@@ -549,6 +697,15 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                     retstr = jprint(retjson,1);
                 }
             }
+            else if ( dexreq.func == '2' )
+            {
+                //printf("call list.(%s %d %d)\n",(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg);
+                if ( (retjson= kmd_listtransactions(myinfo,coin,(char *)&dexp->packet[datalen],dexreq.shortarg,dexreq.intarg)) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
             else if ( dexreq.func == 'C' )
             {
                 if ( (retjson= dpow_checkaddress(myinfo,coin,(char *)&dexp->packet[datalen])) != 0 )
@@ -562,7 +719,7 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 retstr = dpow_importaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 if ( retstr == 0 )
                 {
-                    *broadcastflagp = 1;
+                    //*broadcastflagp = 1;
                     retstr = dpow_validateaddress(myinfo,coin,(char *)&dexp->packet[datalen]);
                 }
                 else
@@ -583,6 +740,31 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 {
                     dpow_randipbits(myinfo,coin,retjson);
                     free(retstr);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'M' )
+            {
+                if ( (retjson= dpow_getmessage(myinfo,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( dexreq.func == 'Z' )
+            {
+                if ( (retjson= dpow_psock(myinfo,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    dpow_randipbits(myinfo,coin,retjson);
+                    retstr = jprint(retjson,1);
+                }
+            }
+            else if ( 0 && dexreq.func == 'a' )
+            {
+                if ( (retjson= dpow_addmessage(myinfo,(char *)&dexp->packet[datalen])) != 0 )
+                {
+                    *broadcastflagp = 1;
+                    dpow_randipbits(myinfo,coin,retjson);
                     retstr = jprint(retjson,1);
                 }
             }
@@ -763,6 +945,18 @@ char *_dex_gettxout(struct supernet_info *myinfo,char *symbol,bits256 txid,int32
     return(_dex_sendrequest(myinfo,&dexreq,3,"value"));
 }
 
+char *_dex_gettxin(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
+{
+    struct dex_request dexreq;
+    //char str[65]; printf("gettxout(%s %s %d)\n",symbol,bits256_str(str,txid),vout);
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.hash = txid;
+    dexreq.shortarg = vout;
+    dexreq.func = 'x';
+    return(_dex_sendrequest(myinfo,&dexreq,1,""));
+}
+
 char *_dex_kvupdate(struct supernet_info *myinfo,char *symbol,char *key,char *value,int32_t flags)
 {
     struct dex_request dexreq; char keyvalue[IGUANA_MAXSCRIPTSIZE]; int32_t keylen,valuesize;
@@ -832,6 +1026,16 @@ char *_dex_getnotaries(struct supernet_info *myinfo,char *symbol)
                         decode_hex(myinfo->notaries[i],33,pubkeystr);
                 }
             }
+            else
+            {
+                extern const char *Notaries_elected[][2];
+                myinfo->numnotaries = 64;//sizeof(Notaries_elected)/sizeof(*Notaries_elected);
+                for (i=0; i<myinfo->numnotaries; i++)
+                {
+                    decode_hex(myinfo->notaries[i],33,(char *)Notaries_elected[i][1]);
+                }
+                printf("default to elected.%d\n",myinfo->numnotaries);
+            }
             free_json(retjson);
         }
     }
@@ -888,6 +1092,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)
 {
     struct dex_request dexreq;
+return(clonestr("{\"error\":\"importaddress deprecated\"}"));
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'A';
@@ -912,12 +1117,77 @@ char *_dex_validateaddress(struct supernet_info *myinfo,char *symbol,char *addre
     return(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,""));
 }
 
-char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
+char *_dex_getmessage(struct supernet_info *myinfo,char *jsonstr)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,"KMD",sizeof(dexreq.name));
+    dexreq.func = 'M';
+    return(_dex_sendrequeststr(myinfo,&dexreq,jsonstr,0,1,""));
+}
+
+char *_dex_sendmessage(struct supernet_info *myinfo,char *jsonstr)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,"KMD",sizeof(dexreq.name));
+    dexreq.func = 'a';
+    return(_dex_sendrequeststr(myinfo,&dexreq,jsonstr,0,1,""));
+}
+
+char *_dex_psock(struct supernet_info *myinfo,char *jsonstr)
+{
+    struct dex_request dexreq;
+    if ( jsonstr == 0 )
+        jsonstr = "{}";
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,"KMD",sizeof(dexreq.name));
+    dexreq.func = 'Z';
+    return(_dex_sendrequeststr(myinfo,&dexreq,jsonstr,0,1,""));
+}
+
+char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *address,uint8_t arg)
 {
     struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
-    dexreq.func = 'U';
+    dexreq.func = arg;
+    if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
+    {
+        //printf("UNSPENTS.(%s)\n",retstr);
+    }
+    return(_dex_arrayreturn(retstr));
+}
+
+char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    return(_dex_listunspentarg(myinfo,symbol,address,'u')); // 'U' old variant
+}
+
+char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    return(_dex_listunspentarg(myinfo,symbol,address,'u'));
+}
+
+char *_dex_listspent(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; char *retstr;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 's';
+    if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
+    {
+        //printf("UNSPENTS.(%s)\n",retstr);
+    }
+    return(_dex_arrayreturn(retstr));
+}
+
+char *_dex_getbalance(struct supernet_info *myinfo,char *symbol,char *address)
+{
+    struct dex_request dexreq; char *retstr;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.func = 'b';
     if ( (retstr= _dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")) != 0 )
     {
         //printf("UNSPENTS.(%s)\n",retstr);
@@ -932,7 +1202,18 @@ char *_dex_listtransactions(struct supernet_info *myinfo,char *symbol,char *addr
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.intarg = skip;
     dexreq.shortarg = count;
-    dexreq.func = 'L';
+    dexreq.func = '2';//'L';
+    return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")));
+}
+
+char *_dex_listtransactions2(struct supernet_info *myinfo,char *symbol,char *address,int32_t count,int32_t skip)
+{
+    struct dex_request dexreq;
+    memset(&dexreq,0,sizeof(dexreq));
+    safecopy(dexreq.name,symbol,sizeof(dexreq.name));
+    dexreq.intarg = skip;
+    dexreq.shortarg = count;
+    dexreq.func = '2';
     return(_dex_arrayreturn(_dex_sendrequeststr(myinfo,&dexreq,address,0,1,"")));
 }
 
@@ -957,7 +1238,7 @@ int32_t dex_crc32find(struct supernet_info *myinfo,uint32_t crc32)
 
 int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp,int32_t size)
 {
-    int32_t firstz=-1; uint32_t crc32;
+    uint32_t crc32; //int32_t firstz=-1; 
     if ( dexp->version0 == (DEX_VERSION & 0xff) && dexp->version1 == ((DEX_VERSION >> 8) & 0xff) )
     {
         if ( dexp->datalen == (size - sizeof(*dexp)) )
@@ -965,7 +1246,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
             crc32 = calc_crc32(0,dexp->packet,dexp->datalen);//(void *)((long)dexp + sizeof(dexp->crc32)),(int32_t)(size - sizeof(dexp->crc32)));
             if ( dexp->crc32 == crc32 )//&& (firstz= dex_crc32find(myinfo,crc32)) >= 0 )
                 return(0);
-            else printf("dexp %08x != %08x || firstz.%d < 0\n",dexp->crc32,crc32,firstz);
+            //else printf("dexp %08x != %08x || firstz.%d < 0\n",dexp->crc32,crc32,firstz);
         } else printf("datalen.%d != (%d - %ld)\n",dexp->datalen,size,sizeof(*dexp));
     }
     return(-1);
@@ -974,6 +1255,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 int32_t dex_subsock_poll(struct supernet_info *myinfo)
 {
     int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
+    return(0);
     //fprintf(stderr,"subsock.%d\n",myinfo->subsock);
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
@@ -994,7 +1276,7 @@ void dex_updateclient(struct supernet_info *myinfo)
     int32_t i;
     if ( myinfo->IAMNOTARY == 0 )
     {
-        for (i=0; i<100; i++)
+        for (i=0; i<1000; i++)
             if ( dex_subsock_poll(myinfo) <= 0 )
                 break;
     }
@@ -1143,12 +1425,13 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
                                 }
                                 else
                                 {
-                                    timeout = 500;
+                                    timeout = 100;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                                    timeout = 10;
+                                    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                                    timeout = 1;
                                     nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                                    timeout = 500;
+                                    timeout = 1;
                                     nn_setsockopt(repsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                                     maxsize = 1024 * 1024;
                                     printf("RCVBUF.%d\n",nn_setsockopt(dexsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -1162,7 +1445,7 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr)
             }
             myinfo->dpowipbits[0] = (uint32_t)calc_ipbits(myinfo->ipaddr);
             myinfo->numdpowipbits = 1;
-            timeout = 10;
+            timeout = 1;
             nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
             maxsize = 1024 * 1024;
             printf("RCVBUF.%d\n",nn_setsockopt(dpowsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize)));
@@ -1710,7 +1993,7 @@ void dpow_send(struct supernet_info *myinfo,struct dpow_info *dp,struct dpow_blo
         pfd.events = NN_POLLOUT;
         if ( nn_poll(&pfd,1,100) > 0 )
         {
-            sentbytes = signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
+            sentbytes = signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dpowsock,np,size);
             break;
         }
         usleep(1000);
@@ -1726,7 +2009,9 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
     int32_t i,j,matched,missing,n; char ipaddr[64];
     if ( numipbits >= 64 )
     {
-        printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
+        static int32_t counter;
+        if ( counter++ < 100 )
+            printf("dpow_ipbitsadd reject from.%d numipbits.%d\n",fromid,numipbits);
         return;
     }
     n = dp->numipbits;
@@ -1765,7 +2050,7 @@ void dpow_ipbitsadd(struct supernet_info *myinfo,struct dpow_info *dp,uint32_t *
 
 int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
 {
-    int32_t i,n=0,num=0,size,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
+    int32_t i,n,num,num2,flags=0,size,iter,lastval=0,broadcastflag,firstz = -1; char *retstr; uint32_t crc32,r,m; struct dpow_nanomsghdr *np=0; struct dpow_info *dp; struct dpow_block *bp; struct dex_nanomsghdr *dexp = 0; void *freeptr;
     if ( time(NULL) < myinfo->nanoinit+5 || (myinfo->dpowsock < 0 && myinfo->dexsock < 0 && myinfo->repsock < 0) )
         return(-1);
     if ( myinfo->IAMNOTARY != 0 && myinfo->numnotaries <= 0 )
@@ -1774,123 +2059,128 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
         printf("INIT with %d notaries\n",myinfo->numnotaries);
     }
     portable_mutex_lock(&myinfo->dpowmutex);
-    /*for (i=0; i<100; i++)
+    num = num2 = n = 0;
+    for (iter=0; iter<100; iter++)
     {
-        struct nn_pollfd pfd;
-        pfd.fd = myinfo->dpowsock;
-        pfd.events = NN_POLLIN;
-        if ( nn_poll(&pfd,1,100) > 0 )
-            break;
-        usleep(1000);
-    }*/
-    while ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) >= 0 && num < 100 )
-    {
-        num++;
-        if ( size > 0 )
+        freeptr = 0;
+        if ( (flags & 1) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dpowsock,&np)) > 0 )
         {
-            //fprintf(stderr,"%d ",size);
-            if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
+            num++;
+            if ( size > 0 )
             {
-                //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
-                if ( np->datalen == (size - sizeof(*np)) )
+                //fprintf(stderr,"%d ",size);
+                if ( np->version0 == (DPOW_VERSION & 0xff) && np->version1 == ((DPOW_VERSION >> 8) & 0xff) )
                 {
-                    crc32 = calc_crc32(0,np->packet,np->datalen);
-                    dp = 0;
-                    for (i=0; i<myinfo->numdpows; i++)
+                    //printf("v.%02x %02x datalen.%d size.%d %d vs %d\n",np->version0,np->version1,np->datalen,size,np->datalen,(int32_t)(size - sizeof(*np)));
+                    if ( np->datalen == (size - sizeof(*np)) )
                     {
-                        if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
+                        crc32 = calc_crc32(0,np->packet,np->datalen);
+                        dp = 0;
+                        for (i=0; i<myinfo->numdpows; i++)
                         {
-                            dp = &myinfo->DPOWS[i];
-                            break;
-                        }
-                    }
-                    if ( dp != 0 && crc32 == np->crc32 )
-                    {
-                         if ( i == myinfo->numdpows )
-                            printf("received nnpacket for (%s)\n",np->symbol);
-                        else
-                        {
-                            dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
-                            if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
+                            if ( strcmp(np->symbol,myinfo->DPOWS[i].symbol) == 0 )
                             {
-                                //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
-                                if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
-                                {
-                                    if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
-                                    {
-                                        if ( bp->isratify == 0 )
-                                            dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind,np->channel);
-                                        else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind,np->channel);
-                                        dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
-                                    } else printf("wrong senderind.%d\n",np->senderind);
-                                }
-                            } //else printf("height.%d bp.%p state.%x senderind.%d\n",np->height,bp,bp!=0?bp->state:0,np->senderind);
-                            //dp->crcs[firstz] = crc32;
+                                dp = &myinfo->DPOWS[i];
+                                break;
+                            }
                         }
-                    } //else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
-                } else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
-            } //else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
-        } //else printf("illegal size.%d\n",size);
+                        if ( dp != 0 && crc32 == np->crc32 )
+                        {
+                            if ( i == myinfo->numdpows )
+                                printf("received nnpacket for (%s)\n",np->symbol);
+                            else
+                            {
+                                dpow_ipbitsadd(myinfo,dp,np->ipbits,np->numipbits,np->senderind,np->myipbits);
+                                if ( (bp= dpow_heightfind(myinfo,dp,np->height)) != 0 && bp->state != 0xffffffff && bp->myind >= 0 )
+                                {
+                                    //char str[65]; printf("%s RECV ht.%d ch.%08x (%d) crc32.%08x:%08x datalen.%d:%d firstz.%d i.%d senderind.%d myind.%d\n",bits256_str(str,np->srchash),np->height,np->channel,size,np->crc32,crc32,np->datalen,(int32_t)(size - sizeof(*np)),firstz,i,np->senderind,bp->myind);
+                                    if ( np->senderind >= 0 && np->senderind < bp->numnotaries )
+                                    {
+                                        if ( memcmp(bp->notaries[np->senderind].pubkey+1,np->srchash.bytes,32) == 0 && bits256_nonz(np->srchash) != 0 )
+                                        {
+                                            if ( bp->isratify == 0 )
+                                                dpow_nanoutxoget(myinfo,dp,bp,&np->notarize,0,np->senderind,np->channel);
+                                            else dpow_nanoutxoget(myinfo,dp,bp,&np->ratify,1,np->senderind,np->channel);
+                                            dpow_datahandler(myinfo,dp,bp,np->senderind,np->channel,np->height,np->packet,np->datalen);
+                                        } else printf("wrong senderind.%d\n",np->senderind);
+                                    }
+                                } //else printf("height.%d bp.%p state.%x senderind.%d\n",np->height,bp,bp!=0?bp->state:0,np->senderind);
+                                //dp->crcs[firstz] = crc32;
+                            }
+                        } //else printf("crc error from.%d %x vs %x or no dp.%p [%s]\n",np->senderind,crc32,np->crc32,dp,np->symbol);
+                    } else printf("ignore.%d np->datalen.%d %d (size %d - %ld) [%s]\n",np->senderind,np->datalen,(int32_t)(size-sizeof(*np)),size,sizeof(*np),np->symbol);
+                } //else printf("wrong version from.%d %02x %02x size.%d [%s]\n",np->senderind,np->version0,np->version1,size,np->symbol);
+            }
+        } else flags |= 1;
         if ( freeptr != 0 )
             nn_freemsg(freeptr), np = 0, freeptr = 0;
-    } //else printf("no packets\n");
-    n = 0;
-    if ( myinfo->dexsock >= 0 ) // from servers
-    {
-        if ( (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
+        if ( myinfo->dexsock >= 0 ) // from servers
         {
-            //fprintf(stderr,"%d ",size);
-            num++;
-            if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+            freeptr = 0;
+            if ( (flags & 2) == 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->dexsock,&dexp)) > 0 )
             {
-                //printf("FROM BUS.%08x -> pub\n",dexp->crc32);
-                signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                dex_packet(myinfo,dexp,size);
-            }
-            //printf("GOT DEX bus PACKET.%d\n",size);
+                //fprintf(stderr,"%d ",size);
+                n++;
+                if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+                {
+                    //printf("FROM BUS.%08x -> pub\n",dexp->crc32);
+                    //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                    dex_packet(myinfo,dexp,size);
+                }
+                //printf("GOT DEX bus PACKET.%d\n",size);
+            } else flags |= 2;
             if ( freeptr != 0 )
                 nn_freemsg(freeptr), dexp = 0, freeptr = 0;
         }
-    }
-    if ( myinfo->repsock >= 0 ) // from clients
-    {
-        if ( (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
+        if ( myinfo->repsock >= 0 ) // from clients
         {
-            num++;
-            //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
-            if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
+            dexp = 0;
+            if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
             {
-                signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                //printf("send back[%ld]\n",strlen(retstr)+1);
-                free(retstr);
-                if ( broadcastflag != 0 )
+                num2++;
+                //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+                if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
-                    printf("BROADCAST dexp request.[%d]\n",size);
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                    signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
+                    //printf("send back[%ld]\n",strlen(retstr)+1);
+                    free(retstr);
+                    if ( broadcastflag != 0 )
+                    {
+                        printf("BROADCAST dexp request.[%d]\n",size);
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                    }
                 }
-            }
-            else
-            {
-                if ( (m= myinfo->numdpowipbits) > 0 )
+                else
                 {
-                    r = myinfo->dpowipbits[rand() % m];
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
-                    //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
-                } else printf("illegal state without dpowipbits?\n");
-                if ( dex_packetcheck(myinfo,dexp,size) == 0 )
-                {
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
-                    signed_nn_send(myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
-                    //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
-                    dex_packet(myinfo,dexp,size);
-                } else printf("failed dexpacketcheck\n");
-            }
-            //printf("GOT DEX rep PACKET.%d\n",size);
-            //if ( freeptr != 0 )
-            //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
+                    if ( (m= myinfo->numdpowipbits) > 0 )
+                    {
+                        r = myinfo->dpowipbits[rand() % m];
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,&r,sizeof(r));
+                        //printf("REP.%08x <- rand ip m.%d %x\n",dexp->crc32,m,r);
+                    } else printf("illegal state without dpowipbits?\n");
+                    if ( dex_packetcheck(myinfo,dexp,size) == 0 )
+                    {
+                        signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->dexsock,dexp,size);
+                        //signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->pubsock,dexp,size);
+                        //printf("REP.%08x -> dexbus and pub, t.%d lag.%d\n",dexp->crc32,dexp->timestamp,(int32_t)(time(NULL)-dexp->timestamp));
+                        dex_packet(myinfo,dexp,size);
+                    } //else printf("failed dexpacketcheck\n");
+                }
+                //printf("GOT DEX rep PACKET.%d\n",size);
+                //if ( freeptr != 0 )
+                //    nn_freemsg(freeptr), dexp = 0, freeptr = 0;
+                //if ( num > 1000 )
+                //    break;
+            } else flags |= 4;
             if ( dexp != 0 )
                 nn_freemsg(dexp), dexp = 0;
         }
+        if ( (num + n + num2) != lastval )
+        {
+            //printf("lastval.%d: num.%d n.%d num2.%d rep packets\n",lastval,num,n,num2);
+            lastval = (num + n + num2);
+        } else break;
     }
     portable_mutex_unlock(&myinfo->dpowmutex);
     return(num);

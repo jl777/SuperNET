@@ -126,12 +126,12 @@ int32_t blockhash_scrypt(uint8_t *blockhashp,uint8_t *serialized,int32_t len)
 blockhashfunc iguana_hashalgo(char *hashalgostr)
 {
 return(blockhash_sha256); // all coins seem to use this for genesis
-    if ( hashalgostr == 0 || hashalgostr[0] == 0 || strcmp(hashalgostr,"sha256") == 0 )
+    /*if ( hashalgostr == 0 || hashalgostr[0] == 0 || strcmp(hashalgostr,"sha256") == 0 )
         return(blockhash_sha256);
     else if ( strcmp(hashalgostr,"scrypt") == 0 )
         return(blockhash_scrypt);
     else printf("unsupported blockhash algo.(%s)\n",hashalgostr);
-    return(0);
+    return(0);*/
 }
 
 bits256 iguana_calcblockhash(char *symbol,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),uint8_t *serialized,int32_t len)
@@ -189,8 +189,8 @@ bits256 iguana_chaingenesis(struct supernet_info *myinfo,char *symbol,uint8_t zc
 char *parse_conf_line(char *line,char *field)
 {
     line += strlen(field);
-    for (; *line!='='&&*line!=0; line++)
-        break;
+    while ( (*line) != '=' && (*line) != 0 )
+        line++;
     if ( *line == 0 )
         return(0);
     if ( *line == '=' )
@@ -232,7 +232,12 @@ void set_coinconfname(char *fname,char *coinstr,char *userhome,char *coindir,cha
         sprintf(confname,"%s.conf",buf);
     }
     printf("userhome.(%s) coindir.(%s) confname.(%s)\n",userhome,coindir,confname);
-    sprintf(fname,"%s/%s/%s",userhome,coindir,confname);
+#ifdef WIN32
+    if ( userhome == 0 || userhome[0] == 0 )
+        sprintf(fname,"%s/%s",coindir,confname);
+    else
+#endif
+        sprintf(fname,"%s/%s/%s",userhome,coindir,confname);
 }
 
 uint16_t extract_userpass(char *serverport,char *userpass,char *coinstr,char *userhome,char *coindir,char *confname)
@@ -486,7 +491,7 @@ void iguana_chaininit(struct supernet_info *myinfo,struct iguana_chain *chain,in
     if ( strcmp(chain->symbol,"BTC") == 0 )
     {
         chain->unitval = 0x1d;
-        chain->txfee = 10000;
+        chain->txfee = 50000;
         chain->havecltv = 1;
     }
     else chain->txfee = 10000;

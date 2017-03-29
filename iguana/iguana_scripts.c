@@ -77,6 +77,13 @@ int32_t bitcoin_checklocktimeverify(uint8_t *script,int32_t n,uint32_t locktime)
     return(n);
 }
 
+int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint32_t timestamp)
+{
+    n = bitcoin_checklocktimeverify(script,n,timestamp);
+    n = bitcoin_standardspend(script,n,rmd160);
+    return(n);
+}
+
 int32_t bitcoin_MofNspendscript(uint8_t p2sh_rmd160[20],uint8_t *script,int32_t n,const struct vin_info *vp)
 {
     int32_t i,plen;
@@ -333,9 +340,9 @@ int32_t _iguana_calcrmd160(struct iguana_info *coin,struct vin_info *vp)
         if ( (plen= vp->spendscript[2]+5) != vp->spendlen )
         {
             return(IGUANA_SCRIPT_STRANGE);
-            while ( plen < vp->spendlen )
+            /*while ( plen < vp->spendlen )
                 if ( vp->spendscript[plen++] != 0x61 ) // nop
-                    return(IGUANA_SCRIPT_STRANGE);
+                    return(IGUANA_SCRIPT_STRANGE);*/
         }
         return(IGUANA_SCRIPT_76A988AC);
     }
@@ -480,7 +487,7 @@ char *iguana_scriptaddress(struct iguana_info *coin,char *coinaddr,uint8_t *scri
 
 int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *sigsizep,uint32_t *pubkeysizep,uint8_t **userdatap,uint32_t *userdatalenp,struct vin_info *vp,uint8_t *scriptsig,int32_t len,int32_t spendtype)
 {
-    char asmstr[IGUANA_MAXSCRIPTSIZE*3]; int32_t j,n,siglen,plen; uint8_t *p2shscript;
+    int32_t j,n,siglen,plen; uint8_t *p2shscript;
     j = n = 0;
     *userdatap = 0;
     *userdatalenp = *pubkeysizep = *sigsizep = 0;
@@ -552,7 +559,7 @@ int32_t bitcoin_scriptget(struct iguana_info *coin,int32_t *hashtypep,uint32_t *
      decode_hex(vp->rmd160,20,"010966776006953d5567439e5e39f86a0d273bee");//3564a74f9ddb4372301c49154605573d7d1a88fe");
      vp->type = IGUANA_SCRIPT_76A988AC;
      }*/
-    vp->spendlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,vp->spendscript,asmstr,vp->rmd160,vp->type,(const struct vin_info *)vp,vp->vin.prev_vout);
+    vp->spendlen = iguana_scriptgen(coin,&vp->M,&vp->N,vp->coinaddr,vp->spendscript,0,vp->rmd160,vp->type,(const struct vin_info *)vp,vp->vin.prev_vout);
     //printf("type.%d asmstr.(%s) spendlen.%d\n",vp->type,asmstr,vp->spendlen);
     return(vp->spendlen);
 }
