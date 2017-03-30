@@ -629,8 +629,8 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
 bits256 mpz_div64(bits256 hash,uint64_t divval);
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
-void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coinkmd,char *BTCaddr,char *KMDaddr,bits256 privkey);
-bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,char *KMDaddr,char *prefix);
+void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin);
+bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,uint8_t pubtype,char *KMDaddr,char *prefix);
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
 int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
 
@@ -659,7 +659,7 @@ void iguana_schnorr(struct supernet_info *myinfo);
 void iguana_fixsecp(struct supernet_info *myinfo);
 int32_t bitcoin_timelockspend(uint8_t *script,int32_t n,uint8_t rmd160[20],uint32_t timestamp);
 
-char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t *satoshis,int32_t numoutputs,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode);
 uint64_t _iguana_interest(uint32_t now,int32_t height,uint32_t txlocktime,uint64_t value);
 
 #include "../includes/iguana_api.h"

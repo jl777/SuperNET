@@ -27,7 +27,7 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,uint64_t
 int32_t iguana_scriptdata(struct iguana_info *coin, uint8_t *scriptspace, long fileptr[2], char *fname, uint64_t scriptpos, int32_t scriptlen)
 #endif
 {
-    FILE *fp; long err; int32_t retval = scriptlen;
+    FILE *fp; long err; uint8_t *ptr; int32_t i,retval = scriptlen;
 #ifndef __PNACL__
     if ( scriptpos < 0xffffffff )
     {
@@ -41,7 +41,10 @@ int32_t iguana_scriptdata(struct iguana_info *coin, uint8_t *scriptspace, long f
         {
             if ( (scriptpos + scriptlen) <= fileptr[1] )
             {
-                memcpy(scriptspace,(void *)(fileptr[0] + (uint32_t)scriptpos),scriptlen);
+                ptr = (void *)(fileptr[0] + (uint32_t)scriptpos);
+                //memcpy(scriptspace,ptr,scriptlen);
+                for (i=0; i<scriptlen; i++)
+                    scriptspace[i] = ptr[i];
                 return(retval);
             }
             else if ( (0) )
@@ -307,7 +310,7 @@ int32_t iguana_peerblockrequest(struct supernet_info *myinfo,struct iguana_info 
                         char str[65],str2[65];
                         if ( counter++ < 100 )
                         {
-                            for (i=0; i<len; i++)
+                            for (i=0; i<len&&i<64; i++)
                                 printf("%02x",blockspace[sizeof(struct iguana_msghdr)+i]);
                             printf(" len.%d error getting txi.%d [%d:%d] cmp.%s %s\n",len,i,bp->hdrsi,bundlei,bits256_str(str,checktxid),bits256_str(str2,T.txid));
                         }
