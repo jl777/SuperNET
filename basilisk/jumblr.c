@@ -170,12 +170,12 @@ char *jumblr_zgetbalance(struct supernet_info *myinfo,struct iguana_info *coin,c
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"z_getbalance",params));
 }
 
-char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
+char *jumblr_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     char params[1024];
     if ( coin->FULLNODE == 0 )
-        return(_dex_listunspent(myinfo,coin->symbol,addr));
-    sprintf(params,"[1, 99999999, [\"%s\"]]",addr);
+        return(dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr));
+    sprintf(params,"[1, 99999999, [\"%s\"]]",coinaddr);
     return(bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",params));
 }
 
