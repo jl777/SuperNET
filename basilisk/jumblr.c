@@ -525,9 +525,10 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
     fees[3] = (strcmp("BTC",coin->symbol) == 0) ? 50000 : 10000;
     if ( (ind= jumblr_DEXutxoind(&shouldsplit,targetpriceB,targetpriceM,targetpriceS,amount,margin,dexfeeratio,fees[3])) >= 0 )
     {
+        printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
         if ( shouldsplit != 0 )
             return(jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetpriceB,margin * targetpriceM,margin * targetpriceS,fees));
-    }
+    } else printf("negative ind\n");
     return(0);
 }
 
@@ -544,21 +545,25 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
 int32_t jumblr_utxotxidpending(struct supernet_info *myinfo,bits256 *splittxidp,struct iguana_info *coin,bits256 txid,int32_t vout)
 {
     int32_t i;
+    printf("jumblr_utxotxidpending\n");
     memset(splittxidp,0,sizeof(*splittxidp));
     for (i=0; i<coin->DEXinfo.numpending; i++)
     {
         if ( coin->DEXinfo.pending[i].vout == vout && bits256_cmp(coin->DEXinfo.pending[i].txid,txid) == 0 )
         {
             *splittxidp = coin->DEXinfo.pending[i].splittxid;
+            printf("jumblr_utxotxidpending found txid in slot.%d\n",i);
             return(i);
         }
     }
+    printf("jumblr_utxotxidpending cant find txid\n");
     return(-1);
 }
 
 void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,bits256 splittxid)
 {
     struct jumblr_pending pend;
+    printf("add txid to pending\n");
     memset(&pend,0,sizeof(pend));
     pend.splittxid = splittxid;
     pend.txid = txid;
@@ -586,9 +591,10 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
                     printf("%llx/v%d %.8f %d of %d\n",(long long)txid.txid,vout,dstr(value),i,n);
                     if ( jumblr_utxotxidpending(myinfo,&splittxid,coin,txid,vout) < 0 )
                     {
+                        printf("call utxoupdate\n");
                         jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,txid,vout,value,myinfo->IAMLP);
                         jumblr_utxotxidpendingadd(myinfo,coin,txid,vout,splittxid);
-                    }
+                    } else printf("already have txid\n");
                 }
             }
             free_json(array);
