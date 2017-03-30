@@ -2176,7 +2176,6 @@ int32_t iguana_bundlefiles(struct iguana_info *coin,uint32_t *ipbits,void **ptrs
 void iguana_bundlemapfree(struct iguana_info *coin,struct OS_memspace *mem,struct OS_memspace *hashmem,uint32_t *ipbits,void **ptrs,long *filesizes,int32_t num,struct iguana_ramchain *R,int32_t starti,int32_t endi)
 {
     int32_t j,n = (endi - starti + 1);
-    sleep(3);
     for (j=0; j<num; j++)
         if ( ptrs[j] != 0 && filesizes[j] != 0 )
         {
