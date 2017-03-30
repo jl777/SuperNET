@@ -141,7 +141,7 @@ struct iguana_msgmerkle
     uint32_t branch_length;
     bits256 branch_hash[4096];
     uint32_t branch_side_mask;
-}PACKEDSTRUCT;
+}; //PACKEDSTRUCT;
 
 struct iguana_msgblock
 {
@@ -155,9 +155,9 @@ struct iguana_msgzblock
     uint32_t txn_count;
 } PACKEDSTRUCT;
 
-struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; }PACKEDSTRUCT;
+struct iguana_msgvin { bits256 prev_hash; uint8_t *vinscript,*userdata,*spendscript,*redeemscript; uint32_t prev_vout,sequence; uint16_t scriptlen,p2shlen,userdatalen,spendlen; }; //PACKEDSTRUCT;
 
-struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; }PACKEDSTRUCT;
+struct iguana_msgvout { uint64_t value; uint32_t pk_scriptlen; uint8_t *pk_script; }; //PACKEDSTRUCT;
 
 struct iguana_msgtx
 {
@@ -168,7 +168,7 @@ struct iguana_msgtx
     int32_t allocsize,timestamp,numinputs,numoutputs;
     int64_t inputsum,outputsum,txfee;
     uint8_t *serialized;
-} PACKEDSTRUCT;
+};// PACKEDSTRUCT;
 
 struct iguana_msgjoinsplit
 {
@@ -466,10 +466,22 @@ struct iguana_RTtxid
 
 struct hashstr_item { UT_hash_handle hh; char address[40]; };
 
+struct jumblr_pending { bits256 splittxid,txid; int32_t vout; };
+
+struct DEXcoin_info
+{
+    bits256 deposit_privkey,jumblr_privkey;
+    struct iguana_info *coin;
+    double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,maxbid,minask,avail,KMDavail;
+    uint32_t lasttime,numpending;
+    char CMCname[32],symbol[16],depositaddr[64],KMDdepositaddr[64],KMDjumblraddr[64],jumblraddr[64];
+    struct jumblr_pending *pending;
+};
+
 struct iguana_info
 {
     UT_hash_handle hh;
-    char name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
+    char CMCname[64],name[64],symbol[64],protocol,statusstr[512],scriptsfname[2][512];
     struct iguana_peers *peers; struct iguana_peer internaladdr;
     //basilisk_func basilisk_rawtx,basilisk_balances,basilisk_value;
     //basilisk_metricfunc basilisk_rawtxmetric,basilisk_balancesmetric,basilisk_valuemetric;
@@ -534,6 +546,7 @@ struct iguana_info
     uint64_t estimatedfee;
     char seedipaddr[64]; 
     uint32_t lastbesthashtime; bits256 lastbesthash; int32_t lastbestheight;
+    struct DEXcoin_info DEXinfo;
     struct iguana_block *RTblocks[65536]; uint8_t *RTrawdata[65536]; int32_t RTrecvlens[65536],RTnumtx[65536];
     struct iguana_RTtxid *RTdataset; struct iguana_RTaddr *RTaddrs;
     struct hashstr_item *alladdresses;

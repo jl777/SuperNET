@@ -1120,20 +1120,22 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
                             if ( M.datalen < 100000 )
                             {
                                 M.data = malloc(M.datalen);
-                                fread(M.data,1,M.datalen,fp);
-                                if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
+                                if ( fread(M.data,1,M.datalen,fp) == M.datalen )
                                 {
-                                    if ( iter == 1 )
+                                    if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
                                     {
-                                        if ( swap == 0 )
+                                        if ( iter == 1 )
                                         {
-                                            swap = basilisk_thread_start(myinfo,privkey,&R,statebits,optionduration,1);
-                                            swap->I.choosei = swap->I.otherchoosei = -1;
+                                            if ( swap == 0 )
+                                            {
+                                                swap = basilisk_thread_start(myinfo,privkey,&R,statebits,optionduration,1);
+                                                swap->I.choosei = swap->I.otherchoosei = -1;
+                                            }
+                                            if ( swap != 0 )
+                                                basilisk_swapgotdata(myinfo,swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
                                         }
-                                        if ( swap != 0 )
-                                            basilisk_swapgotdata(myinfo,swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
-                                    }
-                                } else printf("crc mismatch %x vs %x\n",calc_crc32(0,M.data,M.datalen),M.crc32);
+                                    } else printf("crc mismatch %x vs %x\n",calc_crc32(0,M.data,M.datalen),M.crc32);
+                                } else printf("error reading M.datalen %d\n",M.datalen);
                                 free(M.data), M.data = 0;
                             }
                         }
@@ -1456,14 +1458,15 @@ int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoin
 
 struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 privkey,uint8_t *pubkey33,bits256 pubkey25519,struct basilisk_swap *swap,int32_t optionduration,uint32_t statebits,int32_t reinit)
 {
-    FILE *fp; char fname[512]; uint8_t *alicepub33=0,*bobpub33=0; int32_t jumblrflag,x = -1;
+    FILE *fp; char fname[512]; uint8_t *alicepub33=0,*bobpub33=0; int32_t errs=0,jumblrflag,x = -1;
     if ( reinit != 0 )
     {
         sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
         printf("reinit.(%s)\n",fname);
         if ( (fp= fopen(fname,"rb")) != 0 )
         {
-            fread(&swap->I,1,sizeof(swap->I),fp);
+            if ( fread(&swap->I,1,sizeof(swap->I),fp) != sizeof(swap->I) )
+                errs++;
             if ( swap->bobcoin == 0 )
                 swap->bobcoin = iguana_coinfind(swap->I.req.dest);
             if ( swap->alicecoin == 0 )
@@ -1482,9 +1485,12 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
                 basilisk_swap_loadtx(&swap->bobrefund,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);
                 basilisk_swap_loadtx(&swap->alicereclaim,fp,swap->bobcoin->symbol,swap->alicecoin->symbol);*/
             } else printf("missing coins (%p %p)\n",swap->bobcoin,swap->alicecoin);
-            fread(swap->privkeys,1,sizeof(swap->privkeys),fp);
-            fread(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
-            fread(swap->deck,1,sizeof(swap->deck),fp);
+            if ( fread(swap->privkeys,1,sizeof(swap->privkeys),fp) != sizeof(swap->privkeys) )
+                errs++;
+            if ( fread(swap->otherdeck,1,sizeof(swap->otherdeck),fp) != sizeof(swap->otherdeck) )
+                errs++;
+            if ( fread(swap->deck,1,sizeof(swap->deck),fp) != sizeof(swap->deck) )
+                errs++;
             fclose(fp);
         } else printf("cant find.(%s)\n",fname);
     }

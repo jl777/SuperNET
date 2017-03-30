@@ -128,7 +128,7 @@ struct pangea_msghdr
     char cmd[8];
     int8_t turni,cardi,destplayer,myind; // ALL DATA MUST BE SERIALIZED!!!
     uint8_t serialized[];
-} PACKED;
+};// PACKED;
 
 #define PANGEA_ARGS struct supernet_info *myinfo,struct table_info *tp,cJSON *json
 #define PANGEA_CALLARGS myinfo,tp,json

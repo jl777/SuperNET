@@ -545,12 +545,14 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
     return(rawtx);
 }
 
-char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t satoshis,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode)
+char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJSON **vinsp,cJSON *txobj,int64_t *outputs,int32_t numoutputs,char *changeaddr,int64_t txfee,cJSON *utxos,char *remoteaddr,struct vin_info *V,int32_t maxmode)
 {
-    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,i,n,num,spendlen; char *spendscriptstr,*rawtx=0; bits256 txid; cJSON *sobj,*vins=0,*item; uint64_t value,avail=0,total,change,interests; struct iguana_outpoint *unspents = 0;
+    uint8_t addrtype,rmd160[20],spendscript[IGUANA_MAXSCRIPTSIZE]; int32_t allocflag=0,max,i,n,num,spendlen; char *spendscriptstr,*rawtx=0; uint64_t satoshis = 0; bits256 txid; cJSON *sobj,*vins=0,*item; uint64_t value,avail=0,total,change,interests; struct iguana_outpoint *unspents = 0;
     *vinsp = 0;
     max = 0;
     interests = 0;
+    for (i=0; i<numoutputs; i++)
+        satoshis += outputs[i];
     if ( (n= cJSON_GetArraySize(utxos)) == 0 )
         return(0);
     for (i=0; i<n; i++)
