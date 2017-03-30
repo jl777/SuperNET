@@ -583,6 +583,7 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
                     txid = jbits256(item,"txid");
                     vout = jint(item,"vout");
                     value = SATOSHIDEN * jdouble(item,"amount");
+                    printf("%llx/v%d %.8f %d of %d\n",(long long)txid.txid,vout,dstr(value),i,n);
                     if ( jumblr_utxotxidpending(myinfo,&splittxid,coin,txid,vout) < 0 )
                     {
                         jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,txid,vout,value,myinfo->IAMLP);
