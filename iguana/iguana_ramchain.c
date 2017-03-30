@@ -71,7 +71,7 @@ struct iguana_kvitem *iguana_hashsetPT(struct iguana_ramchain *ramchain,int32_t 
             printf("negative itemind\n");
             iguana_exit(0,0);
         }
-        if ( (0) )
+        if ( (1) )
         {
             if ( selector == 'T' )
                 HASH_FIND(hh,ramchain->txids,key,keylen,tmp);
