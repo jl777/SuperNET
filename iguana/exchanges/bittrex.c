@@ -169,7 +169,7 @@ uint64_t TRADE(int32_t dotrade,char **retstrp,struct exchange_info *exchange,cha
     if ( //CHECKBALANCE(retstrp,dotrade,exchange,dir,base,rel,price,volume,argjson) == 0 &&
         (json= SIGNPOST(&exchange->cHandle,dotrade,retstrp,exchange,payload,payload)) != 0 )
     {
-        if ( *retstrp != 0 )
+        if ( 0 && *retstrp != 0 )
             printf("SIGNPOST returned.(%s) %s\n",*retstrp,jprint(json,0));
         if ( is_cJSON_True(cJSON_GetObjectItem(json,"success")) != 0 && (resultobj= cJSON_GetObjectItem(json,"result")) != 0 )
         {

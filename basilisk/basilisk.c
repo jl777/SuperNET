@@ -1294,7 +1294,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 STRING_ARG(jumblr,setpassphrase,passphrase)
 {
     cJSON *retjson; char KMDaddr[64],BTCaddr[64],wifstr[64]; bits256 privkey; struct iguana_info *coinbtc;
-    if ( passphrase == 0 || passphrase[0] == 0 || (coin= iguana_coinfind("KMD")) == 0 || coin->FULLNODE >= 0 )
+    if ( passphrase == 0 || passphrase[0] == 0 || (coin= iguana_coinfind("KMD")) == 0 )//|| coin->FULLNODE >= 0 )
         return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
     else
     {

@@ -594,7 +594,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,txfee,addresses,0,0,0,0,"127.0.0.1",0,1);
-        if ( cJSON_GetArraySize(vins) > duplicates/4 )
+        if ( cJSON_GetArraySize(vins) > duplicates/2 )
         {
             free(rawtx);
             rawtx = 0;

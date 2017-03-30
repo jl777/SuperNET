@@ -364,14 +364,17 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,uint8_t pubtype,char *KMDaddr,char *prefix)
+bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubtype,char *KMDaddr,char *prefix)
 {
     bits256 privkey,pubkey; uint8_t pubkey33[33]; char passphrase[sizeof(myinfo->jumblr_passphrase) + 64];
     sprintf(passphrase,"%s%s",prefix,myinfo->jumblr_passphrase);
+    if ( myinfo->jumblr_passphrase[0] == 0 )
+        strcpy(myinfo->jumblr_passphrase,"password");
     conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
-    bitcoin_address(BTCaddr,pubtype,pubkey33,33);
+    bitcoin_address(coinaddr,pubtype,pubkey33,33);
     bitcoin_address(KMDaddr,60,pubkey33,33);
+    printf("(%s) -> (%s %s)\n",passphrase,coinaddr,KMDaddr);
     return(privkey);
 }
 
@@ -567,6 +570,7 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
     char *retstr; cJSON *array,*item; int32_t i,n,vout; bits256 txid,splittxid; uint64_t value;
     if ( (retstr= _dex_listunspent(myinfo,coin->symbol,coinaddr)) != 0 )
     {
+        printf("%s.(%s)\n",coin->symbol,retstr);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -601,16 +605,21 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
             safecopy(ptr->symbol,symbol,sizeof(ptr->symbol));
             safecopy(ptr->CMCname,CMCname,sizeof(ptr->CMCname));
         }
-        if ( ptr->depositaddr[0] == 0 )
+        //if ( ptr->depositaddr[0] == 0 )
         {
             if ( strcmp("KMD",symbol) == 0 )
                 ptr->deposit_privkey = jumblr_privkey(myinfo,ptr->depositaddr,0,ptr->KMDdepositaddr,JUMBLR_DEPOSITPREFIX);
             else ptr->deposit_privkey = jumblr_privkey(myinfo,ptr->depositaddr,ptr->coin->chain->pubtype,ptr->KMDdepositaddr,JUMBLR_DEPOSITPREFIX);
         }
-        if ( ptr->jumblraddr[0] == 0 )
-            ptr->jumblr_privkey = jumblr_privkey(myinfo,ptr->jumblraddr,ptr->coin->chain->pubtype,ptr->KMDjumblraddr,"");
+        //if ( ptr->jumblraddr[0] == 0 )
+        {
+            if ( strcmp("KMD",symbol) == 0 )
+                ptr->jumblr_privkey = jumblr_privkey(myinfo,ptr->jumblraddr,0,ptr->KMDjumblraddr,"");
+            else ptr->jumblr_privkey = jumblr_privkey(myinfo,ptr->jumblraddr,ptr->coin->chain->pubtype,ptr->KMDjumblraddr,"");
+        }
         ptr->avail = dstr(jumblr_balance(myinfo,ptr->coin,ptr->depositaddr));
         ptr->btcprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,CMCname,symbol,"BTC",&ptr->USD_average);
+        printf("%s avail %.8f btcprice %.8f deposit.(%s %s) -> jumblr.(%s %s)\n",symbol,ptr->avail,ptr->btcprice,ptr->depositaddr,ptr->KMDdepositaddr,ptr->jumblraddr,ptr->KMDjumblraddr);
         if ( strcmp("KMD",symbol) == 0 )
         {
             ptr->BTC2KMD = ptr->btcprice;
@@ -627,7 +636,7 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
             jumblr_utxoupdate(myinfo,ptr->coin,ptr->kmdprice,ptr->depositaddr);
         }
         ptr->lasttime = (uint32_t)time(NULL);
-    }
+    } else printf("skip\n");
 }
 
 void jumblr_CMCname(char *CMCname,char *symbol)
