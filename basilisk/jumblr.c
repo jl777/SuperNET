@@ -446,56 +446,56 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
     return(success * total);
 }
 
-double jumblr_DEXutxosize(double *targetpriceBp,double *targetpriceMp,double *targetpriceSp,int32_t isbob)
+double jumblr_DEXutxosize(double *targetvolBp,double *targetvolMp,double *targetvolSp,int32_t isbob)
 {
     double fee,depositfactor = (isbob == 0) ? 1. : 1.2;
     fee = JUMBLR_INCR * JUMBLR_FEE;
-    *targetpriceBp = depositfactor * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
-    *targetpriceMp = depositfactor * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
-    *targetpriceSp = depositfactor * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
+    *targetvolBp = depositfactor * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
+    *targetvolMp = depositfactor * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
+    *targetvolSp = depositfactor * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
     return(depositfactor);
 }
 
-int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetpriceB,double targetpriceM,double targetpriceS,double amount,double margin,double dexfeeratio,double esttxfee)
+int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetvolB,double targetvolM,double targetvolS,double amount,double margin,double dexfeeratio,double esttxfee)
 {
     *shouldsplitp = 0;
-    if ( amount >= targetpriceB )
+    if ( amount >= targetvolB )
     {
-        if ( amount > margin * (targetpriceB + targetpriceS) )
+        if ( amount > margin * (targetvolB + targetvolS) )
             *shouldsplitp = 1;
         return(0);
     }
     else
     {
-        if ( amount >= targetpriceM )
+        if ( amount >= targetvolM )
         {
-            if ( amount > margin * (targetpriceM + targetpriceS) )
+            if ( amount > margin * (targetvolM + targetvolS) )
                 *shouldsplitp = 1;
             return(1);
         }
         else
         {
-            if ( amount >= targetpriceS )
+            if ( amount >= targetvolS )
             {
-                if ( amount > margin * targetpriceS )
+                if ( amount > margin * targetvolS )
                     *shouldsplitp = 1;
                 return(2);
             }
-            else if ( amount >= targetpriceB/dexfeeratio )
+            else if ( amount >= targetvolB/dexfeeratio )
             {
-                if ( amount > margin * targetpriceB/dexfeeratio )
+                if ( amount > margin * targetvolB/dexfeeratio )
                     *shouldsplitp = 1;
                 return(3);
             }
-            else if ( amount >= targetpriceM/dexfeeratio )
+            else if ( amount >= targetvolM/dexfeeratio )
             {
-                if ( amount > margin * targetpriceM/dexfeeratio )
+                if ( amount > margin * targetvolM/dexfeeratio )
                     *shouldsplitp = 1;
                 return(4);
             }
-            else if ( amount >= targetpriceS/dexfeeratio )
+            else if ( amount >= targetvolS/dexfeeratio )
             {
-                if ( amount > margin * targetpriceS/dexfeeratio )
+                if ( amount > margin * targetvolS/dexfeeratio )
                     *shouldsplitp = 1;
                 return(5);
             }
@@ -512,22 +512,23 @@ int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetpriceB,double targe
 
 int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t isbob)
 {
-    double fees[4],targetpriceB,amount,targetpriceM,targetpriceS,depositfactor,dexfeeratio,margin; int32_t ind,shouldsplit;
+    double fees[4],targetvolB,amount,targetvolM,targetvolS,depositfactor,dexfeeratio,margin; int32_t ind,shouldsplit;
     margin = 1.1;
     depositfactor = (isbob == 0) ? 1. : 1.2;
     dexfeeratio = 500.;
     amount = dstr(value);
     memset(splittxidp,0,sizeof(*splittxidp));
-    depositfactor = jumblr_DEXutxosize(&targetpriceB,&targetpriceM,&targetpriceS,isbob);
-    fees[0] = (margin * targetpriceB) / dexfeeratio;
-    fees[1] = (margin * targetpriceM) / dexfeeratio;
-    fees[2] = (margin * targetpriceS) / dexfeeratio;
+    depositfactor = jumblr_DEXutxosize(&targetvolB,&targetvolM,&targetvolS,isbob);
+    printf("depositfactor %.8f targetvols %.8f %.8f %.8f\n",depositfactor,targetvolB,targetvolM,targetvolS);
+    fees[0] = (margin * targetvolB) / dexfeeratio;
+    fees[1] = (margin * targetvolM) / dexfeeratio;
+    fees[2] = (margin * targetvolS) / dexfeeratio;
     fees[3] = (strcmp("BTC",coin->symbol) == 0) ? 50000 : 10000;
-    if ( (ind= jumblr_DEXutxoind(&shouldsplit,targetpriceB,targetpriceM,targetpriceS,amount,margin,dexfeeratio,fees[3])) >= 0 )
+    if ( (ind= jumblr_DEXutxoind(&shouldsplit,targetvolB,targetvolM,targetvolS,amount,margin,dexfeeratio,fees[3])) >= 0 )
     {
         printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
         if ( shouldsplit != 0 )
-            return(jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetpriceB,margin * targetpriceM,margin * targetpriceS,fees));
+            return(jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees));
     } else printf("negative ind\n");
     return(0);
 }
