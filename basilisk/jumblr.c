@@ -514,7 +514,7 @@ int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetvolB,double targetv
 
 int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 privkey,bits256 txid,int32_t vout,uint64_t value,int32_t isbob,double kmdprice)
 {
-    double fees[4],targetvolB,amount,targetvolM,targetvolS,depositfactor,dexfeeratio,margin; int32_t ind,shouldsplit; cJSON *privkeys; char wifstr[128]; int64_t retval = 0;
+    double fees[4],targetvolB,amount,targetvolM,targetvolS,depositfactor,dexfeeratio,margin; int32_t ind,i,shouldsplit; cJSON *privkeys; char wifstr[128]; int64_t retval = 0;
     margin = 1.1;
     depositfactor = (isbob == 0) ? 1. : 1.2;
     dexfeeratio = 500.;
@@ -526,6 +526,9 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
     fees[1] = (margin * targetvolM) / dexfeeratio;
     fees[2] = (margin * targetvolS) / dexfeeratio;
     fees[3] = (strcmp("BTC",coin->symbol) == 0) ? 50000 : 10000;
+    for (i=0; i<4; i++)
+        if ( fees[i] < 10000 )
+            fees[i] = 10000;
     if ( (ind= jumblr_DEXutxoind(&shouldsplit,targetvolB,targetvolM,targetvolS,amount,margin,dexfeeratio,fees[3])) >= 0 )
     {
         printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
