@@ -382,7 +382,7 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubty
 
 int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,int64_t remaining,double bigprice,double middleprice,double smallprice,double fees[4])
 {
-    int64_t values[4],outputs[64],value,total,estfee = 50000; int32_t i,success=0,completed,sendflag,numoutputs = 0; char *retstr; cJSON *retjson,*utxo,*item;
+    int64_t values[4],outputs[64],value,total,estfee = 250000; int32_t i,success=0,completed,sendflag,numoutputs = 0; char *retstr; cJSON *retjson,*utxo,*item;
     total = 0;
     memset(values,0,sizeof(values));
     memset(outputs,0,sizeof(outputs));
