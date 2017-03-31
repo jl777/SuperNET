@@ -705,10 +705,9 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
                         jaddstr(retjson,"signedtx",signedtx);
                         if ( sendflag != 0 )
                         {
-                            //printf("send signedtx.(%s)\n",signedtx);
                             txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
                             jaddbits256(retjson,"sent",txid);
-                        }
+                        } else printf("dont send signedtx.(%s)\n",signedtx);
                     }
                 } else printf("error signing raw utxorawtx tx\n");
             } else printf("null rawtx from calcutxorawtx\n");
