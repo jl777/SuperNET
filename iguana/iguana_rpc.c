@@ -874,6 +874,8 @@ char *SuperNET_rpcparse(struct supernet_info *myinfo,char *retbuf,int32_t bufsiz
                     originstr = &urlstr[i + strlen(fieldstr)];
                     if ( strncmp(originstr,"http://127.0.0.",strlen("http://127.0.0.")) == 0 )
                         originstr = "http://127.0.0.1:";
+                    else if ( strncmp(originstr,"agama://",strlen("agama://")) == 0 )
+                        originstr = "http://127.0.0.1:";
                     else if ( strncmp(originstr,"file://127.0.0.",strlen("file://127.0.0.")) == 0 )
                         originstr = "http://127.0.0.1:";
                     else if ( strncmp(originstr,"chrome-extension://",strlen("chrome-extension://")) == 0 )

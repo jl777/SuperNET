@@ -753,17 +753,20 @@ void jumblr_loop(void *ptr)
     printf("JUMBLR loop\n");
     while ( 1 )
     {
-        if ( myinfo->jumblr_passphrase[0] != 0 && (coin= iguana_coinfind("KMD")) != 0 && coin->FULLNODE < 0 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
             // if BTC has arrived in destination address, invoke DEX -> BTC
             jumblr_DEXcheck(myinfo,coin);
-            t = (uint32_t)time(NULL);
-            if ( (t % (120 * mult)) < 60 )
+            if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
-                // if BTC has arrived in deposit address, invoke DEX -> KMD
-                jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+                t = (uint32_t)time(NULL);
+                if ( (t % (120 * mult)) < 60 )
+                {
+                    // if BTC has arrived in deposit address, invoke DEX -> KMD
+                    jumblr_iteration(myinfo,coin,(t % (360 * mult)) / (120 * mult),t % (120 * mult));
+                }
+                //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
             }
-            //printf("t.%u %p.%d %s\n",t,coin,coin!=0?coin->FULLNODE:0,myinfo->jumblr_passphrase);
         }
         sleep(55);
     }
