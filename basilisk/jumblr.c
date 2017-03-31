@@ -418,13 +418,15 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
         if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
         {
             item = cJSON_Parse(retstr);
+            jaddbits256(item,"txid",txid);
+            jaddnum(item,"vout",vout);
             free(retstr);
             if ( item != 0 )
             {
                 utxo = cJSON_CreateArray();
                 jaddi(utxo,item);
                 sendflag = 0;
-                printf("jitem.(%s)\n",jprint(utxo,0));
+                ///printf("jitem.(%s)\n",jprint(utxo,0));
                 if ( (retstr= iguana_utxorawtx(myinfo,coin,0,coinaddr,coinaddr,outputs,numoutputs,0,&completed,sendflag,utxo,privkeys)) != 0 )
                 {
                     if ( completed != 0 )
