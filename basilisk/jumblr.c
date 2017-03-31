@@ -424,6 +424,7 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
                 utxo = cJSON_CreateArray();
                 jaddi(utxo,item);
                 sendflag = 0;
+                printf("jitem.(%s)\n",jprint(utxo,0));
                 if ( (retstr= iguana_utxorawtx(myinfo,coin,0,coinaddr,coinaddr,outputs,numoutputs,0,&completed,sendflag,utxo,privkeys)) != 0 )
                 {
                     if ( completed != 0 )
@@ -531,7 +532,7 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
             fees[i] = 10000;
     if ( (ind= jumblr_DEXutxoind(&shouldsplit,targetvolB,targetvolM,targetvolS,amount,margin,dexfeeratio,fees[3])) >= 0 )
     {
-        printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
+        //printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
         if ( shouldsplit != 0 )
         {
             privkeys = cJSON_CreateArray();
@@ -540,7 +541,7 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
             retval = jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees,privkeys);
             free_json(privkeys);
         }
-    } else printf("negative ind\n");
+    } // else printf("negative ind\n");
     return(retval);
 }
 
@@ -557,25 +558,23 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
 int32_t jumblr_utxotxidpending(struct supernet_info *myinfo,bits256 *splittxidp,struct iguana_info *coin,bits256 txid,int32_t vout)
 {
     int32_t i;
-    printf("jumblr_utxotxidpending\n");
     memset(splittxidp,0,sizeof(*splittxidp));
     for (i=0; i<coin->DEXinfo.numpending; i++)
     {
         if ( coin->DEXinfo.pending[i].vout == vout && bits256_cmp(coin->DEXinfo.pending[i].txid,txid) == 0 )
         {
             *splittxidp = coin->DEXinfo.pending[i].splittxid;
-            printf("jumblr_utxotxidpending found txid in slot.%d\n",i);
+            // printf("jumblr_utxotxidpending found txid in slot.%d\n",i);
             return(i);
         }
     }
-    printf("jumblr_utxotxidpending cant find txid\n");
+    // printf("jumblr_utxotxidpending cant find txid\n");
     return(-1);
 }
 
 void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout,bits256 splittxid)
 {
     struct jumblr_pending pend;
-    printf("add txid to pending\n");
     memset(&pend,0,sizeof(pend));
     pend.splittxid = splittxid;
     pend.txid = txid;
@@ -603,10 +602,9 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
                     printf("price %.8f %llx/v%d %.8f %d of %d\n",price,(long long)txid.txid,vout,dstr(value),i,n);
                     if ( jumblr_utxotxidpending(myinfo,&splittxid,coin,txid,vout) < 0 )
                     {
-                        printf("call utxoupdate\n");
                         jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,privkey,txid,vout,value,myinfo->IAMLP,price);
                         jumblr_utxotxidpendingadd(myinfo,coin,txid,vout,splittxid);
-                    } else printf("already have txid\n");
+                    } //else printf("already have txid\n");
                 }
             }
             free_json(array);
@@ -657,7 +655,7 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
             jumblr_utxoupdate(myinfo,ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey);
         }
         ptr->lasttime = (uint32_t)time(NULL);
-    } else printf("skip\n");
+    } // else printf("skip\n");
 }
 
 void jumblr_CMCname(char *CMCname,char *symbol)
