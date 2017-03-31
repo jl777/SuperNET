@@ -446,13 +446,13 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
     return(success * total);
 }
 
-double jumblr_DEXutxosize(double *targetvolBp,double *targetvolMp,double *targetvolSp,int32_t isbob)
+double jumblr_DEXutxosize(double *targetvolBp,double *targetvolMp,double *targetvolSp,int32_t isbob,double kmdprice)
 {
     double fee,depositfactor = (isbob == 0) ? 1. : 1.2;
     fee = JUMBLR_INCR * JUMBLR_FEE;
-    *targetvolBp = depositfactor * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
-    *targetvolMp = depositfactor * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
-    *targetvolSp = depositfactor * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
+    *targetvolBp = depositfactor * kmdprice * ((JUMBLR_INCR + 3*fee)*100 + 3*JUMBLR_TXFEE);
+    *targetvolMp = depositfactor * kmdprice * ((JUMBLR_INCR + 3*fee)*10 + 3*JUMBLR_TXFEE);
+    *targetvolSp = depositfactor * kmdprice * ((JUMBLR_INCR + 3*fee) + 3*JUMBLR_TXFEE);
     return(depositfactor);
 }
 
@@ -510,7 +510,7 @@ int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetvolB,double targetv
     }
 }
 
-int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t isbob)
+int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,uint64_t value,int32_t isbob,double kmdprice)
 {
     double fees[4],targetvolB,amount,targetvolM,targetvolS,depositfactor,dexfeeratio,margin; int32_t ind,shouldsplit;
     margin = 1.1;
@@ -518,7 +518,7 @@ int64_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
     dexfeeratio = 500.;
     amount = dstr(value);
     memset(splittxidp,0,sizeof(*splittxidp));
-    depositfactor = jumblr_DEXutxosize(&targetvolB,&targetvolM,&targetvolS,isbob);
+    depositfactor = jumblr_DEXutxosize(&targetvolB,&targetvolM,&targetvolS,isbob,kmdprice);
     printf("depositfactor %.8f targetvols %.8f %.8f %.8f\n",depositfactor,targetvolB,targetvolM,targetvolS);
     fees[0] = (margin * targetvolB) / dexfeeratio;
     fees[1] = (margin * targetvolM) / dexfeeratio;
@@ -589,11 +589,11 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
                     txid = jbits256(item,"txid");
                     vout = jint(item,"vout");
                     value = SATOSHIDEN * jdouble(item,"amount");
-                    printf("%llx/v%d %.8f %d of %d\n",(long long)txid.txid,vout,dstr(value),i,n);
+                    printf("price %.8f %llx/v%d %.8f %d of %d\n",price,(long long)txid.txid,vout,dstr(value),i,n);
                     if ( jumblr_utxotxidpending(myinfo,&splittxid,coin,txid,vout) < 0 )
                     {
                         printf("call utxoupdate\n");
-                        jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,txid,vout,value,myinfo->IAMLP);
+                        jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,txid,vout,value,myinfo->IAMLP,price);
                         jumblr_utxotxidpendingadd(myinfo,coin,txid,vout,splittxid);
                     } else printf("already have txid\n");
                 }
