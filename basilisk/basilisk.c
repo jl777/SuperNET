@@ -1612,7 +1612,7 @@ STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
     if ( destaddr != 0 && changeaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
     {
         txfee = jdouble(vals,"txfee") * SATOSHIDEN;
-        return(iguana_utxorawtx(myinfo,coin,timelock,destaddr,changeaddr,&satoshis,1,txfee,&completed,sendflag,utxos));
+        return(iguana_utxorawtx(myinfo,coin,timelock,destaddr,changeaddr,&satoshis,1,txfee,&completed,sendflag,utxos,0));
     }
     return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
 }
