@@ -39,7 +39,7 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
     coin = iguana_coinfind(symbol);
     if ( (retstr= dex_listunspent(myinfo,coin,0,0,symbol,coinaddr)) != 0 )
     {
-        printf("(%s)\n",retstr);
+        //printf("(%s)\n",retstr);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             n = cJSON_GetArraySize(array);
@@ -51,22 +51,27 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
                     fprintf(stderr,"%.8f ",dstr(value));
                     if ( value <= limit )
                     {
+                        fprintf(stderr,"< ");
                         if ( utxos == 0 )
                             utxos = cJSON_CreateArray();
                         jaddi(utxos,jduplicate(item));
                     }
                     else if ( value > biggest )
                     {
+                        fprintf(stderr,"biggest! ");
                         if ( biggestitem != 0 )
                             free_json(biggestitem);
                         biggestitem = jduplicate(item);
                         *satoshis = biggest = value;
-                    }
+                    } else fprintf(stderr,"> ");
                 }
             }
             free_json(array);
-            if ( biggestitem != 0 )
+            if ( utxos == 0 && biggestitem != 0 )
+            {
+                printf("add biggest.(%s)\n",jprint(biggestitem,0));
                 jaddi(utxos,biggestitem);
+            }
         }
         free(retstr);
     }
