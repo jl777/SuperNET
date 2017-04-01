@@ -665,6 +665,8 @@ TWO_STRINGS(dex,listunspent,symbol,address)
             return(retstr);
         }
     }
+    else if ( coin != 0 && coin->FULLNODE < 0 )
+        return(jprint(dpow_listunspent(myinfo,coin,address),1));
     return(_dex_listunspent(myinfo,symbol,address));
 }
 
