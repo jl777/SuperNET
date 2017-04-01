@@ -48,28 +48,28 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
                 item = jitem(array,i);
                 if ( (value= SATOSHIDEN*jdouble(item,"amount")) != 0 || (value= SATOSHIDEN*jdouble(item,"value")) != 0 )
                 {
-                    fprintf(stderr,"%.8f ",dstr(value));
+                    //fprintf(stderr,"%.8f ",dstr(value));
                     if ( value <= limit )
                     {
-                        fprintf(stderr,"< ");
+                        //fprintf(stderr,"< ");
                         if ( utxos == 0 )
                             utxos = cJSON_CreateArray();
                         jaddi(utxos,jduplicate(item));
                     }
                     else if ( value > biggest )
                     {
-                        fprintf(stderr,"biggest! ");
+                        //fprintf(stderr,"biggest! ");
                         if ( biggestitem != 0 )
                             free_json(biggestitem);
                         biggestitem = jduplicate(item);
                         *satoshis = biggest = value;
-                    } else fprintf(stderr,"> ");
+                    } //else fprintf(stderr,"> ");
                 }
             }
             free_json(array);
             if ( utxos == 0 && biggestitem != 0 )
             {
-                printf("add biggest.(%s)\n",jprint(biggestitem,0));
+                fprintf(stderr,"add biggest.(%s)\n",jprint(biggestitem,0));
                 jaddi(utxos,biggestitem);
             }
         }

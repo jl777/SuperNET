@@ -554,7 +554,10 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
     for (i=0; i<numoutputs; i++)
         satoshis += outputs[i];
     if ( (n= cJSON_GetArraySize(utxos)) == 0 )
+    {
+        fprintf(stderr,"iguana_calcutxorawtx: no utxos provided?\n");
         return(0);
+    }
     for (i=0; i<n; i++)
     {
         item = jitem(utxos,i);
@@ -570,6 +573,7 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
         unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
         value = jdouble(item,"value") * SATOSHIDEN;
         interests += SATOSHIDEN * jdouble(item,"interest");
+        printf("(%s) ",jprint(item,0));
         iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
         avail += value;
     }
