@@ -376,7 +376,7 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubty
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
     bitcoin_address(coinaddr,pubtype,pubkey33,33);
     bitcoin_address(KMDaddr,60,pubkey33,33);
-    printf("(%s) -> (%s %s)\n",passphrase,coinaddr,KMDaddr);
+    //printf("(%s) -> (%s %s)\n",passphrase,coinaddr,KMDaddr);
     return(privkey);
 }
 
