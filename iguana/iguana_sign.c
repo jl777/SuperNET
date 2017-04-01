@@ -568,14 +568,15 @@ void iguana_vinobjset(struct iguana_msgvin *vin,cJSON *item,uint8_t *spendscript
     }
 }
 
-int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid)
+int32_t iguana_vinarray_check(cJSON *vinarray,bits256 txid,int32_t vout)
 {
-    bits256 array_txid; cJSON *item; int32_t i,n = cJSON_GetArraySize(vinarray);
+    bits256 array_txid; cJSON *item; int32_t array_vout,i,n = cJSON_GetArraySize(vinarray);
     for (i=0; i<n; i++)
     {
         item = jitem(vinarray,i);
         array_txid = jbits256(item,"txid");
-        if ( bits256_cmp(array_txid,txid) == 0 )
+        array_vout = jint(item,"vout");
+        if ( bits256_cmp(array_txid,txid) == 0 && array_vout == vout )
         {
             printf("vinarray.[%d] duplicate\n",i);
             return(i);
@@ -704,11 +705,11 @@ int32_t iguana_rwmsgtx(struct iguana_info *coin,int32_t height,int32_t rwflag,cJ
                 iguana_vinobjset(&msg->vins[i],jitem(vins,i),spendscript,sizeof(spendscript));
                 sigtxid = bitcoin_sigtxid(coin,height,sigser,maxsize*2,msg,i,msg->vins[i].spendscript,msg->vins[i].spendlen,SIGHASH_ALL,vpnstr,suppress_pubkeys);
                 //printf("after vini.%d vinscript.%p spendscript.%p spendlen.%d (%s)\n",i,msg->vins[i].vinscript,msg->vins[i].spendscript,msg->vins[i].spendlen,jprint(jitem(vins,i),0));
-                if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+                if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                     jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
                 if ( msg->vins[i].spendscript == spendscript )
                     msg->vins[i].spendscript = 0;
-            } else if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash) < 0 )
+            } else if ( iguana_vinarray_check(vinarray,msg->vins[i].prev_hash,msg->vins[i].prev_vout) < 0 )
                 jaddi(vinarray,iguana_vinjson(coin,&msg->vins[i],sigtxid));
         }
         free(sigser);
