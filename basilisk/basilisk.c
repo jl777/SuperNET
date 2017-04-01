@@ -33,6 +33,44 @@ int32_t basilisk_notarycmd(char *cmd)
     else return(0);
 }*/
 
+cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *satoshis,uint64_t limit,char *coinaddr)
+{
+    int32_t i,n; char *retstr; uint64_t value,biggest = 0; struct iguana_info *coin=0; cJSON *item,*biggestitem=0,*array,*utxos = 0;
+    coin = iguana_coinfind(symbol);
+    if ( (retstr= dex_listunspent(myinfo,coin,0,0,symbol,coinaddr)) != 0 )
+    {
+        if ( (array= cJSON_Parse(retstr)) != 0 )
+        {
+            n = cJSON_GetArraySize(array);
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (value= SATOSHIDEN*jdouble(item,"amount")) != 0 || (value= SATOSHIDEN*jdouble(item,"value")) != 0 )
+                {
+                    if ( value <= limit )
+                    {
+                        if ( utxos == 0 )
+                            utxos = cJSON_CreateArray();
+                        jaddi(utxos,jduplicate(item));
+                    }
+                    else if ( value > biggest )
+                    {
+                        if ( biggestitem != 0 )
+                            free_json(biggestitem);
+                        biggestitem = jduplicate(item);
+                        *satoshis = biggest = value;
+                    }
+                }
+            }
+            free_json(array);
+            if ( biggestitem != 0 )
+                jaddi(utxos,biggestitem);
+        }
+        free(retstr);
+    }
+    return(utxos);
+}
+
 uint32_t basilisk_calcnonce(struct supernet_info *myinfo,uint8_t *data,int32_t datalen,uint32_t nBits)
 {
     int32_t i,numiters = 0; bits256 hash,hash2,threshold; uint32_t basilisktag;
@@ -1071,6 +1109,7 @@ ARRAY_OBJ_INT(tradebot,goals,currencies,vals,targettime)
         return(clonestr("{\"result\":\"success\"}"));
     } else return(clonestr("{\"error\":\"no currencies or vals\"}"));
 }
+
 HASH_ARRAY_STRING(basilisk,getmessage,hash,vals,hexstr)
 {
     uint32_t msgid,width,channel; char *retstr;
@@ -1617,6 +1656,26 @@ STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
     return(clonestr("{\"error\":\"invalid coin or address specified\"}"));
 }
 
+HASH_ARRAY_STRING(basilisk,utxocombine,ignore,vals,symbol)
+{
+    char *coinaddr,*retstr=0; cJSON *utxos; int64_t satoshis,limit,txfee; int32_t completed,sendflag,timelock;
+    timelock = 0;
+    sendflag = jint(vals,"sendflag");
+    coinaddr = jstr(vals,"coinaddr");
+    limit = jdouble(vals,"maxamount") * SATOSHIDEN;
+    if ( limit > 0 && symbol != 0 && symbol[0] != 0 && (utxos= basilisk_utxosweep(myinfo,symbol,&satoshis,limit,coinaddr)) != 0 && cJSON_GetArraySize(utxos) > 0 )
+    {
+        if ( coinaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
+        {
+            txfee = jdouble(vals,"txfee") * SATOSHIDEN;
+            retstr = iguana_utxorawtx(myinfo,coin,timelock,coinaddr,coinaddr,&satoshis,1,txfee,&completed,sendflag,utxos,0);
+        }
+        free_json(utxos);
+    }
+    if ( retstr == 0 )
+        return(clonestr("{\"error\":\"invalid coin or address specified or no available utxos\"}"));
+    return(retstr);
+}
 
 //int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *coin,uint32_t timelocked,char *destaddr,bits256 txid,int32_t vout)
 THREE_STRINGS_AND_DOUBLE(tradebot,aveprice,comment,base,rel,basevolume)

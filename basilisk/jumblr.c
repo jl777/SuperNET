@@ -380,10 +380,11 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubty
     return(privkey);
 }
 
-int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,int64_t remaining,double bigprice,double middleprice,double smallprice,double fees[4],cJSON *privkeys)
+int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,int64_t remaining,double bigprice,double middleprice,double smallprice,double fees[4],cJSON *privkeys,double esttxfee)
 {
-    int64_t values[4],outputs[64],value,total,estfee = 150000; int32_t i,n,success=0,completed,sendflag,numoutputs = 0; char *retstr; cJSON *retjson,*utxo,*item;
+    int64_t values[4],outputs[64],value,total,estfee; int32_t i,n,success=0,completed,sendflag,numoutputs = 0; char *retstr; cJSON *retjson,*utxo,*item;
     total = 0;
+    estfee = SATOSHIDEN * esttxfee;
     memset(values,0,sizeof(values));
     memset(outputs,0,sizeof(outputs));
     if ( bigprice > SMALLVAL )
@@ -515,7 +516,7 @@ int32_t jumblr_DEXutxoind(int32_t *shouldsplitp,double targetvolB,double targetv
     }
 }
 
-int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 privkey,bits256 txid,int32_t vout,uint64_t value,int32_t isbob,double kmdprice)
+int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 privkey,bits256 txid,int32_t vout,uint64_t value,int32_t isbob,double kmdprice,double estfee)
 {
     double fees[4],targetvolB,amount,targetvolM,targetvolS,depositfactor,dexfeeratio,margin; int32_t ind,i,shouldsplit; cJSON *privkeys; char wifstr[128];
     margin = 1.1;
@@ -525,9 +526,9 @@ int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
     memset(splittxidp,0,sizeof(*splittxidp));
     depositfactor = jumblr_DEXutxosize(&targetvolB,&targetvolM,&targetvolS,isbob,kmdprice);
     printf("depositfactor %.8f targetvols %.8f %.8f %.8f\n",depositfactor,targetvolB,targetvolM,targetvolS);
-    fees[0] = (margin * targetvolB) / dexfeeratio;
-    fees[1] = (margin * targetvolM) / dexfeeratio;
-    fees[2] = (margin * targetvolS) / dexfeeratio;
+    fees[0] = estfee + (margin * targetvolB) / dexfeeratio;
+    fees[1] = estfee + (margin * targetvolM) / dexfeeratio;
+    fees[2] = estfee + (margin * targetvolS) / dexfeeratio;
     fees[3] = (strcmp("BTC",coin->symbol) == 0) ? 50000 : 10000;
     for (i=0; i<4; i++)
         if ( fees[i] < 10000 )
@@ -540,7 +541,7 @@ int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
             privkeys = cJSON_CreateArray();
             bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
             jaddistr(privkeys,wifstr);
-            jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees,privkeys);
+            jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees,privkeys,estfee);
             free_json(privkeys);
             ind = -1;
         }
@@ -588,7 +589,7 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,struct iguana_info *
     coin->DEXinfo.pending[coin->DEXinfo.numpending++] = pend;
 }
 
-void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,double price,char *coinaddr,bits256 privkey)
+void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,double price,char *coinaddr,bits256 privkey,double estfee)
 {
     char *retstr; cJSON *array,*item; int32_t i,n,vout,ind; bits256 txid,splittxid; uint64_t value;
     if ( (retstr= jumblr_listunspent(myinfo,coin,coinaddr)) != 0 )
@@ -607,7 +608,7 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
                     printf("price %.8f %llx/v%d %.8f %d of %d\n",price,(long long)txid.txid,vout,dstr(value),i,n);
                     if ( jumblr_utxotxidpending(myinfo,&splittxid,&ind,coin,txid,vout) < 0 )
                     {
-                        ind = jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,privkey,txid,vout,value,myinfo->IAMLP,price);
+                        ind = jumblr_DEXutxoupdate(myinfo,coin,&splittxid,coinaddr,privkey,txid,vout,value,myinfo->IAMLP,price,estfee);
                         jumblr_utxotxidpendingadd(myinfo,coin,txid,vout,splittxid,ind);
                     } //else printf("already have txid\n");
                 }
@@ -620,9 +621,11 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,struct iguana_info *coin,dou
 
 void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *CMCname,double BTC2KMD,double KMDavail)
 {
-    double avebid,aveask,highbid,lowask,CMC_average,changes[3]; struct iguana_info *btccoin,*kmdcoin; struct DEXcoin_info *ptr = &coin->DEXinfo;
+    double avebid,aveask,highbid,lowask,CMC_average,changes[3],estfee,estbtcfee; struct iguana_info *btccoin,*kmdcoin; struct DEXcoin_info *ptr = &coin->DEXinfo;
     // wait for one confirmation to clear most in mempool (ha, ha)
     // deal with changing addresses, ie all pendings?
+    estfee = 0.0001;
+    estbtcfee = 0.0015;
     if ( coin != 0 && (kmdcoin= iguana_coinfind("KMD")) != 0 && time(NULL) > ptr->lasttime+60 )
     {
         ptr->coin = coin;
@@ -652,14 +655,14 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
             ptr->kmdprice = 1.;
             ptr->KMDavail = ptr->avail;
             if ( (btccoin= iguana_coinfind("BTC")) != 0 )
-                jumblr_utxoupdate(myinfo,btccoin,ptr->btcprice,ptr->depositaddr,ptr->deposit_privkey);
-            jumblr_utxoupdate(myinfo,kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey);
+                jumblr_utxoupdate(myinfo,btccoin,ptr->btcprice,ptr->depositaddr,ptr->deposit_privkey,estbtcfee);
+            jumblr_utxoupdate(myinfo,kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey,estfee);
         }
         else if ( (ptr->BTC2KMD= BTC2KMD) > SMALLVAL )
         {
             ptr->kmdprice = ptr->btcprice / BTC2KMD;
             ptr->KMDavail = KMDavail;
-            jumblr_utxoupdate(myinfo,ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey);
+            jumblr_utxoupdate(myinfo,ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey,estfee);
         }
         ptr->lasttime = (uint32_t)time(NULL);
     } // else printf("skip\n");
