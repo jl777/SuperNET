@@ -33,9 +33,9 @@ int32_t basilisk_notarycmd(char *cmd)
     else return(0);
 }*/
 
-cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *satoshis,uint64_t limit,char *coinaddr)
+cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *satoshis,uint64_t limit,int32_t maxvins,char *coinaddr)
 {
-    int32_t i,n; char *retstr; uint64_t value,biggest = 0; struct iguana_info *coin=0; cJSON *item,*biggestitem=0,*array,*utxos = 0;
+    int32_t i,n,numvins = 0; char *retstr; uint64_t value,biggest = 0; struct iguana_info *coin=0; cJSON *item,*biggestitem=0,*array,*utxos = 0;
     coin = iguana_coinfind(symbol);
     if ( (retstr= dex_listunspent(myinfo,coin,0,0,symbol,coinaddr)) != 0 )
     {
@@ -54,7 +54,11 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
                         //fprintf(stderr,"< ");
                         if ( utxos == 0 )
                             utxos = cJSON_CreateArray();
-                        jaddi(utxos,jduplicate(item));
+                        if ( numvins < maxvins )
+                        {
+                            jaddi(utxos,jduplicate(item));
+                            numvins++;
+                        }
                     }
                     else if ( value > biggest )
                     {
@@ -1665,12 +1669,14 @@ STRING_ARRAY_OBJ_STRING(basilisk,utxorawtx,symbol,utxos,vals,ignore)
 
 HASH_ARRAY_STRING(basilisk,utxocombine,ignore,vals,symbol)
 {
-    char *coinaddr,*retstr=0; cJSON *utxos; int64_t satoshis,limit,txfee; int32_t completed,sendflag,timelock;
+    char *coinaddr,*retstr=0; cJSON *utxos; int64_t satoshis,limit,txfee; int32_t maxvins,completed,sendflag,timelock;
     timelock = 0;
+    if ( (maxvins= jint(vals,"maxvins")) == 0 )
+        maxvins = 20;
     sendflag = jint(vals,"sendflag");
     coinaddr = jstr(vals,"coinaddr");
     limit = jdouble(vals,"maxamount") * SATOSHIDEN;
-    if ( limit > 0 && symbol != 0 && symbol[0] != 0 && (utxos= basilisk_utxosweep(myinfo,symbol,&satoshis,limit,coinaddr)) != 0 && cJSON_GetArraySize(utxos) > 0 )
+    if ( limit > 0 && symbol != 0 && symbol[0] != 0 && (utxos= basilisk_utxosweep(myinfo,symbol,&satoshis,limit,maxvins,coinaddr)) != 0 && cJSON_GetArraySize(utxos) > 0 )
     {
         if ( coinaddr != 0 && symbol != 0 && (coin= iguana_coinfind(symbol)) != 0 )
         {
