@@ -658,7 +658,7 @@ int64_t iguana_verifytimelock(struct supernet_info *myinfo,struct iguana_info *c
     } return(-2);
 }
 
-char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,int64_t *satoshis,int32_t numoutputs,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos)
+char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int32_t timelock,char *destaddr,char *changeaddr,int64_t *satoshis,int32_t numoutputs,uint64_t txfee,int32_t *completedp,int32_t sendflag,cJSON *utxos,cJSON *privkeys)
 {
     uint8_t script[35],p2shscript[128],rmd160[20],addrtype; bits256 txid; int32_t i,p2shlen,iter,spendlen; cJSON *retjson,*txcopy,*txobj=0,*vins=0; char *rawtx=0,*signedtx=0; uint32_t timelocked = 0;
     *completedp = 0;
@@ -697,7 +697,7 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
             {
                 if ( iter == 1 || txfee != 0 )
                     jaddstr(retjson,"rawtx",rawtx);
-                if ( (signedtx= iguana_signrawtx(myinfo,coin,0,&txid,completedp,vins,rawtx,0,0)) != 0 )
+                if ( (signedtx= iguana_signrawtx(myinfo,coin,0,&txid,completedp,vins,rawtx,privkeys,0)) != 0 )
                 {
                     if ( (iter == 1 || txfee != 0) && *completedp != 0 )
                     {
@@ -705,10 +705,9 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
                         jaddstr(retjson,"signedtx",signedtx);
                         if ( sendflag != 0 )
                         {
-                            //printf("send signedtx.(%s)\n",signedtx);
                             txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
                             jaddbits256(retjson,"sent",txid);
-                        }
+                        } else printf("dont send signedtx.(%s)\n",signedtx);
                     }
                 } else printf("error signing raw utxorawtx tx\n");
             } else printf("null rawtx from calcutxorawtx\n");

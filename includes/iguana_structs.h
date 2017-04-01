@@ -466,14 +466,14 @@ struct iguana_RTtxid
 
 struct hashstr_item { UT_hash_handle hh; char address[40]; };
 
-struct jumblr_pending { bits256 splittxid,txid; int32_t vout; };
+struct jumblr_pending { bits256 splittxid,txid; int32_t vout,ind; };
 
 struct DEXcoin_info
 {
     bits256 deposit_privkey,jumblr_privkey;
     struct iguana_info *coin;
     double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,maxbid,minask,avail,KMDavail;
-    uint32_t lasttime,numpending;
+    uint32_t lasttime; int32_t numpending;
     char CMCname[32],symbol[16],depositaddr[64],KMDdepositaddr[64],KMDjumblraddr[64],jumblraddr[64];
     struct jumblr_pending *pending;
 };
