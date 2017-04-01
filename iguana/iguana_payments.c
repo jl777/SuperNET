@@ -571,9 +571,10 @@ char *iguana_calcutxorawtx(struct supernet_info *myinfo,struct iguana_info *coin
             continue;
         }
         unspents = realloc(unspents,(1 + max) * sizeof(*unspents));
-        value = jdouble(item,"value") * SATOSHIDEN;
+        if ( (value= jdouble(item,"value") * SATOSHIDEN) == 0 )
+            value = jdouble(item,"amount") * SATOSHIDEN;
         interests += SATOSHIDEN * jdouble(item,"interest");
-        printf("(%s) ",jprint(item,0));
+        //printf("(%s) ",jprint(item,0));
         iguana_outptset(myinfo,coin,&unspents[max++],jbits256(item,"txid"),jint(item,"vout"),value,spendscriptstr);
         avail += value;
     }
