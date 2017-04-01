@@ -39,6 +39,7 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
     coin = iguana_coinfind(symbol);
     if ( (retstr= dex_listunspent(myinfo,coin,0,0,symbol,coinaddr)) != 0 )
     {
+        printf("(%s)\n",retstr);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             n = cJSON_GetArraySize(array);
@@ -47,6 +48,7 @@ cJSON *basilisk_utxosweep(struct supernet_info *myinfo,char *symbol,int64_t *sat
                 item = jitem(array,i);
                 if ( (value= SATOSHIDEN*jdouble(item,"amount")) != 0 || (value= SATOSHIDEN*jdouble(item,"value")) != 0 )
                 {
+                    fprintf(stderr,"%.8f ",dstr(value));
                     if ( value <= limit )
                     {
                         if ( utxos == 0 )
