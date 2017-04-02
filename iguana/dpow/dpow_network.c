@@ -798,7 +798,13 @@ char *dex_response(int32_t *broadcastflagp,struct supernet_info *myinfo,struct d
                 }
                 //printf("DEX NOTARIES -> (%s)\n",retstr);
             }
-        } else printf("(%s) not active\n",dexreq.name);
+        }
+        else
+        {
+            static uint32_t counter;
+            if ( counter++ < 10 )
+                printf("request came in from GUI for (%s) that is not active\n",dexreq.name);
+        }
         if ( retstr == 0 )
             return(clonestr("{\"error\":\"null return\"}"));
     }
