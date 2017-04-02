@@ -536,7 +536,7 @@ int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
             fees[i] = 10000;
     if ( (ind= jumblr_DEXutxoind(shouldsplitp,targetvolB,targetvolM,targetvolS,amount,margin,dexfeeratio,fees[3])) >= 0 )
     {
-        //printf("shouldsplit.%d ind.%d\n",shouldsplit,ind);
+        printf("shouldsplit.%d ind.%d\n",*shouldsplitp,ind);
         if ( *shouldsplitp != 0 )
         {
             privkeys = cJSON_CreateArray();
@@ -586,8 +586,6 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,char *dest,struct ig
     pend.txid = txid;
     pend.vout = vout;
     pend.ind = ind;
-    coin->DEXinfo.pending = realloc(coin->DEXinfo.pending,sizeof(*coin->DEXinfo.pending) * (1 + coin->DEXinfo.numpending));
-    coin->DEXinfo.pending[coin->DEXinfo.numpending++] = pend;
     if ( shouldsplit == 0 && ind < 3 )
     {
         if ( price > SMALLVAL )
@@ -595,7 +593,7 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,char *dest,struct ig
             vals = cJSON_CreateObject();
             jaddstr(vals,"source",coin->symbol);
             jaddstr(vals,"dest",dest);
-            jaddnum(vals,"amount",dstr(value));
+            jaddnum(vals,"amount",dstr(value) - estfee);
             jaddnum(vals,"minprice",price);
             jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
@@ -611,6 +609,8 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,char *dest,struct ig
             free_json(vals);
         }
     }
+    coin->DEXinfo.pending = realloc(coin->DEXinfo.pending,sizeof(*coin->DEXinfo.pending) * (1 + coin->DEXinfo.numpending));
+    coin->DEXinfo.pending[coin->DEXinfo.numpending++] = pend;
 }
 
 void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_info *coin,double price,char *coinaddr,bits256 privkey,double estfee)
@@ -634,7 +634,11 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_inf
                     {
                         ind = jumblr_DEXutxoupdate(myinfo,coin,&shouldsplit,&splittxid,coinaddr,privkey,txid,vout,value,myinfo->IAMLP,price,estfee);
                         jumblr_utxotxidpendingadd(myinfo,dest,coin,txid,vout,value,splittxid,ind,price,estfee,shouldsplit);
-                    } //else printf("already have txid\n");
+                    }
+                    else
+                    {
+                        // update status of utxo
+                    }
                 }
             }
             free_json(array);
