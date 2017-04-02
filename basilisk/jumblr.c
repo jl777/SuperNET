@@ -587,7 +587,7 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,char *dest,struct ig
     pend.txid = txid;
     pend.vout = vout;
     pend.ind = ind;
-    if ( shouldsplit == 0 && ind < 3 )
+    if ( myinfo->IAMLP == 0 && shouldsplit == 0 && ind < 3 )
     {
         if ( price > SMALLVAL )
         {
@@ -706,6 +706,8 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     struct iguana_info *kmdcoin;
+    if ( myinfo->IAMNOTARY != 0 )
+        return;
     if ( (kmdcoin= iguana_coinfind("KMD")) == 0 || iguana_coinfind("BTC") == 0 )
         return;
     //printf("jumblr_DEXcheck\n");
@@ -747,6 +749,8 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
 {
     //static uint32_t lasttime;
     char BTCaddr[64],KMDaddr[64],*zaddr,*retstr; bits256 privkey; uint64_t amount=0,total=0; double fee; struct jumblr_item *ptr,*tmp; uint8_t r;
+    if ( myinfo->IAMNOTARY != 0 )
+        return;
     fee = JUMBLR_INCR * JUMBLR_FEE;
     OS_randombytes(&r,sizeof(r));
 //r = 0;
