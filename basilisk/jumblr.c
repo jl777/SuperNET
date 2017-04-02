@@ -526,10 +526,10 @@ int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
     amount = dstr(value);
     memset(splittxidp,0,sizeof(*splittxidp));
     depositfactor = jumblr_DEXutxosize(&targetvolB,&targetvolM,&targetvolS,isbob,kmdprice);
-    //printf("depositfactor %.8f targetvols %.8f %.8f %.8f\n",depositfactor,targetvolB,targetvolM,targetvolS);
-    fees[0] = estfee + (margin * targetvolB) / dexfeeratio;
-    fees[1] = estfee + (margin * targetvolM) / dexfeeratio;
-    fees[2] = estfee + (margin * targetvolS) / dexfeeratio;
+    printf("depositfactor %.8f targetvols %.8f %.8f %.8f\n",depositfactor,targetvolB,targetvolM,targetvolS);
+    fees[0] = (margin * targetvolB) / dexfeeratio;
+    fees[1] = (margin * targetvolM) / dexfeeratio;
+    fees[2] = (margin * targetvolS) / dexfeeratio;
     fees[3] = (strcmp("BTC",coin->symbol) == 0) ? 50000 : 10000;
     for (i=0; i<4; i++)
         if ( fees[i] < 10000 )
