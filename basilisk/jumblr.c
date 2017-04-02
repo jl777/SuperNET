@@ -403,7 +403,7 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
         if ( (value= values[i]) != 0 )
         {
             n = 0;
-            while ( n < 10 && remaining > value+estfee && numoutputs < sizeof(outputs)/sizeof(*outputs) )
+            while ( n < 10 && remaining > value && numoutputs < sizeof(outputs)/sizeof(*outputs) )
             {
                 outputs[numoutputs++] = value;
                 remaining -= value;
