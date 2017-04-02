@@ -755,10 +755,10 @@ void jumblr_loop(void *ptr)
     {
         if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
-            // if BTC has arrived in destination address, invoke DEX -> BTC
-            jumblr_DEXcheck(myinfo,coin);
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
+                // if BTC has arrived in destination address, invoke DEX -> BTC
+                jumblr_DEXcheck(myinfo,coin);
                 t = (uint32_t)time(NULL);
                 if ( (t % (120 * mult)) < 60 )
                 {

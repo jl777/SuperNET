@@ -550,7 +550,7 @@ int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swap
             free(retarray);
         } else printf("error parsing.(%s)\n",retstr);
         free(retstr);
-    } else printf("error creating %s feetx\n",iambob != 0 ? "BOB" : "ALICE");
+    } else printf("error creating %s %s\n",iambob != 0 ? "BOB" : "ALICE",rawtx->name);
     free_json(valsobj);
     free(V);
     return(retval);
@@ -790,7 +790,7 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
     return(-1);
 }
 
-int32_t basilisk_bobpayment_spendclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 privAm,bits256 myprivs0,uint8_t *data,int32_t datalen,int32_t jumblrflag)
+/*int32_t basilisk_bobpayment_spendclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 privAm,bits256 myprivs0,uint8_t *data,int32_t datalen,int32_t jumblrflag)
 {
     bits256 revAm; uint8_t userdata[512]; int32_t i,len,numconfirms = 0,retval = -1; uint32_t sequenceid = 0xffffffff;
     basilisk_rawtx_setparms("bobpayment",quoteid,src,bobcoin,numconfirms,0,amount,3,0,jumblrflag);
@@ -878,7 +878,7 @@ int32_t basilisk_alicepayment_spendclone(struct supernet_info *myinfo,struct igu
         
     }
     return(retval);
-}
+}*/
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
