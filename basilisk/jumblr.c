@@ -414,7 +414,7 @@ int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bi
         }
     }
     char str[65]; printf("numoutputs.%d total %.8f %s/v%d\n",numoutputs,dstr(total),bits256_str(str,txid),vout);
-    if ( numoutputs > 0 )
+    if ( numoutputs > 1 ) // no point to make just one
     {
         if ( (retstr= _dex_gettxout(myinfo,coin->symbol,txid,vout)) != 0 )
         {
@@ -542,9 +542,10 @@ int32_t jumblr_DEXutxoupdate(struct supernet_info *myinfo,struct iguana_info *co
             privkeys = cJSON_CreateArray();
             bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
             jaddistr(privkeys,wifstr);
-            jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees,privkeys,estfee);
+            if ( jumblr_DEXsplit(myinfo,coin,splittxidp,coinaddr,txid,vout,value,margin * targetvolB,margin * targetvolM,margin * targetvolS,fees,privkeys,estfee) > 0 )
+                ind = -1;
+            else *shouldsplitp = 0;
             free_json(privkeys);
-            ind = -1;
         }
     } // else printf("negative ind\n");
     return(ind);
