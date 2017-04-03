@@ -589,12 +589,14 @@ void jumblr_utxotxidpendingadd(struct supernet_info *myinfo,char *dest,struct ig
     pend.ind = ind;
     if ( myinfo->IAMLP == 0 && shouldsplit == 0 && ind < 3 )
     {
-        if ( price > SMALLVAL )
+        static uint32_t num;
+        if ( num == 0 && price > SMALLVAL )
         {
+            num++;
             vals = cJSON_CreateObject();
             jaddstr(vals,"source",coin->symbol);
             jaddstr(vals,"dest",dest);
-            jaddnum(vals,"amount",dstr(value) - estfee);
+            jaddnum(vals,"amount",price * 100);//dstr(value) - estfee);
             jaddnum(vals,"minprice",price);
             jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
