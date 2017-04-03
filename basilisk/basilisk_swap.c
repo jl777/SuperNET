@@ -2418,7 +2418,7 @@ void basilisk_swaploop(void *_swap)
             printf("ALICE's error %d %d %d\n",swap->myfee.I.datalen,swap->alicepayment.I.datalen,swap->alicepayment.I.datalen);
             retval = -7;
         }
-        else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobpayment.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) )
+        else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) ) //swap->bobpayment.I.datalen == 0 
         {
             printf("BOB's error %d %d %d\n",swap->myfee.I.datalen,swap->bobpayment.I.datalen,swap->bobdeposit.I.datalen);
             retval = -7;
