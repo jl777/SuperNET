@@ -306,6 +306,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
                 if ( list[i].destamount > maxamount )
                 {
                     maxamount = list[i].destamount;
+                    printf("set maxamount %llu\n",(long long)maxamount);
                     maxi = i;
                 }
             }
@@ -317,12 +318,14 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
     double retvals[4],refprice=0.,profitmargin,aveprice,destvolume; cJSON *retjson; char *retstr;
     destvolume = dstr(maxamount);
+    printf("destvolume <- %.8f\n",dstr(destvolume));
     if ( fabs(destvolume) < SMALLVAL )
     {
         if ( (destvolume= dstr(minamount)) == 0 )
         {
             aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount));
             destvolume = aveprice * dstr(list[0].srcamount);
+            printf("set destvolume %.8f\n",destvolume);
         }
     }
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
