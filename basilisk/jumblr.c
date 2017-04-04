@@ -679,12 +679,13 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
         }
         ptr->avail = dstr(jumblr_balance(myinfo,ptr->coin,ptr->depositaddr));
         ptr->btcprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,CMCname,symbol,"BTC",&ptr->USD_average);
+        KMDavail = dstr(jumblr_balance(myinfo,ptr->coin,ptr->KMDjumblraddr));
         printf("%s avail %.8f btcprice %.8f deposit.(%s %s) -> jumblr.(%s %s)\n",symbol,ptr->avail,ptr->btcprice,ptr->depositaddr,ptr->KMDdepositaddr,ptr->jumblraddr,ptr->KMDjumblraddr);
         if ( strcmp("KMD",symbol) == 0 )
         {
             ptr->BTC2KMD = ptr->btcprice;
             ptr->kmdprice = 1.;
-            ptr->KMDavail = ptr->avail;
+            ptr->KMDavail = KMDavail;
             /*if ( (btccoin= iguana_coinfind("BTC")) != 0 )
                 jumblr_utxoupdate(myinfo,"KMD",btccoin,ptr->btcprice,ptr->depositaddr,ptr->deposit_privkey,estbtcfee);
             jumblr_utxoupdate(myinfo,"BTC",kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey,estfee);*/
