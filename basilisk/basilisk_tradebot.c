@@ -228,7 +228,8 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->desthash = jbits256(reqjson,"desthash");
     rp->srcamount = j64bits(reqjson,"srcamount");
     rp->minamount = j64bits(reqjson,"minamount");
-    rp->destamount = j64bits(reqjson,"destamount");
+    //rp->destamount = j64bits(reqjson,"destamount");
+    rp->destamount = j64bits(reqjson,"destsatoshis");
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
     //if ( jstr(reqjson,"relay") != 0 )

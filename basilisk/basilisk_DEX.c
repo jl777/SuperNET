@@ -159,7 +159,10 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
         jadd64bits(item,"minamount",rp->minamount);
     jaddstr(item,"dest",rp->dest);
     if ( rp->destamount != 0 )
-        jadd64bits(item,"destamount",rp->destamount);
+    {
+        //jadd64bits(item,"destamount",rp->destamount);
+        jadd64bits(item,"destsatoshis",rp->destamount);
+    }
     jaddnum(item,"quotetime",rp->quotetime);
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
