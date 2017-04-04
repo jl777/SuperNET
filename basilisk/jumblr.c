@@ -754,7 +754,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
             jaddstr(vals,"source","KMD");
             jaddstr(vals,"dest","BTC");
             jaddnum(vals,"amount",JUMBLR_INCR);
-            jaddnum(vals,"minprice",1./kmdcoin->DEXinfo.btcprice*1.01);
+            jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice);
             jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
             kmdcoin->DEXinfo.DEXpending += btcavail;
@@ -764,7 +764,6 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
                 free(retstr);
             }
             free_json(vals);
-            // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
     } //else printf("notlp.%d kmdprice %.8f\n",myinfo->IAMLP,kmdcoin->DEXinfo.btcprice);
 }
