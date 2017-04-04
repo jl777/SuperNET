@@ -746,9 +746,9 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
             free_json(vals);
             // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
-        if ( coinbtc != 0 && kmdcoin->DEXinfo.avail > JUMBLR_INCR+kmdcoin->DEXinfo.DEXpending )
+        if ( coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > JUMBLR_INCR+kmdcoin->DEXinfo.DEXpending )
         {
-            printf("KMD deposits %.8f, min %.8f\n",kmdcoin->DEXinfo.avail,JUMBLR_INCR);
+            printf("KMD deposits %.8f, min %.8f\n",kmdcoin->DEXinfo.KMDavail,JUMBLR_INCR);
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","KMD");
             jaddstr(vals,"dest","BTC");
