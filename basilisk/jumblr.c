@@ -679,21 +679,21 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
         }
         ptr->avail = dstr(jumblr_balance(myinfo,ptr->coin,ptr->depositaddr));
         ptr->btcprice = get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,CMCname,symbol,"BTC",&ptr->USD_average);
-        //printf("%s avail %.8f btcprice %.8f deposit.(%s %s) -> jumblr.(%s %s)\n",symbol,ptr->avail,ptr->btcprice,ptr->depositaddr,ptr->KMDdepositaddr,ptr->jumblraddr,ptr->KMDjumblraddr);
+        printf("%s avail %.8f btcprice %.8f deposit.(%s %s) -> jumblr.(%s %s)\n",symbol,ptr->avail,ptr->btcprice,ptr->depositaddr,ptr->KMDdepositaddr,ptr->jumblraddr,ptr->KMDjumblraddr);
         if ( strcmp("KMD",symbol) == 0 )
         {
             ptr->BTC2KMD = ptr->btcprice;
             ptr->kmdprice = 1.;
             ptr->KMDavail = ptr->avail;
-            if ( (btccoin= iguana_coinfind("BTC")) != 0 )
+            /*if ( (btccoin= iguana_coinfind("BTC")) != 0 )
                 jumblr_utxoupdate(myinfo,"KMD",btccoin,ptr->btcprice,ptr->depositaddr,ptr->deposit_privkey,estbtcfee);
-            jumblr_utxoupdate(myinfo,"BTC",kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey,estfee);
+            jumblr_utxoupdate(myinfo,"BTC",kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey,estfee);*/
         }
         else if ( (ptr->BTC2KMD= BTC2KMD) > SMALLVAL )
         {
             ptr->kmdprice = ptr->btcprice / BTC2KMD;
             ptr->KMDavail = KMDavail;
-            jumblr_utxoupdate(myinfo,"KMD",ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey,estfee);
+            //jumblr_utxoupdate(myinfo,"KMD",ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey,estfee);
         }
         ptr->lasttime = (uint32_t)time(NULL);
     } // else printf("skip\n");
@@ -746,7 +746,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
             free_json(vals);
             // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
-    } else printf("null kmdprice %.8f\n",kmdcoin->DEXinfo.btcprice);
+    } //else printf("notlp.%d kmdprice %.8f\n",myinfo->IAMLP,kmdcoin->DEXinfo.btcprice);
 }
 
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
