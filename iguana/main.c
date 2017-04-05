@@ -749,7 +749,7 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; uint32_t t,n=0; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
     while ( 1 )
     {
@@ -758,7 +758,8 @@ void jumblr_loop(void *ptr)
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
                 // if BTC has arrived in destination address, invoke DEX -> BTC
-                jumblr_DEXcheck(myinfo,coin);
+                if ( (n++ % 10) == 0 )
+                    jumblr_DEXcheck(myinfo,coin);
                 t = (uint32_t)time(NULL);
                 if ( (t % (120 * mult)) < 60 )
                 {
