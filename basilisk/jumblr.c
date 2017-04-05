@@ -727,7 +727,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
         double minbtc,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
         btcavail = dstr(jumblr_balance(myinfo,coinbtc,kmdcoin->DEXinfo.depositaddr));
-        if ( 0 && coinbtc != 0 && btcavail > minbtc+kmdcoin->DEXinfo.DEXpending )
+        if ( coinbtc != 0 && btcavail > minbtc+kmdcoin->DEXinfo.DEXpending )
         {
             printf("BTC deposits %.8f, min %.8f\n",btcavail,minbtc);
             
@@ -747,15 +747,15 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
             free_json(vals);
             // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
-        if ( coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > JUMBLR_INCR+kmdcoin->DEXinfo.DEXpending )
+        if ( 0 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > JUMBLR_INCR+kmdcoin->DEXinfo.DEXpending )
         {
             printf("KMD deposits %.8f, min %.8f\n",kmdcoin->DEXinfo.KMDavail,JUMBLR_INCR);
             vals = cJSON_CreateObject();
             jaddstr(vals,"source","KMD");
             jaddstr(vals,"dest","BTC");
             jaddnum(vals,"amount",JUMBLR_INCR);
-            jaddnum(vals,"destamount",JUMBLR_INCR*kmdcoin->DEXinfo.btcprice);
-            jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice);
+            //jaddnum(vals,"destamount",JUMBLR_INCR*kmdcoin->DEXinfo.btcprice);
+            jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice/1.01);
             jaddnum(vals,"usejumblr",1);
             memset(hash.bytes,0,sizeof(hash));
             kmdcoin->DEXinfo.DEXpending += btcavail;
