@@ -2408,7 +2408,7 @@ void basilisk_swaploop(void *_swap)
             }
         }
     }
-    if ( (swap->I.statebits & 0x40) == 0 )
+    if ( swap->I.iambob == 0 && (swap->I.statebits & 0x40) == 0 )
     {
         printf("couldnt send fee\n");
         retval = -8;
