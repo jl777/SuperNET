@@ -332,7 +332,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
     {
-        if ( profitmargin == 0. || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
+        if ( profitmargin == 0. || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,.1 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
