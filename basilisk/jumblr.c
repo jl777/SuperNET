@@ -727,7 +727,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
         double minbtc,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
         btcavail = dstr(jumblr_balance(myinfo,coinbtc,kmdcoin->DEXinfo.depositaddr));
-        if ( 0 && coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
+        if ( coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
         {
             avail = (btcavail - kmdcoin->DEXinfo.DEXpending);
             printf("BTC deposits %.8f, min %.8f avail %.8f\n",btcavail,minbtc,avail);
