@@ -991,10 +991,21 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     printf("ERROR: too many linfos %d\n",i);
 }
 
-int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume)
+int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume,double price)
 {
-    printf("minvol %f maxvol %f vs volume %f\n",li->minvol,li->maxvol,volume);
-    if ( (li->minvol == 0 || volume >= li->minvol) && (li->maxvol == 0 || volume <= li->maxvol) )
+    double minvol,maxvol;
+    if ( dir > 0 )
+    {
+        minvol = li->minvol;
+        maxvol = li->maxvol;
+    }
+    else
+    {
+        minvol = price * li->minvol;
+        maxvol = price * li->maxvol;
+    }
+    printf("dir.%d minvol %f maxvol %f vs (%f %f) volume %f price %f\n",dir,li->minvol,li->maxvol,minvol,maxvol,volume,price);
+    if ( (minvol == 0. || volume >= minvol) && (maxvol == 0. || volume <= maxvol) )
         return(0);
     else return(-1);
 }
@@ -1018,7 +1029,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
             continue;
         }
-        if ( _default_volume_ok(myinfo,&refli,dir,destvolume) == 0 )
+        if ( _default_volume_ok(myinfo,&refli,dir,destvolume,dir > 0 ? refli.bid : refli.ask) == 0 )
         {
             if ( refli.profit != 0. )
                 *refpricep = refli.refprice;

@@ -162,7 +162,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
     {
         //jadd64bits(item,"destamount",rp->destamount);
         jadd64bits(item,"destsatoshis",rp->destamount);
-        printf("DESTSATOSHIS.%llu\n",(long long)rp->destamount);
+        //printf("DESTSATOSHIS.%llu\n",(long long)rp->destamount);
     }
     jaddnum(item,"quotetime",rp->quotetime);
     jaddnum(item,"timestamp",rp->timestamp);

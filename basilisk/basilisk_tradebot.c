@@ -230,7 +230,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->minamount = j64bits(reqjson,"minamount");
     //rp->destamount = j64bits(reqjson,"destamount");
     rp->destamount = j64bits(reqjson,"destsatoshis");
-    printf("parse DESTSATOSHIS.%llu (%s)\n",(long long)rp->destamount,jprint(reqjson,0));
+    //printf("parse DESTSATOSHIS.%llu (%s)\n",(long long)rp->destamount,jprint(reqjson,0));
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
     //if ( jstr(reqjson,"relay") != 0 )
@@ -319,7 +319,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     // MVP -> USD myrequest.0 pendingid.0 noquoteflag.1 havequoteflag.0 maxi.-1 0.00000000
     double retvals[4],refprice=0.,profitmargin,aveprice,destvolume; cJSON *retjson; char *retstr;
     destvolume = dstr(maxamount);
-    printf("destvolume <- %.8f\n",dstr(destvolume));
+    //printf("destvolume <- %.8f\n",dstr(destvolume));
     if ( fabs(destvolume) < SMALLVAL )
     {
         if ( (destvolume= dstr(minamount)) == 0 )
