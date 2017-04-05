@@ -230,6 +230,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->minamount = j64bits(reqjson,"minamount");
     //rp->destamount = j64bits(reqjson,"destamount");
     rp->destamount = j64bits(reqjson,"destsatoshis");
+    printf("parse DESTSATOSHIS.%llu\n",(long long)rp->destamount);
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
     //if ( jstr(reqjson,"relay") != 0 )
@@ -326,7 +327,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             aveprice = instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount));
             destvolume = aveprice * dstr(list[0].srcamount);
             printf("set destvolume %.8f\n",destvolume);
-        }
+        } else printf("destvolume %.8f <- minamount\n",destvolume);
     }
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
