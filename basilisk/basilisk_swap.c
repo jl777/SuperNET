@@ -1964,6 +1964,8 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                 basilisk_sendstate(myinfo,swap,data,maxlen);
             }
         }
+        else if ( swap->I.iambob == 0 )
+            swap->I.statebits |= 0x80;
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->I.otherstatebits & 0x80) != 0 && (swap->I.statebits & 0x80) != 0 )
