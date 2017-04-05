@@ -336,6 +336,8 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
+        if ( strcmp("BTC",list[0].src) == 0 )
+            aveprice = (1. / aveprice);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
         destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount * SATOSHIDEN;
         printf("%s/%s pm %f aveprice %f src %.8f dest %.8f avebid %f bidvol %f, aveask %f askvol %f\n",list[0].src,list[0].dest,profitmargin,aveprice,dstr(list[0].srcamount),dstr(destamount),retvals[0],retvals[1],retvals[2],retvals[3]);
