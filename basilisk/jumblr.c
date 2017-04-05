@@ -652,7 +652,7 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_inf
 
 void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char *symbol,char *CMCname,double BTC2KMD,double KMDavail)
 {
-    double avebid,aveask,highbid,lowask,CMC_average,changes[3],estfee,estbtcfee; struct iguana_info *btccoin,*kmdcoin; struct DEXcoin_info *ptr = &coin->DEXinfo;
+    double avebid,aveask,highbid,lowask,CMC_average,changes[3],estfee,estbtcfee; struct iguana_info *kmdcoin; struct DEXcoin_info *ptr = &coin->DEXinfo;
     // wait for one confirmation to clear most in mempool (ha, ha)
     // deal with changing addresses, ie all pendings?
     estfee = 0.0001;

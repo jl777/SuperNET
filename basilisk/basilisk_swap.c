@@ -1948,12 +1948,14 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
 int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t j,datalen,retval = 0;
+    if ( swap->I.iambob != 0 )
+        swap->I.statebits |= 0x80;
     while ( ((swap->I.otherstatebits & 0x80) == 0 || (swap->I.statebits & 0x80) == 0) && retval == 0 && time(NULL) < swap->I.expiration )
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
-        printf("D r%u/q%u swapstate.%x otherstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits);
-        if ( (swap->I.statebits & 0x80) == 0 ) // wait for fee
+        printf("D r%u/q%u swapstate.%x otherstate.%x remaining %d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits,(int32_t)(swap->I.expiration-time(NULL)));
+        if ( swap->I.iambob != 0 && (swap->I.statebits & 0x80) == 0 ) // wait for fee
         {
             if ( basilisk_swapget(myinfo,swap,0x80,data,maxlen,basilisk_verify_otherfee) == 0 )
             {
@@ -2384,25 +2386,25 @@ void basilisk_swaploop(void *_swap)
                         break;
                     }
                 }
-            }
-            printf("generate fee\n");
-            if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
-            {
-                printf("done generate fee\n");
-                swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
-                iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
-                basilisk_txlog(myinfo,swap,&swap->myfee,-1);
-                for (i=0; i<swap->myfee.I.spendlen; i++)
-                    printf("%02x",swap->myfee.txbytes[i]);
-                printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
-                swap->I.statebits |= 0x40;
-                if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
-                    break;
-            }
-            else
-            {
-                printf("error creating myfee\n");
-                retval = -6;
+                printf("generate fee\n");
+                if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
+                {
+                    printf("done generate fee\n");
+                    swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
+                    iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
+                    basilisk_txlog(myinfo,swap,&swap->myfee,-1);
+                    for (i=0; i<swap->myfee.I.spendlen; i++)
+                        printf("%02x",swap->myfee.txbytes[i]);
+                    printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+                    swap->I.statebits |= 0x40;
+                    if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
+                        break;
+                }
+                else
+                {
+                    printf("error creating myfee\n");
+                    retval = -6;
+                }
             }
         }
     }
@@ -2418,7 +2420,7 @@ void basilisk_swaploop(void *_swap)
             printf("ALICE's error %d %d %d\n",swap->myfee.I.datalen,swap->alicepayment.I.datalen,swap->alicepayment.I.datalen);
             retval = -7;
         }
-        else if ( swap->I.iambob != 0 && (swap->myfee.I.datalen == 0 || swap->bobdeposit.I.datalen == 0) ) //swap->bobpayment.I.datalen == 0 
+        else if ( swap->I.iambob != 0 && swap->bobdeposit.I.datalen == 0 ) //swap->bobpayment.I.datalen == 0
         {
             printf("BOB's error %d %d %d\n",swap->myfee.I.datalen,swap->bobpayment.I.datalen,swap->bobdeposit.I.datalen);
             retval = -7;
