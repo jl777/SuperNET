@@ -727,7 +727,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
         double minbtc,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
         btcavail = dstr(jumblr_balance(myinfo,coinbtc,kmdcoin->DEXinfo.depositaddr));
-        if ( coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
+        if ( 0 && coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
         {
             avail = (btcavail - kmdcoin->DEXinfo.DEXpending);
             printf("BTC deposits %.8f, min %.8f avail %.8f\n",btcavail,minbtc,avail);
@@ -757,7 +757,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
                 // curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"InstantDEX\",\"method\":\"request\",\"vals\":{\"source\":\"KMD\",\"amount\":20,\"dest\":\"USD\",\"minprice\":0.08}}"
             }
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
-        if ( 0 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (100. + kmdcoin->DEXinfo.KMDpending) )
+        if ( 1 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (100. + kmdcoin->DEXinfo.KMDpending) )
         {
             avail = (kmdcoin->DEXinfo.KMDavail - kmdcoin->DEXinfo.KMDpending);
             printf("KMD deposits %.8f, min %.8f, avail %.8f\n",kmdcoin->DEXinfo.KMDavail,JUMBLR_INCR,avail);
