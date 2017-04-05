@@ -994,7 +994,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
 int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume,double price)
 {
     double minvol,maxvol;
-    if ( dir > 0 )
+    if ( dir < 0 )
     {
         minvol = li->minvol;
         maxvol = li->maxvol;
@@ -1004,7 +1004,7 @@ int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *l
         minvol = price * li->minvol;
         maxvol = price * li->maxvol;
     }
-    printf("dir.%d minvol %f maxvol %f vs (%f %f) volume %f price %f\n",dir,li->minvol,li->maxvol,minvol,maxvol,volume,price);
+    printf("dir.%d minvol %f maxvol %f vs (%f %f) volume %f price %.8f\n",dir,li->minvol,li->maxvol,minvol,maxvol,volume,price);
     if ( (minvol == 0. || volume >= minvol) && (maxvol == 0. || volume <= maxvol) )
         return(0);
     else return(-1);
