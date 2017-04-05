@@ -332,14 +332,14 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
     {
-        if ( profitmargin == 0. || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,1.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
+        if ( profitmargin == 0. || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,.3 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
             aveprice = refprice;
         if ( fabs(aveprice) < SMALLVAL )
             return(0);
         if ( strcmp("BTC",list[0].src) == 0 )
             aveprice = (1. / aveprice);
         //retvals[0] = avebid, retvals[1] = bidvol, retvals[2] = aveask, retvals[3] = askvol;
-        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount * SATOSHIDEN;
+        destamount = (1.0 - profitmargin) * aveprice * list[0].srcamount;
         printf("%s/%s pm %f aveprice %f src %.8f dest %.8f avebid %f bidvol %f, aveask %f askvol %f\n",list[0].src,list[0].dest,profitmargin,aveprice,dstr(list[0].srcamount),dstr(destamount),retvals[0],retvals[1],retvals[2],retvals[3]);
         if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
         {
