@@ -230,7 +230,7 @@ struct basilisk_request *basilisk_parsejson(struct basilisk_request *rp,cJSON *r
     rp->minamount = j64bits(reqjson,"minamount");
     //rp->destamount = j64bits(reqjson,"destamount");
     rp->destamount = j64bits(reqjson,"destsatoshis");
-    printf("parse DESTSATOSHIS.%llu\n",(long long)rp->destamount);
+    printf("parse DESTSATOSHIS.%llu (%s)\n",(long long)rp->destamount,jprint(reqjson,0));
     requestid = juint(reqjson,"requestid");
     quoteid = juint(reqjson,"quoteid");
     //if ( jstr(reqjson,"relay") != 0 )
