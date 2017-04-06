@@ -18,7 +18,7 @@
 make sure to broadcast deposit before claiming refund, or to just skip it if neither is done
 */
 
-#define DEX_SLEEP 1
+#define DEX_SLEEP 5
 
 // Todo: monitor blockchains, ie complete extracting scriptsig
 // mode to autocreate required outputs
@@ -104,6 +104,35 @@ Alice spends bobdeposit in 2*INSTANTDEX_LOCKTIME
 
 //Bobdeposit includes a covered put option for alicecoin, duration INSTANTDEX_LOCKTIME
 //alicepayment includes a covered call option for alicecoin, duration (2*INSTANTDEX_LOCKTIME - elapsed)
+
+int32_t basilisk_istrustedbob(struct supernet_info *myinfo,struct basilisk_swap *swap)
+{
+    // for BTC and if trusted LP
+    return(0);
+}
+
+int32_t basilisk_priviextract(struct supernet_info *myinfo,struct iguana_info *coin,char *name,bits256 *destp,uint8_t secret160[20],bits256 srctxid,int32_t srcvout)
+{
+    bits256 txid,privkey; char str[65]; int32_t i,vini,scriptlen; uint8_t rmd160[20],scriptsig[IGUANA_MAXSCRIPTSIZE];
+    memset(privkey.bytes,0,sizeof(privkey));
+    // use dex_listtransactions!
+    if ( (vini= iguana_vinifind(myinfo,coin,&txid,srctxid,srcvout)) >= 0 )
+    {
+        if ( (scriptlen= iguana_scriptsigextract(myinfo,coin,scriptsig,sizeof(scriptsig),txid,vini)) > 32 )
+        {
+            for (i=0; i<32; i++)
+                privkey.bytes[i] = scriptsig[scriptlen - 33 + i];
+            revcalc_rmd160_sha256(rmd160,privkey);//.bytes,sizeof(privkey));
+            if ( memcmp(secret160,rmd160,sizeof(rmd160)) == sizeof(rmd160) )
+            {
+                *destp = privkey;
+                printf("basilisk_priviextract found privi %s (%s)\n",name,bits256_str(str,privkey));
+                return(0);
+            }
+        }
+    }
+    return(-1);
+}
 
 void revcalc_rmd160_sha256(uint8_t rmd160[20],bits256 revhash)
 {
@@ -1167,12 +1196,23 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
             desthash.bytes[i] = ptr[offset++];
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
         offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
-        crc32 = calc_crc32(0,&ptr[offset],size-offset);
         if ( size > offset )
         {
-            //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
-            basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset,0);
+            crc32 = calc_crc32(0,&ptr[offset],size-offset);
+            if ( size > offset )
+            {
+                //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
+                basilisk_swapgotdata(myinfo,swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset,0);
+            }
         }
+        else if ( bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0 )
+        {
+            if ( swap->aborted == 0 )
+            {
+                swap->aborted = (uint32_t)time(NULL);
+                printf("got abort signal from other side\n");
+            }
+        } else printf("basilisk_swapget: got strange packet\n");
         if ( ptr != 0 )
             nn_freemsg(ptr), ptr = 0;
     }
@@ -1235,26 +1275,23 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
     return(nextbits);
 }
 
-int32_t basilisk_priviextract(struct supernet_info *myinfo,struct iguana_info *coin,char *name,bits256 *destp,uint8_t secret160[20],bits256 srctxid,int32_t srcvout)
+void basilisk_swap_sendabort(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
-    bits256 txid,privkey; char str[65]; int32_t i,vini,scriptlen; uint8_t rmd160[20],scriptsig[IGUANA_MAXSCRIPTSIZE];
-    memset(privkey.bytes,0,sizeof(privkey));
-    if ( (vini= iguana_vinifind(myinfo,coin,&txid,srctxid,srcvout)) >= 0 )
+    uint32_t msgbits = 0; uint8_t buf[sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2]; int32_t sentbytes,offset=0;
+    memset(buf,0,sizeof(buf));
+    offset += iguana_rwnum(1,&buf[offset],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
+    offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
+    if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
     {
-        if ( (scriptlen= iguana_scriptsigextract(myinfo,coin,scriptsig,sizeof(scriptsig),txid,vini)) > 0 )
+        if ( sentbytes < 0 )
         {
-            for (i=0; i<32; i++)
-                privkey.bytes[i] = scriptsig[scriptlen - 33 + i];
-            revcalc_rmd160_sha256(rmd160,privkey);//.bytes,sizeof(privkey));
-            if ( memcmp(secret160,rmd160,sizeof(rmd160)) == sizeof(rmd160) )
-            {
-                *destp = privkey;
-                printf("found privi %s (%s)\n",name,bits256_str(str,privkey));
-                return(0);
-            }
+            if ( swap->pushsock >= 0 )
+                nn_close(swap->pushsock), swap->pushsock = -1;
+            if ( swap->subsock >= 0 )
+                nn_close(swap->subsock), swap->subsock = -1;
+            swap->connected = 0;
         }
-    }
-    return(-1);
+    } else printf("basilisk_swap_sendabort\n");
 }
 
 int32_t basilisk_privBn_extract(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
@@ -1263,13 +1300,13 @@ int32_t basilisk_privBn_extract(struct supernet_info *myinfo,struct basilisk_swa
     {
         printf("extracted privBn from blockchain\n");
     }
-    if ( basilisk_swapget(myinfo,swap,0x40000000,data,maxlen,basilisk_verify_privi) == 0 )
+    else if ( basilisk_swapget(myinfo,swap,0x40000000,data,maxlen,basilisk_verify_privi) == 0 )
     {
-        if ( bits256_nonz(swap->I.privBn) != 0 && swap->alicereclaim.I.datalen == 0 )
-        {
-            char str[65]; printf("have privBn.%s\n",bits256_str(str,swap->I.privBn));
-            return(basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim));
-        }
+    }
+    if ( bits256_nonz(swap->I.privBn) != 0 && swap->alicereclaim.I.datalen == 0 )
+    {
+        char str[65]; printf("have privBn.%s\n",bits256_str(str,swap->I.privBn));
+        return(basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim));
     }
     return(-1);
 }
@@ -1278,7 +1315,7 @@ int32_t basilisk_privAm_extract(struct supernet_info *myinfo,struct basilisk_swa
 {
     if ( basilisk_priviextract(myinfo,swap->bobcoin,"privAm",&swap->I.privAm,swap->I.secretAm,swap->bobpayment.I.actualtxid,0) == 0 )
     {
-        
+        printf("extracted privAm from blockchain\n");
     }
     if ( bits256_nonz(swap->I.privAm) != 0 && swap->bobspend.I.datalen == 0 )
     {
@@ -1950,7 +1987,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
     int32_t j,datalen,retval = 0;
     if ( swap->I.iambob != 0 )
         swap->I.statebits |= 0x80;
-    while ( ((swap->I.otherstatebits & 0x80) == 0 || (swap->I.statebits & 0x80) == 0) && retval == 0 && time(NULL) < swap->I.expiration )
+    while ( swap->aborted == 0 && ((swap->I.otherstatebits & 0x80) == 0 || (swap->I.statebits & 0x80) == 0) && retval == 0 && time(NULL) < swap->I.expiration )
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -1977,13 +2014,13 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
     }
     basilisk_swap_saveupdate(myinfo,swap);
-    while ( retval == 0 && time(NULL) < swap->I.expiration )  // both sides have setup required data and paid txfee
+    while ( swap->aborted == 0 && retval == 0 && time(NULL) < swap->I.expiration )  // both sides have setup required data and paid txfee
     {
         basilisk_swap_saveupdate(myinfo,swap);
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
         //if ( (rand() % 30) == 0 )
-            printf("E r%u/q%u swapstate.%x otherstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits);
+            printf("E r%u/q%u swapstate.%x otherstate.%x remaining %d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,swap->I.otherstatebits,(int32_t)(swap->I.expiration-time(NULL)));
         if ( swap->I.iambob != 0 )
         {
             //printf("BOB\n");
@@ -2081,7 +2118,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             }
             else if ( (swap->I.statebits & 0x400) == 0 )
             {
-                if ( basilisk_numconfirms(myinfo,swap,&swap->bobdeposit) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(myinfo,swap) != 0 || basilisk_numconfirms(myinfo,swap,&swap->bobdeposit) >= swap->I.bobconfirms )
                 {
                     printf("bobdeposit confirmed\n");
                     swap->I.statebits |= 0x400;
@@ -2105,7 +2142,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             }
             else if ( (swap->I.statebits & 0x10000) == 0 )
             {
-                if ( basilisk_numconfirms(myinfo,swap,&swap->bobpayment) >= swap->I.bobconfirms )
+                if ( basilisk_istrustedbob(myinfo,swap) != 0 || basilisk_numconfirms(myinfo,swap,&swap->bobpayment) >= swap->I.bobconfirms )
                 {
                     printf("bobpayment confirmed\n");
                     swap->I.statebits |= 0x10000;
@@ -2142,7 +2179,7 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                     retval = 1;
                 }
             }
-            else if ( basilisk_privBn_extract(myinfo,swap,data,maxlen) == 0 )
+            else if ( swap->aborted != 0 || basilisk_privBn_extract(myinfo,swap,data,maxlen) == 0 )
             {
                 printf("Alice reclaims her payment\n");
                 swap->I.statebits |= 0x40000000;
@@ -2257,9 +2294,52 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
     }
 }
 
+int32_t basilisk_alicetxs(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
+{
+    int32_t i,retval = -1;
+    for (i=0; i<3; i++)
+    {
+        basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
+        if ( swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.spendlen == 0 )
+        {
+            printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
+            sleep(20);
+        }
+        else
+        {
+            retval = 0;
+            for (i=0; i<swap->alicepayment.I.datalen; i++)
+                printf("%02x",swap->alicepayment.txbytes[i]);
+            printf(" ALICE PAYMENT created\n");
+            iguana_unspents_mark(myinfo,swap->alicecoin,swap->alicepayment.vins);
+            basilisk_txlog(myinfo,swap,&swap->alicepayment,-1);
+            break;
+        }
+    }
+    printf("generate fee\n");
+    if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
+    {
+        swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
+        iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
+        basilisk_txlog(myinfo,swap,&swap->myfee,-1);
+        for (i=0; i<swap->myfee.I.spendlen; i++)
+            printf("%02x",swap->myfee.txbytes[i]);
+        printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+        swap->I.statebits |= 0x40;
+        if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
+            return(0);
+    }
+    else
+    {
+        printf("error creating myfee\n");
+        return(-2);
+    }
+    return(-1);
+}
+
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t iters,retval=0,i,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t iters,retval=0,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfoptr;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -2267,7 +2347,7 @@ void basilisk_swaploop(void *_swap)
     expiration = (uint32_t)time(NULL) + 600;
     myinfo->DEXactive = expiration;
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
-    while ( (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
+    while ( swap->aborted == 0 && (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
     {
         dex_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid)); //,60);
         if ( swap->connected == 0 )
@@ -2290,7 +2370,7 @@ void basilisk_swaploop(void *_swap)
         printf("couldnt establish connection\n");
         retval = -1;
     }
-    while ( retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
+    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2311,9 +2391,14 @@ void basilisk_swaploop(void *_swap)
         retval = -1;
         myinfo->DEXactive = 0;
     }
+    if ( swap->aborted != 0 )
+    {
+        printf("swap aborted before tx sent\n");
+        retval = -1;
+    }
     printf("C r%u/q%u swapstate.%x retval.%d\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits,retval);
     iters = 0;
-    while ( retval == 0 && (swap->I.statebits & 0x40) == 0 && iters++ < 10 ) // send fee
+    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x40) == 0 && iters++ < 10 ) // send fee
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2322,7 +2407,17 @@ void basilisk_swaploop(void *_swap)
         //printf("swapget\n");
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         //printf("after swapget\n");
-        if ( swap->myfee.I.datalen == 0 )
+        if ( swap->I.iambob != 0 && swap->bobdeposit.I.datalen == 0 )
+        {
+            printf("bobscripts set\n");
+            if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
+            {
+                sleep(DEX_SLEEP);
+                printf("bobscripts set error\n");
+                continue;
+            }
+        }
+        if ( swap->I.iambob == 0 && swap->myfee.I.datalen == 0 )
         {
             /*for (i=0; i<20; i++)
                 printf("%02x",swap->secretAm[i]);
@@ -2354,59 +2449,10 @@ void basilisk_swaploop(void *_swap)
             for (i=0; i<32; i++)
                 printf("%02x",swap->pubB1.bytes[i]);
             printf(" <- pubB1\n");*/
-            basilisk_txlog(myinfo,swap,0,-1);
-            if ( swap->I.iambob != 0 )
+            if ( (retval= basilisk_alicetxs(myinfo,swap,data,maxlen)) != 0 )
             {
-                printf("bobscripts set\n");
-                if ( basilisk_bobscripts_set(myinfo,swap,1,1) < 0 )
-                {
-                    sleep(DEX_SLEEP);
-                    printf("bobscripts set error\n");
-                    continue;
-                }
-            }
-            else
-            {
-                for (i=0; i<3; i++)
-                {
-                    //if ( swap->alicepayment.txbytes != 0 && swap->alicepayment.I.spendlen != 0 )
-                    //    break;
-                    basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
-                    if ( swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.spendlen == 0 )
-                    {
-                        printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
-                        sleep(DEX_SLEEP);
-                    }
-                    else
-                    {
-                        retval = 0;
-                        for (i=0; i<swap->alicepayment.I.datalen; i++)
-                            printf("%02x",swap->alicepayment.txbytes[i]);
-                        printf(" ALICE PAYMENT created\n");
-                        iguana_unspents_mark(myinfo,swap->alicecoin,swap->alicepayment.vins);
-                        basilisk_txlog(myinfo,swap,&swap->alicepayment,-1);
-                        break;
-                    }
-                }
-                printf("generate fee\n");
-                if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
-                {
-                    printf("done generate fee\n");
-                    swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
-                    iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
-                    basilisk_txlog(myinfo,swap,&swap->myfee,-1);
-                    for (i=0; i<swap->myfee.I.spendlen; i++)
-                        printf("%02x",swap->myfee.txbytes[i]);
-                    printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
-                    swap->I.statebits |= 0x40;
-                    if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
-                        break;
-                }
-                else
-                {
-                    printf("error creating myfee\n");
-                    retval = -6;
-                }
+                printf("basilisk_alicetxs error\n");
+                break;
             }
         }
     }
@@ -2428,7 +2474,7 @@ void basilisk_swaploop(void *_swap)
             retval = -7;
         }
     }
-    while ( retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
+    while ( swap->aborted == 0 && retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
         sleep(DEX_SLEEP);
         basilisk_sendstate(myinfo,swap,data,maxlen);
@@ -2437,7 +2483,7 @@ void basilisk_swaploop(void *_swap)
         if ( time(NULL) > swap->I.expiration )
             break;
     }
-    if ( swap->I.iambob != 0 && swap->bobdeposit.I.datalen != 0 )
+    if ( swap->I.iambob != 0 && swap->bobdeposit.I.datalen != 0 && bits256_nonz(swap->bobdeposit.I.actualtxid) != 0 )
     {
         printf("BOB waiting for confirm state.%x\n",swap->I.statebits);
         sleep(60); // wait for confirm/propagation of msig
@@ -2456,6 +2502,8 @@ void basilisk_swaploop(void *_swap)
         }
         basilisk_swap_saveupdate(myinfo,swap);
     }
+    if ( retval != 0 )
+        basilisk_swap_sendabort(myinfo,swap);
     printf("end of atomic swap\n");
     if ( swapcompleted(myinfo,swap) > 0 ) // only if swap completed
     {
