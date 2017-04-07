@@ -1,3 +1,4 @@
+sleep 999999
 # RBzPz4Sd2Jt3jKVsXKwC4vwGkYG6hSekge KMD 108355.00859530
 curl --url "http://127.0.0.1:0" --data "{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"RBzPz4Sd2Jt3jKVsXKwC4vwGkYG6hSekge\",\"symbol\":\"KMD\"}"
 echo  "108355.00859530 <- expected amount RBzPz4Sd2Jt3jKVsXKwC4vwGkYG6hSekge"

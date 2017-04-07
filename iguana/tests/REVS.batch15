@@ -1,3 +1,4 @@
+sleep 999999
 # RQedHsGydzYsynBRiizK3LNBnRUkAMRafZ KMD 5844.47004626, REVS 115.97829823
 sleep 1
 fiat/revs sendtoaddress RQedHsGydzYsynBRiizK3LNBnRUkAMRafZ 115.97829823
