@@ -1785,7 +1785,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         jaddbits256(vals,"srchash",hash);
     printf("service.(%s)\n",jprint(vals,0));
     memset(&R,0,sizeof(R));
-    if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp")) == 0 )
+    if ( basilisk_request_create(&R,vals,hash,juint(vals,"timestamp"),juint(vals,"DEXselector")) == 0 )
     {
         iambob = bitcoin_coinptrs(hash,&bobcoin,&alicecoin,R.src,R.dest,privkey,GENESIS_PUBKEY);
         if ( (optionhours= jint(vals,"optionhours")) != 0 )

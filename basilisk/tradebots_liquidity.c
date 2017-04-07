@@ -1142,6 +1142,14 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
+    struct iguana_info *kmdcoin = iguana_coinfind("KMD");
+    if ( kmdcoin != 0 )
+    {
+        if ( swap->DEXselector == 1 )
+            kmdcoin->DEXinfo.DEXpending -= swap->I.req.srcamount;
+        else if ( swap->DEXselector == 2 )
+            kmdcoin->DEXinfo.KMDpending -= swap->I.req.srcamount;
+    }
     printf(">>>>>>>>>>>>>>>>>> balancing trade\n");
     return;
     if ( swap->balancingtrade == 0 )
