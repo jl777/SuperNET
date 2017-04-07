@@ -628,7 +628,8 @@ void jumblr_utxoupdate(struct supernet_info *myinfo,char *dest,struct iguana_inf
             {
                 for (i=0; i<n; i++)
                 {
-                    item = jitem(array,i);
+                    if ( (item= jitem(array,i)) == 0 )
+                        continue;
                     txid = jbits256(item,"txid");
                     vout = jint(item,"vout");
                     value = SATOSHIDEN * jdouble(item,"amount");

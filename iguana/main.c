@@ -2058,7 +2058,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=3; iter<4; iter++)
+        for (iter=1; iter<2; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
