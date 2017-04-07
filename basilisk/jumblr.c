@@ -199,6 +199,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         {
             if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
             {
+                printf("jumblr.(%s)\n",retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(retjson)) > 0 )
