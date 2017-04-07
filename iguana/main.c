@@ -2160,13 +2160,6 @@ void iguana_main(void *arg)
 #ifdef __APPLE__
     char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 16;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
-    myinfo = SuperNET_MYINFO(0);
-    myinfo->rpcport = IGUANA_RPCPORT;
-    decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
-    decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
-    iguana_ensuredirs();
-    iguana_Qinit();
-    libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
         komodo_REVS_merge(batchstr,batchstr2);
@@ -2182,6 +2175,13 @@ void iguana_main(void *arg)
         free(batchstr);
     }
 #endif
+    myinfo = SuperNET_MYINFO(0);
+    myinfo->rpcport = IGUANA_RPCPORT;
+    decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
+    decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
+    iguana_ensuredirs();
+    iguana_Qinit();
+    libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     dex_init(myinfo);
     myinfo->psockport = 30000;
