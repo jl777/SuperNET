@@ -35,11 +35,14 @@
 
 int32_t jumblr_addresstype(struct supernet_info *myinfo,struct iguana_info *coin,char *addr)
 {
-    if ( addr[0] == 'z' && addr[1] == 'c' && strlen(addr) >= 40 )
-        return('z');
-    else if ( strlen(addr) < 40 )
-        return('t');
-    else return(-1);
+    if ( strcmp(coin->symbol,"KMD") == 0 )
+    {
+        if ( addr[0] == 'z' && addr[1] == 'c' && strlen(addr) >= 40 )
+            return('z');
+        else if ( strlen(addr) < 40 )
+            return('t');
+        else return(-1);
+    } else return('t');
 }
 
 struct jumblr_item *jumblr_opidfind(struct supernet_info *myinfo,char *opid)
