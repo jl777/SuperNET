@@ -571,7 +571,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
     start_DEXrel = dex_balance(rel,reladdr);
     while ( 1 )
     {
-        if ( time(NULL) > lasttime+300 )
+        if ( time(NULL) > lasttime+10 )
         {
             if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel,&USD_average)) != 0. )
             {
@@ -634,19 +634,23 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
             if ( (1) )
             {
                 if ( mmbid >= lowask || (maxbid > SMALLVAL && mmbid > maxbid) ) //mmbid < highbid ||
+                {
+                    printf("clear mmbid %.8f lowask %.8f maxbid %.8f\n",mmbid,lowask,maxbid);
                     mmbid = 0.;
+                }
                 if ( mmask <= highbid || (minask > SMALLVAL && mmask < minask) ) // mmask > lowask ||
                     mmask = 0.;
             }
             marketmaker_volumeset(&bidincr,&askincr,incr,buyvol,pendingbids,sellvol,pendingasks,maxexposure);
             printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
-            if ( (aveask - avebid)/aveprice > 4*profitmargin )
-                bid = highbid * (1 - 4*profitmargin), ask = lowask *  (1 + 4*profitmargin);
+            if ( (aveask - avebid)/aveprice > profitmargin )
+                bid = highbid * (1 - profitmargin), ask = lowask *  (1 + profitmargin);
             else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
             marketmaker_spread("DEX",base,rel,bid,incr,ask,incr,profitmargin*aveprice*0.5);
             if ( (pendingbids + buyvol) > (pendingasks + sellvol) )
             {
-                bidincr *= (double)(pendingasks + sellvol) / ((pendingbids + buyvol) + (pendingasks + sellvol));
+                bidincr *= sqrt((double)(pendingasks + sellvol) / ((pendingbids + buyvol) + (pendingasks + sellvol)));
+                //printf("bidincr %f buy.(%f + %f) sell.(%f + %f)\n",bidincr,pendingbids,buyvol,pendingasks,sellvol);
                 if ( bidincr < 0.1*incr )
                     bidincr = 0.1*incr;
                 if ( bidincr > 1. )
@@ -660,9 +664,9 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                 if ( askincr > 1. )
                     askincr = (int32_t)askincr + 0.777;
             }
-            //printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
-            //marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
-            sleep(6000);
+            printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
+            marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
+            sleep(60);
         }
     }
 }
