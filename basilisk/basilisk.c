@@ -1222,17 +1222,20 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                 }
                 free_json(txoutjson);
                 return(jprint(retjson,1));
-            } else return(clonestr("{\"error\":\"null return from gettxout\"}"));
+            } //else return(clonestr("{\"error\":\"null return from gettxout\"}"));
         }
-        if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
-            basilisktag = rand();
-        if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
-            timeoutmillis = BASILISK_TIMEOUT;
-        if ( coin->FULLNODE > 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+        else
         {
-            retstr = ptr->retstr, ptr->retstr = 0;
-            ptr->finished = OS_milliseconds() + 10000;
-            return(retstr);
+            if ( (basilisktag= juint(vals,"basilisktag")) == 0 )
+                basilisktag = rand();
+            if ( (timeoutmillis= juint(vals,"timeout")) <= 0 )
+                timeoutmillis = BASILISK_TIMEOUT;
+            if ( coin->FULLNODE > 0 && (ptr= basilisk_bitcoinvalue(&Lptr,myinfo,coin,remoteaddr,basilisktag,timeoutmillis,vals)) != 0 )
+            {
+                retstr = ptr->retstr, ptr->retstr = 0;
+                ptr->finished = OS_milliseconds() + 10000;
+                return(retstr);
+            }
         }
     }
     if ( myinfo->reqsock >= 0 )
