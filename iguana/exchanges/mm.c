@@ -723,8 +723,6 @@ int main(int argc, const char * argv[])
                     printf("Need to activate both %s and %s before marketmaker\n",base,rel);
                     exit(1);
                 }
-                printf("%s %s\n",base,DEX_balance(exchange,base,""));
-                printf("%s %s\n",rel,DEX_balance(exchange,rel,""));
                 marketmaker_pendinginit(exchange,base,rel);
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
