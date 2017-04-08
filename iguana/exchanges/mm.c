@@ -485,7 +485,10 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 if ( bid > SMALLVAL && bidvol > SMALLVAL && ptr->dir > 0 && fabs(bid - ptr->price) < separation )
                     nearflags[0]++;
                 if ( ask > SMALLVAL && askvol > SMALLVAL && ptr->dir < 0 && fabs(ask - ptr->price) < separation )
+                {
+                    printf("%.8f near %.8f\n",ask,ptr->price);
                     nearflags[1]++;
+                }
             }
         }
     }
