@@ -733,7 +733,7 @@ int main(int argc, const char * argv[])
                     marketmaker(minask,maxbid,baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
                 }
                 free_json(loginjson);
-            //printf("%s\n",DEX_apikeypair(exchange,apikey,apisecret));
+                printf("%s\n",DEX_apikeypair(exchange,apikey,apisecret));
             } else printf("ERROR parsing.(%s)\n",retstr);
             free(retstr);
         }
