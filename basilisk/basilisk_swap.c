@@ -19,6 +19,7 @@ make sure to broadcast deposit before claiming refund, or to just skip it if nei
 */
 
 #define DEX_SLEEP 5
+#define BASILISK_DEFAULT_NUMCONFIRMS 5
 
 // Todo: monitor blockchains, ie complete extracting scriptsig
 // mode to autocreate required outputs
@@ -819,96 +820,6 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
     return(-1);
 }
 
-/*int32_t basilisk_bobpayment_spendclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 privAm,bits256 myprivs0,uint8_t *data,int32_t datalen,int32_t jumblrflag)
-{
-    bits256 revAm; uint8_t userdata[512]; int32_t i,len,numconfirms = 0,retval = -1; uint32_t sequenceid = 0xffffffff;
-    basilisk_rawtx_setparms("bobpayment",quoteid,src,bobcoin,numconfirms,0,amount,3,0,jumblrflag);
-    dest->I.suppress_pubkeys = 1;
-    basilisk_rawtx_gen("bobpayment",myinfo,swapstarted,changepubkey33,1,1,src,src->I.locktime,src->spendscript,src->I.spendlen,bobcoin->chain->txfee,1,0);
-    if ( basilisk_rawtx_spendscript(0,bobcoin->longestchain,src,0,data,datalen,0) == 0 )
-    {
-        memset(revAm.bytes,0,sizeof(revAm));
-        for (i=0; i<32; i++)
-            revAm.bytes[i] = privAm.bytes[31-i];
-        len = basilisk_swapuserdata(userdata,revAm,0,myprivs0,src->redeemscript,src->I.redeemlen);
-        if ( (retval= _basilisk_rawtx_sign(myinfo,bobcoin->longestchain,swapstarted,src->I.locktime,sequenceid,dest,src,myprivs0,0,userdata,len,1)) == 0 )
-        {
-        }
-    }
-    return(retval);
-}
-
-int32_t basilisk_bobpayment_reclaimclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 myprivs1,uint8_t *data,int32_t datalen,int32_t jumblrflag)
-{
-    bits256 zero; uint8_t userdata[512]; int32_t len,numconfirms = 0,retval = -1; uint32_t sequenceid = 0xffffffff;
-    basilisk_rawtx_setparms("bobpayment",quoteid,src,bobcoin,numconfirms,0,amount,3,0,jumblrflag);
-    dest->I.suppress_pubkeys = 1;
-    basilisk_rawtx_gen("bobpayment",myinfo,swapstarted,changepubkey33,1,1,src,src->I.locktime,src->spendscript,src->I.spendlen,bobcoin->chain->txfee,1,0);
-    if ( basilisk_rawtx_spendscript(0,bobcoin->longestchain,src,0,data,datalen,0) == 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        len = basilisk_swapuserdata(userdata,zero,1,myprivs1,src->redeemscript,src->I.redeemlen);
-        if ( (retval= _basilisk_rawtx_sign(myinfo,bobcoin->longestchain,swapstarted,src->I.locktime,sequenceid,dest,src,myprivs1,0,userdata,len,1)) == 0 )
-        {
-        }
-    }
-    return(retval);
-}
-
-int32_t basilisk_bobdeposit_refundclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 myprivs0,bits256 privBn,uint8_t *data,int32_t datalen,int32_t jumblrflag)
-{
-    uint8_t userdata[512]; int32_t len,numconfirms = 0,retval = -1; uint32_t sequenceid = 0xffffffff;
-    basilisk_rawtx_setparms("bobdeposit",quoteid,src,bobcoin,numconfirms,0,amount,4,0,jumblrflag);
-    dest->I.suppress_pubkeys = 1;
-    basilisk_rawtx_gen("bobdeposit",myinfo,swapstarted,changepubkey33,1,1,src,src->I.locktime,src->spendscript,src->I.spendlen,bobcoin->chain->txfee,1,0);
-    if ( basilisk_rawtx_spendscript(0,bobcoin->longestchain,src,0,data,datalen,0) == 0 )
-    {
-        len = basilisk_swapuserdata(userdata,privBn,0,myprivs0,src->redeemscript,src->I.redeemlen);
-        if ( (retval= _basilisk_rawtx_sign(myinfo,bobcoin->longestchain,swapstarted,src->I.locktime,sequenceid,dest,src,myprivs0,0,userdata,len,0)) == 0 )
-        {
-        }
-    }
-    return(retval);
-}
-
-int32_t basilisk_bobdeposit_claimclone(struct supernet_info *myinfo,struct iguana_info *bobcoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 myprivs0,uint8_t *data,int32_t datalen,int32_t jumblrflag)
-{
-    bits256 zero; uint8_t userdata[512]; int32_t len,numconfirms = 0,retval = -1; uint32_t sequenceid = 0xffffffff;
-    basilisk_rawtx_setparms("bobdeposit",quoteid,src,bobcoin,numconfirms,0,amount,4,0,jumblrflag);
-    dest->I.suppress_pubkeys = 1;
-    basilisk_rawtx_gen("bobdeposit",myinfo,swapstarted,changepubkey33,1,1,src,src->I.locktime,src->spendscript,src->I.spendlen,bobcoin->chain->txfee,1,0);
-    if ( basilisk_rawtx_spendscript(0,bobcoin->longestchain,src,0,data,datalen,0) == 0 )
-    {
-        memset(zero.bytes,0,sizeof(zero));
-        len = basilisk_swapuserdata(userdata,zero,1,myprivs0,src->redeemscript,src->I.redeemlen);
-        if ( (retval= _basilisk_rawtx_sign(myinfo,bobcoin->longestchain,swapstarted,src->I.locktime,sequenceid,dest,src,myprivs0,0,userdata,len,1)) == 0 )
-        {
-        }
-    }
-    return(retval);
-}
-
-//basilisk_alicepayment_clone(myinfo,&dest,&src,swapstarted,changepubkey33,alicecoin,quoteid,amount,privAm,pubAm,privBn,pubBn);
-
-int32_t basilisk_alicepayment_spendclone(struct supernet_info *myinfo,struct iguana_info *alicecoin,struct basilisk_rawtx *dest,struct basilisk_rawtx *src,uint32_t swapstarted,uint8_t *changepubkey33,uint32_t quoteid,uint64_t amount,bits256 privAm,bits256 privBn,int32_t jumblrflag)
-{
-    uint8_t pubAm33[33],pubBn33[33]; bits256 pubAm,pubBn; int32_t retval,numconfirms = 0; uint32_t sequenceid = 0xffffffff;
-    bitcoin_pubkey33(myinfo->ctx,pubAm33,privAm);
-    memcpy(pubAm.bytes,pubAm33+1,32);
-    bitcoin_pubkey33(myinfo->ctx,pubBn33,privBn);
-    memcpy(pubBn.bytes,pubBn33+1,32);
-    memset(src,0,sizeof(*src));
-    memset(dest,0,sizeof(*dest));
-    basilisk_rawtx_setparms("alicepayment",quoteid,src,alicecoin,numconfirms,0,amount,2,0,jumblrflag);
-    src->I.spendlen = basilisk_alicescript(src->redeemscript,&src->I.redeemlen,src->spendscript,0,src->I.destaddr,alicecoin->chain->p2shtype,pubAm,pubBn);
-    basilisk_rawtx_gen("alicepayment",myinfo,swapstarted,changepubkey33,0,1,src,src->I.locktime,src->spendscript,src->I.spendlen,alicecoin->chain->txfee,1,0);
-    if ( (retval= _basilisk_rawtx_sign(myinfo,alicecoin->longestchain,swapstarted,src->I.locktime,sequenceid,dest,src,privAm,&privBn,0,0,1)) == 0 )
-    {
-        
-    }
-    return(retval);
-}*/
-
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
     struct basilisk_swap *swap = ptr;
@@ -1581,17 +1492,17 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
     if ( strcmp("BTC",swap->bobcoin->symbol) == 0 )
     {
         swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
+        swap->I.aliceconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.bobconfirms * 3);
     }
     else if ( strcmp("BTC",swap->alicecoin->symbol) == 0 )
     {
         swap->I.aliceconfirms = (1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
-        swap->I.bobconfirms = swap->I.bobconfirms * 3;
+        swap->I.bobconfirms = MIN(BASILISK_DEFAULT_NUMCONFIRMS,swap->I.bobconfirms * 3);
     }
     else
     {
-        swap->I.bobconfirms = 3;
-        swap->I.aliceconfirms = 3;
+        swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
+        swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
     if ( swap->I.bobconfirms == 0 )
         swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
