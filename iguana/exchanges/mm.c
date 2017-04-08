@@ -723,6 +723,7 @@ int main(int argc, const char * argv[])
                     printf("Need to activate both %s and %s before marketmaker\n",base,rel);
                     exit(1);
                 }
+                printf(">>>>>>> (%s) (%s) %s\n",apikey,apisecret,DEX_apikeypair(exchange,apikey,apisecret));
                 marketmaker_pendinginit(exchange,base,rel);
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
@@ -733,7 +734,6 @@ int main(int argc, const char * argv[])
                     marketmaker(minask,maxbid,baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
                 }
                 free_json(loginjson);
-                printf("(%s) (%s) %s\n",apikey,apisecret,DEX_apikeypair(exchange,apikey,apisecret));
             } else printf("ERROR parsing.(%s)\n",retstr);
             free(retstr);
         }
