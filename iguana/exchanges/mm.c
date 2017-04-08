@@ -24,6 +24,7 @@
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
+char DEX_baseaddr[64],DEX_reladdr[64];
 struct mmpending_order
 {
     double price,volume;
@@ -41,7 +42,6 @@ char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
 };
 double PAXPRICES[sizeof(CURRENCIES)/sizeof(*CURRENCIES)];
 uint32_t PAXACTIVE;
-char DEX_baseaddr[16],DEX_reladdr[16];
 
 char *DEX_swapstatus()
 {
