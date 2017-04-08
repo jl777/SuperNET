@@ -604,7 +604,7 @@ struct basilisk_request
     char src[8],dest[8];
     //char volatile_start,message[43];
     uint64_t destamount;
-    int32_t optionhours,profitmargin,DEXselector,extraspace;
+    int32_t optionhours,profitmargin;//,DEXselector,extraspace;
 } PACKEDSTRUCT;
 
 struct basilisk_relaystatus

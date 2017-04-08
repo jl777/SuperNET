@@ -116,8 +116,8 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
         memcpy(rp->src,&serialized[len],sizeof(rp->src)), len += sizeof(rp->src);
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->DEXselector),&rp->DEXselector);
-    len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->extraspace),&rp->extraspace);
+    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->DEXselector),&rp->DEXselector);
+    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->extraspace),&rp->extraspace);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf(" basilisk_rwDEXquote.%d: quoteid.%u mismatch calc %u rp.%p\n",rwflag,rp->quoteid,basilisk_quoteid(rp),rp);
     if ( basilisk_requestid(rp) != rp->requestid )
@@ -170,7 +170,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
-    jaddnum(item,"DEXselector",rp->DEXselector);
+    //jaddnum(item,"DEXselector",rp->DEXselector);
     jaddnum(item,"optionhours",rp->optionhours);
     jaddnum(item,"profit",(double)rp->profitmargin / 1000000.);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
@@ -219,7 +219,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         rp->srchash = jbits256(valsobj,"srchash");
         rp->optionhours = jint(valsobj,"optionhours");
         rp->profitmargin = jdouble(valsobj,"profit") * 1000000;
-        rp->DEXselector = DEXselector;
+        //rp->DEXselector = DEXselector;
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
         //if ( jstr(valsobj,"relay") != 0 )

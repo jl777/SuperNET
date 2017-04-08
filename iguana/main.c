@@ -755,6 +755,9 @@ void jumblr_loop(void *ptr)
     {
         if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
+#ifdef __APPLE__
+            jumblr_DEXcheck(myinfo,coin);
+#endif
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
                 // if BTC has arrived in destination address, invoke DEX -> BTC
