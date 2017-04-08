@@ -666,7 +666,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                 bid = highbid * (1 - profitmargin), ask = lowask *  (1 + profitmargin);
             else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
             marketmaker_spread("DEX",base,rel,bid,incr,ask,incr,profitmargin*aveprice*0.5);
-            if ( (pendingbids + buyvol) > (pendingasks + sellvol) )
+            if ( (pendingbids + buyvol) > (pendingasks + sellvol) && (pendingbids + buyvol) > bidincr )
             {
                 bidincr *= ((double)(pendingasks + sellvol) / ((pendingbids + buyvol) + (pendingasks + sellvol)));
                 printf("bidincr %f buy.(%f + %f) sell.(%f + %f)\n",bidincr,pendingbids,buyvol,pendingasks,sellvol);
@@ -675,7 +675,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                 if ( bidincr > 1. )
                     bidincr = (int32_t)bidincr + 0.777;
             }
-            if ( (pendingbids + buyvol) < (pendingasks + sellvol) )
+            if ( (pendingbids + buyvol) < (pendingasks + sellvol) && (pendingasks + sellvol) > askincr )
             {
                 askincr *= (double)(pendingbids + buyvol) / ((pendingbids + buyvol) + (pendingasks + sellvol));
                 if ( askincr < 0.1*incr )
