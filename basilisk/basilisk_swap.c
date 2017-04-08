@@ -1791,6 +1791,7 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
             fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
         }
         fprintf(fp,",\"lock\":%u",locktime);
+        fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
         if ( bits256_nonz(triggertxid) != 0 )
             fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
         fprintf(fp,"}\n");
@@ -1822,12 +1823,14 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     sendlen += rawtx->I.redeemlen;
                 }
                 memset(triggertxid.bytes,0,sizeof(triggertxid));
+                if ( rawtx == &swap->myfee )
+                    basilisk_dontforget(myinfo,swap,&swap->myfee,0,triggertxid);
                 if ( swap->I.iambob != 0 )
                 {
                     if ( rawtx == &swap->bobdeposit )
                     {
                         basilisk_dontforget(myinfo,swap,&swap->bobdeposit,0,triggertxid);
-                        basilisk_dontforget(myinfo,swap,&swap->bobrefund,0,triggertxid);
+                        basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
                     }
                     else if ( rawtx == &swap->bobpayment )
                     {
@@ -1835,7 +1838,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                         basilisk_dontforget(myinfo,swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
                     }
                     else if ( rawtx == &swap->bobspend )
-                        basilisk_dontforget(myinfo,swap,&swap->bobspend,0,triggertxid);
+                        basilisk_dontforget(myinfo,swap,&swap->bobspend,0,swap->alicepayment.I.actualtxid);
                 }
                 else
                 {
@@ -1846,7 +1849,6 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     else if ( rawtx == &swap->alicespend )
                     {
                         basilisk_dontforget(myinfo,swap,&swap->alicespend,0,triggertxid);
-                        //basilisk_alicepayment_spend(myinfo,swap,&swap->alicereclaim);
                         basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
                     }
                 }
@@ -2619,9 +2621,114 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
     return(swap);
 }
 
+cJSON *basilisk_nullretjson(cJSON *retjson)
+{
+    char *outstr;
+    if ( retjson != 0 )
+    {
+        outstr = jprint(retjson,0);
+        if ( strcmp(outstr,"{}") == 0 )
+        {
+            free_json(retjson);
+            retjson = 0;
+        }
+        free(outstr);
+    }
+    return(retjson);
+}
+
+cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 trigger,int32_t vout)
+{
+    char *retstr; cJSON *retjson=0; struct iguana_info *coin;
+    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 )
+    {
+        if ( (retstr= _dex_gettxout(myinfo,symbol,trigger,vout)) != 0 )
+        {
+            retjson = cJSON_Parse(retstr);
+            free(retstr);
+        }
+    } else retjson = dpow_gettxout(myinfo,coin,trigger,vout);
+    return(basilisk_nullretjson(retjson));
+}
+
+cJSON *basilisk_swapgettx(struct supernet_info *myinfo,char *symbol,bits256 txid)
+{
+    char *retstr; cJSON *retjson=0; struct iguana_info *coin;
+    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 )
+    {
+        if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
+        {
+            retjson = cJSON_Parse(retstr);
+            free(retstr);
+        }
+    } else retjson = dpow_gettransaction(myinfo,coin,txid);
+    return(basilisk_nullretjson(retjson));
+}
+
+char *txnames[] = { "myfee", "bobdeposit", "bobpayment", "alicepayment", "bobrefund", "bobreclaim", "bobspend", "alicespend", "alicereclaim" };
+
+cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
+{
+    int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65]; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 txid,trigger; uint32_t t,addflag; uint64_t value;
+    item = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+    {
+        addflag = 0;
+        sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
+        if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
+        {
+            if ( (txobj= cJSON_Parse(fstr)) != 0 )
+            {
+                if ( (symbol= jstr(txobj,"coin")) != 0 )
+                {
+                    if ( (t= juint(txobj,"lock")) == 0 || time(NULL) > t )
+                    {
+                        txid = jbits256(txobj,"txid");
+                        if ( jobj(txobj,"trigger") != 0 )
+                        {
+                            trigger = jbits256(txobj,"trigger");
+                            if ( (triggerobj= basilisk_swapgettxout(myinfo,symbol,trigger,0)) == 0 )
+                            {
+                                printf("%s trigger.(%s) spent! extract priv\n",bits256_str(str2,txid),bits256_str(str,trigger));
+                                addflag = 1;
+                            } else free_json(triggerobj);
+                        }
+                        else
+                        {
+                            if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
+                            {
+                                printf("%s ready to broadcast\n",bits256_str(str2,txid));
+                                addflag = 1;
+                            } else free_json(sentobj);
+                        }
+                    }
+                    if ( addflag == 0 )
+                    {
+                        value = jdouble(txobj,"amount") * SATOSHIDEN;
+                        if ( strcmp(symbol,"KMD") == 0 )
+                            KMDtotals[i] += value;
+                        else if ( strcmp(symbol,"BTC") == 0 )
+                            BTCtotals[i] += value;
+                        free_json(txobj);
+                    } else jaddi(array,txobj);
+                } else free_json(txobj);
+            }
+            free(fstr);
+        }
+    }
+    jaddnum(item,"requestid",requestid);
+    jaddnum(item,"quoteid",quoteid);
+    jadd(item,"txs",array);
+    return(item);
+}
+
 char *basilisk_swaplist(struct supernet_info *myinfo)
 {
-    char fname[512]; FILE *fp; struct basilisk_request R; int32_t optionduration; uint32_t quoteid,requestid,statebits; cJSON *retjson,*array; bits256 privkey;
+    char fname[512]; FILE *fp; cJSON *retjson,*array,*totalsobj; uint32_t quoteid,requestid; uint64_t KMDtotals[16],BTCtotals[16]; int32_t i;
+    memset(KMDtotals,0,sizeof(KMDtotals));
+    memset(BTCtotals,0,sizeof(BTCtotals));
+    //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
     retjson = cJSON_CreateObject();
     array = cJSON_CreateArray();
     sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
@@ -2629,15 +2736,29 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
     {
         while ( fread(&requestid,1,sizeof(requestid),fp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),fp) == sizeof(quoteid) )
         {
-            if ( basilisk_swap_load(requestid,quoteid,&privkey,&R,&statebits,&optionduration) == 0 )
+            jaddi(array,basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid));
+            /*if ( basilisk_swap_load(requestid,quoteid,&privkey,&R,&statebits,&optionduration) == 0 )
             {
                 jaddi(array,basilisk_requestjson(&R));
-            }
+            }*/
         }
         fclose(fp);
     }
     jaddstr(retjson,"result","success");
     jadd(retjson,"swaps",array);
+    if ( cJSON_GetArraySize(array) > 0 )
+    {
+        totalsobj = cJSON_CreateObject();
+        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+            if ( BTCtotals[i] != 0 )
+                jaddnum(totalsobj,txnames[i],dstr(BTCtotals[i]));
+        jadd(retjson,"BTCtotals",totalsobj);
+        totalsobj = cJSON_CreateObject();
+        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+            if ( KMDtotals[i] != 0 )
+                jaddnum(totalsobj,txnames[i],dstr(KMDtotals[i]));
+        jadd(retjson,"KMDtotals",totalsobj);
+    }
     return(jprint(retjson,1));
 }
 
