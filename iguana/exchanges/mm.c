@@ -295,11 +295,9 @@ void marketmaker_queue(char *exchange,char *base,char *rel,int32_t dir,double pr
 void marketmaker_pendingupdate(char *exchange,char *base,char *rel)
 {
     char *retstr; cJSON *retjson,*obj; int32_t i; struct mmpending_order *ptr;
-    printf("update.(%s %s %s)\n",exchange,base,rel);
     for (i=0; i<Num_Pending; i++)
     {
         ptr = &Pending_orders[i];
-        printf("%d of %d: %p\n",i,Num_Pending,ptr);
         if ( strcmp(exchange,ptr->exchange) != 0 || strcmp(base,ptr->base) != 0 || strcmp(rel,ptr->rel) != 0 )
             continue;
         if ( ptr->completed == 0 && (retstr= DEX_orderstatus(exchange,ptr->orderid)) != 0 )
@@ -748,8 +746,8 @@ int main(int argc, const char * argv[])
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
                     printf("PAXACTIVE.%08x %s\n",PAXACTIVE,DEX_amlp(blocktrail));
-                    strcpy(DEX_baseaddr,baseaddr);
-                    strcpy(DEX_reladdr,reladdr);
+                    strncpy(DEX_baseaddr,baseaddr,sizeof(DEX_baseaddr)-1);
+                    strncpy(DEX_reladdr,reladdr,sizeof(DEX_reladdr)-1);
                     printf("%s.%s %s\n",base,baseaddr,DEX_balance("DEX",base,baseaddr));
                     printf("%s.%s %s\n",rel,reladdr,DEX_balance("DEX",rel,reladdr));
                     // initialize state using DEX_pendingorders, etc.
