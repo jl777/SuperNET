@@ -2759,6 +2759,13 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                 jaddnum(totalsobj,txnames[i],dstr(KMDtotals[i]));
         jadd(retjson,"KMDtotals",totalsobj);
     }
+    array = cJSON_CreateArray();
+    for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
+    {
+        if ( myinfo->linfos[i].base[0] != 0 && myinfo->linfos[i].rel[0] != 0 )
+            jaddi(array,linfo_json(&myinfo->linfos[i]));
+    }
+    jadd(retjson,"quotes",array);
     return(jprint(retjson,1));
 }
 
