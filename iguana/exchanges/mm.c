@@ -677,7 +677,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                 if ( askincr > 1. )
                     askincr = (int32_t)askincr + 0.777;
             }
-            //printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
+            printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
             marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
             sleep(60);
         }
