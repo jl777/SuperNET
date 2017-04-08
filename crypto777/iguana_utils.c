@@ -1279,7 +1279,7 @@ double get_theoretical(double *avebidp,double *aveaskp,double *highbidp,double *
             weighted = weighted_orderbook(avebidp,aveaskp,highbidp,lowaskp,bittrex_orderbook(base,rel,25),1./(*CMC_averagep));
             if ( *CMC_averagep > SMALLVAL && weighted > SMALLVAL )
                 theoretical = calc_theoretical(weighted,*CMC_averagep,changes);
-            if ( 0 && counter++ < 100 )
+            if ( (0) && counter++ < 100 )
                 printf("HBLA.[%.8f %.8f] AVE.[%.8f %.8f] (%s) CMC %f %f %f %f\n",*highbidp,*lowaskp,*avebidp,*aveaskp,jprint(item,0),*CMC_averagep,changes[0],changes[1],changes[2]);
             free_json(cmcjson);
         }
