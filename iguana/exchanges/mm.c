@@ -484,18 +484,18 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
             {
                 if ( bid > SMALLVAL && bidvol > SMALLVAL && ptr->dir > 0 && fabs(bid - ptr->price) < separation )
                 {
-                    printf("bid %.8f near %.8f\n",bid,ptr->price);
+                    //printf("bid %.8f near %.8f\n",bid,ptr->price);
                     nearflags[0]++;
                 }
                 if ( ask > SMALLVAL && askvol > SMALLVAL && ptr->dir < 0 && fabs(ask - ptr->price) < separation )
                 {
-                    printf("%.8f near %.8f\n",ask,ptr->price);
+                    //printf("%.8f near %.8f\n",ask,ptr->price);
                     nearflags[1]++;
                 }
             }
         }
     }
-    printf("spread.%s (%.8f %.6f) (%.8f %.6f)\n",exchange,bid,bidvol,ask,askvol);
+    //printf("spread.%s (%.8f %.6f) (%.8f %.6f)\n",exchange,bid,bidvol,ask,askvol);
     if ( bid > SMALLVAL && bidvol > SMALLVAL && nearflags[0] == 0 )
     {
         if ( strcmp("DEX",exchange) == 0 && strcmp(base,"KMD") == 0 && strcmp(rel,"BTC") == 0 )
@@ -553,20 +553,20 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
         }
         else if ( (retstr= DEX_trade(exchange,base,rel,1,bid,bidvol)) != 0 )
         {
-            printf("DEX_trade.(%s)\n",retstr);
+            //printf("DEX_trade.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 marketmaker_queue(exchange,base,rel,1,bid,bidvol,retjson);
                 free_json(retjson);
             }
             free(retstr);
-        } else printf("skip bid %s %.8f vol %f\n",exchange,bid,bidvol);
+        } //else printf("skip bid %s %.8f vol %f\n",exchange,bid,bidvol);
     }
     if ( ask > SMALLVAL && askvol > SMALLVAL && nearflags[1] == 0 && strcmp("DEX",exchange) != 0 )
     {
         if ( (retstr= DEX_trade(exchange,base,rel,-1,ask,askvol)) != 0 )
         {
-            printf("DEX_trade.(%s)\n",retstr);
+            //printf("DEX_trade.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 marketmaker_queue(exchange,base,rel,-1,ask,askvol,retjson);
@@ -574,7 +574,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
             }
             free(retstr);
         }
-    } else printf("skip ask %s %.8f vol %f\n",exchange,bid,bidvol);
+    } //else printf("skip ask %s %.8f vol %f\n",exchange,bid,bidvol);
     return(n);
 }
 
