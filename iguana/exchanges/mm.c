@@ -295,9 +295,11 @@ void marketmaker_queue(char *exchange,char *base,char *rel,int32_t dir,double pr
 void marketmaker_pendingupdate(char *exchange,char *base,char *rel)
 {
     char *retstr; cJSON *retjson,*obj; int32_t i; struct mmpending_order *ptr;
+    printf("update.(%s %s %s)\n",exchange,base,rel);
     for (i=0; i<Num_Pending; i++)
     {
         ptr = &Pending_orders[i];
+        printf("%d of %d: %p\n",i,Num_Pending,ptr);
         if ( strcmp(exchange,ptr->exchange) != 0 || strcmp(base,ptr->base) != 0 || strcmp(rel,ptr->rel) != 0 )
             continue;
         if ( ptr->completed == 0 && (retstr= DEX_orderstatus(exchange,ptr->orderid)) != 0 )
