@@ -1578,8 +1578,21 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         free(swap);
         return(0);
     }
-    swap->I.bobconfirms = (1*0 + sqrt(dstr(swap->I.bobsatoshis) * .1));
-    swap->I.aliceconfirms = swap->I.bobconfirms * 3;
+    if ( strcmp("BTC",swap->bobcoin->symbol) == 0 )
+    {
+        swap->I.bobconfirms = (1 + sqrt(dstr(swap->I.bobsatoshis) * .1));
+        swap->I.aliceconfirms = swap->I.bobconfirms * 3;
+    }
+    else if ( strcmp("BTC",swap->alicecoin->symbol) == 0 )
+    {
+        swap->I.aliceconfirms = (1 + sqrt(dstr(swap->I.alicesatoshis) * .1));
+        swap->I.bobconfirms = swap->I.bobconfirms * 3;
+    }
+    else
+    {
+        swap->I.bobconfirms = 3;
+        swap->I.aliceconfirms = 3;
+    }
     if ( swap->I.bobconfirms == 0 )
         swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
     if ( swap->I.aliceconfirms == 0 )
