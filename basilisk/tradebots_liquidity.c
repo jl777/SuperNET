@@ -984,7 +984,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
                 } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
             }
             myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
+            //printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
             return;
         }
     }
@@ -1150,7 +1150,7 @@ void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
         else if ( swap->DEXselector == 2 )
             kmdcoin->DEXinfo.KMDpending -= swap->I.req.srcamount;
     }
-    printf(">>>>>>>>>>>>>>>>>> balancing trade\n");
+    printf(">>>>>>>>>>>>>>>>>> balancing trade done by marketmaker\n");
     return;
     if ( swap->balancingtrade == 0 )
         _default_swap_balancingtrade(myinfo,swap,iambob);

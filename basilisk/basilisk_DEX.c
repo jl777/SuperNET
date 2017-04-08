@@ -479,6 +479,7 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,bits256 privkey,uint3
         retstr = clonestr("{\"error\":\"couldnt find to requestid to choose\"}");
     return(retstr);
 }
+
 cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
     cJSON *unspents=0,*array=0; char *retstr;

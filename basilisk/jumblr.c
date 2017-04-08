@@ -215,7 +215,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         }
         else if ( (retstr= dex_getbalance(myinfo,coin,0,0,coin->symbol,addr)) != 0 )
         {
-            printf("DEX retstr.(%s)\n",retstr);
+            //printf("DEX retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 balance = jdouble(retjson,"balance") * SATOSHIDEN;
@@ -714,7 +714,7 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin)
 {
     double vol,avail; struct iguana_info *kmdcoin,*coinbtc = 0;
-    if ( myinfo->IAMNOTARY != 0 )
+    if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 )
         return;
     if ( (kmdcoin= iguana_coinfind("KMD")) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 )
         return;
