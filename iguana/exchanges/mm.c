@@ -40,6 +40,7 @@ char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
 };
 double PAXPRICES[sizeof(CURRENCIES)/sizeof(*CURRENCIES)];
+uint32_t PAXACTIVE;
 
 char *DEX_amlp(char *blocktrail)
 {
@@ -505,7 +506,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 jaddnum(vals,"minvol",vol*0.1 > 100 ? 100 : vol * 0.1);
                 sprintf(url,"%s/?",IGUANA_URL);
                 sprintf(postdata,"{\"agent\":\"tradebot\",\"method\":\"liquidity\",\"targetcoin\":\"%s\",\"vals\":%s}",base,jprint(vals,1));
-                printf("(%s)\n",postdata);
+                //printf("(%s)\n",postdata);
                 if ( (retstr= bitcoind_RPC(0,"tradebot",url,0,"liqudity",postdata)) != 0 )
                 {
                     //printf("(%s) -> (%s)\n",postdata,retstr);
@@ -514,6 +515,8 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                 spread_ratio = .5 * ((ask - bid) / (bid + ask));
                 for (i=0; i<sizeof(CURRENCIES)/sizeof(*CURRENCIES); i++)
                 {
+                    if ( (PAXACTIVE & (1<<i)) == 0 )
+                        continue;
                     if ( PAXPRICES[i] > SMALLVAL )
                     {
                         vals = cJSON_CreateObject();
@@ -530,7 +533,7 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
                             free(retstr);
                         }
                     }
-break;
+//break;
                 }
             } else printf("unsupported ask only for DEX %s/%s\n",base,rel);
         }
@@ -571,7 +574,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
     start_DEXrel = dex_balance(rel,reladdr);
     while ( 1 )
     {
-        if ( time(NULL) > lasttime+10 )
+        if ( time(NULL) > lasttime+60 )
         {
             if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel,&USD_average)) != 0. )
             {
@@ -630,7 +633,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
             marketmaker_prune(exchange,base,rel,1,mmbid - theoretical*profitmargin,mmask + theoretical*profitmargin,0.);
             // if new prices crosses existing order, cancel old order first
             marketmaker_prune(exchange,base,rel,-1,mmbid,mmask,0.);
-            printf("(%.8f %.8f) ",mmbid,mmask);
+            //printf("(%.8f %.8f) ",mmbid,mmask);
             if ( (1) )
             {
                 if ( mmbid >= lowask || (maxbid > SMALLVAL && mmbid > maxbid) ) //mmbid < highbid ||
@@ -642,7 +645,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                     mmask = 0.;
             }
             marketmaker_volumeset(&bidincr,&askincr,incr,buyvol,pendingbids,sellvol,pendingasks,maxexposure);
-            printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
+            //printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
             if ( (aveask - avebid)/aveprice > profitmargin )
                 bid = highbid * (1 - profitmargin), ask = lowask *  (1 + profitmargin);
             else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
@@ -664,7 +667,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                 if ( askincr > 1. )
                     askincr = (int32_t)askincr + 0.777;
             }
-            printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
+            //printf("mmbid %.8f %.6f, mmask %.8f %.6f\n",mmbid,bidincr,mmask,askincr);
             marketmaker_spread(exchange,base,rel,mmbid,bidincr,mmask,askincr,profitmargin*aveprice*0.5);
             sleep(60);
         }
@@ -673,9 +676,9 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 int main(int argc, const char * argv[])
 {
-    char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail;
+    char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid;
-    cJSON *retjson,*addrjson; char *retstr,*baseaddr,*reladdr,*passphrase;
+    cJSON *retjson,*loginjson; int32_t i;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         minask = jdouble(retjson,"minask");
@@ -693,34 +696,50 @@ int main(int argc, const char * argv[])
         rel = jstr(retjson,"rel");
         blocktrail = jstr(retjson,"blocktrail");
         exchange = jstr(retjson,"exchange");
+        PAXACTIVE = juint(retjson,"paxactive");
         if ( profitmargin < 0. || maxexposure <= 0. || incrratio <= 0. || apikey == 0 || apisecret == 0 || base == 0 || name == 0 || rel == 0 || exchange == 0 || blocktrail == 0 )
         {
             printf("illegal parameter (%s)\n",jprint(retjson,0));
             exit(-1);
         }
+        free_json(retjson);
         if ( (retstr= iguana_walletpassphrase(passphrase,999999)) != 0 )
         {
-            printf("%s\n",DEX_apikeypair(exchange,apikey,apisecret));
-            printf("%s %s\n",base,DEX_balance(exchange,base,""));
-            printf("%s %s\n",rel,DEX_balance(exchange,rel,""));
-            marketmaker_pendinginit(exchange,base,rel);
-            if ( (addrjson= cJSON_Parse(retstr)) != 0 )
+            //printf("login.(%s)\n",retstr);
+            if ( (loginjson= cJSON_Parse(retstr)) != 0 )
             {
-                baseaddr = jstr(addrjson,base);
-                reladdr = jstr(addrjson,rel);
+                if ( PAXACTIVE != 0 )
+                {
+                    for (i=0; i<32; i++)
+                    {
+                        if ( ((1<<i) & PAXACTIVE) != 0 )
+                        {
+                            if ( jstr(loginjson,CURRENCIES[i]) == 0 )
+                                PAXACTIVE &= ~(1 << i);
+                        }
+                    }
+                }
+                if ( (baseaddr= jstr(loginjson,base)) == 0 || (reladdr= jstr(loginjson,rel)) == 0 )
+                {
+                    printf("Need to activate both %s and %s before marketmaker\n",base,rel);
+                    exit(1);
+                }
+                printf("%s %s\n",base,DEX_balance(exchange,base,""));
+                printf("%s %s\n",rel,DEX_balance(exchange,rel,""));
+                marketmaker_pendinginit(exchange,base,rel);
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
-                    printf("%s\n",DEX_amlp(blocktrail));
+                    printf("PAXACTIVE.%08x %s\n",PAXACTIVE,DEX_amlp(blocktrail));
                     printf("%s.%s %s\n",base,baseaddr,DEX_balance("DEX",base,baseaddr));
                     printf("%s.%s %s\n",rel,reladdr,DEX_balance("DEX",rel,reladdr));
                     // initialize state using DEX_pendingorders, etc.
                     marketmaker(minask,maxbid,baseaddr,reladdr,start_base,start_rel,profitmargin,maxexposure,incrratio,exchange,name,base,rel);
                 }
-                free_json(addrjson);
+                free_json(loginjson);
+            //printf("%s\n",DEX_apikeypair(exchange,apikey,apisecret));
             } else printf("ERROR parsing.(%s)\n",retstr);
             free(retstr);
         }
-        free_json(retjson);
     }
     return 0;
 }
