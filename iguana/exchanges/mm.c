@@ -705,7 +705,7 @@ int main(int argc, const char * argv[])
         free_json(retjson);
         if ( (retstr= iguana_walletpassphrase(passphrase,999999)) != 0 )
         {
-            //printf("login.(%s)\n",retstr);
+            printf("(%s/%s) login.(%s)\n",base,rel,retstr);
             if ( (loginjson= cJSON_Parse(retstr)) != 0 )
             {
                 if ( PAXACTIVE != 0 )
