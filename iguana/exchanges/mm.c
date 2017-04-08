@@ -41,6 +41,7 @@ char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD",
 };
 double PAXPRICES[sizeof(CURRENCIES)/sizeof(*CURRENCIES)];
 uint32_t PAXACTIVE;
+char DEX_baseaddr[16],DEX_reladdr[16];
 
 char *DEX_swapstatus()
 {
@@ -662,6 +663,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
             printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
             if ( (retstr= DEX_swapstatus()) != 0 )
                 printf("%s\n",retstr), free(retstr);
+            printf("%s %.8f, %s %.8f\n",base,DEX_balance("DEX",base,DEX_baseaddr),rel,DEX_balance("DEX",rel,DEX_reladdr));
             if ( (aveask - avebid)/aveprice > profitmargin )
                 bid = highbid * (1 - profitmargin), ask = lowask *  (1 + profitmargin);
             else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
@@ -744,6 +746,8 @@ int main(int argc, const char * argv[])
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
                     printf("PAXACTIVE.%08x %s\n",PAXACTIVE,DEX_amlp(blocktrail));
+                    strcpy(DEX_baseaddr,baseaddr);
+                    strcpy(DEX_reladdr,reladdr);
                     printf("%s.%s %s\n",base,baseaddr,DEX_balance("DEX",base,baseaddr));
                     printf("%s.%s %s\n",rel,reladdr,DEX_balance("DEX",rel,reladdr));
                     // initialize state using DEX_pendingorders, etc.
