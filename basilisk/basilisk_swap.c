@@ -2223,7 +2223,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         return;
     if ( swap->pushsock < 0 && swap->subsock < 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
     {
-        timeout = 100;
+        timeout = 1000;
         nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
         timeout = 1;
         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
