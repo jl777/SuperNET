@@ -702,7 +702,6 @@ int main(int argc, const char * argv[])
             printf("illegal parameter (%s)\n",jprint(retjson,0));
             exit(-1);
         }
-        free_json(retjson);
         if ( (retstr= iguana_walletpassphrase(passphrase,999999)) != 0 )
         {
             printf("(%s/%s) login.(%s)\n",base,rel,retstr);
@@ -740,6 +739,7 @@ int main(int argc, const char * argv[])
             } else printf("ERROR parsing.(%s)\n",retstr);
             free(retstr);
         }
+        free_json(retjson);
     }
     return 0;
 }
