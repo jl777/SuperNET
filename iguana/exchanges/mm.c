@@ -46,8 +46,8 @@ char *DEX_swapstatus()
 {
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
-    sprintf(postdata,"{\"agent\":\"basilisk\",\"method\":\"swapstatus\"}");
-    return(bitcoind_RPC(0,"basilisk",url,0,"swapstatus",postdata));
+    sprintf(postdata,"{\"agent\":\"InstantDEX\",\"method\":\"getswaplist\"}");
+    return(bitcoind_RPC(0,"InstantDEX",url,0,"getswaplist",postdata));
 }
 
 char *DEX_amlp(char *blocktrail)
