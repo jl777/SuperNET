@@ -645,7 +645,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                     mmask = 0.;
             }
             marketmaker_volumeset(&bidincr,&askincr,incr,buyvol,pendingbids,sellvol,pendingasks,maxexposure);
-            //printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
+            printf("AVE.(%.8f %.8f) hbla %.8f %.8f bid %.8f ask %.8f theory %.8f buys.(%.6f %.6f) sells.(%.6f %.6f) incr.(%.6f %.6f) balances.(%.8f + %.8f, %.8f + %.8f) test %f\n",avebid,aveask,highbid,lowask,mmbid,mmask,theoretical,buyvol,pendingbids,sellvol,pendingasks,bidincr,askincr,balance_base,DEX_base,balance_rel,DEX_rel,(aveask - avebid)/aveprice);
             if ( (aveask - avebid)/aveprice > profitmargin )
                 bid = highbid * (1 - profitmargin), ask = lowask *  (1 + profitmargin);
             else bid = avebid - profitmargin*aveprice, ask = avebid + profitmargin*aveprice;
@@ -723,7 +723,7 @@ int main(int argc, const char * argv[])
                     printf("Need to activate both %s and %s before marketmaker\n",base,rel);
                     exit(1);
                 }
-                printf(">>>>>>> (%s) (%s) %s\n",apikey,apisecret,DEX_apikeypair(exchange,apikey,apisecret));
+                printf("%s\n",DEX_apikeypair(exchange,apikey,apisecret));
                 marketmaker_pendinginit(exchange,base,rel);
                 if ( baseaddr != 0 && reladdr != 0 )
                 {
