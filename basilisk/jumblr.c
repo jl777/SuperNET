@@ -202,7 +202,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         {
             if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
             {
-                printf("jumblr.(%s)\n",retstr);
+                printf("jumblr.[%s].(%s)\n",coin->symbol,retstr);
                 if ( (retjson= cJSON_Parse(retstr)) != 0 )
                 {
                     if ( (n= cJSON_GetArraySize(retjson)) > 0 )
@@ -215,7 +215,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         }
         else if ( (retstr= dex_getbalance(myinfo,coin,0,0,coin->symbol,addr)) != 0 )
         {
-            //printf("retstr.(%s)\n",retstr);
+            printf("DEX retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 balance = jdouble(retjson,"balance") * SATOSHIDEN;

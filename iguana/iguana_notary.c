@@ -865,6 +865,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     char url[512],*retstr; cJSON *retjson; uint64_t val;
     if ( myinfo->DEXEXPLORER != 0 )
     {
+        printf("DEXEXPLORER\n");
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_getbalance(myinfo,coin,address),1));
         if ( coin != 0 )
@@ -909,7 +910,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
                         jdelete(retjson,"unconfirmed_received");
                         jaddnum(retjson,"unconfirmed_received",dstr(val));
                     }
-                    //printf("(%s) -> (%s)\n",retstr,jprint(retjson,0));
+                    printf("blocktrail.(%s) -> (%s)\n",retstr,jprint(retjson,0));
                     free(retstr);
                     retstr = jprint(retjson,1);
                 }
