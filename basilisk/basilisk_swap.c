@@ -773,7 +773,7 @@ void basilisk_dontforget_update(struct supernet_info *myinfo,struct basilisk_swa
     memset(triggertxid.bytes,0,sizeof(triggertxid));
     if ( rawtx == &swap->myfee )
         basilisk_dontforget(myinfo,swap,&swap->myfee,0,triggertxid);
-    if ( swap->I.iambob != 0 )
+    //if ( swap->I.iambob != 0 )
     {
         if ( rawtx == &swap->bobdeposit )
         {
@@ -795,7 +795,7 @@ void basilisk_dontforget_update(struct supernet_info *myinfo,struct basilisk_swa
         else if ( rawtx == &swap->bobrefund )
             basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
     }
-    else
+    //else
     {
         if ( rawtx == &swap->alicepayment )
         {
