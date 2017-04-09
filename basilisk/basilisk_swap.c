@@ -2593,7 +2593,7 @@ char *txnames[] = { "myfee", "bobdeposit", "bobpayment", "alicepayment", "bobref
 
 cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
-    int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65]; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 checktxid,txid,trigger; uint32_t t,addflag; uint64_t value;
+    int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65],*txbytes,*retstr; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 checktxid,txid,trigger; uint32_t t,addflag; uint64_t value;
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
     printf("R.%u Q.%u\n",requestid,quoteid);
@@ -2638,6 +2638,14 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                                 }
                                 free_json(sentobj);
                             }
+                            if ( addflag != 0 && (txbytes= jstr(txobj,"tx")) != 0 )
+                            {
+                                if ( (retstr= _dex_sendrawtransaction(myinfo,symbol,txbytes)) != 0 )
+                                {
+                                    printf("RETSTR.(%s)\n",retstr);
+                                    free(retstr);
+                                }
+                            }
                         }
                     } //else printf("%s t %u\n",symbol,t);
                     if ( addflag == 0 )
@@ -2648,7 +2656,11 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         else if ( strcmp(symbol,"BTC") == 0 )
                             BTCtotals[i] += value;
                         free_json(txobj);
-                    } else jaddi(array,txobj);
+                    }
+                    else
+                    {
+                        jaddi(array,txobj);
+                    }
                 } else free_json(txobj);
             } //else printf("no symbol\n");
             free(fstr);
