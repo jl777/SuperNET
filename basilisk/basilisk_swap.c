@@ -710,11 +710,116 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
  OP_HASH160 <hash(bob_privN)> OP_EQUALVERIFY <bob_pubB0> OP_CHECKSIG
  OP_ENDIF*/
 
+void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,int32_t scriptlen)
+{
+    int32_t i; char scriptstr[513];
+    if ( scriptlen != 0 )
+    {
+        for (i=0; i<scriptlen; i++)
+            sprintf(&scriptstr[i << 1],"%02x",script[i]);
+        scriptstr[i << 1] = 0;
+        fprintf(fp,"\",\"%s\":\"%s\"",userdataname,scriptstr);
+    }
+}
+
+void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
+{
+    char fname[512],str[65],msigaddr[64]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
+    sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"wb")) != 0 )
+    {
+        fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->coin->symbol);
+        if ( rawtx->I.datalen > 0 )
+        {
+            fprintf(fp,",\"tx\":\"");
+            for (i=0; i<rawtx->I.datalen; i++)
+                fprintf(fp,"%02x",rawtx->txbytes[i]);
+            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
+        }
+        for (i=0; i<2; i++)
+            if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
+                fprintf(fp,"\",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
+        if ( bits256_nonz(swap->I.privAm) != 0 )
+            fprintf(fp,"\",\"privAm\":\"%s\"",bits256_str(str,swap->I.privAm));
+        if ( bits256_nonz(swap->I.privBn) != 0 )
+            fprintf(fp,"\",\"privBn\":\"%s\"",bits256_str(str,swap->I.privBn));
+        fprintf(fp,",\"lock\":%u",locktime);
+        fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
+        if ( bits256_nonz(triggertxid) != 0 )
+            fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
+        if ( swap->bobdeposit.p2shaddr[0] != 0 )
+            fprintf(fp,",\"Bdeposit\":\"%s\"",swap->bobdeposit.p2shaddr);
+        if ( swap->bobpayment.p2shaddr[0] != 0 )
+            fprintf(fp,",\"Bpayment\":\"%s\"",swap->bobpayment.p2shaddr);
+        if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
+        {
+            basilisk_alicescript(redeemscript,&len,script,0,msigaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            fprintf(fp,"\",\"Apayment\":\"%s\"",msigaddr);
+        }
+        basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
+        basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
+        basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);
+        basilisk_dontforget_userdata("Bspend",fp,swap->I.userdata_bobspend,swap->I.userdata_bobspendlen);
+        basilisk_dontforget_userdata("Breclaim",fp,swap->I.userdata_bobreclaim,swap->I.userdata_bobreclaimlen);
+        basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);
+        fprintf(fp,"}\n");
+        fclose(fp);
+    }
+}
+
+void basilisk_dontforget_update(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
+{
+    bits256 triggertxid;
+    memset(triggertxid.bytes,0,sizeof(triggertxid));
+    if ( rawtx == &swap->myfee )
+        basilisk_dontforget(myinfo,swap,&swap->myfee,0,triggertxid);
+    if ( swap->I.iambob != 0 )
+    {
+        if ( rawtx == &swap->bobdeposit )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->bobdeposit,0,triggertxid);
+            basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
+        }
+        else if ( rawtx == &swap->bobpayment )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->bobpayment,0,triggertxid);
+            basilisk_dontforget(myinfo,swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
+        }
+        else if ( rawtx == &swap->bobspend )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
+            basilisk_dontforget(myinfo,swap,&swap->bobspend,0,swap->alicepayment.I.actualtxid);
+        }
+        else if ( rawtx == &swap->bobreclaim )
+            basilisk_dontforget(myinfo,swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
+        else if ( rawtx == &swap->bobrefund )
+            basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
+    }
+    else
+    {
+        if ( rawtx == &swap->alicepayment )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
+        }
+        else if ( rawtx == &swap->alicespend )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->bobpayment,0,triggertxid);
+            basilisk_dontforget(myinfo,swap,&swap->alicespend,0,triggertxid);
+        }
+        else if ( rawtx == &swap->alicereclaim )
+        {
+            basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
+            basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
+        }
+    }
+}
+
 int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
     uint8_t userdata[512]; int32_t i,retval,len = 0; static bits256 zero; struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
+        basilisk_dontforget_update(myinfo,swap,&swap->bobdeposit);
         len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         memcpy(swap->I.userdata_aliceclaim,userdata,len);
         swap->I.userdata_aliceclaimlen = len;
@@ -782,6 +887,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
     memset(revAm.bytes,0,sizeof(revAm));
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
+        basilisk_dontforget_update(myinfo,swap,&swap->bobpayment);
         for (i=0; i<32; i++)
             revAm.bytes[i] = swap->I.privAm.bytes[31-i];
         len = basilisk_swapuserdata(userdata,revAm,0,swap->I.myprivs[0],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
@@ -843,7 +949,10 @@ int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,void *ptr,uint8_t
 {
     struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->alicecoin->longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
+    {
+        basilisk_dontforget_update(myinfo,swap,&swap->alicepayment);
         return(0);
+    }
     else return(-1);
 }
 
@@ -995,7 +1104,7 @@ void basilisk_swapgotdata(struct supernet_info *myinfo,struct basilisk_swap *swa
     for (i=0; i<swap->nummessages; i++)
         if ( crc32 == swap->messages[i].crc32 && msgbits == swap->messages[i].msgbits && bits256_cmp(srchash,swap->messages[i].srchash) == 0 && bits256_cmp(desthash,swap->messages[i].desthash) == 0 )
             return;
-    printf(" new message.[%d] datalen.%d Q.%x msg.%x [%llx]\n",swap->nummessages,datalen,quoteid,msgbits,*(long long *)data);
+    //printf(" new message.[%d] datalen.%d Q.%x msg.%x [%llx]\n",swap->nummessages,datalen,quoteid,msgbits,*(long long *)data);
     swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
     mp = &swap->messages[swap->nummessages++];
     mp->crc32 = crc32;
@@ -1721,66 +1830,9 @@ int32_t basilisk_verify_privkeys(struct supernet_info *myinfo,void *ptr,uint8_t 
     return(errs);
 }
 
-void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,int32_t scriptlen)
-{
-    int32_t i; char scriptstr[513];
-    if ( scriptlen != 0 )
-    {
-        for (i=0; i<scriptlen; i++)
-            sprintf(&scriptstr[i << 1],"%02x",script[i]);
-        scriptstr[i << 1] = 0;
-        fprintf(fp,"\",\"%s\":\"%s\"",userdataname,scriptstr);
-    }
-}
-
-void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
-{
-    char fname[512],str[65],msigaddr[64]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
-    sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
-    if ( (fp= fopen(fname,"wb")) != 0 )
-    {
-        fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->coin->symbol);
-        if ( rawtx->I.datalen > 0 )
-        {
-            fprintf(fp,",\"tx\":\"");
-            for (i=0; i<rawtx->I.datalen; i++)
-                fprintf(fp,"%02x",rawtx->txbytes[i]);
-            fprintf(fp,"\",\"txid\":\"%s\"",bits256_str(str,bits256_doublesha256(0,rawtx->txbytes,rawtx->I.datalen)));
-        }
-        for (i=0; i<2; i++)
-            if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
-                fprintf(fp,"\",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
-        if ( bits256_nonz(swap->I.privAm) != 0 )
-            fprintf(fp,"\",\"privAm\":\"%s\"",bits256_str(str,swap->I.privAm));
-        if ( bits256_nonz(swap->I.privBn) != 0 )
-            fprintf(fp,"\",\"privBn\":\"%s\"",bits256_str(str,swap->I.privBn));
-        fprintf(fp,",\"lock\":%u",locktime);
-        fprintf(fp,",\"amount\":%.8f",dstr(rawtx->I.amount));
-        if ( bits256_nonz(triggertxid) != 0 )
-            fprintf(fp,",\"trigger\":\"%s\"",bits256_str(str,triggertxid));
-        if ( swap->bobdeposit.p2shaddr[0] != 0 )
-            fprintf(fp,",\"Bdeposit\":\"%s\"",swap->bobdeposit.p2shaddr);
-        if ( swap->bobpayment.p2shaddr[0] != 0 )
-            fprintf(fp,",\"Bpayment\":\"%s\"",swap->bobpayment.p2shaddr);
-        if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
-        {
-            basilisk_alicescript(redeemscript,&len,script,0,msigaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
-            fprintf(fp,"\",\"Apayment\":\"%s\"",msigaddr);
-        }
-        basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
-        basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
-        basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);
-        basilisk_dontforget_userdata("Bspend",fp,swap->I.userdata_bobspend,swap->I.userdata_bobspendlen);
-        basilisk_dontforget_userdata("Breclaim",fp,swap->I.userdata_bobreclaim,swap->I.userdata_bobreclaimlen);
-        basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);
-        fprintf(fp,"}\n");
-        fclose(fp);
-    }
-}
-
 uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend)
 {
-    uint8_t sendbuf[32768]; int32_t sendlen; bits256 triggertxid;
+    uint8_t sendbuf[32768]; int32_t sendlen;
     if ( basilisk_swapdata_rawtx(myinfo,swap,data,maxlen,rawtx) != 0 )
     {
         if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
@@ -1801,48 +1853,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                     memcpy(&sendbuf[sendlen],rawtx->redeemscript,rawtx->I.redeemlen);
                     sendlen += rawtx->I.redeemlen;
                 }
-                memset(triggertxid.bytes,0,sizeof(triggertxid));
-                if ( rawtx == &swap->myfee )
-                    basilisk_dontforget(myinfo,swap,&swap->myfee,0,triggertxid);
-                if ( swap->I.iambob != 0 )
-                {
-                    if ( rawtx == &swap->bobdeposit )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->bobdeposit,0,triggertxid);
-                        basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
-                    }
-                    else if ( rawtx == &swap->bobpayment )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->bobpayment,0,triggertxid);
-                        basilisk_dontforget(myinfo,swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
-                    }
-                    else if ( rawtx == &swap->bobspend )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
-                        basilisk_dontforget(myinfo,swap,&swap->bobspend,0,swap->alicepayment.I.actualtxid);
-                    }
-                    else if ( rawtx == &swap->bobreclaim )
-                        basilisk_dontforget(myinfo,swap,&swap->bobreclaim,swap->bobpayment.I.locktime,triggertxid);
-                    else if ( rawtx == &swap->bobrefund )
-                        basilisk_dontforget(myinfo,swap,&swap->bobrefund,swap->bobdeposit.I.locktime,triggertxid);
-                }
-                else
-                {
-                    if ( rawtx == &swap->alicepayment )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
-                    }
-                    else if ( rawtx == &swap->alicespend )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->bobpayment,0,triggertxid);
-                        basilisk_dontforget(myinfo,swap,&swap->alicespend,0,triggertxid);
-                    }
-                    else if ( rawtx == &swap->alicereclaim )
-                    {
-                        basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
-                        basilisk_dontforget(myinfo,swap,&swap->alicereclaim,0,swap->bobrefund.I.actualtxid);
-                    }
-                }
+                basilisk_dontforget_update(myinfo,swap,rawtx);
                 //printf("sendlen.%d datalen.%d redeemlen.%d\n",sendlen,rawtx->datalen,rawtx->redeemlen);
                 if ( suppress_swapsend == 0 )
                     return(basilisk_swapsend(myinfo,swap,msgbits,sendbuf,sendlen,nextbits,rawtx->I.crcs));
