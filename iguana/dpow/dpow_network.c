@@ -1093,7 +1093,7 @@ char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *si
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
     retstr = _dex_sendrequeststr(myinfo,&dexreq,signedtx,0,1,"*");
-    printf("RET.(%s)\n",retstr);
+    //printf("RET.(%s)\n",retstr);
     return(retstr);
 }
 

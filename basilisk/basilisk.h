@@ -79,6 +79,12 @@ struct basilisk_swapinfo
     int32_t choosei,otherchoosei,cutverified,otherverifiedcut,numpubs,havestate,otherhavestate,pad2;
     uint8_t secretAm[20],secretBn[20];
     uint8_t secretAm256[32],secretBn256[32];
+    uint8_t userdata_aliceclaim[256],userdata_aliceclaimlen;
+    uint8_t userdata_alicereclaim[256],userdata_alicereclaimlen;
+    uint8_t userdata_alicespend[256],userdata_alicespendlen;
+    uint8_t userdata_bobspend[256],userdata_bobspendlen;
+    uint8_t userdata_bobreclaim[256],userdata_bobreclaimlen;
+    uint8_t userdata_bobrefund[256],userdata_bobrefundlen;
 };
 
 struct basilisk_value { bits256 txid; int64_t value; int32_t height; int16_t vout; char coinaddr[64]; };
