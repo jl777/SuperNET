@@ -1768,7 +1768,7 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
                 {
                     if ( rawtx == &swap->alicepayment )
                     {
-                        basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,triggertxid);
+                        basilisk_dontforget(myinfo,swap,&swap->alicepayment,0,swap->bobdeposit.I.actualtxid);
                     }
                     else if ( rawtx == &swap->alicespend )
                     {
@@ -2593,7 +2593,7 @@ char *txnames[] = { "myfee", "bobdeposit", "bobpayment", "alicepayment", "bobref
 
 cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
-    int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65]; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 txid,trigger; uint32_t t,addflag; uint64_t value;
+    int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65]; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 checktxid,txid,trigger; uint32_t t,addflag; uint64_t value;
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
     printf("R.%u Q.%u\n",requestid,quoteid);
@@ -2630,7 +2630,12 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                             }
                             else
                             {
-                                printf("%s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
+                                checktxid = jbits256(sentobj,"txid");
+                                if ( bits256_cmp(checktxid,txid) != 0 )
+                                {
+                                    printf("%s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
+                                    addflag = 1;
+                                }
                                 free_json(sentobj);
                             }
                         }
