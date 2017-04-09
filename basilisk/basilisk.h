@@ -60,7 +60,7 @@ struct basilisk_rawtx
     struct iguana_msgtx msgtx;
     struct basilisk_rawtxinfo I;
     struct iguana_info *coin;
-    char vinstr[8192];
+    char vinstr[8192],p2shaddr[64];
     cJSON *vins;
     uint8_t txbytes[16384],spendscript[512],redeemscript[1024],extraspace[4096];
 };

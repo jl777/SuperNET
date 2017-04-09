@@ -727,7 +727,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
         if ( coin->CMCname[0] != 0 )
             jumblr_DEXupdate(myinfo,coin,coin->symbol,coin->CMCname,kmdcoin->DEXinfo.btcprice,kmdcoin->DEXinfo.avail);
     }
-    if ( myinfo->IAMLP == 0 && kmdcoin->DEXinfo.btcprice > SMALLVAL )
+    if ( myinfo->numswaps == 0 && myinfo->IAMLP == 0 && kmdcoin->DEXinfo.btcprice > SMALLVAL )
     {
         double minbtc,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
@@ -749,7 +749,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddstr(vals,"source","BTC");
                 jaddstr(vals,"dest","KMD");
                 jaddnum(vals,"amount",vol);
-                jaddnum(vals,"minprice",1./(1.015 * kmdcoin->DEXinfo.btcprice));
+                jaddnum(vals,"minprice",1./(1.02 * kmdcoin->DEXinfo.btcprice));
                 jaddnum(vals,"usejumblr",1);
                 jaddnum(vals,"DEXselector",1);
                 memset(hash.bytes,0,sizeof(hash));
@@ -781,7 +781,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddstr(vals,"dest","BTC");
                 jaddnum(vals,"amount",vol);
                 //jaddnum(vals,"destamount",JUMBLR_INCR*kmdcoin->DEXinfo.btcprice);
-                jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice/1.015);
+                jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice/1.02);
                 jaddnum(vals,"usejumblr",1);
                 memset(hash.bytes,0,sizeof(hash));
                 kmdcoin->DEXinfo.KMDpending += vol;
