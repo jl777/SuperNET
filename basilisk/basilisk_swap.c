@@ -2630,7 +2630,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                             }
                             else
                             {
-                                //printf("%s txid %s\n",symbol,bits256_str(str,txid));
+                                printf("%s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
                                 free_json(sentobj);
                             }
                         }
