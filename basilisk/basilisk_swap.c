@@ -1164,7 +1164,7 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
                     if ( swap->subsock >= 0 )
                         nn_close(swap->subsock), swap->subsock = -1;
                     swap->connected = 0;
-                    basilisk_psockinit(myinfo,swap,0);
+                    basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
                 }
                 mp = &swap->messages[i];
                 if ( msgbits != 0x80000000 )
@@ -1199,7 +1199,7 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
                 nn_close(swap->pushsock), swap->pushsock = -1;
             if ( swap->subsock >= 0 )
                 nn_close(swap->subsock), swap->subsock = -1;
-            swap->connected = 0;
+            swap->connected = swap->I.iambob != 0 ? -1 : 0;
         }
     }
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
@@ -2232,7 +2232,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         return;
     }
     sprintf(keystr,"%08x-%08x",swap->I.req.requestid,swap->I.req.quoteid);
-    if ( (retstr= _dex_kvsearch(myinfo,"KV",keystr)) != 0 )
+    if ( swap->connected == 0 && (retstr= _dex_kvsearch(myinfo,"KV",keystr)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
         {
@@ -2258,7 +2258,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         printf("KVsearch.(%s) connected.%d socks.(%d %d)\n",retstr,swap->connected,swap->pushsock,swap->subsock);
         free(retstr);
     }
-    if ( swap->connected == 0 && amlp != 0 )
+    if ( swap->connected <= 0 && amlp != 0 )
     {
         if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
         {
@@ -2349,7 +2349,7 @@ void basilisk_swaploop(void *_swap)
         dex_channelsend(myinfo,swap->I.req.srchash,swap->I.req.desthash,channel,0x4000000,(void *)&swap->I.req.requestid,sizeof(swap->I.req.requestid)); //,60);
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
-        if ( swap->connected != 0 )
+        if ( swap->connected > 0 )
         {
             printf("A r%u/q%u swapstate.%x\n",swap->I.req.requestid,swap->I.req.quoteid,swap->I.statebits);
             basilisk_sendstate(myinfo,swap,data,maxlen);
