@@ -876,7 +876,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
     if ( depositflag == 0 )
     {
         swap->bobpayment.I.spendlen = basilisk_bobscript(swap->bobpayment.I.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.I.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.I.locktime,&swap->bobpayment.I.secretstart,&swap->I,0);
-        bitcoin_address(swap->bobpayment.p2shaddr,swap->bobcoin->chain->p2shtype,swap->bobpayment.I.rmd160,20);
+        bitcoin_address(swap->bobpayment.p2shaddr,swap->bobcoin->chain->p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
         //for (i=0; i<swap->bobpayment.redeemlen; i++)
         //    printf("%02x",swap->bobpayment.redeemscript[i]);
         //printf(" <- bobpayment.%d\n",i);
@@ -912,7 +912,7 @@ int32_t basilisk_bobscripts_set(struct supernet_info *myinfo,struct basilisk_swa
     else
     {
         swap->bobdeposit.I.spendlen = basilisk_bobscript(swap->bobdeposit.I.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.I.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.I.locktime,&swap->bobdeposit.I.secretstart,&swap->I,1);
-        bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin->chain->p2shtype,swap->bobdeposit.I.rmd160,20);
+        bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin->chain->p2shtype,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         if ( genflag != 0 && (swap->bobdeposit.I.datalen == 0 || swap->bobrefund.I.datalen == 0) )
         {
             for (i=0; i<3; i++)
@@ -1762,21 +1762,17 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
             fprintf(fp,",\"Bdeposit\":\"%s\"",swap->bobdeposit.p2shaddr);
         if ( swap->bobpayment.p2shaddr[0] != 0 )
             fprintf(fp,",\"Bpayment\":\"%s\"",swap->bobpayment.p2shaddr);
-        if ( swap->alicepayment.p2shaddr[0] != 0 )
-            fprintf(fp,",\"Apayment\":\"%s\"",swap->alicepayment.p2shaddr);
-        if ( swap->bobdeposit.p2shaddr[0] != 0 )
-            fprintf(fp,",\"deposit\":\"%s\"",swap->bobdeposit.p2shaddr);
+        if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
+        {
+            basilisk_alicescript(redeemscript,&len,script,0,msigaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            fprintf(fp,"\",\"Apayment\":\"%s\"",msigaddr);
+        }
         basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
         basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
         basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);
         basilisk_dontforget_userdata("Bspend",fp,swap->I.userdata_bobspend,swap->I.userdata_bobspendlen);
         basilisk_dontforget_userdata("Breclaim",fp,swap->I.userdata_bobreclaim,swap->I.userdata_bobreclaimlen);
         basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);
-        if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
-        {
-            basilisk_alicescript(redeemscript,&len,script,0,msigaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
-            fprintf(fp,"\",\"Adest\":\"%s\"",msigaddr);
-        }
         fprintf(fp,"}\n");
         fclose(fp);
     }
