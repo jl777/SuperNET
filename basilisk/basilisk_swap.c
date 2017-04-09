@@ -18,7 +18,7 @@
 make sure to broadcast deposit before claiming refund, or to just skip it if neither is done
 */
 
-#define DEX_SLEEP 5
+#define DEX_SLEEP 15
 #define BASILISK_DEFAULT_NUMCONFIRMS 5
 
 // Todo: monitor blockchains, ie complete extracting scriptsig
@@ -2596,12 +2596,14 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     int32_t i; char fname[512],*fstr,*symbol,str[65],str2[65]; long fsize; cJSON *txobj,*item,*triggerobj,*sentobj,*array; bits256 txid,trigger; uint32_t t,addflag; uint64_t value;
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
+    printf("R.%u Q.%u\n",requestid,quoteid);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         addflag = 0;
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
+            //printf("%s\n",fname);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
@@ -2612,9 +2614,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         if ( jobj(txobj,"trigger") != 0 )
                         {
                             trigger = jbits256(txobj,"trigger");
+                            //printf("%s trigger %s\n",symbol,bits256_str(str,trigger));
                             if ( (triggerobj= basilisk_swapgettxout(myinfo,symbol,trigger,0)) == 0 )
                             {
-                                printf("%s trigger.(%s) spent! extract priv\n",bits256_str(str2,txid),bits256_str(str,trigger));
+                                printf("%s %s trigger.(%s) spent! extract priv\n",symbol,bits256_str(str2,txid),bits256_str(str,trigger));
                                 addflag = 1;
                             } else free_json(triggerobj);
                         }
@@ -2622,11 +2625,16 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         {
                             if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
                             {
-                                printf("%s ready to broadcast\n",bits256_str(str2,txid));
+                                printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                                 addflag = 1;
-                            } else free_json(sentobj);
+                            }
+                            else
+                            {
+                                //printf("%s txid %s\n",symbol,bits256_str(str,txid));
+                                free_json(sentobj);
+                            }
                         }
-                    }
+                    } //else printf("%s t %u\n",symbol,t);
                     if ( addflag == 0 )
                     {
                         value = jdouble(txobj,"amount") * SATOSHIDEN;
@@ -2637,7 +2645,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         free_json(txobj);
                     } else jaddi(array,txobj);
                 } else free_json(txobj);
-            }
+            } //else printf("no symbol\n");
             free(fstr);
         }
     }
