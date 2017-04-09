@@ -1088,11 +1088,13 @@ char *_dex_getbestblockhash(struct supernet_info *myinfo,char *symbol)
 
 char *_dex_sendrawtransaction(struct supernet_info *myinfo,char *symbol,char *signedtx)
 {
-    struct dex_request dexreq;
+    struct dex_request dexreq; char *retstr;
     memset(&dexreq,0,sizeof(dexreq));
     safecopy(dexreq.name,symbol,sizeof(dexreq.name));
     dexreq.func = 'S';
-    return(_dex_sendrequeststr(myinfo,&dexreq,signedtx,0,3,"*"));
+    retstr = _dex_sendrequeststr(myinfo,&dexreq,signedtx,0,1,"*");
+    printf("RET.(%s)\n",retstr);
+    return(retstr);
 }
 
 char *_dex_importaddress(struct supernet_info *myinfo,char *symbol,char *address)

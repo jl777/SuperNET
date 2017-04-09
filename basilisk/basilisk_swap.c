@@ -2642,7 +2642,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                             {
                                 if ( (retstr= _dex_sendrawtransaction(myinfo,symbol,txbytes)) != 0 )
                                 {
-                                    printf("RETSTR.(%s)\n",retstr);
+                                    printf("%s RETSTR.(%s)\n",txbytes,retstr);
                                     free(retstr);
                                 }
                             }
