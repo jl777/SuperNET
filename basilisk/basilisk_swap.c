@@ -690,13 +690,15 @@ void basilisk_swap_coinaddr(struct supernet_info *myinfo,struct basilisk_swap *s
     cJSON *txobj,*vouts,*vout,*addresses,*item; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( (txobj= bitcoin_data2json(coin,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
-        //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
+        char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
         {
             vout = jitem(vouts,0);
+            printf("VOUT.(%s)\n",jprint(vout,0));
             if ( (addresses= jarray(&m,vout,"addresses")) != 0 )
             {
                 item = jitem(addresses,0);
+                printf("item.(%s)\n",jprint(item,0));
                 if ( (addr= jstr(item,0)) != 0 )
                 {
                     safecopy(coinaddr,addr,64);
