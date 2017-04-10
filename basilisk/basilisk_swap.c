@@ -2315,7 +2315,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
                     if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
                     {
                         swap->connected = 1;
-                        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\"}",pushaddr,subaddr);
+                        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\",\"trade\":[\"%s\", %.8f, \"%s\", %.8f]}",pushaddr,subaddr,swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount));
                         datalen = (int32_t)strlen((char *)data) + 1;
                         printf("datalen.%d (%s)\n",datalen,(char *)data);
                         init_hexbytes_noT(databuf,data,datalen);
