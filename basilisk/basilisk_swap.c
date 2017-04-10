@@ -687,10 +687,19 @@ int32_t basilisk_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,str
 
 void basilisk_swap_coinaddr(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,char *coinaddr,uint8_t *data,int32_t datalen)
 {
-    cJSON *txobj; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; int32_t suppress_pubkeys = 0;
+    cJSON *txobj,*vouts,*vout,*addresses; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( (txobj= bitcoin_data2json(coin,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
-        char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
+        //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
+        if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
+        {
+            vout = jitem(vouts,0);
+            if ( (addresses= jarray(&m,vout,"addresses")) != 0 && (addr= jstri(addresses,0)) != 0 )
+            {
+                safecopy(coinaddr,addr,64);
+                printf("extracted.(%s)\n",coinaddr);
+            }
+        }
         free_json(txobj);
     }
 }
