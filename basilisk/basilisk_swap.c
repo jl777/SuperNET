@@ -687,7 +687,7 @@ int32_t basilisk_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,str
 
 void basilisk_swap_coinaddr(struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,char *coinaddr,uint8_t *data,int32_t datalen)
 {
-    cJSON *txobj,*vouts,*vout,*addresses,*item; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
+    cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( (txobj= bitcoin_data2json(coin,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
@@ -695,7 +695,7 @@ void basilisk_swap_coinaddr(struct supernet_info *myinfo,struct basilisk_swap *s
         {
             vout = jitem(vouts,0);
             printf("VOUT.(%s)\n",jprint(vout,0));
-            if ( (addresses= jarray(&m,vout,"addresses")) != 0 )
+            if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
             {
                 item = jitem(addresses,0);
                 printf("item.(%s)\n",jprint(item,0));
