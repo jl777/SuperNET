@@ -690,19 +690,19 @@ void basilisk_swap_coinaddr(struct supernet_info *myinfo,struct basilisk_swap *s
     cJSON *txobj,*vouts,*vout,*addresses,*item,*skey; uint8_t extraspace[8192]; bits256 signedtxid; struct iguana_msgtx msgtx; char *addr; int32_t n,m,suppress_pubkeys = 0;
     if ( (txobj= bitcoin_data2json(coin,coin->longestchain,&signedtxid,&msgtx,extraspace,sizeof(extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
-        char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
+        //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,signedtxid),jprint(txobj,0));
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && n > 0 )
         {
             vout = jitem(vouts,0);
-            printf("VOUT.(%s)\n",jprint(vout,0));
+            //printf("VOUT.(%s)\n",jprint(vout,0));
             if ( (skey= jobj(vout,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
             {
                 item = jitem(addresses,0);
-                printf("item.(%s)\n",jprint(item,0));
+                //printf("item.(%s)\n",jprint(item,0));
                 if ( (addr= jstr(item,0)) != 0 )
                 {
                     safecopy(coinaddr,addr,64);
-                    printf("extracted.(%s)\n",coinaddr);
+                    //printf("extracted.(%s)\n",coinaddr);
                 }
             }
         }
@@ -766,10 +766,16 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
                 basilisk_swap_coinaddr(myinfo,swap,swap->bobcoin,coinaddr,rawtx->txbytes,rawtx->I.datalen);
                 if ( coinaddr[0] != 0 )
                 {
-                    fprintf(fp,",\"%s\":\"%s\"",rawtx == &swap->bobdeposit ? "Bdeposit" : "Bpayment",coinaddr);
+                    if ( rawtx == &swap->bobdeposit )
+                        safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
+                    else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
                 }
             }
         }
+        if ( swap->Bdeposit[0] != 0 )
+            fprintf(fp,",\"%s\":\"%s\"","Bdeposit",swap->Bdeposit);
+        if ( swap->Bpayment[0] != 0 )
+            fprintf(fp,",\"%s\":\"%s\"","Bpayment",swap->Bpayment);
         for (i=0; i<2; i++)
             if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
                 fprintf(fp,"\",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
