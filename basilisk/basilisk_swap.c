@@ -2815,7 +2815,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
-            //printf("%s\n",fname);
+            printf("%s -> (%s)\n",fname,fstr);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
                 printf("TXOBJ.(%s)\n",jprint(txobj,0));
