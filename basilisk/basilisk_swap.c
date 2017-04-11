@@ -2833,7 +2833,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 if ( bits256_nonz(privkey) != 0 )
                     privBn = privkey;
                 if ( jobj(txobj,"tx") != 0 )
+                {
                     txbytes[i] = clonestr(jstr(txobj,"tx"));
+                    printf("[%s] TX.(%s)\n",txnames[i],txbytes[i]);
+                }
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )
