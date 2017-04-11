@@ -2818,6 +2818,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             //printf("%s\n",fname);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
+                printf("TXOBJ.(%s)\n",jprint(txobj,0));
                 iambob = jint(txobj,"iambob");
                 txid = jbits256(txobj,"txid");
                 privkey = jbits256(txobj,"myprivs0");
