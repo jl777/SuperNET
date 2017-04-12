@@ -2990,13 +2990,13 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     {
                         if ( jobj(txobj,"trigger") != 0 )
                         {
-                            trigger = jbits256(txobj,"trigger");
+                            /*trigger = jbits256(txobj,"trigger");
                             //printf("%s trigger %s\n",symbol,bits256_str(str,trigger));
                             if ( (triggerobj= basilisk_swapgettxout(myinfo,symbol,trigger,0)) == 0 )
                             {
                                 printf("%s %s trigger.(%s) spent! extract priv\n",symbol,bits256_str(str2,txid),bits256_str(str,trigger));
                                 addflag = 1;
-                            } else free_json(triggerobj);
+                            } else free_json(triggerobj);*/
                         }
                         else
                         {
