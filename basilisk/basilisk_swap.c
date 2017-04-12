@@ -214,10 +214,10 @@ int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,
     {
         if ( 1 && bits256_nonz(privkey) != 0 )
         {
-            uint8_t bufA[20];//,bufB[20];
+            uint8_t bufA[20],bufB[20];
             revcalc_rmd160_sha256(bufA,privkey);
-            /*calc_rmd160_sha256(bufB,privkey.bytes,sizeof(privkey));
-            if ( memcmp(bufA,secret160,sizeof(bufA)) == 0 )
+            calc_rmd160_sha256(bufB,privkey.bytes,sizeof(privkey));
+            /*if ( memcmp(bufA,secret160,sizeof(bufA)) == 0 )
                 printf("MATCHES BUFA\n");
             else if ( memcmp(bufB,secret160,sizeof(bufB)) == 0 )
                 printf("MATCHES BUFB\n");
@@ -227,9 +227,8 @@ int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,
             printf(" <- revcalc\n");
             for (i=0; i<20; i++)
                 printf("%02x",bufB[i]);
-            printf(" <- calc\n");
-            memcpy(secret160,bufB,20);*/
-            memcpy(secret160,bufA,20);
+            printf(" <- calc\n");*/
+            memcpy(secret160,bufB,20);
         }
         n = bitcoin_secret160verify(redeemscript,n,secret160);
     }
@@ -254,7 +253,7 @@ int32_t basilisk_bobscript(uint8_t *rmd160,uint8_t *redeemscript,int32_t *redeem
     if ( depositflag != 0 )
         *locktimep = swap->started + swap->putduration + swap->callduration;
     else *locktimep = swap->started + swap->putduration;
-    n = basilisk_swap_bobredeemscript(depositflag,secretstartp,redeemscript,*locktimep,swap->pubA0,swap->pubB0,swap->pubB1,swap->privAm,swap->privBn,swap->secretAm,swap->secretAm256,swap->secretBn,swap->secretBn256);
+    *redeemlenp = n = basilisk_swap_bobredeemscript(depositflag,secretstartp,redeemscript,*locktimep,swap->pubA0,swap->pubB0,swap->pubB1,swap->privAm,swap->privBn,swap->secretAm,swap->secretAm256,swap->secretBn,swap->secretBn256);
     if ( n > 0 )
     {
         calc_rmd160_sha256(rmd160,redeemscript,n);
