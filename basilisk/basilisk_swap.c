@@ -785,19 +785,6 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
             fprintf(fp,",\"%s\":\"%s\"","Bdeposit",swap->Bdeposit);
         if ( swap->Bpayment[0] != 0 )
             fprintf(fp,",\"%s\":\"%s\"","Bpayment",swap->Bpayment);
-        for (i=0; i<2; i++)
-            if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
-                fprintf(fp,",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
-        if ( bits256_nonz(swap->I.privAm) != 0 )
-            fprintf(fp,",\"privAm\":\"%s\"",bits256_str(str,swap->I.privAm));
-        if ( bits256_nonz(swap->I.privBn) != 0 )
-            fprintf(fp,",\"privBn\":\"%s\"",bits256_str(str,swap->I.privBn));
-        if ( bits256_nonz(swap->I.pubA0) != 0 )
-            fprintf(fp,",\"pubA0\":\"%s\"",bits256_str(str,swap->I.pubA0));
-        if ( bits256_nonz(swap->I.pubB0) != 0 )
-            fprintf(fp,",\"pubB0\":\"%s\"",bits256_str(str,swap->I.pubB0));
-        if ( bits256_nonz(swap->I.pubB1) != 0 )
-            fprintf(fp,",\"pubB1\":\"%s\"",bits256_str(str,swap->I.pubB1));
         fprintf(fp,",\"expiration\":%u",swap->I.expiration);
         fprintf(fp,",\"iambob\":%d",swap->I.iambob);
         fprintf(fp,",\"bobcoin\":\"%s\"",swap->bobcoin->symbol);
@@ -824,6 +811,19 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
         fprintf(fp,"{\"src\":\"%s\",\"srcamount\":%.8f,\"dest\":\"%s\",\"destamount\":%.8f,\"requestid\":%u,\"quoteid\":%u,\"iambob\":%d,\"state\":%x,\"otherstate\":%x,\"expiration\":%u,\"dlocktime\":%u,\"plocktime\":%u",swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.requestid,swap->I.req.quoteid,swap->I.iambob,swap->I.statebits,swap->I.otherstatebits,swap->I.expiration,swap->bobdeposit.I.locktime,swap->bobpayment.I.locktime);
+        for (i=0; i<2; i++)
+            if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
+                fprintf(fp,",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
+        if ( bits256_nonz(swap->I.privAm) != 0 )
+            fprintf(fp,",\"privAm\":\"%s\"",bits256_str(str,swap->I.privAm));
+        if ( bits256_nonz(swap->I.privBn) != 0 )
+            fprintf(fp,",\"privBn\":\"%s\"",bits256_str(str,swap->I.privBn));
+        if ( bits256_nonz(swap->I.pubA0) != 0 )
+            fprintf(fp,",\"pubA0\":\"%s\"",bits256_str(str,swap->I.pubA0));
+        if ( bits256_nonz(swap->I.pubB0) != 0 )
+            fprintf(fp,",\"pubB0\":\"%s\"",bits256_str(str,swap->I.pubB0));
+        if ( bits256_nonz(swap->I.pubB1) != 0 )
+            fprintf(fp,",\"pubB1\":\"%s\"",bits256_str(str,swap->I.pubB1));
         if ( bits256_nonz(swap->bobdeposit.I.actualtxid) != 0 )
             fprintf(fp,",\"Bdeposit\":\"%s\"",bits256_str(str,swap->bobdeposit.I.actualtxid));
         if ( bits256_nonz(swap->bobrefund.I.actualtxid) != 0 )
@@ -2905,6 +2905,18 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             pubA0 = jbits256(item,"pubA0");
             pubB0 = jbits256(item,"pubB0");
             pubB1 = jbits256(item,"pubB1");
+            privkey = jbits256(item,"myprivs0");
+            if ( bits256_nonz(privkey) != 0 )
+                myprivs[0] = privkey;
+            privkey = jbits256(item,"myprivs1");
+            if ( bits256_nonz(privkey) != 0 )
+                myprivs[1] = privkey;
+            privkey = jbits256(item,"privAm");
+            if ( bits256_nonz(privkey) != 0 )
+                privAm = privkey;
+            privkey = jbits256(item,"privBn");
+            if ( bits256_nonz(privkey) != 0 )
+                privBn = privkey;
             expiration = juint(item,"expiration");
             state = jint(item,"state");
             otherstate = jint(item,"otherstate");
@@ -2943,18 +2955,6 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 if ( bits256_nonz(txid) == 0 )
                     continue;
                 txids[i] = txid;
-                privkey = jbits256(txobj,"myprivs0");
-                if ( bits256_nonz(privkey) != 0 )
-                    myprivs[0] = privkey;
-                privkey = jbits256(txobj,"myprivs1");
-                if ( bits256_nonz(privkey) != 0 )
-                    myprivs[1] = privkey;
-                privkey = jbits256(txobj,"privAm");
-                if ( bits256_nonz(privkey) != 0 )
-                    privAm = privkey;
-                privkey = jbits256(txobj,"privBn");
-                if ( bits256_nonz(privkey) != 0 )
-                    privBn = privkey;
                 if ( jobj(txobj,"tx") != 0 )
                 {
                     txbytes[i] = clonestr(jstr(txobj,"tx"));
@@ -3031,7 +3031,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         printf("create alicespend\n");
                         if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 )
                         {
-                            printf("have bobpayment txid\n");
+                            printf("have bobpayment txid %u-%u\n",requestid,quoteid);
                             // alicespend
                             revcalc_rmd160_sha256(secretAm,privAm);
                             vcalc_sha256(0,secretAm256,privAm.bytes,sizeof(privAm));
