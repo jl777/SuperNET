@@ -714,11 +714,13 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32_t toKMD)
 {
     double vol,avail; struct iguana_info *kmdcoin,*coinbtc = 0;
+    kmdcoin = iguana_coinfind("KMD");
+    coinbtc = iguana_coinfind("BTC");
+    printf("jumblr_DEXcheck numswaps.%d notary.%d IAMLP.%d %p %p %f\n",myinfo->numswaps,myinfo->IAMNOTARY,myinfo->IAMLP,kmdcoin,coinbtc,kmdcoin->DEXinfo.btcprice);
     if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 )
         return;
-    if ( (kmdcoin= iguana_coinfind("KMD")) == 0 || (coinbtc= iguana_coinfind("BTC")) == 0 )
+    if ( kmdcoin == 0 || coinbtc == 0 )
         return;
-    //printf("jumblr_DEXcheck\n");
     jumblr_DEXupdate(myinfo,kmdcoin,"KMD","komodo",0.,0.);
     if ( strcmp(coin->symbol,"KMD") != 0 && kmdcoin->DEXinfo.btcprice > 0. )
     {
@@ -749,7 +751,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddstr(vals,"source","BTC");
                 jaddstr(vals,"dest","KMD");
                 jaddnum(vals,"amount",vol);
-                jaddnum(vals,"minprice",1./(1.03 * kmdcoin->DEXinfo.btcprice));
+                jaddnum(vals,"minprice",1./(1.05 * kmdcoin->DEXinfo.btcprice));
                 jaddnum(vals,"usejumblr",1);
                 jaddnum(vals,"DEXselector",1);
                 memset(hash.bytes,0,sizeof(hash));
@@ -781,7 +783,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddstr(vals,"dest","BTC");
                 jaddnum(vals,"amount",vol);
                 //jaddnum(vals,"destamount",JUMBLR_INCR*kmdcoin->DEXinfo.btcprice);
-                jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice/1.03);
+                jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice/1.05);
                 jaddnum(vals,"usejumblr",1);
                 memset(hash.bytes,0,sizeof(hash));
                 kmdcoin->DEXinfo.KMDpending += vol;
@@ -793,8 +795,8 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 }
                 free_json(vals);
             }
-        } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
-    } //else printf("notlp.%d kmdprice %.8f\n",myinfo->IAMLP,kmdcoin->DEXinfo.btcprice);
+        } else printf("btcavail %.8f pending %.8f\n",btcavail,kmdcoin->DEXinfo.KMDpending);
+    } else printf("notlp.%d kmdprice %.8f\n",myinfo->IAMLP,kmdcoin->DEXinfo.btcprice);
 }
 
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval)
