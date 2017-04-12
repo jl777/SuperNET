@@ -172,7 +172,7 @@ bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,uint8_t *redeemscript,uint32_t locktime,bits256 pubA0,bits256 pubB0,bits256 pubB1,bits256 privAm,bits256 privBn,uint8_t *secretAm,uint8_t *secretAm256,uint8_t *secretBn,uint8_t *secretBn256)
 {
     int32_t i,n=0; bits256 cltvpub,destpub,privkey; uint8_t pubkeyA[33],pubkeyB[33],*secret160,*secret256;
-    if ( depositflag != 0 )
+    if ( depositflag == 0 )
     {
         pubkeyA[0] = 0x02, cltvpub = pubA0;
         pubkeyB[0] = 0x03, destpub = pubB0;
