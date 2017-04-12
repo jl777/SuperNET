@@ -798,19 +798,19 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
             basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
-        basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
+        /*basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
         basilisk_dontforget_userdata("Areclaim",fp,swap->I.userdata_alicereclaim,swap->I.userdata_alicereclaimlen);
         basilisk_dontforget_userdata("Aspend",fp,swap->I.userdata_alicespend,swap->I.userdata_alicespendlen);
         basilisk_dontforget_userdata("Bspend",fp,swap->I.userdata_bobspend,swap->I.userdata_bobspendlen);
         basilisk_dontforget_userdata("Breclaim",fp,swap->I.userdata_bobreclaim,swap->I.userdata_bobreclaimlen);
-        basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);
+        basilisk_dontforget_userdata("Brefund",fp,swap->I.userdata_bobrefund,swap->I.userdata_bobrefundlen);*/
         fprintf(fp,"}\n");
         fclose(fp);
     }
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
     if ( (fp= fopen(fname,"wb")) != 0 )
     {
-        fprintf(fp,"{\"src\":\"%s\",\"srcamount\":%.8f,\"dest\":\"%s\",\"destamount\":%.8f,\"requestid\":%u,\"quoteid\":%u,\"iambob\":%d,\"state\":%x,\"otherstate\":%x,\"expiration\":%u,\"dlocktime\":%u,\"plocktime\":%u",swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.requestid,swap->I.req.quoteid,swap->I.iambob,swap->I.statebits,swap->I.otherstatebits,swap->I.expiration,swap->bobdeposit.I.locktime,swap->bobpayment.I.locktime);
+        fprintf(fp,"{\"src\":\"%s\",\"srcamount\":%.8f,\"dest\":\"%s\",\"destamount\":%.8f,\"requestid\":%u,\"quoteid\":%u,\"iambob\":%d,\"state\":%u,\"otherstate\":%u,\"expiration\":%u,\"dlocktime\":%u,\"plocktime\":%u",swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount),swap->I.req.requestid,swap->I.req.quoteid,swap->I.iambob,swap->I.statebits,swap->I.otherstatebits,swap->I.expiration,swap->bobdeposit.I.locktime,swap->bobpayment.I.locktime);
         for (i=0; i<2; i++)
             if ( bits256_nonz(swap->I.myprivs[i]) != 0 )
                 fprintf(fp,",\"myprivs%d\":\"%s\"",i,bits256_str(str,swap->I.myprivs[i]));
@@ -1307,7 +1307,7 @@ void basilisk_swaps_init(struct supernet_info *myinfo)
                 }
             }
         }
-    }
+    } else myinfo->swapsfp = fopen(fname,"wb+");
 }
 
 void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t amlp);
@@ -2678,25 +2678,26 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                 {
                     //for (i=0; i<sizeof(swap->I.req); i++)
                     //    fprintf(stderr,"%02x",((uint8_t *)&swap->I.req)[i]);
-                    fprintf(stderr," M.%d N.%d launch.%d %d %p\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req);
+                    fprintf(stderr," M.%d N.%d launch.%d %d %p reinit.%d\n",m,n,myinfo->numswaps,(int32_t)(sizeof(myinfo->swaps)/sizeof(*myinfo->swaps)),&swap->I.req,reinit);
                     if ( (swap->fp= basilisk_swap_save(myinfo,swap,privkey,rp,statebits,optionduration,reinit)) != 0 )
                     {
-                        if ( reinit == 0 )
+                    }
+                    if ( reinit == 0 )
+                    {
+                        if ( myinfo->swapsfp == 0 )
                         {
-                            if ( myinfo->swapsfp == 0 )
-                            {
-                                char fname[512];
-                                sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
-                                if ( (myinfo->swapsfp= fopen(fname,"rb+")) == 0 )
-                                    myinfo->swapsfp = fopen(fname,"wb+");
-                                else fseek(myinfo->swapsfp,0,SEEK_END);
-                            }
-                            if ( myinfo->swapsfp != 0 )
-                            {
-                                fwrite(&rp->requestid,1,sizeof(rp->requestid),myinfo->swapsfp);
-                                fwrite(&rp->quoteid,1,sizeof(rp->quoteid),myinfo->swapsfp);
-                                fflush(myinfo->swapsfp);
-                            }
+                            char fname[512];
+                            sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+                            if ( (myinfo->swapsfp= fopen(fname,"rb+")) == 0 )
+                                myinfo->swapsfp = fopen(fname,"wb+");
+                            else fseek(myinfo->swapsfp,0,SEEK_END);
+                            printf("LIST fp.%p\n",myinfo->swapsfp);
+                        }
+                        if ( myinfo->swapsfp != 0 )
+                        {
+                            fwrite(&rp->requestid,1,sizeof(rp->requestid),myinfo->swapsfp);
+                            fwrite(&rp->quoteid,1,sizeof(rp->quoteid),myinfo->swapsfp);
+                            fflush(myinfo->swapsfp);
                         }
                     }
                     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
@@ -2939,14 +2940,14 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     }
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    //printf("R.%u Q.%u\n",requestid,quoteid);
+    printf("R.%u Q.%u\n",requestid,quoteid);
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
         needflag = addflag = 0;
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
-            //printf("%s -> (%s)\n",fname,fstr);
+            printf("%s -> (%s)\n",fname,fstr);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
                 //printf("TXOBJ.(%s)\n",jprint(txobj,0));
@@ -3017,16 +3018,18 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             free(fstr);
         }
     }
+    printf("iambob.%d src.%s dest.%s bob.%s alice.%s\n",iambob,src,dest,bobcoin,alicecoin);
+    strcpy(bobcoin,"KMD");
+    strcpy(alicecoin,"BTC");
     if ( bobcoin[0] != 0 && alicecoin[0] != 0 )
     {
-        printf("iambob.%d src.%s dest.%s bob.%s alice.%s\n",iambob,src,dest,bobcoin,alicecoin);
         if ( iambob == 0 )
         {
-            if ( sentflags[BASILISK_ALICESPEND] == 0 )
+            if ( 1 || sentflags[BASILISK_ALICESPEND] == 0 )
             {
-                if ( sentflags[BASILISK_BOBPAYMENT] != 0 )
+                if ( 1 || sentflags[BASILISK_BOBPAYMENT] != 0 )
                 {
-                    if ( txbytes[BASILISK_ALICESPEND] == 0 )
+                    if ( 1 || txbytes[BASILISK_ALICESPEND] == 0 )
                     {
                         printf("create alicespend\n");
                         if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 )
