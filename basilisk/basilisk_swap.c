@@ -2769,8 +2769,8 @@ void basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txname,
 char *basilisk_swap_bobtxspend(struct supernet_info *myinfo,char *symbol,bits256 privkey,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33)
 {
     char *rawtxbytes=0,*signedtx=0,hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff; struct iguana_info *coin; uint64_t amount=100000; bits256 txid,signedtxid;
-    printf("bobtxspend.%s\n",symbol);
-    if ( (coin= iguana_coinfind(symbol)) == 0 )
+    printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
+    if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
     height = coin->longestchain;
     timestamp = (uint32_t)time(NULL);
@@ -2780,6 +2780,7 @@ char *basilisk_swap_bobtxspend(struct supernet_info *myinfo,char *symbol,bits256
     privkeys = cJSON_CreateArray();
     bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
     jaddistr(privkeys,wifstr);
+    printf("wif.%s\n",wifstr);
     V[0].N = V[0].M = 1;
     V[0].suppress_pubkeys = suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
