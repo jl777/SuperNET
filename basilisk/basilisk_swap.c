@@ -2976,13 +2976,6 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,bits25
     return(spendtxid);
 }
 
-bits256 basilisk_swap_privalice_extract(struct supernet_info *myinfo,char *symbol,bits256 utxotxid,int32_t vout)
-{
-    bits256 privAm;
-    memset(&privAm,0,sizeof(privAm));
-    return(privAm);
-}
-
 bits256 basilisk_swap_privbob_extract(struct supernet_info *myinfo,char *symbol,bits256 spendtxid,int32_t vini)
 {
     bits256 privBn; int32_t i,scriptlen,siglen; uint8_t script[1024]; // from Bob refund of Bob deposit
@@ -2991,7 +2984,7 @@ bits256 basilisk_swap_privbob_extract(struct supernet_info *myinfo,char *symbol,
     {
         siglen = script[0];
         for (i=0; i<32; i++)
-            privBn.bytes[31 - i] = script[siglen+1+i];
+            privBn.bytes[i] = script[siglen+2+i];
         char str[65]; printf("extracted privBn.(%s)\n",bits256_str(str,privBn));
     }
     return(privBn);
@@ -3273,7 +3266,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             }
             if ( sentflags[BASILISK_BOBRECLAIM] == 0 && sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > expiration )
             {
-                if ( txbytes[BASILISK_BOBRECLAIM] == 0 )//&& bits256_nonz(privAm) != 0 )
+                if ( txbytes[BASILISK_BOBRECLAIM] == 0 )
                 {
                     // bobreclaim
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,privAm,privBn,secretAm,secretAm256,secretBn,secretBn256);
@@ -3306,7 +3299,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     }
                     if ( txbytes[BASILISK_BOBREFUND] != 0 )
                         basilisk_swap_sendrawtransaction(myinfo,"bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
-                } else printf("time %u < expiration %u\n",(uint32_t)time(NULL),expiration-INSTANTDEX_LOCKTIME/2);
+                }
             }
         }
     }
