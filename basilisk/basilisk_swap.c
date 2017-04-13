@@ -2759,10 +2759,16 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
     {
         if ( (retstr= _dex_gettxout(myinfo,symbol,trigger,vout)) != 0 )
         {
+            printf("dexgettxout.(%s)\n",retstr);
             retjson = cJSON_Parse(retstr);
             free(retstr);
         }
-    } else retjson = dpow_gettxout(myinfo,coin,trigger,vout);
+    }
+    else
+    {
+        retjson = dpow_gettxout(myinfo,coin,trigger,vout);
+        printf("dpowgettxout.(%s)\n",jprint(retjson,0));
+    }
     return(basilisk_nullretjson(retjson));
 }
 
