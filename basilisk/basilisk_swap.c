@@ -3140,6 +3140,9 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         {
             printf("privAm.(%s)\n",bits256_str(str,privAm));
             printf("pubB0.(%s)\n",bits256_str(str,pubB0));
+            printf("myprivs0.(%s)\n",bits256_str(str,myprivs[0]));
+            printf("myprivs1.(%s)\n",bits256_str(str,myprivs[1]));
+            printf("privBn.(%s)\n",bits256_str(str,privBn));
             if ( sentflags[BASILISK_BOBSPEND] == 0 )
             {
                 if ( sentflags[BASILISK_ALICEPAYMENT] != 0 )
@@ -3173,7 +3176,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,dlocktime,pubA0,pubB0,pubB1,privAm,privBn,secretAm,secretAm256,secretBn,secretBn256);
                         int32_t j; for (j=0; j<32; j++)
                             rev.bytes[i] = privBn.bytes[31-i];
-                        len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
+                        len = basilisk_swapuserdata(userdata,privBn,0,myprivs[0],redeemscript,redeemlen);
                         if ( (txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBDEPOSIT],0,pubkey33)) != 0 )
                             printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,pubB1),txbytes[BASILISK_ALICECLAIM]);
                     }
