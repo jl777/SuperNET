@@ -2839,7 +2839,7 @@ bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txna
 char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33)
 {
     char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = (uint32_t)time(NULL)-777,sequenceid = 0xffffffff; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
-    //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
+    printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
     if ( (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
@@ -2933,6 +2933,7 @@ char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,
         pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
         pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
+        printf("redeemlen.%d spendlen.%d\n",redeemlen,spendlen);
         signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,userdata,len,utxotxid,vout,pubkey33);
     }
     return(signedtx);
@@ -2978,16 +2979,16 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,bits25
 
 bits256 basilisk_swap_privbob_extract(struct supernet_info *myinfo,char *symbol,bits256 spendtxid,int32_t vini)
 {
-    bits256 privBn; int32_t i,scriptlen,siglen; uint8_t script[1024]; // from Bob refund of Bob deposit
-    memset(&privBn,0,sizeof(privBn));
+    bits256 privkey; int32_t i,scriptlen,siglen; uint8_t script[1024]; // from Bob refund of Bob deposit
+    memset(&privkey,0,sizeof(privkey));
     if ( (scriptlen= basilisk_swap_getsigscript(myinfo,symbol,script,(int32_t)sizeof(script),spendtxid,vini)) > 0 )
     {
         siglen = script[0];
         for (i=0; i<32; i++)
-            privBn.bytes[i] = script[siglen+2+i];
-        char str[65]; printf("extracted privBn.(%s)\n",bits256_str(str,privBn));
+            privkey.bytes[i] = script[siglen+2+i];
+        char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
     }
-    return(privBn);
+    return(privkey);
 }
 
 #define BASILISK_ALICESPEND 0
