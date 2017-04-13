@@ -2755,7 +2755,7 @@ cJSON *basilisk_nullretjson(cJSON *retjson)
 cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 trigger,int32_t vout)
 {
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
-    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 )
+    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
     {
         if ( (retstr= _dex_gettxout(myinfo,symbol,trigger,vout)) != 0 )
         {
