@@ -3249,16 +3249,15 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             printf("privBn.(%s)\n",bits256_str(str,privBn));
             if ( sentflags[BASILISK_BOBSPEND] == 0 )
             {
-                if ( sentflags[BASILISK_ALICEPAYMENT] != 0 )
+                if ( bits256_nonz(txids[BASILISK_ALICESPEND]) == 0 )
+                    txids[BASILISK_ALICESPEND] = basilisk_swap_spendtxid(myinfo,bobcoin,txids[BASILISK_BOBPAYMENT],0);
+                if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 )
                 {
-                    if ( txbytes[BASILISK_BOBSPEND] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
+                    if ( txbytes[BASILISK_BOBSPEND] == 0 )
                     {
                         if ( bits256_nonz(privAm) == 0 )
                         {
-                            if ( bits256_nonz(txids[BASILISK_ALICESPEND]) == 0 )
-                                txids[BASILISK_ALICESPEND] = basilisk_swap_spendtxid(myinfo,bobcoin,txids[BASILISK_BOBPAYMENT],0);
-                            if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 )
-                                privAm = basilisk_swap_privbob_extract(myinfo,bobcoin,txids[BASILISK_ALICESPEND],0);
+                            privAm = basilisk_swap_privbob_extract(myinfo,bobcoin,txids[BASILISK_ALICESPEND],0);
                         }
                         if ( bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
                             if ( (txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33)) != 0 )
