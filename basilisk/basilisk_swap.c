@@ -2767,6 +2767,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
     else
     {
         retjson = dpow_gettxout(myinfo,coin,trigger,vout);
+        printf("need to verify passthru has this info\n");
         printf("dpowgettxout.(%s)\n",jprint(retjson,0));
     }
     return(basilisk_nullretjson(retjson));
@@ -2933,11 +2934,17 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
 
 char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33])
 {
-    char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen,len = 0; uint8_t userdata[256],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
+    char msigaddr[64],*signedtx = 0; bits256 rev; int32_t i,spendlen,redeemlen,len = 0; uint8_t userdata[256],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
     if ( coin != 0 && bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
     {
-        pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
-        pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
+        rev = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
+        memset(&pubAm,0,sizeof(pubAm));
+        memset(&pubBn,0,sizeof(pubBn));
+        for (i=0; i<32; i++)
+            pubAm.bytes[i] = rev.bytes[31-i];
+        rev = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
+        for (i=0; i<32; i++)
+            pubBn.bytes[i] = rev.bytes[31-i];
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
         char str[65]; printf("utxo.(%s) redeemlen.%d spendlen.%d\n",bits256_str(str,utxotxid),redeemlen,spendlen);
         signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,userdata,len,utxotxid,vout,pubkey33);
