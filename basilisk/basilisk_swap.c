@@ -3163,7 +3163,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             {
                 if ( sentflags[BASILISK_BOBSPEND] != 0 || time(NULL) > expiration-INSTANTDEX_LOCKTIME/2 )
                 {
-                    if ( txbytes[BASILISK_BOBREFUND] == 0 )
+                    if ( 1 || txbytes[BASILISK_BOBREFUND] == 0 )
                     {
                         // bobrefund
                         printf("unexpected missing BOBREFUND txbytes\n");
@@ -3180,10 +3180,9 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             }
             if ( sentflags[BASILISK_BOBRECLAIM] == 0 && sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > expiration )
             {
-                if ( txbytes[BASILISK_BOBRECLAIM] == 0 )
+                if ( txbytes[BASILISK_BOBRECLAIM] == 0 && bits256_nonz(privAm) != 0 )
                 {
                     // bobreclaim
-                    printf("unexpected missing BOBRECLAIM txbytes\n");
                     revcalc_rmd160_sha256(secretAm,privAm);
                     vcalc_sha256(0,secretAm256,privAm.bytes,sizeof(privAm));
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,privAm,privBn,secretAm,secretAm256,secretBn,secretBn256);
