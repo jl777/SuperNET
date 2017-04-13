@@ -2912,7 +2912,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     txobj = bitcoin_txoutput(txobj,spendscript,spendlen,destamount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
     {
-        //printf("rawtx.(%s) vins.(%s)\n",rawtxbytes,jprint(vins,0));
+        printf("rawtx.(%s) vins.(%s)\n",rawtxbytes,jprint(vins,0));
         if ( (signedtx= iguana_signrawtx(myinfo,coin,height,&signedtxid,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
             printf("couldnt sign transaction\n");
         else if ( completed == 0 )
@@ -2933,7 +2933,7 @@ char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,
         pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
         pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
-        printf("redeemlen.%d spendlen.%d\n",redeemlen,spendlen);
+        char str[65]; printf("utxo.(%s) redeemlen.%d spendlen.%d\n",bits256_str(str,utxotxid),redeemlen,spendlen);
         signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,userdata,len,utxotxid,vout,pubkey33);
     }
     return(signedtx);
