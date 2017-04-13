@@ -3161,7 +3161,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             }
             if ( sentflags[BASILISK_BOBREFUND] == 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(txids[BASILISK_BOBDEPOSIT]) != 0 )
             {
-                if ( sentflags[BASILISK_BOBSPEND] != 0 || time(NULL) > expiration-INSTANTDEX_LOCKTIME/2 )
+                if ( 1 || sentflags[BASILISK_BOBSPEND] != 0 || time(NULL) > expiration-INSTANTDEX_LOCKTIME/2 )
                 {
                     if ( 1 || txbytes[BASILISK_BOBREFUND] == 0 )
                     {
@@ -3176,7 +3176,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     }
                     if ( 0 && txbytes[BASILISK_BOBREFUND] != 0 )
                         basilisk_swap_sendrawtransaction(myinfo,"bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
-                }
+                } else printf("time %u < expiration %u\n",(uint32_t)time(NULL),expiration-INSTANTDEX_LOCKTIME/2);
             }
             if ( sentflags[BASILISK_BOBRECLAIM] == 0 && sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > expiration )
             {
