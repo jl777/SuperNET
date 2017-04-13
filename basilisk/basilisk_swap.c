@@ -2992,7 +2992,7 @@ bits256 basilisk_swap_privbob_extract(struct supernet_info *myinfo,char *symbol,
     {
         siglen = script[0];
         for (i=0; i<32; i++)
-            privkey.bytes[i] = script[siglen+2+i];
+            privkey.bytes[31 - i] = script[siglen+2+i];
         char str[65]; printf("extracted privbob.(%s)\n",bits256_str(str,privkey));
     }
     return(privkey);
