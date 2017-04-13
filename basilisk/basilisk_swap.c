@@ -2934,19 +2934,13 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
 
 char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33])
 {
-    char msigaddr[64],*signedtx = 0; bits256 rev; int32_t i,spendlen,redeemlen,len = 0; uint8_t userdata[256],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
+    char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen,len = 0; uint8_t userdata[256],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
     if ( coin != 0 && bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
     {
-        rev = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
-        memset(&pubAm,0,sizeof(pubAm));
-        memset(&pubBn,0,sizeof(pubBn));
-        for (i=0; i<32; i++)
-            pubAm.bytes[i] = rev.bytes[31-i];
-        rev = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
-        for (i=0; i<32; i++)
-            pubBn.bytes[i] = rev.bytes[31-i];
+        pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
+        pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
-        char str[65]; printf("utxo.(%s) redeemlen.%d spendlen.%d\n",bits256_str(str,utxotxid),redeemlen,spendlen);
+        char str[65]; printf("%s utxo.(%s) redeemlen.%d spendlen.%d\n",msigaddr,bits256_str(str,utxotxid),redeemlen,spendlen);
         signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,userdata,len,utxotxid,vout,pubkey33);
     }
     return(signedtx);
@@ -3178,6 +3172,11 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     printf("iambob.%d src.%s dest.%s bob.%s alice.%s pubA0.(%s)\n",iambob,src,dest,bobcoin,alicecoin,bits256_str(str,pubA0));
     strcpy(bobcoin,"KMD");
     strcpy(alicecoin,"BTC");
+    printf("privAm.(%s)\n",bits256_str(str,privAm));
+    printf("pubB0.(%s)\n",bits256_str(str,pubB0));
+    printf("myprivs0.(%s)\n",bits256_str(str,myprivs[0]));
+    printf("myprivs1.(%s)\n",bits256_str(str,myprivs[1]));
+    printf("privBn.(%s)\n",bits256_str(str,privBn));
     if ( bobcoin[0] != 0 && alicecoin[0] != 0 )
     {
         if ( iambob == 0 )
@@ -3249,11 +3248,6 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         }
         else if ( iambob == 1 )
         {
-            printf("privAm.(%s)\n",bits256_str(str,privAm));
-            printf("pubB0.(%s)\n",bits256_str(str,pubB0));
-            printf("myprivs0.(%s)\n",bits256_str(str,myprivs[0]));
-            printf("myprivs1.(%s)\n",bits256_str(str,myprivs[1]));
-            printf("privBn.(%s)\n",bits256_str(str,privBn));
             if ( sentflags[BASILISK_BOBSPEND] == 0 )
             {
                 if ( bits256_nonz(txids[BASILISK_ALICESPEND]) == 0 )
@@ -3265,6 +3259,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                         if ( bits256_nonz(privAm) == 0 )
                         {
                             privAm = basilisk_swap_privbob_extract(myinfo,bobcoin,txids[BASILISK_ALICESPEND],0);
+                            printf("privAm.(%s) <<<<<<<<<<<<\n",bits256_str(str,privAm));
                         }
                         if ( bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
                             if ( (txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33)) != 0 )
