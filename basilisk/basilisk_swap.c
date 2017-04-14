@@ -2850,7 +2850,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
-    if ( (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
+    if ( 0 && (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
     {
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
@@ -3059,7 +3059,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 safecopy(src,srcstr,sizeof(src));
             if ( (deststr= jstr(item,"dest")) != 0 )
                 safecopy(dest,deststr,sizeof(dest));
-            if ( (dest33= jstr(item,"dest33")) != 0 )
+            if ( (dest33= jstr(item,"dest33")) != 0 && strlen(dest33) == 66 )
                 decode_hex(pubkey33,33,dest33);
             plocktime = juint(item,"plocktime");
             dlocktime = juint(item,"dlocktime");
@@ -3184,8 +3184,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         }
     }
     printf("iambob.%d src.%s dest.%s bob.%s alice.%s pubA0.(%s)\n",iambob,src,dest,bobcoin,alicecoin,bits256_str(str,pubA0));
-    strcpy(bobcoin,"KMD");
-    strcpy(alicecoin,"BTC");
+    //strcpy(bobcoin,"KMD");
+    //strcpy(alicecoin,"BTC");
     printf("privAm.(%s)\n",bits256_str(str,privAm));
     printf("pubB0.(%s)\n",bits256_str(str,pubB0));
     printf("myprivs0.(%s)\n",bits256_str(str,myprivs[0]));
