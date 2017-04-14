@@ -2850,7 +2850,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
-    if ( (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
+    /*if ( (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
     {
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
@@ -2860,7 +2860,8 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         printf("%s %s basilisk_swap_bobtxspend.%s strange utxo.(%s)\n",symbol,bits256_str(str,utxotxid),name,jprint(utxoobj,0));
         free_json(utxoobj);
         return(0);
-    } else free_json(utxoobj);
+    } else free_json(utxoobj);*/
+    destamount = 1000000;
     if ( destamount > 10000 )
         destamount -= 10000;
     if ( strcmp(symbol,"BTC") == 0 )
@@ -3228,7 +3229,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     if ( txbytes[BASILISK_ALICESPEND] != 0 )
                     {
                         txids[BASILISK_ALICESPEND] = basilisk_swap_sendrawtransaction(myinfo,"alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
-                        if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested!
+                        if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested
                             sentflags[BASILISK_ALICESPEND] = 1;
                     }
                 }
@@ -3346,7 +3347,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     if ( txbytes[BASILISK_BOBREFUND] != 0 )
                     {
                         txids[BASILISK_BOBREFUND] = basilisk_swap_sendrawtransaction(myinfo,"bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
-                        if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 )
+                        if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
                             sentflags[BASILISK_BOBREFUND] = 1;
                     }
                 }
