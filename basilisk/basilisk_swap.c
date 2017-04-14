@@ -2822,7 +2822,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
             {
                 scriptlen >>= 1;
                 decode_hex(script,scriptlen,hexstr);
-                char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
+                //char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
             }
         }
         free_json(retjson);
@@ -2836,7 +2836,7 @@ bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txna
     memset(&txid,0,sizeof(txid));
     if ( (retstr= _dex_sendrawtransaction(myinfo,symbol,txbytes)) != 0 )
     {
-        if ( is_hexstr(retstr,64) == 64 )
+        if ( is_hexstr(retstr,0) == 64 )
             decode_hex(txid.bytes,32,retstr);
         char str[65]; printf("[%s] %s RETSTR.(%s) %s\n",txname,txbytes,retstr,bits256_str(str,txid));
         free(retstr);
@@ -2847,7 +2847,7 @@ bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txna
 char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33)
 {
     char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = (uint32_t)time(NULL)-777,sequenceid = 0xffffffff; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
-    printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
+    //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
     if ( (utxoobj= basilisk_swapgettxout(myinfo,symbol,utxotxid,vout)) == 0 )
@@ -2920,7 +2920,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     txobj = bitcoin_txoutput(txobj,spendscript,spendlen,destamount);
     if ( (rawtxbytes= bitcoin_json2hex(myinfo,coin,&txid,txobj,V)) != 0 )
     {
-        printf("rawtx.(%s) vins.(%s)\n",rawtxbytes,jprint(vins,0));
+        //printf("rawtx.(%s) vins.(%s)\n",rawtxbytes,jprint(vins,0));
         if ( (signedtx= iguana_signrawtx(myinfo,coin,height,&signedtxid,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
             printf("couldnt sign transaction\n");
         else if ( completed == 0 )

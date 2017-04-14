@@ -794,9 +794,9 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             if ( len == bitcoin_pubkeylen(pubkeys[i]) )
             {
                 numsigners++;
-                for (j=0; j<33; j++)
-                    printf("%02x",pubkeys[i][j]);
-                printf(" <- pubkey.[%d]\n",i);
+                //for (j=0; j<33; j++)
+                //    printf("%02x",pubkeys[i][j]);
+                //printf(" <- pubkey.[%d]\n",i);
             }
             else
             {
