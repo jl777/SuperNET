@@ -2855,7 +2855,8 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
     }
-    if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
+    destamount = 1000000;
+    if ( destamount == 0 && (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
         printf("%s %s basilisk_swap_bobtxspend.%s strange utxo.(%s)\n",symbol,bits256_str(str,utxotxid),name,jprint(utxoobj,0));
         free_json(utxoobj);
