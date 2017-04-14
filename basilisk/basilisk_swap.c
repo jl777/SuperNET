@@ -2903,6 +2903,13 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     sobj = cJSON_CreateObject();
     bitcoin_address(destaddr,coin->chain->pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
+    int32_t i; for (i=0; i<20; i++)
+        printf("%02x",rmd160[i]);
+    printf(" destaddr.(%s)\n",destaddr);
+    calc_rmd160_sha256(rmd160,pubkey33,33);
+    for (i=0; i<20; i++)
+        printf("%02x",rmd160[i]);
+    printf(" <- vs direct calc\n");
     spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
     jaddstr(sobj,"hex",hexstr);
