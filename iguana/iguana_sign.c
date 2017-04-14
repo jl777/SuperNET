@@ -1006,7 +1006,7 @@ int32_t bitcoin_verifyvins(struct iguana_info *coin,int32_t height,bits256 *sign
                 if ( signtx != 0 && bits256_nonz(vp->signers[j].privkey) != 0 )
                 {
                     siglen = bitcoin_sign(coin->ctx,coin->symbol,sig,sigtxid,vp->signers[j].privkey,0);
-                    if ( (plen= bitcoin_pubkeylen(vp->signers[j].pubkey)) <= 0 )
+                    //if ( (plen= bitcoin_pubkeylen(vp->signers[j].pubkey)) <= 0 )
                         bitcoin_pubkey33(coin->ctx,vp->signers[j].pubkey,vp->signers[j].privkey);
                     sig[siglen++] = sighash;
                     vp->signers[j].siglen = siglen;
