@@ -738,11 +738,12 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
         {
             avail = (btcavail - kmdcoin->DEXinfo.DEXpending);
             printf("BTC deposits %.8f, min %.8f avail %.8f\n",btcavail,minbtc,avail);
-            if ( avail >= (100. * minbtc) )
+            /*if ( avail >= (100. * minbtc) )
                 vol = (100. * minbtc);
             else if ( avail >= (10. * minbtc) )
                 vol = (10. * minbtc);
-            else if ( avail >= minbtc )
+            else*/
+                if ( avail >= minbtc )
                 vol = minbtc;
             else vol = 0.;
             if ( vol > 0. )
@@ -769,11 +770,11 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
         {
             avail = (kmdcoin->DEXinfo.KMDavail - kmdcoin->DEXinfo.KMDpending);
             printf("KMD deposits %.8f, min %.8f, avail %.8f\n",kmdcoin->DEXinfo.KMDavail,JUMBLR_INCR,avail);
-            if ( avail > 10000. )
+            /*if ( avail > 10000. )
                 vol = 10000.;
             else if ( avail > 1000. )
                 vol = 1000.;
-            else if ( avail >= 100. )
+            else*/ if ( avail >= 100. )
                 vol = 100.;
             else vol = 0.;
             if ( vol > 0. )
