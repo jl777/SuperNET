@@ -3054,11 +3054,11 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             iambob = jint(item,"iambob");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )
                 decode_hex(secretAm,20,secretstr);
-            if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 32 )
+            if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 64 )
                 decode_hex(secretAm256,32,secretstr);
             if ( (secretstr= jstr(item,"secretBn")) != 0 && strlen(secretstr) == 40 )
                 decode_hex(secretBn,20,secretstr);
-            if ( (secretstr= jstr(item,"secretBn256")) != 0 && strlen(secretstr) == 32 )
+            if ( (secretstr= jstr(item,"secretBn256")) != 0 && strlen(secretstr) == 64 )
                 decode_hex(secretBn256,32,secretstr);
             if ( (srcstr= jstr(item,"src")) != 0 )
                 safecopy(src,srcstr,sizeof(src));
@@ -3116,8 +3116,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
     //printf("R.%u Q.%u\n",requestid,quoteid);
+    for (j=0; j<33; j++) printf("%02x",pubkey33[j]); printf(" <- pubkey33 A\n");
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
+        for (j=0; j<33; j++) printf("%02x",pubkey33[j]); printf(" <- pubkey33 i%d\n",i);
         needflag = addflag = 0;
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
