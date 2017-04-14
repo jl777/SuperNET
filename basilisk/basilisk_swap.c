@@ -3065,7 +3065,12 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             if ( (deststr= jstr(item,"dest")) != 0 )
                 safecopy(dest,deststr,sizeof(dest));
             if ( (dest33= jstr(item,"dest33")) != 0 && strlen(dest33) == 66 )
+            {
                 decode_hex(pubkey33,33,dest33);
+                for (i=0; i<33; i++)
+                    printf("%02x",pubkey33[i]);
+                printf(" <- %s dest33\n",dest33);
+            }
             plocktime = juint(item,"plocktime");
             dlocktime = juint(item,"dlocktime");
             r = juint(item,"requestid");

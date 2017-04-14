@@ -1477,7 +1477,7 @@ int32_t iguana_signrawtransaction(struct supernet_info *myinfo,struct iguana_inf
                 //printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(coin,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
-                    int32_t tmp; char str[65];
+                    int32_t tmp; //char str[65];
                     if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
                         printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
