@@ -2871,11 +2871,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     height = coin->longestchain;
     timestamp = (uint32_t)time(NULL);
     V = calloc(256,sizeof(*V));
-    V[0].signers[0].privkey = privkey;
-    bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
     privkeys = cJSON_CreateArray();
-    bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
-    jaddistr(privkeys,wifstr);
     if ( privkey2p != 0 )
     {
         V[0].signers[1].privkey = *privkey2p;
@@ -2884,6 +2880,10 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         jaddistr(privkeys,wifstr);
         V[0].N = V[0].M = 2;
     } else V[0].N = V[0].M = 1;
+    V[0].signers[0].privkey = privkey;
+    bitcoin_pubkey33(myinfo->ctx,V[0].signers[0].pubkey,privkey);
+    bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
+    jaddistr(privkeys,wifstr);
     V[0].suppress_pubkeys = suppress_pubkeys;
     V[0].ignore_cltverr = ignore_cltverr;
     if ( redeemlen != 0 )
