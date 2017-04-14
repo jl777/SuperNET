@@ -2947,11 +2947,11 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
 
 char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33])
 {
-    char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen; uint8_t redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
+    char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen; uint8_t tmp33[33],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
     if ( coin != 0 && bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
     {
-        pubAm = bitcoin_pubkey33(myinfo->ctx,pubkey33,privAm);
-        pubBn = bitcoin_pubkey33(myinfo->ctx,pubkey33,privBn);
+        pubAm = bitcoin_pubkey33(myinfo->ctx,tmp33,privAm);
+        pubBn = bitcoin_pubkey33(myinfo->ctx,tmp33,privBn);
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
         //char str[65]; printf("%s utxo.(%s) redeemlen.%d spendlen.%d\n",msigaddr,bits256_str(str,utxotxid),redeemlen,spendlen);
         /*rev = privAm;
@@ -3116,10 +3116,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
     //printf("R.%u Q.%u\n",requestid,quoteid);
-    for (j=0; j<33; j++) printf("%02x",pubkey33[j]); printf(" <- pubkey33 A\n");
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
     {
-        for (j=0; j<33; j++) printf("%02x",pubkey33[j]); printf(" <- pubkey33 i%d\n",i);
         needflag = addflag = 0;
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
@@ -3287,8 +3285,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                             privAm = basilisk_swap_privbob_extract(myinfo,bobcoin,txids[BASILISK_ALICESPEND],0);
                         }
                         if ( bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
+                        {
                             if ( (txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33)) != 0 )
                                 printf("bobspend.(%s)\n",txbytes[BASILISK_BOBSPEND]);
+                        }
                     }
                     if ( txbytes[BASILISK_BOBSPEND] != 0 )
                     {
