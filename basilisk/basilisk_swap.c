@@ -2920,7 +2920,6 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         free_json(utxoobj);
         return(0);
     } else free_json(utxoobj);
-    destamount = 1000000;
     if ( destamount > 10000 )
         destamount -= 10000;
     if ( strcmp(symbol,"BTC") == 0 )
