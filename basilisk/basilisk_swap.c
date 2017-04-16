@@ -2862,7 +2862,7 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
         basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
         printf("spendtxid dest.(%s)\n",coinaddr);
-        if ( coinaddr[0] != 0 && (retstr= _dex_listtransactions(myinfo,symbol,coinaddr,100,0)) != 0 )
+        if ( coinaddr[0] != 0 && (retstr= dex_listtransactions(myinfo,0,0,0,symbol,coinaddr,100,0)) != 0 )
         {
             printf("listtransactions.(%s)\n",retstr);
             if ( (array= cJSON_Parse(retstr)) != 0 )
