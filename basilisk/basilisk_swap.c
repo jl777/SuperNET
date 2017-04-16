@@ -3649,7 +3649,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
 
 char *basilisk_swaplist(struct supernet_info *myinfo)
 {
-    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16]; int32_t i;
+    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16],Btotal,Ktotal; int32_t i;
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -3682,15 +3682,21 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
     if ( cJSON_GetArraySize(array) > 0 )
     {
         totalsobj = cJSON_CreateObject();
-        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        for (Btotal=i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
             if ( BTCtotals[i] != 0 )
-                jaddnum(totalsobj,txnames[i],dstr(BTCtotals[i]));
+                jaddnum(totalsobj,txnames[i],dstr(BTCtotals[i])), Btotal += BTCtotals[i];
         jadd(retjson,"BTCtotals",totalsobj);
         totalsobj = cJSON_CreateObject();
-        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        for (Ktotal=i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
             if ( KMDtotals[i] != 0 )
-                jaddnum(totalsobj,txnames[i],dstr(KMDtotals[i]));
+                jaddnum(totalsobj,txnames[i],dstr(KMDtotals[i])), Ktotal += KMDtotals[i];
         jadd(retjson,"KMDtotals",totalsobj);
+        jaddnum(retjson,"KMDtotal",dstr(Ktotal));
+        jaddnum(retjson,"BTCtotal",dstr(Btotal));
+        if ( Ktotal > 0 && Btotal < 0 )
+            jaddnum(retjson,"avebuy",(double)-Btotal/Ktotal);
+        else if ( Ktotal < 0 && Btotal > 0 )
+                jaddnum(retjson,"avesell",(double)-Btotal/Ktotal);
     }
     array = cJSON_CreateArray();
     for (i=0; i<sizeof(myinfo->linfos)/sizeof(*myinfo->linfos); i++)
