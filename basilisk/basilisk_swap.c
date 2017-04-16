@@ -2800,11 +2800,11 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
     {
         if ( (retstr= dex_gettxout(myinfo,0,0,0,trigger,symbol,vout)) != 0 )
         {
-            printf("dexgettxout.(%s)\n",retstr);
+            //printf("dexgettxout.(%s)\n",retstr);
             retjson = cJSON_Parse(retstr);
             free(retstr);
         }
-        if ( strcmp("BTC",symbol) == 0 )
+        if ( 0 && strcmp("BTC",symbol) == 0 )
             printf("%s gettxout.(%s)\n",symbol,jprint(retjson,0));
     }
     else
