@@ -2905,7 +2905,8 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                 {
                     for (i=0; i<n; i++)
                     {
-                        item = jitem(array,i);
+                        if ( (item= jitem(array,i)) == 0 )
+                            continue;
                         txid = jbits256(item,"txid");
                         if ( bits256_nonz(txid) == 0 )
                         {
