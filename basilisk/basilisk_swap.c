@@ -18,7 +18,7 @@
 make sure to broadcast deposit before claiming refund, or to just skip it if neither is done
 */
 
-#define DEX_SLEEP 15
+#define DEX_SLEEP 10
 #define BASILISK_DEFAULT_NUMCONFIRMS 5
 
 // Todo: monitor blockchains, ie complete extracting scriptsig
@@ -555,6 +555,8 @@ int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swap
     jaddstr(valsobj,"spendscript",scriptstr);
     jaddstr(valsobj,"changeaddr",rawtx->coin->changeaddr);
     jadd64bits(valsobj,"satoshis",rawtx->I.amount);
+    if ( strcmp(rawtx->coin->symbol,"BTC") == 0 && txfee > 0 && txfee < 50000 )
+        txfee = 50000;
     jadd64bits(valsobj,"txfee",txfee);
     jaddnum(valsobj,"minconf",minconf);
     if ( locktime == 0 )
@@ -571,7 +573,7 @@ int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swap
     V = calloc(256,sizeof(*V));
     if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)) != 0 )
     {
-        printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
+        printf("%s %s basilisk_bitcoinrawtx.(%s) txfee %.8f\n",rawtx->name,str,retstr,dstr(txfee));
         flag = 0;
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
@@ -2111,7 +2113,7 @@ void basilisk_sendmostprivs(struct supernet_info *myinfo,struct basilisk_swap *s
 
 int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
-    int32_t j,datalen,retval = 0;
+    int32_t j,datalen,retval = 0; uint32_t savestatebits=0,saveotherbits=0;
     if ( swap->I.iambob != 0 )
         swap->I.statebits |= 0x80;
     while ( swap->aborted == 0 && ((swap->I.otherstatebits & 0x80) == 0 || (swap->I.statebits & 0x80) == 0) && retval == 0 && time(NULL) < swap->I.expiration )
@@ -2134,7 +2136,10 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         if ( (swap->I.otherstatebits & 0x80) != 0 && (swap->I.statebits & 0x80) != 0 )
             break;
-        sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
+            sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        savestatebits = swap->I.statebits;
+        saveotherbits = swap->I.otherstatebits;
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_sendstate(myinfo,swap,data,maxlen);
         if ( (swap->I.otherstatebits & 0x80) == 0 )
@@ -2321,7 +2326,10 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
         }
         if ( (rand() % 30) == 0 )
             printf("finished swapstate.%x other.%x\n",swap->I.statebits,swap->I.otherstatebits);
-        sleep(DEX_SLEEP + (swap->I.iambob == 0));
+        if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
+            sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        savestatebits = swap->I.statebits;
+        saveotherbits = swap->I.otherstatebits;
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
     }
@@ -2466,7 +2474,7 @@ int32_t basilisk_alicetxs(struct supernet_info *myinfo,struct basilisk_swap *swa
 
 void basilisk_swaploop(void *_swap)
 {
-    uint8_t *data; uint32_t expiration; uint32_t channel; int32_t iters,retval=0,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
+    uint8_t *data; uint32_t expiration,savestatebits=0,saveotherbits=0; uint32_t channel; int32_t iters,retval=0,j,datalen,maxlen; struct supernet_info *myinfo; struct basilisk_swap *swap = _swap;
     myinfo = swap->myinfoptr;
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
@@ -2490,7 +2498,10 @@ void basilisk_swaploop(void *_swap)
             if ( (swap->I.statebits & (0x08|0x02)) == (0x08|0x02) )
                 break;
         }
-        sleep(DEX_SLEEP);
+        if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
+            sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        savestatebits = swap->I.statebits;
+        saveotherbits = swap->I.otherstatebits;
     }
     if ( swap->connected == 0 )
     {
@@ -2510,7 +2521,10 @@ void basilisk_swaploop(void *_swap)
             swap->I.statebits |= 0x20;
             break;
         }
-        sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
+            sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        savestatebits = swap->I.statebits;
+        saveotherbits = swap->I.otherstatebits;
     }
     myinfo->DEXactive = swap->I.expiration;
     if ( time(NULL) >= expiration )
@@ -2603,7 +2617,10 @@ void basilisk_swaploop(void *_swap)
     }
     while ( swap->aborted == 0 && retval == 0 && basilisk_swapiteration(myinfo,swap,data,maxlen) == 0 )
     {
-        sleep(DEX_SLEEP);
+        if ( swap->I.statebits == savestatebits && swap->I.otherstatebits == saveotherbits )
+            sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
+        savestatebits = swap->I.statebits;
+        saveotherbits = swap->I.otherstatebits;
         basilisk_sendstate(myinfo,swap,data,maxlen);
         basilisk_swapget(myinfo,swap,0x80000000,data,maxlen,basilisk_verify_otherstatebits);
         basilisk_swap_saveupdate(myinfo,swap);
@@ -2783,7 +2800,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
     {
         if ( (retstr= dex_gettxout(myinfo,0,0,0,trigger,symbol,vout)) != 0 )
         {
-            //printf("dexgettxout.(%s)\n",retstr);
+            printf("dexgettxout.(%s)\n",retstr);
             retjson = cJSON_Parse(retstr);
             free(retstr);
         }
@@ -3354,7 +3371,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
     {
         if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
         {
-            //printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
+            printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
             if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
                 sentflags[BASILISK_ALICEPAYMENT] = 1;
             else if ( (sentobj= basilisk_swapgettx(myinfo,alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
