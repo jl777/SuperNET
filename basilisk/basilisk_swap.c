@@ -2862,7 +2862,7 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
         basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
         if ( coinaddr[0] != 0 && (retstr= _dex_listtransactions(myinfo,symbol,coinaddr,100,0)) != 0 )
         {
-            //printf("listtransactions.(%s)\n",retstr);
+            printf("listtransactions.(%s)\n",retstr);
             if ( (array= cJSON_Parse(retstr)) != 0 )
             {
                 if ( (n= cJSON_GetArraySize(array)) > 0 )
