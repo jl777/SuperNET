@@ -2856,7 +2856,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
 
 bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*item,*inputs; int32_t i,n,m; char coinaddr[64];
+    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64];
     // listtransactions or listspents
     destaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
@@ -2880,14 +2880,17 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                         if ( bits256_nonz(txid) == 0 )
                         {
                             spendtxid = jbits256(item,"hash");
-                            if ( (array= jarray(&m,item,"inputs")) != 0 && m == 1 )
+                            if ( (array2= jarray(&m,item,"inputs")) != 0 && m == 1 )
                             {
-                                txid = jbits256(jitem(array,0),"output_hash");
+                                printf("found inputs with %s\n",bits256_str(str,spendtxid));
+                                txid = jbits256(jitem(array2,0),"output_hash");
                                 if ( bits256_cmp(txid,utxotxid) == 0 )
                                 {
-                                    if ( (array= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array,0),"address")) != 0 )
+                                    printf("matched %s\n",bits256_str(str,txid));
+                                    if ( (array2= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array2,0),"address")) != 0 )
                                     {
                                         strcpy(destaddr,addr);
+                                        printf("set addr.(%s)\n",addr);
                                         break;
                                     }
                                 }
