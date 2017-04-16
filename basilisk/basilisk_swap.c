@@ -3407,6 +3407,16 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         }
         else if ( finishedflag == 0 && iambob == 1 )
         {
+            if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
+            {
+                if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
+                    sentflags[BASILISK_ALICEPAYMENT] = 1;
+                else if ( (sentobj= basilisk_swapgettx(myinfo,alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
+                {
+                    sentflags[BASILISK_ALICEPAYMENT] = 1;
+                    free_json(sentobj);
+                }
+            }
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
                 if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(privAm) != 0 )
