@@ -2816,7 +2816,7 @@ int32_t basilisk_swap_txdestaddr(char *destaddr,bits256 txid,int32_t vout,cJSON 
                 safecopy(destaddr,addr,64);
                 retval = 0;
             }
-            printf("item.(%s) -> dest.(%s)\n",jprint(item,0),destaddr);
+            //printf("item.(%s) -> dest.(%s)\n",jprint(item,0),destaddr);
         }
     }
     return(retval);
@@ -3112,19 +3112,19 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
             sentflags[utxoind] = 1;
             if ( aliceaddr != 0 && strcmp(destaddr,aliceaddr) == 0 )
             {
-                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && strcmp(destaddr,bobaddr) == 0 )
             {
-                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 txids[bobspent] = spendtxid;
             }
             else
             {
-                printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                //printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 if ( aliceaddr != 0 )
                 {
                     sentflags[bobspent] = 1;
