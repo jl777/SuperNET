@@ -2787,7 +2787,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
 cJSON *basilisk_swapgettx(struct supernet_info *myinfo,char *symbol,bits256 txid)
 {
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
-    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 )
+    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
     {
         if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
         {
@@ -2856,6 +2856,7 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
     // listtransactions or listspents
     destaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
+    char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
     if ( iguana_isnotarychain(symbol) >= 0 )
     {
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
