@@ -3195,13 +3195,13 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
             if ( bits256_nonz(privkey) != 0 )
             {
                 privAm = privkey;
-                printf("set privAm <- %s\n",bits256_str(str,privAm));
+                //printf("set privAm <- %s\n",bits256_str(str,privAm));
             }
             privkey = jbits256(item,"privBn");
             if ( bits256_nonz(privkey) != 0 )
             {
                 privBn = privkey;
-                printf("set privBn <- %s\n",bits256_str(str,privBn));
+                //printf("set privBn <- %s\n",bits256_str(str,privBn));
             }
             expiration = juint(item,"expiration");
             state = jint(item,"state");
@@ -3409,6 +3409,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         {
             if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
             {
+                printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
                 if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
                     sentflags[BASILISK_ALICEPAYMENT] = 1;
                 else if ( (sentobj= basilisk_swapgettx(myinfo,alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
