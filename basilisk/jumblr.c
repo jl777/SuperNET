@@ -752,7 +752,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddstr(vals,"source","BTC");
                 jaddstr(vals,"dest","KMD");
                 jaddnum(vals,"amount",vol);
-                jaddnum(vals,"minprice",kmdcoin->DEXinfo.btcprice);
+                jaddnum(vals,"minprice",1./kmdcoin->DEXinfo.btcprice);
                 jaddnum(vals,"usejumblr",1);
                 jaddnum(vals,"DEXselector",1);
                 memset(hash.bytes,0,sizeof(hash));

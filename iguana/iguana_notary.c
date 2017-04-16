@@ -922,7 +922,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
                         jdelete(retjson,"unconfirmed_received");
                         jaddnum(retjson,"unconfirmed_received",dstr(val));
                     }
-                    //printf("blocktrail.(%s) -> (%s)\n",retstr,jprint(retjson,0));
+                    printf("blocktrail.(%s) -> (%s)\n",retstr,jprint(retjson,0));
                     free(retstr);
                     retstr = jprint(retjson,1);
                 }
