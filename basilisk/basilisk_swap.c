@@ -106,6 +106,16 @@ Alice spends bobdeposit in 2*INSTANTDEX_LOCKTIME
 //Bobdeposit includes a covered put option for alicecoin, duration INSTANTDEX_LOCKTIME
 //alicepayment includes a covered call option for alicecoin, duration (2*INSTANTDEX_LOCKTIME - elapsed)
 
+
+/* in case of following states, some funds remain unclaimable, but all identified cases are due to one or both sides not spending when they were the only eligible party:
+ 
+ Bob failed to claim deposit during exclusive period and since alice put in the claim, the alicepayment is unspendable. if alice is nice, she can send privAm to Bob.
+Apaymentspent.(0000000000000000000000000000000000000000000000000000000000000000) alice.0 bob.0
+paymentspent.(f91da4e001360b95276448e7b01904d9ee4d15862c5af7f5c7a918df26030315) alice.0 bob.1
+depositspent.(f34e04ad74e290f63f3d0bccb7d0d50abfa54eea58de38816fdc596a19767add) alice.1 bob.0
+
+ */
+
 int32_t basilisk_istrustedbob(struct supernet_info *myinfo,struct basilisk_swap *swap)
 {
     // for BTC and if trusted LP
@@ -3061,7 +3071,7 @@ bits256 basilisk_swap_privBn_extract(struct supernet_info *myinfo,bits256 *bobre
 
 bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int32_t *sentflags,bits256 *txids,int32_t utxoind,int32_t alicespent,int32_t bobspent,int32_t vout,char *aliceaddr,char *bobaddr)
 {
-    bits256 spendtxid,txid; char destaddr[64],str[65];
+    bits256 spendtxid,txid; char destaddr[64];
     txid = txids[utxoind];
     memset(&spendtxid,0,sizeof(spendtxid));
     if ( aliceaddr != 0 )
