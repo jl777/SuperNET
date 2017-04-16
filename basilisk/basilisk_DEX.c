@@ -484,7 +484,7 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,bits256 privkey,uint3
 
 cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *unspents=0,*array=0; char *retstr;
+    cJSON *unspents=0,*array=0,*json,*ismine; char *retstr; int32_t valid = 0;
     if ( coin->FULLNODE > 0 )
     {
         array = cJSON_CreateArray();
@@ -492,15 +492,24 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,c
         unspents = iguana_listunspents(myinfo,coin,array,0,0,"");
         free_json(array);
     }
-    else if ( coin->FULLNODE == 0 )
+    else
     {
-        if ( (retstr= dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr)) != 0 )
+        if ( coin->FULLNODE < 0 && (retstr= dpow_validateaddress(myinfo,coin,coinaddr)) != 0 )
         {
-            unspents = cJSON_Parse(retstr);
+            json = cJSON_Parse(retstr);
+            if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+                valid = 1;
             free(retstr);
         }
+        if ( coin->FULLNODE == 0 || valid == 0 )
+        {
+            if ( (retstr= dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr)) != 0 )
+            {
+                unspents = cJSON_Parse(retstr);
+                free(retstr);
+            }
+        } else unspents = dpow_listunspent(myinfo,coin,coinaddr);
     }
-    else unspents = dpow_listunspent(myinfo,coin,coinaddr);
     return(unspents);
 }
 

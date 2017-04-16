@@ -567,11 +567,11 @@ int32_t _basilisk_rawtx_gen(char *str,struct supernet_info *myinfo,uint32_t swap
     jaddistr(addresses,coinaddr);
     jadd(valsobj,"addresses",addresses);
     rawtx->I.locktime = locktime;
-    //printf("%s locktime.%u\n",rawtx->name,locktime);
+    printf("%s locktime.%u\n",rawtx->name,locktime);
     V = calloc(256,sizeof(*V));
     if ( (retstr= basilisk_bitcoinrawtx(myinfo,rawtx->coin,"",basilisktag,jint(valsobj,"timeout"),valsobj,V)) != 0 )
     {
-        //printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
+        printf("%s %s basilisk_bitcoinrawtx.(%s)\n",rawtx->name,str,retstr);
         flag = 0;
         if ( (retarray= cJSON_Parse(retstr)) != 0 )
         {
