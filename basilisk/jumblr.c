@@ -198,7 +198,7 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
     char *retstr; double val; cJSON *retjson; int32_t i,n; int64_t balance = 0;
     if ( jumblr_addresstype(myinfo,coin,addr) == 't' )
     {
-        if ( coin->FULLNODE < 0 && jumblr_ismine(myinfo,coin,addr) > 0 )
+        if ( coin->FULLNODE < 0 && iguana_isnotarychain(coin->symbol) < 0 )
         {
             if ( (retstr= jumblr_listunspent(myinfo,coin,addr)) != 0 )
             {
