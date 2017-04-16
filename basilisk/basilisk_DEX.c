@@ -281,12 +281,12 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
     } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
 
-void basilisk_requests_poll(struct supernet_info *myinfo)
+int32_t basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; bits256 privkey; double hwm = 0.;
+    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n,retval = 0; struct basilisk_request issueR; bits256 privkey; double hwm = 0.;
     if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
-        return;
+        return(retval);
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
     memset(&myinfo->DEXaccept,0,sizeof(myinfo->DEXaccept));
@@ -298,6 +298,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         {
             if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )
             {
+                retval++;
                 for (i=0; i<n; i++)
                     hwm = basilisk_process_results(myinfo,&issueR,jitem(outerarray,i),hwm);
             } //else hwm = basilisk_process_results(myinfo,&issueR,outerarray,hwm);
@@ -332,6 +333,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
+    return(retval);
 }
 
 struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint32_t senderipbits,int32_t numrequests)

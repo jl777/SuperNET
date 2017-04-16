@@ -1392,10 +1392,10 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
                 if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
                 {
                     printf("nothing received for a while from Bob, try new sockets\n");
-                    if ( swap->pushsock >= 0 )
-                        nn_close(swap->pushsock), swap->pushsock = -1;
-                    if ( swap->subsock >= 0 )
-                        nn_close(swap->subsock), swap->subsock = -1;
+                    if ( swap->pushsock >= 0 ) //nn_close(swap->pushsock),
+                        swap->pushsock = -1;
+                    if ( swap->subsock >= 0 ) //nn_close(swap->subsock),
+                        swap->subsock = -1;
                     swap->connected = 0;
                     basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
                 }
@@ -1429,9 +1429,9 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         if ( sentbytes < 0 )
         {
             if ( swap->pushsock >= 0 )
-                nn_close(swap->pushsock), swap->pushsock = -1;
-            if ( swap->subsock >= 0 )
-                nn_close(swap->subsock), swap->subsock = -1;
+                swap->pushsock = -1; //nn_close(swap->pushsock),
+            if ( swap->subsock >= 0 ) // nn_close(swap->subsock),
+                swap->subsock = -1;
             swap->connected = swap->I.iambob != 0 ? -1 : 0;
             swap->aborted = (uint32_t)time(NULL);
         }
@@ -1451,10 +1451,10 @@ void basilisk_swap_sendabort(struct supernet_info *myinfo,struct basilisk_swap *
     {
         if ( sentbytes < 0 )
         {
-            if ( swap->pushsock >= 0 )
-                nn_close(swap->pushsock), swap->pushsock = -1;
-            if ( swap->subsock >= 0 )
-                nn_close(swap->subsock), swap->subsock = -1;
+            if ( swap->pushsock >= 0 ) //nn_close(swap->pushsock),
+                swap->pushsock = -1;
+            if ( swap->subsock >= 0 ) //nn_close(swap->subsock), 
+                swap->subsock = -1;
             swap->connected = 0;
         }
     } else printf("basilisk_swap_sendabort\n");
@@ -3261,6 +3261,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
         free(fstr);
     }
+    if ( iambob < 0 )
+        return(0);
     item = cJSON_CreateObject();
     array = cJSON_CreateArray();
     //printf("R.%u Q.%u\n",requestid,quoteid);
@@ -3626,7 +3628,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
 
 char *basilisk_swaplist(struct supernet_info *myinfo)
 {
-    char fname[512]; FILE *fp; cJSON *retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16]; int32_t i;
+    char fname[512]; FILE *fp; cJSON *item,*retjson,*array,*totalsobj; uint32_t quoteid,requestid; int64_t KMDtotals[16],BTCtotals[16]; int32_t i;
     memset(KMDtotals,0,sizeof(KMDtotals));
     memset(BTCtotals,0,sizeof(BTCtotals));
     //,statebits; int32_t optionduration; struct basilisk_request R; bits256 privkey;
@@ -3647,7 +3649,10 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                     break;
                 }
             if ( flag == 0 )
-                jaddi(array,basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid));
+            {
+                if ( (item= basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
+                    jaddi(array,item);
+            }
         }
         fclose(fp);
     }

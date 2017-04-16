@@ -1263,7 +1263,7 @@ int32_t dex_packetcheck(struct supernet_info *myinfo,struct dex_nanomsghdr *dexp
 int32_t dex_subsock_poll(struct supernet_info *myinfo)
 {
     int32_t size= -1; struct dex_nanomsghdr *dexp; void *freeptr;
-    return(0);
+    //return(0);
     //fprintf(stderr,"subsock.%d\n",myinfo->subsock);
     if ( myinfo->subsock >= 0 && (size= signed_nn_recv(&freeptr,myinfo->ctx,myinfo->notaries,myinfo->numnotaries,myinfo->subsock,&dexp)) >= 0 )
     {
