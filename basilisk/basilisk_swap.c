@@ -3074,10 +3074,10 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
     bits256 spendtxid,txid; char destaddr[64];
     txid = txids[utxoind];
     memset(&spendtxid,0,sizeof(spendtxid));
-    if ( aliceaddr != 0 )
+    /*if ( aliceaddr != 0 )
         printf("aliceaddr.(%s)\n",aliceaddr);
     if ( bobaddr != 0 )
-        printf("bobaddr.(%s)\n",bobaddr);
+        printf("bobaddr.(%s)\n",bobaddr);*/
     if ( bits256_nonz(txid) != 0 )
     {
         spendtxid = basilisk_swap_spendtxid(myinfo,symbol,destaddr,txid,vout);
@@ -3193,7 +3193,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 myprivs[1] = privkey;
             privkey = jbits256(item,"privAm");
             if ( bits256_nonz(privkey) != 0 )
+            {
                 privAm = privkey;
+                printf("set privAm <- %s\n",bits256_str(str,privAm));
+            }
             privkey = jbits256(item,"privBn");
             if ( bits256_nonz(privkey) != 0 )
             {
