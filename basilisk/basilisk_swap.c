@@ -3400,7 +3400,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         {
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
-                if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 )
+                if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(privAm) != 0 )
                 {
                     //if ( txbytes[BASILISK_BOBSPEND] == 0 )
                     {
