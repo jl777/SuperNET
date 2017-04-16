@@ -633,6 +633,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
 bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,uint8_t pubtype,char *KMDaddr,char *prefix);
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
 int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
+int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares

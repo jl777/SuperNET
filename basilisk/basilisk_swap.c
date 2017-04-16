@@ -3610,7 +3610,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
     bits256_str(str,depositspent), jaddbits256(item,"depositspent",depositspent);
     if ( finishedflag != 0 )
     {
-        printf("SWAP %u-%u finished!\n",requestid,quoteid);
+        //printf("SWAP %u-%u finished!\n",requestid,quoteid);
         sprintf(fname,"%s/SWAPS/%u-%u.finished",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
         if ( (fp= fopen(fname,"wb")) != 0 )
         {
