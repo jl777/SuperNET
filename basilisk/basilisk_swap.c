@@ -3240,7 +3240,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                                 printf("alicespend.(%s)\n",txbytes[BASILISK_ALICESPEND]);
                         }
                     }
-                    if ( txbytes[BASILISK_ALICESPEND] != 0 )
+                    if ( 0 && txbytes[BASILISK_ALICESPEND] != 0 )
                     {
                         txids[BASILISK_ALICESPEND] = basilisk_swap_sendrawtransaction(myinfo,"alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
                         if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested
@@ -3268,7 +3268,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                                 printf("privBn.(%s) aliceclaim.(%s)\n",bits256_str(str,privBn),txbytes[BASILISK_ALICECLAIM]);
                         }
                     }
-                    if ( txbytes[BASILISK_ALICECLAIM] != 0 )
+                    if ( 0 && txbytes[BASILISK_ALICECLAIM] != 0 )
                     {
                         txids[BASILISK_ALICECLAIM] = basilisk_swap_sendrawtransaction(myinfo,"aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM]);
                         if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 ) // txcreate tested
@@ -3287,7 +3287,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                             printf("privBn.(%s) alicereclaim.(%s)\n",bits256_str(str,privBn),txbytes[BASILISK_ALICERECLAIM]);
                     }
                 }
-                if ( txbytes[BASILISK_ALICERECLAIM] != 0 )
+                if ( 0 && txbytes[BASILISK_ALICERECLAIM] != 0 )
                 {
                     txids[BASILISK_ALICERECLAIM] = basilisk_swap_sendrawtransaction(myinfo,"alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM]);
                     if ( bits256_nonz(txids[BASILISK_ALICERECLAIM]) != 0 ) // txcreate tested
