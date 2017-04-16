@@ -3351,7 +3351,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     {
                         txids[BASILISK_ALICESPEND] = basilisk_swap_sendrawtransaction(myinfo,"alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
                         if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested
+                        {
                             sentflags[BASILISK_ALICESPEND] = 1;
+                            paymentspent = txids[BASILISK_ALICESPEND];
+                        }
                     }
                 }
             }
@@ -3373,7 +3376,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     {
                         txids[BASILISK_ALICECLAIM] = basilisk_swap_sendrawtransaction(myinfo,"aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM]);
                         if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 ) // tested
+                        {
                             sentflags[BASILISK_ALICECLAIM] = 1;
+                            depositspent = txids[BASILISK_ALICECLAIM];
+                        }
                     }
                 } else printf("now %u before expiration %u\n",(uint32_t)time(NULL),expiration);
             }
@@ -3392,7 +3398,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 {
                     txids[BASILISK_ALICERECLAIM] = basilisk_swap_sendrawtransaction(myinfo,"alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM]);
                     if ( bits256_nonz(txids[BASILISK_ALICERECLAIM]) != 0 ) // txcreate tested
+                    {
                         sentflags[BASILISK_ALICERECLAIM] = 1;
+                        Apaymentspent = txids[BASILISK_ALICERECLAIM];
+                    }
                 }
             }
         }
@@ -3418,7 +3427,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     {
                         txids[BASILISK_BOBSPEND] = basilisk_swap_sendrawtransaction(myinfo,"bobspend",alicecoin,txbytes[BASILISK_BOBSPEND]);
                         if ( bits256_nonz(txids[BASILISK_BOBSPEND]) != 0 ) // tested
+                        {
                             sentflags[BASILISK_BOBSPEND] = 1;
+                            Apaymentspent = txids[BASILISK_BOBSPEND];
+                        }
                     }
                 }
             }
@@ -3439,7 +3451,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                 {
                     txids[BASILISK_BOBRECLAIM] = basilisk_swap_sendrawtransaction(myinfo,"bobreclaim",bobcoin,txbytes[BASILISK_BOBRECLAIM]);
                     if ( bits256_nonz(txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
+                    {
                         sentflags[BASILISK_BOBRECLAIM] = 1;
+                        paymentspent = txids[BASILISK_BOBRECLAIM];
+                    }
                 }
             }
             if ( sentflags[BASILISK_BOBREFUND] == 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(depositspent) == 0 )
@@ -3459,11 +3474,24 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
                     {
                         txids[BASILISK_BOBREFUND] = basilisk_swap_sendrawtransaction(myinfo,"bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
                         if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
+                        {
                             sentflags[BASILISK_BOBREFUND] = 1;
+                            depositspent = txids[BASILISK_BOBREFUND];
+                        }
                     }
                 }
             }
         }
+    }
+    if ( sentflags[BASILISK_ALICESPEND] != 0 || sentflags[BASILISK_BOBRECLAIM] != 0 )
+        sentflags[BASILISK_BOBPAYMENT] = 1;
+    if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_BOBSPEND] != 0 )
+        sentflags[BASILISK_ALICEPAYMENT] = 1;
+    if ( sentflags[BASILISK_ALICECLAIM] != 0 || sentflags[BASILISK_BOBREFUND] != 0 )
+        sentflags[BASILISK_BOBDEPOSIT] = 1;
+    if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+    {
+        finishedflag = 1;
     }
     jaddnum(item,"requestid",requestid);
     jaddnum(item,"quoteid",quoteid);
