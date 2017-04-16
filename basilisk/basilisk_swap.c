@@ -2883,14 +2883,22 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
 
 bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txname,char *symbol,char *txbytes)
 {
-    char *retstr; bits256 txid;
+    char *retstr; bits256 txid; int32_t i,sentflag = 0;
     memset(&txid,0,sizeof(txid));
-    if ( (retstr= _dex_sendrawtransaction(myinfo,symbol,txbytes)) != 0 )
+    for (i=0; i<3; i++)
     {
-        if ( is_hexstr(retstr,0) == 64 )
-            decode_hex(txid.bytes,32,retstr);
-        char str[65]; printf("[%s] %s RETSTR.(%s) %s\n",txname,txbytes,retstr,bits256_str(str,txid));
-        free(retstr);
+        if ( (retstr= _dex_sendrawtransaction(myinfo,symbol,txbytes)) != 0 )
+        {
+            if ( is_hexstr(retstr,0) == 64 )
+            {
+                decode_hex(txid.bytes,32,retstr);
+                sentflag = 1;
+            }
+            char str[65]; printf("[%s] %s RETSTR.(%s) %s.%s\n",txname,txbytes,retstr,symbol,bits256_str(str,txid));
+            free(retstr);
+        }
+        if ( sentflag != 0 )
+            break;
     }
     return(txid);
 }
