@@ -734,7 +734,7 @@ int32_t iguana_checksig(struct iguana_info *coin,struct iguana_stackdata pubkeya
         if ( (retval= (bitcoin_verify(coin->ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
         {
         }
-        if ( (1) )
+        if ( (0) )
         {
             int32_t i; char str[65];
             for (i=0; i<siglen; i++)
