@@ -346,7 +346,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
         if ( (coin= iguana_coinfind(list[0].dest)) != 0 )
         {
             bitcoin_address(coinaddr,coin->chain->pubtype,myinfo->persistent_pubkey33,33);
-            balance = dstr(jumblr_balance(myinfo,coin,coinaddr));
+            balance = jumblr_balance(myinfo,coin,coinaddr);
             printf("%s %s balance %.8f destamount %.8f aveprice %.8f maxamount %.8f minamount %.8f\n",list[0].dest,coinaddr,dstr(balance),dstr(destamount),aveprice,dstr(maxamount),dstr(minamount));
         }
         /*if ( (retstr= InstantDEX_available(myinfo,iguana_coinfind(list[0].dest),0,0,list[0].dest)) != 0 )
