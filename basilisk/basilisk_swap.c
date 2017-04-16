@@ -3026,9 +3026,9 @@ char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,
     {
         pubAm = bitcoin_pubkey33(myinfo->ctx,tmp33,privAm);
         pubBn = bitcoin_pubkey33(myinfo->ctx,tmp33,privBn);
-        char str[65];
-        printf("pubAm.(%s)\n",bits256_str(str,pubAm));
-        printf("pubBn.(%s)\n",bits256_str(str,pubBn));
+        //char str[65];
+        //printf("pubAm.(%s)\n",bits256_str(str,pubAm));
+        //printf("pubBn.(%s)\n",bits256_str(str,pubBn));
         spendlen = basilisk_alicescript(redeemscript,&redeemlen,spendscript,0,msigaddr,coin->chain->p2shtype,pubAm,pubBn);
         //char str[65]; printf("%s utxo.(%s) redeemlen.%d spendlen.%d\n",msigaddr,bits256_str(str,utxotxid),redeemlen,spendlen);
         /*rev = privAm;
@@ -3080,26 +3080,26 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
         printf("bobaddr.(%s)\n",bobaddr);*/
     if ( bits256_nonz(txid) != 0 )
     {
+        char str[65];
         spendtxid = basilisk_swap_spendtxid(myinfo,symbol,destaddr,txid,vout);
         if ( bits256_nonz(spendtxid) != 0 )
         {
             sentflags[utxoind] = 1;
             if ( aliceaddr != 0 && strcmp(destaddr,aliceaddr) == 0 )
             {
-                //printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("ALICE spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[alicespent] = 1;
                 txids[alicespent] = spendtxid;
             }
             else if ( bobaddr != 0 && strcmp(destaddr,bobaddr) == 0 )
             {
-                //printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("BOB spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 sentflags[bobspent] = 1;
                 txids[bobspent] = spendtxid;
             }
             else
             {
-                //char str[65];
-                //printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
+                printf("OTHER dest spent.(%s) -> %s\n",bits256_str(str,txid),destaddr);
                 if ( aliceaddr != 0 )
                 {
                     sentflags[bobspent] = 1;
@@ -3316,6 +3316,17 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
     if ( bobcoin[0] != 0 && alicecoin[0] != 0 )
     {
+        if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
+        {
+            printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
+            if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
+                sentflags[BASILISK_ALICEPAYMENT] = 1;
+            else if ( (sentobj= basilisk_swapgettx(myinfo,alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
+            {
+                sentflags[BASILISK_ALICEPAYMENT] = 1;
+                free_json(sentobj);
+            }
+        }
         paymentspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,Adest,Bdest);
         Apaymentspent = basilisk_swap_spendupdate(myinfo,alicecoin,sentflags,txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,AAdest,ABdest);
         depositspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,Adest,Bdest);
@@ -3407,17 +3418,6 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,uint64_t *KMDtotals,uint64
         }
         else if ( finishedflag == 0 && iambob == 1 )
         {
-            if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
-            {
-                printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
-                if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
-                    sentflags[BASILISK_ALICEPAYMENT] = 1;
-                else if ( (sentobj= basilisk_swapgettx(myinfo,alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
-                {
-                    sentflags[BASILISK_ALICEPAYMENT] = 1;
-                    free_json(sentobj);
-                }
-            }
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
                 if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(privAm) != 0 )
