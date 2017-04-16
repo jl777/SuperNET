@@ -215,10 +215,11 @@ int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,cha
         }
         else if ( (retstr= dex_getbalance(myinfo,coin,0,0,coin->symbol,addr)) != 0 )
         {
-            //printf("DEX retstr.(%s)\n",retstr);
+            printf("DEX retstr.(%s)\n",retstr);
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
                 balance = jdouble(retjson,"balance") * SATOSHIDEN;
+                printf("GOT BALANCE %s %.8f\n",coin->symbol,balance);
                 free_json(retjson);
             }
             free(retstr);
