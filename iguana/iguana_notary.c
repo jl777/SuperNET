@@ -703,7 +703,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
                         for (i=0; i<n; i++)
                             jaddi(retjson3,jduplicate(jitem(data2,i)));
                     }
-                    printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
+                    //printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
                     free(retstr);
                     free(retstr2);
                     free_json(retjson);

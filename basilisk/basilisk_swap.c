@@ -2775,7 +2775,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
             free(retstr);
         }
         if ( strcmp("BTC",symbol) == 0 )
-            printf("%s gettx.(%s)\n",symbol,jprint(retjson,0));
+            printf("%s gettxout.(%s)\n",symbol,jprint(retjson,0));
     }
     else
     {
@@ -2796,8 +2796,8 @@ cJSON *basilisk_swapgettx(struct supernet_info *myinfo,char *symbol,bits256 txid
             retjson = cJSON_Parse(retstr);
             free(retstr);
         }
-        if ( strcmp("BTC",symbol) == 0 )
-            printf("%s gettx.(%s)\n",symbol,jprint(retjson,0));
+        //if ( strcmp("BTC",symbol) == 0 )
+        //    printf("%s gettx.(%s)\n",symbol,jprint(retjson,0));
     } else retjson = dpow_gettransaction(myinfo,coin,txid);
     return(basilisk_nullretjson(retjson));
 }
@@ -2811,12 +2811,12 @@ int32_t basilisk_swap_txdestaddr(char *destaddr,bits256 txid,int32_t vout,cJSON 
         if ( (skey= jobj(item,"scriptPubKey")) != 0 && (addresses= jarray(&m,skey,"addresses")) != 0 )
         {
             item = jitem(addresses,0);
-            //printf("item.(%s)\n",jprint(item,0));
             if ( (addr= jstr(item,0)) != 0 )
             {
                 safecopy(destaddr,addr,64);
                 retval = 0;
             }
+            printf("item.(%s) -> dest.(%s)\n",jprint(item,0),destaddr);
         }
     }
     return(retval);
@@ -2856,7 +2856,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
 
 bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *retstr; cJSON *array,*item; int32_t i,n; char coinaddr[64];
+    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*item,*inputs; int32_t i,n,m; char coinaddr[64];
     // listtransactions or listspents
     destaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
@@ -2877,7 +2877,23 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                     {
                         item = jitem(array,i);
                         txid = jbits256(item,"txid");
-                        if ( bits256_cmp(txid,utxotxid) == 0 )
+                        if ( bits256_nonz(txid) == 0 )
+                        {
+                            spendtxid = jbits256(item,"hash");
+                            if ( (array= jarray(&m,item,"inputs")) != 0 && m == 1 )
+                            {
+                                txid = jbits256(jitem(array,0),"output_hash");
+                                if ( bits256_cmp(txid,utxotxid) == 0 )
+                                {
+                                    if ( (array= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array,0),"address")) != 0 )
+                                    {
+                                        strcpy(destaddr,addr);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else if ( bits256_cmp(txid,utxotxid) == 0 )
                         {
                             spendtxid = jbits256(item,"spendtxid");
                             if ( bits256_nonz(spendtxid) != 0 )
