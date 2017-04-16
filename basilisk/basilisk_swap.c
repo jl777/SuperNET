@@ -2768,7 +2768,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
     if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
     {
-        if ( (retstr= _dex_gettxout(myinfo,symbol,trigger,vout)) != 0 )
+        if ( (retstr= dex_gettxout(myinfo,0,0,0,trigger,symbol,vout)) != 0 )
         {
             //printf("dexgettxout.(%s)\n",retstr);
             retjson = cJSON_Parse(retstr);
@@ -2789,7 +2789,7 @@ cJSON *basilisk_swapgettx(struct supernet_info *myinfo,char *symbol,bits256 txid
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
     if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
     {
-        if ( (retstr= _dex_getrawtransaction(myinfo,symbol,txid)) != 0 )
+        if ( (retstr= dex_gettransaction(myinfo,0,0,0,txid,symbol)) != 0 )
         {
             retjson = cJSON_Parse(retstr);
             free(retstr);
