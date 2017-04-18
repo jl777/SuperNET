@@ -335,7 +335,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_swap *
 
 bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct basilisk_swap *swap,struct iguana_info *coin,uint8_t *data,int32_t datalen)
 {
-    bits256 txid; char *signedtx,*retstr;
+    bits256 txid; char *signedtx,*retstr; int32_t i;
     memset(txid.bytes,0,sizeof(txid));
     if ( data != 0 && datalen != 0 )
     {
@@ -347,20 +347,24 @@ bits256 basilisk_swap_broadcast(char *name,struct supernet_info *myinfo,struct b
 #endif
         signedtx = malloc(datalen*2 + 1);
         init_hexbytes_noT(signedtx,data,datalen);
-        if ( (retstr= basilisk_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
+        for (i=0; i<3; i++)
         {
-            if ( is_hexstr(retstr,0) == 64 )
+            if ( (retstr= basilisk_sendrawtransaction(myinfo,coin,signedtx)) != 0 )
             {
-                decode_hex(txid.bytes,32,retstr);
-                free(retstr);
-                printf("sendrawtransaction %s.(%s)\n",name,bits256_str(str,txid));
-            }
-            else
-            {
-                printf("sendrawtransaction %s error.(%s)\n",name,retstr);
-                free(retstr);
-            }
-        } else printf("sendrawtransaction %s got null return\n",name);
+                if ( is_hexstr(retstr,0) == 64 )
+                {
+                    decode_hex(txid.bytes,32,retstr);
+                    free(retstr);
+                    printf("sendrawtransaction %s.(%s)\n",name,bits256_str(str,txid));
+                    break;
+                }
+                else
+                {
+                    printf("sendrawtransaction %s error.(%s)\n",name,retstr);
+                    free(retstr);
+                }
+            } else printf("sendrawtransaction %s got null return\n",name);
+        }
         free(signedtx);
     }
     return(txid);
@@ -945,6 +949,7 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
     uint8_t userdata[512]; int32_t i,retval,len = 0; static bits256 zero; struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
+        basilisk_swap_broadcast(swap->bobdeposit.name,myinfo,swap,swap->bobdeposit.coin,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
         basilisk_dontforget_update(myinfo,swap,&swap->bobdeposit);
         len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         memcpy(swap->I.userdata_aliceclaim,userdata,len);
@@ -1013,6 +1018,7 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
     memset(revAm.bytes,0,sizeof(revAm));
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
+        basilisk_swap_broadcast(swap->bobpayment.name,myinfo,swap,swap->bobpayment.coin,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
         basilisk_dontforget_update(myinfo,swap,&swap->bobpayment);
         for (i=0; i<32; i++)
             revAm.bytes[i] = swap->I.privAm.bytes[31-i];
@@ -1076,6 +1082,7 @@ int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,void *ptr,uint8_t
     struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->alicecoin->longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
     {
+        basilisk_swap_broadcast(swap->alicepayment.name,myinfo,swap,swap->alicepayment.coin,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
         basilisk_dontforget_update(myinfo,swap,&swap->alicepayment);
         return(0);
     }
@@ -1965,7 +1972,10 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
             char str[65],str2[65];
             rawtx->I.actualtxid = basilisk_swap_broadcast(rawtx->name,myinfo,swap,rawtx->coin,rawtx->txbytes,rawtx->I.datalen);
             if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
+            {
                 printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
+                rawtx->I.actualtxid = rawtx->I.signedtxid;
+            }
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )
             {
                 sendlen = 0;
