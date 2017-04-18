@@ -1253,7 +1253,9 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                 retjson = cJSON_CreateObject();
                 jaddstr(retjson,"result","success");
                 jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
-                jaddnum(retjson,"height",jint(txoutjson,"height"));
+                if ( (height= jint(txoutjson,"height")) == 0 && coin != 0 )
+                    height = coin->longestchain - jint(txoutjson,"confirmations");
+                jaddnum(retjson,"height",height);
                 if ( (array= jarray(&n,txoutjson,"vout")) != 0 && vout < n && (txjson= jitem(array,vout)) != 0 )
                 {
                     //printf("txjson.(%s)\n",jprint(txjson,0));
