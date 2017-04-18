@@ -448,7 +448,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
         coinaddr = jstri(addresses,i);
         if ( (array= basilisk_unspents(myinfo,coin,coinaddr)) != 0 )
         {
-            //printf("unspents.(%s) %s\n",coinaddr,jprint(array,0));
+            //printf("iguana_calcrawtx unspents.(%s) %s\n",coinaddr,jprint(array,0));
             if ( (m= cJSON_GetArraySize(array)) > 0 )
             {
                 for (j=0; j<m; j++)
@@ -458,7 +458,7 @@ char *iguana_calcrawtx(struct supernet_info *myinfo,struct iguana_info *coin,cJS
                         continue;
                     if ( (spendscriptstr= jstr(item,"scriptPubKey")) == 0 )
                     {
-                        printf("no spendscriptstr.(%s)\n",jprint(item,0));
+                        printf("no spendscriptstr %d.(%s)\n",i,jprint(array,0));
                         continue;
                     }
                     unspents = realloc(unspents,(1 + max) * sizeof(*unspents));

@@ -1202,7 +1202,9 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
         {
             if ( (txoutjson= dpow_gettxout(myinfo,coin,txid,vout)) != 0 )
             {
-                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && (value= SATOSHIDEN*jdouble(txoutjson,"value")) != 0 )
+                if ( (value= SATOSHIDEN*jdouble(txoutjson,"value")) == 0 )
+                    value = SATOSHIDEN*jdouble(txoutjson,"amount");
+                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && value != 0 )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
@@ -1219,6 +1221,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                 }
                 else
                 {
+                    printf("missing fields.(%s)\n",jprint(txoutjson,0));
                     free_json(txoutjson);
                     return(clonestr("{\"error\":\"return from gettxout missing fields\"}"));
                 }

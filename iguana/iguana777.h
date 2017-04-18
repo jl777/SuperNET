@@ -182,7 +182,7 @@ struct basilisk_swap
 {
     struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
     void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
-    int32_t subsock,pushsock,connected,DEXselector; uint32_t lasttime,aborted;
+    int32_t subsock,pushsock,connected,DEXselector,aliceunconf,depositunconf,paymentunconf; uint32_t lasttime,aborted;
     FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
     struct basilisk_swapinfo I;

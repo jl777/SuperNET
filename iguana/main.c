@@ -756,8 +756,9 @@ void jumblr_loop(void *ptr)
         if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
 //#ifdef __APPLE__
-            if ( (n++ % 10) == 0 )
-                jumblr_DEXcheck(myinfo,coin,!((n/10)&1));
+            //if ( (n++ % 10) == 0 )
+            n++;
+            jumblr_DEXcheck(myinfo,coin,n & 1);//!((n/10)&1));
 //#endif
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
