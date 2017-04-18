@@ -298,6 +298,7 @@ int32_t basilisk_confirmsobj(cJSON *item)
     numconfirms = jint(item,"numconfirms");
     if ( height > 0 && numconfirms >= 0 )
         return(numconfirms);
+    printf("basilisk_confirmsobj height.%d numconfirms.%d (%s)\n",height,numconfirms,jprint(item,0));
     return(-1);
 }
 
@@ -314,6 +315,8 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_swap *
     if ( (valstr= basilisk_value(myinfo,rawtx->coin,0,0,swap->persistent_pubkey,argjson,0)) != 0 )
     {
         char str[65]; printf("basilisk_numconfirms required.%d %s %s valstr.(%s)\n",rawtx->I.numconfirms,rawtx->name,bits256_str(str,rawtx->I.actualtxid),valstr);
+        //basilisk_numconfirms required.0 alicespend 29a2a6b4a61b1da82096d533c71b6762d61a82ca771a633269d97c0ccb94fe85 valstr.({"result":"success","numconfirms":0,"address":"1JGvZ67oTdM7kCya4J8kj1uErbSRAoq3wH","satoshis":"1413818","value":0.01413818,"height":462440,"txid":"29a2a6b4a61b1da82096d533c71b6762d61a82ca771a633269d97c0ccb94fe85","vout":0,"coin":"BTC"})
+
         if ( (valuearray= cJSON_Parse(valstr)) != 0 )
         {
             if ( is_cJSON_Array(valuearray) != 0 )
@@ -2309,12 +2312,13 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             }
             else if ( (swap->I.statebits & 0x40000) == 0 )
             {
-                if ( basilisk_numconfirms(myinfo,swap,&swap->alicespend) >= swap->I.bobconfirms )
+                int32_t numconfs;
+                if ( (numconfs= basilisk_numconfirms(myinfo,swap,&swap->alicespend)) >= swap->I.bobconfirms )
                 {
                     swap->I.statebits |= 0x40000;
                     printf("Alice confirms spend of Bob's payment\n");
                     retval = 1;
-                }
+                } else printf("alicespend numconfs.%d < %d\n",numconfs,swap->I.bobconfirms);
             }
             if ( swap->bobdeposit.I.locktime != 0 && time(NULL) > swap->bobdeposit.I.locktime )
             {
