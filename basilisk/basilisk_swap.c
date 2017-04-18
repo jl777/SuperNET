@@ -949,8 +949,8 @@ int32_t basilisk_verify_bobdeposit(struct supernet_info *myinfo,void *ptr,uint8_
     uint8_t userdata[512]; int32_t i,retval,len = 0; static bits256 zero; struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
-        swap->bobdeposit.I.actualtxid = basilisk_swap_broadcast(swap->bobdeposit.name,myinfo,swap,swap->bobdeposit.coin,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
-        if ( bits256_nonz(swap->bobdeposit.I.actualtxid) != 0 )
+        swap->bobdeposit.I.signedtxid = basilisk_swap_broadcast(swap->bobdeposit.name,myinfo,swap,swap->bobdeposit.coin,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
+        if ( bits256_nonz(swap->bobdeposit.I.signedtxid) != 0 )
             swap->depositunconf = 1;
         basilisk_dontforget_update(myinfo,swap,&swap->bobdeposit);
         len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
@@ -1020,8 +1020,8 @@ int32_t basilisk_verify_bobpaid(struct supernet_info *myinfo,void *ptr,uint8_t *
     memset(revAm.bytes,0,sizeof(revAm));
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin->longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
-        swap->bobpayment.I.actualtxid = basilisk_swap_broadcast(swap->bobpayment.name,myinfo,swap,swap->bobpayment.coin,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
-        if ( bits256_nonz(swap->bobpayment.I.actualtxid) != 0 )
+        swap->bobpayment.I.signedtxid = basilisk_swap_broadcast(swap->bobpayment.name,myinfo,swap,swap->bobpayment.coin,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
+        if ( bits256_nonz(swap->bobpayment.I.signedtxid) != 0 )
             swap->paymentunconf = 1;
         basilisk_dontforget_update(myinfo,swap,&swap->bobpayment);
         for (i=0; i<32; i++)
@@ -1083,11 +1083,11 @@ int32_t basilisk_alicepayment_spend(struct supernet_info *myinfo,struct basilisk
 
 int32_t basilisk_verify_alicepaid(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
-    bits256 txid; struct basilisk_swap *swap = ptr;
+    struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->alicecoin->longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
     {
-        swap->alicepayment.I.actualtxid = basilisk_swap_broadcast(swap->alicepayment.name,myinfo,swap,swap->alicepayment.coin,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
-        if ( bits256_nonz(txid) != 0 )
+        swap->alicepayment.I.signedtxid = basilisk_swap_broadcast(swap->alicepayment.name,myinfo,swap,swap->alicepayment.coin,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
+        if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
             swap->aliceunconf = 1;
         basilisk_dontforget_update(myinfo,swap,&swap->alicepayment);
         return(0);
@@ -1771,12 +1771,12 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
         swap->I.bobconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
         swap->I.aliceconfirms = BASILISK_DEFAULT_NUMCONFIRMS;
     }
-    if ( swap->I.bobconfirms == 0 )
+    /*if ( swap->I.bobconfirms == 0 )
         swap->I.bobconfirms = swap->bobcoin->chain->minconfirms;
     if ( swap->I.aliceconfirms == 0 )
-        swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;
+        swap->I.aliceconfirms = swap->alicecoin->chain->minconfirms;*/
     jumblrflag = (bits256_cmp(pubkey25519,myinfo->jumblr_pubkey) == 0 || bits256_cmp(pubkey25519,myinfo->jumblr_depositkey) == 0);
-    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, bobconfs.%d aliceconfs.%d\n",jumblrflag,swap->I.bobconfirms,swap->I.aliceconfirms);
+    printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms);
     if ( swap->I.iambob != 0 )
     {
         basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->bobcoin,0,0,swap->I.bobsatoshis/INSTANTDEX_DECKSIZE,0,0,jumblrflag);
