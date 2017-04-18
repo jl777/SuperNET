@@ -741,9 +741,15 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( txobj != 0 )
         free_json(txobj);
     if ( rawtx != 0 )
+    {
+        jaddstr(retjson,"rawtx",rawtx);
         free(rawtx);
+    }
     if ( signedtx != 0 )
+    {
+        jaddstr(retjson,"signedtx",signedtx);
         free(signedtx);
+    }
     return(jprint(retjson,1));
 }
 
