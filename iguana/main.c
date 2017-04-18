@@ -751,19 +751,19 @@ void jumblr_loop(void *ptr)
 {
     struct iguana_info *coin; uint32_t t,n=0; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
-    while ( 1 )
+    while ( myinfo->IAMNOTARY == 0 )
     {
         if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
-#ifdef __APPLE__
+//#ifdef __APPLE__
             if ( (n++ % 10) == 0 )
                 jumblr_DEXcheck(myinfo,coin,!((n/10)&1));
-#endif
+//#endif
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
                 // if BTC has arrived in destination address, invoke DEX -> BTC
-                if ( (n++ % 10) == 0 )
-                    jumblr_DEXcheck(myinfo,coin,!((n/10)&1));
+                //if ( (n++ % 10) == 0 )
+                //    jumblr_DEXcheck(myinfo,coin,!((n/10)&1));
                 t = (uint32_t)time(NULL);
                 if ( (t % (120 * mult)) < 60 )
                 {

@@ -714,7 +714,7 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32_t toKMD)
 {
-    double vol,avail; struct iguana_info *kmdcoin,*coinbtc = 0;
+    double vol,avail; int32_t enabled = 0; struct iguana_info *kmdcoin,*coinbtc = 0;
     kmdcoin = iguana_coinfind("KMD");
     coinbtc = iguana_coinfind("BTC");
     //printf("jumblr_DEXcheck numswaps.%d notary.%d IAMLP.%d %p %p %f\n",myinfo->numswaps,myinfo->IAMNOTARY,myinfo->IAMLP,kmdcoin,coinbtc,kmdcoin->DEXinfo.btcprice);
@@ -730,12 +730,14 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
         if ( coin->CMCname[0] != 0 )
             jumblr_DEXupdate(myinfo,coin,coin->symbol,coin->CMCname,kmdcoin->DEXinfo.btcprice,kmdcoin->DEXinfo.avail);
     }
-    if ( myinfo->numswaps == 0 && myinfo->IAMLP == 0 && kmdcoin->DEXinfo.btcprice > SMALLVAL )
+    if ( myinfo->numswaps == 0 || (kmdcoin->FULLNODE < 0 && coinbtc->FULLNODE < 0) )
+        enabled = 1;
+    if ( enabled != 0 && myinfo->IAMLP == 0 && kmdcoin->DEXinfo.btcprice > SMALLVAL )
     {
         double minbtc,minkmd,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
         btcavail = dstr(jumblr_balance(myinfo,coinbtc,kmdcoin->DEXinfo.depositaddr));
-        if ( coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
+        if ( toKMD == 0 && coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
         {
             avail = (btcavail - kmdcoin->DEXinfo.DEXpending);
             printf("BTC deposits %.8f, min %.8f avail %.8f\n",btcavail,minbtc,avail);
@@ -768,7 +770,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
             }
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
         minkmd = 100.;
-        if ( coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (minkmd + kmdcoin->DEXinfo.KMDpending) )
+        if ( toKMD != 0 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (minkmd + kmdcoin->DEXinfo.KMDpending) )
         {
             avail = (kmdcoin->DEXinfo.KMDavail - kmdcoin->DEXinfo.KMDpending);
             printf("KMD deposits %.8f, min %.8f, avail %.8f\n",kmdcoin->DEXinfo.KMDavail,minkmd,avail);

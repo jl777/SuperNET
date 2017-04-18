@@ -2673,8 +2673,21 @@ cJSON *basilisk_swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct basilisk_swap *swap = 0;
+    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; struct basilisk_swap *swap = 0;
     // statebits 1 -> client, 0 -> LP
+    if ( statebits == 0 && myinfo->numswaps > 0 )
+    {
+        if ( (coin= iguana_coinfind(rp->src)) == 0 || coin->FULLNODE >= 0 )
+        {
+            printf("dont have SRC coin.%s or not native and already swap pending\n",rp->src);
+            return(0);
+        }
+        if ( (coin= iguana_coinfind(rp->dest)) == 0 || coin->FULLNODE >= 0 )
+        {
+            printf("dont have DEST coin.%s or not native and already swap pending\n",rp->dest);
+            return(0);
+        }
+    }
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     for (i=0; i<myinfo->numswaps; i++)
         if ( myinfo->swaps[i]->I.req.requestid == rp->requestid )
@@ -2796,7 +2809,7 @@ cJSON *basilisk_nullretjson(cJSON *retjson)
 cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 trigger,int32_t vout)
 {
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
-    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
+    if ( ((coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
     {
         if ( (retstr= dex_gettxout(myinfo,0,0,0,trigger,symbol,vout)) != 0 )
         {
@@ -2819,7 +2832,7 @@ cJSON *basilisk_swapgettxout(struct supernet_info *myinfo,char *symbol,bits256 t
 cJSON *basilisk_swapgettx(struct supernet_info *myinfo,char *symbol,bits256 txid)
 {
     char *retstr; cJSON *retjson=0; struct iguana_info *coin;
-    if ( (coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0 || iguana_isnotarychain(symbol) >= 0 )
+    if ( ((coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
     {
         if ( (retstr= dex_gettransaction(myinfo,0,0,0,txid,symbol)) != 0 )
         {
@@ -2886,12 +2899,12 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
 
 bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64];
+    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64]; struct iguana_info *coin = iguana_coinfind(symbol);
     // listtransactions or listspents
     destaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
-    if ( iguana_isnotarychain(symbol) >= 0 )
+    if ( (coin == 0 || coin->FULLNODE >= 0) && iguana_isnotarychain(symbol) >= 0 )
     {
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
         basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
