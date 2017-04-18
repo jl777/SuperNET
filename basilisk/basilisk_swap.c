@@ -2213,13 +2213,13 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                     else
                     {
                         tradebot_swap_balancingtrade(myinfo,swap,1);
-                        printf("Bob spends alicepayment\n");
+                        printf("Bob spends alicepayment aliceconfirms.%d\n",swap->I.aliceconfirms);
                         swap->I.statebits |= 0x40000;
-                        while ( basilisk_numconfirms(myinfo,swap,&swap->bobspend) < swap->I.aliceconfirms )
+                        if ( basilisk_numconfirms(myinfo,swap,&swap->bobspend) >= swap->I.aliceconfirms )
                         {
                             printf("bobspend confirmed\n");
                             swap->I.statebits |= 0x80000;
-                            printf("Bob confirms spend of Alice's payment\n");
+                            printf("Bob confirming spend of Alice's payment\n");
                             sleep(DEX_SLEEP);
                         }
                         retval = 1;
