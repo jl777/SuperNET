@@ -319,11 +319,12 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_swap *
 
         if ( (valuearray= cJSON_Parse(valstr)) != 0 )
         {
-            if ( is_cJSON_Array(valuearray) != 0 )
+            if ( valstr[0] == '[' && is_cJSON_Array(valuearray) != 0 )
             {
                 n = cJSON_GetArraySize(valuearray);
                 for (i=0; i<n; i++)
                 {
+                    printf("i.%d of n.%d\n",i,n);
                     if ( (retval= basilisk_confirmsobj(jitem(valuearray,i))) >= 0 )
                         break;
                }
@@ -333,6 +334,7 @@ int32_t basilisk_numconfirms(struct supernet_info *myinfo,struct basilisk_swap *
         free(valstr);
     }
     free_json(argjson);
+    printf("numconfirms.%d returned\n",retval);
     return(retval);
 }
 
@@ -1410,10 +1412,10 @@ int32_t basilisk_swapget(struct supernet_info *myinfo,struct basilisk_swap *swap
                 if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
                 {
                     printf("nothing received for a while from Bob, try new sockets\n");
-                    if ( swap->pushsock >= 0 ) //nn_close(swap->pushsock),
-                        swap->pushsock = -1;
-                    if ( swap->subsock >= 0 ) //nn_close(swap->subsock),
-                        swap->subsock = -1;
+                    if ( swap->pushsock >= 0 ) //
+                        nn_close(swap->pushsock), swap->pushsock = -1;
+                    if ( swap->subsock >= 0 ) //
+                        nn_close(swap->subsock), swap->subsock = -1;
                     swap->connected = 0;
                     basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
                 }
@@ -1447,9 +1449,9 @@ uint32_t basilisk_swapsend(struct supernet_info *myinfo,struct basilisk_swap *sw
         if ( sentbytes < 0 )
         {
             if ( swap->pushsock >= 0 )
-                swap->pushsock = -1; //nn_close(swap->pushsock),
-            if ( swap->subsock >= 0 ) // nn_close(swap->subsock),
-                swap->subsock = -1;
+                nn_close(swap->pushsock), swap->pushsock = -1; //,
+            if ( swap->subsock >= 0 ) //
+                nn_close(swap->subsock), swap->subsock = -1;
             swap->connected = swap->I.iambob != 0 ? -1 : 0;
             swap->aborted = (uint32_t)time(NULL);
         }
@@ -1469,10 +1471,10 @@ void basilisk_swap_sendabort(struct supernet_info *myinfo,struct basilisk_swap *
     {
         if ( sentbytes < 0 )
         {
-            if ( swap->pushsock >= 0 ) //nn_close(swap->pushsock),
-                swap->pushsock = -1;
-            if ( swap->subsock >= 0 ) //nn_close(swap->subsock), 
-                swap->subsock = -1;
+            if ( swap->pushsock >= 0 ) //
+                nn_close(swap->pushsock), swap->pushsock = -1;
+            if ( swap->subsock >= 0 ) //
+                nn_close(swap->subsock), swap->subsock = -1;
             swap->connected = 0;
         }
     } else printf("basilisk_swap_sendabort\n");
@@ -2302,12 +2304,9 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
             else if ( (swap->I.statebits & 0x20000) == 0 )
             {
                 printf("alicespend bobpayment\n");
-                if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicespend,0x20000,0) != 0 && basilisk_numconfirms(myinfo,swap,&swap->alicespend) > 0 )
+                if ( basilisk_swapdata_rawtxsend(myinfo,swap,0,data,maxlen,&swap->alicespend,0x20000,0) != 0 )//&& (swap->aliceunconf != 0 || basilisk_numconfirms(myinfo,swap,&swap->alicespend) > 0) )
                 {
-                    for (j=datalen=0; j<32; j++)
-                        data[datalen++] = swap->I.privAm.bytes[j];
-                    swap->I.statebits |= basilisk_swapsend(myinfo,swap,0x40000,data,datalen,0x20000,swap->I.crcs_mypriv);
-                    printf("send privAm %x\n",swap->I.statebits);
+                    swap->I.statebits |= 0x20000;
                 }
             }
             else if ( (swap->I.statebits & 0x40000) == 0 )
@@ -2315,7 +2314,10 @@ int32_t basilisk_swapiteration(struct supernet_info *myinfo,struct basilisk_swap
                 int32_t numconfs;
                 if ( (numconfs= basilisk_numconfirms(myinfo,swap,&swap->alicespend)) >= swap->I.bobconfirms )
                 {
-                    swap->I.statebits |= 0x40000;
+                    for (j=datalen=0; j<32; j++)
+                        data[datalen++] = swap->I.privAm.bytes[j];
+                    printf("send privAm %x\n",swap->I.statebits);
+                    swap->I.statebits |= basilisk_swapsend(myinfo,swap,0x40000,data,datalen,0x20000,swap->I.crcs_mypriv);
                     printf("Alice confirms spend of Bob's payment\n");
                     retval = 1;
                 } else printf("alicespend numconfs.%d < %d\n",numconfs,swap->I.bobconfirms);
