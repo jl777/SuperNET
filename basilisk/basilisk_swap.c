@@ -2978,9 +2978,13 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
             free(retstr);
         }
     }
-    else
+    else if ( coin != 0 )
     {
-        printf("need to find spendtxid the hard way\n");
+        if ( (array= dpow_listtransactions(myinfo,coin,destaddr,100,0)) != 0 )
+        {
+            printf("list.(%s)\n",jprint(array,0));
+            free_json(array);
+        }
     }
     return(spendtxid);
 }
