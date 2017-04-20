@@ -3120,8 +3120,8 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
     }
-    //if ( strcmp(symbol,"KMD") != 0 && finalseqid != 0 )
-    //    locktime = 0;
+    if ( strcmp(symbol,"KMD") != 0 && finalseqid != 0 )
+        locktime = 0;
     if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
         printf("%s %s basilisk_swap_bobtxspend.%s strange utxo.(%s)\n",symbol,bits256_str(str,utxotxid),name,jprint(utxoobj,0));
@@ -3497,21 +3497,24 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         safecopy(bobcoin,symbol,sizeof(bobcoin));
                     else if ( i == BASILISK_BOBSPEND || i == BASILISK_ALICEPAYMENT || i == BASILISK_ALICERECLAIM )
                         safecopy(alicecoin,symbol,sizeof(alicecoin));
-                    if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
+                    if ( finishedflag == 0 )
                     {
-                        //printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
-                    }
-                    else
-                    {
-                        checktxid = jbits256(sentobj,"txid");
-                        if ( bits256_nonz(checktxid) == 0 )
-                            checktxid = jbits256(sentobj,"hash");
-                        if ( bits256_cmp(checktxid,txid) == 0 )
+                        if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
                         {
-                            //printf(">>>>>> %s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
-                            sentflags[i] = 1;
+                            //printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
-                        free_json(sentobj);
+                        else
+                        {
+                            checktxid = jbits256(sentobj,"txid");
+                            if ( bits256_nonz(checktxid) == 0 )
+                                checktxid = jbits256(sentobj,"hash");
+                            if ( bits256_cmp(checktxid,txid) == 0 )
+                            {
+                                //printf(">>>>>> %s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
+                                sentflags[i] = 1;
+                            }
+                            free_json(sentobj);
+                        }
                     }
                     values[i] = value = jdouble(txobj,"amount") * SATOSHIDEN;
                     printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
