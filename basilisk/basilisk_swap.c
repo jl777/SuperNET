@@ -3335,7 +3335,10 @@ int32_t basilisk_swap_isfinished(bits256 *txids,int32_t *sentflags,bits256 payme
             if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
                 break;
         if ( i == sizeof(txnames)/sizeof(*txnames) )
+        {
+            printf("if nothing sent, it is finished\n");
             return(1);
+        }
     }
     return(0);
 }
