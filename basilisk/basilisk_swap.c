@@ -3326,25 +3326,37 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
 char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
 
 // add blocktrail presence requirement for BTC
-int32_t basilisk_swap_isfinished(bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
+int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
     int32_t i,n = 0;
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
         if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
             n++;
-    if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+    if ( n == 0 )
     {
-        if ( bits256_nonz(paymentspent) != 0 && n == 6 )
+        printf("if nothing sent, it is finished\n");
+        return(1);
+    }
+    if ( iambob != 0 )
+    {
+        if ( bits256_nonz(txids[BASILISK_BOBDEPOSIT]) == 0 && sentflags[BASILISK_BOBDEPOSIT] == 0 )
             return(1);
-        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 && n == 4 )
+        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 )
+        {
+            if ( bits256_nonz(depositspent) != 0 )
+                return(1);
+        }
+        else if ( bits256_nonz(paymentspent) != 0 )
             return(1);
     }
     else
     {
-        if ( n == 0 )
-        {
-            printf("if nothing sent, it is finished\n");
+        if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) == 0 && sentflags[BASILISK_ALICEPAYMENT] == 0 )
             return(1);
+        else
+        {
+            if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_ALICESPEND] != 0 )
+                return(1);
         }
     }
     return(0);
@@ -3571,7 +3583,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         paymentspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,Adest,Bdest);
         Apaymentspent = basilisk_swap_spendupdate(myinfo,alicecoin,sentflags,txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,AAdest,ABdest);
         depositspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,Adest,Bdest);
-        finishedflag = basilisk_swap_isfinished(txids,sentflags,paymentspent,Apaymentspent,depositspent);
+        finishedflag = basilisk_swap_isfinished(iambob,txids,sentflags,paymentspent,Apaymentspent,depositspent);
         if ( iambob == 0 )
         {
             if ( sentflags[BASILISK_ALICESPEND] == 0 )
@@ -3797,7 +3809,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             BTCtotals[BASILISK_BOBSPEND] += values[BASILISK_ALICEPAYMENT] * sentflags[BASILISK_BOBSPEND];
         }
     }
-    finishedflag = basilisk_swap_isfinished(txids,sentflags,paymentspent,Apaymentspent,depositspent);
+    finishedflag = basilisk_swap_isfinished(iambob,txids,sentflags,paymentspent,Apaymentspent,depositspent);
     jaddnum(item,"requestid",requestid);
     jaddnum(item,"quoteid",quoteid);
     jadd(item,"txs",array);
