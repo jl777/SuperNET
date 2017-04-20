@@ -2927,7 +2927,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
             {
                 scriptlen >>= 1;
                 decode_hex(script,scriptlen,hexstr);
-                char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
+                //char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
             }
         }
         free_json(retjson);
@@ -2963,7 +2963,7 @@ bits256 dex_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *desta
                                 {
                                     spendtxid = jbits256(item,"hash");
                                     strcpy(destaddr,addr);
-                                    printf("set spend addr.(%s) <- %s\n",addr,jprint(item,0));
+                                    //printf("set spend addr.(%s) <- %s\n",addr,jprint(item,0));
                                     break;
                                 }
                             }
@@ -3359,6 +3359,8 @@ int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflag
         {
             if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_ALICESPEND] != 0 )
                 return(1);
+            else if ( sentflags[BASILISK_BOBSPEND] != 0 ) // without ALICECLAIM this is loss due to inactivity
+                return(1);
         }
     }
     return(0);
@@ -3381,6 +3383,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
     plocktime = dlocktime = 0;
     src[0] = dest[0] = bobcoin[0] = alicecoin[0] = 0;
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+    printf("%s\n",fname);
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
         if ( (item= cJSON_Parse(fstr)) != 0 )
@@ -3883,7 +3886,7 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                 if ( (item= basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    if ( 1 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
                         break;
                 }
             }
