@@ -85,7 +85,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
         }
         else if ( (error->type&0xff) != cJSON_NULL || (result->type&0xff) != cJSON_NULL )
         {
-            if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"sendrawtransaction") != 0 )
+            if ( strcmp(command,"getrawtransaction") != 0 && strcmp(command,"signrawtransaction") != 0 && strcmp(command,"sendrawtransaction") != 0 )
                 printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC (%s) error.%s\n",debugstr,command,rpcstr);
             retstr = rpcstr;
             rpcstr = 0;

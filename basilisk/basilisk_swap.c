@@ -3319,6 +3319,17 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
 char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
 
 // add blocktrail presence requirement for BTC
+int32_t basilisk_swap_isfinished(bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
+{
+    if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
+    {
+        if ( bits256_nonz(paymentspent) != 0 )
+            return(1);
+        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 )
+            return(1);
+    }
+    return(0);
+}
 
 cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requestid,uint32_t quoteid)
 {
@@ -3517,10 +3528,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         paymentspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBPAYMENT,BASILISK_ALICESPEND,BASILISK_BOBRECLAIM,0,Adest,Bdest);
         Apaymentspent = basilisk_swap_spendupdate(myinfo,alicecoin,sentflags,txids,BASILISK_ALICEPAYMENT,BASILISK_ALICERECLAIM,BASILISK_BOBSPEND,0,AAdest,ABdest);
         depositspent = basilisk_swap_spendupdate(myinfo,bobcoin,sentflags,txids,BASILISK_BOBDEPOSIT,BASILISK_ALICECLAIM,BASILISK_BOBREFUND,0,Adest,Bdest);
-        if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
-        {
-            finishedflag = 1;
-        }
+        finishedflag = basilisk_swap_isfinished(txids,sentflags,paymentspent,Apaymentspent,depositspent);
         if ( finishedflag == 0 && iambob == 0 )
         {
             if ( sentflags[BASILISK_ALICESPEND] == 0 )
@@ -3740,10 +3748,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             BTCtotals[BASILISK_BOBSPEND] += values[BASILISK_ALICEPAYMENT] * sentflags[BASILISK_BOBSPEND];
         }
     }
-    if ( bits256_nonz(paymentspent) != 0 && bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
-    {
-        finishedflag = 1;
-    }
+    finishedflag = basilisk_swap_isfinished(txids,sentflags,paymentspent,Apaymentspent,depositspent);
     jaddnum(item,"requestid",requestid);
     jaddnum(item,"quoteid",quoteid);
     jadd(item,"txs",array);
