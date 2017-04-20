@@ -2935,6 +2935,21 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
     return(scriptlen);
 }
 
+int64_t basilisk_txvalue(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
+{
+    cJSON *txobj,*vouts,*item; int32_t n; int64_t value = 0;
+    if ( (txobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
+    {
+        if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
+        {
+            item = jitem(vouts,vout);
+            if ( (value= jdouble(item,"amount") * SATOSHIDEN) == 0 )
+                value = jdouble(item,"value") * SATOSHIDEN;
+        }
+    }
+    return(value);
+}
+
 bits256 dex_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,char *coinaddr,bits256 utxotxid,int32_t vout)
 {
     char *retstr,*addr; cJSON *array,*item,*array2; int32_t i,n,m; bits256 spendtxid,txid;
@@ -3511,7 +3526,9 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     txbytes[i] = clonestr(jstr(txobj,"tx"));
                     //printf("[%s] TX.(%s)\n",txnames[i],txbytes[i]);
                 }
-                values[i] = value = jdouble(txobj,"amount") * SATOSHIDEN;
+                if ( (value= jdouble(txobj,"amount") * SATOSHIDEN) == 0 )
+                    value = jdouble(txobj,"value") * SATOSHIDEN;
+                values[i] = value;
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )
@@ -3762,7 +3779,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         sentflags[BASILISK_ALICEPAYMENT] = 1;
     if ( sentflags[BASILISK_ALICECLAIM] != 0 || sentflags[BASILISK_BOBREFUND] != 0 )
         sentflags[BASILISK_BOBDEPOSIT] = 1;
-    if ( origfinishedflag == 0 )
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        if ( sentflags[i] != 0 && values[i] == 0 )
+            values[i] = basilisk_txvalue(myinfo,bobcoin,txids[i],0);
+     if ( origfinishedflag == 0 )
     {
         printf("iambob.%d Apaymentspent.(%s) alice.%d bob.%d %s %.8f\n",iambob,bits256_str(str,Apaymentspent),sentflags[BASILISK_ALICERECLAIM],sentflags[BASILISK_BOBSPEND],alicecoin,dstr(values[BASILISK_ALICEPAYMENT]));
         printf("paymentspent.(%s) alice.%d bob.%d %s %.8f\n",bits256_str(str,paymentspent),sentflags[BASILISK_ALICESPEND],sentflags[BASILISK_BOBRECLAIM],bobcoin,dstr(values[BASILISK_BOBPAYMENT]));
