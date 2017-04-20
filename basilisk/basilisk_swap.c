@@ -2982,7 +2982,17 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
     {
         if ( (array= dpow_listtransactions(myinfo,coin,destaddr,100,0)) != 0 )
         {
-            printf("list.(%s)\n",jprint(array,0));
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    if ( (item= jitem(array,i)) == 0 )
+                        continue;
+                    txid = jbits256(item,"txid");
+                    if ( bits256_cmp(txid,utxotxid) == 0 )
+                        printf("item.%d.[%s]\n",i,jprint(item,0));
+                }
+            }
             free_json(array);
         }
     }
