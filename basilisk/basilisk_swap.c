@@ -3321,11 +3321,20 @@ char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bob
 // add blocktrail presence requirement for BTC
 int32_t basilisk_swap_isfinished(bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
+    int32_t i;
     if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
     {
         if ( bits256_nonz(paymentspent) != 0 )
             return(1);
         else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 )
+            return(1);
+    }
+    else
+    {
+        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+            if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
+                break;
+        if ( i == sizeof(txnames)/sizeof(*txnames) )
             return(1);
     }
     return(0);
