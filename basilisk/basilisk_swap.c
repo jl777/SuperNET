@@ -2952,7 +2952,6 @@ bits256 dex_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *desta
                     txid = jbits256(item,"txid");
                     if ( bits256_nonz(txid) == 0 )
                     {
-                        spendtxid = jbits256(item,"hash");
                         if ( (array2= jarray(&m,item,"inputs")) != 0 && m == 1 )
                         {
                             //printf("found inputs with %s\n",bits256_str(str,spendtxid));
@@ -2962,8 +2961,9 @@ bits256 dex_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *desta
                                 //printf("matched %s\n",bits256_str(str,txid));
                                 if ( (array2= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array2,0),"address")) != 0 )
                                 {
+                                    spendtxid = jbits256(item,"hash");
                                     strcpy(destaddr,addr);
-                                    //printf("set addr.(%s)\n",addr);
+                                    printf("set spend addr.(%s) <- %s\n",addr,jprint(item,0));
                                     break;
                                 }
                             }
@@ -3078,7 +3078,10 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
             basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
             printf("fallback use DEX for native (%s) (%s)\n",coinaddr,bits256_str(str,utxotxid));
             if ( coinaddr[0] != 0 )
+            {
                 spendtxid = dex_swap_spendtxid(myinfo,symbol,destaddr,coinaddr,utxotxid,vout);
+                printf("spendtxid.(%s)\n",bits256_str(str,spendtxid));
+            }
         }
     }
     return(spendtxid);
