@@ -3654,7 +3654,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             }
             if ( sentflags[BASILISK_BOBREFUND] == 0 && sentflags[BASILISK_BOBDEPOSIT] != 0 && bits256_nonz(txids[BASILISK_BOBDEPOSIT]) != 0 && bits256_nonz(depositspent) == 0 )
             {
-                if ( bits256_nonz(paymentspent) != 0 )
+                if ( bits256_nonz(paymentspent) != 0 || time(NULL) > expiration )
                 {
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
                     {
