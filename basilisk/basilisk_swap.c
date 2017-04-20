@@ -2921,7 +2921,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
 
 bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *retstr,*addr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64]; struct iguana_info *coin = iguana_coinfind(symbol);
+    bits256 spendtxid,txid; char *retstr,*addr,*catstr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64]; struct iguana_info *coin = iguana_coinfind(symbol);
     // listtransactions or listspents
     destaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
@@ -2984,14 +2984,27 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
+                coinaddr[0] = 0;
                 for (i=0; i<n; i++)
                 {
                     if ( (item= jitem(array,i)) == 0 )
                         continue;
                     txid = jbits256(item,"txid");
-                    if ( bits256_cmp(txid,utxotxid) == 0 )
-                        printf("item.%d.[%s]\n",i,jprint(item,0));
+                    if ( vout == juint(item,"vout") && bits256_cmp(txid,utxotxid) == 0 && (catstr= jstr(item,"category")) != 0 && strcmp(catstr,"send") == 0 )
+                    {
+                        if ( jstr(item,"address") != 0 )
+                            strncpy(coinaddr,jstr(item,"address"),63);
+                        printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
+                    }
                 }
+                if ( coinaddr[0] != 0 )
+                {
+                    free_json(array);
+                    if ( (array= dpow_listtransactions(myinfo,coin,destaddr,100,0)) != 0 )
+                    {
+                        printf("second array.(%s)\n",jprint(array,0));
+                    }
+                 }
             }
             free_json(array);
         }
