@@ -3109,9 +3109,11 @@ bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txna
     return(txid);
 }
 
-char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33,int32_t finalseqid)
+char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration)
 {
-    char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = (uint32_t)time(NULL) - 2777,sequenceid = 0xffffffff * finalseqid; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
+    char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
+    if ( finalseqid == 0 )
+        locktime = expiration;
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
@@ -3210,7 +3212,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
     return(signedtx);
 }
 
-char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33])
+char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privAm,bits256 privBn,bits256 utxotxid,int32_t vout,uint8_t pubkey33[33],uint32_t expiration)
 {
     char msigaddr[64],*signedtx = 0; int32_t spendlen,redeemlen; uint8_t tmp33[33],redeemscript[512],spendscript[128]; bits256 pubAm,pubBn; struct iguana_info *coin = iguana_coinfind(symbol);
     if ( coin != 0 && bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
@@ -3228,7 +3230,7 @@ char *basilisk_swap_Aspend(char *name,struct supernet_info *myinfo,char *symbol,
         rev = privBn;
         for (i=0; i<32; i++)
             privBn.bytes[i] = rev.bytes[31 - i];*/
-        signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,0,0,utxotxid,vout,pubkey33,1);
+        signedtx = basilisk_swap_bobtxspend(name,myinfo,symbol,privAm,&privBn,redeemscript,redeemlen,0,0,utxotxid,vout,pubkey33,1,expiration);
     }
     return(signedtx);
 }
@@ -3601,7 +3603,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                             //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
                             redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
                             len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
-                            if ( (txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend("alicespend",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,1)) != 0 )
+                            if ( (txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend("alicespend",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,1,expiration)) != 0 )
                                 printf("alicespend.(%s)\n",txbytes[BASILISK_ALICESPEND]);
                         }
                     }
@@ -3626,7 +3628,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         if ( redeemlen > 0 )
                         {
                             len = basilisk_swapuserdata(userdata,zero,1,myprivs[0],redeemscript,redeemlen);
-                            if ( (txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend("aliceclaim",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBDEPOSIT],0,pubkey33,0)) != 0 )
+                            if ( (txbytes[BASILISK_ALICECLAIM]= basilisk_swap_bobtxspend("aliceclaim",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBDEPOSIT],0,pubkey33,0,expiration)) != 0 )
                                 printf("privBn.(%s) aliceclaim.(%s)\n",bits256_str(str,privBn),txbytes[BASILISK_ALICECLAIM]);
                         }
                     }
@@ -3648,7 +3650,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     privBn = basilisk_swap_privBn_extract(myinfo,&txids[BASILISK_BOBREFUND],bobcoin,txids[BASILISK_BOBDEPOSIT],privBn);
                     if ( bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 && bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
                     {
-                        if ( (txbytes[BASILISK_ALICERECLAIM]= basilisk_swap_Aspend("alicereclaim",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33)) != 0 )
+                        if ( (txbytes[BASILISK_ALICERECLAIM]= basilisk_swap_Aspend("alicereclaim",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33,expiration)) != 0 )
                             printf("privBn.(%s) alicereclaim.(%s)\n",bits256_str(str,privBn),txbytes[BASILISK_ALICERECLAIM]);
                     }
                 }
@@ -3678,7 +3680,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         }
                         if ( bits256_nonz(privAm) != 0 && bits256_nonz(privBn) != 0 )
                         {
-                            if ( (txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33)) != 0 )
+                            if ( (txbytes[BASILISK_BOBSPEND]= basilisk_swap_Aspend("bobspend",myinfo,alicecoin,privAm,privBn,txids[BASILISK_ALICEPAYMENT],0,pubkey33,expiration)) != 0 )
                                 printf("bobspend.(%s)\n",txbytes[BASILISK_BOBSPEND]);
                         }
                     }
@@ -3702,7 +3704,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     if ( redeemlen > 0 )
                     {
                         len = basilisk_swapuserdata(userdata,zero,1,myprivs[1],redeemscript,redeemlen);
-                        if ( (txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[1],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,0)) != 0 )
+                        if ( (txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[1],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,0,expiration)) != 0 )
                         {
                             int32_t z;
                             for (z=0; z<20; z++)
@@ -3732,7 +3734,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         vcalc_sha256(0,secretBn256,privBn.bytes,sizeof(privBn));
                         redeemlen = basilisk_swap_bobredeemscript(1,&secretstart,redeemscript,dlocktime,pubA0,pubB0,pubB1,privAm,privBn,secretAm,secretAm256,secretBn,secretBn256);
                         len = basilisk_swapuserdata(userdata,privBn,0,myprivs[0],redeemscript,redeemlen);
-                        if ( (txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBDEPOSIT],0,pubkey33,1)) != 0 )
+                        if ( (txbytes[BASILISK_BOBREFUND]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBDEPOSIT],0,pubkey33,1,expiration)) != 0 )
                             printf("pubB1.(%s) bobrefund.(%s)\n",bits256_str(str,pubB1),txbytes[BASILISK_BOBREFUND]);
                     }
                     if ( txbytes[BASILISK_BOBREFUND] != 0 )
