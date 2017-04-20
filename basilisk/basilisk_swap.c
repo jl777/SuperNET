@@ -3863,7 +3863,7 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                 if ( (item= basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    if ( 0 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
                         break;
                 }
             }
