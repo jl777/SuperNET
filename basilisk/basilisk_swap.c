@@ -3708,7 +3708,12 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     {
                         len = basilisk_swapuserdata(userdata,zero,1,myprivs[1],redeemscript,redeemlen);
                         if ( (txbytes[BASILISK_BOBRECLAIM]= basilisk_swap_bobtxspend("bobrefund",myinfo,bobcoin,myprivs[1],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,0)) != 0 )
-                            printf("myprivs[1].(%s) bobreclaim.(%s)\n",bits256_str(str,myprivs[1]),txbytes[BASILISK_BOBRECLAIM]);
+                        {
+                            int32_t z;
+                            for (z=0; z<20; z++)
+                                printf("%02x",secretAm[z]);
+                            printf(" secretAm, myprivs[1].(%s) bobreclaim.(%s)\n",bits256_str(str,myprivs[1]),txbytes[BASILISK_BOBRECLAIM]);
+                        }
                     }
                 }
                 if ( txbytes[BASILISK_BOBRECLAIM] != 0 )
