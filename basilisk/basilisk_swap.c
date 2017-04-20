@@ -3698,6 +3698,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             {
                 if ( bits256_nonz(paymentspent) != 0 || time(NULL) > expiration )
                 {
+                    printf("do the refund!\n");
                     //if ( txbytes[BASILISK_BOBREFUND] == 0 )
                     {
                         revcalc_rmd160_sha256(secretBn,privBn);
@@ -3716,7 +3717,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                             depositspent = txids[BASILISK_BOBREFUND];
                         }
                     }
-                }
+                } else printf("time %u vs expiration %u\n",(uint32_t)time(NULL),expiration);
             }
         }
     }
