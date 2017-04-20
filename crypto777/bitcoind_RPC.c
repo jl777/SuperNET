@@ -57,7 +57,7 @@ char *post_process_bitcoind_RPC(char *debugstr,char *command,char *rpcstr,char *
     //printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
     if ( command == 0 || rpcstr == 0 || rpcstr[0] == 0 )
     {
-        if ( strcmp(command,"signrawtransaction") != 0 )
+        if ( strcmp(command,"signrawtransaction") != 0 && strcmp(command,"getrawtransaction") != 0 )
             printf("<<<<<<<<<<< bitcoind_RPC: %s post_process_bitcoind_RPC.%s.[%s]\n",debugstr,command,rpcstr);
         return(rpcstr);
     }

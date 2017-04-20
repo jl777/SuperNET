@@ -3015,14 +3015,14 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                             if (strcmp(catstr,"send") == 0 )
                             {
                                 strncpy(destaddr,addr,63);
-                                printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
+                                //printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
                                 if ( coinaddr[0] != 0 )
                                     break;
                             }
                             if (strcmp(catstr,"receive") == 0 )
                             {
                                 strncpy(coinaddr,addr,63);
-                                printf("receive dest.(%s) <- (%s)\n",destaddr,coinaddr);
+                                //printf("receive dest.(%s) <- (%s)\n",destaddr,coinaddr);
                                 if ( destaddr[0] != 0 )
                                     break;
                             }
