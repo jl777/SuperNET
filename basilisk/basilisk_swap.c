@@ -3120,7 +3120,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
     }
-    if ( strcmp(symbol,"KMD") != 0 )
+    if ( strcmp(symbol,"KMD") != 0 && finalseqid != 0 )
         locktime = 0;
     if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
