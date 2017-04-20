@@ -3121,7 +3121,7 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         return(0);
     }
     //if ( strcmp(symbol,"KMD") != 0 && finalseqid != 0 )
-    //    locktime = 0;
+    locktime = 0;
     sequenceid = 0xffffffff;
     if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
@@ -3331,20 +3331,20 @@ char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bob
 // add blocktrail presence requirement for BTC
 int32_t basilisk_swap_isfinished(bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
 {
-    int32_t i;
+    int32_t i,n = 0;
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
+            n++;
     if ( bits256_nonz(Apaymentspent) != 0 && bits256_nonz(depositspent) != 0 )
     {
-        if ( bits256_nonz(paymentspent) != 0 )
+        if ( bits256_nonz(paymentspent) != 0 && n == 6 )
             return(1);
-        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 )
+        else if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) == 0 && sentflags[BASILISK_BOBPAYMENT] == 0 && n == 4 )
             return(1);
     }
     else
     {
-        for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
-            if ( i != BASILISK_OTHERFEE && i != BASILISK_MYFEE && sentflags[i] != 0 )
-                break;
-        if ( i == sizeof(txnames)/sizeof(*txnames) )
+        if ( n == 0 )
         {
             printf("if nothing sent, it is finished\n");
             return(1);
@@ -3492,6 +3492,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     txbytes[i] = clonestr(jstr(txobj,"tx"));
                     //printf("[%s] TX.(%s)\n",txnames[i],txbytes[i]);
                 }
+                values[i] = value = jdouble(txobj,"amount") * SATOSHIDEN;
                 if ( (symbol= jstr(txobj,"coin")) != 0 )
                 {
                     if ( i == BASILISK_ALICESPEND || i == BASILISK_BOBPAYMENT || i == BASILISK_BOBDEPOSIT || i == BASILISK_BOBREFUND || i == BASILISK_BOBRECLAIM || i == BASILISK_ALICECLAIM )
@@ -3516,11 +3517,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                             }
                             free_json(sentobj);
                         }
+                        printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     }
-                    values[i] = value = jdouble(txobj,"amount") * SATOSHIDEN;
-                    printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
-                    //if ( sentflags[i] == 0 || addflag != 0 )
-                    //    jaddi(array,txobj);
                 }
             } //else printf("no symbol\n");
             free(fstr);
@@ -3864,7 +3862,7 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                 if ( (item= basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( 0 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    if ( (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
                         break;
                 }
             }
