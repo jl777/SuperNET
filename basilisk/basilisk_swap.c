@@ -181,22 +181,22 @@ bits256 basilisk_revealkey(bits256 privkey,bits256 pubkey)
 
 int32_t basilisk_swap_bobredeemscript(int32_t depositflag,int32_t *secretstartp,uint8_t *redeemscript,uint32_t locktime,bits256 pubA0,bits256 pubB0,bits256 pubB1,bits256 privAm,bits256 privBn,uint8_t *secretAm,uint8_t *secretAm256,uint8_t *secretBn,uint8_t *secretBn256)
 {
-    int32_t i,n=0; bits256 cltvpub,destpub,privkey; uint8_t pubkeyA[33],pubkeyB[33],*secret160,*secret256;
+    int32_t i,n=0; bits256 cltvpub,destpub,privkey; uint8_t pubkeyA[33],pubkeyB[33],secret160[20],secret256[32];
     if ( depositflag != 0 )
     {
         pubkeyA[0] = 0x02, cltvpub = pubA0;
         pubkeyB[0] = 0x03, destpub = pubB0;
         privkey = privBn;
-        secret160 = secretBn;
-        secret256 = secretBn256;
+        memcpy(secret160,secretBn,20);
+        memcpy(secret256,secretBn256,32);
     }
     else
     {
         pubkeyA[0] = 0x03, cltvpub = pubB1;
         pubkeyB[0] = 0x02, destpub = pubA0;
         privkey = privAm;
-        secret160 = secretAm;
-        secret256 = secretAm256;
+        memcpy(secret160,secretAm,20);
+        memcpy(secret256,secretAm256,32);
     }
     //for (i=0; i<32; i++)
     //    printf("%02x",secret256[i]);
