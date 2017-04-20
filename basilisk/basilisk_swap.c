@@ -785,7 +785,7 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
     coinaddr[0] = secretAmstr[0] = secretAm256str[0] = secretBnstr[0] = secretBn256str[0] = 0;
     memset(zeroes,0,sizeof(zeroes));
-    if ( (fp= fopen(fname,"wb")) != 0 )
+    if ( rawtx != 0 && (fp= fopen(fname,"wb")) != 0 )
     {
         fprintf(fp,"{\"name\":\"%s\",\"coin\":\"%s\"",rawtx->name,rawtx->coin->symbol);
         if ( rawtx->I.datalen > 0 )
@@ -915,6 +915,11 @@ void basilisk_dontforget_update(struct supernet_info *myinfo,struct basilisk_swa
 {
     bits256 triggertxid;
     memset(triggertxid.bytes,0,sizeof(triggertxid));
+    if ( rawtx == 0 )
+    {
+        basilisk_dontforget(myinfo,swap,0,0,triggertxid);
+        return;
+    }
     if ( rawtx == &swap->myfee )
         basilisk_dontforget(myinfo,swap,&swap->myfee,0,triggertxid);
     else if ( rawtx == &swap->otherfee )
@@ -1237,6 +1242,7 @@ int32_t basilisk_verify_privi(struct supernet_info *myinfo,void *ptr,uint8_t *da
                 vcalc_sha256(0,swap->I.secretBn256,privkey.bytes,sizeof(privkey));
                 printf("set privBn.%s %s\n",bits256_str(str,swap->I.privBn),bits256_str(str2,*(bits256 *)swap->I.secretBn256));
             }
+            basilisk_dontforget_update(myinfo,swap,0);
             char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
         }
@@ -2921,7 +2927,7 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
             {
                 scriptlen >>= 1;
                 decode_hex(script,scriptlen,hexstr);
-                //char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
+                char str[65]; printf("%s/v%d sigscript.(%s)\n",bits256_str(str,txid),vini,hexstr);
             }
         }
         free_json(retjson);
@@ -3448,7 +3454,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                             if ( strcmp(txname,txnames[i]) == 0 )
                             {
                                 sentflags[j] = 1;
-                                printf("finished.%s\n",txnames[j]);
+                                //printf("finished.%s\n",txnames[j]);
                                 break;
                             }
                     }
@@ -3505,7 +3511,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         free_json(sentobj);
                     }
                     values[i] = value = jdouble(txobj,"amount") * SATOSHIDEN;
-                    //printf("%s %.8f\n",txnames[i],dstr(value));
+                    printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
                     //if ( sentflags[i] == 0 || addflag != 0 )
                     //    jaddi(array,txobj);
                 }
@@ -3722,7 +3728,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             }
         }
     }
-    printf("finish.%d iambob.%d REFUND %d %d %d %d\n",finishedflag,iambob,sentflags[BASILISK_BOBREFUND] == 0,sentflags[BASILISK_BOBDEPOSIT] != 0,bits256_nonz(txids[BASILISK_BOBDEPOSIT]) != 0,bits256_nonz(depositspent) == 0);
+    //printf("finish.%d iambob.%d REFUND %d %d %d %d\n",finishedflag,iambob,sentflags[BASILISK_BOBREFUND] == 0,sentflags[BASILISK_BOBDEPOSIT] != 0,bits256_nonz(txids[BASILISK_BOBDEPOSIT]) != 0,bits256_nonz(depositspent) == 0);
     if ( sentflags[BASILISK_ALICESPEND] != 0 || sentflags[BASILISK_BOBRECLAIM] != 0 )
         sentflags[BASILISK_BOBPAYMENT] = 1;
     if ( sentflags[BASILISK_ALICERECLAIM] != 0 || sentflags[BASILISK_BOBSPEND] != 0 )
