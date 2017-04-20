@@ -3387,7 +3387,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         {
             iambob = jint(item,"iambob");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )
+            {
                 decode_hex(secretAm,20,secretstr);
+                printf("secretAm.(%s)\n",secretstr);
+            }
             if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 64 )
                 decode_hex(secretAm256,32,secretstr);
             if ( (secretstr= jstr(item,"secretBn")) != 0 && strlen(secretstr) == 40 )
