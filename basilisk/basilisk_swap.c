@@ -3000,7 +3000,7 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                 if ( coinaddr[0] != 0 )
                 {
                     free_json(array);
-                    if ( (array= dpow_listtransactions(myinfo,coin,destaddr,100,0)) != 0 )
+                    if ( (array= dpow_listtransactions(myinfo,coin,coinaddr,100,0)) != 0 )
                     {
                         printf("second array.(%s)\n",jprint(array,0));
                     }
