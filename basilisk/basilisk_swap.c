@@ -3389,7 +3389,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )
             {
                 decode_hex(secretAm,20,secretstr);
-                printf("secretAm.(%s)\n",secretstr);
+                int32_t z;
+                for (z=0; z<20; z++)
+                    printf("%02x",secretAm[z]);
+                printf(" secretAm.(%s)\n",secretstr);
             }
             if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 64 )
                 decode_hex(secretAm256,32,secretstr);
@@ -3600,10 +3603,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         if ( bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 )
                         {
                             // alicespend
-                            for (j=0; j<32; j++)
-                                rev.bytes[j] = privAm.bytes[31 - j];
-                            revcalc_rmd160_sha256(secretAm,rev);//privAm);
-                            vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
+                            //for (j=0; j<32; j++)
+                            //    rev.bytes[j] = privAm.bytes[31 - j];
+                            //revcalc_rmd160_sha256(secretAm,rev);//privAm);
+                            //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
                             redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
                             len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
                             if ( (txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend("alicespend",myinfo,bobcoin,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,pubkey33,1)) != 0 )
@@ -3670,6 +3673,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
         else if ( iambob == 1 )
         {
+            int32_t z;
+            for (z=0; z<20; z++)
+                printf("%02x",secretAm[z]);
+            printf(" secretAm iambob\n");
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
                 printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,txids[BASILISK_ALICESPEND]),bits256_nonz(privAm));
