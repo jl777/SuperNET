@@ -781,7 +781,7 @@ void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,in
 
 void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
 {
-    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
+    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65],*tmp; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
     coinaddr[0] = secretAmstr[0] = secretAm256str[0] = secretBnstr[0] = secretBn256str[0] = 0;
     memset(zeroes,0,sizeof(zeroes));
@@ -799,6 +799,11 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
                 basilisk_swap_coinaddr(myinfo,swap,swap->bobcoin,coinaddr,rawtx->txbytes,rawtx->I.datalen);
                 if ( coinaddr[0] != 0 )
                 {
+                    if ( swap->bobcoin != 0 && swap->bobcoin->FULLNODE < 0 )
+                    {
+                        if ( (tmp= dpow_importaddress(myinfo,swap->bobcoin,coinaddr)) != 0 )
+                            free(tmp);
+                    }
                     if ( rawtx == &swap->bobdeposit )
                         safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
                     else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
@@ -820,6 +825,11 @@ void basilisk_dontforget(struct supernet_info *myinfo,struct basilisk_swap *swap
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
             basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin->chain->p2shtype,swap->I.pubAm,swap->I.pubBn);
+            if ( swap->alicecoin != 0 && swap->alicecoin->FULLNODE < 0 )
+            {
+                if ( (tmp= dpow_importaddress(myinfo,swap->alicecoin,coinaddr)) != 0 )
+                    free(tmp);
+            }
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
         /*basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
@@ -2919,22 +2929,112 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
     return(scriptlen);
 }
 
+bits256 dex_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,char *coinaddr,bits256 utxotxid,int32_t vout)
+{
+    char *retstr,*addr; cJSON *array,*item,*array2; int32_t i,n,m; bits256 spendtxid,txid;
+    memset(&spendtxid,0,sizeof(spendtxid));
+    if ( (retstr= dex_listtransactions(myinfo,0,0,0,symbol,coinaddr,100,0)) != 0 )
+    {
+        if ( (array= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    if ( (item= jitem(array,i)) == 0 )
+                        continue;
+                    txid = jbits256(item,"txid");
+                    if ( bits256_nonz(txid) == 0 )
+                    {
+                        spendtxid = jbits256(item,"hash");
+                        if ( (array2= jarray(&m,item,"inputs")) != 0 && m == 1 )
+                        {
+                            //printf("found inputs with %s\n",bits256_str(str,spendtxid));
+                            txid = jbits256(jitem(array2,0),"output_hash");
+                            if ( bits256_cmp(txid,utxotxid) == 0 )
+                            {
+                                //printf("matched %s\n",bits256_str(str,txid));
+                                if ( (array2= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array2,0),"address")) != 0 )
+                                {
+                                    strcpy(destaddr,addr);
+                                    //printf("set addr.(%s)\n",addr);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else if ( bits256_cmp(txid,utxotxid) == 0 )
+                    {
+                        spendtxid = jbits256(item,"spendtxid");
+                        if ( bits256_nonz(spendtxid) != 0 )
+                        {
+                            basilisk_swap_getcoinaddr(myinfo,symbol,destaddr,spendtxid,0);
+                            //char str[65]; printf("found spendtxid.(%s) -> %s\n",bits256_str(str,spendtxid),destaddr);
+                            break;
+                        }
+                    }
+                }
+            }
+            free_json(array);
+        }
+        free(retstr);
+    }
+    return(spendtxid);
+}
+    
 bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *destaddr,bits256 utxotxid,int32_t vout)
 {
-    bits256 spendtxid,txid; char *retstr,*addr,*catstr; cJSON *array,*array2,*item; int32_t i,n,m; char coinaddr[64]; struct iguana_info *coin = iguana_coinfind(symbol);
+    bits256 spendtxid,txid; char *catstr,*addr; cJSON *array,*item,*item2,*txobj,*vins; int32_t i,n,m; char coinaddr[64],str[65]; struct iguana_info *coin = iguana_coinfind(symbol);
     // listtransactions or listspents
     destaddr[0] = 0;
+    coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
     if ( (coin == 0 || coin->FULLNODE >= 0) && iguana_isnotarychain(symbol) >= 0 )
     {
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
         basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
-        //printf("spendtxid %s dest.(%s)\n",symbol,coinaddr);
-        if ( coinaddr[0] != 0 && (retstr= dex_listtransactions(myinfo,0,0,0,symbol,coinaddr,100,0)) != 0 )
+        if ( coinaddr[0] != 0 )
+            spendtxid = dex_swap_spendtxid(myinfo,symbol,destaddr,coinaddr,utxotxid,vout);
+    }
+    else if ( coin != 0 )
+    {
+        if ( (array= dpow_listtransactions(myinfo,coin,destaddr,1000,0)) != 0 )
         {
-            //printf("listtransactions.(%s)\n",retstr);
-            if ( (array= cJSON_Parse(retstr)) != 0 )
+            if ( (n= cJSON_GetArraySize(array)) > 0 )
+            {
+                for (i=0; i<n; i++)
+                {
+                    if ( (item= jitem(array,i)) == 0 )
+                        continue;
+                    txid = jbits256(item,"txid");
+                    if ( vout == juint(item,"vout") && bits256_cmp(txid,utxotxid) == 0 && (addr= jstr(item,"address")) != 0 )
+                    {
+                        if ( (catstr= jstr(item,"category")) != 0 )
+                        {
+                            if (strcmp(catstr,"send") == 0 )
+                            {
+                                strncpy(destaddr,addr,63);
+                                printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
+                                if ( coinaddr[0] != 0 )
+                                    break;
+                            }
+                            if (strcmp(catstr,"receive") == 0 )
+                            {
+                                strncpy(coinaddr,addr,63);
+                                printf("receive dest.(%s) <- (%s)\n",destaddr,coinaddr);
+                                if ( destaddr[0] != 0 )
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+            free_json(array);
+        }
+        if ( destaddr[0] != 0 )
+        {
+            if ( (array= dpow_listtransactions(myinfo,coin,destaddr,1000,0)) != 0 )
             {
                 if ( (n= cJSON_GetArraySize(array)) > 0 )
                 {
@@ -2942,71 +3042,37 @@ bits256 basilisk_swap_spendtxid(struct supernet_info *myinfo,char *symbol,char *
                     {
                         if ( (item= jitem(array,i)) == 0 )
                             continue;
-                        txid = jbits256(item,"txid");
-                        if ( bits256_nonz(txid) == 0 )
+                        if ( (catstr= jstr(item,"category")) != 0 && strcmp(catstr,"send") == 0 )
                         {
-                            spendtxid = jbits256(item,"hash");
-                            if ( (array2= jarray(&m,item,"inputs")) != 0 && m == 1 )
+                            txid = jbits256(item,"txid");
+                            if ( (txobj= dpow_gettransaction(myinfo,coin,txid)) != 0 )
                             {
-                                //printf("found inputs with %s\n",bits256_str(str,spendtxid));
-                                txid = jbits256(jitem(array2,0),"output_hash");
-                                if ( bits256_cmp(txid,utxotxid) == 0 )
+                                if ( (vins= jarray(&m,txobj,"vin")) != 0 && m > jint(item,"vout") )
                                 {
-                                    //printf("matched %s\n",bits256_str(str,txid));
-                                    if ( (array2= jarray(&m,item,"outputs")) != 0 && m == 1 && (addr= jstr(jitem(array2,0),"address")) != 0 )
+                                    item2 = jitem(vins,jint(item,"vout"));
+                                    if ( bits256_cmp(utxotxid,jbits256(item2,"txid")) == 0 && vout == jint(item2,"vout") )
                                     {
-                                        strcpy(destaddr,addr);
-                                        //printf("set addr.(%s)\n",addr);
+                                        spendtxid = txid;
                                         break;
                                     }
                                 }
                             }
                         }
-                        else if ( bits256_cmp(txid,utxotxid) == 0 )
-                        {
-                            spendtxid = jbits256(item,"spendtxid");
-                            if ( bits256_nonz(spendtxid) != 0 )
-                            {
-                                basilisk_swap_getcoinaddr(myinfo,symbol,destaddr,spendtxid,0);
-                                //char str[65]; printf("found spendtxid.(%s) -> %s\n",bits256_str(str,spendtxid),destaddr);
-                                break;
-                            }
-                        }
                     }
+                    if ( i == n )
+                        printf("dpowlist: native couldnt find spendtxid for %s\n",bits256_str(str,utxotxid));
                 }
+                free_json(array);
             }
-            free(retstr);
+            if ( bits256_nonz(spendtxid) != 0 )
+                return(spendtxid);
         }
-    }
-    else if ( coin != 0 )
-    {
-        if ( (array= dpow_listtransactions(myinfo,coin,destaddr,100,0)) != 0 )
+        if ( iguana_isnotarychain(symbol) >= 0 )
         {
-            if ( (n= cJSON_GetArraySize(array)) > 0 )
-            {
-                coinaddr[0] = 0;
-                for (i=0; i<n; i++)
-                {
-                    if ( (item= jitem(array,i)) == 0 )
-                        continue;
-                    txid = jbits256(item,"txid");
-                    if ( vout == juint(item,"vout") && bits256_cmp(txid,utxotxid) == 0 && (catstr= jstr(item,"category")) != 0 && strcmp(catstr,"send") == 0 )
-                    {
-                        if ( jstr(item,"address") != 0 )
-                            strncpy(coinaddr,jstr(item,"address"),63);
-                        printf("(%s) <- (%s) item.%d.[%s]\n",destaddr,coinaddr,i,jprint(item,0));
-                    }
-                }
-                if ( coinaddr[0] != 0 )
-                {
-                    free_json(array);
-                    if ( (array= dpow_listtransactions(myinfo,coin,coinaddr,100,0)) != 0 )
-                    {
-                        printf("second array.(%s)\n",jprint(array,0));
-                    }
-                 }
-            }
-            free_json(array);
+            basilisk_swap_getcoinaddr(myinfo,symbol,coinaddr,utxotxid,vout);
+            printf("fallback use DEX for native (%s) (%s)\n",coinaddr,bits256_str(str,utxotxid));
+            if ( coinaddr[0] != 0 )
+                spendtxid = dex_swap_spendtxid(myinfo,symbol,destaddr,coinaddr,utxotxid,vout);
         }
     }
     return(spendtxid);
