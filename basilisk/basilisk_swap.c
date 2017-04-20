@@ -2938,14 +2938,17 @@ int32_t basilisk_swap_getsigscript(struct supernet_info *myinfo,char *symbol,uin
 int64_t basilisk_txvalue(struct supernet_info *myinfo,char *symbol,bits256 txid,int32_t vout)
 {
     cJSON *txobj,*vouts,*item; int32_t n; int64_t value = 0;
-    if ( (txobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
+    //char str[65]; printf("%s txvalue.(%s)\n",symbol,bits256_str(str,txid));
+    if ( (txobj= basilisk_swapgettx(myinfo,symbol,txid)) != 0 )
     {
+        //printf("txobj.(%s)\n",jprint(txobj,0));
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
         {
             item = jitem(vouts,vout);
             if ( (value= jdouble(item,"amount") * SATOSHIDEN) == 0 )
                 value = jdouble(item,"value") * SATOSHIDEN;
         }
+        free_json(txobj);
     }
     return(value);
 }
@@ -3343,6 +3346,27 @@ bits256 basilisk_swap_spendupdate(struct supernet_info *myinfo,char *symbol,int3
 #define BASILISK_ALICECLAIM 10
 //0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0
 char *txnames[] = { "alicespend", "bobspend", "bobpayment", "alicepayment", "bobdeposit", "otherfee", "myfee", "bobrefund", "bobreclaim", "alicereclaim", "aliceclaim" };
+
+int32_t basilisk_isbobcoin(int32_t iambob,int32_t ind)
+{
+    switch ( ind  )
+    {
+        case BASILISK_MYFEE: return(iambob); break;
+        case BASILISK_OTHERFEE: return(!iambob); break;
+        case BASILISK_BOBSPEND:
+        case BASILISK_ALICEPAYMENT:
+        case BASILISK_ALICERECLAIM:
+        case BASILISK_ALICECLAIM: return(0);
+            break;
+        case BASILISK_BOBDEPOSIT:
+        case BASILISK_ALICESPEND:
+        case BASILISK_BOBPAYMENT:
+        case BASILISK_BOBREFUND:
+        case BASILISK_BOBRECLAIM: return(1);
+            break;
+       default: return(-1); break;
+    }
+}
 
 // add blocktrail presence requirement for BTC
 int32_t basilisk_swap_isfinished(int32_t iambob,bits256 *txids,int32_t *sentflags,bits256 paymentspent,bits256 Apaymentspent,bits256 depositspent)
@@ -3780,8 +3804,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
     if ( sentflags[BASILISK_ALICECLAIM] != 0 || sentflags[BASILISK_BOBREFUND] != 0 )
         sentflags[BASILISK_BOBDEPOSIT] = 1;
     for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
-        if ( sentflags[i] != 0 && values[i] == 0 )
-            values[i] = basilisk_txvalue(myinfo,bobcoin,txids[i],0);
+        if ( bits256_nonz(txids[i]) != 0 && values[i] == 0 )
+            values[i] = basilisk_txvalue(myinfo,basilisk_isbobcoin(iambob,i) ? bobcoin : alicecoin,txids[i],0);
      if ( origfinishedflag == 0 )
     {
         printf("iambob.%d Apaymentspent.(%s) alice.%d bob.%d %s %.8f\n",iambob,bits256_str(str,Apaymentspent),sentflags[BASILISK_ALICERECLAIM],sentflags[BASILISK_BOBSPEND],alicecoin,dstr(values[BASILISK_ALICEPAYMENT]));
