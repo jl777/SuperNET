@@ -3646,6 +3646,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         {
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
+                printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,txids[BASILISK_ALICESPEND]),bits256_nonz(privAm));
                 if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 || bits256_nonz(privAm) != 0 )
                 {
                     //if ( txbytes[BASILISK_BOBSPEND] == 0 )
