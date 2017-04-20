@@ -3514,40 +3514,40 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
     }
     //printf("iambob.%d src.%s dest.%s bob.%s alice.%s pubA0.(%s)\n",iambob,src,dest,bobcoin,alicecoin,bits256_str(str,pubA0));
-    //strcpy(bobcoin,"KMD");
-    //strcpy(alicecoin,"BTC");
     Adestaddr[0] = destaddr[0] = 0;
     Adest = Bdest = AAdest = ABdest = 0;
-    if ( iambob == 0 )
-    {
-        if ( (coin= iguana_coinfind(alicecoin)) != 0 )
-        {
-            bitcoin_address(Adestaddr,coin->chain->pubtype,pubkey33,33);
-            AAdest = Adestaddr;
-        }
-        if ( (coin= iguana_coinfind(bobcoin)) != 0 )
-        {
-            bitcoin_address(destaddr,coin->chain->pubtype,pubkey33,33);
-            Adest = destaddr;
-        }
-    }
-    else
-    {
-        if ( (coin= iguana_coinfind(bobcoin)) != 0 )
-        {
-            bitcoin_address(destaddr,coin->chain->pubtype,pubkey33,33);
-            Bdest = destaddr;
-        }
-        if ( (coin= iguana_coinfind(alicecoin)) != 0 )
-        {
-            bitcoin_address(Adestaddr,coin->chain->pubtype,pubkey33,33);
-            ABdest = Adestaddr;
-        }
-    }
+    if ( bobcoin[0] == 0 || alicecoin[0] == 0 )
+        return(0);
     //printf("privAm.(%s) %p/%p\n",bits256_str(str,privAm),Adest,AAdest);
     //printf("privBn.(%s) %p/%p\n",bits256_str(str,privBn),Bdest,ABdest);
     if ( finishedflag == 0 && bobcoin[0] != 0 && alicecoin[0] != 0 )
     {
+        if ( iambob == 0 )
+        {
+            if ( (coin= iguana_coinfind(alicecoin)) != 0 )
+            {
+                bitcoin_address(Adestaddr,coin->chain->pubtype,pubkey33,33);
+                AAdest = Adestaddr;
+            }
+            if ( (coin= iguana_coinfind(bobcoin)) != 0 )
+            {
+                bitcoin_address(destaddr,coin->chain->pubtype,pubkey33,33);
+                Adest = destaddr;
+            }
+        }
+        else
+        {
+            if ( (coin= iguana_coinfind(bobcoin)) != 0 )
+            {
+                bitcoin_address(destaddr,coin->chain->pubtype,pubkey33,33);
+                Bdest = destaddr;
+            }
+            if ( (coin= iguana_coinfind(alicecoin)) != 0 )
+            {
+                bitcoin_address(Adestaddr,coin->chain->pubtype,pubkey33,33);
+                ABdest = Adestaddr;
+            }
+        }
         if ( sentflags[BASILISK_ALICEPAYMENT] == 0 && bits256_nonz(txids[BASILISK_ALICEPAYMENT]) != 0 )
         {
             printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
