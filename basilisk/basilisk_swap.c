@@ -3111,7 +3111,7 @@ bits256 basilisk_swap_sendrawtransaction(struct supernet_info *myinfo,char *txna
 
 char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *symbol,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33,int32_t finalseqid)
 {
-    char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = (uint32_t)time(NULL) - 777,sequenceid = 0xffffffff * finalseqid; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
+    char *rawtxbytes=0,*signedtx=0,str[65],hexstr[999],wifstr[128],destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*sobj,*privkeys; int32_t height,completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = (uint32_t)time(NULL) - 777,sequenceid = 0xfffffffe | finalseqid; struct iguana_info *coin; bits256 txid,signedtxid; uint64_t destamount;
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 || (coin= iguana_coinfind(symbol)) == 0 )
         return(0);
@@ -3385,13 +3385,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         {
             iambob = jint(item,"iambob");
             if ( (secretstr= jstr(item,"secretAm")) != 0 && strlen(secretstr) == 40 )
-            {
                 decode_hex(secretAm,20,secretstr);
-                int32_t z;
-                for (z=0; z<20; z++)
-                    printf("%02x",secretAm[z]);
-                printf(" secretAm.(%s)\n",secretstr);
-            }
             if ( (secretstr= jstr(item,"secretAm256")) != 0 && strlen(secretstr) == 64 )
                 decode_hex(secretAm256,32,secretstr);
             if ( (secretstr= jstr(item,"secretBn")) != 0 && strlen(secretstr) == 40 )
@@ -3671,10 +3665,6 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
         else if ( iambob == 1 )
         {
-            int32_t z;
-            for (z=0; z<20; z++)
-                printf("%02x",secretAm[z]);
-            printf(" secretAm iambob\n");
             if ( sentflags[BASILISK_BOBSPEND] == 0 && bits256_nonz(Apaymentspent) == 0 )
             {
                 printf("try to bobspend aspend.%s have privAm.%d\n",bits256_str(str,txids[BASILISK_ALICESPEND]),bits256_nonz(privAm));
@@ -3705,16 +3695,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             }
             if ( sentflags[BASILISK_BOBRECLAIM] == 0 && sentflags[BASILISK_BOBPAYMENT] != 0 && bits256_nonz(txids[BASILISK_BOBPAYMENT]) != 0 && time(NULL) > expiration && bits256_nonz(paymentspent) == 0 )
             {
-                for (z=0; z<20; z++)
-                    printf("%02x",secretAm[z]);
-                printf(" secretAm inside reclaim\n");
                 //if ( txbytes[BASILISK_BOBRECLAIM] == 0 )
                 {
                     // bobreclaim
                     redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,zero,privBn,secretAm,secretAm256,secretBn,secretBn256);
-                    for (z=0; z<20; z++)
-                        printf("%02x",secretAm[z]);
-                    printf(" secretAm after redeemscript\n");
                     if ( redeemlen > 0 )
                     {
                         len = basilisk_swapuserdata(userdata,zero,1,myprivs[1],redeemscript,redeemlen);
