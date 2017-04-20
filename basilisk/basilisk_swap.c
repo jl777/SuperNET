@@ -3120,9 +3120,6 @@ char *basilisk_swap_bobtxspend(char *name,struct supernet_info *myinfo,char *sym
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
     }
-    //if ( strcmp(symbol,"KMD") != 0 && finalseqid != 0 )
-    locktime = 0;
-    sequenceid = 0xffffffff;
     if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
         printf("%s %s basilisk_swap_bobtxspend.%s strange utxo.(%s)\n",symbol,bits256_str(str,utxotxid),name,jprint(utxoobj,0));
@@ -3448,6 +3445,9 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             paymentspent = jbits256(txobj,"paymentspent");
             Apaymentspent = jbits256(txobj,"Apaymentspent");
             depositspent = jbits256(txobj,"depositspent");
+            if ( (array= jarray(&n,txobj,"values")) != 0 )
+                for (i=0; i<n&&i<sizeof(txnames)/sizeof(*txnames); i++)
+                    values[i] = SATOSHIDEN * jdouble(jitem(array,i),0);
             if ( (array= jarray(&n,txobj,"sentflags")) != 0 )
             {
                 for (i=0; i<n; i++)
@@ -3455,7 +3455,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                     if ( (txname= jstri(array,i)) != 0 )
                     {
                         for (j=0; j<sizeof(txnames)/sizeof(*txnames); j++)
-                            if ( strcmp(txname,txnames[i]) == 0 )
+                            if ( strcmp(txname,txnames[j]) == 0 )
                             {
                                 sentflags[j] = 1;
                                 //printf("finished.%s\n",txnames[j]);
@@ -3810,6 +3810,10 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
             free(txbytes[i]);
     }
     jadd(item,"sentflags",array);
+    array = cJSON_CreateArray();
+    for (i=0; i<sizeof(txnames)/sizeof(*txnames); i++)
+        jaddinum(array,dstr(values[i]));
+    jadd(item,"values",array);
     jaddstr(item,"result","success");
     if ( finishedflag != 0 )
         jaddstr(item,"status","finished");
