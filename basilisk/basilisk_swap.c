@@ -1800,14 +1800,14 @@ struct basilisk_swap *bitcoin_swapinit(struct supernet_info *myinfo,bits256 priv
     printf(">>>>>>>>>> jumblrflag.%d <<<<<<<<< use smart address, %.8f bobconfs.%d, %.8f aliceconfs.%d\n",jumblrflag,dstr(swap->I.bobsatoshis),swap->I.bobconfirms,dstr(swap->I.alicesatoshis),swap->I.aliceconfirms);
     if ( swap->I.iambob != 0 )
     {
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->bobcoin,0,0,swap->I.bobsatoshis/INSTANTDEX_DECKSIZE,0,0,jumblrflag);
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->alicecoin,0,0,swap->I.alicesatoshis/INSTANTDEX_DECKSIZE,0,0,jumblrflag);
+        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->bobcoin,0,0,swap->I.bobsatoshis/INSTANTDEX_INSURANCEDIV,0,0,jumblrflag);
+        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->alicecoin,0,0,swap->I.alicesatoshis/INSTANTDEX_INSURANCEDIV,0,0,jumblrflag);
         bobpub33 = pubkey33;
     }
     else
     {
-        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->bobcoin,0,0,swap->I.bobsatoshis/INSTANTDEX_DECKSIZE,0,0,jumblrflag);
-        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->alicecoin,0,0,swap->I.alicesatoshis/INSTANTDEX_DECKSIZE,0,0,jumblrflag);
+        basilisk_rawtx_setparms("otherfee",swap->I.req.quoteid,&swap->otherfee,swap->bobcoin,0,0,swap->I.bobsatoshis/INSTANTDEX_INSURANCEDIV,0,0,jumblrflag);
+        basilisk_rawtx_setparms("myfee",swap->I.req.quoteid,&swap->myfee,swap->alicecoin,0,0,swap->I.alicesatoshis/INSTANTDEX_INSURANCEDIV,0,0,jumblrflag);
         alicepub33 = pubkey33;
     }
     basilisk_rawtx_setparms("bobdeposit",swap->I.req.quoteid,&swap->bobdeposit,swap->bobcoin,swap->I.bobconfirms,0,swap->I.bobsatoshis + (swap->I.bobsatoshis>>3) + swap->bobcoin->txfee,4,0,jumblrflag);
@@ -2431,7 +2431,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
             }
             free_json(retjson);
         }
-        printf("KVsearch.(%s) connected.%d socks.(%d %d)\n",retstr,swap->connected,swap->pushsock,swap->subsock);
+        printf("KVsearch.(%s) -> (%s) connected.%d socks.(%d %d)\n",keystr,retstr,swap->connected,swap->pushsock,swap->subsock);
         free(retstr);
     }
     if ( swap->connected <= 0 && amlp != 0 )
