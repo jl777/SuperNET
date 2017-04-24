@@ -291,7 +291,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(0.);
         pendingid = active->I.req.quoteid;
     }
-    if ( smartaddress_pubkey(myinfo,&privkey,list[0].srchash) >= 0 )
+    if ( smartaddress_pubkey(myinfo,&privkey,list[0].src,list[0].srchash) >= 0 )
         myrequest = 1;
     for (i=0; i<n; i++)
     {
@@ -299,7 +299,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(-1);
         if ( list[i].quoteid != 0 )
         {
-            if ( smartaddress_pubkey(myinfo,&privkey,list[i].desthash) >= 0 )
+            if ( smartaddress_pubkey(myinfo,&privkey,list[i].dest,list[i].desthash) >= 0 )
                 myrequest |= 2;
             havequoteflag++;
             if ( pendingid == 0 )

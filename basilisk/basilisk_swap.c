@@ -500,7 +500,7 @@ cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *co
                         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,waddr->wifstr);
                     }
-                    else if ( smartaddress(myinfo,&privkey,coinaddr) >= 0 )
+                    else if ( smartaddress(myinfo,&privkey,coin->symbol,coinaddr) >= 0 )
                     {
                         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,wifstr);
@@ -2711,9 +2711,9 @@ cJSON *basilisk_swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; struct basilisk_swap *swap = 0;
+    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; double pending=0.; struct basilisk_swap *swap = 0;
     // statebits 1 -> client, 0 -> LP
-    if ( statebits == 0 && myinfo->numswaps > 0 )
+    if ( myinfo->numswaps > 0 )
     {
         if ( (coin= iguana_coinfind(rp->src)) == 0 || coin->FULLNODE >= 0 )
         {
@@ -2818,7 +2818,18 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                         
                     }
                     myinfo->swaps[myinfo->numswaps++] = swap;
-                } else printf("%u/%u offer wasnt accepted statebits.%d m.%d n.%d\n",rp->requestid,rp->quoteid,statebits,m,n);
+                }
+                else
+                {
+                    if ( statebits != 0 )
+                    {
+                        if ( (coin= iguana_coinfind(rp->src)) != 0 )
+                        {
+                            
+                        }
+                    }
+                    printf("%u/%u offer wasnt accepted statebits.%d m.%d n.%d pending %.8f\n",rp->requestid,rp->quoteid,statebits,m,n,pending);
+                }
             }
         }
     }

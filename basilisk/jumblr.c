@@ -371,20 +371,6 @@ void jumblr_opidsupdate(struct supernet_info *myinfo,struct iguana_info *coin)
     }
 }
 
-bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubtype,char *KMDaddr,char *prefix)
-{
-    bits256 privkey,pubkey; uint8_t pubkey33[33]; char passphrase[sizeof(myinfo->jumblr_passphrase) + 64];
-    sprintf(passphrase,"%s%s",prefix,myinfo->jumblr_passphrase);
-    if ( myinfo->jumblr_passphrase[0] == 0 )
-        strcpy(myinfo->jumblr_passphrase,"password");
-    conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
-    bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
-    bitcoin_address(coinaddr,pubtype,pubkey33,33);
-    bitcoin_address(KMDaddr,60,pubkey33,33);
-    //printf("(%s) -> (%s %s)\n",passphrase,coinaddr,KMDaddr);
-    return(privkey);
-}
-
 int64_t jumblr_DEXsplit(struct supernet_info *myinfo,struct iguana_info *coin,bits256 *splittxidp,char *coinaddr,bits256 txid,int32_t vout,int64_t remaining,double bigprice,double middleprice,double smallprice,double fees[4],cJSON *privkeys,double esttxfee)
 {
     int64_t values[4],outputs[64],value,total,estfee; int32_t i,n,success=0,completed,sendflag,numoutputs = 0; char *retstr; cJSON *retjson,*utxo,*item;
@@ -691,15 +677,11 @@ void jumblr_DEXupdate(struct supernet_info *myinfo,struct iguana_info *coin,char
             ptr->BTC2KMD = ptr->btcprice;
             ptr->kmdprice = 1.;
             ptr->KMDavail = KMDavail;
-            /*if ( (btccoin= iguana_coinfind("BTC")) != 0 )
-                jumblr_utxoupdate(myinfo,"KMD",btccoin,ptr->btcprice,ptr->depositaddr,ptr->deposit_privkey,estbtcfee);
-            jumblr_utxoupdate(myinfo,"BTC",kmdcoin,1.,ptr->KMDdepositaddr,ptr->deposit_privkey,estfee);*/
         }
         else if ( (ptr->BTC2KMD= BTC2KMD) > SMALLVAL )
         {
             ptr->kmdprice = ptr->btcprice / BTC2KMD;
             ptr->KMDavail = KMDavail;
-            //jumblr_utxoupdate(myinfo,"KMD",ptr->coin,ptr->kmdprice,ptr->depositaddr,ptr->deposit_privkey,estfee);
         }
         ptr->lasttime = (uint32_t)time(NULL);
         printf("%s avail %.8f KMDavail %.8f btcprice %.8f deposit.(%s %s) -> jumblr.(%s %s)\n",symbol,ptr->avail,KMDavail,ptr->btcprice,ptr->depositaddr,ptr->KMDdepositaddr,ptr->jumblraddr,ptr->KMDjumblraddr);
@@ -718,12 +700,12 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
     kmdcoin = iguana_coinfind("KMD");
     coinbtc = iguana_coinfind("BTC");
     //printf("jumblr_DEXcheck numswaps.%d notary.%d IAMLP.%d %p %p %f\n",myinfo->numswaps,myinfo->IAMNOTARY,myinfo->IAMLP,kmdcoin,coinbtc,kmdcoin->DEXinfo.btcprice);
-    if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 )
+    if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 || myinfo->secret[0] == 0 )
         return;
     if ( kmdcoin == 0 || coinbtc == 0 )
         return;
     jumblr_DEXupdate(myinfo,kmdcoin,"KMD","komodo",0.,0.);
-    if ( strcmp(coin->symbol,"KMD") != 0 && kmdcoin->DEXinfo.btcprice > 0. )
+    if ( strcmp(coin->symbol,"KMD") != 0 && strcmp(coin->symbol,"BTC") != 0 && kmdcoin->DEXinfo.btcprice > 0. )
     {
         if ( coin->CMCname[0] == 0 )
             jumblr_CMCname(coin->CMCname,coin->symbol);
@@ -737,9 +719,9 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
         double minbtc,minkmd,btcavail; char *retstr; cJSON *vals; bits256 hash;
         minbtc = (kmdcoin->DEXinfo.btcprice * 1.2) * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
         btcavail = dstr(jumblr_balance(myinfo,coinbtc,kmdcoin->DEXinfo.depositaddr));
-        avail = (btcavail - kmdcoin->DEXinfo.DEXpending);
-        printf("BTC.%d deposits %.8f, min %.8f avail %.8f pending %.8f\n",toKMD,btcavail,minbtc,avail,kmdcoin->DEXinfo.DEXpending);
-        if ( toKMD == 0 && coinbtc != 0 && btcavail > (minbtc + kmdcoin->DEXinfo.DEXpending) )
+        avail = (btcavail - coinbtc->DEXinfo.DEXpending);
+        printf("BTC.%d deposits %.8f, min %.8f avail %.8f pending %.8f\n",toKMD,btcavail,minbtc,avail,coinbtc->DEXinfo.DEXpending);
+        if ( toKMD == 0 && coinbtc != 0 && btcavail > (minbtc + coinbtc->DEXinfo.DEXpending) )
         {
             /*if ( avail >= (100. * minbtc) )
                 vol = (100. * minbtc);
@@ -759,7 +741,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddnum(vals,"usejumblr",1);
                 jaddnum(vals,"DEXselector",1);
                 memset(hash.bytes,0,sizeof(hash));
-                kmdcoin->DEXinfo.DEXpending += vol;
+                coinbtc->DEXinfo.DEXpending += vol;
                 if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
                 {
                     printf("request.(%s) -> (%s)\n",jprint(vals,0),retstr);
@@ -770,9 +752,9 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
             }
         } //else printf("btcavail %.8f pending %.8f\n",btcavail,pending);
         minkmd = 100.;
-        avail = (kmdcoin->DEXinfo.KMDavail - kmdcoin->DEXinfo.KMDpending);
-        printf("KMD.%d deposits %.8f, min %.8f, avail %.8f  pending %.8f\n",toKMD,kmdcoin->DEXinfo.KMDavail,minkmd,avail,kmdcoin->DEXinfo.KMDpending);
-        if ( toKMD != 0 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (minkmd + kmdcoin->DEXinfo.KMDpending) )
+        avail = (kmdcoin->DEXinfo.KMDavail - kmdcoin->DEXinfo.DEXpending);
+        printf("KMD.%d deposits %.8f, min %.8f, avail %.8f  pending %.8f\n",toKMD,kmdcoin->DEXinfo.KMDavail,minkmd,avail,kmdcoin->DEXinfo.DEXpending);
+        if ( toKMD != 0 && coinbtc != 0 && kmdcoin->DEXinfo.KMDavail > (minkmd + kmdcoin->DEXinfo.DEXpending) )
         {
             /*if ( avail > 100.*JUMBLR_INCR )
                 vol = 100.*JUMBLR_INCR;
@@ -791,7 +773,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 jaddnum(vals,"minprice",0.985 * kmdcoin->DEXinfo.btcprice);
                 jaddnum(vals,"usejumblr",2);
                 memset(hash.bytes,0,sizeof(hash));
-                kmdcoin->DEXinfo.KMDpending += vol;
+                kmdcoin->DEXinfo.DEXpending += vol;
                 jaddnum(vals,"DEXselector",2);
                 if ( (retstr= InstantDEX_request(myinfo,coinbtc,0,0,hash,vals,"")) != 0 )
                 {
@@ -800,7 +782,7 @@ void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32
                 }
                 free_json(vals);
             }
-        } else printf("kmdavail %.8f pending %.8f\n",kmdcoin->DEXinfo.KMDavail,kmdcoin->DEXinfo.KMDpending);
+        } else printf("kmdavail %.8f pending %.8f\n",kmdcoin->DEXinfo.KMDavail,kmdcoin->DEXinfo.DEXpending);
     } else printf("notlp.%d kmdprice %.8f\n",myinfo->IAMLP,kmdcoin->DEXinfo.btcprice);
 }
 

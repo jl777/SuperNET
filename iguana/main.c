@@ -753,7 +753,7 @@ void jumblr_loop(void *ptr)
     printf("JUMBLR loop\n");
     while ( myinfo->IAMNOTARY == 0 )
     {
-        if ( (coin= iguana_coinfind("KMD")) != 0 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && iguana_coinfind("BTC") != 0 )
         {
 //#ifdef __APPLE__
             //if ( (n++ % 10) == 0 )

@@ -245,8 +245,8 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
         //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
-    srcmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->srchash) >= 0;
-    destmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->desthash) >= 0;
+    srcmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->src,_rp->srchash) >= 0;
+    destmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->dest,_rp->desthash) >= 0;
     if ( srcmatch != 0 || destmatch != 0 )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -310,7 +310,7 @@ int32_t basilisk_requests_poll(struct supernet_info *myinfo)
     if ( hwm > 0. )
     {
         myinfo->DEXaccept = issueR;
-        if ( smartaddress_pubkey(myinfo,&privkey,issueR.srchash) >= 0 )
+        if ( smartaddress_pubkey(myinfo,&privkey,issueR.src,issueR.srchash) >= 0 )
         {
             printf("matched dex_smartpubkey\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60

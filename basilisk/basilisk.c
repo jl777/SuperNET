@@ -1354,7 +1354,7 @@ HASH_ARRAY_STRING(basilisk,rawtx,hash,vals,hexstr)
 
 STRING_ARG(jumblr,setpassphrase,passphrase)
 {
-    cJSON *retjson; char KMDaddr[64],BTCaddr[64],wifstr[64]; bits256 privkey; struct iguana_info *coinbtc;
+    cJSON *retjson,*tmp; char KMDaddr[64],BTCaddr[64],wifstr[64],*smartaddrs; bits256 privkey; struct iguana_info *coinbtc;
     if ( passphrase == 0 || passphrase[0] == 0 || (coin= iguana_coinfind("KMD")) == 0 )//|| coin->FULLNODE >= 0 )
         return(clonestr("{\"error\":\"no passphrase or no native komodod\"}"));
     else
@@ -1363,7 +1363,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
-        smartaddress_add(myinfo,privkey,BTCaddr,KMDaddr);
+        smartaddress_add(myinfo,privkey,"deposit");
         myinfo->jumblr_depositkey = curve25519(privkey,curve25519_basepoint9());
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
         if ( coin->FULLNODE < 0 )
@@ -1378,12 +1378,18 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
             jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         }
         privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
-        smartaddress_add(myinfo,privkey,BTCaddr,KMDaddr);
+        smartaddress_add(myinfo,privkey,"jumblr");
         myinfo->jumblr_pubkey = curve25519(privkey,curve25519_basepoint9());
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);
         if ( coinbtc != 0 )
             jaddnum(retjson,"BTCjumbled",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
+        if ( (smartaddrs= InstantDEX_smartaddresses(myinfo,0,0,0)) != 0 )
+        {
+            if ( (tmp= cJSON_Parse(smartaddrs)) != 0 )
+                jadd(retjson,"smartaddresses",tmp);
+            free(smartaddrs);
+        }
         return(jprint(retjson,1));
     }
 }
@@ -1944,7 +1950,5 @@ ZERO_ARGS(InstantDEX,getswaplist)
 {
     return(basilisk_swaplist(myinfo));
 }
-
-
 
 #include "../includes/iguana_apiundefs.h"
