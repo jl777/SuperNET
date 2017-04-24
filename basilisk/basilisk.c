@@ -1364,7 +1364,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
         privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
-        smartaddress_add(myinfo,privkey,"deposit",0.,0.);
+        smartaddress_add(myinfo,privkey,"deposit","KMD",0.,0.);
         myinfo->jumblr_depositkey = curve25519(privkey,curve25519_basepoint9());
         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
         if ( coin->FULLNODE < 0 )
@@ -1379,7 +1379,7 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
             jaddnum(retjson,"BTCdeposits",dstr(jumblr_balance(myinfo,coinbtc,BTCaddr)));
         }
         privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
-        smartaddress_add(myinfo,privkey,"jumblr",0.,0.);
+        smartaddress_add(myinfo,privkey,"jumblr","KMD",0.,0.);
         myinfo->jumblr_pubkey = curve25519(privkey,curve25519_basepoint9());
         jaddstr(retjson,"KMDjumblr",KMDaddr);
         jaddstr(retjson,"BTCjumblr",BTCaddr);

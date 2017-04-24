@@ -91,7 +91,7 @@ void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,d
     }
 }
 
-int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
+int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *type,char *symbol,double maxbid,double minask)
 {
     char coinaddr[64]; uint8_t addrtype,rmd160[20]; struct smartaddress *ap; int32_t i,j,n;
     if ( myinfo->numsmartaddrs < sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs) )
@@ -114,11 +114,11 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
                 return(i+1);
              }
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs];
-        smartaddress_symboladd(ap,"KMD",0.,0.);
-        smartaddress_symboladd(ap,"BTC",0.,0.);
         if ( smartaddress_type(symbol) < 0 )
             return(-1);
-        strcpy(ap->typestr,symbol);
+        strcpy(ap->typestr,type);
+        smartaddress_symboladd(ap,"KMD",0.,0.);
+        smartaddress_symboladd(ap,"BTC",0.,0.);
         ap->privkey = privkey;
         bitcoin_pubkey33(myinfo->ctx,ap->pubkey33,privkey);
         calc_rmd160_sha256(ap->rmd160,ap->pubkey33,33);
@@ -137,11 +137,11 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
     return(-1);
 }
 
-int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *type,char *symbol,double maxbid,double minask)
 {
     int32_t retval;
     portable_mutex_lock(&myinfo->smart_mutex);
-    retval = _smartaddress_add(myinfo,privkey,symbol,maxbid,minask);
+    retval = _smartaddress_add(myinfo,privkey,type,symbol,maxbid,minask);
     portable_mutex_unlock(&myinfo->smart_mutex);
     return(retval);
 }
@@ -267,7 +267,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,smartaddress,type,symbol,maxbid,minask)
         return(clonestr("{\"error\":\"non-supported smartaddress symbol\"}"));
     bitcoin_pubkey33(myinfo->ctx,pubkey33,privkey);
     bitcoin_address(coinaddr,coin->chain->pubtype,pubkey33,33);
-    smartaddress_add(myinfo,privkey,symbol,maxbid,minask);
+    smartaddress_add(myinfo,privkey,type,symbol,maxbid,minask);
     return(InstantDEX_smartaddresses(myinfo,0,0,0));
 }
 
