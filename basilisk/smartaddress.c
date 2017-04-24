@@ -81,13 +81,17 @@ cJSON *smartaddress_json(struct smartaddress *ap)
 
 void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,double minask)
 {
-    struct smartaddress_symbol *sp;
-    ap->symbols = realloc(ap->symbols,(ap->numsymbols+1) * sizeof(*ap->symbols));
-    sp = &ap->symbols[ap->numsymbols++];
-    memset(sp,0,sizeof(*sp));
-    safecopy(sp->symbol,symbol,sizeof(sp->symbol));
-    sp->maxbid = maxbid;
-    sp->minask = minask;
+    char tmp[64]; struct smartaddress_symbol *sp;
+    strcpy(tmp,ap->typestr), touppercase(tmp);
+    if ( strcmp(tmp,symbol) != 0 )
+    {
+        ap->symbols = realloc(ap->symbols,(ap->numsymbols+1) * sizeof(*ap->symbols));
+        sp = &ap->symbols[ap->numsymbols++];
+        memset(sp,0,sizeof(*sp));
+        safecopy(sp->symbol,symbol,sizeof(sp->symbol));
+        sp->maxbid = maxbid;
+        sp->minask = minask;
+    }
 }
 
 int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
