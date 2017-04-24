@@ -54,10 +54,6 @@ cJSON *smartaddress_json(struct smartaddress *ap)
     char coinaddr[64]; int32_t j,n; struct iguana_info *coin; cJSON *array,*item,*retjson;
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"type",ap->typestr);
-    bitcoin_address(coinaddr,60,ap->pubkey33,33);
-    jaddstr(retjson,"KMD",coinaddr);
-    bitcoin_address(coinaddr,0,ap->pubkey33,33);
-    jaddstr(retjson,"BTC",coinaddr);
     if ( (n= ap->numsymbols) > 0 )
     {
         array = cJSON_CreateArray();
@@ -91,6 +87,7 @@ void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,d
         safecopy(sp->symbol,symbol,sizeof(sp->symbol));
         sp->maxbid = maxbid;
         sp->minask = minask;
+        printf("symboladd (%s) <- (%s %f %f)\n",ap->typestr,symbol,maxbid,minask);
     }
 }
 
