@@ -281,7 +281,7 @@ int32_t basilisk_request_cmpref(struct basilisk_request *ref,struct basilisk_req
 
 double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk_request *issueR,struct basilisk_request *list,int32_t n)
 {
-    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; bits256 privkey; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.;
+    int32_t i,noquoteflag=0,havequoteflag=0,myrequest=0,maxi=-1; int64_t balance=0,destamount,minamount = 0,maxamount = 0; bits256 privkey; uint32_t pendingid=0; struct basilisk_swap *active; double metric = 0.,bidasks[2]; char typestr[64];
     memset(issueR,0,sizeof(*issueR));
     minamount = list[0].minamount;
     //printf("need to verify null quoteid is list[0] requestid.%u quoteid.%u\n",list[0].requestid,list[0].quoteid);
@@ -291,7 +291,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(0.);
         pendingid = active->I.req.quoteid;
     }
-    if ( smartaddress_pubkey(myinfo,&privkey,list[0].src,list[0].srchash) >= 0 )
+    if ( smartaddress_pubkey(myinfo,typestr,bidasks,&privkey,list[0].src,list[0].srchash) >= 0 )
         myrequest = 1;
     for (i=0; i<n; i++)
     {
@@ -299,7 +299,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             return(-1);
         if ( list[i].quoteid != 0 )
         {
-            if ( smartaddress_pubkey(myinfo,&privkey,list[i].dest,list[i].desthash) >= 0 )
+            if ( smartaddress_pubkey(myinfo,typestr,bidasks,&privkey,list[i].dest,list[i].desthash) >= 0 )
                 myrequest |= 2;
             havequoteflag++;
             if ( pendingid == 0 )

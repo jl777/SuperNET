@@ -227,7 +227,7 @@ THREE_STRINGS(InstantDEX,supports,exchange,base,rel);
 ZERO_ARGS(InstantDEX,init);
 ZERO_ARGS(InstantDEX,getswaplist);
 ZERO_ARGS(InstantDEX,smartaddresses);
-TWO_STRINGS(InstantDEX,smartaddress,type,symbol);
+TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,smartaddress,type,symbol,maxbid,minask);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);

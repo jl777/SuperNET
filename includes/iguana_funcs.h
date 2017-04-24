@@ -606,10 +606,10 @@ void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
 int32_t basilisk_requests_poll(struct supernet_info *myinfo);
 void dpow_psockloop(void *_ptr);
-int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typestr);
-int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *symbol,char *coinaddr);
-int32_t smartaddress_pubkey(struct supernet_info *myinfo,bits256 *privkeyp,char *symbol,bits256 pubkey);
-int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,char *symbol,uint8_t *pubkey33);
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typestr,double maxbid,double minask);
+int32_t smartaddress(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,char *coinaddr);
+int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,bits256 pubkey);
+int32_t smartaddress_pubkey33(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,uint8_t *pubkey33);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);

@@ -470,7 +470,7 @@ int32_t basilisk_rawtx_sign(struct supernet_info *myinfo,int32_t height,struct b
 
 cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *coin,cJSON *vins)
 {
-    cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid,privkey;
+    cJSON *privkeyarray,*item,*sobj; struct iguana_waddress *waddr; struct iguana_waccount *wacct; char coinaddr[64],account[128],wifstr[64],str[65],typestr[64],*hexstr; uint8_t script[1024]; int32_t i,n,len,vout; bits256 txid,privkey; double bidasks[2];
     privkeyarray = cJSON_CreateArray();
     //printf("%s persistent.(%s) (%s) change.(%s) scriptstr.(%s)\n",coin->symbol,myinfo->myaddr.BTC,coinaddr,coin->changeaddr,scriptstr);
     if ( (n= cJSON_GetArraySize(vins)) > 0 )
@@ -500,7 +500,7 @@ cJSON *basilisk_privkeyarray(struct supernet_info *myinfo,struct iguana_info *co
                         bitcoin_priv2wif(wifstr,waddr->privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,waddr->wifstr);
                     }
-                    else if ( smartaddress(myinfo,&privkey,coin->symbol,coinaddr) >= 0 )
+                    else if ( smartaddress(myinfo,typestr,bidasks,&privkey,coin->symbol,coinaddr) >= 0 )
                     {
                         bitcoin_priv2wif(wifstr,privkey,coin->chain->wiftype);
                         jaddistr(privkeyarray,wifstr);

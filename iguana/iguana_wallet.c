@@ -1377,8 +1377,8 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         sprintf(jumblr_passphrase,"jumblr %s",password);
         if ( (jumblrstr= jumblr_setpassphrase(myinfo,0,0,0,jumblr_passphrase)) != 0 )
             free(jumblrstr);
-        smartaddress_add(myinfo,myinfo->persistent_priv,"kmd");
-        smartaddress_add(myinfo,myinfo->persistent_priv,"btc");
+        smartaddress_add(myinfo,myinfo->persistent_priv,"kmd",0.,0.);
+        smartaddress_add(myinfo,myinfo->persistent_priv,"btc",0.,0.);
     }
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
