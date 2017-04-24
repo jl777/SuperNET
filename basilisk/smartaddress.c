@@ -61,7 +61,7 @@ cJSON *smartaddress_json(struct smartaddress *ap)
         printf("smartjson.(%s)\n",jprint(ap->typejson,0));
         //jadd(item,"type",ap->typejson);
         array = cJSON_CreateArray();
-        if ( (n= cJSON_GetArraySize(ap->typejson)) > 0 )
+        if ( is_cJSON_Array(ap->typejson) != 0 && (n= cJSON_GetArraySize(ap->typejson)) > 0 )
         {
             jadd(retjson,"type",jitem(ap->typejson,0));
             for (j=1; j<n; j++)
@@ -89,7 +89,7 @@ cJSON *smartaddress_json(struct smartaddress *ap)
 
 int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
 {
-    char coinaddr[64],*jsym; uint8_t addrtype,rmd160[20]; cJSON *item; struct smartaddress *ap; int32_t i,j,n;
+    char coinaddr[64],*jsym,tmp[64]; uint8_t addrtype,rmd160[20]; cJSON *item; struct smartaddress *ap; int32_t i,j,n;
     if ( myinfo->numsmartaddrs < sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs) )
     {
         for (i=0; i<myinfo->numsmartaddrs; i++)
@@ -124,7 +124,13 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
                         }
                     }
                 }
-                jaddistr(ap->typejson,symbol);
+                item = cJSON_CreateObject();
+                strcpy(tmp,symbol), touppercase(tmp), jaddstr(item,"s",tmp);
+                if ( maxbid != 0. )
+                    jaddnum(item,"b",maxbid);
+                if ( minask != 0. )
+                    jaddnum(item,"a",minask);
+                jaddi(ap->typejson,item);
                 return(i+1);
              }
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs];
