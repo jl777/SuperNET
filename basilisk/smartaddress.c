@@ -89,7 +89,7 @@ cJSON *smartaddress_json(struct smartaddress *ap)
 
 int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
 {
-    char coinaddr[64],*jsym,tmp[64]; uint8_t addrtype,rmd160[20]; cJSON *item; struct smartaddress *ap; int32_t i,j,n;
+    char coinaddr[64],*jsym,tmp[64]; uint8_t addrtype,rmd160[20]; cJSON *item,*nitem; struct smartaddress *ap; int32_t i,j,n;
     if ( myinfo->numsmartaddrs < sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs) )
     {
         for (i=0; i<myinfo->numsmartaddrs; i++)
@@ -107,18 +107,11 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
                         jsym = jstr(item,"s");
                         if ( jsym != 0 && strcmp(jsym,symbol) == 0 )
                         {
-                            if ( maxbid != 0. )
-                            {
-                                if ( jobj(item,"b") != 0 )
-                                    jdelete(item,"b");
-                                jaddnum(item,"b",maxbid);
-                            }
-                            if ( minask != 0. )
-                            {
-                                if ( jobj(item,"a") != 0 )
-                                    jdelete(item,"a");
-                                jaddnum(item,"a",minask);
-                            }
+                            nitem = cJSON_CreateObject();
+                            jaddstr(nitem,"s",symbol);
+                            jaddnum(nitem,"b",maxbid);
+                            jaddnum(nitem,"a",minask);
+                            cJSON_ReplaceItemInArray(ap->typejson,j,nitem);
                             printf("updated.(%s)\n",jprint(ap->typejson,0));
                             return(0);
                         }
