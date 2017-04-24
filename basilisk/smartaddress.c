@@ -97,9 +97,10 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typ
     if ( myinfo->numsmartaddrs < sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs) )
     {
         for (i=0; i<myinfo->numsmartaddrs; i++)
-            if ( bits256_cmp(myinfo->smartaddrs[i].privkey,privkey) == 0 )
+        {
+            ap = &myinfo->smartaddrs[i];
+            if ( strcmp(type,ap->typestr) == 0 && bits256_cmp(ap->privkey,privkey) == 0 )
             {
-                ap = &myinfo->smartaddrs[i];
                 n = ap->numsymbols;
                 for (j=0; j<n; j++)
                 {
@@ -113,6 +114,7 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typ
                 smartaddress_symboladd(ap,symbol,maxbid,minask);
                 return(i+1);
              }
+        }
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs];
         if ( smartaddress_type(symbol) < 0 )
             return(-1);
