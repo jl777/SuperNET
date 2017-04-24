@@ -51,35 +51,27 @@ bits256 jumblr_privkey(struct supernet_info *myinfo,char *coinaddr,uint8_t pubty
 
 cJSON *smartaddress_json(struct smartaddress *ap)
 {
-    char coinaddr[64],*symbol; int32_t j,n; struct iguana_info *coin; cJSON *array,*ritem,*item,*retjson = cJSON_CreateObject();
+    char coinaddr[64]; int32_t j,n; struct iguana_info *coin; cJSON *array,*item,*retjson;
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"type",ap->typestr);
     bitcoin_address(coinaddr,60,ap->pubkey33,33);
     jaddstr(retjson,"KMD",coinaddr);
     bitcoin_address(coinaddr,0,ap->pubkey33,33);
     jaddstr(retjson,"BTC",coinaddr);
-    if ( ap->typejson != 0 )
+    if ( (n= ap->numsymbols) > 0 )
     {
-        printf("smartjson.(%s)\n",jprint(ap->typejson,0));
-        //jadd(item,"type",ap->typejson);
         array = cJSON_CreateArray();
-        if ( is_cJSON_Array(ap->typejson) != 0 && (n= cJSON_GetArraySize(ap->typejson)) > 0 )
+        for (j=0; j<n; j++)
         {
-            jadd(retjson,"type",jitem(ap->typejson,0));
-            for (j=1; j<n; j++)
+            if ( (coin= iguana_coinfind(ap->symbols[j].symbol)) != 0 )
             {
-                item = jitem(ap->typejson,j);
-                if ( (symbol= jstr(item,"s")) != 0 )
-                {
-                    if ( (coin= iguana_coinfind(symbol)) != 0 )
-                    {
-                        bitcoin_address(coinaddr,coin->chain->pubtype,ap->pubkey33,33);
-                        ritem = cJSON_CreateObject();
-                        jaddstr(ritem,"coin",symbol);
-                        jaddstr(ritem,"address",coinaddr);
-                        jaddnum(ritem,"maxbid",jdouble(item,"b"));
-                        jaddnum(ritem,"minask",jdouble(item,"a"));
-                        jaddi(array,ritem);
-                    }
-                }
+                bitcoin_address(coinaddr,coin->chain->pubtype,ap->pubkey33,33);
+                item = cJSON_CreateObject();
+                jaddstr(item,"coin",coin->symbol);
+                jaddstr(item,"address",coinaddr);
+                jaddnum(item,"maxbid",ap->symbols[j].maxbid);
+                jaddnum(item,"minask",ap->symbols[j].minask);
+                jaddi(array,item);
             }
         }
         jadd(retjson,"coins",array);
@@ -87,53 +79,45 @@ cJSON *smartaddress_json(struct smartaddress *ap)
     return(retjson);
 }
 
+void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,double minask)
+{
+    struct smartaddress_symbol *sp;
+    ap->symbols = realloc(ap->symbols,(ap->numsymbols+1) * sizeof(*ap->symbols));
+    sp = &ap->symbols[ap->numsymbols++];
+    memset(sp,0,sizeof(*sp));
+    safecopy(sp->symbol,symbol,sizeof(sp->symbol));
+    sp->maxbid = maxbid;
+    sp->minask = minask;
+}
+
 int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symbol,double maxbid,double minask)
 {
-    char coinaddr[64],*jsym,tmp[64]; uint8_t addrtype,rmd160[20]; cJSON *item,*nitem; struct smartaddress *ap; int32_t i,j,n;
+    char coinaddr[64]; uint8_t addrtype,rmd160[20]; struct smartaddress *ap; int32_t i,j,n;
     if ( myinfo->numsmartaddrs < sizeof(myinfo->smartaddrs)/sizeof(*myinfo->smartaddrs) )
     {
         for (i=0; i<myinfo->numsmartaddrs; i++)
             if ( bits256_cmp(myinfo->smartaddrs[i].privkey,privkey) == 0 )
             {
                 ap = &myinfo->smartaddrs[i];
-                if ( ap->typejson == 0 )
-                    return(-1);
-                else
+                n = ap->numsymbols;
+                for (j=0; j<n; j++)
                 {
-                    n = cJSON_GetArraySize(ap->typejson);
-                    for (j=0; j<n; j++)
+                    if ( strcmp(ap->symbols[j].symbol,symbol) == 0 )
                     {
-                        item = jitem(ap->typejson,j);
-                        jsym = jstr(item,"s");
-                        if ( jsym != 0 && strcmp(jsym,symbol) == 0 )
-                        {
-                            nitem = cJSON_CreateObject();
-                            jaddstr(nitem,"s",symbol);
-                            jaddnum(nitem,"b",maxbid);
-                            jaddnum(nitem,"a",minask);
-                            cJSON_ReplaceItemInArray(ap->typejson,j,nitem);
-                            printf("updated.(%s)\n",jprint(ap->typejson,0));
-                            return(0);
-                        }
+                        ap->symbols[j].maxbid = maxbid;
+                        ap->symbols[j].minask = minask;
+                        return(0);
                     }
                 }
-                item = cJSON_CreateObject();
-                strcpy(tmp,symbol), touppercase(tmp), jaddstr(item,"s",tmp);
-                if ( maxbid != 0. )
-                    jaddnum(item,"b",maxbid);
-                if ( minask != 0. )
-                    jaddnum(item,"a",minask);
-                jaddi(ap->typejson,item);
+                smartaddress_symboladd(ap,symbol,maxbid,minask);
                 return(i+1);
              }
         ap = &myinfo->smartaddrs[myinfo->numsmartaddrs];
-        ap->typejson = cJSON_CreateArray();
+        smartaddress_symboladd(ap,"KMD",0.,0.);
+        smartaddress_symboladd(ap,"BTC",0.,0.);
         if ( smartaddress_type(symbol) < 0 )
             return(-1);
-        item = cJSON_CreateObject(), jaddstr(item,"type",symbol), jaddi(ap->typejson,item);
-        item = cJSON_CreateObject(), jaddstr(item,"s","KMD"), jaddi(ap->typejson,item);
-        item = cJSON_CreateObject(), jaddstr(item,"s","BTC"), jaddi(ap->typejson,item);
-        printf("created.(%s)\n",jprint(ap->typejson,0));
+        strcpy(ap->typestr,symbol);
         ap->privkey = privkey;
         bitcoin_pubkey33(myinfo->ctx,ap->pubkey33,privkey);
         calc_rmd160_sha256(ap->rmd160,ap->pubkey33,33);
@@ -163,21 +147,16 @@ int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *symb
 
 int32_t smartaddress_symbolmatch(char *typestr,double *bidaskp,struct smartaddress *ap,char *symbol)
 {
-    int32_t j,n; char *str; cJSON *item;
-    if ( ap->typejson != 0 && (n= cJSON_GetArraySize(ap->typejson)) > 0 )
+    int32_t j,n;
+    strcpy(typestr,ap->typestr);
+    if ( (n= ap->numsymbols) > 0 )
     {
-        item = jitem(ap->typejson,0);
-        if ( (str= jstr(item,"type")) != 0 )
-            strncpy(typestr,str,63);
-        else typestr[0] = 0;
-        for (j=1; j<n; j++)
+        for (j=0; j<n; j++)
         {
-            item = jitem(ap->typejson,j);
-            str = jstr(item,"s");
-            if ( str != 0 && strcmp(str,symbol) == 0 )
+            if ( strcmp(ap->symbols[j].symbol,symbol) == 0 )
             {
-                bidaskp[0] = jdouble(item,"b");
-                bidaskp[1] = jdouble(item,"a");
+                bidaskp[0] = ap->symbols[j].maxbid;
+                bidaskp[1] = ap->symbols[j].minask;
                 return(j);
             }
         }

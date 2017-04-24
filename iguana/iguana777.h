@@ -95,11 +95,15 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct smartaddress_symbol { double maxbid,minask; char symbol[16]; };
+
 struct smartaddress
 {
     bits256 privkey,pubkey;
-    cJSON *typejson;
+    int32_t numsymbols;
     uint8_t pubkey33[33],rmd160[20];
+    char typestr[16];
+    struct smartaddress_symbol *symbols;
 };
 
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
