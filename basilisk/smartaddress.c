@@ -58,6 +58,7 @@ cJSON *smartaddress_json(struct smartaddress *ap)
     jaddstr(retjson,"BTC",coinaddr);
     if ( ap->typejson != 0 )
     {
+        printf("smartjson.(%s)\n",jprint(ap->typejson,0));
         //jadd(item,"type",ap->typejson);
         array = cJSON_CreateArray();
         if ( (n= cJSON_GetArraySize(ap->typejson)) > 0 )
@@ -118,6 +119,7 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
                                     jdelete(item,"a");
                                 jaddnum(item,"a",minask);
                             }
+                            printf("updated.(%s)\n",jprint(ap->typejson,0));
                             return(0);
                         }
                     }
@@ -132,6 +134,7 @@ int32_t _smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *sym
         item = cJSON_CreateObject(), jaddstr(item,"type",symbol), jaddi(ap->typejson,item);
         item = cJSON_CreateObject(), jaddstr(item,"s","KMD"), jaddi(ap->typejson,item);
         item = cJSON_CreateObject(), jaddstr(item,"s","BTC"), jaddi(ap->typejson,item);
+        printf("created.(%s)\n",jprint(ap->typejson,0));
         ap->privkey = privkey;
         bitcoin_pubkey33(myinfo->ctx,ap->pubkey33,privkey);
         calc_rmd160_sha256(ap->rmd160,ap->pubkey33,33);
