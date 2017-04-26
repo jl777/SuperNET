@@ -910,6 +910,9 @@ void iguana_walletlock(struct supernet_info *myinfo,struct iguana_info *coin)
     memset(&myinfo->persistent_priv,0,sizeof(myinfo->persistent_priv));
     memset(&myinfo->persistent_pubkey33,0,sizeof(myinfo->persistent_pubkey33));
     memset(myinfo->secret,0,sizeof(myinfo->secret));
+    memset(myinfo->jumblr_passphrase,0,sizeof(myinfo->jumblr_passphrase));
+    memset(&myinfo->jumblr_depositkey,0,sizeof(myinfo->jumblr_depositkey));
+    memset(&myinfo->jumblr_pubkey,0,sizeof(myinfo->jumblr_pubkey));
     memset(myinfo->permanentfile,0,sizeof(myinfo->permanentfile));
     if ( myinfo->decryptstr != 0 )
         scrubfree(myinfo->decryptstr), myinfo->decryptstr = 0;
@@ -1369,8 +1372,14 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
         }
     }
     if ( bits256_nonz(myinfo->persistent_priv) != 0 )
-        smartaddress_add(myinfo,myinfo->persistent_priv,"","");
-
+    {
+        char *jumblrstr,jumblr_passphrase[1024];
+        sprintf(jumblr_passphrase,"jumblr %s",password);
+        if ( (jumblrstr= jumblr_setpassphrase(myinfo,0,0,0,jumblr_passphrase)) != 0 )
+            free(jumblrstr);
+        smartaddress_add(myinfo,myinfo->persistent_priv,"kmd","BTC",0.,0.);
+        smartaddress_add(myinfo,myinfo->persistent_priv,"btc","KMD",0.,0.);
+    }
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);
 }

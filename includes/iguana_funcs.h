@@ -604,12 +604,12 @@ int32_t iguana_scriptdata(struct iguana_info *coin,uint8_t *scriptspace,long fil
 void basilisk_ensurerelay(struct supernet_info *myinfo,struct iguana_info *notaries,uint32_t ipbits);
 void dpow_nanomsginit(struct supernet_info *myinfo,char *ipaddr);
 int32_t iguana_datachain_scan(struct supernet_info *myinfo,struct iguana_info *coin,uint8_t rmd160[20]);
-void basilisk_requests_poll(struct supernet_info *myinfo);
+int32_t basilisk_requests_poll(struct supernet_info *myinfo);
 void dpow_psockloop(void *_ptr);
-int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *BTCaddr,char *KMDaddr);
-int32_t smartaddress(struct supernet_info *myinfo,bits256 *privkeyp,char *coinaddr);
-int32_t smartaddress_pubkey(struct supernet_info *myinfo,bits256 *privkeyp,bits256 pubkey);
-int32_t smartaddress_pubkey33(struct supernet_info *myinfo,bits256 *privkeyp,uint8_t *pubkey33);
+int32_t smartaddress_add(struct supernet_info *myinfo,bits256 privkey,char *typestr,char *symbol,double maxbid,double minask);
+int32_t smartaddress(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,char *coinaddr);
+int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,bits256 pubkey);
+int32_t smartaddress_pubkey33(struct supernet_info *myinfo,char *typestr,double *bidaskp,bits256 *privkeyp,char *symbol,uint8_t *pubkey33);
 
 void iguana_RTreset(struct iguana_info *coin);
 void iguana_RTpurge(struct iguana_info *coin,int32_t lastheight);
@@ -629,10 +629,11 @@ int32_t iguana_staker_sort(struct iguana_info *coin,bits256 *hash2p,uint8_t *ref
 bits256 mpz_div64(bits256 hash,uint64_t divval);
 void iguana_walletinitcheck(struct supernet_info *myinfo,struct iguana_info *coin);
 void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int32_t selector,int32_t modval);
-void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin);
+void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32_t toKMD);
 bits256 jumblr_privkey(struct supernet_info *myinfo,char *BTCaddr,uint8_t pubtype,char *KMDaddr,char *prefix);
 char *jumblr_importprivkey(struct supernet_info *myinfo,struct iguana_info *coin,char *wifstr);
 int64_t iguana_esttxfee(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,char *signedtx,int32_t numvins);
+int64_t jumblr_balance(struct supernet_info *myinfo,struct iguana_info *coin,char *addr);
 
 // ------------------------------------------------------[ Preparation ]----
 // Initialise a gfshare context for producing shares

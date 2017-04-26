@@ -605,17 +605,29 @@ TWOINTS_AND_ARRAY(dpow,ratify,minsigs,timestamp,ratified)
 
 HASH_AND_STRING(dex,gettransaction,txid,symbol)
 {
+    /*char str[65],url[1024],*retstr;
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && myinfo->blocktrail_apikey[0] != 0 )
+    {
+        sprintf(url,"https://api.blocktrail.com/v1/btc/transaction/%s?api_key=%s",bits256_str(str,txid),myinfo->blocktrail_apikey);
+
+        sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
+    }*/
     return(_dex_getrawtransaction(myinfo,symbol,txid));
 }
 
 HASH_AND_STRING_AND_INT(dex,gettxout,txid,symbol,vout)
 {
+    /*char str[65],url[1024],*retstr;
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && myinfo->blocktrail_apikey[0] != 0 )
+    {
+        sprintf(url,"https://api.blocktrail.com/v1/btc/transaction/%s?api_key=%s",bits256_str(str,txid),myinfo->blocktrail_apikey);
+    }*/
     return(_dex_gettxout(myinfo,symbol,txid,vout));
 }
 
 TWO_STRINGS(dex,listunspent,symbol,address)
 {
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->blocktrail_apikey[0] != 0 )
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && myinfo->blocktrail_apikey[0] != 0 )
     {
         char url[1024],*retstr,*coinaddr,*script; int32_t i,n,vout; cJSON *retjson,*data,*item,*item3,*data3; bits256 txid; uint64_t val;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/unspent-outputs?api_key=%s",address,myinfo->blocktrail_apikey);
@@ -665,14 +677,14 @@ TWO_STRINGS(dex,listunspent,symbol,address)
             return(retstr);
         }
     }
-    //else if ( coin != 0 && coin->FULLNODE < 0 )
-    //    return(jprint(dpow_listunspent(myinfo,coin,address),1));
+    else if ( coin != 0 && coin->FULLNODE < 0 )
+        return(jprint(dpow_listunspent(myinfo,coin,address),1));
     return(_dex_listunspent(myinfo,symbol,address));
 }
 
 TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
 {
-    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && coin->FULLNODE == 0 && myinfo->blocktrail_apikey[0] != 0 )
+    if ( symbol != 0 && strcmp(symbol,"BTC") == 0 && (coin= iguana_coinfind("BTC")) != 0 && myinfo->blocktrail_apikey[0] != 0 )
     {
         char url[1024],*retstr,*retstr2; cJSON *retjson,*retjson2,*retjson3,*data,*data2; int32_t i,n;
         sprintf(url,"https://api.blocktrail.com/v1/btc/address/%s/transactions?api_key=%s",address,myinfo->blocktrail_apikey);
@@ -691,7 +703,7 @@ TWO_STRINGS_AND_TWO_DOUBLES(dex,listtransactions,symbol,address,count,skip)
                         for (i=0; i<n; i++)
                             jaddi(retjson3,jduplicate(jitem(data2,i)));
                     }
-                    printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
+                    //printf("combined (%s) and (%s) -> (%s)\n",retstr,retstr2,jprint(retjson3,0));
                     free(retstr);
                     free(retstr2);
                     free_json(retjson);
@@ -865,6 +877,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
     char url[512],*retstr; cJSON *retjson; uint64_t val;
     if ( myinfo->DEXEXPLORER != 0 )
     {
+        //printf("DEXEXPLORER\n");
         if ( symbol != 0 && address != 0 && (coin= iguana_coinfind(symbol)) != 0 && coin->DEXEXPLORER != 0 )
             return(jprint(kmd_getbalance(myinfo,coin,address),1));
         if ( coin != 0 )
@@ -909,7 +922,7 @@ TWO_STRINGS(dex,getbalance,symbol,address)
                         jdelete(retjson,"unconfirmed_received");
                         jaddnum(retjson,"unconfirmed_received",dstr(val));
                     }
-                    //printf("(%s) -> (%s)\n",retstr,jprint(retjson,0));
+                    //printf("blocktrail.(%s) -> (%s)\n",retstr,jprint(retjson,0));
                     free(retstr);
                     retstr = jprint(retjson,1);
                 }

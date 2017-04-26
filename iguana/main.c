@@ -749,16 +749,22 @@ void iguana_urlinit(struct supernet_info *myinfo,int32_t ismainnet,int32_t usess
 
 void jumblr_loop(void *ptr)
 {
-    struct iguana_info *coin; uint32_t t; struct supernet_info *myinfo = ptr; int32_t mult = 10;
+    struct iguana_info *coin; uint32_t t,n=0; struct supernet_info *myinfo = ptr; int32_t mult = 10;
     printf("JUMBLR loop\n");
-    while ( 1 )
+    while ( myinfo->IAMNOTARY == 0 )
     {
-        if ( (coin= iguana_coinfind("KMD")) != 0 )
+        if ( (coin= iguana_coinfind("KMD")) != 0 && iguana_coinfind("BTC") != 0 )
         {
+//#ifdef __APPLE__
+            //if ( (n++ % 10) == 0 )
+            n++;
+            jumblr_DEXcheck(myinfo,coin,n & 1);//!((n/10)&1));
+//#endif
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
                 // if BTC has arrived in destination address, invoke DEX -> BTC
-                jumblr_DEXcheck(myinfo,coin);
+                //if ( (n++ % 10) == 0 )
+                //    jumblr_DEXcheck(myinfo,coin,!((n/10)&1));
                 t = (uint32_t)time(NULL);
                 if ( (t % (120 * mult)) < 60 )
                 {
@@ -2057,7 +2063,7 @@ void komodo_ICO_batch(cJSON *array,int32_t batchid)
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=3; iter<4; iter++)
+        for (iter=0; iter<1; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -2157,7 +2163,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 15;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 16;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
@@ -2174,13 +2180,13 @@ void iguana_main(void *arg)
         free(batchstr);
     }
 #endif
+    myinfo = SuperNET_MYINFO(0);
+    myinfo->rpcport = IGUANA_RPCPORT;
     decode_hex(CRYPTO777_RMD160,20,CRYPTO777_RMD160STR);
     decode_hex(CRYPTO777_PUBSECP33,33,CRYPTO777_PUBSECPSTR);
     iguana_ensuredirs();
     iguana_Qinit();
-    myinfo = SuperNET_MYINFO(0);
     libgfshare_init(myinfo,myinfo->logs,myinfo->exps);
-    myinfo->rpcport = IGUANA_RPCPORT;
     myinfo->dpowsock = myinfo->dexsock = myinfo->pubsock = myinfo->subsock = myinfo->reqsock = myinfo->repsock = -1;
     dex_init(myinfo);
     myinfo->psockport = 30000;

@@ -932,7 +932,7 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
     li.ask = jdouble(vals,"ask");
     if ( (li.minvol= jdouble(vals,"minvol")) <= 0. )
         li.minvol = (strcmp("BTC",base) == 0) ? 0.0001 : 0.001;
-    if ( strcmp(li.base,"KMD") == 0 && strcmp(li.rel,"BTC") == 0 && li.minvol > 100. )
+    if ( strcmp(li.base,"KMD") == 0 && strcmp(li.rel,"BTC") == 0 && li.minvol >= 100. )
         li.minvol = 100.;
     if ( (li.maxvol= jdouble(vals,"maxvol")) < li.minvol )
         li.maxvol = li.minvol;
@@ -984,17 +984,28 @@ void _default_liquidity_command(struct supernet_info *myinfo,char *base,bits256 
                 } else tradebot_monitor(myinfo,0,0,0,li.exchange,li.base,li.rel,0.);
             }
             myinfo->linfos[i] = li;
-            printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
+            //printf("Set linfo[%d] %s (%s/%s) profitmargin %.6f bid %.8f ask %.8f minvol %.6f maxvol %.6f ref %.8f <- (%s)\n",i,li.exchange,li.base,li.rel,li.profit,li.bid,li.ask,li.minvol,li.maxvol,li.refprice,jprint(vals,0));
             return;
         }
     }
     printf("ERROR: too many linfos %d\n",i);
 }
 
-int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume)
+int32_t _default_volume_ok(struct supernet_info *myinfo,struct liquidity_info *li,int32_t dir,double volume,double price)
 {
-    printf("minvol %f maxvol %f vs volume %f\n",li->minvol,li->maxvol,volume);
-    if ( (li->minvol == 0 || volume >= li->minvol) && (li->maxvol == 0 || volume <= li->maxvol) )
+    double minvol,maxvol;
+    if ( dir < 0 )
+    {
+        minvol = li->minvol;
+        maxvol = li->maxvol;
+    }
+    else
+    {
+        minvol = price * li->minvol;
+        maxvol = price * li->maxvol;
+    }
+    printf("dir.%d minvol %f maxvol %f vs (%f %f) volume %f price %.8f\n",dir,li->minvol,li->maxvol,minvol,maxvol,volume,price);
+    if ( (minvol == 0. || volume >= minvol) && (maxvol == 0. || volume <= maxvol) )
         return(0);
     else return(-1);
 }
@@ -1018,7 +1029,7 @@ double _default_liquidity_active(struct supernet_info *myinfo,double *refpricep,
             printf("continue %s %s/%s [%d] dir.%d vs %s %s/%s\n",exchange,base,rel,i,dir,refli.exchange,refli.base,refli.rel);
             continue;
         }
-        if ( _default_volume_ok(myinfo,&refli,dir,destvolume) == 0 )
+        if ( _default_volume_ok(myinfo,&refli,dir,destvolume,dir > 0 ? refli.bid : refli.ask) == 0 )
         {
             if ( refli.profit != 0. )
                 *refpricep = refli.refprice;
@@ -1131,7 +1142,24 @@ void _default_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_s
 
 void tradebot_swap_balancingtrade(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob)
 {
-    printf("balancing trade\n");
+    if ( swap->bobcoin != 0 && swap->alicecoin != 0 )
+    {
+        if ( iambob != 0 )
+        {
+            if ( strcmp(swap->I.req.src,swap->bobcoin->symbol) == 0 )
+                swap->bobcoin->DEXinfo.DEXpending -= swap->I.req.srcamount;
+            else if ( strcmp(swap->I.req.dest,swap->bobcoin->symbol) == 0 )
+                swap->bobcoin->DEXinfo.DEXpending -= swap->I.req.destamount;
+        }
+        else
+        {
+            if ( strcmp(swap->I.req.src,swap->alicecoin->symbol) == 0 )
+                swap->alicecoin->DEXinfo.DEXpending -= swap->I.req.srcamount;
+            else if ( strcmp(swap->I.req.dest,swap->alicecoin->symbol) == 0 )
+                swap->alicecoin->DEXinfo.DEXpending -= swap->I.req.destamount;
+        }
+    }
+    printf(">>>>>>>>>>>>>>>>>> balancing trade done by marketmaker\n");
     return;
     if ( swap->balancingtrade == 0 )
         _default_swap_balancingtrade(myinfo,swap,iambob);

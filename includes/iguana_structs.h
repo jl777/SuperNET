@@ -472,7 +472,7 @@ struct DEXcoin_info
 {
     bits256 deposit_privkey,jumblr_privkey;
     struct iguana_info *coin;
-    double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,maxbid,minask,avail,KMDavail;
+    double btcprice,BTC2KMD,kmdprice,USD_average,DEXpending,KMDpending,maxbid,minask,avail,KMDavail;
     uint32_t lasttime; int32_t numpending;
     char CMCname[32],symbol[16],depositaddr[64],KMDdepositaddr[64],KMDjumblraddr[64],jumblraddr[64];
     struct jumblr_pending *pending;
@@ -604,7 +604,7 @@ struct basilisk_request
     char src[8],dest[8];
     //char volatile_start,message[43];
     uint64_t destamount;
-    int32_t optionhours,profitmargin;
+    int32_t optionhours,profitmargin;//,DEXselector,extraspace;
 } PACKEDSTRUCT;
 
 struct basilisk_relaystatus

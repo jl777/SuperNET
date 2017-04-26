@@ -95,10 +95,15 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
+struct smartaddress_symbol { double maxbid,minask; char symbol[16]; };
+
 struct smartaddress
 {
     bits256 privkey,pubkey;
+    int32_t numsymbols;
     uint8_t pubkey33[33],rmd160[20];
+    char typestr[16];
+    struct smartaddress_symbol *symbols;
 };
 
 struct pending_trade { UT_hash_handle hh; double basevolume,relvolume,dir; char base[32],rel[32]; };
@@ -141,7 +146,7 @@ struct supernet_info
     struct exchange_info *tradingexchanges[SUPERNET_MAXEXCHANGES]; int32_t numexchanges;
     struct iguana_waccount *wallet;
     struct iguana_info *allcoins; int32_t allcoins_being_added,allcoins_numvirts;
-    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex;
+    portable_mutex_t bu_mutex,allcoins_mutex,gecko_mutex,basilisk_mutex,DEX_mutex,DEX_reqmutex,DEX_swapmutex,smart_mutex;
     struct queueitem *DEX_quotes; cJSON *Cunspents,*Cspends;
     struct basilisk_swap *swaps[256]; int32_t numswaps;
     struct basilisk_message *messagetable; portable_mutex_t messagemutex; queue_t msgQ,p2pQ;
@@ -168,7 +173,7 @@ struct supernet_info
     uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
     FILE *swapsfp;
-    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh,runsilent;
 };
 
 struct basilisk_swapmessage
@@ -182,13 +187,14 @@ struct basilisk_swap
 {
     struct supernet_info *myinfoptr; struct iguana_info *bobcoin,*alicecoin;
     void (*balancingtrade)(struct supernet_info *myinfo,struct basilisk_swap *swap,int32_t iambob);
-    int32_t subsock,pushsock,connected; uint32_t lasttime;
+    int32_t subsock,pushsock,connected,aliceunconf,depositunconf,paymentunconf; uint32_t lasttime,aborted;
     FILE *fp;
     bits256 persistent_privkey,persistent_pubkey;
     struct basilisk_swapinfo I;
     struct basilisk_rawtx bobdeposit,bobpayment,alicepayment,myfee,otherfee,aliceclaim,alicespend,bobreclaim,bobspend,bobrefund,alicereclaim;
     bits256 privkeys[INSTANTDEX_DECKSIZE];
     struct basilisk_swapmessage *messages; int32_t nummessages;
+    char Bdeposit[64],Bpayment[64];
     uint64_t otherdeck[INSTANTDEX_DECKSIZE][2],deck[INSTANTDEX_DECKSIZE][2];
     uint8_t persistent_pubkey33[33],pad[15],verifybuf[65536];
 

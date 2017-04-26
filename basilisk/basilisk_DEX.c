@@ -116,6 +116,8 @@ int32_t basilisk_rwDEXquote(int32_t rwflag,uint8_t *serialized,struct basilisk_r
         memcpy(rp->src,&serialized[len],sizeof(rp->src)), len += sizeof(rp->src);
         memcpy(rp->dest,&serialized[len],sizeof(rp->dest)), len += sizeof(rp->dest);
     }
+    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->DEXselector),&rp->DEXselector);
+    //len += iguana_rwnum(rwflag,&serialized[len],sizeof(rp->extraspace),&rp->extraspace);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
         printf(" basilisk_rwDEXquote.%d: quoteid.%u mismatch calc %u rp.%p\n",rwflag,rp->quoteid,basilisk_quoteid(rp),rp);
     if ( basilisk_requestid(rp) != rp->requestid )
@@ -159,11 +161,16 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
         jadd64bits(item,"minamount",rp->minamount);
     jaddstr(item,"dest",rp->dest);
     if ( rp->destamount != 0 )
-        jadd64bits(item,"destamount",rp->destamount);
+    {
+        //jadd64bits(item,"destamount",rp->destamount);
+        jadd64bits(item,"destsatoshis",rp->destamount);
+        //printf("DESTSATOSHIS.%llu\n",(long long)rp->destamount);
+    }
     jaddnum(item,"quotetime",rp->quotetime);
     jaddnum(item,"timestamp",rp->timestamp);
     jaddnum(item,"requestid",rp->requestid);
     jaddnum(item,"quoteid",rp->quoteid);
+    //jaddnum(item,"DEXselector",rp->DEXselector);
     jaddnum(item,"optionhours",rp->optionhours);
     jaddnum(item,"profit",(double)rp->profitmargin / 1000000.);
     if ( rp->quoteid != 0 && basilisk_quoteid(rp) != rp->quoteid )
@@ -192,7 +199,7 @@ cJSON *basilisk_requestjson(struct basilisk_request *rp)
     return(item);
 }
 
-int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits256 desthash,uint32_t timestamp)
+int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits256 desthash,uint32_t timestamp,int32_t DEXselector)
 {
     char *dest,*src; uint32_t i;
     memset(rp,0,sizeof(*rp));
@@ -212,6 +219,7 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
         rp->srchash = jbits256(valsobj,"srchash");
         rp->optionhours = jint(valsobj,"optionhours");
         rp->profitmargin = jdouble(valsobj,"profit") * 1000000;
+        //rp->DEXselector = DEXselector;
         strncpy(rp->src,src,sizeof(rp->src)-1);
         strncpy(rp->dest,dest,sizeof(rp->dest)-1);
         //if ( jstr(valsobj,"relay") != 0 )
@@ -231,14 +239,14 @@ int32_t basilisk_request_create(struct basilisk_request *rp,cJSON *valsobj,bits2
 
 char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *_rp,uint32_t statebits,int32_t optionduration)
 {
-    cJSON *retjson; bits256 tmpprivkey; struct basilisk_request *rp=0; int32_t i,srcmatch,destmatch;
+    cJSON *retjson; char typestr[64]; bits256 tmpprivkey; double bidasks[2]; struct basilisk_request *rp=0; int32_t i,srcmatch,destmatch;
     if ( _rp->requestid == myinfo->lastdexrequestid )
     {
         //printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
-    srcmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->srchash) >= 0;
-    destmatch = smartaddress_pubkey(myinfo,&tmpprivkey,_rp->desthash) >= 0;
+    srcmatch = smartaddress_pubkey(myinfo,typestr,bidasks,&tmpprivkey,_rp->src,_rp->srchash) >= 0;
+    destmatch = smartaddress_pubkey(myinfo,typestr,bidasks,&tmpprivkey,_rp->dest,_rp->desthash) >= 0;
     if ( srcmatch != 0 || destmatch != 0 )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -273,12 +281,12 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
     } else return(clonestr("{\"error\":\"unexpected basilisk_start not mine and amrelay\"}"));
 }
 
-void basilisk_requests_poll(struct supernet_info *myinfo)
+int32_t basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
-    char *retstr; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n; struct basilisk_request issueR; bits256 privkey; double hwm = 0.;
+    char *retstr,typestr[64]; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n,retval = 0; struct basilisk_request issueR; bits256 privkey; double bidasks[2],hwm = 0.;
     if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
-        return;
+        return(retval);
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
     memset(&myinfo->DEXaccept,0,sizeof(myinfo->DEXaccept));
@@ -290,6 +298,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
         {
             if ( (outerarray= jarray(&n,retjson,"responses")) != 0 )
             {
+                retval++;
                 for (i=0; i<n; i++)
                     hwm = basilisk_process_results(myinfo,&issueR,jitem(outerarray,i),hwm);
             } //else hwm = basilisk_process_results(myinfo,&issueR,outerarray,hwm);
@@ -301,7 +310,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
     if ( hwm > 0. )
     {
         myinfo->DEXaccept = issueR;
-        if ( smartaddress_pubkey(myinfo,&privkey,issueR.srchash) >= 0 )
+        if ( smartaddress_pubkey(myinfo,typestr,bidasks,&privkey,issueR.src,issueR.srchash) >= 0 )
         {
             printf("matched dex_smartpubkey\n");
             dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
@@ -324,6 +333,7 @@ void basilisk_requests_poll(struct supernet_info *myinfo)
                 free(retstr);
         } //else printf("basilisk_requests_poll unexpected hwm issueR\n");
     }
+    return(retval);
 }
 
 struct basilisk_relay *basilisk_request_ensure(struct supernet_info *myinfo,uint32_t senderipbits,int32_t numrequests)
@@ -471,9 +481,10 @@ char *basilisk_respond_accept(struct supernet_info *myinfo,bits256 privkey,uint3
         retstr = clonestr("{\"error\":\"couldnt find to requestid to choose\"}");
     return(retstr);
 }
+
 cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
 {
-    cJSON *unspents=0,*array=0; char *retstr;
+    cJSON *unspents=0,*array=0,*json,*ismine; char *retstr; int32_t valid = 0;
     if ( coin->FULLNODE > 0 )
     {
         array = cJSON_CreateArray();
@@ -481,15 +492,24 @@ cJSON *basilisk_unspents(struct supernet_info *myinfo,struct iguana_info *coin,c
         unspents = iguana_listunspents(myinfo,coin,array,0,0,"");
         free_json(array);
     }
-    else if ( coin->FULLNODE == 0 )
+    else
     {
-        if ( (retstr= dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr)) != 0 )
+        if ( coin->FULLNODE < 0 && (retstr= dpow_validateaddress(myinfo,coin,coinaddr)) != 0 )
         {
-            unspents = cJSON_Parse(retstr);
+            json = cJSON_Parse(retstr);
+            if ( (ismine= jobj(json,"ismine")) != 0 && is_cJSON_True(ismine) != 0 )
+                valid = 1;
             free(retstr);
         }
+        if ( coin->FULLNODE == 0 || valid == 0 )
+        {
+            if ( (retstr= dex_listunspent(myinfo,coin,0,0,coin->symbol,coinaddr)) != 0 )
+            {
+                unspents = cJSON_Parse(retstr);
+                free(retstr);
+            }
+        } else unspents = dpow_listunspent(myinfo,coin,coinaddr);
     }
-    else unspents = dpow_listunspent(myinfo,coin,coinaddr);
     return(unspents);
 }
 

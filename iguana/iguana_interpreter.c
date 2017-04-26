@@ -785,7 +785,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             printf("iguana_checkmultisig n.%d != N.%d\n",n,N);
             return(0);
         }
-        //printf("n.%d stackdepth.%d\n",n,stacks->stackdepth);
+//printf("n.%d stackdepth.%d\n",n,stacks->stackdepth);
         for (i=0; i<N; i++)
         {
             if ( stacks->stackdepth <= 0 )
@@ -810,7 +810,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
         if ( stacks->stackdepth <= 0 )
             return(0);
         m = (int32_t)iguana_num(iguana_pop(stacks));
-        //printf("m.%d stackdepth.%d\n",m,stacks->stackdepth);
+//printf("m.%d stackdepth.%d\n",m,stacks->stackdepth);
 
         if ( m != M )
         {
@@ -830,7 +830,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
         }
         if ( i == numsigners )
         {
-            //char str[65]; printf("sigtxid.(%s)\n",bits256_str(str,txhash2));
+            //char str[65]; printf("depth.%d sigtxid.(%s)\n",stacks->stackdepth,bits256_str(str,txhash2));
             if ( stacks->stackdepth > 0 )
                 iguana_pop(stacks); // for backward compatibility
             j = numsigners-1;
@@ -849,7 +849,7 @@ int32_t iguana_checkmultisig(struct iguana_info *coin,struct iguana_interpreter 
             }
         }
     }
-    //printf("valid.%d j.%d M.%d N.%d numsigners.%d\n",valid,j,M,N,numsigners);
+    printf("checkmultisig: valid.%d j.%d M.%d N.%d numsigners.%d\n",valid,j,M,N,numsigners);
     return(0);
 }
 

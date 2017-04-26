@@ -594,7 +594,7 @@ char *iguana_utxoduplicates(struct supernet_info *myinfo,struct iguana_info *coi
         for (i=0; i<duplicates; i++)
             bitcoin_txoutput(txobj,script,spendlen,satoshis);
         rawtx = iguana_calcrawtx(myinfo,coin,&vins,txobj,satoshis * duplicates,changeaddr,txfee,addresses,0,0,0,0,"127.0.0.1",0,1);
-        if ( cJSON_GetArraySize(vins) > duplicates/2 )
+        if ( strcmp(coin->chain->symbol,"BTC") == 0 && cJSON_GetArraySize(vins) > duplicates/2 )
         {
             free(rawtx);
             rawtx = 0;
@@ -741,9 +741,15 @@ char *iguana_utxorawtx(struct supernet_info *myinfo,struct iguana_info *coin,int
     if ( txobj != 0 )
         free_json(txobj);
     if ( rawtx != 0 )
+    {
+        jaddstr(retjson,"rawtx",rawtx);
         free(rawtx);
+    }
     if ( signedtx != 0 )
+    {
+        jaddstr(retjson,"signedtx",signedtx);
         free(signedtx);
+    }
     return(jprint(retjson,1));
 }
 
