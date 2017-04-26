@@ -238,6 +238,7 @@ int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *b
         if ( bits256_cmp(myinfo->smartaddrs[i].pubkey,pubkey) == 0 )
         {
             ap = &myinfo->smartaddrs[i];
+            *privkeyp = ap->privkey;
             if ( (j= smartaddress_symbolmatch(typestr,bidaskp,ap,symbol)) >= 0 )
                 retval = 0;
             else retval = (i+1);
