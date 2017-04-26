@@ -2446,10 +2446,10 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
             }
             free_json(retjson);
         }
-        printf("KVsearch.(%s) -> (%s) connected.%d socks.(%d %d)\n",keystr,retstr,swap->connected,swap->pushsock,swap->subsock);
+        printf("KVsearch.(%s) -> (%s) connected.%d socks.(%d %d) amlp.%d\n",keystr,retstr,swap->connected,swap->pushsock,swap->subsock,amlp);
         free(retstr);
     }
-    if ( swap->connected <= 0 && amlp != 0 )
+    if ( swap->connected <= 0 && amlp != 0 && subsock >= 0 && pushsock >= 0 )
     {
         if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
         {
@@ -2460,25 +2460,30 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
                 subaddr = jstr(retjson,"subaddr");
                 if ( pushaddr != 0 && subaddr != 0 )
                 {
-                    if ( nn_connect(pushsock,pushaddr) >= 0 && nn_connect(subsock,subaddr) >= 0 )
+                    if ( nn_connect(pushsock,pushaddr) >= 0 )
                     {
-                        swap->connected = 1;
-                        sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\",\"trade\":[\"%s\", %.8f, \"%s\", %.8f]}",pushaddr,subaddr,swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount));
-                        datalen = (int32_t)strlen((char *)data) + 1;
-                        printf("datalen.%d (%s)\n",datalen,(char *)data);
-                        init_hexbytes_noT(databuf,data,datalen);
-                        printf("%s -> %s\n",keystr,databuf);
-                        if ( (retstr2= _dex_kvupdate(myinfo,"KV",keystr,databuf,1)) != 0 )
+                        printf("connected to %d pushaddr.(%s)\n",pushsock,pushaddr);
+                        if ( nn_connect(subsock,subaddr) >= 0 )
                         {
-                            printf("KVupdate.(%s)\n",retstr2);
-                            free(retstr2);
-                        }
-                    }
+                            swap->connected = 1;
+                            sprintf((char *)data,"{\"push\":\"%s\",\"sub\":\"%s\",\"trade\":[\"%s\", %.8f, \"%s\", %.8f]}",pushaddr,subaddr,swap->I.req.src,dstr(swap->I.req.srcamount),swap->I.req.dest,dstr(swap->I.req.destamount));
+                            datalen = (int32_t)strlen((char *)data) + 1;
+                            printf("datalen.%d (%s)\n",datalen,(char *)data);
+                            init_hexbytes_noT(databuf,data,datalen);
+                            printf("%s -> %s\n",keystr,databuf);
+                            if ( (retstr2= _dex_kvupdate(myinfo,"KV",keystr,databuf,1)) != 0 )
+                            {
+                                printf("KVupdate.(%s)\n",retstr2);
+                                free(retstr2);
+                            }
+                        } else printf("nn_connect error to %d subaddr.(%s)\n",subsock,subaddr);
+                    } else printf("nn_connect error to %d pushaddr.(%s)\n",pushsock,pushaddr);
                 }
+                else printf("missing addr (%p) (%p) (%s)\n",pushaddr,subaddr,jprint(retjson,0));
                 free_json(retjson);
-            }
+            } else printf("Error parsing psock.(%s)\n",retstr);
             free(retstr);
-        }
+        } else printf("error issuing _dex_psock\n");
     }
 }
 
@@ -2767,12 +2772,12 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
             for (iter=0; iter<3; iter++)
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
+                sleep(13);
                 basilisk_sendstate(myinfo,swap,data,sizeof(data));
                 basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);
                 if ( swap->connected > 0 )
                     break;
                 printf("loopback didntwork with %d %d\n",swap->pushsock,swap->subsock);
-                sleep(3);
             }
             if ( reinit != 0 )
             {
