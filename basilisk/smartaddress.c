@@ -352,11 +352,11 @@ void smartaddress_dex(struct supernet_info *myinfo,int32_t selector,struct iguan
     if ( minamount > SMALLVAL && maxavail > minamount + basecoin->DEXinfo.DEXpending && (maxbid == 0. || price <= maxbid) )
     {
         avail = (maxavail - (minamount + basecoin->DEXinfo.DEXpending));
-        if ( avail >= (100. * minamount) )
+        /*if ( avail >= (100. * minamount) )
             vol = (100. * minamount);
         else if ( avail >= (10. * minamount) )
             vol = (10. * minamount);
-        else if ( avail >= minamount )
+        else*/ if ( avail >= minamount )
             vol = minamount;
         else vol = 0.;
         if ( vol > 0. )
