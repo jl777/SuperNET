@@ -697,11 +697,11 @@ void jumblr_CMCname(char *CMCname,char *symbol)
 void jumblr_DEXcheck(struct supernet_info *myinfo,struct iguana_info *coin,int32_t toKMD)
 {
     double vol,avail; int32_t enabled = 0; struct iguana_info *kmdcoin,*coinbtc = 0;
-    kmdcoin = iguana_coinfind("KMD");
-    coinbtc = iguana_coinfind("BTC");
     //printf("jumblr_DEXcheck numswaps.%d notary.%d IAMLP.%d %p %p %f\n",myinfo->numswaps,myinfo->IAMNOTARY,myinfo->IAMLP,kmdcoin,coinbtc,kmdcoin->DEXinfo.btcprice);
     if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 || myinfo->secret[0] == 0 )
         return;
+    kmdcoin = iguana_coinfind("KMD");
+    coinbtc = iguana_coinfind("BTC");
     if ( kmdcoin == 0 || coinbtc == 0 )
         return;
     jumblr_DEXupdate(myinfo,kmdcoin,"KMD","komodo",0.,0.);
@@ -847,21 +847,24 @@ void jumblr_iteration(struct supernet_info *myinfo,struct iguana_info *coin,int3
                 }
                 break;
             case 2: // z -> public
-                jumblr_opidsupdate(myinfo,coin);
-                HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
+                if ( myinfo->runsilent == 0 )
                 {
-                    if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
+                    jumblr_opidsupdate(myinfo,coin);
+                    HASH_ITER(hh,myinfo->jumblrs,ptr,tmp)
                     {
-                        if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
+                        if ( jumblr_addresstype(myinfo,coin,ptr->src) == 'z' && jumblr_addresstype(myinfo,coin,ptr->dest) == 'z' )
                         {
-                            privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
-                            if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
+                            if ( (r & 1) == 0 && ptr->spent == 0 && (total= jumblr_balance(myinfo,coin,ptr->dest)) >= (fee + JUMBLR_FEE)*SATOSHIDEN )
                             {
-                                printf("sendz_to_t.(%s)\n",retstr);
-                                free(retstr);
+                                privkey = jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,"");
+                                if ( (retstr= jumblr_sendz_to_t(myinfo,coin,ptr->dest,KMDaddr,dstr(total))) != 0 )
+                                {
+                                    printf("sendz_to_t.(%s)\n",retstr);
+                                    free(retstr);
+                                }
+                                ptr->spent = (uint32_t)time(NULL);
+                                break;
                             }
-                            ptr->spent = (uint32_t)time(NULL);
-                            break;
                         }
                     }
                 }

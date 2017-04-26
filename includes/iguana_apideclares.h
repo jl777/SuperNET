@@ -198,6 +198,8 @@ STRING_ARG(iguana,stakers,activecoin);
 
 STRING_ARG(jumblr,setpassphrase,passphrase);
 ZERO_ARGS(jumblr,status);
+ZERO_ARGS(jumblr,runsilent);
+ZERO_ARGS(jumblr,totransparent);
 
 ZERO_ARGS(InstantDEX,allcoins);
 STRING_ARG(InstantDEX,available,source);

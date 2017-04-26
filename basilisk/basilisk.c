@@ -1395,6 +1395,18 @@ STRING_ARG(jumblr,setpassphrase,passphrase)
     }
 }
 
+ZERO_ARGS(jumblr,runsilent)
+{
+    myinfo->runsilent = 1;
+    return(clonestr("{\"result\":\"success\",\"mode\":\"runsilent\"}"));
+}
+
+ZERO_ARGS(jumblr,totransparent)
+{
+    myinfo->runsilent = 0;
+    return(clonestr("{\"result\":\"success\",\"mode\":\"totransparent\"}"));
+}
+
 ZERO_ARGS(jumblr,status)
 {
     cJSON *retjson; char KMDaddr[64],BTCaddr[64]; struct jumblr_item *ptr,*tmp; struct iguana_info *coinbtc; int64_t received,deposited,jumblred,step_t2z,step_z2z,step_z2t,finished,pending,maxval,minval;
@@ -1404,6 +1416,7 @@ ZERO_ARGS(jumblr,status)
         retjson = cJSON_CreateObject();
         step_t2z = step_z2z = step_z2t = deposited = finished = pending = 0;
         jumblr_privkey(myinfo,BTCaddr,0,KMDaddr,JUMBLR_DEPOSITPREFIX);
+        jaddstr(retjson,"mode",myinfo->runsilent == 0 ? "totransparent" : "runsilent");
         jaddstr(retjson,"KMDdeposit",KMDaddr);
         jaddstr(retjson,"BTCdeposit",BTCaddr);
         if ( (coinbtc= iguana_coinfind("BTC")) != 0 )

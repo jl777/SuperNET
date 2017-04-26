@@ -173,7 +173,7 @@ struct supernet_info
     uint16_t psockport,numpsocks; struct psock *PSOCKS; portable_mutex_t psockmutex;
     uint8_t notaries[64][33]; int32_t numnotaries,DEXEXPLORER;
     FILE *swapsfp;
-    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh;
+    struct smartaddress smartaddrs[64]; int32_t numsmartaddrs,cancelrefresh,runsilent;
 };
 
 struct basilisk_swapmessage
