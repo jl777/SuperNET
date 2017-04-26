@@ -1892,7 +1892,22 @@ int32_t basilisk_verify_otherstatebits(struct supernet_info *myinfo,void *ptr,ui
         return(retval);
     } else return(-1);
 }
-               
+
+int32_t basilisk_verify_statebits(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
+{
+    int32_t retval = -1; uint32_t statebits; struct basilisk_swap *swap = ptr;
+    if ( datalen == sizeof(swap->I.statebits) )
+    {
+        retval = iguana_rwnum(0,data,sizeof(swap->I.statebits),&statebits);
+        if ( statebits != swap->I.statebits )
+        {
+            printf("statebits.%x != %x\n",statebits,swap->I.statebits);
+            return(-1);
+        }
+    }
+    return(retval);
+}
+
 int32_t basilisk_verify_choosei(struct supernet_info *myinfo,void *ptr,uint8_t *data,int32_t datalen)
 {
     int32_t otherchoosei=-1,i,len = 0; struct basilisk_swap *swap = ptr;
@@ -2711,7 +2726,7 @@ cJSON *basilisk_swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    int32_t i,m,n; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; double pending=0.; struct basilisk_swap *swap = 0;
+    int32_t i,m,n,iter; uint8_t pubkey33[33],data[64]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; double pending=0.; struct basilisk_swap *swap = 0;
     // statebits 1 -> client, 0 -> LP
     if ( myinfo->numswaps > 0 )
     {
@@ -2749,7 +2764,16 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            basilisk_psockinit(myinfo,swap,statebits == 0);
+            for (iter=0; iter<3; iter++)
+            {
+                basilisk_psockinit(myinfo,swap,statebits == 0);
+                basilisk_sendstate(myinfo,swap,data,sizeof(data));
+                basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);
+                if ( swap->connected > 0 )
+                    break;
+                printf("loopback didntwork with %d %d\n",swap->pushsock,swap->subsock);
+                sleep(3);
+            }
             if ( reinit != 0 )
             {
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)basilisk_swaploop,(void *)swap) != 0 )
