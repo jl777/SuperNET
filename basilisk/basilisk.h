@@ -42,6 +42,10 @@
 #define INSTANTDEX_BTC "1KRhTPvoxyJmVALwHFXZdeeWFbcJSbkFPu"
 #define INSTANTDEX_BTCD "RThtXup6Zo7LZAi8kRWgjAyi1s4u6U9Cpf"
 
+#define JUMBLR_INCR 99.65
+#define JUMBLR_FEE 0.001
+#define JUMBLR_TXFEE 0.01
+
 struct basilisk_swap;
 
 struct basilisk_rawtxinfo
