@@ -471,7 +471,7 @@ void smartaddress_jumblr(struct supernet_info *myinfo,char *symbol,char *coinadd
     {
         if ( strcmp(coinaddr,basecoin->DEXinfo.jumblraddr) == 0 )
             smartaddress_dex(myinfo,2,basecoin,coinaddr,basecoin->DEXinfo.jumblravail,relcoin,maxbid,minask,extraobj,credits);
-        else printf("smartaddress_jumblr: mismatch jumblr address (%s) vs (%s)\n",coinaddr,basecoin->DEXinfo.jumblraddr);
+        else printf("smartaddress_jumblr.%s: mismatch jumblr address (%s) vs (%s)\n",symbol,coinaddr,basecoin->DEXinfo.jumblraddr);
     }
 }
 
@@ -540,11 +540,13 @@ void smartaddress_update(struct supernet_info *myinfo,int32_t selector)
                                 for (j=0; j<m; j++)
                                 {
                                     coinitem = jitem(array,j);
-                                    symbol = jstr(coinitem,"coin");
+                                    if ( (symbol= jstr(coinitem,"coin")) == 0 )
+                                        continue;
                                     if ( iter == 0 )
                                         smartaddress_coinupdate(myinfo,symbol,kmdcoin->DEXinfo.btcprice,kmdcoin->DEXinfo.avail,kmdcoin->DEXinfo.USD_average);
                                     else
                                     {
+                                        printf("Action.(%s)\n",jprint(coinitem,0));
                                         address = jstr(coinitem,"address");
                                         maxbid = jdouble(coinitem,"maxbid");
                                         minask = jdouble(coinitem,"minask");

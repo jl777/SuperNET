@@ -1205,7 +1205,9 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             {
                 if ( (value= SATOSHIDEN*jdouble(txoutjson,"value")) == 0 )
                     value = SATOSHIDEN*jdouble(txoutjson,"amount");
-                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && value != 0 )
+                if ( (coinaddr= jstr(txoutjson,"address")) == 0 && (addrs= jarray(&n,txoutjson,"addresses")) != 0 && n > 0 )
+                    coinaddr = jstri(addrs,0);
+                if ( coinaddr != 0 && value != 0 )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
