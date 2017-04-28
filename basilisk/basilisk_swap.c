@@ -2537,7 +2537,7 @@ void basilisk_swaploop(void *_swap)
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 600;
+    expiration = (uint32_t)time(NULL) + 120;
     myinfo->DEXactive = expiration;
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     while ( swap->aborted == 0 && (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
@@ -3975,7 +3975,7 @@ char *basilisk_swaplist(struct supernet_info *myinfo)
                 if ( (item= basilisk_remember(myinfo,KMDtotals,BTCtotals,requestid,quoteid)) != 0 )
                 {
                     jaddi(array,item);
-                    if ( 1 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
+                    if ( 0 && (status= jstr(item,"status")) != 0 && strcmp(status,"pending") == 0 )
                         break;
                 }
             }

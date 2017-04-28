@@ -1207,9 +1207,9 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                     value = SATOSHIDEN*jdouble(txoutjson,"amount");
                 if ( (coinaddr= jstr(txoutjson,"address")) == 0 )
                 {
-                    if ( (addrs= jarray(&n,txoutjson,"addresses")) != 0 && n > 0 )
+                    if ( (sobj= jobj(txoutjson,"scriptPubKey")) != 0 && (addrs= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
                         coinaddr = jstri(addrs,0);
-                    printf("no address, check addrs.[%d] %p coinaddr.%p\n",n,addrs,coinaddr);
+                    printf("no address, check addrs %p coinaddr.%p\n",sobj,coinaddr);
                 }
                 if ( coinaddr != 0 && value != 0 )
                 {
