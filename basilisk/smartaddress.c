@@ -546,11 +546,14 @@ void smartaddress_update(struct supernet_info *myinfo,int32_t selector)
                                         smartaddress_coinupdate(myinfo,symbol,kmdcoin->DEXinfo.btcprice,kmdcoin->DEXinfo.avail,kmdcoin->DEXinfo.USD_average);
                                     else
                                     {
-                                        printf("Action.(%s)\n",jprint(coinitem,0));
+                                        printf("Action.%s (%s)\n",typestr,jprint(coinitem,0));
                                         if ( (address= jstr(coinitem,"address")) != 0 )
                                         {
-                                            bitcoin_addr2rmd160(&addrtype,rmd160,address);
-                                            bitcoin_address(coinaddr,kmdcoin->chain->pubtype,rmd160,20);
+                                            if ( strcmp(typestr,"jumblr") == 0 )
+                                            {
+                                                bitcoin_addr2rmd160(&addrtype,rmd160,address);
+                                                bitcoin_address(coinaddr,kmdcoin->chain->pubtype,rmd160,20);
+                                            } else strcpy(coinaddr,address);
                                             maxbid = jdouble(coinitem,"maxbid");
                                             minask = jdouble(coinitem,"minask");
                                             extraobj = jobj(coinitem,"extra");
