@@ -313,11 +313,14 @@ int32_t basilisk_requests_poll(struct supernet_info *myinfo)
         if ( smartaddress_pubkey(myinfo,typestr,bidasks,&privkey,issueR.src,issueR.srchash) >= 0 )
         {
             printf("matched dex_smartpubkey\n");
-            dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
-            dpow_nanomsg_update(myinfo);
-            dex_updateclient(myinfo);
-            if ( (retstr= basilisk_start(myinfo,privkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
-                free(retstr);
+            if ( myinfo->DEXtrades > 0 )
+            {
+                dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
+                dpow_nanomsg_update(myinfo);
+                dex_updateclient(myinfo);
+                if ( (retstr= basilisk_start(myinfo,privkey,&issueR,1,issueR.optionhours * 3600)) != 0 )
+                    free(retstr);
+            }
         }
         else if ( issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
         {

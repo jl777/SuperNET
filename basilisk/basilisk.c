@@ -1857,6 +1857,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         memset(hash.bytes,0,sizeof(hash));
         msgid = (uint32_t)time(NULL);
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+        myinfo->DEXtrades++; // not exact but allows a one side initiated self-trade
         basilisk_channelsend(myinfo,hash,hash,DEX_channel,msgid,serialized,datalen,60);
         sleep(3);
         /*while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
