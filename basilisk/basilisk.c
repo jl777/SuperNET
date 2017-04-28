@@ -1972,4 +1972,11 @@ ZERO_ARGS(InstantDEX,getswaplist)
     return(basilisk_swaplist(myinfo));
 }
 
+DOUBLE_ARG(InstantDEX,DEXratio,ratio)
+{
+    if ( ratio < 0.95 || ratio > 1.01 )
+        return(clonestr("{\"result\":\"error\",\"description\":\"DEXratio must be between 0.95 and 1.01\"}"));
+    myinfo->DEXratio = ratio;
+    return(clonestr("{\"result\":\"success\"}"));
+}
 #include "../includes/iguana_apiundefs.h"

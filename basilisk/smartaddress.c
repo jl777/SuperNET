@@ -336,6 +336,8 @@ void smartaddress_dex(struct supernet_info *myinfo,int32_t selector,struct iguan
     minamount = price = 0.;
     if ( basebtc < SMALLVAL && relbtc < SMALLVAL )
         return;
+    if ( myinfo->DEXratio < .95 || myinfo->DEXratio > 1.01 )
+        myinfo->DEXratio = 0.995;
     if ( basebtc < SMALLVAL || relbtc < SMALLVAL )
     {
         if ( (price= maxbid) > SMALLVAL )
@@ -345,11 +347,11 @@ void smartaddress_dex(struct supernet_info *myinfo,int32_t selector,struct iguan
             else if ( relbtc < SMALLVAL )
                 relbtc = basebtc / price, printf("calculated relbtc %.8f from (%.8f / %.8f)\n",relbtc,basebtc,price); // price * relbtc == basebtc
         }
-    } else price = 0.985 * (basebtc / relbtc);
+    } else price = myinfo->DEXratio * (basebtc / relbtc);
     minbtc = btc2kmd * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
     if ( minamount == 0. && basebtc > SMALLVAL )
         minamount = (minbtc / basebtc);
-    printf("%s/%s minbtc %.8f btcprice %.8f -> minamount %.8f price %.8f vs maxbid %.8f\n",basecoin->symbol,relcoin->symbol,minbtc,basecoin->DEXinfo.btcprice,minamount,price,maxbid);
+    printf("%s/%s minbtc %.8f btcprice %.8f -> minamount %.8f price %.8f vs maxbid %.8f DEXratio %.5f\n",basecoin->symbol,relcoin->symbol,minbtc,basecoin->DEXinfo.btcprice,minamount,price,maxbid,myinfo->DEXratio);
     if ( minamount > SMALLVAL && maxavail > minamount + basecoin->DEXinfo.DEXpending && (maxbid == 0. || price <= maxbid) )
     {
         avail = (maxavail - (minamount + basecoin->DEXinfo.DEXpending));

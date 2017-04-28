@@ -2769,18 +2769,18 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            for (iter=0; iter<3; iter++)
+            for (iter=0; iter<1; iter++)
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
                 sleep(3);
                 if ( swap->connected <= 0 )
                     continue;
-                sleep(13);
-                basilisk_sendstate(myinfo,swap,data,sizeof(data));
+                sleep(30);
+                /*basilisk_sendstate(myinfo,swap,data,sizeof(data));
                 basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);
                 if ( swap->connected > 0 )
                     break;
-                printf("loopback didntwork with %d %d\n",swap->pushsock,swap->subsock);
+                printf("loopback didntwork with %d %d\n",swap->pushsock,swap->subsock);*/
             }
             if ( reinit != 0 )
             {
