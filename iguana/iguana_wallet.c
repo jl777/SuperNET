@@ -1373,12 +1373,14 @@ TWOSTRINGS_AND_INT(bitcoinrpc,walletpassphrase,password,permanentfile,timeout)
     }
     if ( bits256_nonz(myinfo->persistent_priv) != 0 )
     {
-        char *jumblrstr,jumblr_passphrase[1024];
+        char *jumblrstr,jumblr_passphrase[1024],coinaddr[64],KMDaddr[64]; bits256 privkey;
         sprintf(jumblr_passphrase,"jumblr %s",password);
         if ( (jumblrstr= jumblr_setpassphrase(myinfo,0,0,0,jumblr_passphrase)) != 0 )
             free(jumblrstr);
-        smartaddress_add(myinfo,myinfo->persistent_priv,"kmd","BTC",0.,0.);
-        smartaddress_add(myinfo,myinfo->persistent_priv,"btc","KMD",0.,0.);
+        privkey = jumblr_privkey(myinfo,coinaddr,0,KMDaddr,"kmd ");
+        smartaddress_add(myinfo,privkey,"kmd","BTC",0.,0.);
+        privkey = jumblr_privkey(myinfo,coinaddr,0,KMDaddr,"btc ");
+        smartaddress_add(myinfo,privkey,"btc","KMD",0.,0.);
     }
     //basilisk_unspents_update(myinfo,coin);
     return(retstr);

@@ -2731,7 +2731,7 @@ cJSON *basilisk_swapjson(struct supernet_info *myinfo,struct basilisk_swap *swap
 
 struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
 {
-    int32_t i,m,n,iter; uint8_t pubkey33[33],data[64]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; double pending=0.; struct basilisk_swap *swap = 0;
+    int32_t i,m,n,iter; uint8_t pubkey33[33]; bits256 pubkey25519; uint32_t channel,starttime; cJSON *retarray,*item,*msgobj; struct iguana_info *coin; double pending=0.; struct basilisk_swap *swap = 0;
     // statebits 1 -> client, 0 -> LP
     if ( myinfo->numswaps > 0 )
     {

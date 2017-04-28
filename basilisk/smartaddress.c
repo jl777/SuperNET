@@ -62,9 +62,13 @@ cJSON *smartaddress_extrajson(struct smartaddress *ap)
 
 cJSON *smartaddress_json(struct smartaddress *ap)
 {
-    char coinaddr[64]; int32_t j,n; struct iguana_info *coin; cJSON *array,*item,*retjson;
+    char coinaddr[64],symbol[64]; uint8_t desttype,tmp,rmd160[20]; int32_t j,n; struct iguana_info *coin,*dest; cJSON *array,*item,*retjson;
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"type",ap->typestr);
+    strcpy(symbol,ap->typestr), touppercase(symbol);
+    if ( (dest= iguana_coinfind(symbol)) != 0 )
+        desttype = dest->chain->pubtype;
+    else desttype = 60;
     if ( (n= ap->numsymbols) > 0 )
     {
         array = cJSON_CreateArray();
@@ -76,6 +80,12 @@ cJSON *smartaddress_json(struct smartaddress *ap)
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
                 jaddstr(item,"address",coinaddr);
+                if ( dest != 0 )
+                {
+                    bitcoin_addr2rmd160(&tmp,rmd160,coinaddr);
+                    bitcoin_address(coinaddr,desttype,rmd160,20);
+                    jaddstr(item,"dest",coinaddr);
+                }
                 jaddnum(item,"maxbid",ap->symbols[j].maxbid);
                 jaddnum(item,"minask",ap->symbols[j].minask);
                 jadd(item,"extra",smartaddress_extrajson(ap));
@@ -99,7 +109,7 @@ void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,d
         safecopy(sp->symbol,symbol,sizeof(sp->symbol));
         sp->maxbid = maxbid;
         sp->minask = minask;
-        printf("symboladd (%s) <- (%s %f %f)\n",ap->typestr,symbol,maxbid,minask);
+        printf("symboladd.%d (%s) <- (%s %f %f)\n",ap->numsymbols,ap->typestr,symbol,maxbid,minask);
     }
 }
 
