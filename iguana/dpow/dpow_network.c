@@ -830,7 +830,7 @@ char *dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *data,int32
     {
         if ( (retstrs[j]= _dex_reqsend(myinfo,handler,0,0,data,datalen)) != 0 )
         {
-printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
+//printf("j.%d of max.%d M.%d (%s)\n",j,max,M,retstrs[j]);
             if ( strncmp(retstrs[j],"{\"error\":\"null return\"}",strlen("{\"error\":\"null return\"}")) != 0 && strncmp(retstrs[j],"[]",strlen("[]")) != 0 && strcmp("0",retstrs[j]) != 0 )
             {
                 if ( ++j == M )

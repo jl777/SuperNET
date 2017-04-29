@@ -3568,7 +3568,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
         origfinishedflag = finishedflag = 1;
         free(fstr);
-    } else printf("%s not finished\n",fname);
+    }
     if ( iambob < 0 )
         return(0);
     item = cJSON_CreateObject();
@@ -3625,7 +3625,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                 }
             } //else printf("no symbol\n");
             free(fstr);
-        }
+        } else if ( finishedflag == 0 )
+            printf("%s not finished\n",fname);
     }
     //printf("iambob.%d src.%s dest.%s bob.%s alice.%s pubA0.(%s)\n",iambob,src,dest,bobcoin,alicecoin,bits256_str(str,pubA0));
     Adestaddr[0] = destaddr[0] = 0;
