@@ -85,9 +85,21 @@ cJSON *smartaddress_json(struct smartaddress *ap)
                     bitcoin_addr2rmd160(&tmp,rmd160,coinaddr);
                     bitcoin_address(coinaddr,desttype,rmd160,20);
                     jaddstr(item,"dest",coinaddr);
+                    if ( coin->DEXinfo.depositaddr[0] != 0 )
+                    {
+                        jaddstr(item,"jumblr_deposit",coin->DEXinfo.depositaddr);
+                        jaddnum(item,"deposit_avail",coin->DEXinfo.avail);
+                    }
+                    if ( coin->DEXinfo.jumblraddr[0] != 0 )
+                    {
+                        jaddstr(item,"jumblr",coin->DEXinfo.jumblraddr);
+                        jaddnum(item,"jumblr_avail",coin->DEXinfo.jumblravail);
+                    }
+                    if ( ap->symbols[j].maxbid != 0. )
+                        jaddnum(item,"maxbid",ap->symbols[j].maxbid);
+                    if ( ap->symbols[j].minask != 0. )
+                        jaddnum(item,"minask",ap->symbols[j].minask);
                 }
-                jaddnum(item,"maxbid",ap->symbols[j].maxbid);
-                jaddnum(item,"minask",ap->symbols[j].minask);
                 jadd(item,"extra",smartaddress_extrajson(ap));
                 jaddi(array,item);
             }

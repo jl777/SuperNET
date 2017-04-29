@@ -3568,7 +3568,7 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         }
         origfinishedflag = finishedflag = 1;
         free(fstr);
-    }
+    } else printf("%s not finished\n",fname);
     if ( iambob < 0 )
         return(0);
     item = cJSON_CreateObject();
@@ -3602,24 +3602,26 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
                         safecopy(bobcoin,symbol,sizeof(bobcoin));
                     else if ( i == BASILISK_BOBSPEND || i == BASILISK_ALICEPAYMENT || i == BASILISK_ALICERECLAIM )
                         safecopy(alicecoin,symbol,sizeof(alicecoin));
-                    if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
-                    {
-                        //printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
-                    }
-                    else
-                    {
-                        checktxid = jbits256(sentobj,"txid");
-                        if ( bits256_nonz(checktxid) == 0 )
-                            checktxid = jbits256(sentobj,"hash");
-                        if ( bits256_cmp(checktxid,txid) == 0 )
-                        {
-                            //printf(">>>>>> %s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
-                            sentflags[i] = 1;
-                        }
-                        free_json(sentobj);
-                    }
                     if ( finishedflag == 0 )
+                    {
+                        if ( (sentobj= basilisk_swapgettx(myinfo,symbol,txid)) == 0 )
+                        {
+                            //printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
+                        }
+                        else
+                        {
+                            checktxid = jbits256(sentobj,"txid");
+                            if ( bits256_nonz(checktxid) == 0 )
+                                checktxid = jbits256(sentobj,"hash");
+                            if ( bits256_cmp(checktxid,txid) == 0 )
+                            {
+                                //printf(">>>>>> %s txid %s\n",jprint(sentobj,0),bits256_str(str,txid));
+                                sentflags[i] = 1;
+                            }
+                            free_json(sentobj);
+                        }
                         printf("%s %s %.8f\n",txnames[i],bits256_str(str,txid),dstr(value));
+                    }
                 }
             } //else printf("no symbol\n");
             free(fstr);
