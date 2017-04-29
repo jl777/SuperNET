@@ -3467,7 +3467,6 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
     plocktime = dlocktime = 0;
     src[0] = dest[0] = bobcoin[0] = alicecoin[0] = 0;
     sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
-    printf("%s\n",fname);
     if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
     {
         if ( (item= cJSON_Parse(fstr)) != 0 )
@@ -3579,6 +3578,8 @@ cJSON *basilisk_remember(struct supernet_info *myinfo,int64_t *KMDtotals,int64_t
         sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,requestid,quoteid,txnames[i]), OS_compatible_path(fname);
         if ( (fstr= OS_filestr(&fsize,fname)) != 0 )
         {
+            if ( finishedflag == 0 )
+                printf("%s\n",fname);
             //printf("%s -> (%s)\n",fname,fstr);
             if ( (txobj= cJSON_Parse(fstr)) != 0 )
             {
