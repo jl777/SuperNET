@@ -93,8 +93,8 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
             putchar((char)key[i]);
         printf(" -> ");
         for (i=0; i<coresize; i++)
-            printf("%02x",valueptr[i]);
-        //decode_hex(decodestr,coresize,valueptr);
+            printf("%c",(char)valueptr[i]);
+        decode_hex(decodestr,coresize,valueptr);
         char str[65]; printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",(char *)valueptr,valuesize,bits256_str(str,txid),vout,ht,height);
     }
 }
