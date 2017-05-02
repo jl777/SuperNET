@@ -48,7 +48,7 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void komodo_kvupdate(int32_t height,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
+void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
     static bits256 zeroes;
     uint32_t flags; bits256 pubkey,refpubkey,sig; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
@@ -94,7 +94,7 @@ void komodo_kvupdate(int32_t height,bits256 txid,int32_t vout,uint8_t *opretbuf,
         printf(" -> ");
         for (i=0; i<valuesize; i++)
             putchar((char)valueptr[i]);
-        char str[65]; printf(" [%d] %s/v%d ht.%d\n",valuesize,bits256_str(str,txid),vout,height);
+        char str[65]; printf(" [%d] %s/v%d ht.%d height.%d\n",valuesize,bits256_str(str,txid),vout,ht,height);
     }
 }
 
