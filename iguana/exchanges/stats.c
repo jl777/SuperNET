@@ -266,14 +266,14 @@ int32_t komodo_parsestatefile(struct komodo_state *sp,FILE *fp,char *symbol,char
 void stats_stateupdate(char *destdir,char *statefname,int32_t maxseconds)
 {
     static long lastpos;
-    char fname[512],symbol[64],base[64],dest[64]; int32_t n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
+    char symbol[64],base[64],dest[64]; int32_t n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
     starttime = (uint32_t)time(NULL);
     strcpy(base,"KV");
     strcpy(symbol,"KV");
     strcpy(dest,"KMD");
     sp = &KOMODO_STATE;
     n = 0;
-    if ( (fp= fopen(fname,"rb")) != 0 && sp != 0 )
+    if ( (fp= fopen(statefname,"rb")) != 0 && sp != 0 )
     {
         fseek(fp,0,SEEK_END);
         if ( ftell(fp) > lastpos )
