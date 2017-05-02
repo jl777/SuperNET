@@ -51,7 +51,7 @@ struct komodo_state KOMODO_STATE;
 void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
     static bits256 zeroes;
-    uint32_t flags; bits256 pubkey,refpubkey,sig; char decodestr[10000]; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
+    uint32_t flags; bits256 pubkey,refpubkey,sig; cJSON *kvjson; char decodestr[10000]; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
     iguana_rwnum(0,&opretbuf[1],sizeof(keylen),&keylen);
     iguana_rwnum(0,&opretbuf[3],sizeof(valuesize),&valuesize);
     iguana_rwnum(0,&opretbuf[5],sizeof(height),&height);
@@ -89,13 +89,18 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
                 }
             }
         }*/
-        for (i=0; i<keylen; i++)
-            putchar((char)key[i]);
-        printf(" -> ");
-        for (i=0; i<coresize; i++)
-            printf("%c",(char)valueptr[i]);
+        //for (i=0; i<coresize; i++)
+        //    printf("%c",(char)valueptr[i]);
         decode_hex(decodestr,coresize/2,valueptr);
-        char str[65]; printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
+        if ( (kvjson= cJSON_Parse(decodestr)) != 0 )
+        {
+            char str[65];
+            for (i=0; i<keylen; i++)
+                putchar((char)key[i]);
+            printf(" -> ");
+            printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
+            free_json(kvjson);
+        }
     }
 }
 
