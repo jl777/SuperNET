@@ -104,8 +104,8 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
             //    putchar((char)key[i]);
             //printf(" -> ");
             //printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
-            if ( key[keylen-1] == 0 )
-                stats_kvjson((char *)key,kvjson,pubkey,sig);
+            key[keylen] = 0;
+            stats_kvjson((char *)key,kvjson,pubkey,sig);
             free_json(kvjson);
         }
     }
