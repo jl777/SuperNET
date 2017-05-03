@@ -52,12 +52,17 @@ void stats_kvjson(FILE *fp,int32_t height,int32_t savedheight,uint32_t timestamp
 {
     struct tai T; int32_t seconds,datenum;
     datenum = OS_conv_unixtime(&T,&seconds,timestamp);
-    jaddnum(kvjson,"key",key);
+    jaddstr(kvjson,"key",key);
     jaddnum(kvjson,"datenum",datenum);
     jaddnum(kvjson,"hour",seconds/3600);
     jaddnum(kvjson,"seconds",seconds % 3600);
     jaddnum(kvjson,"height",height);
     printf("(%s)\n",jprint(kvjson,0));
+    if ( logfp != 0 )
+    {
+        fprintf(logfp,"%s\n",jprint(kvjson,0));
+        fflush(logfp);
+    }
 }
 
 void komodo_kvupdate(FILE *logfp,struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
@@ -330,7 +335,7 @@ int main(int argc, const char * argv[])
     if ( argc < 2 )
         statefname = "/root/.komodo/KV/komodostate";
     else statefname = (char *)argv[1];
-    sprintf(logfname,"%s/logfile",DEST_DIR);
+    sprintf(logfname,"%s/logfile",STATS_DESTDIR);
     logfp = fopen(logfname,"wb");
     printf("DEX stats running\n");
     while ( 1 )
