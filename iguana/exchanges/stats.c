@@ -48,6 +48,11 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
+void stats_kvjson(char *key,cJSON *kvjson)
+{
+    printf("(%s) -> (%s)\n",key,jprint(kvjson,0));
+}
+
 void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
     static bits256 zeroes;
@@ -94,11 +99,13 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
         decode_hex(decodestr,coresize/2,valueptr);
         if ( (kvjson= cJSON_Parse(decodestr)) != 0 )
         {
-            char str[65];
-            for (i=0; i<keylen; i++)
-                putchar((char)key[i]);
-            printf(" -> ");
-            printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
+            //char str[65];
+            //for (i=0; i<keylen; i++)
+            //    putchar((char)key[i]);
+            //printf(" -> ");
+            //printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
+            if ( key[keylen-1] == 0 )
+                stats_kvjson((char *)key,kvjson);
             free_json(kvjson);
         }
     }
