@@ -48,18 +48,34 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
+void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
+{
+    uint64_t srcamount,destamount; char *source,*dest;
+    if ( LPpubkey != 0 )
+        stats_LPpubkeyupdate(LPpubkey,timestamp);
+    if ( tradejson != 0 )
+    {
+        source = jstr(jitem(array,0),0);
+        srcamount = SATOSHIDEN * jdouble(jitem(array,1),0);
+        dest = jstr(jitem(array,2),0);
+        destamount = SATOSHIDEN * jdouble(jitem(array,3),0);
+        printf("%s (%s %.8f) -> (%s %.8f)\n",key,source,dstr(srcamount),dest,dstr(destamount));
+    }
+}
+
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
-    struct tai T; int32_t seconds,datenum;
+    struct tai T; int32_t seconds,datenum,n;
     datenum = OS_conv_unixtime(&T,&seconds,timestamp);
     jaddstr(kvjson,"key",key);
     jaddnum(kvjson,"datenum",datenum);
     jaddnum(kvjson,"hour",seconds/3600);
     jaddnum(kvjson,"seconds",seconds % 3600);
     jaddnum(kvjson,"height",height);
-    printf("(%s)\n",jprint(kvjson,0));
+    //printf("(%s)\n",jprint(kvjson,0));
     if ( logfp != 0 )
     {
+        stats_datenumupdate(datenum,seconds/3600,seconds % 3600,height,key,jstr(kvjson,"pubkey"),jarray(&n,kvjson,"trade"));
         fprintf(logfp,"%s\n",jprint(kvjson,0));
         fflush(logfp);
     }
@@ -142,7 +158,7 @@ void komodo_setkmdheight(struct komodo_state *sp,int32_t kmdheight,uint32_t time
         {
             sp->SAVEDHEIGHT = kmdheight;
             sp->SAVEDTIMESTAMP = timestamp;
-            printf("ht.%d t.%u\n",kmdheight,timestamp);
+            //printf("ht.%d t.%u\n",kmdheight,timestamp);
         }
         if ( kmdheight > sp->CURRENT_HEIGHT )
             sp->CURRENT_HEIGHT = kmdheight;
