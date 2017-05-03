@@ -48,11 +48,16 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void stats_kvjson(int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
+void stats_kvjson(FILE *fp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
     struct tai T; int32_t seconds,datenum;
     datenum = OS_conv_unixtime(&T,&seconds,timestamp);
-    printf("%d.%d %u (%s) -> (%s)\n",datenum,seconds,timestamp,key,jprint(kvjson,0));
+    jaddnum(kvjson,"key",key);
+    jaddnum(kvjson,"datenum",datenum);
+    jaddnum(kvjson,"hour",seconds/3600);
+    jaddnum(kvjson,"seconds",seconds % 3600);
+    jaddnum(kvjson,"height",height);
+    printf("(%s)\n",jprint(kvjson,0));
 }
 
 void komodo_kvupdate(struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
