@@ -48,7 +48,7 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void stats_kvjson(char *key,cJSON *kvjson)
+void stats_kvjson(char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
     printf("(%s) -> (%s)\n",key,jprint(kvjson,0));
 }
@@ -105,7 +105,7 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
             //printf(" -> ");
             //printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
             if ( key[keylen-1] == 0 )
-                stats_kvjson((char *)key,kvjson);
+                stats_kvjson((char *)key,kvjson,pubkey,sig);
             free_json(kvjson);
         }
     }
