@@ -50,7 +50,7 @@ struct komodo_state KOMODO_STATE;
 
 void stats_kvjson(int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
-    struct tai T; int32_t seconds;
+    struct tai T; int32_t seconds,datenum;
     datenum = OS_conv_unixtime(&T,&seconds,timestamp);
     printf("%d.%u (%s) -> (%s)\n",datenum,seconds,timestamp,key,jprint(kvjson,0));
 }
