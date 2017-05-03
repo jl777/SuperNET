@@ -48,12 +48,12 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void stats_kvjson(char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
+void stats_kvjson(int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
-    printf("(%s) -> (%s)\n",key,jprint(kvjson,0));
+    printf("(%d/%d).%u (%s) -> (%s)\n",height,savedheight,timestamp,key,jprint(kvjson,0));
 }
 
-void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
+void komodo_kvupdate(struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
     static bits256 zeroes;
     uint32_t flags; bits256 pubkey,refpubkey,sig; cJSON *kvjson; char decodestr[10000]; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
@@ -105,7 +105,7 @@ void komodo_kvupdate(int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int3
             //printf(" -> ");
             //printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
             key[keylen] = 0;
-            stats_kvjson((char *)key,kvjson,pubkey,sig);
+            stats_kvjson(ht,sp->SAVEDHEIGHT,sp->SAVEDTIMESTAMP,(char *)key,kvjson,pubkey,sig);
             free_json(kvjson);
         }
     }
@@ -117,7 +117,7 @@ void komodo_eventadd_opreturn(struct komodo_state *sp,char *symbol,int32_t heigh
     {
         if ( opretbuf[0] == 'K' && opretlen != 40 )
         {
-            komodo_kvupdate(height,txid,vout,opretbuf,opretlen,value);
+            komodo_kvupdate(sp,height,txid,vout,opretbuf,opretlen,value);
         }
     }
 }
