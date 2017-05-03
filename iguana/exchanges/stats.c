@@ -55,11 +55,11 @@ void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t t
         stats_LPpubkeyupdate(LPpubkey,timestamp);
     if ( tradejson != 0 )
     {
-        source = jstr(jitem(array,0),0);
-        srcamount = SATOSHIDEN * jdouble(jitem(array,1),0);
-        dest = jstr(jitem(array,2),0);
-        destamount = SATOSHIDEN * jdouble(jitem(array,3),0);
-        printf("%s (%s %.8f) -> (%s %.8f)\n",key,source,dstr(srcamount),dest,dstr(destamount));
+        source = jstr(jitem(tradejson,0),0);
+        srcamount = SATOSHIDEN * jdouble(jitem(tradejson,1),0);
+        dest = jstr(jitem(tradejson,2),0);
+        destamount = SATOSHIDEN * jdouble(jitem(tradejson,3),0);
+        printf("%d.%d.%d ht.%d %s (%s %.8f) -> (%s %.8f)\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount));
     }
 }
 
@@ -75,7 +75,7 @@ void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timest
     //printf("(%s)\n",jprint(kvjson,0));
     if ( logfp != 0 )
     {
-        stats_datenumupdate(datenum,seconds/3600,seconds % 3600,height,key,jstr(kvjson,"pubkey"),jarray(&n,kvjson,"trade"));
+        stats_datenumupdate(datenum,seconds/3600,seconds % 3600,timestamp,height,key,jstr(kvjson,"pubkey"),jarray(&n,kvjson,"trade"));
         fprintf(logfp,"%s\n",jprint(kvjson,0));
         fflush(logfp);
     }
