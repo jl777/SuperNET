@@ -67,7 +67,7 @@ void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t t
         if ( srcamount != 0 && destamount != 0 )
             price = (double)destamount / srcamount;
         else price = 0.;
-        printf("%d.%02d.%04d ht.%-4d %s (%s %.8f) -> (%s %.8f) %.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price);
+        printf("%d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %12.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price);
     }
 }
 
