@@ -55,7 +55,7 @@ void stats_LPpubkeyupdate(char *LPpubkey,uint32_t timestamp)
 
 void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
 {
-    uint64_t srcamount,destamount; char *source,*dest;
+    uint64_t srcamount,destamount; char *source,*dest; double price;
     if ( LPpubkey != 0 )
         stats_LPpubkeyupdate(LPpubkey,timestamp);
     if ( tradejson != 0 )
@@ -64,7 +64,10 @@ void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t t
         srcamount = SATOSHIDEN * jdouble(jitem(tradejson,1),0);
         dest = jstr(jitem(tradejson,2),0);
         destamount = SATOSHIDEN * jdouble(jitem(tradejson,3),0);
-        printf("%d.%d.%d ht.%d %s (%s %.8f) -> (%s %.8f)\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount));
+        if ( srcamount != 0 && destamount != 0 )
+            price = (double)destamount / srcamount;
+        else price = 0.;
+        printf("%d.%02d.%04d ht.%-4d %s (%s %.8f) -> (%s %.8f) %.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price);
     }
 }
 
