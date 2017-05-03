@@ -48,6 +48,11 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
+void stats_LPpubkeyupdate(char *LPpubkey,uint32_t timestamp)
+{
+    printf("LP.(%s) t.%u\n",LPpubkey,timestamp);
+}
+
 void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
 {
     uint64_t srcamount,destamount; char *source,*dest;
