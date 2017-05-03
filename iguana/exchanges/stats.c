@@ -60,7 +60,7 @@ void stats_kvjson(FILE *fp,int32_t height,int32_t savedheight,uint32_t timestamp
     printf("(%s)\n",jprint(kvjson,0));
 }
 
-void komodo_kvupdate(struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
+void komodo_kvupdate(FILE *logfp,struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vout,uint8_t *opretbuf,int32_t opretlen,uint64_t value)
 {
     static bits256 zeroes;
     uint32_t flags; bits256 pubkey,refpubkey,sig; cJSON *kvjson; char decodestr[10000]; int32_t i,refvaluesize,hassig,coresize,haspubkey,height,kvheight; uint16_t keylen,valuesize,newflag = 0; uint8_t *key,*valueptr,keyvalue[10000];
@@ -112,19 +112,19 @@ void komodo_kvupdate(struct komodo_state *sp,int32_t ht,bits256 txid,int32_t vou
             //printf(" -> ");
             //printf(" (%s) [%d] %s/v%d ht.%d height.%d\n",decodestr,valuesize,bits256_str(str,txid),vout,ht,height);
             key[keylen] = 0;
-            stats_kvjson(ht,sp->SAVEDHEIGHT,sp->SAVEDTIMESTAMP,(char *)key,kvjson,pubkey,sig);
+            stats_kvjson(logfp,ht,sp->SAVEDHEIGHT,sp->SAVEDTIMESTAMP,(char *)key,kvjson,pubkey,sig);
             free_json(kvjson);
         }
     }
 }
 
-void komodo_eventadd_opreturn(struct komodo_state *sp,char *symbol,int32_t height,bits256 txid,uint64_t value,uint16_t vout,uint8_t *opretbuf,uint16_t opretlen)
+void komodo_eventadd_opreturn(FILE *logfp,struct komodo_state *sp,char *symbol,int32_t height,bits256 txid,uint64_t value,uint16_t vout,uint8_t *opretbuf,uint16_t opretlen)
 {
     if ( sp != 0 )
     {
         if ( opretbuf[0] == 'K' && opretlen != 40 )
         {
-            komodo_kvupdate(sp,height,txid,vout,opretbuf,opretlen,value);
+            komodo_kvupdate(logfp,sp,height,txid,vout,opretbuf,opretlen,value);
         }
     }
 }
@@ -164,7 +164,7 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
     }
 }
 
-int32_t komodo_parsestatefile(struct komodo_state *sp,FILE *fp,char *symbol,char *dest)
+int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char *symbol,char *dest)
 {
     static int32_t errs;
     int32_t func,ht,notarized_height,num,matched=0; bits256 notarized_hash,notarized_desttxid; uint8_t pubkeys[64][33];
@@ -255,7 +255,7 @@ int32_t komodo_parsestatefile(struct komodo_state *sp,FILE *fp,char *symbol,char
                         printf("%02x",opret[i]);
                     printf(" %s.%d load[%s] opret[%c] len.%d %.8f\n",ASSETCHAINS_SYMBOL,ht,symbol,opret[0],olen,(double)ovalue/SATOSHIDEN);
                 }
-                komodo_eventadd_opreturn(sp,symbol,ht,txid,ovalue,v,opret,olen); // global shared state -> global PAX
+                komodo_eventadd_opreturn(logfp,sp,symbol,ht,txid,ovalue,v,opret,olen); // global shared state -> global PAX
             } else
             {
                 int32_t i;
@@ -285,7 +285,7 @@ int32_t komodo_parsestatefile(struct komodo_state *sp,FILE *fp,char *symbol,char
     } else return(-1);
 }
 
-void stats_stateupdate(char *destdir,char *statefname,int32_t maxseconds)
+void stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxseconds)
 {
     static long lastpos;
     char symbol[64],base[64],dest[64]; int32_t n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
@@ -301,7 +301,7 @@ void stats_stateupdate(char *destdir,char *statefname,int32_t maxseconds)
         if ( ftell(fp) > lastpos )
         {
             fseek(fp,lastpos,SEEK_SET);
-            while ( komodo_parsestatefile(sp,fp,symbol,dest) >= 0 && n < 1000 )
+            while ( komodo_parsestatefile(logfp,sp,fp,symbol,dest) >= 0 && n < 1000 )
             {
                 if ( n == 999 )
                 {
@@ -317,23 +317,25 @@ void stats_stateupdate(char *destdir,char *statefname,int32_t maxseconds)
     }
 }
 
-char *stats_update(char *destdir,char *statefname)
+char *stats_update(FILE *logfp,char *destdir,char *statefname)
 {
     cJSON *retjson = cJSON_CreateArray();
-    stats_stateupdate(destdir,statefname,10);
+    stats_stateupdate(logfp,destdir,statefname,10);
     return(jprint(retjson,1));
 }
 
 int main(int argc, const char * argv[])
 {
-    FILE *fp; char *filestr,*statefname;
+    FILE *fp,*logfp; char *filestr,*statefname,logfname[512];
     if ( argc < 2 )
         statefname = "/root/.komodo/KV/komodostate";
     else statefname = (char *)argv[1];
+    sprintf(logfname,"%s/logfile",DEST_DIR);
+    logfp = fopen(logfname,"wb");
     printf("DEX stats running\n");
     while ( 1 )
     {
-        if ( (filestr= stats_update(STATS_DEST,statefname)) != 0 )
+        if ( (filestr= stats_update(logfp,STATS_DEST,statefname)) != 0 )
         {
             printf("%u: %s\n",(uint32_t)time(NULL),filestr);
             if ( (fp= fopen(STATS_DEST,"wb")) != 0 )
