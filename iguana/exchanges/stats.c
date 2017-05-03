@@ -130,6 +130,7 @@ void komodo_setkmdheight(struct komodo_state *sp,int32_t kmdheight,uint32_t time
         {
             sp->SAVEDHEIGHT = kmdheight;
             sp->SAVEDTIMESTAMP = timestamp;
+            printf("ht.%d t.%u\n",kmdheight,timestamp);
         }
         if ( kmdheight > sp->CURRENT_HEIGHT )
             sp->CURRENT_HEIGHT = kmdheight;
