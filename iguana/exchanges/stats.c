@@ -48,7 +48,7 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void stats_kvjson(FILE *fp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
+void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
     struct tai T; int32_t seconds,datenum;
     datenum = OS_conv_unixtime(&T,&seconds,timestamp);
