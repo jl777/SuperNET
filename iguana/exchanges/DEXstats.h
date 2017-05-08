@@ -75,6 +75,7 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,
         printf("date->datenum %d != %d? hour.%d seconds.%d\n",date->datenum,datenum,hour,seconds);
         return;
     }
+    printf("%d numpairs.%d %p %p\n",date->datenum,date->numpairs,date,date->pairs);
     for (i=0; i<date->numpairs; i++)
         if ( strcmp(dest,date->pairs[i].dest) == 0 )
         {
@@ -106,6 +107,7 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
     {
         pp->dates = realloc(pp->dates,sizeof(*pp->dates) * (offset+1));
         n = (offset - pp->numdates);
+        printf("allocate %s.[%d to %d]\n",pp->symbol,pp->numdates,pp->numdates+n);
         for (i=0; i<=n; i++)
         {
             date = &pp->dates[pp->numdates + i];
