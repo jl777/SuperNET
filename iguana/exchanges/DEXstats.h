@@ -111,6 +111,7 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
             memset(date,0,sizeof(*date));
             date->datenum = pp->firstdatenum + pp->numdates + i;
         }
+        pp->numdates = offset;
     }
     stats_pairupdate(&pp->dates[offset],dest,datenum,hour,seconds,height,volume,price);
 }
