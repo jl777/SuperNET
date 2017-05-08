@@ -888,7 +888,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
             *tmpptr++ = green;
             *tmpptr++ = blue;
         }
-        sprintf(fname,"%s/bitmaps/%s_%s.jpg",STATS_DEST,symbol,dest), OS_portable_path(fname);
+        sprintf(fname,"%s/bitmaps/%s_%s.jpg",STATS_DESTDIR,symbol,dest), OS_portable_path(fname);
         gen_jpegfile(fname,1,bytemap,numdates*24,height);
         free(bitmap), free(bytemap);
         jaddstr(retjson,"bitmap",fname);
