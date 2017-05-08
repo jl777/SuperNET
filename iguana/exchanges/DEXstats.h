@@ -82,16 +82,13 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,
             pair = &date->pairs[i];
             break;
         }
-    if ( i == date->numpairs )
+    if ( date->pairs == 0 || i == date->numpairs )
     {
         date->pairs = realloc(date->pairs,sizeof(*date->pairs) * (date->numpairs + 1));
         pair = &date->pairs[date->numpairs++];
-        if ( pair->dest[0] == 0 )
-        {
-            memset(pair,0,sizeof(*pair));
-            strcpy(pair->dest,dest);
-            printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
-        }
+        memset(pair,0,sizeof(*pair));
+        strcpy(pair->dest,dest);
+        printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
     }
     pair->prices = realloc(pair->prices,sizeof(*pair->prices) * (pair->numprices+1));
     stats_pricepoint(&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
