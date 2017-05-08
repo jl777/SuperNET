@@ -829,7 +829,7 @@ void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *p
     for (i=0; i<numpvals; i++)
         printf("%u ",pvals[i]);
     printf("pvals ht.%d\n",ht);*/
-    fprintf(stderr,"%.8f ",(double)pvals[0]/1000000000);
+    fprintf(stderr,"%.8f ",dstr(pvals[0]));
 }
 
 int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char *symbol,int32_t iter)
