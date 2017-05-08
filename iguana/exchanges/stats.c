@@ -1040,10 +1040,10 @@ int main(int argc, const char * argv[])
         if ( (filestr= stats_update(logfp,STATS_DEST,statefname,komodofile)) != 0 )
         {
             timestamp = (uint32_t)time(NULL);
-            leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
+            leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 30*24*3600);
             //printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
             memset(prices,0,sizeof(prices));
-            if ( (retstr= stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1)) != 0 )
+            if ( (retstr= stats_prices("KMD","BTC",prices,leftdatenum,30+1)) != 0 )
             {
                 //printf("%s\n",retstr);
                 free(retstr);
