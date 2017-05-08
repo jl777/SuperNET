@@ -814,7 +814,7 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         stats_genspline(output,slopes,&spline,splineid,"spline",utc32,splinevals,n,0);
         for (i=0; i<2048; i++)
             if ( output[i] != 0. )
-            printf("(%d %.8f) ",i,output[i]);
+            printf("(%d %.8f).t%u ",i,output[i],utc32[0]+i*3600);
         printf(" output\n");
     }
     free(utc32);
