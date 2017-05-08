@@ -101,7 +101,7 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
         printf("illegal datenum.%d for %s when 1st.%d\n",datenum,pp->symbol,pp->firstdatenum);
         return;
     }
-    if ( offset > pp->numdates )
+    if ( offset >= pp->numdates )
     {
         pp->dates = realloc(pp->dates,sizeof(*pp->dates) * (offset+1));
         n = (offset - pp->numdates);
