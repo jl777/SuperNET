@@ -909,7 +909,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         agent = "stats";
     if ( strcmp(method,"bitmap") == 0 )
     {
-        if ( (timestamp= juint(argjson,"endtimestamp")) == 0 )
+        if ( (endtimestamp= juint(argjson,"endtimestamp")) == 0 )
             endtimestamp = (uint32_t)time(NULL);
         if ( (source= jstr(argjson,"source")) == 0 )
             source = "KMD";
