@@ -416,7 +416,7 @@ void disp_yval(register int32_t color,register float yval,register uint32_t *bit
     if ( 1 && is_primary_color(color) != 0 )
     {
         bitmap[y*rowwidth + x] = color;
-        printf("(%d, %d) <- %x, ",x,y,color);
+        //printf("(%d, %d) <- %x, ",x,y,color);
         return;
     }
     //if ( pixelwt(color) > pixelwt(bitmap[y*rowwidth + x]) )
@@ -509,7 +509,7 @@ double _output_line(int32_t calclogflag,double ave,double *output,double *buf,in
                     yval = _calc_pricey(val,ave);
                 else yval = val;
             } //else yval = (val / ave) * height / 3;
-            printf("(%f -> %f) ",val,yval);
+            //printf("(%f -> %f) ",val,yval);
             if ( fabs(yval) > .0000000001 )
             {
                 aveabs += fabs(yval);
@@ -889,7 +889,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
         sum /= i;
         uint32_t val,height = 400,*bitmap = calloc(sizeof(*bitmap),height * numdates*24);
         uint8_t red,green,blue,*tmpptr,*bytemap = calloc(sizeof(*bytemap),3 * height * numdates*24);
-        output_line(1,sum,output,i,0x00ffff,bitmap,numdates*24,height);
+        output_line(1,sum,output,i,0xffffff,bitmap,numdates*24,height);
         tmpptr = bytemap;
         for (j=0; j<height*numdates*24; j++)
         {
