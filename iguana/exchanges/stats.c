@@ -823,7 +823,7 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
     }
 }
 
-void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t pvals,int32_t numpvals)
+void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *pvals,int32_t numpvals)
 {
     int32_t i;
     for (i=0; i<numpvals; i++)
@@ -971,7 +971,7 @@ void stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxsec
             fseek(fp,0,SEEK_END);
             if ( ftell(fp) > lastpos[iter] )
             {
-                fseek(fp,lastpos,SEEK_SET);
+                fseek(fp,lastpos[iter],SEEK_SET);
                 while ( komodo_parsestatefile(logfp,sp,fp,symbol,iter) >= 0 && n < 1000 )
                 {
                     if ( n == 999 )
