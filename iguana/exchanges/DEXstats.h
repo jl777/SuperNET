@@ -777,10 +777,16 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
                 {
                     datenum = pp->firstdatenum+j;
                     if ( datenum < leftdatenum ) // can speed up by calculating offset 0
+                    {
+                        printf("skip (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                         continue;
+                    }
                     if ( datenum >= leftdatenum+numdates )
+                    {
+                        printf("break (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                         break;
-                    printf("found (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
+                    }
+                    printf("add (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                     stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
                 }
             }
