@@ -825,10 +825,11 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
 
 void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *pvals,int32_t numpvals)
 {
-    int32_t i;
+    /*int32_t i;
     for (i=0; i<numpvals; i++)
         printf("%u ",pvals[i]);
-    printf("pvals ht.%d\n",ht);
+    printf("pvals ht.%d\n",ht);*/
+    fprintf(stderr,"%.8f ",(double)pvals[0]/1000000000);
 }
 
 int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char *symbol,int32_t iter)
