@@ -174,7 +174,8 @@ void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t tim
             else if ( (pp= stats_priceinfo(source,datenum)) != 0 )
                 stats_datenumupdate(0,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
         } else price = 0.;
-        printf("dir.%-2d %d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",dir,datenum,hour,seconds,height,key!=0?key:"",source,dstr(srcamount),dest,dstr(destamount),price,1./price);
+        if ( dir != 0 )
+            printf("dir.%-2d %d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",dir,datenum,hour,seconds,height,key!=0?key:"",source,dstr(srcamount),dest,dstr(destamount),price,1./price);
     }
 }
 
