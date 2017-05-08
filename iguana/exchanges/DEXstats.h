@@ -817,7 +817,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
 
 char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
 {
-    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals; char fname[1024]; struct tai T; cJSON *retjson,*array,*item;
+    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals,total; char fname[1024]; struct tai T; cJSON *retjson,*array,*item;
     timestamp = (uint32_t)time(NULL);
     if ( Num_priceinfos >= sizeof(Prices)/sizeof(*Prices) )
         return(0);
@@ -842,10 +842,11 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
     tmp = OS_conv_datenum(leftdatenum,0,0,0);
     utc32 = calloc(sizeof(*utc32),numdates);
     splinevals = calloc(sizeof(*splinevals),numdates);
-    for (i=n=0; i<numdates; i++,tmp+=24*3600)
+    for (total=i=n=0; i<numdates; i++,tmp+=24*3600)
     {
         if ( prices[i].volumesum != 0. )
         {
+            total += prices[i].volumesum;
             splinevals[n] = (prices[i].pricesum / prices[i].volumesum);
             utc32[n] = tmp;
             //printf("offset.%d splineval %.8f t%u n.%d\n",i,splinevals[n],tmp,n);
@@ -855,6 +856,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"source",symbol);
     jaddstr(retjson,"dest",dest);
+    jaddnum(retjson,"totalvolume",total);
     jaddnum(retjson,"start",leftdatenum);
     jaddnum(retjson,"numdates",numdates);
     if ( n > 3 )
