@@ -1005,7 +1005,7 @@ int main(int argc, const char * argv[])
             leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
             printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
             memset(prices,0,sizeof(prices));
-            stats_prices("KMD","BTC",prices,leftdatenum,(int32_t)(sizeof(prices)/sizeof(*prices)));
+            stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1);
             if ( (fp= fopen(STATS_DEST,"wb")) != 0 )
             {
                 fwrite(filestr,1,strlen(filestr)+1,fp);
