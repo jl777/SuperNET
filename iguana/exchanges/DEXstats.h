@@ -88,6 +88,7 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *dest,int32_t daten
         pair = &date->pairs[date->numpairs++];
         memset(pair,0,sizeof(*pair));
         strcpy(pair->dest,dest);
+        printf("new pair.%d (%s -> %s)\n",date->numpairs,date->symbol,date->dest);
     }
     pair->prices = realloc(pair->prices,sizeof(*pair->prices) * (pair->numprices+1));
     stats_pricepoint(&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
