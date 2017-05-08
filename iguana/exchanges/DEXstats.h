@@ -11,7 +11,7 @@
 
 #define LEFTMARGIN 40
 #define MAX_SPLINES 1024
-#define MAX_LOOKAHEAD 60
+#define MAX_LOOKAHEAD 7
 
 struct stats_spline { char name[64]; int32_t splineid,lasti,basenum,num,firstx,dispincr,spline32[MAX_SPLINES][4]; uint32_t utc32[MAX_SPLINES]; int64_t spline64[MAX_SPLINES][4]; double dSplines[MAX_SPLINES][4],pricevals[MAX_SPLINES+MAX_LOOKAHEAD],lastutc,lastval,aveslopeabs; };
 
