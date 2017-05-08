@@ -1,1 +1,1 @@
-gcc -o stats -I../crypto777 exchanges/stats.c ../crypto777/cJSON.c ../agents/libcrypto777.a -lcurl -lpthread -lm
+gcc -g -o DEXstats -I../crypto777 exchanges/stats.c ../crypto777/cJSON.c ../agents/libcrypto777.a -lcurl -lpthread -lm
