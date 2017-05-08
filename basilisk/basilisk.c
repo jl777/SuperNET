@@ -1183,7 +1183,7 @@ HASH_ARRAY_STRING(basilisk,sendmessage,hash,vals,hexstr)
 
 HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
 {
-    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
+    char *retstr=0,*symbol,*coinaddr,*infostr; cJSON *retjson,*sobj,*info,*addrs,*txoutjson,*txjson,*array; uint32_t basilisktag,blocktime,numtx=0; bits256 txid,blockhash; struct basilisk_item *ptr,Lptr; uint64_t value; int32_t timeoutmillis,vout,height,n,m;
     if ( vals == 0 )
         return(clonestr("{\"error\":\"null valsobj\"}"));
     //if ( myinfo->IAMNOTARY != 0 || myinfo->NOTARY.RELAYID >= 0 )
@@ -1205,7 +1205,13 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
             {
                 if ( (value= SATOSHIDEN*jdouble(txoutjson,"value")) == 0 )
                     value = SATOSHIDEN*jdouble(txoutjson,"amount");
-                if ( (coinaddr= jstr(txoutjson,"address")) != 0 && value != 0 )
+                if ( (coinaddr= jstr(txoutjson,"address")) == 0 )
+                {
+                    if ( (sobj= jobj(txoutjson,"scriptPubKey")) != 0 && (addrs= jarray(&n,sobj,"addresses")) != 0 && n > 0 )
+                        coinaddr = jstri(addrs,0);
+                    printf("no address, check addrs %p coinaddr.%p\n",sobj,coinaddr);
+                }
+                if ( coinaddr != 0 && value != 0 )
                 {
                     retjson = cJSON_CreateObject();
                     jaddstr(retjson,"result","success");
@@ -1213,7 +1219,7 @@ HASH_ARRAY_STRING(basilisk,value,hash,vals,hexstr)
                     jadd64bits(retjson,"satoshis",value);
                     jaddnum(retjson,"value",dstr(value));
                     jaddnum(retjson,"amount",dstr(value));
-                    height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,0,coin);
+                    height = dpow_getchaintip(myinfo,&blockhash,&blocktime,0,&numtx,coin);
                     jaddnum(retjson,"height",height);
                     jaddnum(retjson,"numconfirms",jint(txoutjson,"confirmations"));
                     jaddbits256(retjson,"txid",txid);
@@ -1851,6 +1857,7 @@ HASH_ARRAY_STRING(InstantDEX,request,hash,vals,hexstr)
         memset(hash.bytes,0,sizeof(hash));
         msgid = (uint32_t)time(NULL);
         DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+        myinfo->DEXtrades++; // not exact but allows a one side initiated self-trade
         basilisk_channelsend(myinfo,hash,hash,DEX_channel,msgid,serialized,datalen,60);
         sleep(3);
         /*while ( numiters < 10 && (crc= basilisk_crcsend(myinfo,0,buf,sizeof(buf),hash,myinfo->myaddr.persistent,DEX_channel,msgid,serialized,datalen,crcs)) == 0 )
@@ -1914,7 +1921,7 @@ INT_ARG(InstantDEX,incoming,requestid)
     else
     {
         jaddstr(retjson,"error","cant do InstantDEX channelget");
-        printf("error channelget\n");
+        char str[65]; printf("error channelget %s %x\n",bits256_str(str,myinfo->myaddr.persistent),msgid);
     }
     return(jprint(retjson,1));
 }
@@ -1965,4 +1972,11 @@ ZERO_ARGS(InstantDEX,getswaplist)
     return(basilisk_swaplist(myinfo));
 }
 
+DOUBLE_ARG(InstantDEX,DEXratio,ratio)
+{
+    if ( ratio < 0.95 || ratio > 1.01 )
+        return(clonestr("{\"result\":\"error\",\"description\":\"DEXratio must be between 0.95 and 1.01\"}"));
+    myinfo->DEXratio = ratio;
+    return(clonestr("{\"result\":\"success\"}"));
+}
 #include "../includes/iguana_apiundefs.h"

@@ -795,7 +795,8 @@ int32_t dpow_haveutxo(struct supernet_info *myinfo,struct iguana_info *coin,bits
             for (j=0; j<n; j++)
             {
                 i = (r + j) % n;
-                item = jitem(unspents,i);
+                if ( (item= jitem(unspents,i)) == 0 )
+                    continue;
                 if ( is_cJSON_False(jobj(item,"spendable")) != 0 )
                     continue;
                 if ( (satoshis= SATOSHIDEN * jdouble(item,"amount")) == 0 )

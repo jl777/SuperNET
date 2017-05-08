@@ -62,9 +62,13 @@ cJSON *smartaddress_extrajson(struct smartaddress *ap)
 
 cJSON *smartaddress_json(struct smartaddress *ap)
 {
-    char coinaddr[64]; int32_t j,n; struct iguana_info *coin; cJSON *array,*item,*retjson;
+    char coinaddr[64],symbol[64]; uint8_t desttype,tmp,rmd160[20]; int32_t j,n; struct iguana_info *coin,*dest; cJSON *array,*item,*retjson;
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"type",ap->typestr);
+    strcpy(symbol,ap->typestr), touppercase(symbol);
+    if ( (dest= iguana_coinfind(symbol)) != 0 )
+        desttype = dest->chain->pubtype;
+    else desttype = 60;
     if ( (n= ap->numsymbols) > 0 )
     {
         array = cJSON_CreateArray();
@@ -76,8 +80,26 @@ cJSON *smartaddress_json(struct smartaddress *ap)
                 item = cJSON_CreateObject();
                 jaddstr(item,"coin",coin->symbol);
                 jaddstr(item,"address",coinaddr);
-                jaddnum(item,"maxbid",ap->symbols[j].maxbid);
-                jaddnum(item,"minask",ap->symbols[j].minask);
+                if ( dest != 0 )
+                {
+                    bitcoin_addr2rmd160(&tmp,rmd160,coinaddr);
+                    bitcoin_address(coinaddr,desttype,rmd160,20);
+                    jaddstr(item,"dest",coinaddr);
+                    if ( coin->DEXinfo.depositaddr[0] != 0 )
+                    {
+                        jaddstr(item,"jumblr_deposit",coin->DEXinfo.depositaddr);
+                        jaddnum(item,"deposit_avail",coin->DEXinfo.avail);
+                    }
+                    if ( coin->DEXinfo.jumblraddr[0] != 0 )
+                    {
+                        jaddstr(item,"jumblr",coin->DEXinfo.jumblraddr);
+                        jaddnum(item,"jumblr_avail",coin->DEXinfo.jumblravail);
+                    }
+                    if ( ap->symbols[j].maxbid != 0. )
+                        jaddnum(item,"maxbid",ap->symbols[j].maxbid);
+                    if ( ap->symbols[j].minask != 0. )
+                        jaddnum(item,"minask",ap->symbols[j].minask);
+                }
                 jadd(item,"extra",smartaddress_extrajson(ap));
                 jaddi(array,item);
             }
@@ -99,7 +121,7 @@ void smartaddress_symboladd(struct smartaddress *ap,char *symbol,double maxbid,d
         safecopy(sp->symbol,symbol,sizeof(sp->symbol));
         sp->maxbid = maxbid;
         sp->minask = minask;
-        printf("symboladd (%s) <- (%s %f %f)\n",ap->typestr,symbol,maxbid,minask);
+        printf("symboladd.%d (%s) <- (%s %f %f)\n",ap->numsymbols,ap->typestr,symbol,maxbid,minask);
     }
 }
 
@@ -336,6 +358,8 @@ void smartaddress_dex(struct supernet_info *myinfo,int32_t selector,struct iguan
     minamount = price = 0.;
     if ( basebtc < SMALLVAL && relbtc < SMALLVAL )
         return;
+    if ( myinfo->DEXratio < .95 || myinfo->DEXratio > 1.01 )
+        myinfo->DEXratio = 0.995;
     if ( basebtc < SMALLVAL || relbtc < SMALLVAL )
     {
         if ( (price= maxbid) > SMALLVAL )
@@ -345,11 +369,11 @@ void smartaddress_dex(struct supernet_info *myinfo,int32_t selector,struct iguan
             else if ( relbtc < SMALLVAL )
                 relbtc = basebtc / price, printf("calculated relbtc %.8f from (%.8f / %.8f)\n",relbtc,basebtc,price); // price * relbtc == basebtc
         }
-    } else price = 0.985 * (basebtc / relbtc);
+    } else price = myinfo->DEXratio * (basebtc / relbtc);
     minbtc = btc2kmd * (JUMBLR_INCR + 3*(JUMBLR_INCR * JUMBLR_FEE + JUMBLR_TXFEE));
     if ( minamount == 0. && basebtc > SMALLVAL )
         minamount = (minbtc / basebtc);
-    printf("%s/%s minbtc %.8f btcprice %.8f -> minamount %.8f price %.8f vs maxbid %.8f\n",basecoin->symbol,relcoin->symbol,minbtc,basecoin->DEXinfo.btcprice,minamount,price,maxbid);
+    printf("%s/%s minbtc %.8f btcprice %.8f -> minamount %.8f price %.8f vs maxbid %.8f DEXratio %.5f\n",basecoin->symbol,relcoin->symbol,minbtc,basecoin->DEXinfo.btcprice,minamount,price,maxbid,myinfo->DEXratio);
     if ( minamount > SMALLVAL && maxavail > minamount + basecoin->DEXinfo.DEXpending && (maxbid == 0. || price <= maxbid) )
     {
         avail = (maxavail - (minamount + basecoin->DEXinfo.DEXpending));
@@ -450,7 +474,7 @@ void smartaddress_depositjumblr(struct supernet_info *myinfo,char *symbol,char *
     {
         if ( strcmp(coinaddr,basecoin->DEXinfo.depositaddr) == 0 )
             smartaddress_dex(myinfo,1,basecoin,coinaddr,basecoin->DEXinfo.avail,relcoin,maxbid,minask,extraobj,0.);
-        else printf("smartaddress_jumblr: mismatch deposit address (%s) vs (%s)\n",coinaddr,basecoin->DEXinfo.depositaddr);
+        else printf("smartaddress_jumblr.%s: mismatch deposit address (%s) vs (%s)\n",symbol,coinaddr,basecoin->DEXinfo.depositaddr);
     }
 }
 
@@ -471,7 +495,7 @@ void smartaddress_jumblr(struct supernet_info *myinfo,char *symbol,char *coinadd
     {
         if ( strcmp(coinaddr,basecoin->DEXinfo.jumblraddr) == 0 )
             smartaddress_dex(myinfo,2,basecoin,coinaddr,basecoin->DEXinfo.jumblravail,relcoin,maxbid,minask,extraobj,credits);
-        else printf("smartaddress_jumblr: mismatch jumblr address (%s) vs (%s)\n",coinaddr,basecoin->DEXinfo.jumblraddr);
+        else printf("smartaddress_jumblr.%s: mismatch jumblr address (%s) vs (%s)\n",symbol,coinaddr,basecoin->DEXinfo.jumblraddr);
     }
 }
 
@@ -513,7 +537,7 @@ void smartaddress_action(struct supernet_info *myinfo,int32_t selector,char *typ
 
 void smartaddress_update(struct supernet_info *myinfo,int32_t selector)
 {
-    double maxbid,minask; char *smartstr,*typestr,*symbol,*address; cJSON *smartarray,*extraobj,*item,*array,*coinitem; int32_t iter,i,n,j,m; struct iguana_info *kmdcoin,*coinbtc = 0;
+    double maxbid,minask; uint8_t addrtype,rmd160[20]; char *smartstr,*typestr,*symbol,*address,coinaddr[64]; cJSON *smartarray,*extraobj,*item,*array,*coinitem; int32_t iter,i,n,j,m; struct iguana_info *kmdcoin,*coinbtc = 0;
     //printf("smartaddress_update numswaps.%d notary.%d IAMLP.%d %p %p %f\n",myinfo->numswaps,myinfo->IAMNOTARY,myinfo->IAMLP,kmdcoin,coinbtc,kmdcoin->DEXinfo.btcprice);
     if ( myinfo->IAMNOTARY != 0 || myinfo->IAMLP != 0 || myinfo->secret[0] == 0 )
         return;
@@ -540,16 +564,25 @@ void smartaddress_update(struct supernet_info *myinfo,int32_t selector)
                                 for (j=0; j<m; j++)
                                 {
                                     coinitem = jitem(array,j);
-                                    symbol = jstr(coinitem,"coin");
+                                    if ( (symbol= jstr(coinitem,"coin")) == 0 )
+                                        continue;
                                     if ( iter == 0 )
                                         smartaddress_coinupdate(myinfo,symbol,kmdcoin->DEXinfo.btcprice,kmdcoin->DEXinfo.avail,kmdcoin->DEXinfo.USD_average);
                                     else
                                     {
-                                        address = jstr(coinitem,"address");
-                                        maxbid = jdouble(coinitem,"maxbid");
-                                        minask = jdouble(coinitem,"minask");
-                                        extraobj = jobj(coinitem,"extra");
-                                        smartaddress_action(myinfo,selector,typestr,symbol,address,maxbid,minask,extraobj);
+                                        printf("Action.%s (%s)\n",typestr,jprint(coinitem,0));
+                                        if ( (address= jstr(coinitem,"address")) != 0 )
+                                        {
+                                            if ( strcmp(typestr,"jumblr") == 0 )
+                                            {
+                                                bitcoin_addr2rmd160(&addrtype,rmd160,address);
+                                                bitcoin_address(coinaddr,kmdcoin->chain->pubtype,rmd160,20);
+                                            } else strcpy(coinaddr,address);
+                                            maxbid = jdouble(coinitem,"maxbid");
+                                            minask = jdouble(coinitem,"minask");
+                                            extraobj = jobj(coinitem,"extra");
+                                            smartaddress_action(myinfo,selector,typestr,symbol,coinaddr,maxbid,minask,extraobj);
+                                        }
                                     }
                                 }
                             }

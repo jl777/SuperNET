@@ -230,6 +230,7 @@ ZERO_ARGS(InstantDEX,init);
 ZERO_ARGS(InstantDEX,getswaplist);
 ZERO_ARGS(InstantDEX,smartaddresses);
 TWO_STRINGS_AND_TWO_DOUBLES(InstantDEX,smartaddress,type,symbol,maxbid,minask);
+DOUBLE_ARG(InstantDEX,DEXratio,ratio);
 
 //THREE_STRINGS(atomic,approve,myorderid,otherid,txname);
 //THREE_STRINGS(atomic,claim,myorderid,otherid,txname);
