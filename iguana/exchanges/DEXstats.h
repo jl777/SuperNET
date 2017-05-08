@@ -33,8 +33,9 @@ struct DEXstats_disp { double pricesum,volumesum; };
 struct DEXstats_pricepoint
 {
     double price,volume;
-    uint32_t height:27,hour:5;
+    uint32_t height;
     uint16_t seconds;
+    int8_t hour,dir;
 };
 
 struct DEXstats_pairinfo
@@ -58,16 +59,17 @@ struct DEXstats_priceinfo
 } Prices[1024];
 int32_t Num_priceinfos;
 
-void stats_pricepoint(struct DEXstats_pricepoint *ptr,uint8_t hour,uint16_t seconds,int32_t height,double volume,double price)
+void stats_pricepoint(int32_t dir,struct DEXstats_pricepoint *ptr,uint8_t hour,uint16_t seconds,int32_t height,double volume,double price)
 {
     ptr->price = price;
     ptr->volume = volume;
     ptr->height = height;
     ptr->hour = hour;
+    ptr->dir = dir;
     ptr->seconds = seconds;
 }
 
-void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,double price)
+void stats_pairupdate(int32_t dir,struct DEXstats_datenuminfo *date,char *symbol,char *dest,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,double price)
 {
     int32_t i; struct DEXstats_pairinfo *pair = 0;
     if ( date->datenum != datenum || seconds < 0 || seconds >= 3600 || hour < 0 || hour >= 24 )
@@ -91,11 +93,11 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,
         printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
     }
     pair->prices = realloc(pair->prices,sizeof(*pair->prices) * (pair->numprices+1));
-    stats_pricepoint(&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
+    stats_pricepoint(dir,&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
     //printf("(%s/%s).%d numprices.%d h.%d s.%-4d %.8f %.6f\n",symbol,dest,date->datenum,pair->numprices,hour,seconds,price,volume);
 }
 
-void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,char *dest,double price)
+void stats_datenumupdate(int32_t dir,struct DEXstats_priceinfo *pp,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,char *dest,double price)
 {
     int32_t offset,i,n; struct DEXstats_datenuminfo *date;
     if ( (offset= datenum - pp->firstdatenum) < 0 )
@@ -119,7 +121,7 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
         }
         pp->numdates = offset;
     }
-    stats_pairupdate(&pp->dates[offset],pp->symbol,dest,datenum,hour,seconds,height,volume,price);
+    stats_pairupdate(dir,&pp->dates[offset],pp->symbol,dest,datenum,hour,seconds,height,volume,price);
 }
 
 struct DEXstats_priceinfo *stats_priceinfo(char *symbol,int32_t datenum)
@@ -161,12 +163,17 @@ void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t tim
         if ( srcamount != 0 && destamount != 0 )
         {
             price = (double)destamount / srcamount;
-            if ( (pp= stats_priceinfo(source,datenum)) != 0 )
-                stats_datenumupdate(pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
-            if ( (pp= stats_priceinfo(dest,datenum)) != 0 )
-                stats_datenumupdate(pp,datenum,hour,seconds,height,dstr(destamount),source,1. / price);
+            if ( key != 0 )
+            {
+                if ( (pp= stats_priceinfo(source,datenum)) != 0 )
+                    stats_datenumupdate(-1,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
+                if ( (pp= stats_priceinfo(dest,datenum)) != 0 )
+                    stats_datenumupdate(1,pp,datenum,hour,seconds,height,dstr(destamount),source,1. / price);
+            }
+            else if ( (pp= stats_priceinfo(source,datenum)) != 0 )
+                stats_datenumupdate(0,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
         } else price = 0.;
-        printf("%d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price,1./price);
+        printf("%d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",datenum,hour,seconds,height,key!=0?key:"",source,dstr(srcamount),dest,dstr(destamount),price,1./price);
     }
 }
 

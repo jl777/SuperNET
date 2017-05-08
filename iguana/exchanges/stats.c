@@ -825,13 +825,18 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
 
 void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *pvals,int32_t numpvals)
 {
-    //int32_t i;
-    if ( ht > 300000 )
+    struct tai T; int32_t seconds,datenum,n; cJSON *argjson;
+    if ( ht > 300000 && pvals[32] != 0 )
     {
-        //for (i=0; i<numpvals; i++)
-        //    printf("%u ",pvals[i]);
-        //printf("pvals ht.%d\n",ht);
-        fprintf(stderr,"(%u %.8f) ",sp->SAVEDTIMESTAMP,dstr(pvals[32]) / 1000.);
+        datenum = OS_conv_unixtime(&T,&seconds,sp->SAVEDTIMESTAMP);
+        //printf("(%s)\n",jprint(kvjson,0));
+        argjson = cJSON_CreateArray();
+        jaddistr(argjson,"KMD");
+        jaddnum(argjson,1);
+        jaddistr(argjson,"BTC");
+        jaddnum(argjson,dstr(pvals[32]) / 1000.);
+        stats_priceupdate(datenum,seconds/3600,seconds % 3600,sp->SAVEDTIMESTAMP,sp->SAVEDHEIGHT,0,0,argjson);
+        free_json(argjson);
     }
 }
 
