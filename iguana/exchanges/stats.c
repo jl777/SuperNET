@@ -1025,7 +1025,7 @@ int main(int argc, const char * argv[])
     printf("DEX stats running\n");
     while ( 1 )
     {
-        if ( (filestr= stats_update(logfp,STATS_DEST,statefname,komodofname)) != 0 )
+        if ( (filestr= stats_update(logfp,STATS_DEST,statefname,komodofile)) != 0 )
         {
             timestamp = (uint32_t)time(NULL);
             leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
