@@ -26,7 +26,7 @@ struct stats_spline { char name[64]; int32_t splineid,lasti,basenum,num,firstx,d
 #define _extrapolate_spline32(spline32,gap) ((double)i32tod((spline32)[0]) + ((gap) * ((double)i32tod(.001*.001*(spline32)[1]) + ((gap) * ((double)i32tod(.001*.001*.001*.001*(spline32)[2]) + ((gap) * (double)i32tod(.001*.001*.001*.001*.001*.001*(spline32)[3])))))))
 
 uint32_t forex_colors[16];
-double Display_scale = 1.;
+double Display_scale = 0.1;
 
 struct DEXstats_disp { double pricesum,volumesum; };
 
@@ -413,9 +413,10 @@ void disp_yval(register int32_t color,register float yval,register uint32_t *bit
         return;
     //y = conv_yval_to_y(yval,height/Display_scale) * Display_scale;
     y = conv_yval_to_y(yval * Display_scale,height);
-    if ( 1 && is_primary_color(color) != 0 )
+    //if ( 1 && is_primary_color(color) != 0 )
     {
         bitmap[y*rowwidth + x] = color;
+        printf("(%d, %d) <- %x, ",x,y,color);
         return;
     }
     //if ( pixelwt(color) > pixelwt(bitmap[y*rowwidth + x]) )
