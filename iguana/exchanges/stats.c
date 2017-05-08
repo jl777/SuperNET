@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define STATS_DESTDIR "/var/www/html"
+#define STATS_DEST "/var/www/html/DEXstats.json"
 #include "DEXstats.h"
 
 #ifndef WIN32
@@ -33,8 +35,6 @@
 #define MSG_NOSIGNAL	0
 #endif
 
-#define STATS_DESTDIR "/var/www/html"
-#define STATS_DEST "/var/www/html/DEXstats.json"
 #define GLOBAL_HELPDIR "/root/SuperNET/iguana/help"
 
 char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
