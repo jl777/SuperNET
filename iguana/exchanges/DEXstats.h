@@ -774,9 +774,9 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
             pp = &Prices[i];
+            printf(" (%s) numdates %d 1st %d left %d+%d\n",symbol,pp->numdates,pp->firstdatenum,leftdatenum,numdates);
             if ( leftdatenum+numdates >= pp->firstdatenum && leftdatenum <= pp->firstdatenum+pp->numdates )
             {
-                printf(" (%s) numdates %d 1st %d left %d+%d\n",symbol,pp->numdates,pp->firstdatenum,leftdatenum,numdates);
                 for (j=0; j<pp->numdates; j++)
                 {
                     datenum = pp->firstdatenum+j;
