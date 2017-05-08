@@ -766,10 +766,12 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
 
 struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
 {
-    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp; double *splinevals; struct tai T;
+    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals; struct tai T;
     timestamp = (uint32_t)time(NULL);
     if ( Num_priceinfos >= sizeof(Prices)/sizeof(*Prices) )
         return(0);
+    lefttimestamp = OS_conv_datenum(leftdatenum-1,0,0,0);
+    righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
     for (i=0; i<Num_priceinfos; i++)
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
@@ -777,16 +779,10 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
             for (j=0; j<pp->numdates; j++)
             {
                 timestamp = OS_conv_datenum(pp->firstdatenum+j,0,0,0);
-                datenum = OS_conv_unixtime(&T,&seconds,timestamp);
-                if ( datenum < leftdatenum ) // can speed up by calculating offset 0
+                if ( timestamp < lefttimestamp ) // can speed up by calculating offset 0
                 {
                     printf("skip (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                     continue;
-                }
-                if ( datenum >= leftdatenum+numdates )
-                {
-                    printf("break (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
-                    break;
                 }
                 stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
             }
