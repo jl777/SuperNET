@@ -813,7 +813,8 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         memset(&spline,0,sizeof(spline));
         stats_genspline(output,slopes,&spline,splineid,"spline",utc32,splinevals,n,0);
         for (i=0; i<2048; i++)
-            printf("%.8f ",output[i]);
+            if ( output[i] != 0. )
+            printf("(%d %.8f) ",i,output[i]);
         printf(" output\n");
     }
     free(utc32);
