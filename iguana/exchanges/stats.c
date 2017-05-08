@@ -23,11 +23,19 @@
 #include <stdint.h>
 #include "OS_portable.h"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#include "DEXstats.h"
 
+#ifndef WIN32
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL	0x4000	// Do not generate SIGPIPE
+#endif
+#else
+#define MSG_NOSIGNAL	0
+#endif
 
-#define IGUANA_URL "http://127.0.0.1:7778"
 #define STATS_DESTDIR "/var/www/html"
 #define STATS_DEST "/var/www/html/DEXstats.json"
+#define GLOBAL_HELPDIR "/root/SuperNET/iguana/help"
 
 char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
@@ -48,26 +56,648 @@ struct komodo_state
 
 struct komodo_state KOMODO_STATE;
 
-void stats_LPpubkeyupdate(char *LPpubkey,uint32_t timestamp)
+int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
-    printf("LP.(%s) t.%u\n",LPpubkey,timestamp);
+    int32_t opt,sock,result; char ipaddr[64],checkipaddr[64]; struct timeval timeout;
+    struct sockaddr_in saddr; socklen_t addrlen,slen;
+    addrlen = sizeof(saddr);
+    struct hostent *hostent;
+    
+    /**
+     * gethostbyname() is deprecated and cause crash on x64 windows
+     * the solution is to implement similar functionality by using getaddrinfo()
+     * it is standard posix function and is correctly supported in win32/win64/linux
+     * @author - fadedreamz@gmail.com
+     */
+#if defined(_M_X64)
+    struct addrinfo *addrresult = NULL;
+    struct addrinfo *returnptr = NULL;
+    struct addrinfo hints;
+    struct sockaddr_in * sockaddr_ipv4;
+    int retVal;
+    int found = 0;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+#endif
+    
+    if ( parse_ipaddr(ipaddr,hostname) != 0 )
+        port = parse_ipaddr(ipaddr,hostname);
+    
+#if defined(_M_X64)
+    retVal = getaddrinfo(ipaddr, NULL, &hints, &addrresult);
+    for (returnptr = addrresult; returnptr != NULL && found == 0; returnptr = returnptr->ai_next) {
+        switch (returnptr->ai_family) {
+            case AF_INET:
+                sockaddr_ipv4 = (struct sockaddr_in *) returnptr->ai_addr;
+                // we want to break from the loop after founding the first ipv4 address
+                found = 1;
+                break;
+        }
+    }
+    
+    // if we iterate through the loop and didn't find anything,
+    // that means we failed in the dns lookup
+    if (found == 0) {
+        printf("getaddrinfo(%s) returned error\n", hostname);
+        freeaddrinfo(addrresult);
+        return(-1);
+    }
+#else
+    hostent = gethostbyname(ipaddr);
+    if ( hostent == NULL )
+    {
+        printf("gethostbyname(%s) returned error: %d port.%d ipaddr.(%s)\n",hostname,errno,port,ipaddr);
+        return(-1);
+    }
+#endif
+    saddr.sin_family = AF_INET;
+    saddr.sin_port = htons(port);
+    //#ifdef WIN32
+    //   saddr.sin_addr.s_addr = (uint32_t)calc_ipbits("127.0.0.1");
+    //#else
+    
+#if defined(_M_X64)
+    saddr.sin_addr.s_addr = sockaddr_ipv4->sin_addr.s_addr;
+    // graceful cleanup
+    sockaddr_ipv4 = NULL;
+    freeaddrinfo(addrresult);
+#else
+    memcpy(&saddr.sin_addr.s_addr,hostent->h_addr_list[0],hostent->h_length);
+#endif
+    expand_ipbits(checkipaddr,saddr.sin_addr.s_addr);
+    if ( strcmp(ipaddr,checkipaddr) != 0 )
+        printf("bindflag.%d iguana_socket mismatch (%s) -> (%s)?\n",bindflag,checkipaddr,ipaddr);
+    //#endif
+    if ( (sock= socket(AF_INET,SOCK_STREAM,0)) < 0 )
+    {
+        if ( errno != ETIMEDOUT )
+            printf("socket() failed: %s errno.%d", strerror(errno),errno);
+        return(-1);
+    }
+    opt = 1;
+    slen = sizeof(opt);
+    //printf("set keepalive.%d\n",setsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,slen));
+#ifndef WIN32
+    if ( 1 )//&& bindflag != 0 )
+    {
+        opt = 0;
+        getsockopt(sock,SOL_SOCKET,SO_KEEPALIVE,(void *)&opt,&slen);
+        opt = 1;
+        //printf("keepalive.%d\n",opt);
+    }
+    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(void *)&opt,sizeof(opt));
+#ifdef __APPLE__
+    setsockopt(sock,SOL_SOCKET,SO_NOSIGPIPE,&opt,sizeof(opt));
+#endif
+#endif
+    if ( bindflag == 0 )
+    {
+        timeout.tv_sec = 10;
+        timeout.tv_usec = 0;
+        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+        result = connect(sock,(struct sockaddr *)&saddr,addrlen);
+        if ( result != 0 )
+        {
+            if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+            {
+                //printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+            }
+            if ( sock >= 0 )
+                closesocket(sock);
+            return(-1);
+        }
+        timeout.tv_sec = 10000000;
+        timeout.tv_usec = 0;
+        setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+    }
+    else
+    {
+        while ( (result= bind(sock,(struct sockaddr*)&saddr,addrlen)) != 0 )
+        {
+            if ( errno == EADDRINUSE )
+            {
+                sleep(1);
+                printf("ERROR BINDING PORT.%d. this is normal tcp timeout, unless another process is using port\n",port);
+                sleep(3);
+                printf("%s(%s) port.%d try again: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                if ( bindflag == 1 )
+                {
+                    closesocket(sock);
+                    return(-1);
+                }
+                sleep(13);
+                //continue;
+            }
+            if ( errno != ECONNRESET && errno != ENOTCONN && errno != ECONNREFUSED && errno != ETIMEDOUT && errno != EHOSTUNREACH )
+            {
+                printf("%s(%s) port.%d failed: %s sock.%d. errno.%d\n",bindflag!=0?"bind":"connect",hostname,port,strerror(errno),sock,errno);
+                closesocket(sock);
+                return(-1);
+            }
+        }
+        if ( listen(sock,64) != 0 )
+        {
+            printf("listen(%s) port.%d failed: %s sock.%d. errno.%d\n",hostname,port,strerror(errno),sock,errno);
+            if ( sock >= 0 )
+                closesocket(sock);
+            return(-1);
+        }
+    }
+#ifdef __APPLE__
+    //timeout.tv_sec = 0;
+    //timeout.tv_usec = 30000;
+    //setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(void *)&timeout,sizeof(timeout));
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 10000;
+    setsockopt(sock,SOL_SOCKET,SO_SNDTIMEO,(void *)&timeout,sizeof(timeout));
+#endif
+    return(sock);
 }
 
-void stats_datenumupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
+int32_t Supernet_lineparse(char *key,int32_t keymax,char *value,int32_t valuemax,char *src)
 {
-    uint64_t srcamount,destamount; char *source,*dest; double price;
-    if ( LPpubkey != 0 )
-        stats_LPpubkeyupdate(LPpubkey,timestamp);
-    if ( tradejson != 0 )
+    int32_t a,b,c,n = 0; //char *origkey=key,*origvalue=value;
+    key[0] = value[0] = 0;
+    while ( (c= src[n]) == ' ' || c == '\t' || c == '\n' || c == '\t' )
+        n++;
+    while ( (c= src[n]) != ':' && c != 0 )
     {
-        source = jstr(jitem(tradejson,0),0);
-        srcamount = SATOSHIDEN * jdouble(jitem(tradejson,1),0);
-        dest = jstr(jitem(tradejson,2),0);
-        destamount = SATOSHIDEN * jdouble(jitem(tradejson,3),0);
-        if ( srcamount != 0 && destamount != 0 )
-            price = (double)destamount / srcamount;
-        else price = 0.;
-        printf("%d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price,1/price);
+        *key++ = c;
+        //printf("(%c) ",c);
+        if ( ++n >= keymax-1 )
+        {
+            *key = 0;
+            printf("lineparse overflow key.(%s)\n",src);
+            return(-1);
+        }
+    }
+    *key = 0;
+    //printf("-> key.(%s)\n",origkey);
+    if ( src[n] != ':' )
+        return(n);
+    n++;
+    while ( (c= src[n]) == ' ' || c == '\t' )
+        n++;
+    while ( (c= src[n]) != 0 && c != '\r' && c != '\n' )
+    {
+        if ( c == '%' && (a= src[n+1]) != 0 && (b= src[n+2]) != 0 )
+            c = ((unhex(a) << 4) | unhex(b)), n += 2;
+        *value++ = c;
+        n++;
+        if ( n >= valuemax-1 )
+        {
+            *value = 0;
+            printf("lineparse overflow.(%s)\n",src);
+            return(-1);
+        }
+    }
+    *value = 0;
+    if ( src[n] != 0 )
+    {
+        n++;
+        while ( (c= src[n]) == '\r' || c == '\n' )
+            n++;
+    }
+    //printf("key.(%s) value.(%s)\n",origkey,origvalue);
+    return(n);
+}
+
+cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
+{
+    int32_t i,n,totallen,datalen,len = 0; cJSON *json,*array; char key[8192],*data;
+    json = cJSON_CreateObject();
+    array = cJSON_CreateArray();
+    totallen = (int32_t)strlen(urlstr);
+    while ( 1 )
+    {
+        for (i=len; urlstr[i]!=0; i++)
+            if ( urlstr[i] == '\r' || urlstr[i] == '\n' )
+                break;
+        if ( i == len && (urlstr[len] == '\r' || urlstr[len] == '\n') )
+        {
+            len++;
+            continue;
+        }
+        urlstr[i] = 0;
+        //printf("URLSTR[%d]=%s\n",i,&urlstr[len]);
+        if ( (n= Supernet_lineparse(key,sizeof(key),value,bufsize,&urlstr[len])) > 0 )
+        {
+            if ( value[0] != 0 )
+                jaddstr(json,key,value);
+            else jaddistr(array,key);
+            len += (n + 1);
+            if ( strcmp(key,"Content-Length") == 0 && (datalen= atoi(value)) > 0 )
+            {
+                data = &urlstr[totallen - datalen];
+                data[-1] = 0;
+                //printf("post.(%s) (%c)\n",data,data[0]);
+                jaddstr(json,"POST",data);
+            }
+        } else break;
+    }
+    jadd(json,"lines",array);
+    //printf("urlconv.(%s)\n",jprint(json,0));
+    return(json);
+}
+
+char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
+{
+    cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize;
+    char symbol[64],buf[4096],*originstr,*fieldstr,*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
+    //printf("rpcparse.(%s)\n",urlstr);
+    for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
+        urlmethod[i] = urlstr[i];
+    urlmethod[i++] = 0;
+    n = i;
+    //printf("URLMETHOD.(%s)\n",urlmethod);
+    *postflagp = (strcmp(urlmethod,"POST") == 0);
+    for (i=0; i<sizeof(url)-1&&urlstr[n+i]!=0&&urlstr[n+i]!=' '; i++)
+        url[i] = urlstr[n+i];
+    url[i++] = 0;
+    n += i;
+    j = i = 0;
+    filetype[0] = 0;
+    //printf("url.(%s) method.(%s)\n",&url[i],urlmethod);
+#ifdef __PNACL__
+    snprintf(furl,sizeof(furl),"%s/%s",GLOBAL_DBDIR,url+1);
+#else
+    snprintf(furl,sizeof(furl),"%s",url+1);
+#endif
+    if ( strcmp(&url[i],"/") == 0 && strcmp(urlmethod,"GET") == 0 )
+    {
+        *jsonflagp = 1;
+        if ( (filestr= OS_filestr(&filesize,"index7779.html")) == 0 )
+            return(clonestr("{\"error\":\"cant find index7779\"}"));
+        else return(filestr);
+    }
+    else if ( (filestr= OS_filestr(&filesize,furl)) != 0 )
+    {
+        *jsonflagp = 1;
+        for (i=(int32_t)strlen(url)-1; i>0; i--)
+            if ( url[i] == '.' || url[i] == '/' )
+                break;
+        if ( url[i] == '.' )
+            strcpy(filetype,url+i+1);
+        //printf("return filetype.(%s) size.%ld\n",filetype,filesize);
+        return(filestr);
+    }
+    if ( strncmp(&url[i],"/api",strlen("/api")) == 0 )
+    {
+        *jsonflagp = 1;
+        i += strlen("/api");
+    } else *jsonflagp = 0;
+    if ( strcmp(url,"/favicon.ico") == 0 )
+    {
+        *jsonflagp = 1;
+        return(0);
+    }
+    if ( url[i] != '/' )
+        token = &url[i];
+    n = i;
+    tokens = cJSON_CreateArray();
+    for (; url[i]!=0; i++)
+    {
+        //printf("i.%d (%c)\n",i,url[i]);
+        if ( url[i] == '/' )
+        {
+            url[i] = 0;
+            if ( token != 0 )
+            {
+                //printf("TOKEN.(%s) i.%d\n",token,i);
+                jaddistr(tokens,token);
+                num++;
+            }
+            token = &url[i+1];
+            i++;
+            //printf("new token.(%s) i.%d\n",token,i+1);
+            continue;
+        }
+    }
+    if ( token != 0 )
+    {
+        //printf("add token.(%s)\n",token);
+        jaddistr(tokens,token);
+        num++;
+    }
+    argjson = cJSON_CreateObject();
+    if ( num > 0 )
+        jaddstr(argjson,"agent",jstri(tokens,0));
+    if ( num > 1 )
+        jaddstr(argjson,"method",jstri(tokens,1));
+    if ( (json= SuperNET_urlconv(retbuf,bufsize,urlstr+n)) != 0 )
+    {
+        jadd(json,"tokens",tokens);
+        jaddstr(json,"urlmethod",urlmethod);
+        if ( (data= jstr(json,"POST")) == 0 || (argjson= cJSON_Parse(data)) == 0 )
+        {
+            userpass = jstr(argjson,"userpass");
+            //printf("userpass.(%s)\n",userpass);
+            if ( (n= cJSON_GetArraySize(tokens)) > 0 )
+            {
+                if ( n > 1 )
+                {
+                    if ( jstri(tokens,1) != 0 )
+                    {
+                        char *key,*value;
+                        strcpy(buf,jstri(tokens,1));
+                        key = value = 0;
+                        i = 0;
+                        for (; buf[i]!=0; i++)
+                        {
+                            if ( buf[i] == '?' )
+                            {
+                                buf[i] = 0;
+                                jdelete(argjson,"method");
+                                jaddstr(argjson,"method",buf);
+                                i++;
+                                key = &buf[i];
+                                break;
+                            }
+                        }
+                        while ( buf[i] != 0 )
+                        {
+                            //printf("iter.[%s]\n",&buf[i]);
+                            if ( buf[i] != 0 && key != 0 )
+                            {
+                                for (; buf[i]!=0; i++)
+                                {
+                                    if ( buf[i] == '=' )
+                                    {
+                                        buf[i] = 0;
+                                        i++;
+                                        //printf("got key.(%s)\n",key);
+                                        value = &buf[i];
+                                        break;
+                                    }
+                                }
+                                if ( buf[i] != 0 && value != 0 )
+                                {
+                                    for (; buf[i]!=0; i++)
+                                    {
+                                        if ( buf[i] == '&' )
+                                        {
+                                            buf[i] = 0;
+                                            jaddstr(argjson,key,value);
+                                            i++;
+                                            //printf("got value.(%s)\n",value);
+                                            value = 0;
+                                            key = &buf[i];
+                                            break;
+                                        }
+                                        else if ( buf[i] == '+' )
+                                            buf[i] = ' ';
+                                    }
+                                }
+                            }
+                        }
+                        if ( key != 0 && value != 0 )
+                            jaddstr(argjson,key,value);
+                    }
+                    else
+                    {
+                        //jdelete(argjson,"method");
+                        //jaddstr(argjson,"method",buf);
+                    }
+                }
+                for (i=2; i<n; i++)
+                {
+                    if ( i == n-1 )
+                        jaddstr(argjson,"data",jstri(tokens,i));
+                    else
+                    {
+                        if ( strcmp(jstri(tokens,i),"coin") == 0 && strlen(jstri(tokens,i+1)) < sizeof(symbol)-1 )
+                        {
+                            strcpy(symbol,jstri(tokens,i+1));
+                            touppercase(symbol);
+                            jaddstr(argjson,jstri(tokens,i),symbol);
+                        } else jaddstr(argjson,jstri(tokens,i),jstri(tokens,i+1));
+                        i++;
+                    }
+                }
+            }
+        }
+        if ( is_cJSON_Array(argjson) != 0 && (n= cJSON_GetArraySize(argjson)) > 0 )
+        {
+            cJSON *retitem,*retarray = cJSON_CreateArray();
+            origargjson = argjson;
+            symbol[0] = 0;
+            for (i=0; i<n; i++)
+            {
+                argjson = jitem(origargjson,i);
+                if ( userpass != 0 && jstr(argjson,"userpass") == 0 )
+                    jaddstr(argjson,"userpass",userpass);
+                //printf("after urlconv.(%s) argjson.(%s)\n",jprint(json,0),jprint(argjson,0));
+                if ( (retstr= stats_JSON(argjson,remoteaddr,port)) != 0 )
+                {
+                    if ( (retitem= cJSON_Parse(retstr)) != 0 )
+                        jaddi(retarray,retitem);
+                    free(retstr);
+                }
+                //printf("(%s) {%s} -> (%s) postflag.%d (%s)\n",urlstr,jprint(argjson,0),cJSON_Print(json),*postflagp,retstr);
+            }
+            free_json(origargjson);
+            retstr = jprint(retarray,1);
+        }
+        else
+        {
+            cJSON *arg;
+            if ( jstr(argjson,"agent") != 0 && strcmp(jstr(argjson,"agent"),"bitcoinrpc") != 0 && jobj(argjson,"params") != 0 )
+            {
+                arg = jobj(argjson,"params");
+                if ( is_cJSON_Array(arg) != 0 && cJSON_GetArraySize(arg) == 1 )
+                    arg = jitem(arg,0);
+            } else arg = argjson;
+            //printf("ARGJSON.(%s)\n",jprint(arg,0));
+            if ( userpass != 0 && jstr(arg,"userpass") == 0 )
+                jaddstr(arg,"userpass",userpass);
+            retstr = stats_JSON(arg,remoteaddr,port);
+        }
+        free_json(argjson);
+        free_json(json);
+        if ( tmpjson != 0 )
+            free(tmpjson);
+        return(retstr);
+    }
+    free_json(argjson);
+    if ( tmpjson != 0 )
+        free(tmpjson);
+    *jsonflagp = 1;
+    return(clonestr("{\"error\":\"couldnt process packet\"}"));
+}
+
+int32_t iguana_getcontentlen(char *buf,int32_t recvlen)
+{
+    char *str,*clenstr = "Content-Length: "; int32_t len = -1;
+    if ( (str= strstr(buf,clenstr)) != 0 )
+    {
+        //printf("strstr.(%s)\n",str);
+        str += strlen(clenstr);
+        len = atoi(str);
+        //printf("len.%d\n",len);
+    }
+    return(len);
+}
+
+int32_t iguana_getheadersize(char *buf,int32_t recvlen)
+{
+    char *str,*delim = "\r\n\r\n";
+    if ( (str= strstr(buf,delim)) != 0 )
+        return((int32_t)(((long)str - (long)buf) + strlen(delim)));
+    return(recvlen);
+}
+
+void stats_rpcloop(void *args)
+{
+    static char *jsonbuf;
+    uint16_t port; char filetype[128],content_type[128];
+    int32_t recvlen,flag,bindsock,postflag=0,contentlen,sock,remains,numsent,jsonflag=0,hdrsize,len;
+    socklen_t clilen; char helpname[512],remoteaddr[64],*buf,*retstr,*space;
+    struct sockaddr_in cli_addr; uint32_t ipbits,i,size = IGUANA_MAXPACKETSIZE + 512;
+    if ( (port= *(uint16_t *)args) == 0 )
+        port = 7779;
+    if ( jsonbuf == 0 )
+        jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
+    while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
+    {
+        //if ( coin->MAXPEERS == 1 )
+        //    break;
+        //exit(-1);
+        sleep(3);
+    }
+    printf(">>>>>>>>>> DEX stats 127.0.0.1:%d bind sock.%d DEX stats API enabled <<<<<<<<<\n",port,bindsock);
+    space = calloc(1,size);
+    while ( bindsock >= 0 )
+    {
+        clilen = sizeof(cli_addr);
+        sock = accept(bindsock,(struct sockaddr *)&cli_addr,&clilen);
+        if ( sock < 0 )
+        {
+            //printf("iguana_rpcloop ERROR on accept usock.%d errno %d %s\n",sock,errno,strerror(errno));
+            continue;
+        }
+        memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
+        expand_ipbits(remoteaddr,ipbits);
+        printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
+        
+        memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
+        remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);
+        buf = jsonbuf;
+        recvlen = flag = 0;
+        retstr = 0;
+        while ( remains > 0 )
+        {
+            //printf("flag.%d remains.%d recvlen.%d\n",flag,remains,recvlen);
+            if ( (len= (int32_t)recv(sock,buf,remains,0)) < 0 )
+            {
+                if ( errno == EAGAIN )
+                {
+                    printf("EAGAIN for len %d, remains.%d\n",len,remains);
+                    usleep(10000);
+                }
+                break;
+            }
+            else
+            {
+                if ( len > 0 )
+                {
+                    buf[len] = 0;
+                    if ( recvlen == 0 )
+                    {
+                        if ( (contentlen= iguana_getcontentlen(buf,recvlen)) > 0 )
+                        {
+                            hdrsize = iguana_getheadersize(buf,recvlen);
+                            if ( hdrsize > 0 )
+                            {
+                                if ( len < (hdrsize + contentlen) )
+                                {
+                                    remains = (hdrsize + contentlen) - len;
+                                    buf = &buf[len];
+                                    flag = 1;
+                                    //printf("got.(%s) %d remains.%d of len.%d contentlen.%d hdrsize.%d remains.%d\n",buf,recvlen,remains,len,contentlen,hdrsize,(hdrsize+contentlen)-len);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    recvlen += len;
+                    remains -= len;
+                    buf = &buf[len];
+                    if ( flag == 0 || remains <= 0 )
+                        break;
+                }
+                else
+                {
+                    usleep(10000);
+                    //printf("got.(%s) %d remains.%d of total.%d\n",jsonbuf,recvlen,remains,len);
+                    //retstr = iguana_rpcparse(space,size,&postflag,jsonbuf);
+                    if ( flag == 0 )
+                        break;
+                }
+            }
+        }
+        content_type[0] = 0;
+        if ( recvlen > 0 )
+        {
+            retstr = stats_rpcparse(space,size,&jsonflag,&postflag,jsonbuf,remoteaddr,filetype,port);
+            if ( filetype[0] != 0 )
+            {
+                static cJSON *mimejson; char *tmp,*typestr=0; long tmpsize;
+                sprintf(helpname,"%s/mime.json",GLOBAL_HELPDIR);
+                if ( (tmp= OS_filestr(&tmpsize,helpname)) != 0 )
+                {
+                    mimejson = cJSON_Parse(tmp);
+                    free(tmp);
+                }
+                if ( mimejson != 0 )
+                {
+                    if ( (typestr= jstr(mimejson,filetype)) != 0 )
+                        sprintf(content_type,"Content-Type: %s\r\n",typestr);
+                } else printf("parse error.(%s)\n",tmp);
+                //printf("filetype.(%s) json.%p type.%p tmp.%p [%s]\n",filetype,mimejson,typestr,tmp,content_type);
+            }
+        }
+        if ( retstr != 0 )
+        {
+            char *response,hdrs[1024];
+            //printf("RETURN.(%s)\n",retstr);
+            if ( jsonflag != 0 || postflag != 0 )
+            {
+                response = malloc(strlen(retstr)+1024+1+1);
+                sprintf(hdrs,"HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Credentials: true\r\nAccess-Control-Allow-Methods: GET, POST\r\nCache-Control :  no-cache, no-store, must-revalidate\r\n%sContent-Length : %8d\r\n\r\n",content_type,(int32_t)strlen(retstr));
+                response[0] = '\0';
+                strcat(response,hdrs);
+                strcat(response,retstr);
+                strcat(response,"\n");
+                if ( retstr != space )
+                    free(retstr);
+                retstr = response;
+            }
+            remains = (int32_t)strlen(retstr);
+            i = 0;
+            while ( remains > 0 )
+            {
+                if ( (numsent= (int32_t)send(sock,&retstr[i],remains,MSG_NOSIGNAL)) < 0 )
+                {
+                    if ( errno != EAGAIN && errno != EWOULDBLOCK )
+                    {
+                        //printf("%s: %s numsent.%d vs remains.%d len.%d errno.%d (%s) usock.%d\n",retstr,ipaddr,numsent,remains,recvlen,errno,strerror(errno),sock);
+                        break;
+                    }
+                }
+                else if ( remains > 0 )
+                {
+                    remains -= numsent;
+                    i += numsent;
+                    if ( remains > 0 )
+                        printf("iguana sent.%d remains.%d of len.%d\n",numsent,remains,recvlen);
+                }
+            }
+            if ( retstr != space)
+                free(retstr);
+        }
+        closesocket(sock);
     }
 }
 
@@ -83,7 +713,7 @@ void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timest
     //printf("(%s)\n",jprint(kvjson,0));
     if ( logfp != 0 )
     {
-        stats_datenumupdate(datenum,seconds/3600,seconds % 3600,timestamp,height,key,jstr(kvjson,"pubkey"),jarray(&n,kvjson,"trade"));
+        stats_priceupdate(datenum,seconds/3600,seconds % 3600,timestamp,height,key,jstr(kvjson,"pubkey"),jarray(&n,kvjson,"trade"));
         fprintf(logfp,"%s\n",jprint(kvjson,0));
         fflush(logfp);
     }
@@ -132,7 +762,7 @@ void komodo_kvupdate(FILE *logfp,struct komodo_state *sp,int32_t ht,bits256 txid
         }*/
         //for (i=0; i<coresize; i++)
         //    printf("%c",(char)valueptr[i]);
-        decode_hex(decodestr,coresize/2,valueptr);
+        decode_hex((uint8_t *)decodestr,coresize/2,(char *)valueptr);
         if ( (kvjson= cJSON_Parse(decodestr)) != 0 )
         {
             //char str[65];
@@ -355,18 +985,27 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname)
 
 int main(int argc, const char * argv[])
 {
-    FILE *fp,*logfp; char *filestr,*statefname,logfname[512];
+    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*statefname,logfname[512]; uint16_t port = 7779;
     if ( argc < 2 )
         statefname = "/root/.komodo/KV/komodostate";
     else statefname = (char *)argv[1];
     sprintf(logfname,"%s/logfile",STATS_DESTDIR);
     logfp = fopen(logfname,"wb");
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&port) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",port);
+        exit(-1);
+    }
     printf("DEX stats running\n");
     while ( 1 )
     {
         if ( (filestr= stats_update(logfp,STATS_DEST,statefname)) != 0 )
         {
-            printf("%u: %s\n",(uint32_t)time(NULL),filestr);
+            timestamp = (uint32_t)time(NULL);
+            leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
+            printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
+            memset(prices,0,sizeof(prices));
+            stats_prices("KMD","BTC",prices,leftdatenum,(int32_t)(sizeof(prices)/sizeof(*prices)));
             if ( (fp= fopen(STATS_DEST,"wb")) != 0 )
             {
                 fwrite(filestr,1,strlen(filestr)+1,fp);
