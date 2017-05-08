@@ -915,7 +915,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             source = "KMD";
         if ( (dest= jstr(argjson,"dest")) == 0 )
             dest = "USD";
-        if ( (numdates= jstr(argjson,"numdates")) == 0 )
+        if ( (numdates= jint(argjson,"numdates")) <= 0 || numdates > 1024/24 )
             numdates = 1024/24;
         leftdatenum = OS_conv_unixtime(&T,&seconds,endtimestamp - numdates*24*3600);
         printf("(%s/%s) endtimestamp.%u: leftdatenum.%d\n",source,dest,endtimestamp,leftdatenum);
