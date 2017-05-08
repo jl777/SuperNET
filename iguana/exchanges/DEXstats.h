@@ -731,7 +731,7 @@ void output_line(int32_t calclogflag,double ave,double *buf,int32_t n,int32_t co
     _output_line(calclogflag,ave,buf,src,1024,color,bitmap,rowwidth,height);
 }
 
-void stats_updatedisp(struct DEXstats_disp *disp,int32_t seconds,double price,double volume)
+void stats_updatedisp(struct DEXstats_disp *disp,double price,double volume)
 {
     if ( price > SMALLVAL && volume > SMALLVAL )
     {
@@ -742,8 +742,10 @@ void stats_updatedisp(struct DEXstats_disp *disp,int32_t seconds,double price,do
 
 void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates,struct DEXstats_datenuminfo *date,char *dest,int32_t current_daysecond)
 {
-    int32_t i,j,seconds,hour,offset,delta,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp;
+    int32_t i,j,seconds,hour,offset,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp,lefttimestamp,righttimestamp;
     offset = datenum - leftdatenum;
+    lefttimestamp = OS_conv_datenum(leftdatenum,0,0,0);
+    righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
     printf("search dest.%s datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",dest,datenum,leftdatenum,numdates,offset,date->numpairs);
     for (i=0; i<date->numpairs; i++)
     {
@@ -754,13 +756,14 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
             for (j=0; j<pair->numprices; j++)
             {
                 ptr = &pair->prices[j];
-                seconds = 3600*ptr->hour + ptr->seconds + (24*3600 - current_daysecond);
-                if ( seconds >= 24*3600 )
-                    delta = 1;
-                else delta = 0;
-                seconds -= delta*24*3600;
-                if ( offset+delta >= leftdatenum && offset+delta < leftdatenum+numdates )
-                    stats_updatedisp(&prices[offset+delta],seconds,ptr->price,ptr->volume);
+                timestamp = OS_conv_datenum(date->datenum,ptr->hour,ptr->seconds/60,ptr->seconds%60);
+                timestamp += (24*3600 - current_daysecond);
+                offset = (timestamp - lefttimestamp) / (24*3600);
+                if ( offset >= 0 && offset < numdates )
+                {
+                    printf("found dest.(%s) numprices.%d %d (%.8f %.6f)\n",dest,pair->numprices,ptr->price,ptr->volume);
+                    stats_updatedisp(&prices[offset],ptr->price,ptr->volume);
+                }
             }
             break;
         }
