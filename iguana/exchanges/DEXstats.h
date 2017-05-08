@@ -832,7 +832,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
                 timestamp = OS_conv_datenum(pp->firstdatenum+j,0,0,0);
                 if ( timestamp < lefttimestamp ) // can speed up by calculating offset 0
                 {
-                    printf("skip (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
+                    //printf("skip (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                     continue;
                 }
                 stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
