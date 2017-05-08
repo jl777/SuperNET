@@ -886,7 +886,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
         sum /= i;
         uint32_t val,height = 400,*bitmap = calloc(sizeof(*bitmap),height * numdates*24);
         uint8_t red,green,blue,*tmpptr,*bytemap = calloc(sizeof(*bytemap),3 * height * numdates*24);
-        output_line(1,sum,output,i,0xff00ff,bitmap,numdates*24,height);
+        output_line(0,sum,output,i,0xff00ff,bitmap,numdates*24,height);
         tmpptr = bytemap;
         for (j=0; j<height*numdates*24; j++)
         {
