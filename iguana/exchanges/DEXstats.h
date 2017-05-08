@@ -86,9 +86,12 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,
     {
         date->pairs = realloc(date->pairs,sizeof(*date->pairs) * (date->numpairs + 1));
         pair = &date->pairs[date->numpairs++];
-        memset(pair,0,sizeof(*pair));
-        strcpy(pair->dest,dest);
-        printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
+        if ( pair->dest[0] == 0 )
+        {
+            memset(pair,0,sizeof(*pair));
+            strcpy(pair->dest,dest);
+            printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
+        }
     }
     pair->prices = realloc(pair->prices,sizeof(*pair->prices) * (pair->numprices+1));
     stats_pricepoint(&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
@@ -103,7 +106,7 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
         printf("illegal datenum.%d for %s when 1st.%d\n",datenum,pp->symbol,pp->firstdatenum);
         return;
     }
-    if ( offset >= pp->numdates )
+    if ( offset == 0 || offset > pp->numdates )
     {
         pp->dates = realloc(pp->dates,sizeof(*pp->dates) * (offset+1));
         n = (offset - pp->numdates);
@@ -111,8 +114,11 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
         for (i=0; i<=n; i++)
         {
             date = &pp->dates[pp->numdates + i];
-            memset(date,0,sizeof(*date));
-            date->datenum = pp->firstdatenum + pp->numdates + i;
+            if ( date->datenum != pp->firstdatenum + pp->numdates + i )
+            {
+                memset(date,0,sizeof(*date));
+                date->datenum = pp->firstdatenum + pp->numdates + i;
+            }
         }
         pp->numdates = offset;
     }
