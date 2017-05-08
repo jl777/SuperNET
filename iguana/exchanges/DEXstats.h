@@ -75,7 +75,7 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *symbol,char *dest,
         printf("date->datenum %d != %d? hour.%d seconds.%d\n",date->datenum,datenum,hour,seconds);
         return;
     }
-    printf("%d numpairs.%d %p %p\n",date->datenum,date->numpairs,date,date->pairs);
+    //printf("%d numpairs.%d %p %p\n",date->datenum,date->numpairs,date,date->pairs);
     for (i=0; i<date->numpairs; i++)
         if ( strcmp(dest,date->pairs[i].dest) == 0 )
         {
@@ -744,29 +744,26 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
 {
     int32_t i,j,seconds,hour,offset,delta,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp;
     offset = datenum - leftdatenum;
-    printf("add datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",datenum,leftdatenum,numdates,offset,date->numpairs);
-    if ( datenum >= leftdatenum-1 && datenum <= leftdatenum+numdates )
+    printf("search dest.%s datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",dest,datenum,leftdatenum,numdates,offset,date->numpairs);
+    for (i=0; i<date->numpairs; i++)
     {
-        printf("add datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",datenum,leftdatenum,numdates,offset,date->numpairs);
-        for (i=0; i<date->numpairs; i++)
-            if ( strcmp(dest,date->pairs[i].dest) == 0 )
+        if ( strcmp(dest,date->pairs[i].dest) == 0 )
+        {
+            pair = &date->pairs[i];
+            printf("found dest.(%s) numprices.%d\n",dest,pair->numprices);
+            for (j=0; j<pair->numprices; j++)
             {
-                pair = &date->pairs[i];
-                printf("found dest.(%s) numprices.%d\n",dest,pair->numprices);
-                for (j=0; j<pair->numprices; j++)
-                {
-                    ptr = &pair->prices[j];
-                    seconds = 3600*ptr->hour + ptr->seconds + (24*3600 - current_daysecond);
-                    if ( seconds >= 24*3600 )
-                        delta = 1;
-                    else delta = 0;
-                    seconds -= delta*24*3600;
-                    if ( offset+delta >= leftdatenum && offset+delta < leftdatenum+numdates )
-                        stats_updatedisp(&prices[offset+delta],seconds,ptr->price,ptr->volume);
-                }
-                break;
+                ptr = &pair->prices[j];
+                seconds = 3600*ptr->hour + ptr->seconds + (24*3600 - current_daysecond);
+                if ( seconds >= 24*3600 )
+                    delta = 1;
+                else delta = 0;
+                seconds -= delta*24*3600;
+                if ( offset+delta >= leftdatenum && offset+delta < leftdatenum+numdates )
+                    stats_updatedisp(&prices[offset+delta],seconds,ptr->price,ptr->volume);
             }
-        
+            break;
+        }
     }
 }
 
