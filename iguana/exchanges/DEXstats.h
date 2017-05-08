@@ -65,7 +65,7 @@ void stats_pricepoint(struct DEXstats_pricepoint *ptr,uint8_t hour,uint16_t seco
     ptr->height = height;
     ptr->hour = hour;
     ptr->seconds = seconds;
-    printf("h.%d s.%-4d %.8f %.6f\n",hour,seconds,price,volume);
+    //printf("h.%d s.%-4d %.8f %.6f\n",hour,seconds,price,volume);
 }
 
 void stats_pairupdate(struct DEXstats_datenuminfo *date,char *dest,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,double price)
@@ -771,7 +771,6 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
             pp = &Prices[i];
-            printf("found (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
             if ( datenum >= pp->firstdatenum && datenum < pp->firstdatenum+pp->numdates )
             {
                 for (j=0; j<pp->numdates; j++)
@@ -781,6 +780,7 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
                         continue;
                     if ( datenum >= leftdatenum+numdates )
                         break;
+                    printf("found (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                     stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
                 }
             }
