@@ -256,7 +256,7 @@ void smooth1024(double dest[],double src[],int32_t smoothiters)
 float _calc_pricey(register double price,register double weekave)
 {
     if ( price != 0. && weekave != 0. )
-        return(calc_loganswer(weekave,price));
+        return(0.2 * calc_loganswer(weekave,price));
     else return(0.f);
 }
 
