@@ -874,11 +874,23 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
         if ( i != 2048 )
             i++;
         sum /= i;
-        uint32_t height = 400; uint8_t *bitmap = calloc(sizeof(*bitmap),3 * height * numdates*24);
+        uint32_t height = 400,*bitmap = calloc(sizeof(*bitmap),height * numdates*24);
+        uint8_t red,green,blue,*tmpptr,*bytemap = calloc(sizeof(*bytemap),3 * height * numdates*24);
         output_line(0,sum,output,i,0xff00ff,bitmap,numdates*24,height);
+        tmpptr = bytemap;
+        for (j=0; j<height*numdates*24; j++)
+        {
+            val = bitmap[j];
+            red = val & 0xff;
+            green = (val >> 8) & 0xff;
+            blue = (val >> 16) & 0xff;
+            *tmpptr++ = red;
+            *tmpptr++ = green;
+            *tmpptr++ = blue;
+        }
         sprintf(fname,"%s/bitmaps/%s_%s.jpg",STATS_DEST,symbol,dest), OS_portable_path(fname);
-        gen_jpegfile(fname,1,bitmap,numdates*24,height);
-        free(bitmap);
+        gen_jpegfile(fname,1,bytemap,numdates*24,height);
+        free(bitmap), free(bytemap);
         jaddstr(retjson,"bitmap",fname);
         jadd(retjson,"hourly",array);
         jaddnum(retjson,"average",sum);
