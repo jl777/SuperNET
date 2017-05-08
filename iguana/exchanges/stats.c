@@ -985,7 +985,7 @@ char *stats_update(FILE *logfp,char *destdir,char *statefname)
 
 int main(int argc, const char * argv[])
 {
-    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*statefname,logfname[512]; uint16_t port = 7779;
+    struct tai T; uint32_t timestamp; struct DEXstats_disp prices[365]; int32_t seconds,leftdatenum; FILE *fp,*logfp; char *filestr,*retstr,*statefname,logfname[512]; uint16_t port = 7779;
     if ( argc < 2 )
         statefname = "/root/.komodo/KV/komodostate";
     else statefname = (char *)argv[1];
@@ -1005,7 +1005,11 @@ int main(int argc, const char * argv[])
             leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
             printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
             memset(prices,0,sizeof(prices));
-            stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1);
+            if ( (retstr= stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1)) != 0 )
+            {
+                printf("%s\n",retstr);
+                free(retstr);
+            }
             if ( (fp= fopen(STATS_DEST,"wb")) != 0 )
             {
                 fwrite(filestr,1,strlen(filestr)+1,fp);
