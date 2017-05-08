@@ -499,13 +499,15 @@ double _output_line(int32_t calclogflag,double ave,double *output,double *buf,in
         ave = log(ave);
     for (x=0; x<n; x++)
     {
-        if ( (val= buf[x]) != 0 )
+        if ( (val= buf[x]) != 0. )
         {
             if ( calclogflag != 0 )
+            {
                 val = log(buf[x]);
-            if ( ave != 1. )
-                yval = _calc_pricey(val,ave);
-            else yval = val;
+                if ( ave != 1. )
+                    yval = _calc_pricey(val,ave);
+                else yval = val;
+            } else yval = (val / ave) * height / 3;
             printf("(%f -> %f) ",val,yval);
             if ( fabs(yval) > .0000000001 )
             {
