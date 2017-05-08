@@ -832,9 +832,9 @@ void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *p
         //printf("(%s)\n",jprint(kvjson,0));
         argjson = cJSON_CreateArray();
         jaddistr(argjson,"KMD");
-        jaddnum(argjson,1);
+        jaddinum(argjson,1);
         jaddistr(argjson,"BTC");
-        jaddnum(argjson,dstr(pvals[32]) / 1000.);
+        jaddinum(argjson,dstr(pvals[32]) / 1000.);
         stats_priceupdate(datenum,seconds/3600,seconds % 3600,sp->SAVEDTIMESTAMP,sp->SAVEDHEIGHT,0,0,argjson);
         free_json(argjson);
     }

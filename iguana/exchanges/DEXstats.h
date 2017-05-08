@@ -151,7 +151,7 @@ void stats_LPpubkeyupdate(char *LPpubkey,uint32_t timestamp)
 
 void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
 {
-    uint64_t srcamount,destamount; char *source,*dest; double price; struct DEXstats_priceinfo *pp;
+    int32_t dir = 0; uint64_t srcamount,destamount; char *source,*dest; double price; struct DEXstats_priceinfo *pp;
     if ( LPpubkey != 0 )
         stats_LPpubkeyupdate(LPpubkey,timestamp);
     if ( tradejson != 0 )
@@ -165,6 +165,7 @@ void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t tim
             price = (double)destamount / srcamount;
             if ( key != 0 )
             {
+                dir = 1;
                 if ( (pp= stats_priceinfo(source,datenum)) != 0 )
                     stats_datenumupdate(-1,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
                 if ( (pp= stats_priceinfo(dest,datenum)) != 0 )
