@@ -770,6 +770,7 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
             pp = &Prices[i];
+            printf("found (%s) datenums %d %d %d\n",datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
             if ( datenum >= pp->firstdatenum && datenum < pp->firstdatenum+pp->numdates )
             {
                 for (j=0; j<pp->numdates; j++)
