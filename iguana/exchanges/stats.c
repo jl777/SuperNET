@@ -972,9 +972,9 @@ int32_t stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t max
             if ( ftell(fp) > lastpos[iter] )
             {
                 fseek(fp,lastpos[iter],SEEK_SET);
-                while ( komodo_parsestatefile(logfp,sp,fp,symbol,iter) >= 0 && n < 1000 )
+                while ( komodo_parsestatefile(logfp,sp,fp,symbol,iter) >= 0 && n < 100000 )
                 {
-                    if ( n == 999 )
+                    if ( n == 99999 )
                     {
                         if ( time(NULL) < starttime+maxseconds )
                             n = 0;
