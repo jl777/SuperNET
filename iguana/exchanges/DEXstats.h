@@ -840,7 +840,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
         {
             splinevals[n] = (prices[i].pricesum / prices[i].volumesum);
             utc32[n] = tmp;
-            printf("offset.%d splineval %.8f t%u n.%d\n",i,splinevals[n],tmp,n);
+            //printf("offset.%d splineval %.8f t%u n.%d\n",i,splinevals[n],tmp,n);
             n++;
         }
     }
@@ -907,7 +907,18 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( (agent= jstr(argjson,"agent")) == 0 )
         agent = "stats";
-    
+    /*timestamp = (uint32_t)time(NULL);
+    leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
+    printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
+    memset(prices,0,sizeof(prices));
+    if ( (retstr= stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1)) != 0 )
+    {
+        printf("%s\n",retstr);
+        free(retstr);
+    }
+
+    char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
+*/
     return(clonestr(jprint(argjson,0)));
 }
 

@@ -1003,11 +1003,11 @@ int main(int argc, const char * argv[])
         {
             timestamp = (uint32_t)time(NULL);
             leftdatenum = OS_conv_unixtime(&T,&seconds,timestamp - 1024*3600);
-            printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
+            //printf("%u: leftdatenum.%d %s\n",timestamp,leftdatenum,filestr);
             memset(prices,0,sizeof(prices));
             if ( (retstr= stats_prices("KMD","BTC",prices,leftdatenum,1024/24+1)) != 0 )
             {
-                printf("%s\n",retstr);
+                //printf("%s\n",retstr);
                 free(retstr);
             }
             if ( (fp= fopen(STATS_DEST,"wb")) != 0 )
