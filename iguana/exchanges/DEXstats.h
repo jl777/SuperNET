@@ -737,9 +737,11 @@ void stats_updatedisp(struct DEXstats_disp *disp,int32_t seconds,double price,do
 void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates,struct DEXstats_datenuminfo *date,char *dest,int32_t current_daysecond)
 {
     int32_t i,j,seconds,hour,offset,delta,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp;
+    printf("add datenum.%d vs leftdatenum.%d numdates.%d\n",datenum,leftdatenum,numdates);
     if ( datenum >= leftdatenum-1 && datenum <= leftdatenum+numdates )
     {
         offset = datenum - leftdatenum;
+        printf("offset.%d\n",offset);
         for (i=0; i<date->numpairs; i++)
             if ( strcmp(dest,date->pairs[i].dest) == 0 )
             {
@@ -787,7 +789,6 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
                         printf("break (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                         break;
                     }
-                    printf("add (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
                     stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
                 }
             }
