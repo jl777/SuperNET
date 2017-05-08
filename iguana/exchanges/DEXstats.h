@@ -498,7 +498,7 @@ double _output_line(int32_t calclogflag,double ave,double *output,double *buf,in
             if ( ave != 1. )
                 yval = _calc_pricey(val,ave);
             else yval = val;
-            printf("%f ",yval);
+            //printf("%f ",yval);
             if ( fabs(yval) > .0000000001 )
             {
                 aveabs += fabs(yval);
