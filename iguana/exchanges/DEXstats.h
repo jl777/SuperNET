@@ -770,9 +770,42 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
     }
 }
 
+void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
+{
+    struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    FILE * outfile;		/* target file */
+    JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+    int row_stride;		/* physical row width in image buffer */
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+    if ( (outfile= fopen(fname,"wb")) == NULL)
+    {
+        fprintf(stderr, "can't open %s\n", fname);
+        iguana_exit(0,0);
+    }
+    jpeg_stdio_dest(&cinfo, outfile);
+    cinfo.image_width = width; 	/* image width and height, in pixels */
+    cinfo.image_height = height;
+    cinfo.input_components = 3;		/* # of color components per pixel */
+    cinfo.in_color_space = JCS_RGB; 	/* colorspace of input image */
+    jpeg_set_defaults(&cinfo);
+    jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
+    jpeg_start_compress(&cinfo, TRUE);
+    row_stride = width * 3;	/* JSAMPLEs per row in image_buffer */
+    while (cinfo.next_scanline < cinfo.image_height)
+    {
+        row_pointer[0] = &bitmap[cinfo.next_scanline * row_stride];
+        (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+    }
+    jpeg_finish_compress(&cinfo);
+    fclose(outfile);
+    jpeg_destroy_compress(&cinfo);
+}
+
 char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
 {
-    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals; struct tai T; cJSON *retjson,*array,*item;
+    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals; char fname[1024]; struct tai T; cJSON *retjson,*array,*item;
     timestamp = (uint32_t)time(NULL);
     if ( Num_priceinfos >= sizeof(Prices)/sizeof(*Prices) )
         return(0);
@@ -837,6 +870,12 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
         if ( i != 2048 )
             i++;
         sum /= i;
+        uint32_t height = 400,*bitmap = calloc(sizeof(*bitmap),3 * height * numdates*24);
+        output_line(0,sum,output,i,0xff00ff,bitmap,numdates*24,height)
+        sprintf(fname,"%s/bitmaps/%s_%s.jpg",STATS_DEST,symbol,dest), OS_portable_path(fname);
+        gen_jpegfile(fname,1,bitmap,numdates*24,height);
+        free(bitmap);
+        jaddstr(retjson,"bitmap",fname);
         jadd(retjson,"hourly",array);
         jaddnum(retjson,"average",sum);
     }
