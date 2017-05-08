@@ -746,13 +746,13 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
     offset = datenum - leftdatenum;
     lefttimestamp = OS_conv_datenum(leftdatenum,0,0,0);
     righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
-    printf("search dest.%s datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",dest,datenum,leftdatenum,numdates,offset,date->numpairs);
+    //printf("search dest.%s datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",dest,datenum,leftdatenum,numdates,offset,date->numpairs);
     for (i=0; i<date->numpairs; i++)
     {
         if ( strcmp(dest,date->pairs[i].dest) == 0 )
         {
             pair = &date->pairs[i];
-            printf("found dest.(%s) numprices.%d\n",dest,pair->numprices);
+            //printf("found dest.(%s) numprices.%d\n",dest,pair->numprices);
             for (j=0; j<pair->numprices; j++)
             {
                 ptr = &pair->prices[j];
@@ -803,8 +803,9 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         {
             splinevals[n] = (prices[i].pricesum / prices[i].volumesum);
             utc32[n] = tmp;
+            printf("offset.%d splineval %.8f t%u n.%d\n",i,splinevals[n],tmp,n);
             n++;
-        } else memset(&prices[i],0,sizeof(prices[i]));
+        }
     }
     if ( n > 3 )
     {
