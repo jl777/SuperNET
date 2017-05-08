@@ -559,7 +559,7 @@ void stats_rpcloop(void *args)
         port = 7779;
     if ( jsonbuf == 0 )
         jsonbuf = calloc(1,IGUANA_MAXPACKETSIZE);
-    while ( (bindsock= iguana_socket(1,"127.0.0.1",port)) < 0 )
+    while ( (bindsock= iguana_socket(1,"0.0.0.0",port)) < 0 )
     {
         //if ( coin->MAXPEERS == 1 )
         //    break;
