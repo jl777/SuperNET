@@ -902,7 +902,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
-    char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,width = 1024;
+    char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,numdates;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( (agent= jstr(argjson,"agent")) == 0 )
@@ -915,10 +915,12 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             source = "KMD";
         if ( (dest= jstr(argjson,"dest")) == 0 )
             dest = "USD";
-        leftdatenum = OS_conv_unixtime(&T,&seconds,endtimestamp - width*3600);
+        if ( (numdates= jstr(argjson,"numdates")) == 0 )
+            numdates = 1024/24;
+        leftdatenum = OS_conv_unixtime(&T,&seconds,endtimestamp - numdates*24*3600);
         printf("(%s/%s) endtimestamp.%u: leftdatenum.%d\n",source,dest,endtimestamp,leftdatenum);
         memset(prices,0,sizeof(prices));
-        if ( (retstr= stats_prices(source,dest,prices,leftdatenum,width/24+1)) != 0 )
+        if ( (retstr= stats_prices(source,dest,prices,leftdatenum,numdates+1)) != 0 )
             return(retstr);
     }
     return(clonestr(jprint(argjson,0)));

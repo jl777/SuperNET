@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --url "http://127.0.0.1:7779" --data "{\"method\":\"start\"}"
+curl --url "http://127.0.0.1:7779" --data "{\"method\":\"bitmap\",\"endtimestamp\":0,\"source\":\"KMD\",\"dest\":\"BTC\",\"numdates\":30}"
