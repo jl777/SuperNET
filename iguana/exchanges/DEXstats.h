@@ -776,7 +776,7 @@ struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
             pp = &Prices[i];
-            for (j=0; j<pp->numdates; j++)
+            for (j=0; j<=pp->numdates; j++)
             {
                 timestamp = OS_conv_datenum(pp->firstdatenum+j,0,0,0);
                 if ( timestamp < lefttimestamp ) // can speed up by calculating offset 0
