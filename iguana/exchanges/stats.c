@@ -955,7 +955,7 @@ int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char 
     } else return(-1);
 }
 
-void stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxseconds,char *komodofile)
+int32_t stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxseconds,char *komodofile)
 {
     static long lastpos[2];
     char symbol[64],base[64]; int32_t iter,n; FILE *fp; uint32_t starttime; struct komodo_state *sp;
@@ -993,8 +993,11 @@ void stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t maxsec
 
 char *stats_update(FILE *logfp,char *destdir,char *statefname,char *komodofname)
 {
+    int32_t i;
     cJSON *retjson = cJSON_CreateArray();
-    stats_stateupdate(logfp,destdir,statefname,10,komodofname);
+    for (i=0; i<100; i++)
+        if ( stats_stateupdate(logfp,destdir,statefname,10,komodofname) <= 0 )
+            break;
     return(jprint(retjson,1));
 }
 
