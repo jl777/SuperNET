@@ -770,6 +770,9 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
     }
 }
 
+#include "../crypto777/jpeg/jinclude.h"
+#include "../crypto777/jpeg/jpeglib.h"
+
 void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
 {
     struct jpeg_compress_struct cinfo;
