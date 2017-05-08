@@ -761,7 +761,7 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
                 offset = (timestamp - lefttimestamp) / (24*3600);
                 if ( offset >= 0 && offset < numdates )
                 {
-                    printf("found dest.(%s) numprices.%d %d (%.8f %.6f)\n",dest,pair->numprices,ptr->price,ptr->volume);
+                    printf("found dest.(%s) numprices.%d offset.%d (%.8f %.6f)\n",dest,pair->numprices,offset,ptr->price,ptr->volume);
                     stats_updatedisp(&prices[offset],ptr->price,ptr->volume);
                 }
             }
