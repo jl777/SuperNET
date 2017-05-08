@@ -825,11 +825,14 @@ void komodo_eventadd_kmdheight(struct komodo_state *sp,char *symbol,int32_t heig
 
 void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *pvals,int32_t numpvals)
 {
-    /*int32_t i;
-    for (i=0; i<numpvals; i++)
-        printf("%u ",pvals[i]);
-    printf("pvals ht.%d\n",ht);*/
-    fprintf(stderr,"%.8f ",dstr(pvals[0]));
+    int32_t i;
+    if ( ht > 300000 )
+    {
+        for (i=0; i<numpvals; i++)
+            printf("%u ",pvals[i]);
+        printf("pvals ht.%d\n",ht);
+        fprintf(stderr,"%.8f ",dstr(pvals[0]));
+    }
 }
 
 int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char *symbol,int32_t iter)
@@ -944,7 +947,7 @@ int32_t komodo_parsestatefile(FILE *logfp,struct komodo_state *sp,FILE *fp,char 
             {
                 if ( iter == 1 )
                 {
-                    printf("load[%s] prices %d\n",symbol,ht);
+                    //printf("load[%s] prices %d\n",symbol,ht);
                     stats_pricefeed(sp,symbol,ht,pvals,numpvals);
                 }
                 //if ( matched != 0 ) global shared state -> global PVALS
