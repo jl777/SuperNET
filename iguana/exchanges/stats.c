@@ -54,7 +54,7 @@ struct komodo_state
     uint32_t RTbufs[64][3]; uint64_t RTmask;
 };
 
-struct komodo_state KOMODO_STATE;
+struct komodo_state KOMODO_STATE[2];
 
 int32_t iguana_socket(int32_t bindflag,char *hostname,uint16_t port)
 {
@@ -831,7 +831,7 @@ void stats_pricefeed(struct komodo_state *sp,char *symbol,int32_t ht,uint32_t *p
         //for (i=0; i<numpvals; i++)
         //    printf("%u ",pvals[i]);
         //printf("pvals ht.%d\n",ht);
-        fprintf(stderr,"%.8f ",dstr(pvals[32]) / 1000.);
+        fprintf(stderr,"(%u %.8f) ",sp->SAVEDTIMESTAMP,dstr(pvals[32]) / 1000.);
     }
 }
 
@@ -966,10 +966,10 @@ int32_t stats_stateupdate(FILE *logfp,char *destdir,char *statefname,int32_t max
     starttime = (uint32_t)time(NULL);
     strcpy(base,"KV");
     strcpy(symbol,"KV");
-    sp = &KOMODO_STATE;
     n = 0;
     for (iter=0; iter<2; iter++)
     {
+        sp = &KOMODO_STATE[iter];
         if ( (fp= fopen(iter == 0 ? statefname : komodofile,"rb")) != 0 )
         {
             fseek(fp,0,SEEK_END);
