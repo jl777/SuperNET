@@ -1,5 +1,5 @@
 #!/bin/bash
-pkill iguana
+pkill -15 iguana
 rm -f ../agents/iguana *.o
 git pull
 cd secp256k1; ./m_unix; cd ..
