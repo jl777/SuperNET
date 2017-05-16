@@ -451,3 +451,7 @@ iguana/confs/LTC_oldhdrs.txt
 iguana/DB/LTC_peers.dat
 
 iguana/debug.log
+
+iguana/DB/LTC/.tmpmarker
+
+iguana/DB/purgeable/LTC/.tmpmarker
