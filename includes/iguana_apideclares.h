@@ -196,7 +196,7 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 STRING_AND_INT(iguana,PoSweights,activecoin,height);
 STRING_ARG(iguana,stakers,activecoin);
 
-STRING_ARG(jumblr,setpassphrase,passphrase);
+//STRING_ARG(jumblr,setpassphrase,passphrase);
 ZERO_ARGS(jumblr,status);
 ZERO_ARGS(jumblr,runsilent);
 ZERO_ARGS(jumblr,totransparent);
