@@ -329,7 +329,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
             printf("set destvolume %.8f\n",destvolume);
         } // else printf("destvolume %.8f <- minamount\n",destvolume);
     }
-    printf("%s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
+    printf("<<<<<<< %s -> %s myrequest.%d pendingid.%u noquoteflag.%d havequoteflag.%d maxi.%d %.8f destvol %.8f\n",list[0].src,list[0].dest,myrequest,pendingid,noquoteflag,havequoteflag,maxi,dstr(maxamount),destvolume);
     if ( myinfo->IAMLP != 0 && myrequest == 0 && pendingid == 0 && noquoteflag != 0 && ((profitmargin= tradebot_liquidity_active(myinfo,&refprice,"DEX",list[0].src,list[0].dest,destvolume)) > 0. || refprice != 0.) )
     {
         if ( profitmargin == 0. || (aveprice= instantdex_avehbla(myinfo,retvals,list[0].src,list[0].dest,.1 * dstr(list[0].srcamount))) == 0. || refprice > aveprice )
@@ -370,7 +370,7 @@ double basilisk_request_listprocess(struct supernet_info *myinfo,struct basilisk
     }
     else if ( myrequest != 0 && pendingid == 0 && maxi >= 0 ) // automatch best quote
     {
-        if ( minamount != 0 && maxamount >= minamount && time(NULL) > list[0].timestamp+BASILISK_AUCTION_DURATION )
+        if ( minamount != 0 && maxamount >= minamount )//&& time(NULL) > list[0].timestamp+BASILISK_AUCTION_DURATION )
         {
             *issueR = list[maxi];
             for (i=0; i<sizeof(*issueR); i++)

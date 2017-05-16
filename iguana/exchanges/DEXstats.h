@@ -11,7 +11,7 @@
 
 #define LEFTMARGIN 40
 #define MAX_SPLINES 1024
-#define MAX_LOOKAHEAD 60
+#define MAX_LOOKAHEAD 7
 
 struct stats_spline { char name[64]; int32_t splineid,lasti,basenum,num,firstx,dispincr,spline32[MAX_SPLINES][4]; uint32_t utc32[MAX_SPLINES]; int64_t spline64[MAX_SPLINES][4]; double dSplines[MAX_SPLINES][4],pricevals[MAX_SPLINES+MAX_LOOKAHEAD],lastutc,lastval,aveslopeabs; };
 
@@ -26,15 +26,16 @@ struct stats_spline { char name[64]; int32_t splineid,lasti,basenum,num,firstx,d
 #define _extrapolate_spline32(spline32,gap) ((double)i32tod((spline32)[0]) + ((gap) * ((double)i32tod(.001*.001*(spline32)[1]) + ((gap) * ((double)i32tod(.001*.001*.001*.001*(spline32)[2]) + ((gap) * (double)i32tod(.001*.001*.001*.001*.001*.001*(spline32)[3])))))))
 
 uint32_t forex_colors[16];
-double Display_scale = 1.;
+double Display_scale = 0.25;
 
 struct DEXstats_disp { double pricesum,volumesum; };
 
 struct DEXstats_pricepoint
 {
     double price,volume;
-    uint32_t height:27,hour:5;
+    uint32_t height;
     uint16_t seconds;
+    int8_t hour,dir;
 };
 
 struct DEXstats_pairinfo
@@ -58,17 +59,17 @@ struct DEXstats_priceinfo
 } Prices[1024];
 int32_t Num_priceinfos;
 
-void stats_pricepoint(struct DEXstats_pricepoint *ptr,uint8_t hour,uint16_t seconds,int32_t height,double volume,double price)
+void stats_pricepoint(int32_t dir,struct DEXstats_pricepoint *ptr,uint8_t hour,uint16_t seconds,int32_t height,double volume,double price)
 {
     ptr->price = price;
     ptr->volume = volume;
     ptr->height = height;
     ptr->hour = hour;
+    ptr->dir = dir;
     ptr->seconds = seconds;
-    printf("h.%d s.%-4d %.8f %.6f\n",hour,seconds,price,volume);
 }
 
-void stats_pairupdate(struct DEXstats_datenuminfo *date,char *dest,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,double price)
+void stats_pairupdate(int32_t dir,struct DEXstats_datenuminfo *date,char *symbol,char *dest,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,double price)
 {
     int32_t i; struct DEXstats_pairinfo *pair = 0;
     if ( date->datenum != datenum || seconds < 0 || seconds >= 3600 || hour < 0 || hour >= 24 )
@@ -76,24 +77,27 @@ void stats_pairupdate(struct DEXstats_datenuminfo *date,char *dest,int32_t daten
         printf("date->datenum %d != %d? hour.%d seconds.%d\n",date->datenum,datenum,hour,seconds);
         return;
     }
+    //printf("%d numpairs.%d %p %p\n",date->datenum,date->numpairs,date,date->pairs);
     for (i=0; i<date->numpairs; i++)
         if ( strcmp(dest,date->pairs[i].dest) == 0 )
         {
             pair = &date->pairs[i];
             break;
         }
-    if ( i == date->numpairs )
+    if ( date->pairs == 0 || i == date->numpairs )
     {
         date->pairs = realloc(date->pairs,sizeof(*date->pairs) * (date->numpairs + 1));
         pair = &date->pairs[date->numpairs++];
         memset(pair,0,sizeof(*pair));
         strcpy(pair->dest,dest);
+        printf("%d new pair.%d (%s) -> dest.(%s)\n",date->datenum,date->numpairs,symbol,dest);
     }
     pair->prices = realloc(pair->prices,sizeof(*pair->prices) * (pair->numprices+1));
-    stats_pricepoint(&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
+    stats_pricepoint(dir,&pair->prices[pair->numprices++],hour,seconds,height,volume,price);
+    //printf("(%s/%s).%d numprices.%d h.%d s.%-4d %.8f %.6f\n",symbol,dest,date->datenum,pair->numprices,hour,seconds,price,volume);
 }
 
-void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,char *dest,double price)
+void stats_datenumupdate(int32_t dir,struct DEXstats_priceinfo *pp,int32_t datenum,int32_t hour,int32_t seconds,int32_t height,double volume,char *dest,double price)
 {
     int32_t offset,i,n; struct DEXstats_datenuminfo *date;
     if ( (offset= datenum - pp->firstdatenum) < 0 )
@@ -101,18 +105,23 @@ void stats_datenumupdate(struct DEXstats_priceinfo *pp,int32_t datenum,int32_t h
         printf("illegal datenum.%d for %s when 1st.%d\n",datenum,pp->symbol,pp->firstdatenum);
         return;
     }
-    if ( offset > pp->numdates )
+    if ( offset == 0 || offset > pp->numdates )
     {
         pp->dates = realloc(pp->dates,sizeof(*pp->dates) * (offset+1));
         n = (offset - pp->numdates);
+        printf("allocate %s.[%d to %d]\n",pp->symbol,pp->numdates,pp->numdates+n);
         for (i=0; i<=n; i++)
         {
             date = &pp->dates[pp->numdates + i];
-            memset(date,0,sizeof(*date));
-            date->datenum = pp->firstdatenum + pp->numdates + i;
+            if ( date->datenum != pp->firstdatenum + pp->numdates + i )
+            {
+                memset(date,0,sizeof(*date));
+                date->datenum = pp->firstdatenum + pp->numdates + i;
+            }
         }
+        pp->numdates = offset;
     }
-    stats_pairupdate(&pp->dates[offset],dest,datenum,hour,seconds,height,volume,price);
+    stats_pairupdate(dir,&pp->dates[offset],pp->symbol,dest,datenum,hour,seconds,height,volume,price);
 }
 
 struct DEXstats_priceinfo *stats_priceinfo(char *symbol,int32_t datenum)
@@ -142,7 +151,7 @@ void stats_LPpubkeyupdate(char *LPpubkey,uint32_t timestamp)
 
 void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t timestamp,int32_t height,char *key,char *LPpubkey,cJSON *tradejson)
 {
-    uint64_t srcamount,destamount; char *source,*dest; double price; struct DEXstats_priceinfo *pp;
+    int32_t dir = 0; uint64_t srcamount,destamount; char *source,*dest; double price; struct DEXstats_priceinfo *pp;
     if ( LPpubkey != 0 )
         stats_LPpubkeyupdate(LPpubkey,timestamp);
     if ( tradejson != 0 )
@@ -154,12 +163,19 @@ void stats_priceupdate(int32_t datenum,int32_t hour,int32_t seconds,uint32_t tim
         if ( srcamount != 0 && destamount != 0 )
         {
             price = (double)destamount / srcamount;
-            if ( (pp= stats_priceinfo(source,datenum)) != 0 )
-                stats_datenumupdate(pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
-            if ( (pp= stats_priceinfo(dest,datenum)) != 0 )
-                stats_datenumupdate(pp,datenum,hour,seconds,height,dstr(destamount),source,1. / price);
+            if ( key != 0 )
+            {
+                dir = 1;
+                if ( (pp= stats_priceinfo(source,datenum)) != 0 )
+                    stats_datenumupdate(-1,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
+                if ( (pp= stats_priceinfo(dest,datenum)) != 0 )
+                    stats_datenumupdate(1,pp,datenum,hour,seconds,height,dstr(destamount),source,1. / price);
+            }
+            else if ( (pp= stats_priceinfo(source,datenum)) != 0 )
+                stats_datenumupdate(0,pp,datenum,hour,seconds,height,dstr(srcamount),dest,price);
         } else price = 0.;
-        printf("%d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",datenum,hour,seconds,height,key,source,dstr(srcamount),dest,dstr(destamount),price,1./price);
+        if ( dir != 0 )
+            printf("dir.%-2d %d.%02d.%04d ht.%-4d %s (%s %12.8f) -> (%s %12.8f) %16.8f %16.8f\n",dir,datenum,hour,seconds,height,key!=0?key:"",source,dstr(srcamount),dest,dstr(destamount),price,1./price);
     }
 }
 
@@ -241,7 +257,7 @@ void smooth1024(double dest[],double src[],int32_t smoothiters)
 float _calc_pricey(register double price,register double weekave)
 {
     if ( price != 0. && weekave != 0. )
-        return(.2 * calc_loganswer(weekave,price));
+        return(0.1 * calc_loganswer(weekave,price));
     else return(0.f);
 }
 
@@ -401,6 +417,7 @@ void disp_yval(register int32_t color,register float yval,register uint32_t *bit
     if ( 1 && is_primary_color(color) != 0 )
     {
         bitmap[y*rowwidth + x] = color;
+        //printf("(%d, %d) <- %x, ",x,y,color);
         return;
     }
     //if ( pixelwt(color) > pixelwt(bitmap[y*rowwidth + x]) )
@@ -484,14 +501,16 @@ double _output_line(int32_t calclogflag,double ave,double *output,double *buf,in
         ave = log(ave);
     for (x=0; x<n; x++)
     {
-        if ( (val= buf[x]) != 0 )
+        if ( (val= buf[x]) != 0. )
         {
-            if ( calclogflag != 0 )
+            //if ( calclogflag != 0 )
+            {
                 val = log(buf[x]);
-            if ( ave != 1. )
-                yval = _calc_pricey(val,ave);
-            else yval = val;
-            printf("%f ",yval);
+                if ( ave != 1. )
+                    yval = _calc_pricey(val,ave);
+                else yval = val;
+            } //else yval = (val / ave) * height / 3;
+            //printf("(%f -> %f) ",val,yval);
             if ( fabs(yval) > .0000000001 )
             {
                 aveabs += fabs(yval);
@@ -724,7 +743,7 @@ void output_line(int32_t calclogflag,double ave,double *buf,int32_t n,int32_t co
     _output_line(calclogflag,ave,buf,src,1024,color,bitmap,rowwidth,height);
 }
 
-void stats_updatedisp(struct DEXstats_disp *disp,int32_t seconds,double price,double volume)
+void stats_updatedisp(struct DEXstats_disp *disp,double price,double volume)
 {
     if ( price > SMALLVAL && volume > SMALLVAL )
     {
@@ -735,87 +754,190 @@ void stats_updatedisp(struct DEXstats_disp *disp,int32_t seconds,double price,do
 
 void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates,struct DEXstats_datenuminfo *date,char *dest,int32_t current_daysecond)
 {
-    int32_t i,j,seconds,hour,offset,delta,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp;
-    if ( datenum >= leftdatenum-1 && datenum <= leftdatenum+numdates )
+    int32_t i,j,seconds,hour,offset,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp,lefttimestamp,righttimestamp;
+    offset = datenum - leftdatenum;
+    lefttimestamp = OS_conv_datenum(leftdatenum,0,0,0);
+    righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
+    //printf("search dest.%s datenum.%d vs leftdatenum.%d numdates.%d offset.%d numpairs.%d\n",dest,datenum,leftdatenum,numdates,offset,date->numpairs);
+    for (i=0; i<date->numpairs; i++)
     {
-        offset = datenum - leftdatenum;
-        for (i=0; i<date->numpairs; i++)
-            if ( strcmp(dest,date->pairs[i].dest) == 0 )
+        if ( strcmp(dest,date->pairs[i].dest) == 0 )
+        {
+            pair = &date->pairs[i];
+            //printf("found dest.(%s) numprices.%d\n",dest,pair->numprices);
+            for (j=0; j<pair->numprices; j++)
             {
-                pair = &date->pairs[i];
-                for (j=0; j<pair->numprices; j++)
+                ptr = &pair->prices[j];
+                timestamp = OS_conv_datenum(date->datenum,ptr->hour,ptr->seconds/60,ptr->seconds%60);
+                timestamp += (24*3600 - current_daysecond);
+                offset = (timestamp - lefttimestamp) / (24*3600);
+                if ( offset >= 0 && offset < numdates )
                 {
-                    ptr = &pair->prices[j];
-                    seconds = 3600*ptr->hour + ptr->seconds + (24*3600 - current_daysecond);
-                    if ( seconds >= 24*3600 )
-                        delta = 1;
-                    else delta = 0;
-                    seconds -= delta*24*3600;
-                    if ( offset+delta >= leftdatenum && offset+delta < leftdatenum+numdates )
-                        stats_updatedisp(&prices[offset+delta],seconds,ptr->price,ptr->volume);
+                    //printf("found dest.(%s) numprices.%d offset.%d (%.8f %.6f)\n",dest,pair->numprices,offset,ptr->price,ptr->volume);
+                    stats_updatedisp(&prices[offset],ptr->price,ptr->volume);
                 }
-                break;
             }
-        
+            break;
+        }
     }
 }
 
-struct DEXstats_priceinfo *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
+#include "../crypto777/jpeg/jinclude.h"
+#include "../crypto777/jpeg/jpeglib.h"
+#include "../crypto777/jpeg/jerror.h"
+
+void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
 {
-    int32_t i,j,datenum,n; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp; double *splinevals;
+    struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    FILE * outfile;		/* target file */
+    JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+    int row_stride;		/* physical row width in image buffer */
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+    if ( (outfile= fopen(fname,"wb")) == NULL)
+    {
+        fprintf(stderr, "can't open %s\n", fname);
+        return;
+    }
+    jpeg_stdio_dest(&cinfo, outfile);
+    cinfo.image_width = width; 	/* image width and height, in pixels */
+    cinfo.image_height = height;
+    cinfo.input_components = 3;		/* # of color components per pixel */
+    cinfo.in_color_space = JCS_RGB; 	/* colorspace of input image */
+    jpeg_set_defaults(&cinfo);
+    jpeg_set_quality(&cinfo, quality, TRUE /* limit to baseline-JPEG values */);
+    jpeg_start_compress(&cinfo, TRUE);
+    row_stride = width * 3;	/* JSAMPLEs per row in image_buffer */
+    while (cinfo.next_scanline < cinfo.image_height)
+    {
+        row_pointer[0] = &bitmap[cinfo.next_scanline * row_stride];
+        (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+    }
+    jpeg_finish_compress(&cinfo);
+    fclose(outfile);
+    jpeg_destroy_compress(&cinfo);
+}
+
+char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
+{
+    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals,total; char fname[1024]; struct tai T; cJSON *retjson,*array,*item;
     timestamp = (uint32_t)time(NULL);
     if ( Num_priceinfos >= sizeof(Prices)/sizeof(*Prices) )
         return(0);
+    lefttimestamp = OS_conv_datenum(leftdatenum-1,0,0,0);
+    righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
     for (i=0; i<Num_priceinfos; i++)
         if ( strcmp(Prices[i].symbol,symbol) == 0 )
         {
             pp = &Prices[i];
-            if ( datenum >= pp->firstdatenum && datenum < pp->firstdatenum+pp->numdates )
+            for (j=0; j<=pp->numdates; j++)
             {
-                for (j=0; j<pp->numdates; j++)
+                timestamp = OS_conv_datenum(pp->firstdatenum+j,0,0,0);
+                if ( timestamp < lefttimestamp ) // can speed up by calculating offset 0
                 {
-                    datenum = pp->firstdatenum+j;
-                    if ( datenum < leftdatenum ) // can speed up by calculating offset 0
-                        continue;
-                    if ( datenum >= leftdatenum+numdates )
-                        break;
-                    stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
+                    //printf("skip (%s) datenums %d %d %d\n",symbol,datenum,pp->firstdatenum,pp->firstdatenum+pp->numdates);
+                    continue;
                 }
+                stats_dispprices(prices,leftdatenum,numdates,&pp->dates[j],dest,timestamp % (3600*24));
             }
             break;
         }
     tmp = OS_conv_datenum(leftdatenum,0,0,0);
     utc32 = calloc(sizeof(*utc32),numdates);
     splinevals = calloc(sizeof(*splinevals),numdates);
-    for (i=n=0; i<numdates; i++,tmp+=24*3600)
+    for (total=i=n=0; i<numdates; i++,tmp+=24*3600)
     {
         if ( prices[i].volumesum != 0. )
         {
+            total += prices[i].volumesum;
             splinevals[n] = (prices[i].pricesum / prices[i].volumesum);
             utc32[n] = tmp;
+            //printf("offset.%d splineval %.8f t%u n.%d\n",i,splinevals[n],tmp,n);
             n++;
-        } else memset(&prices[i],0,sizeof(prices[i]));
+        }
     }
+    retjson = cJSON_CreateObject();
+    jaddstr(retjson,"source",symbol);
+    jaddstr(retjson,"dest",dest);
+    jaddnum(retjson,"totalvolume",total);
+    jaddnum(retjson,"start",leftdatenum);
+    jaddnum(retjson,"numdates",numdates);
     if ( n > 3 )
     {
-        double output[2048],slopes[2048]; struct stats_spline spline; int32_t splineid = 0;
+        double output[2048],slopes[2048],sum = 0.; struct stats_spline spline; int32_t splineid = 0;
         memset(&spline,0,sizeof(spline));
         stats_genspline(output,slopes,&spline,splineid,"spline",utc32,splinevals,n,0);
-
+        array = cJSON_CreateArray();
+        for (i=0; i<n; i++)
+        {
+            item = cJSON_CreateArray();
+            jaddinum(item,utc32[i]);
+            jaddinum(item,splinevals[i]);
+            jaddi(array,item);
+        }
+        jadd(retjson,"splinevals",array);
+        array = cJSON_CreateArray();
+        for (i=0; i<2048; i++)
+        {
+            if ( output[i] == 0. )
+                break;
+            jaddinum(array,output[i]);
+            sum += output[i];
+        }
+        if ( i != 2048 )
+            i++;
+        sum /= i;
+        uint32_t val,height = 400,*bitmap = calloc(sizeof(*bitmap),height * numdates*24);
+        uint8_t red,green,blue,*tmpptr,*bytemap = calloc(sizeof(*bytemap),3 * height * numdates*24);
+        horizline(1,numdates*24,height,bitmap,sum,sum);
+        output_line(1,sum,output,i,0x00ff00,bitmap,numdates*24,height);
+        tmpptr = bytemap;
+        for (j=0; j<height*numdates*24; j++)
+        {
+            val = bitmap[j];
+            red = val & 0xff;
+            green = (val >> 8) & 0xff;
+            blue = (val >> 16) & 0xff;
+            *tmpptr++ = red;
+            *tmpptr++ = green;
+            *tmpptr++ = blue;
+        }
+        sprintf(fname,"%s/bitmaps/%s_%s.jpg",STATS_DESTDIR,symbol,dest), OS_portable_path(fname);
+        gen_jpegfile(fname,100,bytemap,numdates*24,height);
+        free(bitmap), free(bytemap);
+        jaddstr(retjson,"bitmap",fname);
+        jadd(retjson,"hourly",array);
+        jaddnum(retjson,"average",sum);
     }
     free(utc32);
     free(splinevals);
-    return(0);
+    return(jprint(retjson,1));
 }
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
-    char *method,*agent;
+    char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,numdates;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     if ( (agent= jstr(argjson,"agent")) == 0 )
         agent = "stats";
-    
+    if ( strcmp(method,"bitmap") == 0 )
+    {
+        if ( (endtimestamp= juint(argjson,"endtimestamp")) == 0 )
+            endtimestamp = (uint32_t)time(NULL);
+        if ( (source= jstr(argjson,"source")) == 0 )
+            source = "KMD";
+        if ( (dest= jstr(argjson,"dest")) == 0 )
+            dest = "USD";
+        if ( (numdates= jint(argjson,"numdates")) <= 0 || numdates > 1024/24 )
+            numdates = 1024/24;
+        leftdatenum = OS_conv_unixtime(&T,&seconds,endtimestamp - numdates*24*3600);
+        printf("(%s/%s) endtimestamp.%u: leftdatenum.%d\n",source,dest,endtimestamp,leftdatenum);
+        memset(prices,0,sizeof(prices));
+        if ( (retstr= stats_prices(source,dest,prices,leftdatenum,numdates+1)) != 0 )
+            return(retstr);
+    }
     return(clonestr(jprint(argjson,0)));
 }
 

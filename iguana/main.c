@@ -1816,14 +1816,14 @@ STRING_ARG(SuperNET,wif2priv,wif)
     return(jprint(retjson,1));
 }
 
-STRING_ARG(SuperNET,priv2wif,priv)
+STRING_AND_INT(SuperNET,priv2wif,priv,wiftype)
 {
-    bits256 privkey; char wifstr[65]; uint8_t wiftype; cJSON *retjson = cJSON_CreateObject();
+    bits256 privkey; char wifstr[65]; cJSON *retjson = cJSON_CreateObject();
     if ( is_hexstr(priv,0) == sizeof(bits256)*2 )
     {
-        wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
+        //wiftype = coin != 0 ? coin->chain->wiftype : 0x80;
         decode_hex(privkey.bytes,sizeof(privkey),priv);
-        if ( bitcoin_priv2wif(wifstr,privkey,wiftype) > 0 )
+        if ( bitcoin_priv2wif(wifstr,privkey,wiftype&0xff) > 0 )
         {
             jaddstr(retjson,"result","success");
             jaddstr(retjson,"privkey",priv);

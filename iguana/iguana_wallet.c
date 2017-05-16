@@ -1431,6 +1431,11 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
             bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
             jaddstr(retjson,"KMDwif",wifstr);
         }
+        if ( (coin= iguana_coinfind("LTC")) != 0 )
+        {
+            bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"LTCwif",wifstr);
+        }
         if ( need_BTC != 0 )
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,128);

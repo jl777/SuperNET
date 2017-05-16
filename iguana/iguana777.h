@@ -95,7 +95,7 @@ struct supernet_address
     char NXTADDR[32],BTC[64],BTCD[64];
 };
 
-struct smartaddress_symbol { double maxbid,minask; char symbol[16]; };
+struct smartaddress_symbol { double maxbid,minask,srcavail,destamount; char symbol[16]; };
 
 struct smartaddress
 {

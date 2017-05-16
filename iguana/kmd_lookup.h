@@ -704,6 +704,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                     {
                                         ptr->fpos = ftell(coin->kmd_txidfp);
                                         fwrite(tx,1,sizeof(*tx) + tx->numvouts*sizeof(*tx->vouts),coin->kmd_txidfp);
+                                        fflush(coin->kmd_txidfp);
                                     }
                                 }
                                 else
@@ -712,6 +713,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                     {
                                         fwrite(&txid,1,sizeof(txid),coin->kmd_spendfp);
                                         fwrite(&numvins,1,sizeof(numvins),coin->kmd_spendfp);
+                                        fflush(coin->kmd_spendfp);
                                     }
                                     for (j=0; j<numvins; j++)
                                     {
@@ -730,6 +732,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
                                         {
                                             fwrite(&spenttxid,1,sizeof(spenttxid),coin->kmd_spendfp);
                                             fwrite(&spentvout,1,sizeof(spentvout),coin->kmd_spendfp);
+                                            fflush(coin->kmd_spendfp);
                                         }
                                     }
                                 }

@@ -137,10 +137,11 @@ int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr)
 
 int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype)
 {
-    uint8_t data[128]; int32_t len;
+    uint8_t data[128]; int32_t len = 32;
     memcpy(data+1,privkey.bytes,sizeof(privkey));
-    data[33] = 1;
-    len = base58encode_checkbuf(addrtype,data,33);
+    if ( addrtype != 176 ) // not LTC
+        data[1 + len++] = 1;
+    len = base58encode_checkbuf(addrtype,data,len);
     
     if ( bitcoin_base58encode(wifstr,data,len) == 0 )
         return(-1);

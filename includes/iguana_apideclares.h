@@ -196,7 +196,7 @@ STRING_AND_INT(iguana,bundlehashes,activecoin,height);
 STRING_AND_INT(iguana,PoSweights,activecoin,height);
 STRING_ARG(iguana,stakers,activecoin);
 
-STRING_ARG(jumblr,setpassphrase,passphrase);
+//STRING_ARG(jumblr,setpassphrase,passphrase);
 ZERO_ARGS(jumblr,status);
 ZERO_ARGS(jumblr,runsilent);
 ZERO_ARGS(jumblr,totransparent);
@@ -304,7 +304,7 @@ THREE_STRINGS(SuperNET,rosetta,passphrase,pin,showprivkey);
 ZERO_ARGS(SuperNET,keypair);
 HASH_AND_INT(SuperNET,priv2pub,privkey,addrtype);
 STRING_ARG(SuperNET,wif2priv,wif);
-STRING_ARG(SuperNET,priv2wif,priv);
+STRING_AND_INT(SuperNET,priv2wif,priv,wiftype);
 STRING_ARG(SuperNET,addr2rmd160,address);
 STRING_ARG(SuperNET,rmd160conv,rmd160);
 
