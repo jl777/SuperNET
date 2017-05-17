@@ -1,4 +1,4 @@
 #!/bin/bash
 #curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvsearch\",\"key\":\"foo\",\"symbol\":\"KMD\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvsearch\",\"key\":\"test\",\"symbol\":\"KV\"}"
-curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvsearch\",\"key\":\"777\",\"symbol\":\"KV\"}"
+#curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvsearch\",\"key\":\"test\",\"symbol\":\"KV\"}"
+curl --url "http://127.0.0.1:7778" --data "{\"agent\":\"dex\",\"method\":\"kvsearch\",\"key\":\"2aa52428-fd9df866\",\"symbol\":\"KV\"}"
