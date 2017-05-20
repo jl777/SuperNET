@@ -1869,7 +1869,7 @@ void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap
 {
     int32_t i,n;
     // while still in orderbook, wait
-    return;
+    //return;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     n = myinfo->numswaps;
     for (i=0; i<n; i++)
