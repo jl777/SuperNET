@@ -2772,7 +2772,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            for (iter=0; iter<1; iter++)
+            for (iter=0; iter<5; iter++)
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
                 sleep(3);

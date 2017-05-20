@@ -323,7 +323,8 @@ void marketmaker_pendingupdate(char *exchange,char *base,char *rel)
 
 void marketmaker_pendinginit(char *exchange,char *base,char *rel)
 {
-    char *retstr,*orderid; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
+    char *retstr,*orderid,*pairstr,relbase[64]; cJSON *retjson,*array,*item; int32_t i,j,n,dir; struct mmpending_order *ptr;
+    sprintf(relbase,"%s-%s",rel,base);
     if ( (retstr= DEX_openorders(exchange)) != 0 )
     {
         if ( (retjson= cJSON_Parse(retstr)) != 0 )
@@ -334,6 +335,11 @@ void marketmaker_pendinginit(char *exchange,char *base,char *rel)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
+                    if ( (pairstr= jstr(item,"Exchange")) == 0 )
+                        continue;
+                    if ( strcmp(pairstr,relbase) != 0 )
+                        printf("skip %s when %s\n",pairstr,relbase);
+                    else printf("matches %s vs %s\n",pairstr,relbase);
                     //printf("(%s)\n",jprint(item,0));
                     //{"success":true,"message":"","result":[{"Uuid":null,"OrderUuid":"81ad3e37-65d4-4fee-9c29-03b050f5192b","Exchange":"BTC-KMD","OrderType":"LIMIT_BUY","Quantity":885.19934578,"QuantityRemaining":885.19934578,"Limit":0.00011184,"CommissionPaid":0,"Price":0,"PricePerUnit":null,"Opened":"2017-02-19T19:14:02.94","Closed":null,"CancelInitiated":false,"ImmediateOrCancel":false,"IsConditional":false,"Condition":"NONE","ConditionTarget":null}],"tag":"10056789044100011414"}
                     if ( (orderid= jstr(item,"OrderUuid")) != 0 && is_cJSON_Null(jobj(item,"Closed")) != 0 && is_cJSON_False(jobj(item,"CancelInitiated")) != 0 )
