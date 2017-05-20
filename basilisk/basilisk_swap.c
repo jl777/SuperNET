@@ -2417,7 +2417,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         swap->pushsock = pushsock;
         swap->subsock = subsock;
     }
-    if ( swap->subsock < 0 || swap->pushsock < 0 )
+    if ( (subsock= swap->subsock) < 0 || (pushsock= swap->pushsock) < 0 )
     {
         printf("error getting nn_sockets\n");
         return;
