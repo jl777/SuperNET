@@ -2449,10 +2449,12 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         printf("KVsearch.(%s) -> (%s) connected.%d socks.(%d %d) amlp.%d\n",keystr,retstr,swap->connected,swap->pushsock,swap->subsock,amlp);
         free(retstr);
     }
+    printf("connected.%d amlp.%d subsock.%d pushsock.%d\n",swap->connected,amlp,subsock,pushsock);
     if ( swap->connected <= 0 && amlp != 0 && subsock >= 0 && pushsock >= 0 )
     {
         if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
         {
+            printf("psock returns.(%s)\n",retstr);
             // {"result":"success","pushaddr":"tcp://5.9.102.210:30002","subaddr":"tcp://5.9.102.210:30003","randipbits":3606291758,"coin":"KMD","tag":"6952562460568228137"}
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {

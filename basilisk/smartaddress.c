@@ -298,8 +298,8 @@ int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *b
             break;
         }
     portable_mutex_unlock(&myinfo->smart_mutex);
-    char str[65]; if ( retval < 0 )
-        printf("smartaddress_pubkey no match for %s\n",bits256_str(str,pubkey));
+    //char str[65]; if ( retval < 0 )
+    //    printf("smartaddress_pubkey no match for %s\n",bits256_str(str,pubkey));
     return(retval);
 }
 
