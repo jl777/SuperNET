@@ -2776,8 +2776,8 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
                 sleep(3);
-                if ( swap->connected <= 0 )
-                    continue;
+                if ( swap->connected > 0 )
+                    break;
                 sleep(10);
                 /*basilisk_sendstate(myinfo,swap,data,sizeof(data));
                 basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);

@@ -756,8 +756,8 @@ void jumblr_loop(void *ptr)
         if ( (coin= iguana_coinfind("KMD")) != 0 )
         {
             n++;
-            if ( (n % 3) == 0 )
-                smartaddress_update(myinfo,(n/3) & 1);
+            if ( (n % 7) == 0 )
+                smartaddress_update(myinfo,(n/7) & 1);
             if ( myinfo->jumblr_passphrase[0] != 0 && coin->FULLNODE < 0 )
             {
                 // if BTC has arrived in destination address, invoke DEX -> BTC
