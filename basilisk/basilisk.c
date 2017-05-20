@@ -1926,7 +1926,7 @@ INT_ARG(InstantDEX,incoming,requestid)
     else
     {
         jaddstr(retjson,"error","cant do InstantDEX channelget");
-        char str[65]; printf("error channelget %s %x\n",bits256_str(str,pubkey),msgid);
+        //char str[65]; printf("error channelget %s %x\n",bits256_str(str,pubkey),msgid);
     }
     return(jprint(retjson,1));
 }
