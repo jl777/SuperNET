@@ -2772,13 +2772,13 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            for (iter=0; iter<5; iter++)
+            for (iter=0; iter<16; iter++)
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
                 sleep(3);
                 if ( swap->connected <= 0 )
                     continue;
-                sleep(30);
+                sleep(10);
                 /*basilisk_sendstate(myinfo,swap,data,sizeof(data));
                 basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);
                 if ( swap->connected > 0 )
@@ -2797,7 +2797,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
             {
                 starttime = (uint32_t)time(NULL);
                 printf("statebits.%x m.%d n.%d\n",statebits,m,n);
-                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+2*BASILISK_MSGDURATION )
+                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+7*BASILISK_MSGDURATION )
                 {
                     m = n = 0;
                     sleep(DEX_SLEEP);
