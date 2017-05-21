@@ -1869,7 +1869,7 @@ void basilisk_swap_purge(struct supernet_info *myinfo,struct basilisk_swap *swap
 {
     int32_t i,n;
     // while still in orderbook, wait
-    return;
+    //return;
     portable_mutex_lock(&myinfo->DEX_swapmutex);
     n = myinfo->numswaps;
     for (i=0; i<n; i++)
@@ -2417,7 +2417,7 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         swap->pushsock = pushsock;
         swap->subsock = subsock;
     }
-    if ( swap->subsock < 0 || swap->pushsock < 0 )
+    if ( (subsock= swap->subsock) < 0 || (pushsock= swap->pushsock) < 0 )
     {
         printf("error getting nn_sockets\n");
         return;
@@ -2449,10 +2449,12 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
         printf("KVsearch.(%s) -> (%s) connected.%d socks.(%d %d) amlp.%d\n",keystr,retstr,swap->connected,swap->pushsock,swap->subsock,amlp);
         free(retstr);
     }
+    printf("connected.%d amlp.%d subsock.%d pushsock.%d\n",swap->connected,amlp,subsock,pushsock);
     if ( swap->connected <= 0 && amlp != 0 && subsock >= 0 && pushsock >= 0 )
     {
         if ( (retstr= _dex_psock(myinfo,"{}")) != 0 )
         {
+            printf("psock returns.(%s)\n",retstr);
             // {"result":"success","pushaddr":"tcp://5.9.102.210:30002","subaddr":"tcp://5.9.102.210:30003","randipbits":3606291758,"coin":"KMD","tag":"6952562460568228137"}
             if ( (retjson= cJSON_Parse(retstr)) != 0 )
             {
@@ -2491,9 +2493,11 @@ void basilisk_psockinit(struct supernet_info *myinfo,struct basilisk_swap *swap,
 int32_t basilisk_alicetxs(struct supernet_info *myinfo,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
 {
     int32_t i,retval = -1;
+    printf("alicetxs\n");
     for (i=0; i<3; i++)
     {
-        basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
+        if ( swap->alicepayment.I.datalen == 0 )
+            basilisk_alicepayment(myinfo,swap,swap->alicepayment.coin,&swap->alicepayment,swap->I.pubAm,swap->I.pubBn);
         if ( swap->alicepayment.I.datalen == 0 || swap->alicepayment.I.spendlen == 0 )
         {
             printf("error alice generating payment.%d\n",swap->alicepayment.I.spendlen);
@@ -2510,24 +2514,27 @@ int32_t basilisk_alicetxs(struct supernet_info *myinfo,struct basilisk_swap *swa
             break;
         }
     }
-    printf("generate fee\n");
-    if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
+    if ( swap->myfee.I.datalen == 0 )
     {
-        swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
-        iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
-        basilisk_txlog(myinfo,swap,&swap->myfee,-1);
-        for (i=0; i<swap->myfee.I.spendlen; i++)
-            printf("%02x",swap->myfee.txbytes[i]);
-        printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
-        swap->I.statebits |= 0x40;
-        if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 )
-            return(0);
+        printf("generate fee\n");
+        if ( basilisk_rawtx_gen("myfee",myinfo,swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->chain->txfee,1,0) == 0 )
+        {
+            swap->I.statebits |= basilisk_swapdata_rawtxsend(myinfo,swap,0x80,data,maxlen,&swap->myfee,0x40,0);
+            iguana_unspents_mark(myinfo,swap->I.iambob!=0?swap->bobcoin:swap->alicecoin,swap->myfee.vins);
+            basilisk_txlog(myinfo,swap,&swap->myfee,-1);
+            for (i=0; i<swap->myfee.I.spendlen; i++)
+                printf("%02x",swap->myfee.txbytes[i]);
+            printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+            swap->I.statebits |= 0x40;
+        }
+        else
+        {
+            printf("error creating myfee\n");
+            return(-2);
+        }
     }
-    else
-    {
-        printf("error creating myfee\n");
-        return(-2);
-    }
+    if ( swap->alicepayment.I.datalen != 0 && swap->alicepayment.I.spendlen > 0 && swap->myfee.I.datalen != 0 && swap->myfee.I.spendlen > 0 )
+        return(0);
     return(-1);
 }
 
@@ -2617,7 +2624,7 @@ void basilisk_swaploop(void *_swap)
                 continue;
             }
         }
-        if ( swap->I.iambob == 0 && swap->myfee.I.datalen == 0 )
+        if ( swap->I.iambob == 0 )
         {
             /*for (i=0; i<20; i++)
                 printf("%02x",swap->secretAm[i]);
@@ -2770,13 +2777,13 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
         m = n = 0;
         if ( bitcoin_swapinit(myinfo,privkey,pubkey33,pubkey25519,swap,optionduration,statebits,reinit) != 0 )
         {
-            for (iter=0; iter<1; iter++)
+            for (iter=0; iter<16; iter++)
             {
                 basilisk_psockinit(myinfo,swap,statebits == 0);
                 sleep(3);
-                if ( swap->connected <= 0 )
-                    continue;
-                sleep(30);
+                if ( swap->connected > 0 )
+                    break;
+                sleep(10);
                 /*basilisk_sendstate(myinfo,swap,data,sizeof(data));
                 basilisk_swapget(myinfo,swap,0x80000000,data,sizeof(data),basilisk_verify_statebits);
                 if ( swap->connected > 0 )
@@ -2795,7 +2802,7 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
             {
                 starttime = (uint32_t)time(NULL);
                 printf("statebits.%x m.%d n.%d\n",statebits,m,n);
-                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+2*BASILISK_MSGDURATION )
+                while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+7*BASILISK_MSGDURATION )
                 {
                     m = n = 0;
                     sleep(DEX_SLEEP);

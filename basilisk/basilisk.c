@@ -1897,7 +1897,8 @@ int32_t InstantDEX_process_channelget(struct supernet_info *myinfo,void *ptr,int
 
 INT_ARG(InstantDEX,incoming,requestid)
 {
-    cJSON *retjson,*retarray; bits256 zero; uint32_t DEX_channel,msgid,now; int32_t retval,width,drift=3; uint8_t data[32768];
+    static uint32_t counter;
+    cJSON *retjson,*retarray; bits256 zero; uint32_t DEX_channel,msgid,now,n = myinfo->numsmartaddrs+1; int32_t retval,width,drift=3; bits256 pubkey; uint8_t data[32768];
     now = (uint32_t)time(NULL);
     memset(&zero,0,sizeof(zero));
     width = (now - myinfo->DEXpoll) + 2*drift;
@@ -1905,11 +1906,15 @@ INT_ARG(InstantDEX,incoming,requestid)
         width = 2*drift+1;
     else if ( width > 64 )
         width = 64;
+    if ( (counter % n) == n-1 )
+        pubkey = myinfo->myaddr.persistent;
+    else pubkey = myinfo->smartaddrs[counter % n].pubkey;
+    counter++;
     myinfo->DEXpoll = now;
     retjson = cJSON_CreateObject();
     DEX_channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     msgid = (uint32_t)time(NULL) + drift;
-    if ( (retarray= basilisk_channelget(myinfo,zero,myinfo->myaddr.persistent,DEX_channel,msgid,width)) != 0 )
+    if ( (retarray= basilisk_channelget(myinfo,zero,pubkey,DEX_channel,msgid,width)) != 0 )
     {
         //printf("GOT.(%s)\n",jprint(retarray,0));
         if ( (retval= basilisk_process_retarray(myinfo,0,InstantDEX_process_channelget,data,sizeof(data),DEX_channel,msgid,retarray,InstantDEX_incoming_func)) > 0 )
@@ -1921,7 +1926,7 @@ INT_ARG(InstantDEX,incoming,requestid)
     else
     {
         jaddstr(retjson,"error","cant do InstantDEX channelget");
-        char str[65]; printf("error channelget %s %x\n",bits256_str(str,myinfo->myaddr.persistent),msgid);
+        //char str[65]; printf("error channelget %s %x\n",bits256_str(str,pubkey),msgid);
     }
     return(jprint(retjson,1));
 }

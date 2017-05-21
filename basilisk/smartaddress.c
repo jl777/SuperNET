@@ -286,6 +286,11 @@ int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *b
     int32_t i,j,retval = -1; struct smartaddress *ap;
     memset(privkeyp,0,sizeof(*privkeyp));
     memset(bidaskp,0,sizeof(*bidaskp) * 2);
+    if ( bits256_cmp(myinfo->myaddr.persistent,pubkey) == 0 )
+    {
+        *privkeyp = myinfo->persistent_priv;
+        return(myinfo->numsmartaddrs);
+    }
     portable_mutex_lock(&myinfo->smart_mutex);
     for (i=0; i<myinfo->numsmartaddrs; i++)
         if ( bits256_cmp(myinfo->smartaddrs[i].pubkey,pubkey) == 0 )
@@ -298,8 +303,8 @@ int32_t smartaddress_pubkey(struct supernet_info *myinfo,char *typestr,double *b
             break;
         }
     portable_mutex_unlock(&myinfo->smart_mutex);
-    char str[65]; if ( retval < 0 )
-        printf("smartaddress_pubkey no match for %s\n",bits256_str(str,pubkey));
+    //char str[65]; if ( retval < 0 )
+    //    printf("smartaddress_pubkey no match for %s\n",bits256_str(str,pubkey));
     return(retval);
 }
 

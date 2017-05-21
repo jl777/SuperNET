@@ -242,11 +242,12 @@ char *basilisk_start(struct supernet_info *myinfo,bits256 privkey,struct basilis
     cJSON *retjson; char typestr[64]; bits256 tmpprivkey; double bidasks[2]; struct basilisk_request *rp=0; int32_t i,srcmatch,destmatch;
     if ( _rp->requestid == myinfo->lastdexrequestid )
     {
-        //printf("filter duplicate r%u\n",_rp->requestid);
+        printf("filter duplicate r%u\n",_rp->requestid);
         return(clonestr("{\"error\":\"filter duplicate requestid\"}"));
     }
     srcmatch = smartaddress_pubkey(myinfo,typestr,bidasks,&tmpprivkey,_rp->src,_rp->srchash) >= 0;
     destmatch = smartaddress_pubkey(myinfo,typestr,bidasks,&tmpprivkey,_rp->dest,_rp->desthash) >= 0;
+    char str[65],str2[65]; printf("%s srcmatch.%d %s destmatch.%d\n",bits256_str(str,_rp->srchash),srcmatch,bits256_str(str2,_rp->desthash),destmatch);
     if ( srcmatch != 0 || destmatch != 0 )
     {
         for (i=0; i<myinfo->numswaps; i++)
@@ -285,7 +286,7 @@ int32_t basilisk_requests_poll(struct supernet_info *myinfo)
 {
     static uint32_t lastpoll;
     char *retstr,typestr[64]; uint8_t data[32768]; cJSON *outerarray,*retjson; uint32_t msgid,channel; int32_t datalen,i,n,retval = 0; struct basilisk_request issueR; bits256 privkey; double bidasks[2],hwm = 0.;
-    if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+20 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
+    if ( myinfo->IAMNOTARY != 0 || time(NULL) < lastpoll+5 || (myinfo->IAMLP == 0 && myinfo->DEXactive < time(NULL)) )
         return(retval);
     lastpoll = (uint32_t)time(NULL);
     memset(&issueR,0,sizeof(issueR));
@@ -312,7 +313,6 @@ int32_t basilisk_requests_poll(struct supernet_info *myinfo)
         myinfo->DEXaccept = issueR;
         if ( smartaddress_pubkey(myinfo,typestr,bidasks,&privkey,issueR.src,issueR.srchash) >= 0 )
         {
-            printf("matched dex_smartpubkey\n");
             if ( myinfo->DEXtrades > 0 )
             {
                 dex_channelsend(myinfo,issueR.srchash,issueR.desthash,channel,0x4000000,(void *)&issueR.requestid,sizeof(issueR.requestid)); // 60
@@ -322,7 +322,7 @@ int32_t basilisk_requests_poll(struct supernet_info *myinfo)
                     free(retstr);
             }
         }
-        else if ( issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
+        else if ( myinfo->IAMLP != 0 && issueR.requestid != myinfo->lastdexrequestid )//if ( issueR.quoteid == 0 )
         {
             issueR.quoteid = basilisk_quoteid(&issueR);
             issueR.desthash = myinfo->myaddr.persistent;

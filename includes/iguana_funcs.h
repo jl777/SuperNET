@@ -287,6 +287,7 @@ int32_t SuperNET_sendmsg(struct supernet_info *myinfo,struct iguana_info *coin,s
 int32_t category_peer(struct supernet_info *myinfo,struct iguana_peer *addr,bits256 category,bits256 subhash);
 int32_t bitcoin_wif2priv(uint8_t *addrtypep,bits256 *privkeyp,char *wifstr);
 int32_t bitcoin_priv2wif(char *wifstr,bits256 privkey,uint8_t addrtype);
+int32_t bitcoin_priv2wiflong(char *wifstr,bits256 privkey,uint8_t addrtype);
 bits256 iguana_chaingenesis(struct supernet_info *myinfo,char *symbol,uint8_t zcash,uint8_t auxpow,int32_t (*hashalgo)(uint8_t *blockhashp,uint8_t *serialized,int32_t len),bits256 genesishash,char *genesisblock,char *hashalgostr,int32_t version,uint32_t timestamp,uint32_t bits,uint32_t nonce,bits256 merkle_root);
 int32_t iguana_send_ConnectTo(struct iguana_info *coin,struct iguana_peer *addr);
 cJSON *iguana_txjson(struct iguana_info *coin,struct iguana_txid *tx,int32_t height,struct vin_info *V);
