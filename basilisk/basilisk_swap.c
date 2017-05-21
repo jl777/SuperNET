@@ -2545,7 +2545,7 @@ void basilisk_swaploop(void *_swap)
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 120;
+    expiration = (uint32_t)time(NULL) + 300;
     myinfo->DEXactive = expiration;
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     while ( swap->aborted == 0 && (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
@@ -2574,7 +2574,7 @@ void basilisk_swaploop(void *_swap)
         printf("couldnt establish connection\n");
         retval = -1;
     }
-    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
+    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x20) == 0 )
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2591,6 +2591,8 @@ void basilisk_swaploop(void *_swap)
             sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
         savestatebits = swap->I.statebits;
         saveotherbits = swap->I.otherstatebits;
+        if ( time(NULL) > expiration )
+            break;
     }
     myinfo->DEXactive = swap->I.expiration;
     if ( time(NULL) >= expiration )
