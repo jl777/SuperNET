@@ -1435,6 +1435,8 @@ THREE_STRINGS(bitcoinrpc,encryptwallet,passphrase,password,permanentfile)
         {
             bitcoin_priv2wif(wifstr,waddr.privkey,coin->chain->wiftype);
             jaddstr(retjson,"LTCwif",wifstr);
+            bitcoin_priv2wiflong(wifstr,waddr.privkey,coin->chain->wiftype);
+            jaddstr(retjson,"LTCwiflong",wifstr);
         }
         if ( need_BTC != 0 )
         {
