@@ -2804,10 +2804,15 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                 printf("statebits.%x m.%d n.%d\n",statebits,m,n);
                 while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+7*BASILISK_MSGDURATION )
                 {
+                    uint32_t msgid; uint8_t data[1024]; int32_t datalen;
                     m = n = 0;
                     sleep(DEX_SLEEP);
                     printf("waiting for offer to be accepted\n");
                     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+                    datalen = basilisk_rwDEXquote(1,data,rp);
+                    msgid = (uint32_t)time(NULL);
+                    printf("other req.%d >>>>>>>>>>> send response (%llx -> %llx) last.%u r.%u quoteid.%u\n",i,(long long)rp->desthash.txid,(long long)rp->srchash.txid,myinfo->lastdexrequestid,rp->requestid,rp->quoteid);
+                    dex_channelsend(myinfo,rp->desthash,rp->srchash,channel,msgid,data,datalen);
                     if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                     {
                         if ( is_cJSON_Array(retarray) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )
