@@ -13,7 +13,7 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 struct LP_peerinfo
 {
     double profitmargin;
-    uint32_t ipbits,gotintro,sentintro;
+    uint32_t ipbits,gotintro,sentintro,errortime,errors;
     char ipaddr[64],notify_ipaddr[64];
     uint16_t port,notify_port;
 } LP_peerinfos[1024];
@@ -282,14 +282,14 @@ void LPinit(uint16_t port,double profitmargin)
         if ( LP_numpeers > 0 )
         {
             i = rand() % LP_numpeers;
-            if ( i > 0 )
+            if ( i > 0 && (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
             {
                 peer = &LP_peerinfos[i];
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
                 {
                     LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
                     //free(retstr);
-                }
+                } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
         }
         sleep(60);
