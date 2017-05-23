@@ -237,6 +237,11 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
 void LPinit(uint16_t port,double profitmargin)
 {
     char *retstr,*ipaddr,tmp[64]; long filesize,n; int32_t i; uint16_t argport; struct LP_peerinfo *peer;
+    if ( profitmargin == 0. )
+    {
+        profitmargin = 0.01;
+        printf("default profit margin %f\n",profitmargin);
+    }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&port) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",port);
