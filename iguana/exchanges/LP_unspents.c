@@ -229,6 +229,11 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
 void LPinit(uint16_t port,double profitmargin)
 {
     char *retstr,*ipaddr; long filesize,n; int32_t i;
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&port) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",port);
+        exit(-1);
+    }
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
     {
         if ( (ipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && ipaddr[0] != 0 )
@@ -251,11 +256,6 @@ void LPinit(uint16_t port,double profitmargin)
         }
     }
     LP_privkey_init("KMD",60,"test","");
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&port) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",port);
-        exit(-1);
-    }
     printf("peers.(%s)\n",LP_peers());
     while ( 1 )
     {
