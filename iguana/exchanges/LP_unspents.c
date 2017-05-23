@@ -227,7 +227,7 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
 
 void LPinit(uint16_t port,double profitmargin)
 {
-    char *retstr,*ipaddr; long filesize,n; int32_t i;
+    char *retstr,*ipaddr,tmp[64]; long filesize,n; int32_t i; uint16_t argport; struct LP_peerinfo *peer;
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&port) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",port);
@@ -263,7 +263,7 @@ void LPinit(uint16_t port,double profitmargin)
     {
         for (i=0; i<LP_numpeers; i++)
         {
-            uint16_t argport; char tmp[64]; struct LP_peerinfo *peer = &LP_peerinfos[i];
+            peer = &LP_peerinfos[i];
             if ( peer->notify_ipaddr[0] != 0 && peer->notify_port != 0 )
             {
                 strcpy(tmp,peer->notify_ipaddr);
@@ -273,7 +273,20 @@ void LPinit(uint16_t port,double profitmargin)
                 LP_notify(peer,tmp,argport,0);
             }
         }
-        sleep(1);
+        if ( LP_numpeers > 0 )
+        {
+            i = rand() % LP_numpeers;
+            if ( i > 0 )
+            {
+                peer = &LP_peerinfos[i];
+                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port)) != 0 )
+                {
+                    LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
+                    free(retstr);
+                }
+            }
+        }
+        sleep(10);
     }
 }
 
