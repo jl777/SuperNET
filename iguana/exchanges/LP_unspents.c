@@ -292,7 +292,7 @@ void LPinit(uint16_t port,double profitmargin)
                 }
             }
         }
-        sleep(10);
+        sleep(60);
     }
 }
 

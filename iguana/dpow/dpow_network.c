@@ -1183,7 +1183,10 @@ char *_dex_listunspentarg(struct supernet_info *myinfo,char *symbol,char *addres
 
 char *_dex_listunspent(struct supernet_info *myinfo,char *symbol,char *address)
 {
-    return(_dex_listunspentarg(myinfo,symbol,address,'u')); // 'U' old variant
+    char *retstr;
+    retstr = _dex_listunspentarg(myinfo,symbol,address,'u'); // 'U' old variant
+    //printf("_dex_listunspent.(%s)\n",retstr);
+    return(retstr);
 }
 
 char *_dex_listunspent2(struct supernet_info *myinfo,char *symbol,char *address)

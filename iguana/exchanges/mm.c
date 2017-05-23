@@ -181,7 +181,7 @@ char *DEX_listunspent(char *coin,char *coinaddr)
 {
     char url[512],postdata[1024];
     sprintf(url,"%s/?",IGUANA_URL);
-    sprintf(postdata,"{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"%s\",\"symbol\":\"%s\"}",coinaddr,coin);
+    sprintf(postdata,"{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"%s\",\"symbol\":\"%s\",\"timeout\":60000}",coinaddr,coin);
     return(bitcoind_RPC(0,"dex",url,0,"listunspent",postdata));
 }
 

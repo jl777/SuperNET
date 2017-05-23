@@ -153,7 +153,7 @@ try_again:
     curl_easy_setopt(curl_handle,CURLOPT_WRITEDATA,		&s); 			// we pass our 's' struct to the callback
     curl_easy_setopt(curl_handle,CURLOPT_NOSIGNAL,		1L);   			// supposed to fix "Alarm clock" and long jump crash
 	curl_easy_setopt(curl_handle,CURLOPT_NOPROGRESS,	1L);			// no progress callback
-    curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	6L);
+    //curl_easy_setopt(curl_handle,CURLOPT_TIMEOUT,	60L); // causes problems with iguana timeouts
     if ( strncmp(url,"https",5) == 0 )
     {
         curl_easy_setopt(curl_handle,CURLOPT_SSL_VERIFYPEER,0);
