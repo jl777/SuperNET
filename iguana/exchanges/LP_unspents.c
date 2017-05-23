@@ -172,7 +172,7 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
     printf("LP_privkey_init.(%s)\n",retstr);
     if ( (array= cJSON_Parse(retstr)) != 0 )
     {
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
             values = calloc(n,sizeof(*values));
             for (i=0; i<n; i++)
@@ -235,7 +235,7 @@ void LPinit(uint16_t port,double profitmargin)
                 free(retstr);
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
-                if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port)) != 0 )
+                if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
                 {
                     printf("(%s) -> %s\n",default_LPnodes[i],retstr);
                     free(retstr);

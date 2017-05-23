@@ -159,10 +159,10 @@ char *iguana_listunspent(char *coin,char *coinaddr)
     return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
 }
 
-char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port)
+char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",destip,destport,ipaddr,port);
+    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f",destip,destport,ipaddr,port,profitmargin);
     return(issue_curl(url));
 }
 
