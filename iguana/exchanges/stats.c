@@ -579,7 +579,7 @@ void stats_rpcloop(void *args)
         }
         memcpy(&ipbits,&cli_addr.sin_addr.s_addr,sizeof(ipbits));
         expand_ipbits(remoteaddr,ipbits);
-        printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
+        //printf("remote RPC request from (%s) %x\n",remoteaddr,ipbits);
         
         memset(jsonbuf,0,IGUANA_MAXPACKETSIZE);
         remains = (int32_t)(IGUANA_MAXPACKETSIZE - 1);

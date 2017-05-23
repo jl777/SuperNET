@@ -103,8 +103,14 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
     {
         //printf("LPaddpeer %s\n",ipaddr);
         for (i=0; i<LP_numpeers; i++)
+        {
             if ( LP_peerinfos[i].ipbits == ipbits && LP_peerinfos[i].port == port )
+            {
+                if ( gotintro != 0 )
+                    LP_peerinfos[i].gotintro = gotintro;
                 break;
+            }
+        }
         if ( i == LP_numpeers )
         {
             for (j=0; j<LP_numpeers; j++)
