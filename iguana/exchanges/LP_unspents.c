@@ -90,7 +90,8 @@ char *LP_peers()
 {
     int32_t i; cJSON *peersjson = cJSON_CreateArray();
     for (i=0; i<LP_numpeers; i++)
-        jaddi(peersjson,LP_peerjson(&LP_peerinfos[i]));
+        if ( LP_peerinfos[i].errors == 0 )
+            jaddi(peersjson,LP_peerjson(&LP_peerinfos[i]));
     return(jprint(peersjson,1));
 }
 
