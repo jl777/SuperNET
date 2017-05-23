@@ -101,7 +101,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
-        printf("LPaddpeer %s\n",ipaddr);
+        //printf("LPaddpeer %s\n",ipaddr);
         for (i=0; i<LP_numpeers; i++)
             if ( LP_peerinfos[i].ipbits == ipbits && LP_peerinfos[i].port == port )
                 break;
@@ -110,7 +110,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
             for (j=0; j<LP_numpeers; j++)
             {
                 peer = &LP_peerinfos[j];
-                printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
                 peer->notify_port = port;
                 strcpy(peer->notify_ipaddr,ipaddr);
             }
@@ -119,7 +119,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
         {
             j = rand() % LP_numpeers;
             peer = &LP_peerinfos[j];
-            printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+            //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
             peer->notify_port = port;
             strcpy(peer->notify_ipaddr,ipaddr);
         }
@@ -241,7 +241,7 @@ void LPinit(uint16_t port,double profitmargin)
             if ( ipaddr[n-1] == '\n' )
                 ipaddr[--n] = 0;
             retstr = LP_addpeer(ipaddr,port,0,(uint32_t)time(NULL),profitmargin);
-            printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
+            //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
             if ( retstr != 0 )
                 free(retstr);
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
@@ -250,7 +250,7 @@ void LPinit(uint16_t port,double profitmargin)
                     continue;
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
                 {
-                    printf("(%s) -> %s\n",default_LPnodes[i],retstr);
+                    //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
                     LP_notify(&LP_peerinfos[0],ipaddr,port,retstr);
                     //free(retstr);
                 }
@@ -258,7 +258,7 @@ void LPinit(uint16_t port,double profitmargin)
         }
     }
     LP_privkey_init("KMD",60,"test","");
-    printf("peers.(%s)\n",LP_peers());
+    //printf("peers.(%s)\n",LP_peers());
     while ( 1 )
     {
         for (i=0; i<LP_numpeers; i++)
