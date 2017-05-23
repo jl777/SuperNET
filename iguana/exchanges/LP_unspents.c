@@ -12,8 +12,8 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 
 struct LP_peerinfo
 {
-    double profitmargin;
-    uint32_t ipbits,gotintro,sentintro,errortime,errors,numpeers;
+    double profitmargin,notify_margin;
+    uint32_t ipbits,gotintro,sentintro,errortime,errors,numpeers,notify_numpeers;
     char ipaddr[64],notify_ipaddr[64];
     uint16_t port,notify_port;
 } LP_peerinfos[1024];
@@ -53,10 +53,10 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     printf("_LPaddpeer %s -> i.%d numpeers.%d\n",ipaddr,i,LP_numpeers);
 }
 
-void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
+void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,double profit,int32_t numpeers,char *retstr)
 {
     char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,n; uint16_t argport;
-    sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
+    sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",peer->ipaddr,peer->port,ipaddr,port,profit,numpeers);
     if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
         //printf("got (%s) from (%s)\n",retstr,buf);
@@ -120,8 +120,10 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 j = rand() % LP_numpeers;
                 peer = &LP_peerinfos[j];
                 //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
-                peer->notify_port = port;
-                strcpy(peer->notify_ipaddr,ipaddr);
+                peer->notify_margin = LP_peerinfos[0].profitmargin;
+                peer->notify_numpeers = LP_numpeers;
+                peer->notify_port = LP_peerinfos[0].port;
+                strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
             }
         }
         else
@@ -130,6 +132,8 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
             {
                 peer = &LP_peerinfos[j];
                 //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                peer->notify_margin = LP_peerinfos[0].profitmargin;
+                peer->notify_numpeers = LP_numpeers;
                 peer->notify_port = port;
                 strcpy(peer->notify_ipaddr,ipaddr);
             }
@@ -238,7 +242,7 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
 
 void LPinit(uint16_t port,double profitmargin)
 {
-    char *retstr,*ipaddr,tmp[64]; long filesize,n; int32_t i; uint16_t argport; struct LP_peerinfo *peer;
+    char *retstr,*ipaddr,tmp[64]; long filesize,n; int32_t i,notifynumpeers; uint16_t argport; struct LP_peerinfo *peer; double notifymargin;
     if ( profitmargin == 0. )
     {
         profitmargin = 0.01;
@@ -268,7 +272,7 @@ void LPinit(uint16_t port,double profitmargin)
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,profitmargin,LP_numpeers)) != 0 )
                 {
                     //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
-                    LP_notify(&LP_peerinfos[i],ipaddr,port,retstr);
+                    LP_notify(&LP_peerinfos[i],ipaddr,port,0,0,retstr);
                     //free(retstr);
                 }
             }
@@ -285,16 +289,22 @@ void LPinit(uint16_t port,double profitmargin)
             {
                 strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
                 peer->notify_port = LP_peerinfos[0].port;
+                peer->notify_margin = LP_peerinfos[0].profitmargin;
+                peer->notify_numpeers = LP_numpeers;
                 printf("LP_numpeers.%d != [%d] (%s).%d\n",LP_numpeers,i,peer->ipaddr,peer->numpeers);
             }
             if ( peer->notify_ipaddr[0] != 0 && peer->notify_port != 0 )
             {
                 strcpy(tmp,peer->notify_ipaddr);
                 argport = peer->notify_port;
+                notifymargin = peer->notify_margin;
+                notifynumpeers = peer->notify_numpeers;
                 peer->notify_port = 0;
+                peer->notify_margin = 0;
+                peer->notify_numpeers = 0;
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
                 //if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
-                    LP_notify(peer,tmp,argport,0);
+                    LP_notify(peer,tmp,argport,notifymargin,notifynumpeers,0);
             }
         }
         if ( (rand() % 10) == 0 && LP_numpeers > 0 )
@@ -305,7 +315,7 @@ void LPinit(uint16_t port,double profitmargin)
             {
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
                 {
-                    LP_notify(peer,peer->ipaddr,peer->port,retstr);
+                    LP_notify(peer,peer->ipaddr,peer->port,0,0,retstr);
                     //free(retstr);
                 } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
@@ -334,6 +344,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                     if ( otherpeers != LP_numpeers )
                     {
                         peer->notify_port = port;
+                        peer->notify_numpeers = otherpeers;
+                        peer->notify_margin = jdouble(argjson,"profit");
                         strcpy(peer->notify_ipaddr,ipaddr);
                     }
                 }
