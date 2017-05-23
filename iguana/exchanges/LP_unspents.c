@@ -79,6 +79,7 @@ cJSON *LP_peerjson(struct LP_peerinfo *peer)
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"ipaddr",peer->ipaddr);
     jaddnum(item,"port",peer->port);
+    jaddnum(item,"profit",peer->profitmargin);
     return(item);
 }
 
