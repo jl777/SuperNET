@@ -62,7 +62,10 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
                         ipbits = (uint32_t)calc_ipbits(argipaddr);
                         for (j=0; j<LP_numpeers; j++)
                             if ( LP_peerinfos[j].ipbits == ipbits && LP_peerinfos[j].port == argport )
+                            {
+                                printf("(%s) already in slot.%d\n",argipaddr,j);
                                 break;
+                            }
                         if ( j == LP_numpeers )
                             _LP_addpeer(j,ipbits,argipaddr,argport,0,0,profit);
                     }
