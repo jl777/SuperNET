@@ -14,8 +14,8 @@ struct LP_peerinfo
 {
     double profitmargin;
     uint32_t ipbits,gotintro,sentintro;
-    char ipaddr[64];
-    uint16_t port;
+    char ipaddr[64],notify_ipaddr[64];
+    uint16_t port,notify_port;
 } LP_peerinfos[1024];
 int32_t LP_numpeers;
 
@@ -45,7 +45,6 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
 void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
 {
     char buf[1024],*retstr,*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,j,n; uint16_t argport; double profit;
-    printf("notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( (retstr= issue_curl(buf)) != 0 )
     {
@@ -114,7 +113,12 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                     {
                         peer = &LP_peerinfos[j];
                         if ( peer->sentintro == 0 )
-                            LP_notify(peer,ipaddr,port);
+                        {
+                            //queue_LP_notify(peer,ipaddr,port);
+                            printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                            peer->notify_port = port;
+                            strcpy(peer->notify_ipaddr,ipaddr);
+                        }
                         lastj = j;
                     }
                 }
@@ -253,7 +257,22 @@ void LPinit(uint16_t port,double profitmargin)
         exit(-1);
     }
     printf("peers.(%s)\n",LP_peers());
-    getchar();
+    while ( 1 )
+    {
+        for (i=0; i<LP_numpeers; i++)
+        {
+            uint16_t argport; char tmp[64]; struct LP_peerinfo *peer = &LP_peerinfos[i];
+            if ( peer->notify_ipaddr[0] != 0 && peer->notify_port != 0 )
+            {
+                strcpy(tmp,peer->notify_ipaddr);
+                argport = peer->notify_port;
+                peer->notify_port = 0;
+                memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
+                LP_notify(peer,tmp,argport);
+            }
+        }
+        sleep(1);
+    }
 }
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
