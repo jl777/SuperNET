@@ -234,11 +234,11 @@ void LPinit(uint16_t port,double profitmargin)
                 free(retstr);
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
-                if ( (rand() % 100) > 20 )
+                if ( (rand() % 100) > 25 )
                     continue;
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
                 {
-                    //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
+                    printf("(%s) -> %s\n",default_LPnodes[i],retstr);
                     free(retstr);
                 }
             }
