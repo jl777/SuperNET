@@ -59,13 +59,12 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
-        //printf("got (%s) from (%s)\n",retstr,buf);
+        printf("got (%s) from (%s)\n",retstr,buf);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
-                if ( n != peer->numpeers )
-                    peer->numpeers = n;
+                peer->numpeers = n;
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
@@ -314,13 +313,18 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
-        if ( (otherpeers= jint(argjson,"numpeers")) > 0 && otherpeers != LP_numpeers )
+        printf("got method.(%s)\n",method);
+        if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
         {
             if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
-                printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d\n",ipaddr,argport,otherpeers,LP_numpeers);
-                peer->notify_port = port;
-                strcpy(peer->notify_ipaddr,ipaddr);
+                printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d (%s)\n",ipaddr,argport,otherpeers,LP_numpeers,jprint(argjson,0));
+                peer->numpeers = otherpeers;
+                if ( otherpeers != LP_numpeers )
+                {
+                    peer->notify_port = port;
+                    strcpy(peer->notify_ipaddr,ipaddr);
+                }
             }
         }
         if ( strcmp(method,"intro") == 0 )
