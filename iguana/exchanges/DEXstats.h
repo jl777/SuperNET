@@ -915,6 +915,7 @@ char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t 
     return(jprint(retjson,1));
 }
 
+#ifndef FROM_MARKETMAKER
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
     char *method,*agent,*retstr,*source,*dest; struct tai T; uint32_t endtimestamp; struct DEXstats_disp prices[365]; int32_t leftdatenum,seconds,numdates;
@@ -940,5 +941,6 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
     }
     return(clonestr(jprint(argjson,0)));
 }
+#endif
 
 #endif /* DEXstats_h */
