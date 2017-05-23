@@ -305,7 +305,7 @@ cJSON *SuperNET_urlconv(char *value,int32_t bufsize,char *urlstr)
 char *stats_rpcparse(char *retbuf,int32_t bufsize,int32_t *jsonflagp,int32_t *postflagp,char *urlstr,char *remoteaddr,char *filetype,uint16_t port)
 {
     cJSON *tokens,*argjson,*origargjson,*tmpjson=0,*json = 0; long filesize;
-    char symbol[64],buf[4096],*originstr,*fieldstr,*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,iter,num=0;
+    char symbol[64],buf[4096],*userpass=0,urlmethod[16],*data,url[8192],furl[8192],*retstr,*filestr,*token = 0; int32_t i,j,n,num=0;
     //printf("rpcparse.(%s)\n",urlstr);
     for (i=0; i<sizeof(urlmethod)-1&&urlstr[i]!=0&&urlstr[i]!=' '; i++)
         urlmethod[i] = urlstr[i];
@@ -701,6 +701,7 @@ void stats_rpcloop(void *args)
     }
 }
 
+#ifndef FROM_MARKETMAKER
 void stats_kvjson(FILE *logfp,int32_t height,int32_t savedheight,uint32_t timestamp,char *key,cJSON *kvjson,bits256 pubkey,bits256 sigprev)
 {
     struct tai T; int32_t seconds,datenum,n;
@@ -1059,3 +1060,4 @@ int main(int argc, const char * argv[])
     }
     return 0;
 }
+#endif

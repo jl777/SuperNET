@@ -2042,7 +2042,8 @@ uint32_t basilisk_swapdata_rawtxsend(struct supernet_info *myinfo,struct basilis
             }
         }
         return(nextbits);
-    } else printf("error from basilisk_swapdata_rawtx.%s %p len.%d\n",rawtx->name,rawtx->txbytes,rawtx->I.datalen);
+    } else if ( swap->I.iambob == 0 )
+        printf("error from basilisk_swapdata_rawtx.%s %p len.%d\n",rawtx->name,rawtx->txbytes,rawtx->I.datalen);
     return(0);
 }
 
@@ -2545,7 +2546,7 @@ void basilisk_swaploop(void *_swap)
     fprintf(stderr,"start swap\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
-    expiration = (uint32_t)time(NULL) + 120;
+    expiration = (uint32_t)time(NULL) + 300;
     myinfo->DEXactive = expiration;
     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
     while ( swap->aborted == 0 && (swap->I.statebits & (0x08|0x02)) != (0x08|0x02) && time(NULL) < expiration )
@@ -2574,7 +2575,7 @@ void basilisk_swaploop(void *_swap)
         printf("couldnt establish connection\n");
         retval = -1;
     }
-    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x20) == 0 && time(NULL) < expiration )
+    while ( swap->aborted == 0 && retval == 0 && (swap->I.statebits & 0x20) == 0 )
     {
         if ( swap->connected == 0 )
             basilisk_psockinit(myinfo,swap,swap->I.iambob != 0);
@@ -2591,6 +2592,8 @@ void basilisk_swaploop(void *_swap)
             sleep(DEX_SLEEP + (swap->I.iambob == 0)*1);
         savestatebits = swap->I.statebits;
         saveotherbits = swap->I.otherstatebits;
+        if ( time(NULL) > expiration )
+            break;
     }
     myinfo->DEXactive = swap->I.expiration;
     if ( time(NULL) >= expiration )
@@ -2804,10 +2807,15 @@ struct basilisk_swap *basilisk_thread_start(struct supernet_info *myinfo,bits256
                 printf("statebits.%x m.%d n.%d\n",statebits,m,n);
                 while ( statebits == 0 && m <= n/2 && time(NULL) < starttime+7*BASILISK_MSGDURATION )
                 {
+                    uint32_t msgid; uint8_t data[1024]; int32_t datalen;
                     m = n = 0;
                     sleep(DEX_SLEEP);
                     printf("waiting for offer to be accepted\n");
                     channel = 'D' + ((uint32_t)'E' << 8) + ((uint32_t)'X' << 16);
+                    datalen = basilisk_rwDEXquote(1,data,rp);
+                    msgid = (uint32_t)time(NULL);
+                    printf("other req.%d >>>>>>>>>>> send response (%llx -> %llx) last.%u r.%u quoteid.%u\n",i,(long long)rp->desthash.txid,(long long)rp->srchash.txid,myinfo->lastdexrequestid,rp->requestid,rp->quoteid);
+                    dex_channelsend(myinfo,rp->desthash,rp->srchash,channel,msgid,data,datalen);
                     if ( (retarray= basilisk_channelget(myinfo,rp->srchash,rp->desthash,channel,0x4000000,30)) != 0 )
                     {
                         if ( is_cJSON_Array(retarray) != 0 && (n= cJSON_GetArraySize(retarray)) > 0 )

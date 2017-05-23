@@ -754,7 +754,7 @@ void stats_updatedisp(struct DEXstats_disp *disp,double price,double volume)
 
 void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates,struct DEXstats_datenuminfo *date,char *dest,int32_t current_daysecond)
 {
-    int32_t i,j,seconds,hour,offset,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp,lefttimestamp,righttimestamp;
+    int32_t i,j,offset,datenum = date->datenum; struct DEXstats_pairinfo *pair; struct DEXstats_pricepoint *ptr; uint32_t timestamp,lefttimestamp,righttimestamp;
     offset = datenum - leftdatenum;
     lefttimestamp = OS_conv_datenum(leftdatenum,0,0,0);
     righttimestamp = OS_conv_datenum(leftdatenum+numdates,0,0,0);
@@ -782,9 +782,9 @@ void stats_dispprices(struct DEXstats_disp *prices,int32_t leftdatenum,int32_t n
     }
 }
 
-#include "../crypto777/jpeg/jinclude.h"
-#include "../crypto777/jpeg/jpeglib.h"
-#include "../crypto777/jpeg/jerror.h"
+#include "../../crypto777/jpeg/jinclude.h"
+#include "../../crypto777/jpeg/jpeglib.h"
+#include "../../crypto777/jpeg/jerror.h"
 
 void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int32_t height)
 {
@@ -821,7 +821,7 @@ void gen_jpegfile(char *fname,int32_t quality,uint8_t *bitmap,int32_t width,int3
 
 char *stats_prices(char *symbol,char *dest,struct DEXstats_disp *prices,int32_t leftdatenum,int32_t numdates)
 {
-    int32_t i,j,datenum,n,seconds; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals,total; char fname[1024]; struct tai T; cJSON *retjson,*array,*item;
+    int32_t i,j,n; struct DEXstats_priceinfo *pp; uint32_t *utc32,tmp,timestamp,lefttimestamp,righttimestamp; double *splinevals,total; char fname[1024]; cJSON *retjson,*array,*item;
     timestamp = (uint32_t)time(NULL);
     if ( Num_priceinfos >= sizeof(Prices)/sizeof(*Prices) )
         return(0);

@@ -1,28 +1,10 @@
 #!/bin/bash
-pkill iguana
+TESTIPADDR=\"78.47.196.146\"
+#./configure --enable-endomorphism --enable-module-ecdh --enable-module-schnorr --enable-module-rangeproof --enable-experimental --enable-module_recovery
 rm -f ../agents/iguana *.o
 git pull
 cd secp256k1; ./m_unix; cd ..
 cd ../crypto777; ./m_LP; cd ../iguana
-gcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -O2 -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
-gcc -g -fno-aggressive-loop-optimizations -Wno-deprecated -c -DISNOTARYNODE=1 -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c iguana_ramchain.c
-gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a -lnanomsg -lcurl -lssl -lcrypto -lpthread -lz -lm
-
-../agents/iguana notary  & #> iguana.log 2> error.log  &
-
-myip=`curl -s4 checkip.amazonaws.com`
-source pubkey.txt
-
-coins/kmd_7776
-coins/revs_7776
-sleep 4
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"SuperNET\",\"method\":\"myipaddr\",\"ipaddr\":\"$myip\"}"
-sleep 3
-
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"$myip\"}"
-curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"78.47.196.146\"}"
-#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"5.9.102.210\"}"
-#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"89.248.160.237\"}"
-#curl --url "http://127.0.0.1:7776" --data "{\"agent\":\"iguana\",\"method\":\"addnotary\",\"ipaddr\":\"89.248.160.238\"}"
-./wp_7776
-curl --url "http://127.0.0.1:7776" --data "{\"timeout\":60000,\"agent\":\"iguana\",\"method\":\"dpow\",\"symbol\":\"REVS\",\"pubkey\":\"$pubkey\"}"
+gcc -DNOTARY_TESTMODE=$TESTIPADDR -g -Wno-aggressive-loop-optimizations -Wno-deprecated -c -O2 -DLIQUIDITY_PROVIDER=1 *.c ../basilisk/basilisk.c ../gecko/gecko.c ../datachain/datachain.c
+gcc -DNOTARY_TESTMODE=$TESTIPADDR -g -Wno-aggressive-loop-optimizations -Wno-deprecated -c -DLIQUIDITY_PROVIDER=1  main.c iguana777.c iguana_bundles.c ../basilisk/basilisk.c iguana_ramchain.c
+gcc -g -o ../agents/iguana *.o ../agents/libcrypto777.a /usr/local/lib/libnanomsg.so -lcurl -lssl -lcrypto -lpthread -lz -lm

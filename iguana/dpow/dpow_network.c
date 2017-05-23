@@ -88,6 +88,9 @@ void dex_init(struct supernet_info *myinfo)
                 break;
         }
         mask |= (1 << j);
+#ifdef NOTARY_TESTMODE
+        seeds[j] = NOTARY_TESTMODE;
+#endif
         printf("seed.[%d] <- %s\n",i,seeds[j]);
         strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
         myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
@@ -526,14 +529,14 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
                             printf("%d: subscribe connect (%s)\n",myinfo->numdexipbits,str);
                         }
                     }
-//#ifndef __APPLE__
+#ifndef NOTARY_TESTMODE
                     if ( (rand() % 100) < 40 )
                     {
                         nanomsg_tcpname(0,str,ipaddr,REP_SOCK);
                         nn_connect(myinfo->reqsock,str);
                         printf("%d: req connect (%s)\n",myinfo->numdexipbits,str);
                     }
-//#endif
+#endif
                 }
             }
             if ( freeptr != 0 )
