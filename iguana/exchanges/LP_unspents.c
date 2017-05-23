@@ -268,7 +268,7 @@ void LPinit(uint16_t port,double profitmargin)
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,profitmargin,LP_numpeers)) != 0 )
                 {
                     //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
-                    LP_notify(&LP_peerinfos[0],ipaddr,port,retstr);
+                    LP_notify(&LP_peerinfos[i],ipaddr,port,retstr);
                     //free(retstr);
                 }
             }

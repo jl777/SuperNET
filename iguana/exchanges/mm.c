@@ -163,7 +163,7 @@ char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,d
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
-    //printf("(%s)\n",url);
+    printf("(%s)\n",url);
     return(issue_curl(url));
 }
 
