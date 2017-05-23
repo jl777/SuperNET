@@ -115,7 +115,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 peer->profitmargin = profitmargin;
             if ( gotintro != 0 )
                 peer->gotintro = gotintro;
-            if ( peer->errors == 0 )
+            //if ( peer->errors == 0 )
             {
                 j = rand() % LP_numpeers;
                 peer = &LP_peerinfos[j];
@@ -311,7 +311,7 @@ void LPinit(uint16_t port,double profitmargin)
         {
             i = rand() % LP_numpeers;
             peer = &LP_peerinfos[i];
-            if ( i > 0 && (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
+            if ( i > 0 )//&& (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
             {
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
                 {
