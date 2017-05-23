@@ -13,7 +13,7 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 struct LP_peerinfo
 {
     double profitmargin;
-    uint32_t ipbits,gotintro,sentintro,errortime,errors;
+    uint32_t ipbits,gotintro,sentintro,errortime,errors,numpeers;
     char ipaddr[64],notify_ipaddr[64];
     uint16_t port,notify_port;
 } LP_peerinfos[1024];
@@ -64,6 +64,8 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
             {
+                if ( n != peer->numpeers )
+                    peer->numpeers = n;
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
@@ -272,6 +274,12 @@ void LPinit(uint16_t port,double profitmargin)
         for (i=0; i<LP_numpeers; i++)
         {
             peer = &LP_peerinfos[i];
+            if ( peer->numpeers != LP_numpeers && (peer->notify_ipaddr[0] == 0 || peer->notify_port == 0) )
+            {
+                strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
+                peer->notify_port = LP_peerinfos[0].port;
+                printf("LP_numpeers.%d != (%s).%d\n",LP_numpeers,peer->ipaddr,peer->numpeers);
+            }
             if ( peer->notify_ipaddr[0] != 0 && peer->notify_port != 0 )
             {
                 strcpy(tmp,peer->notify_ipaddr);
