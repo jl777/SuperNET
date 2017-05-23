@@ -95,6 +95,7 @@ void dex_init(struct supernet_info *myinfo)
         strcpy(myinfo->dexseed_ipaddrs[i],seeds[j]);
         myinfo->dexipbits[i] = (uint32_t)calc_ipbits(myinfo->dexseed_ipaddrs[i]);
 #ifdef NOTARY_TESTMODE
+        i = 1;
         break;
 #endif
     }
