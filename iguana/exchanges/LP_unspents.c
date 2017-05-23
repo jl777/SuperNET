@@ -271,14 +271,14 @@ void LPinit(uint16_t port,double profitmargin)
     //printf("peers.(%s)\n",LP_peers());
     while ( 1 )
     {
-        for (i=0; i<LP_numpeers; i++)
+        for (i=1; i<LP_numpeers; i++)
         {
             peer = &LP_peerinfos[i];
             if ( peer->numpeers != LP_numpeers && (peer->notify_ipaddr[0] == 0 || peer->notify_port == 0) )
             {
                 strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
                 peer->notify_port = LP_peerinfos[0].port;
-                printf("LP_numpeers.%d != (%s).%d\n",LP_numpeers,peer->ipaddr,peer->numpeers);
+                printf("LP_numpeers.%d != [%d] (%s).%d\n",LP_numpeers,i,peer->ipaddr,peer->numpeers);
             }
             if ( peer->notify_ipaddr[0] != 0 && peer->notify_port != 0 )
             {
@@ -286,7 +286,7 @@ void LPinit(uint16_t port,double profitmargin)
                 argport = peer->notify_port;
                 peer->notify_port = 0;
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
-                if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
+                //if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
                     LP_notify(peer,tmp,argport,0);
             }
         }
@@ -298,7 +298,7 @@ void LPinit(uint16_t port,double profitmargin)
             {
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
                 {
-                    LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
+                    LP_notify(peer,peer->ipaddr,peer->port,retstr);
                     //free(retstr);
                 } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
