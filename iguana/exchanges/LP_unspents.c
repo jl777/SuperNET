@@ -305,6 +305,11 @@ void LPinit(uint16_t port,double profitmargin)
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
                 //if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
                     LP_notify(peer,tmp,argport,notifymargin,notifynumpeers,0);
+                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
+                {
+                    LP_notify(peer,peer->ipaddr,peer->port,0,0,retstr);
+                    //free(retstr);
+                } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
         }
         if ( (rand() % 10) == 0 && LP_numpeers > 0 )
