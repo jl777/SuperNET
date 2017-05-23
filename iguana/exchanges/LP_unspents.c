@@ -282,9 +282,9 @@ void LPinit(uint16_t port,double profitmargin)
         if ( LP_numpeers > 0 )
         {
             i = rand() % LP_numpeers;
+            peer = &LP_peerinfos[i];
             if ( i > 0 && (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
             {
-                peer = &LP_peerinfos[i];
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
                 {
                     LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
