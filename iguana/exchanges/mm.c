@@ -167,10 +167,10 @@ char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,d
     return(issue_curl(url));
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport)
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getpeers",destip,destport);
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f",destip,destport,ipaddr,port,profitmargin);
     return(issue_curl(url));
 }
 

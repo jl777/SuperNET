@@ -279,7 +279,7 @@ void LPinit(uint16_t port,double profitmargin)
             if ( i > 0 )
             {
                 peer = &LP_peerinfos[i];
-                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port)) != 0 )
+                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
                 {
                     LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
                     //free(retstr);
@@ -302,8 +302,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (profitmargin= jdouble(argjson,"profit")) != 0. )
                 retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,profitmargin);
         }
-        else if ( strcmp(method,"getpeers") == 0 )
-            retstr = LP_peers();
+        else if ( strcmp(method,"getpeers") == 0 && (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (profitmargin= jdouble(argjson,"profit")) != 0. )
+            retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,profitmargin);
         else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 && (dest= jstr(argjson,"dest")) != 0 )
         {
             //retstr = LP_getutxos(coin,dest);
