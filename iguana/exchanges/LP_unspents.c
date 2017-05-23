@@ -59,7 +59,7 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,double profit
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",peer->ipaddr,peer->port,ipaddr,port,profit,numpeers);
     if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
-        //printf("got (%s) from (%s)\n",retstr,buf);
+        printf("got (%s) from (%s)\n",retstr,buf);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -305,12 +305,6 @@ void LPinit(uint16_t port,double profitmargin)
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
                 //if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
                     LP_notify(peer,tmp,argport,notifymargin,notifynumpeers,0);
-                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
-                {
-                    printf("fetchpeers.(%s)\n",retstr);
-                    LP_notify(peer,peer->ipaddr,peer->port,0,0,retstr);
-                    //free(retstr);
-                } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
         }
         if ( (rand() % 10) == 0 && LP_numpeers > 0 )
@@ -352,12 +346,6 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                         peer->notify_numpeers = LP_numpeers;
                         peer->notify_margin = LP_peerinfos[0].profitmargin;
                         strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
-                        if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
-                        {
-                            printf("2fetchpeers.(%s)\n",retstr);
-                            LP_notify(peer,peer->ipaddr,peer->port,0,0,retstr);
-                            //free(retstr);
-                        } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
                     }
                 }
             }
