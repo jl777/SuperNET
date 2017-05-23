@@ -343,10 +343,10 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                     peer->numpeers = otherpeers;
                     if ( otherpeers != LP_numpeers )
                     {
-                        peer->notify_port = port;
-                        peer->notify_numpeers = otherpeers;
-                        peer->notify_margin = jdouble(argjson,"profit");
-                        strcpy(peer->notify_ipaddr,ipaddr);
+                        peer->notify_port = LP_peerinfos[0].port;
+                        peer->notify_numpeers = LP_numpeers;
+                        peer->notify_margin = LP_peerinfos[0].profitmargin;
+                        strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
                     }
                 }
             }
