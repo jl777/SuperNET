@@ -19,9 +19,11 @@
 //  Copyright © 2017 SuperNET. All rights reserved.
 //
 
+#define FROM_MARKETMAKER
 #include <stdio.h>
 #include <stdint.h>
 #include "OS_portable.h"
+#include "stats.c"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 char DEX_baseaddr[64],DEX_reladdr[64];
@@ -37,9 +39,9 @@ int32_t Num_Pending;
 
 #define IGUANA_URL "http://127.0.0.1:7778"
 
-char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
+/*char CURRENCIES[][8] = { "USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "NZD", // major currencies
     "CNY", "RUB", "MXN", "BRL", "INR", "HKD", "TRY", "ZAR", "PLN", "NOK", "SEK", "DKK", "CZK", "HUF", "ILS", "KRW", "MYR", "PHP", "RON", "SGD", "THB", "BGN", "IDR", "HRK", // end of currencies
-};
+};*/
 double PAXPRICES[sizeof(CURRENCIES)/sizeof(*CURRENCIES)];
 uint32_t PAXACTIVE;
 
@@ -146,6 +148,14 @@ char *iguana_walletpassphrase(char *passphrase,int32_t timeout)
     sprintf(url,"%s/coin=KMD&agent=bitcoinrpc&method=walletpassphrase?",IGUANA_URL);
     sprintf(postdata,"[\"%s\", %d]",passphrase,timeout);
     return(bitcoind_RPC(0,"",url,0,"walletpassphrase",postdata));
+}
+
+char *iguana_listunspent(char *coin,char *coinaddr)
+{
+    char url[512],postdata[1024];
+    sprintf(url,"%s/coin=%s&agent=bitcoinrpc&method=listunspent?",IGUANA_URL,coin);
+    sprintf(postdata,"[\"%s\"]",coinaddr);
+    return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
 }
 
 double bittrex_balance(char *base,char *coinaddr)
@@ -700,11 +710,14 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
     }
 }
 
+#include "LP_unspents.c"
+
 int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid;
     cJSON *retjson,*loginjson; int32_t i;
+    LPinit();
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         minask = jdouble(retjson,"minask");
