@@ -19,9 +19,21 @@ struct LP_peerinfo
 } LP_peerinfos[1024];
 int32_t LP_numpeers;
 
-void LP_addutxo(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bits256 deposittxid,int32_t depositvout,uint64_t depositsatoshis,char *spendscript,char *coinaddr)
+void LP_addutxo(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bits256 deposittxid,int32_t depositvout,uint64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port)
 {
-    printf("LP_addutxo.(%.8f %.8f)\n",dstr(satoshis),dstr(depositsatoshis));
+    printf("%s:%u LP_addutxo.(%.8f %.8f)\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis));
+}
+
+struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
+{
+    int32_t j;
+    for (j=0; j<LP_numpeers; j++)
+        if ( LP_peerinfos[j].ipbits == ipbits && LP_peerinfos[j].port == port )
+        {
+            //printf("(%s) already in slot.%d\n",argipaddr,j);
+            return(&LP_peerinfos[j]);
+        }
+    return(0);
 }
 
 void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro,double profitmargin)
@@ -29,6 +41,7 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     struct LP_peerinfo *peer;
     if ( i == sizeof(LP_peerinfos)/sizeof(*LP_peerinfos) )
         i = (rand() % (sizeof(LP_peerinfos)/sizeof(*LP_peerinfos)));
+    else LP_numpeers++;
     peer = &LP_peerinfos[i];
     memset(peer,0,sizeof(*peer));
     peer->profitmargin = profitmargin;
@@ -37,14 +50,12 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     peer->sentintro = sentintro;
     strcpy(peer->ipaddr,ipaddr);
     peer->port = port;
-    if ( i == LP_numpeers )
-        LP_numpeers++;
     printf("_LPaddpeer %s -> i.%d numpeers.%d\n",ipaddr,i,LP_numpeers);
 }
 
 void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
 {
-    char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,j,n; uint16_t argport; double profit;
+    char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,n; uint16_t argport; double profit;
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
@@ -60,14 +71,8 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
                     {
                         argport = juint(item,"port");
                         ipbits = (uint32_t)calc_ipbits(argipaddr);
-                        for (j=0; j<LP_numpeers; j++)
-                            if ( LP_peerinfos[j].ipbits == ipbits && LP_peerinfos[j].port == argport )
-                            {
-                                //printf("(%s) already in slot.%d\n",argipaddr,j);
-                                break;
-                            }
-                        if ( j == LP_numpeers )
-                            _LP_addpeer(j,ipbits,argipaddr,argport,0,0,profit);
+                        if ( LP_peerfind(ipbits,argport) == 0 )
+                            _LP_addpeer(LP_numpeers,ipbits,argipaddr,argport,0,0,profit);
                     }
                 }
             }
@@ -97,22 +102,26 @@ char *LP_peers()
 
 char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro,double profitmargin)
 {
-    uint32_t i,j,ipbits; char checkip[64]; struct LP_peerinfo *peer;
+    uint32_t j,ipbits; char checkip[64]; struct LP_peerinfo *peer;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
         //printf("LPaddpeer %s\n",ipaddr);
-        for (i=0; i<LP_numpeers; i++)
+        if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
-            if ( LP_peerinfos[i].ipbits == ipbits && LP_peerinfos[i].port == port )
+            if ( gotintro != 0 )
+                peer->gotintro = gotintro;
+            if ( peer->errors == 0 )
             {
-                if ( gotintro != 0 )
-                    LP_peerinfos[i].gotintro = gotintro;
-                break;
+                j = rand() % LP_numpeers;
+                peer = &LP_peerinfos[j];
+                //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                peer->notify_port = port;
+                strcpy(peer->notify_ipaddr,ipaddr);
             }
         }
-        if ( i == LP_numpeers )
+        else
         {
             for (j=0; j<LP_numpeers; j++)
             {
@@ -121,15 +130,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 peer->notify_port = port;
                 strcpy(peer->notify_ipaddr,ipaddr);
             }
-            _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
-        }
-        else if ( LP_numpeers > 0 )
-        {
-            j = rand() % LP_numpeers;
-            peer = &LP_peerinfos[j];
-            //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
-            peer->notify_port = port;
-            strcpy(peer->notify_ipaddr,ipaddr);
+            _LP_addpeer(LP_numpeers,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
         }
     }
     return(LP_peers());
@@ -218,7 +219,7 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
                         {
                             value = values[i];
                             values[i] = 0, used++;
-                            LP_addutxo(coin,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr);
+                            LP_addutxo(coin,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port);
                             total += value;
                         }
                     }
