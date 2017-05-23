@@ -114,6 +114,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 peer->notify_port = port;
                 strcpy(peer->notify_ipaddr,ipaddr);
             }
+            _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
         }
         else if ( LP_numpeers > 0 )
         {
@@ -123,7 +124,6 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
             peer->notify_port = port;
             strcpy(peer->notify_ipaddr,ipaddr);
         }
-        _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
     }
     return(LP_peers());
 }
