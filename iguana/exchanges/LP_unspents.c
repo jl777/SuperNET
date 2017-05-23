@@ -92,7 +92,7 @@ char *LP_peers()
 
 char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro,double profitmargin)
 {
-    uint32_t i,j,lastj,iter,ipbits; char checkip[64]; struct LP_peerinfo *peer;
+    uint32_t i,j,ipbits; char checkip[64]; struct LP_peerinfo *peer;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
     printf("LPaddpeer %s\n",ipaddr);
@@ -103,21 +103,12 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 break;
         if ( i == LP_numpeers )
         {
-            if ( LP_numpeers > 0 )
+            for (j=0; j<LP_numpeers; j++)
             {
-                lastj = -1;
-                for (iter=0; iter<2; iter++)
-                {
-                    j = (rand() % LP_numpeers);
-                    if ( j != lastj )
-                    {
-                        peer = &LP_peerinfos[j];
-                        printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
-                        peer->notify_port = port;
-                        strcpy(peer->notify_ipaddr,ipaddr);
-                        lastj = j;
-                    }
-                }
+                peer = &LP_peerinfos[j];
+                printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                peer->notify_port = port;
+                strcpy(peer->notify_ipaddr,ipaddr);
             }
             _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
         }
