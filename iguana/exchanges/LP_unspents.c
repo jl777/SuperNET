@@ -250,6 +250,7 @@ void LPinit(uint16_t port,double profitmargin)
             if ( ipaddr[n-1] == '\n' )
                 ipaddr[--n] = 0;
             retstr = LP_addpeer(ipaddr,port,0,(uint32_t)time(NULL),profitmargin);
+            LP_peerinfos[0].profitmargin = profitmargin;
             //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
             if ( retstr != 0 )
                 free(retstr);
