@@ -252,6 +252,7 @@ void LPinit(uint16_t port,double profitmargin)
         printf("error launching stats rpcloop for port.%u\n",port);
         exit(-1);
     }
+    printf("peers.(%s)\n",LP_peers());
     getchar();
 }
 
