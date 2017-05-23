@@ -68,12 +68,12 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
                 for (i=0; i<n; i++)
                 {
                     item = jitem(array,i);
-                    if ( (argipaddr= jstr(item,"ipaddr")) != 0 && jobj(item,"port") != 0 && (profit=jdouble(item,"profit")) > 0. )
+                    if ( (argipaddr= jstr(item,"ipaddr")) != 0 && jobj(item,"port") != 0 )
                     {
                         argport = juint(item,"port");
                         ipbits = (uint32_t)calc_ipbits(argipaddr);
                         if ( LP_peerfind(ipbits,argport) == 0 )
-                            _LP_addpeer(LP_numpeers,ipbits,argipaddr,argport,0,0,profit);
+                            _LP_addpeer(LP_numpeers,ipbits,argipaddr,argport,0,0,jdouble(item,"profit"));
                     }
                 }
             }
@@ -111,6 +111,8 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
         //printf("LPaddpeer %s\n",ipaddr);
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
+            if ( peer->profitmargin == 0. )
+                peer->profitmargin = profitmargin;
             if ( gotintro != 0 )
                 peer->gotintro = gotintro;
             if ( peer->errors == 0 )
@@ -335,11 +337,11 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         }
         if ( strcmp(method,"intro") == 0 )
         {
-            if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (profitmargin= jdouble(argjson,"profit")) != 0. )
-                retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,profitmargin);
+            if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+                retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,jdouble(argjson,"profit"));
         }
-        else if ( strcmp(method,"getpeers") == 0 && (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (profitmargin= jdouble(argjson,"profit")) != 0. )
-            retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,profitmargin);
+        else if ( strcmp(method,"getpeers") == 0 && (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
+            retstr = LP_addpeer(ipaddr,argport,(uint32_t)time(NULL),0,jdouble(argjson,"profit"));
         else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 && (dest= jstr(argjson,"dest")) != 0 )
         {
             //retstr = LP_getutxos(coin,dest);
