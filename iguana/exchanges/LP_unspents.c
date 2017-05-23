@@ -29,7 +29,6 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     struct LP_peerinfo *peer;
     if ( i == sizeof(LP_peerinfos)/sizeof(*LP_peerinfos) )
         i = (rand() % (sizeof(LP_peerinfos)/sizeof(*LP_peerinfos)));
-    printf("_LPaddpeer %s -> i.%d\n",ipaddr,i);
     peer = &LP_peerinfos[i];
     memset(peer,0,sizeof(*peer));
     peer->profitmargin = profitmargin;
@@ -40,6 +39,7 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     peer->port = port;
     if ( i == LP_numpeers )
         LP_numpeers++;
+    printf("_LPaddpeer %s -> i.%d numpeers.%d\n",ipaddr,i,LP_numpeers);
 }
 
 void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
@@ -48,7 +48,7 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( (retstr= issue_curl(buf)) != 0 )
     {
-        printf("got (%s) from (%s)\n",retstr,buf);
+        //printf("got (%s) from (%s)\n",retstr,buf);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
