@@ -112,13 +112,9 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                     if ( j != lastj )
                     {
                         peer = &LP_peerinfos[j];
-                        if ( peer->sentintro == 0 )
-                        {
-                            //queue_LP_notify(peer,ipaddr,port);
-                            printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
-                            peer->notify_port = port;
-                            strcpy(peer->notify_ipaddr,ipaddr);
-                        }
+                        printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+                        peer->notify_port = port;
+                        strcpy(peer->notify_ipaddr,ipaddr);
                         lastj = j;
                     }
                 }
@@ -247,9 +243,11 @@ void LPinit(uint16_t port,double profitmargin)
                 free(retstr);
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
+                if ( (rand() % 100) > 20 )
+                    continue;
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
                 {
-                    printf("(%s) -> %s\n",default_LPnodes[i],retstr);
+                    //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
                     free(retstr);
                 }
             }
