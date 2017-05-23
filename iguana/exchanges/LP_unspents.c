@@ -74,7 +74,7 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
             free_json(array);
         }
         free(retstr);
-    }
+    } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
 }
 
 cJSON *LP_peerjson(struct LP_peerinfo *peer)
@@ -276,7 +276,8 @@ void LPinit(uint16_t port,double profitmargin)
                 argport = peer->notify_port;
                 peer->notify_port = 0;
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
-                LP_notify(peer,tmp,argport,0);
+                if ( (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
+                    LP_notify(peer,tmp,argport,0);
             }
         }
         if ( LP_numpeers > 0 )
