@@ -42,11 +42,11 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     printf("_LPaddpeer %s -> i.%d numpeers.%d\n",ipaddr,i,LP_numpeers);
 }
 
-void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
+void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
 {
-    char buf[1024],*retstr,*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,j,n; uint16_t argport; double profit;
+    char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,j,n; uint16_t argport; double profit;
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
-    if ( (retstr= issue_curl(buf)) != 0 )
+    if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
         //printf("got (%s) from (%s)\n",retstr,buf);
         if ( (array= cJSON_Parse(retstr)) != 0 )
@@ -243,7 +243,8 @@ void LPinit(uint16_t port,double profitmargin)
                 if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
                 {
                     printf("(%s) -> %s\n",default_LPnodes[i],retstr);
-                    free(retstr);
+                    LP_notify(&LP_peerinfos[0],ipaddr,port,retstr);
+                    //free(retstr);
                 }
             }
         }
@@ -261,7 +262,7 @@ void LPinit(uint16_t port,double profitmargin)
                 argport = peer->notify_port;
                 peer->notify_port = 0;
                 memset(peer->notify_ipaddr,0,sizeof(peer->notify_ipaddr));
-                LP_notify(peer,tmp,argport);
+                LP_notify(peer,tmp,argport,0);
             }
         }
         sleep(1);
