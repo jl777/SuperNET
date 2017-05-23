@@ -275,7 +275,7 @@ void LPinit(uint16_t port,double profitmargin)
         for (i=1; i<LP_numpeers; i++)
         {
             peer = &LP_peerinfos[i];
-            if ( peer->numpeers != LP_numpeers && (peer->notify_ipaddr[0] == 0 || peer->notify_port == 0) )
+            if ( peer->numpeers < LP_numpeers && (peer->notify_ipaddr[0] == 0 || peer->notify_port == 0) )
             {
                 strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
                 peer->notify_port = LP_peerinfos[0].port;
