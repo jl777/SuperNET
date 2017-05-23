@@ -115,16 +115,6 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 peer->profitmargin = profitmargin;
             if ( gotintro != 0 )
                 peer->gotintro = gotintro;
-            //if ( peer->errors == 0 )
-            {
-                j = rand() % LP_numpeers;
-                peer = &LP_peerinfos[j];
-                //printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
-                peer->notify_margin = LP_peerinfos[0].profitmargin;
-                peer->notify_numpeers = LP_numpeers;
-                peer->notify_port = LP_peerinfos[0].port;
-                strcpy(peer->notify_ipaddr,LP_peerinfos[0].ipaddr);
-            }
         }
         else
         {
@@ -331,7 +321,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
-        printf("got (%s)\n",jprint(argjson,0));
+        //printf("got (%s)\n",jprint(argjson,0));
         if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
         {
             if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
