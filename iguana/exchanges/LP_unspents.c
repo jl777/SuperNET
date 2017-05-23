@@ -63,7 +63,7 @@ void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
                         for (j=0; j<LP_numpeers; j++)
                             if ( LP_peerinfos[j].ipbits == ipbits && LP_peerinfos[j].port == argport )
                             {
-                                printf("(%s) already in slot.%d\n",argipaddr,j);
+                                //printf("(%s) already in slot.%d\n",argipaddr,j);
                                 break;
                             }
                         if ( j == LP_numpeers )
@@ -99,9 +99,9 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
     uint32_t i,j,ipbits; char checkip[64]; struct LP_peerinfo *peer;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
-    printf("LPaddpeer %s\n",ipaddr);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
+        printf("LPaddpeer %s\n",ipaddr);
         for (i=0; i<LP_numpeers; i++)
             if ( LP_peerinfos[i].ipbits == ipbits && LP_peerinfos[i].port == port )
                 break;
@@ -114,8 +114,16 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
                 peer->notify_port = port;
                 strcpy(peer->notify_ipaddr,ipaddr);
             }
-            _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
         }
+        else if ( LP_numpeers > 0 )
+        {
+            j = rand() % LP_numpeers;
+            peer = &LP_peerinfos[j];
+            printf("queue notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
+            peer->notify_port = port;
+            strcpy(peer->notify_ipaddr,ipaddr);
+        }
+        _LP_addpeer(i,ipbits,ipaddr,port,gotintro,sentintro,profitmargin);
     }
     return(LP_peers());
 }
