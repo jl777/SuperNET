@@ -29,6 +29,7 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
     struct LP_peerinfo *peer;
     if ( i == sizeof(LP_peerinfos)/sizeof(*LP_peerinfos) )
         i = (rand() % (sizeof(LP_peerinfos)/sizeof(*LP_peerinfos)));
+    printf("_LPaddpeer %s -> i.%d\n",ipaddr,i);
     peer = &LP_peerinfos[i];
     memset(peer,0,sizeof(*peer));
     peer->profitmargin = profitmargin;
@@ -44,6 +45,7 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
 void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port)
 {
     char buf[1024],*retstr,*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,j,n; uint16_t argport; double profit;
+    printf("notify (%s) from (%s)\n",peer->ipaddr,ipaddr);
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( (retstr= issue_curl(buf)) != 0 )
     {
@@ -94,6 +96,7 @@ char *LP_addpeer(char *ipaddr,uint16_t port,uint32_t gotintro,uint32_t sentintro
     uint32_t i,j,lastj,iter,ipbits; char checkip[64]; struct LP_peerinfo *peer;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
     expand_ipbits(checkip,ipbits);
+    printf("LPaddpeer %s\n",ipaddr);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
         for (i=0; i<LP_numpeers; i++)
