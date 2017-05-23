@@ -307,6 +307,7 @@ void LPinit(uint16_t port,double profitmargin)
                     LP_notify(peer,tmp,argport,notifymargin,notifynumpeers,0);
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
                 {
+                    printf("fetchpeers.(%s)\n",retstr);
                     LP_notify(peer,peer->ipaddr,peer->port,0,0,retstr);
                     //free(retstr);
                 } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
@@ -341,13 +342,12 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         {
             if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
             {
-                printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d (%s)\n",ipaddr,argport,otherpeers,LP_numpeers,jprint(argjson,0));
                 if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
                 {
-                    printf("found peer.(%s:%u)\n",ipaddr,argport);
                     peer->numpeers = otherpeers;
                     if ( otherpeers != LP_numpeers )
                     {
+                        printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d (%s)\n",ipaddr,argport,otherpeers,LP_numpeers,jprint(argjson,0));
                         peer->notify_port = LP_peerinfos[0].port;
                         peer->notify_numpeers = LP_numpeers;
                         peer->notify_margin = LP_peerinfos[0].profitmargin;
