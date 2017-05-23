@@ -256,7 +256,7 @@ void LPinit(uint16_t port,double profitmargin)
             {
                 if ( (rand() % 100) > 25 )
                     continue;
-                if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,0.01)) != 0 )
+                if ( (retstr= issue_LP_intro(default_LPnodes[i],port,ipaddr,port,profitmargin,LP_numpeers)) != 0 )
                 {
                     //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
                     LP_notify(&LP_peerinfos[0],ipaddr,port,retstr);
@@ -288,7 +288,7 @@ void LPinit(uint16_t port,double profitmargin)
             peer = &LP_peerinfos[i];
             if ( i > 0 && (peer->errors == 0 || (time(NULL) - peer->errortime) > 3600) )
             {
-                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
+                if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin,LP_numpeers)) != 0 )
                 {
                     LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
                     //free(retstr);

@@ -159,18 +159,18 @@ char *iguana_listunspent(char *coin,char *coinaddr)
     return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
 }
 
-char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin)
+char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f",destip,destport,ipaddr,port,profitmargin);
+    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
     //printf("(%s)\n",url);
     return(issue_curl(url));
 }
 
-char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin)
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f",destip,destport,ipaddr,port,profitmargin);
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
     return(issue_curl(url));
 }
 
