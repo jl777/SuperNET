@@ -55,11 +55,11 @@ void _LP_addpeer(int32_t i,uint32_t ipbits,char *ipaddr,uint16_t port,uint32_t g
 
 void LP_notify(struct LP_peerinfo *peer,char *ipaddr,uint16_t port,char *retstr)
 {
-    char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,n; uint16_t argport; double profit;
+    char buf[1024],*argipaddr; uint32_t ipbits; cJSON *array,*item; int32_t i,n; uint16_t argport;
     sprintf(buf,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u",peer->ipaddr,peer->port,ipaddr,port);
     if ( retstr != 0 || (retstr= issue_curl(buf)) != 0 )
     {
-        printf("got (%s) from (%s)\n",retstr,buf);
+        //printf("got (%s) from (%s)\n",retstr,buf);
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
             if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -316,22 +316,26 @@ void LPinit(uint16_t port,double profitmargin)
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
-    char *method,*ipaddr,*coin,*dest,*retstr = 0; uint16_t argport; double profitmargin; int32_t otherpeers; struct LP_peerinfo *peer;
+    char *method,*ipaddr,*coin,*dest,*retstr = 0; uint16_t argport; int32_t otherpeers; struct LP_peerinfo *peer;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
-        printf("got method.(%s)\n",method);
+        printf("got (%s)\n",jprint(argjson,0));
         if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
         {
-            if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
+            if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
             {
                 printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d (%s)\n",ipaddr,argport,otherpeers,LP_numpeers,jprint(argjson,0));
-                peer->numpeers = otherpeers;
-                if ( otherpeers != LP_numpeers )
+                if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
                 {
-                    peer->notify_port = port;
-                    strcpy(peer->notify_ipaddr,ipaddr);
+                    printf("found peer.(%s:%u)\n",ipaddr,argport);
+                    peer->numpeers = otherpeers;
+                    if ( otherpeers != LP_numpeers )
+                    {
+                        peer->notify_port = port;
+                        strcpy(peer->notify_ipaddr,ipaddr);
+                    }
                 }
             }
         }
