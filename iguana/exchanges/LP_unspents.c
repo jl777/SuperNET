@@ -282,7 +282,7 @@ void LPinit(uint16_t port,double profitmargin)
                 if ( (retstr= issue_LP_getpeers(peer->ipaddr,peer->port)) != 0 )
                 {
                     LP_notify(&LP_peerinfos[0],peer->ipaddr,peer->port,retstr);
-                    free(retstr);
+                    //free(retstr);
                 }
             }
         }
