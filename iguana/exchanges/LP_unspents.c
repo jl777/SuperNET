@@ -282,7 +282,7 @@ void LPinit(uint16_t port,double profitmargin)
                     LP_notify(peer,tmp,argport,0);
             }
         }
-        if ( LP_numpeers > 0 )
+        if ( (rand() % 10) == 0 && LP_numpeers > 0 )
         {
             i = rand() % LP_numpeers;
             peer = &LP_peerinfos[i];
@@ -295,17 +295,26 @@ void LPinit(uint16_t port,double profitmargin)
                 } else peer->errors++, peer->errortime = (uint32_t)time(NULL);
             }
         }
-        sleep(60);
+        sleep(6);
     }
 }
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
-    char *method,*ipaddr,*coin,*dest,*retstr = 0; uint16_t argport; double profitmargin;
+    char *method,*ipaddr,*coin,*dest,*retstr = 0; uint16_t argport; double profitmargin; int32_t otherpeers; struct LP_peerinfo *peer;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
+        if ( (otherpeers= jint(argjson,"numpeers")) > 0 && otherpeers != LP_numpeers )
+        {
+            if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
+            {
+                printf("peer.(%s:%u) numpeers.%d != LP_numpeers.%d\n",ipaddr,argport,otherpeers,LP_numpeers);
+                peer->notify_port = port;
+                strcpy(peer->notify_ipaddr,ipaddr);
+            }
+        }
         if ( strcmp(method,"intro") == 0 )
         {
             if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (profitmargin= jdouble(argjson,"profit")) != 0. )
