@@ -218,7 +218,7 @@ void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t my
     char *retstr;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,LP_numpeers)) != 0 )
     {
-        //printf("(%s) -> %s\n",default_LPnodes[i],retstr);
+        printf("(%s) -> %s\n",destipaddr,retstr);
         LP_peersparse(destipaddr,destport,retstr);
         free(retstr);
     }
@@ -267,10 +267,11 @@ void LPinit(uint16_t myport,double profitmargin)
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( peer->numpeers != LP_numpeers )
+            printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,LP_numpeers);
+            if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                 LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
         }
-        sleep(LP_numpeers);
+        sleep(10);
     }
 }
 
@@ -298,7 +299,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             {
                 //retstr = LP_getutxos(coin,dest);
             }
-        }
+        } else printf("malformed request.(%s)\n",jprint(argjson,0));
     }
     if ( retstr != 0 )
         return(retstr);
