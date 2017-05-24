@@ -638,7 +638,9 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     }
     height = kmd_height(coin);
     loadheight = coin->kmd_height+1;
-    lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 2);
+    if ( strcmp(coin->symbol,"LTC") == 0 )
+        lag = 3;
+    else lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 2);
     while ( loadheight < height-lag )
     {
         flag = 0;
