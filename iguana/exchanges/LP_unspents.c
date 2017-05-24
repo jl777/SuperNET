@@ -54,6 +54,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
             len = (int32_t)strlen(msg) + 1;
             if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
                 printf("LP_send sent %d instead of %d\n",sentbytes,len);
+            else printf("SENT.(%s)\n",msg);
             if ( freeflag != 0 )
                 free(msg);
             return(sentbytes);
@@ -620,7 +621,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
-                printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,ptr);
+                printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 if ( ptr != 0 )
                     nn_freemsg(ptr), ptr = 0;
             }
@@ -628,7 +629,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
         {
             nonz++;
-            printf("PULL.[%d] %s\n",recvsize,ptr);
+            printf("PULL.[%d] %s\n",recvsize,(char *)ptr);
             if ( ptr != 0 )
                 nn_freemsg(ptr), ptr = 0;
         }
