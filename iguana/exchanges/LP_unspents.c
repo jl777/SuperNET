@@ -134,6 +134,7 @@ struct LP_peerinfo *LP_addpeer(char *ipaddr,uint16_t port,uint16_t pushport,uint
         {
             peer = calloc(1,sizeof(*peer));
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
+            strcpy(peer->ipaddr,ipaddr);
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 if ( (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -154,7 +155,6 @@ struct LP_peerinfo *LP_addpeer(char *ipaddr,uint16_t port,uint16_t pushport,uint
             }
             peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
-            strcpy(peer->ipaddr,ipaddr);
             peer->port = port;
             peer->ip_port = ((uint64_t)port << 32) | ipbits;
             portable_mutex_lock(&LP_peermutex);
