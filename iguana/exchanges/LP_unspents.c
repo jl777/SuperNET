@@ -9,22 +9,303 @@
 #include <stdio.h>
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
-portable_mutex_t LP_mutex;
-int32_t LP_numpeers;
+portable_mutex_t LP_peermutex,LP_utxomutex;
+int32_t LP_numpeers,LP_numutxos;
 
 struct LP_peerinfo
 {
     UT_hash_handle hh;
     uint64_t ip_port;
     double profitmargin;
-    uint32_t ipbits,errortime,errors,numpeers,foundtime;
+    uint32_t ipbits,errortime,errors,numpeers,numutxos,lasttime;
     char ipaddr[64];
     uint16_t port;
 } *LP_peerinfos;
 
-void LP_addutxo(char *coin,bits256 txid,int32_t vout,uint64_t satoshis,bits256 deposittxid,int32_t depositvout,uint64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port)
+struct LP_utxoinfo
 {
-    printf("%s:%u LP_addutxo.(%.8f %.8f)\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis));
+    UT_hash_handle hh;
+    bits256 txid,deposittxid;
+    uint64_t satoshis,depositsatoshis;
+    int32_t vout,depositvout; uint32_t lasttime,errors;
+    double profitmargin;
+    char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
+    uint16_t port;
+} *LP_utxoinfos;
+
+cJSON *LP_peerjson(struct LP_peerinfo *peer)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddstr(item,"ipaddr",peer->ipaddr);
+    jaddnum(item,"port",peer->port);
+    jaddnum(item,"profit",peer->profitmargin);
+    return(item);
+}
+
+cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
+{
+    cJSON *item = cJSON_CreateObject();
+    jaddstr(item,"ipaddr",utxo->ipaddr);
+    jaddnum(item,"port",utxo->port);
+    jaddnum(item,"profit",utxo->profitmargin);
+    jaddstr(item,"coin",utxo->coin);
+    jaddstr(item,"address",utxo->coinaddr);
+    jaddstr(item,"script",utxo->spendscript);
+    jaddbits256(item,"txid",utxo->txid);
+    jaddnum(item,"vout",utxo->vout);
+    jaddnum(item,"value",dstr(utxo->satoshis));
+    jaddbits256(item,"deposit",utxo->deposittxid);
+    jaddnum(item,"dvout",utxo->depositvout);
+    jaddnum(item,"dvalue",dstr(utxo->depositsatoshis));
+    return(item);
+}
+
+char *LP_peers()
+{
+    struct LP_peerinfo *peer,*tmp; cJSON *peersjson = cJSON_CreateArray();
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        jaddi(peersjson,LP_peerjson(peer));
+    }
+    return(jprint(peersjson,1));
+}
+
+char *LP_utxos(char *coin,int32_t lastn)
+{
+    int32_t i,firsti; struct LP_utxoinfo *utxo,*tmp; cJSON *utxosjson = cJSON_CreateArray();
+    i = 0;
+    if ( lastn >= LP_numutxos )
+        firsti = -1;
+    else firsti = (LP_numutxos - lastn);
+    HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
+    {
+        if ( i++ < firsti )
+            continue;
+        if ( coin == 0 || coin[0] == 0 || strcmp(coin,utxo->coin) == 0 )
+        {
+            jaddi(utxosjson,LP_utxojson(utxo));
+        }
+    }
+    return(jprint(utxosjson,1));
+}
+
+struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
+{
+    struct LP_peerinfo *peer=0; uint64_t ip_port;
+    ip_port = ((uint64_t)port << 32) | ipbits;
+    portable_mutex_lock(&LP_peermutex);
+    HASH_FIND(hh,LP_peerinfos,&ip_port,sizeof(ip_port),peer);
+    portable_mutex_unlock(&LP_peermutex);
+    return(peer);
+}
+
+struct LP_utxoinfo *LP_utxofind(bits256 txid)
+{
+    struct LP_utxoinfo *utxo=0;
+    portable_mutex_lock(&LP_utxomutex);
+    HASH_FIND(hh,LP_utxoinfos,&txid,sizeof(txid),utxo);
+    portable_mutex_unlock(&LP_utxomutex);
+    return(utxo);
+}
+
+struct LP_peerinfo *LP_addpeer(char *ipaddr,uint16_t port,double profitmargin)
+{
+    uint32_t ipbits; char checkip[64]; struct LP_peerinfo *peer = 0;
+    ipbits = (uint32_t)calc_ipbits(ipaddr);
+    expand_ipbits(checkip,ipbits);
+    if ( strcmp(checkip,ipaddr) == 0 )
+    {
+        //printf("LPaddpeer %s\n",ipaddr);
+        if ( (peer= LP_peerfind(ipbits,port)) != 0 )
+        {
+            if ( peer->profitmargin == 0. )
+                peer->profitmargin = profitmargin;
+        }
+        else
+        {
+            peer = calloc(1,sizeof(*peer));
+            peer->profitmargin = profitmargin;
+            peer->ipbits = ipbits;
+            strcpy(peer->ipaddr,ipaddr);
+            peer->port = port;
+            peer->ip_port = ((uint64_t)port << 32) | ipbits;
+            portable_mutex_lock(&LP_peermutex);
+            HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
+            LP_numpeers++;
+            portable_mutex_unlock(&LP_peermutex);
+            printf("_LPaddpeer %s -> numpeers.%d\n",ipaddr,LP_numpeers);
+        }
+    }
+    return(peer);
+}
+
+struct LP_utxoinfo *LP_addutxo(char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
+{
+    struct LP_utxoinfo *utxo = 0;
+    if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
+        return(0);
+    if ( (utxo= LP_utxofind(txid)) != 0 )
+    {
+        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->deposittxid) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->depositvout || depositsatoshis != utxo->depositsatoshis || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
+        {
+            utxo->errors++;
+            char str[65]; printf("error on subsequent utxo add.(%s)\n",bits256_str(str,txid));
+        }
+        else if ( profitmargin != 0. )
+            utxo->profitmargin = profitmargin;
+    }
+    else
+    {
+        utxo = calloc(1,sizeof(*utxo));
+        utxo->profitmargin = profitmargin;
+        strcpy(utxo->ipaddr,ipaddr);
+        utxo->port = port;
+        safecopy(utxo->coin,coin,sizeof(utxo->coin));
+        safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
+        safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
+        utxo->txid = txid;
+        utxo->vout = vout;
+        utxo->satoshis = satoshis;
+        utxo->deposittxid = deposittxid;
+        utxo->depositvout = depositvout;
+        utxo->depositsatoshis = depositsatoshis;
+        portable_mutex_lock(&LP_utxomutex);
+        HASH_ADD(hh,LP_utxoinfos,txid,sizeof(txid),utxo);
+        LP_numutxos++;
+        portable_mutex_unlock(&LP_utxomutex);
+        printf("%s:%u LP_addutxo.(%.8f %.8f)\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis));
+    }
+    return(utxo);
+}
+
+int32_t LP_peersparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+{
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport; cJSON *array,*item; int32_t i,n=0;
+    if ( (array= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                {
+                    argipbits = (uint32_t)calc_ipbits(argipaddr);
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                        peer = LP_addpeer(argipaddr,argport,jdouble(item,"profit"));
+                    if ( peer != 0 )
+                    {
+                        peer->lasttime = now;
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
+                            peer->numpeers = n;
+                    }
+                }
+            }
+        }
+        free_json(array);
+    }
+    return(n);
+}
+
+int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+{
+    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    if ( (array= cJSON_Parse(retstr)) != 0 )
+    {
+        if ( (n= cJSON_GetArraySize(array)) > 0 )
+        {
+            for (i=0; i<n; i++)
+            {
+                item = jitem(array,i);
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
+                {
+                    argipbits = (uint32_t)calc_ipbits(argipaddr);
+                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                        peer = LP_addpeer(argipaddr,argport,jdouble(item,"profit"));
+                    if ( jobj(item,"txid") != 0 )
+                    {
+                        txid = jbits256(item,"txid");
+                        utxo = LP_addutxo(jstr(item,"coin"),txid,jint(item,"vout"),j64bits(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),j64bits(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
+                        if ( utxo != 0 )
+                            utxo->lasttime = now;
+                    }
+                }
+            }
+        }
+        free_json(array);
+    }
+    return(n);
+}
+
+void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
+{
+    char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
+    if ( peer != 0 && peer->errors > 0 )
+        return;
+    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,LP_numpeers,LP_numutxos)) != 0 )
+    {
+        now = (uint32_t)time(NULL);
+        LP_peersparse(destipaddr,destport,retstr,now);
+        free(retstr);
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
+        {
+            if ( peer->lasttime != now )
+            {
+                printf("{%s:%u %.6f} ",peer->ipaddr,peer->port,peer->profitmargin);
+                flag++;
+                if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers,0)) != 0 )
+                    free(retstr);
+            }
+        }
+        if ( flag != 0 )
+            printf(" <- missing peers\n");
+    } else if ( peer != 0 )
+        peer->errors++;
+}
+
+char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+{
+    char url[4096],str[65],str2[65];
+    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&deposit=%s&dvout=%d&dvalue=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->deposittxid),utxo->depositvout,dstr(utxo->depositsatoshis),utxo->spendscript,utxo->coinaddr);
+    if ( strlen(url) > 1024 )
+        printf("WARNING long url.(%s)\n",url);
+    return(issue_curl(url));
+}
+
+void LP_utxosquery(char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
+{
+    char *retstr; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; int32_t i,firsti; uint32_t now,flag = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
+    if ( peer != 0 && peer->errors > 0 )
+        return;
+    if ( coin == 0 )
+        coin = "";
+    if ( (retstr= issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,LP_numpeers,LP_numutxos)) != 0 )
+    {
+        now = (uint32_t)time(NULL);
+        LP_utxosparse(destipaddr,destport,retstr,now);
+        free(retstr);
+        i = 0;
+        if ( lastn >= LP_numutxos )
+            firsti = -1;
+        else firsti = (LP_numutxos - lastn);
+        HASH_ITER(hh,LP_utxoinfos,utxo,tmp)
+        {
+            if ( i++ < firsti )
+                continue;
+            if ( utxo->lasttime != now )
+            {
+                char str[65]; printf("{%s:%u %s} ",utxo->ipaddr,utxo->port,bits256_str(str,utxo->txid));
+                flag++;
+                if ( (retstr= issue_LP_notifyutxo(destipaddr,destport,utxo)) != 0 )
+                    free(retstr);
+            }
+        }
+        if ( flag != 0 )
+            printf(" <- missing utxos\n");
+    } else if ( peer != 0 )
+        peer->errors++;
 }
 
 int32_t LP_maxvalue(uint64_t *values,int32_t n)
@@ -110,7 +391,7 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
                         {
                             value = values[i];
                             values[i] = 0, used++;
-                            LP_addutxo(coin,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port);
+                            LP_addutxo(coin,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
                             total += value;
                         }
                     }
@@ -124,130 +405,11 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
     return(total);
 }
 
-cJSON *LP_peerjson(struct LP_peerinfo *peer)
-{
-    cJSON *item = cJSON_CreateObject();
-    jaddstr(item,"ipaddr",peer->ipaddr);
-    jaddnum(item,"port",peer->port);
-    jaddnum(item,"profit",peer->profitmargin);
-    return(item);
-}
-
-char *LP_peers()
-{
-    struct LP_peerinfo *peer,*tmp; cJSON *peersjson = cJSON_CreateArray();
-    HASH_ITER(hh,LP_peerinfos,peer,tmp)
-    {
-        jaddi(peersjson,LP_peerjson(peer));
-    }
-    return(jprint(peersjson,1));
-}
-
-struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
-{
-    struct LP_peerinfo *peer=0; uint64_t ip_port;
-    ip_port = ((uint64_t)port << 32) | ipbits;
-    portable_mutex_lock(&LP_mutex);
-    HASH_FIND(hh,LP_peerinfos,&ip_port,sizeof(ip_port),peer);
-    portable_mutex_unlock(&LP_mutex);
-    return(peer);
-}
-
-struct LP_peerinfo *_LP_addpeer(uint32_t ipbits,char *ipaddr,uint16_t port,double profitmargin)
-{
-    struct LP_peerinfo *peer = 0;
-    peer = calloc(1,sizeof(*peer));
-    memset(peer,0,sizeof(*peer));
-    peer->profitmargin = profitmargin;
-    peer->ipbits = ipbits;
-    strcpy(peer->ipaddr,ipaddr);
-    peer->port = port;
-    peer->ip_port = ((uint64_t)port << 32) | ipbits;
-    portable_mutex_lock(&LP_mutex);
-    HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
-    LP_numpeers++;
-    portable_mutex_unlock(&LP_mutex);
-    printf("_LPaddpeer %s -> numpeers.%d\n",ipaddr,LP_numpeers);
-    return(peer);
-}
-
-struct LP_peerinfo *LP_addpeer(char *ipaddr,uint16_t port,double profitmargin)
-{
-    uint32_t ipbits; char checkip[64]; struct LP_peerinfo *peer = 0;
-    ipbits = (uint32_t)calc_ipbits(ipaddr);
-    expand_ipbits(checkip,ipbits);
-    if ( strcmp(checkip,ipaddr) == 0 )
-    {
-        //printf("LPaddpeer %s\n",ipaddr);
-        if ( (peer= LP_peerfind(ipbits,port)) != 0 )
-        {
-            if ( peer->profitmargin == 0. )
-                peer->profitmargin = profitmargin;
-        } else peer = _LP_addpeer(ipbits,ipaddr,port,profitmargin);
-    }
-    return(peer);
-}
-
-int32_t LP_peersparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
-{
-    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport; cJSON *array,*item; int32_t i,n=0;
-    if ( (array= cJSON_Parse(retstr)) != 0 )
-    {
-        if ( (n= cJSON_GetArraySize(array)) > 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                item = jitem(array,i);
-                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
-                {
-                    argipbits = (uint32_t)calc_ipbits(argipaddr);
-                    if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(argipaddr,argport,jdouble(item,"profit"));
-                    if ( peer != 0 )
-                    {
-                        peer->foundtime = now;
-                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
-                            peer->numpeers = n;
-                    }
-                }
-            }
-        }
-        free_json(array);
-    }
-    return(n);
-}
-
-void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
-{
-    char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
-    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
-    if ( peer != 0 && peer->errors > 0 )
-        return;
-    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,LP_numpeers)) != 0 )
-    {
-        now = (uint32_t)time(NULL);
-        LP_peersparse(destipaddr,destport,retstr,now);
-        free(retstr);
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
-        {
-            if ( peer->foundtime != now )
-            {
-                printf("{%s:%u %.6f} ",peer->ipaddr,peer->port,peer->profitmargin);
-                flag++;
-                if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers)) != 0 )
-                    free(retstr);
-            }
-        }
-        if ( flag != 0 )
-            printf(" <- missing peers\n");
-   } else if ( peer != 0 )
-       peer->errors++;
-}
-
 void LPinit(uint16_t myport,double profitmargin)
 {
     char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer,*tmp,*mypeer=0;
-    portable_mutex_init(&LP_mutex);
+    portable_mutex_init(&LP_peermutex);
+    portable_mutex_init(&LP_utxomutex);
     if ( profitmargin == 0. )
     {
         profitmargin = 0.01;
@@ -285,7 +447,10 @@ void LPinit(uint16_t myport,double profitmargin)
     while ( 1 )
     {
         if ( mypeer != 0 )
+        {
             mypeer->numpeers = LP_numpeers;
+            mypeer->numutxos = LP_numutxos;
+        }
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
             if ( peer->numpeers != LP_numpeers )
@@ -293,6 +458,12 @@ void LPinit(uint16_t myport,double profitmargin)
                 printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,LP_numpeers);
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
+            }
+            if ( peer->numutxos > LP_numutxos )
+            {
+                printf("%s numutxos.%d vs %d\n",peer->ipaddr,peer->numutxos,LP_numutxos);
+                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+                    LP_utxosquery(peer->ipaddr,peer->port,"",peer->numutxos - LP_numutxos + 10,myipaddr,myport,profitmargin);
             }
         }
         sleep(LP_numpeers);
@@ -303,27 +474,36 @@ void LPinit(uint16_t myport,double profitmargin)
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
-    char *method,*ipaddr,*coin,*dest,*retstr = 0; uint16_t argport; int32_t otherpeers; struct LP_peerinfo *peer; cJSON *retjson;
+    char *method,*ipaddr,*coin,*retstr = 0; uint16_t argport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
     if ( (method= jstr(argjson,"method")) == 0 )
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
         if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
-            peer = LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport);
-            if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
+            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
-                if ( peer != 0 && peer->numpeers < otherpeers )
-                    peer->numpeers = otherpeers;
-                else LP_addpeer(ipaddr,argport,jdouble(argjson,"profit"));
-            }
+                if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
+                {
+                    if ( peer->numpeers < otherpeers )
+                        peer->numpeers = otherpeers;
+                }
+                if ( (othernumutxos= jint(argjson,"numutxos")) > 0 )
+                {
+                    if ( peer->numutxos < othernumutxos )
+                        peer->numutxos = othernumutxos;
+                }
+            } else LP_addpeer(ipaddr,argport,jdouble(argjson,"profit"));
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
+            else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
+                retstr = LP_utxos(coin,jint(argjson,"lastn"));
             else if ( strcmp(method,"notify") == 0 )
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-            else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 && (dest= jstr(argjson,"dest")) != 0 )
+            else if ( strcmp(method,"utxonotify") == 0 )
             {
-                //retstr = LP_getutxos(coin,dest);
+                LP_addutxo(jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),j64bits(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
+                retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
             }
         } else printf("malformed request.(%s)\n",jprint(argjson,0));
     }
