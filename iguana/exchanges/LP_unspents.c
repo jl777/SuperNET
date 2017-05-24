@@ -11,7 +11,7 @@
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
-portable_mutex_t LP_peermutex,LP_utxomutex;
+portable_mutex_t LP_peermutex,LP_utxomutex,LP_jsonmutex;
 int32_t LP_numpeers,LP_numutxos,LP_mypubsock = -1;
 
 struct LP_peerinfo
@@ -499,6 +499,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
+        portable_mutex_lock(&LP_jsonmutex);
         if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
             if ( (pushport= juint(argjson,"push")) == 0 )
@@ -525,6 +526,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                 retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
             }
         } else printf("malformed request.(%s)\n",jprint(argjson,0));
+        portable_mutex_unlock(&LP_jsonmutex);
     }
     if ( retstr != 0 )
         return(retstr);
@@ -535,9 +537,10 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr;
+    char *myipaddr=0,*retstr; long filesize,n; int32_t timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
+    portable_mutex_init(&LP_jsonmutex);
     if ( profitmargin == 0. )
     {
         profitmargin = 0.01;
@@ -627,6 +630,12 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             {
                 nonz++;
                 printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
+                {
+                    if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
+                        free(retstr);
+                    free_json(argjson);
+                }
                 if ( ptr != 0 )
                     nn_freemsg(ptr), ptr = 0;
             }
