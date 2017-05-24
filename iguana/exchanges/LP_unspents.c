@@ -155,16 +155,16 @@ struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
 
 struct LP_peerinfo *_LP_addpeer(uint32_t ipbits,char *ipaddr,uint16_t port,double profitmargin)
 {
-    struct LP_peerinfo *peer = 0; uint64_t ip_port;
+    struct LP_peerinfo *peer = 0;
     peer = calloc(1,sizeof(*peer));
     memset(peer,0,sizeof(*peer));
     peer->profitmargin = profitmargin;
     peer->ipbits = ipbits;
     strcpy(peer->ipaddr,ipaddr);
     peer->port = port;
-    ip_port = ((uint64_t)port << 32) | ipbits;
+    peer->ip_port = ((uint64_t)port << 32) | ipbits;
     portable_mutex_lock(&LP_mutex);
-    HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(ip_port),peer);
+    HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
     LP_numpeers++;
     portable_mutex_unlock(&LP_mutex);
     printf("_LPaddpeer %s -> numpeers.%d\n",ipaddr,LP_numpeers);
