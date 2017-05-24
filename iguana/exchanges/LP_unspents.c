@@ -230,7 +230,7 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
                     if ( jobj(item,"txid") != 0 )
                     {
                         txid = jbits256(item,"txid");
-                        utxo = LP_addutxo(jstr(item,"coin"),txid,jint(item,"vout"),j64bits(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),j64bits(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
+                        utxo = LP_addutxo(jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),SATOSHIDEN * jdouble(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
                         if ( utxo != 0 )
                             utxo->lasttime = now;
                     }
