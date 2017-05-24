@@ -226,7 +226,7 @@ void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t my
 
 void LPinit(uint16_t myport,double profitmargin)
 {
-    char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer;
+    char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer,*tmp;
     portable_mutex_init(&LP_mutex);
     if ( profitmargin == 0. )
     {
@@ -265,9 +265,8 @@ void LPinit(uint16_t myport,double profitmargin)
     //printf("peers.(%s)\n",LP_peers());
     while ( 1 )
     {
-        for (i=1; i<LP_numpeers; i++)
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            peer = &LP_peerinfos[i];
             if ( peer->numpeers != LP_numpeers )
                 LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
         }
