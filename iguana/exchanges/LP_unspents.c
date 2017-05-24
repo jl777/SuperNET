@@ -629,7 +629,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
             }
-            if ( 0 && peer->numutxos != mypeer->numutxos )
+            if ( peer->numutxos != mypeer->numutxos )
             {
                 lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
                 if ( lastn < 0 )
