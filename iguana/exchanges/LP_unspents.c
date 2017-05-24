@@ -534,7 +534,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
 {
-    char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128];
+    char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr;
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     if ( profitmargin == 0. )
@@ -594,6 +594,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
     printf("utxos.(%s)\n",LP_utxos("",10000));
     while ( 1 )
     {
+        nonz = 0;
         if ( mypeer != 0 )
         {
             mypeer->numpeers = LP_numpeers;
@@ -616,7 +617,22 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_utxosquery(pubsock,peer->ipaddr,peer->port,"",lastn,myipaddr,myport,profitmargin);
             }
+            while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
+            {
+                nonz++;
+                printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,ptr);
+                if ( ptr != 0 )
+                    nn_freemsg(ptr), ptr = 0;
+            }
         }
-        sleep(LP_numpeers);
+        while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
+        {
+            nonz++;
+            printf("PULL.[%d] %s\n",recvsize,ptr);
+            if ( ptr != 0 )
+                nn_freemsg(ptr), ptr = 0;
+        }
+       if ( nonz == 0 )
+            sleep(LP_numpeers);
     }
 }
