@@ -456,7 +456,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             else if ( strcmp(method,"notifyutxo") == 0 )
             {
                 printf("utxonotify.(%s)\n",jprint(argjson,0));
-                LP_addutxo(jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),j64bits(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
+                LP_addutxo(jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
                 retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
             }
         } else printf("malformed request.(%s)\n",jprint(argjson,0));
