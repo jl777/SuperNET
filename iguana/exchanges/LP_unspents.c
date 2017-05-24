@@ -624,7 +624,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         nonz = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( peer->numpeers != mypeer->numpeers )
+            if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )
             {
                 printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
