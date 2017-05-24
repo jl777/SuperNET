@@ -174,6 +174,14 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     return(issue_curl(url));
 }
 
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
+    return(issue_curl(url));
+}
+
+
 //
 // http://127.0.0.1:7779/api/stats/getpeers
 
