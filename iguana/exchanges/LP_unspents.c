@@ -317,7 +317,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
-    printf("send.(%s)\n",url);
+    //printf("send.(%s)\n",url);
     return(issue_curl(url));
 }
 
@@ -527,7 +527,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                     printf("change.(%s) numutxos.%d -> %d\n",peer->ipaddr,peer->numutxos,othernumutxos);
                     peer->numutxos = othernumutxos;
                 }
-                printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
+                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
@@ -624,7 +624,8 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         {
             if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )
             {
-                printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
+                if ( peer->numpeers != mypeer->numpeers )
+                    printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
             }
