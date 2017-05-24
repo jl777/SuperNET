@@ -570,11 +570,15 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                     timeout = 1;
                     maxsize = 1024 * 1024;
                     nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-                } else printf("error binding to (%s).%d (%s).%d\n",pushaddr,pullsock,subaddr,pubsock);
-                if ( pullsock >= 0 )
-                    nn_close(pullsock), pullsock = -1;
-                if ( pubsock >= 0 )
-                    nn_close(pubsock), pubsock = -1;
+                }
+                else
+                {
+                    printf("error binding to (%s).%d (%s).%d\n",pushaddr,pullsock,subaddr,pubsock);
+                    if ( pullsock >= 0 )
+                        nn_close(pullsock), pullsock = -1;
+                    if ( pubsock >= 0 )
+                        nn_close(pubsock), pubsock = -1;
+                }
             } else printf("error getting sockets %d %d\n",pullsock,pubsock);
             LP_mypubsock = pubsock;
             mypeer = LP_addpeer(pubsock,myipaddr,myport,0,0,profitmargin);
