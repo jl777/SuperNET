@@ -281,7 +281,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
 
 int32_t LP_utxosparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
-    struct LP_peerinfo *peer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
+    struct LP_peerinfo *peer,*destpeer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
     if ( (array= cJSON_Parse(retstr)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
@@ -306,6 +306,11 @@ int32_t LP_utxosparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                             utxo->lasttime = now;
                     }
                 }
+            }
+            if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
+            {
+                if ( destpeer->numutxos < n )
+                    destpeer->numutxos = n;
             }
         }
         free_json(array);
