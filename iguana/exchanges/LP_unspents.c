@@ -584,8 +584,8 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                     continue;
                 LP_peersquery(pubsock,default_LPnodes[i],myport,myipaddr,myport,profitmargin);
             }
-        }
-    }
+        } else printf("error getting myipaddr\n");
+    } else printf("error issuing curl\n");
     if ( myipaddr == 0 )
     {
         printf("couldnt get myipaddr\n");
