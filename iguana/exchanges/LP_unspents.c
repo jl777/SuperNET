@@ -527,7 +527,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                     printf("change.(%s) numutxos.%d -> %d\n",peer->ipaddr,peer->numutxos,othernumutxos);
                     peer->numutxos = othernumutxos;
                 }
-                printf("peer.(%s) found (%d %d) (%d %d)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos);
+                printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
             } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
