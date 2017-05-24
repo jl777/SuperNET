@@ -242,6 +242,38 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
     return(n);
 }
 
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
+}
+
+char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
+}
+
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
+}
+
+char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+{
+    char url[4096],str[65],str2[65],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&deposit=%s&dvout=%d&dvalue=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->deposittxid),utxo->depositvout,dstr(utxo->depositsatoshis),utxo->spendscript,utxo->coinaddr);
+    //if ( strlen(url) > 1024 )
+        printf("WARNING long url.(%s)\n",url);
+    retstr = issue_curl(url);
+    printf("(%s)\n",retstr);
+    return(retstr);
+}
+
 void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
@@ -267,15 +299,6 @@ void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t my
             printf(" <- missing peers\n");
     } else if ( peer != 0 )
         peer->errors++;
-}
-
-char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
-{
-    char url[4096],str[65],str2[65];
-    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&deposit=%s&dvout=%d&dvalue=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->deposittxid),utxo->depositvout,dstr(utxo->depositsatoshis),utxo->spendscript,utxo->coinaddr);
-    if ( strlen(url) > 1024 )
-        printf("WARNING long url.(%s)\n",url);
-    return(issue_curl(url));
 }
 
 void LP_utxosquery(char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
@@ -422,15 +445,9 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
             if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
                 if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
-                {
-                    if ( peer->numpeers < otherpeers )
-                        peer->numpeers = otherpeers;
-                }
+                    peer->numpeers = otherpeers;
                 if ( (othernumutxos= jint(argjson,"numutxos")) > 0 )
-                {
-                    if ( peer->numutxos < othernumutxos )
-                        peer->numutxos = othernumutxos;
-                }
+                    peer->numutxos = othernumutxos;
             } else LP_addpeer(ipaddr,argport,jdouble(argjson,"profit"));
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
@@ -438,7 +455,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                 retstr = LP_utxos(coin,jint(argjson,"lastn"));
             else if ( strcmp(method,"notify") == 0 )
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-            else if ( strcmp(method,"utxonotify") == 0 )
+            else if ( strcmp(method,"notifyutxo") == 0 )
             {
                 printf("utxonotify.(%s)\n",jprint(argjson,0));
                 LP_addutxo(jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),j64bits(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
