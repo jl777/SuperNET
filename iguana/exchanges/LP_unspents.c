@@ -558,6 +558,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             pullsock = pubsock = -1;
             nanomsg_tcpname(pushaddr,myipaddr,mypull);
             nanomsg_tcpname(subaddr,myipaddr,mypub);
+            printf(">>>>>>>>> myipaddr.%s (%s %s)\n",myipaddr,pushaddr,subaddr);
             if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
             {
                 if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
