@@ -27,6 +27,22 @@
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
 
+#if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
+#include "../../crypto777/nanosrc/nn.h"
+#include "../../crypto777/nanosrc/bus.h"
+#include "../../crypto777/nanosrc/pubsub.h"
+#include "../../crypto777/nanosrc/pipeline.h"
+#include "../../crypto777/nanosrc/reqrep.h"
+#include "../../crypto777/nanosrc/tcp.h"
+#else
+#include "/usr/local/include/nanomsg/nn.h"
+#include "/usr/local/include/nanomsg/bus.h"
+#include "/usr/local/include/nanomsg/pubsub.h"
+#include "/usr/local/include/nanomsg/pipeline.h"
+#include "/usr/local/include/nanomsg/reqrep.h"
+#include "/usr/local/include/nanomsg/tcp.h"
+#endif
+
 char DEX_baseaddr[64],DEX_reladdr[64];
 struct mmpending_order
 {
@@ -786,7 +802,7 @@ int main(int argc, const char * argv[])
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
         profitmargin = jdouble(retjson,"profitmargin");
-        LPinit(7779,profitmargin);
+        LPinit(7779,7780,7781,profitmargin);
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
         start_base = jdouble(retjson,"start_base");
