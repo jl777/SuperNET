@@ -219,8 +219,12 @@ int32_t LP_peersparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 && (pushport= juint(item,"push")) != 0  && (subport= juint(item,"sub")) != 0 )
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
                 {
+                    if ( (pushport= juint(item,"push")) == 0 )
+                        pushport = argport + 1;
+                    if ( (subport= juint(item,"sub")) == 0 )
+                        subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                         peer = LP_addpeer(argipaddr,argport,pushport,subport,jdouble(item,"profit"));
@@ -248,8 +252,12 @@ int32_t LP_utxosparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
             for (i=0; i<n; i++)
             {
                 item = jitem(array,i);
-                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 && (pushport= juint(item,"push")) != 0  && (subport= juint(item,"sub")) != 0 )
+                if ( (argipaddr= jstr(item,"ipaddr")) != 0 && (argport= juint(item,"port")) != 0 )
                 {
+                    if ( (pushport= juint(item,"push")) == 0 )
+                        pushport = argport + 1;
+                    if ( (subport= juint(item,"sub")) == 0 )
+                        subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                         peer = LP_addpeer(argipaddr,argport,pushport,subport,jdouble(item,"profit"));
@@ -464,8 +472,12 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
-        if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 && (pushport= juint(argjson,"push")) != 0  && (subport= juint(argjson,"sub")) != 0 )
+        if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
+            if ( (pushport= juint(argjson,"push")) == 0 )
+                pushport = argport + 1;
+            if ( (subport= juint(argjson,"sub")) == 0 )
+                subport = argport + 2;
             if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
                 if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
