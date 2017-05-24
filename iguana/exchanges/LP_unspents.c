@@ -631,7 +631,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 nonz++;
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                 {
-                    if ( 0 && (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
+                    if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
                     {
                         printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                         free(retstr);
