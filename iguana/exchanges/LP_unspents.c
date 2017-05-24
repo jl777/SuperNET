@@ -90,21 +90,14 @@ cJSON *LP_peerjson(struct LP_peerinfo *peer)
     jaddstr(item,"ipaddr",peer->ipaddr);
     jaddnum(item,"port",peer->port);
     jaddnum(item,"profit",peer->profitmargin);
-    jaddnum(item,"numpeers",peer->numpeers);
-    jaddnum(item,"numutxos",peer->numutxos);
     return(item);
 }
 
 cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 {
-    struct LP_peerinfo *peer; cJSON *item = cJSON_CreateObject();
+    cJSON *item = cJSON_CreateObject();
     jaddstr(item,"ipaddr",utxo->ipaddr);
     jaddnum(item,"port",utxo->port);
-    if ( (peer= LP_peerfind((uint32_t)calc_ipbits(utxo->ipaddr),utxo->port)) != 0 )
-    {
-        jaddnum(item,"numpeers",peer->numpeers);
-        jaddnum(item,"numutxos",peer->numutxos);
-    }
     jaddnum(item,"profit",utxo->profitmargin);
     jaddstr(item,"coin",utxo->coin);
     jaddstr(item,"address",utxo->coinaddr);
