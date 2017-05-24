@@ -147,7 +147,7 @@ char *LP_utxos(char *coin,int32_t lastn)
     return(jprint(utxosjson,1));
 }
 
-struct LP_peerinfo *LP_addpeer(int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin)
+struct LP_peerinfo *LP_addpeer(int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     uint32_t ipbits; int32_t pushsock,subsock,timeout; char checkip[64],pushaddr[64],subaddr[64]; struct LP_peerinfo *peer = 0;
     ipbits = (uint32_t)calc_ipbits(ipaddr);
@@ -159,6 +159,10 @@ struct LP_peerinfo *LP_addpeer(int32_t mypubsock,char *ipaddr,uint16_t port,uint
         {
             if ( peer->profitmargin == 0. )
                 peer->profitmargin = profitmargin;
+            if ( numpeers > peer->numpeers )
+                peer->numpeers = numpeers;
+            if ( numutxos > peer->numutxos )
+                peer->numutxos = numutxos;
         }
         else
         {
@@ -261,7 +265,7 @@ int32_t LP_peersparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"));
+                        peer = LP_addpeer(mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
                     if ( peer != 0 )
                     {
                         peer->lasttime = now;
@@ -294,7 +298,7 @@ int32_t LP_utxosparse(int32_t mypubsock,char *destipaddr,uint16_t destport,char 
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"));
+                        peer = LP_addpeer(mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
                     if ( jobj(item,"txid") != 0 )
                     {
                         txid = jbits256(item,"txid");
@@ -348,6 +352,7 @@ void LP_peersquery(int32_t mypubsock,char *destipaddr,uint16_t destport,char *my
         return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,LP_numpeers,LP_numutxos)) != 0 )
     {
+        printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
         LP_peersparse(mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
@@ -519,7 +524,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                     peer->numpeers = otherpeers;
                 if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                     peer->numutxos = othernumutxos;
-            } else LP_addpeer(LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"));
+            } else LP_addpeer(LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
             else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
@@ -591,7 +596,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 }
             } else printf("error getting sockets %d %d\n",pullsock,pubsock);
             LP_mypubsock = pubsock;
-            mypeer = LP_addpeer(pubsock,myipaddr,myport,0,0,profitmargin);
+            mypeer = LP_addpeer(pubsock,myipaddr,myport,0,0,profitmargin,LP_numpeers,LP_numutxos);
             //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
             for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
             {
@@ -614,6 +619,8 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         if ( mypeer != 0 )
         {
             mypeer->numpeers = LP_numpeers;
+            if ( mypeer->numutxos != LP_numutxos )
+                printf("numutxos %d -> %d\n",mypeer->numutxos,LP_numutxos);
             mypeer->numutxos = LP_numutxos;
         }
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
