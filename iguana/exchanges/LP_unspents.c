@@ -8,6 +8,8 @@
 
 #include <stdio.h>
 
+#define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
+
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
 portable_mutex_t LP_peermutex,LP_utxomutex;
 int32_t LP_numpeers,LP_numutxos;
@@ -405,73 +407,6 @@ uint64_t LP_privkey_init(char *coin,uint8_t addrtype,char *passphrase,char *wifs
     return(total);
 }
 
-void LPinit(uint16_t myport,double profitmargin)
-{
-    char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer,*tmp,*mypeer=0;
-    portable_mutex_init(&LP_peermutex);
-    portable_mutex_init(&LP_utxomutex);
-    if ( profitmargin == 0. )
-    {
-        profitmargin = 0.01;
-        printf("default profit margin %f\n",profitmargin);
-    }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
-    if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
-    {
-        if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
-        {
-            n = strlen(myipaddr);
-            if ( myipaddr[n-1] == '\n' )
-                myipaddr[--n] = 0;
-            mypeer = LP_addpeer(myipaddr,myport,profitmargin);
-            //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
-            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
-            {
-                if ( (rand() % 100) > 25 )
-                    continue;
-                LP_peersquery(default_LPnodes[i],myport,myipaddr,myport,profitmargin);
-            }
-        }
-    }
-    if ( myipaddr == 0 )
-    {
-        printf("couldnt get myipaddr\n");
-        exit(-1);
-    }
-    LP_privkey_init("KMD",60,"test","");
-    //printf("peers.(%s)\n",LP_peers());
-    while ( 1 )
-    {
-        if ( mypeer != 0 )
-        {
-            mypeer->numpeers = LP_numpeers;
-            mypeer->numutxos = LP_numutxos;
-        }
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
-        {
-            if ( peer->numpeers != LP_numpeers )
-            {
-                printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,LP_numpeers);
-                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-                    LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
-            }
-            if ( peer->numutxos > LP_numutxos )
-            {
-                printf("%s numutxos.%d vs %d\n",peer->ipaddr,peer->numutxos,LP_numutxos);
-                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-                    LP_utxosquery(peer->ipaddr,peer->port,"",peer->numutxos - LP_numutxos + 10,myipaddr,myport,profitmargin);
-            }
-        }
-        sleep(LP_numpeers);
-    }
-}
-
-// Q sending of individual peer that is missing from the other
-
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 {
     char *method,*ipaddr,*coin,*retstr = 0; uint16_t argport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
@@ -512,4 +447,69 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"error","unrecognized command");
     return(clonestr(jprint(retjson,1)));
+}
+
+void LPinit(uint16_t myport,double profitmargin)
+{
+    char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer,*tmp,*mypeer=0;
+    portable_mutex_init(&LP_peermutex);
+    portable_mutex_init(&LP_utxomutex);
+    if ( profitmargin == 0. )
+    {
+        profitmargin = 0.01;
+        printf("default profit margin %f\n",profitmargin);
+    }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
+    if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
+    {
+        if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
+        {
+            n = strlen(myipaddr);
+            if ( myipaddr[n-1] == '\n' )
+                myipaddr[--n] = 0;
+            mypeer = LP_addpeer(myipaddr,myport,profitmargin);
+            //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
+            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
+            {
+                if ( (rand() % 100) > 25 )
+                    continue;
+                LP_peersquery(default_LPnodes[i],myport,myipaddr,myport,profitmargin);
+            }
+        }
+    }
+    if ( myipaddr == 0 )
+    {
+        printf("couldnt get myipaddr\n");
+        exit(-1);
+    }
+    LP_privkey_init("KMD",60,"test","");
+    printf("utxos.(%s)\n",LP_utxos("",10000));
+    while ( 1 )
+    {
+        if ( mypeer != 0 )
+        {
+            mypeer->numpeers = LP_numpeers;
+            mypeer->numutxos = LP_numutxos;
+        }
+        HASH_ITER(hh,LP_peerinfos,peer,tmp)
+        {
+            if ( peer->numpeers != LP_numpeers )
+            {
+                printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,LP_numpeers);
+                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+                    LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
+            }
+            if ( peer->numutxos > LP_numutxos )
+            {
+                printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,LP_numutxos,peer->numutxos - LP_numutxos + LP_PROPAGATION_SLACK);
+                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
+                    LP_utxosquery(peer->ipaddr,peer->port,"",peer->numutxos - LP_numutxos + LP_PROPAGATION_SLACK,myipaddr,myport,profitmargin);
+            }
+        }
+        sleep(LP_numpeers);
+    }
 }
