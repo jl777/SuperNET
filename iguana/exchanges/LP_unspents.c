@@ -145,7 +145,10 @@ struct LP_utxoinfo *LP_addutxo(char *coin,bits256 txid,int32_t vout,int64_t sato
 {
     struct LP_utxoinfo *utxo = 0;
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
+    {
+        printf("malformed addutxo\n");
         return(0);
+    }
     if ( (utxo= LP_utxofind(txid)) != 0 )
     {
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->deposittxid) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->depositvout || depositsatoshis != utxo->depositsatoshis || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
@@ -437,6 +440,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                 retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
             else if ( strcmp(method,"utxonotify") == 0 )
             {
+                printf("utxonotify.(%s)\n",jprint(argjson,0));
                 LP_addutxo(jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),j64bits(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),j64bits(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
                 retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
             }
@@ -451,7 +455,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
 
 void LPinit(uint16_t myport,double profitmargin)
 {
-    char *myipaddr=0; long filesize,n; int32_t i; struct LP_peerinfo *peer,*tmp,*mypeer=0;
+    char *myipaddr=0; long filesize,n; int32_t i,lastn; struct LP_peerinfo *peer,*tmp,*mypeer=0;
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     if ( profitmargin == 0. )
@@ -503,11 +507,14 @@ void LPinit(uint16_t myport,double profitmargin)
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_peersquery(peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
             }
-            if ( peer->numutxos > LP_numutxos )
+            if ( peer->numutxos != LP_numutxos )
             {
-                printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,LP_numutxos,peer->numutxos - LP_numutxos + LP_PROPAGATION_SLACK);
+                lastn = peer->numutxos - LP_numutxos + LP_PROPAGATION_SLACK;
+                if ( lastn < 0 )
+                    lastn = LP_PROPAGATION_SLACK * 2;
+                printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,LP_numutxos,lastn);
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-                    LP_utxosquery(peer->ipaddr,peer->port,"",peer->numutxos - LP_numutxos + LP_PROPAGATION_SLACK,myipaddr,myport,profitmargin);
+                    LP_utxosquery(peer->ipaddr,peer->port,"",lastn,myipaddr,myport,profitmargin);
             }
         }
         sleep(LP_numpeers);
