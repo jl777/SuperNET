@@ -220,6 +220,9 @@ int32_t LP_peersparse(char *destipaddr,uint16_t destport,char *retstr,uint32_t n
 void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t myport,double myprofit)
 {
     char *retstr; struct LP_peerinfo *peer,*tmp; uint32_t now,flag = 0;
+    peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
+    if ( peer != 0 && peer->errors > 0 )
+        return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,LP_numpeers)) != 0 )
     {
         now = (uint32_t)time(NULL);
@@ -237,7 +240,8 @@ void LP_peersquery(char *destipaddr,uint16_t destport,char *myipaddr,uint16_t my
         }
         if ( flag != 0 )
             printf(" <- missing peers\n");
-   }
+   } else if ( peer != 0 )
+       peer->errors++;
 }
 
 void LPinit(uint16_t myport,double profitmargin)
