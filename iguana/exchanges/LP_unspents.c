@@ -65,20 +65,46 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
     return(-1);
 }
 
+struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
+{
+    struct LP_peerinfo *peer=0; uint64_t ip_port;
+    ip_port = ((uint64_t)port << 32) | ipbits;
+    portable_mutex_lock(&LP_peermutex);
+    HASH_FIND(hh,LP_peerinfos,&ip_port,sizeof(ip_port),peer);
+    portable_mutex_unlock(&LP_peermutex);
+    return(peer);
+}
+
+struct LP_utxoinfo *LP_utxofind(bits256 txid)
+{
+    struct LP_utxoinfo *utxo=0;
+    portable_mutex_lock(&LP_utxomutex);
+    HASH_FIND(hh,LP_utxoinfos,&txid,sizeof(txid),utxo);
+    portable_mutex_unlock(&LP_utxomutex);
+    return(utxo);
+}
+
 cJSON *LP_peerjson(struct LP_peerinfo *peer)
 {
     cJSON *item = cJSON_CreateObject();
     jaddstr(item,"ipaddr",peer->ipaddr);
     jaddnum(item,"port",peer->port);
     jaddnum(item,"profit",peer->profitmargin);
+    jaddnum(item,"numpeers",peer->numpeers);
+    jaddnum(item,"numutxos",peer->numutxos);
     return(item);
 }
 
 cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
 {
-    cJSON *item = cJSON_CreateObject();
+    struct LP_peerinfo *peer; cJSON *item = cJSON_CreateObject();
     jaddstr(item,"ipaddr",utxo->ipaddr);
     jaddnum(item,"port",utxo->port);
+    if ( (peer= LP_peerfind((uint32_t)calc_ipbits(utxo->ipaddr),utxo->port)) != 0 )
+    {
+        jaddnum(item,"numpeers",peer->numpeers);
+        jaddnum(item,"numutxos",peer->numutxos);
+    }
     jaddnum(item,"profit",utxo->profitmargin);
     jaddstr(item,"coin",utxo->coin);
     jaddstr(item,"address",utxo->coinaddr);
@@ -119,25 +145,6 @@ char *LP_utxos(char *coin,int32_t lastn)
         }
     }
     return(jprint(utxosjson,1));
-}
-
-struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
-{
-    struct LP_peerinfo *peer=0; uint64_t ip_port;
-    ip_port = ((uint64_t)port << 32) | ipbits;
-    portable_mutex_lock(&LP_peermutex);
-    HASH_FIND(hh,LP_peerinfos,&ip_port,sizeof(ip_port),peer);
-    portable_mutex_unlock(&LP_peermutex);
-    return(peer);
-}
-
-struct LP_utxoinfo *LP_utxofind(bits256 txid)
-{
-    struct LP_utxoinfo *utxo=0;
-    portable_mutex_lock(&LP_utxomutex);
-    HASH_FIND(hh,LP_utxoinfos,&txid,sizeof(txid),utxo);
-    portable_mutex_unlock(&LP_utxomutex);
-    return(utxo);
 }
 
 struct LP_peerinfo *LP_addpeer(int32_t mypubsock,char *ipaddr,uint16_t port,uint16_t pushport,uint16_t subport,double profitmargin)
