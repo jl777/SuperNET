@@ -515,9 +515,9 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
                 subport = argport + 2;
             if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
             {
-                if ( (otherpeers= jint(argjson,"numpeers")) > 0 )
+                if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
                     peer->numpeers = otherpeers;
-                if ( (othernumutxos= jint(argjson,"numutxos")) > 0 )
+                if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
                     peer->numutxos = othernumutxos;
             } else LP_addpeer(LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"));
             if ( strcmp(method,"getpeers") == 0 )
