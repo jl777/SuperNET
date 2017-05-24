@@ -574,7 +574,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                     nn_close(pullsock), pullsock = -1;
                 if ( pubsock >= 0 )
                     nn_close(pubsock), pubsock = -1;
-            }
+            } else printf("error getting sockets %d %d\n",pullsock,pubsock);
             LP_mypubsock = pubsock;
             mypeer = LP_addpeer(pubsock,myipaddr,myport,0,0,profitmargin);
             //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
