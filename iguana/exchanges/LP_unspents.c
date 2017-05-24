@@ -189,7 +189,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             if ( mypeer != 0 )
             {
                 mypeer->numpeers++;
-                printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d\n",ipaddr,mypeer->numpeers,mypubsock);
+                printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d other.(%d %d)\n",ipaddr,mypeer->numpeers,mypubsock,numpeers,numutxos);
             } else peer->numpeers = 1; // will become mypeer
             portable_mutex_unlock(&LP_peermutex);
             if ( mypubsock >= 0 )
