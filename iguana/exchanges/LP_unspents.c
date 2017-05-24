@@ -310,8 +310,10 @@ int32_t LP_utxosparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
             if ( (destpeer= LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport)) != 0 )
             {
                 if ( destpeer->numutxos < n )
+                {
                     destpeer->numutxos = n;
-                printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
+                    printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
+                }
             }
         }
         free_json(array);
