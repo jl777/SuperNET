@@ -629,13 +629,15 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
-                printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                 {
-                    if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
+                    if ( 0 && (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
+                    {
+                        printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                         free(retstr);
+                    }
                     free_json(argjson);
-                }
+                } else printf("error parsing.(%s)\n",(char *)ptr);
                 if ( ptr != 0 )
                     nn_freemsg(ptr), ptr = 0;
             }
@@ -651,3 +653,16 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             sleep(LP_numpeers);
     }
 }
+
+#ifdef __APPLE__
+int32_t nn_bind() { return(-1); }
+int32_t nn_close() { return(-1); }
+int32_t nn_connect() { return(-1); }
+int32_t nn_freemsg() { return(-1); }
+int32_t nn_poll() { return(-1); }
+int32_t nn_recv() { return(-1); }
+int32_t nn_send() { return(-1); }
+int32_t nn_setsockopt() { return(-1); }
+int32_t nn_socket() { return(-1); }
+
+#endif
