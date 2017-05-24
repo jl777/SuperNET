@@ -321,10 +321,10 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     return(issue_curl(url));
 }
 
-char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin)
+char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f",destip,destport,coin,lastn,ipaddr,port,profitmargin);
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
     return(issue_curl(url));
 }
 
@@ -380,7 +380,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         return;
     if ( coin == 0 )
         coin = "";
-    if ( (retstr= issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit)) != 0 )
+    if ( (retstr= issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,mypeer->numpeers,mypeer->numutxos)) != 0 )
     {
         now = (uint32_t)time(NULL);
         LP_utxosparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
