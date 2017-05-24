@@ -358,7 +358,7 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer->numpeers,mypeer->numutxos)) != 0 )
     {
-        printf("got.(%s)\n",retstr);
+        //printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
         LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
@@ -564,11 +564,6 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         profitmargin = 0.01;
         printf("default profit margin %f\n",profitmargin);
     }
-    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
-    {
-        printf("error launching stats rpcloop for port.%u\n",myport);
-        exit(-1);
-    }
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
     {
         if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
@@ -617,6 +612,11 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
         exit(-1);
     }
+    if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
+    {
+        printf("error launching stats rpcloop for port.%u\n",myport);
+        exit(-1);
+    }
     LP_privkey_init(mypeer,pubsock,"KMD",60,"test","");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     while ( 1 )
@@ -624,7 +624,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         nonz = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( peer->numpeers != mypeer->numpeers )
+            //if ( peer->numpeers != mypeer->numpeers )
             {
                 printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
