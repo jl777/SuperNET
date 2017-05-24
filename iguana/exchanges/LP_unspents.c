@@ -190,7 +190,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
             {
                 mypeer->numpeers++;
                 printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d\n",ipaddr,mypeer->numpeers,mypubsock);
-            } else peer->numpeers = 1;
+            } else peer->numpeers = 1; // will become mypeer
             portable_mutex_unlock(&LP_peermutex);
             if ( mypubsock >= 0 )
                 LP_send(mypubsock,jprint(LP_peerjson(peer),1),1);
@@ -628,7 +628,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 if ( strcmp(peer->ipaddr,myipaddr) != 0 )
                     LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
             }
-            if ( peer->numutxos != mypeer->numutxos )
+            if ( 0 && peer->numutxos != mypeer->numutxos )
             {
                 lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
                 if ( lastn < 0 )
