@@ -184,7 +184,7 @@ struct LP_peerinfo *LP_addpeer(int32_t mypubsock,char *ipaddr,uint16_t port,uint
             HASH_ADD(hh,LP_peerinfos,ip_port,sizeof(peer->ip_port),peer);
             LP_numpeers++;
             portable_mutex_unlock(&LP_peermutex);
-            printf("_LPaddpeer %s -> numpeers.%d\n",ipaddr,LP_numpeers);
+            printf("_LPaddpeer %s -> numpeers.%d mypubsock.%d\n",ipaddr,LP_numpeers,mypubsock);
             if ( mypubsock >= 0 )
                 LP_send(mypubsock,jprint(LP_peerjson(peer),1),1);
         }
