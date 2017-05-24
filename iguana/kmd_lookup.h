@@ -16,7 +16,7 @@
 #ifndef INCLUDE_KMDLOOKUP_H
 #define INCLUDE_KMDLOOKUP_H
 
-#define KMD_EXPLORER_LAG 3
+#define KMD_EXPLORER_LAG 6
 
 struct kmd_voutinfo
 {
@@ -638,7 +638,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     }
     height = kmd_height(coin);
     loadheight = coin->kmd_height+1;
-    lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 1);
+    lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 2);
     while ( loadheight < height-lag )
     {
         flag = 0;

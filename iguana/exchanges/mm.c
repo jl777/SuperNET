@@ -23,8 +23,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "OS_portable.h"
-#include "stats.c"
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
+#include "stats.c"
 
 char DEX_baseaddr[64],DEX_reladdr[64];
 struct mmpending_order
@@ -156,6 +157,76 @@ char *iguana_listunspent(char *coin,char *coinaddr)
     sprintf(url,"%s/coin=%s&agent=bitcoinrpc&method=listunspent?",IGUANA_URL,coin);
     sprintf(postdata,"[\"%s\"]",coinaddr);
     return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
+}
+
+/*char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/intro?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
+    printf("(%s)\n",url);
+    return(issue_curl(url));
+}*/
+
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d",destip,destport,ipaddr,port,profitmargin,numpeers);
+    return(issue_curl(url));
+}
+
+//
+// http://127.0.0.1:7779/api/stats/getpeers
+
+char *DEX_listunspent(char *coin,char *coinaddr)
+{
+    char url[512],postdata[1024];
+    sprintf(url,"%s/?",IGUANA_URL);
+    sprintf(postdata,"{\"agent\":\"dex\",\"method\":\"listunspent\",\"address\":\"%s\",\"symbol\":\"%s\",\"timeout\":60000}",coinaddr,coin);
+    return(bitcoind_RPC(0,"dex",url,0,"listunspent",postdata));
+}
+
+bits256 iguana_wif2privkey(char *wifstr)
+{
+    char url[512],postdata[1024],*retstr,*privstr; bits256 privkey; cJSON *retjson;
+    memset(privkey.bytes,0,sizeof(privkey));
+    sprintf(url,"%s/?",IGUANA_URL);
+    sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"wif2priv\",\"wif\":\"%s\"}",wifstr);
+    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"wif2priv",postdata)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (privstr= jstr(retjson,"privkey")) != 0 )
+            {
+                if ( strlen(privstr) == 64 )
+                    decode_hex(privkey.bytes,32,privstr);
+            }
+            free_json(retjson);
+        }
+        free(retstr);
+    }
+    return(privkey);
+}
+
+void iguana_priv2pub(uint8_t *pubkey33,char *coinaddr,bits256 privkey,uint8_t addrtype)
+{
+    char privstr[65],url[512],postdata[1024],*retstr,*pubstr,*addr; cJSON *retjson;
+    memset(pubkey33,0,33);
+    coinaddr[0] = 0;
+    bits256_str(privstr,privkey);
+    sprintf(url,"%s/?",IGUANA_URL);
+    sprintf(postdata,"{\"agent\":\"SuperNET\",\"method\":\"priv2pub\",\"privkey\":\"%s\",\"addrtype\":%u}",privstr,addrtype);
+    if ( (retstr= bitcoind_RPC(0,"SuperNET",url,0,"priv2pub",postdata)) != 0 )
+    {
+        if ( (retjson= cJSON_Parse(retstr)) != 0 )
+        {
+            if ( (pubstr= jstr(retjson,"secp256k1")) != 0 && strlen(pubstr) == 66 )
+                decode_hex(pubkey33,33,pubstr);
+            if ( (addr= jstr(retjson,"result")) != 0 && strlen(addr) < 64 )
+                strcpy(coinaddr,addr);
+            free_json(retjson);
+        }
+        free(retstr);
+    }
 }
 
 double bittrex_balance(char *base,char *coinaddr)
@@ -717,12 +788,12 @@ int main(int argc, const char * argv[])
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid;
     cJSON *retjson,*loginjson; int32_t i;
-    LPinit();
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
         profitmargin = jdouble(retjson,"profitmargin");
+        LPinit(7779,profitmargin);
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
         start_base = jdouble(retjson,"start_base");
