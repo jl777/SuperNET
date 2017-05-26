@@ -26,6 +26,7 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
+#include "LP_prices.c"
 
 #if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"
@@ -716,6 +717,7 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
                         }
                     }
                 }
+                LP_priceupdate(base,rel,theoretical,avebid,aveask,highbid,lowask,PAXPRICES);
             }
             if ( strcmp(exchange,"bittrex") == 0 )
             {
@@ -790,7 +792,13 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
     }
 }
 
-#include "LP_unspents.c"
+#include "LP_nativeDEX.c"
+
+void LP_main(void *ptr)
+{
+    double profitmargin = *(double *)ptr;
+    LPinit(7779,7780,7781,profitmargin);
+}
 
 int main(int argc, const char * argv[])
 {
@@ -802,7 +810,11 @@ int main(int argc, const char * argv[])
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
         profitmargin = jdouble(retjson,"profitmargin");
-        LPinit(7779,7780,7781,profitmargin);
+        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)&profitmargin) != 0 )
+        {
+            printf("error launching LP_main %f\n",profitmargin);
+            exit(-1);
+        } getchar();
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
         start_base = jdouble(retjson,"start_base");

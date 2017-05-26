@@ -1,9 +1,21 @@
+
+/******************************************************************************
+ * Copyright © 2014-2017 The SuperNET Developers.                             *
+ *                                                                            *
+ * See the AUTHORS, DEVELOPER-AGREEMENT and LICENSE files at                  *
+ * the top-level directory of this distribution for the individual copyright  *
+ * holder information and the developer policies on copyright and licensing.  *
+ *                                                                            *
+ * Unless otherwise agreed in a custom licensing agreement, no part of the    *
+ * SuperNET software, including this file may be copied, modified, propagated *
+ * or distributed except according to the terms contained in the LICENSE file *
+ *                                                                            *
+ * Removal or modification of this copyright notice is prohibited.            *
+ *                                                                            *
+ ******************************************************************************/
 //
 //  LP_unspents.c
 //  marketmaker
-//
-//  Created by Mac on 5/23/17.
-//  Copyright © 2017 SuperNET. All rights reserved.
 //
 
 #include <stdio.h>
@@ -11,7 +23,7 @@
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
-portable_mutex_t LP_peermutex,LP_utxomutex,LP_jsonmutex;
+portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex;
 int32_t LP_mypubsock = -1;
 
 struct LP_peerinfo
@@ -28,9 +40,10 @@ struct LP_peerinfo
 struct LP_utxoinfo
 {
     UT_hash_handle hh;
-    bits256 txid,deposittxid;
+    bits256 txid,deposittxid,otherpubkey;
+    void *swap;
     uint64_t satoshis,depositsatoshis;
-    int32_t vout,depositvout; uint32_t lasttime,errors;
+    int32_t vout,depositvout; uint32_t lasttime,errors,swappending;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;
@@ -512,59 +525,17 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin
     return(total);
 }
 
-char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port)
-{
-    char *method,*ipaddr,*coin,*retstr = 0; uint16_t argport,pushport,subport; int32_t otherpeers,othernumutxos; struct LP_peerinfo *peer; cJSON *retjson;
-    if ( (method= jstr(argjson,"method")) == 0 )
-        return(clonestr("{\"error\":\"need method in request\"}"));
-    else
-    {
-        portable_mutex_lock(&LP_jsonmutex);
-        if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
-        {
-            if ( (pushport= juint(argjson,"push")) == 0 )
-                pushport = argport + 1;
-            if ( (subport= juint(argjson,"sub")) == 0 )
-                subport = argport + 2;
-            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
-            {
-                if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
-                    peer->numpeers = otherpeers;
-                if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
-                {
-                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer->numutxos);
-                    peer->numutxos = othernumutxos;
-                }
-                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
-            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
-            if ( strcmp(method,"getpeers") == 0 )
-                retstr = LP_peers();
-            else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
-                retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-            else if ( strcmp(method,"notify") == 0 )
-                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-            else if ( strcmp(method,"notifyutxo") == 0 )
-            {
-                printf("utxonotify.(%s)\n",jprint(argjson,0));
-                LP_addutxo(LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
-                retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
-            }
-        } else printf("malformed request.(%s)\n",jprint(argjson,0));
-        portable_mutex_unlock(&LP_jsonmutex);
-    }
-    if ( retstr != 0 )
-        return(retstr);
-    retjson = cJSON_CreateObject();
-    jaddstr(retjson,"error","unrecognized command");
-    return(clonestr(jprint(retjson,1)));
-}
+#include "LP_bitcoin.c"
+#include "LP_swap.c"
+#include "LP_remember.c"
+#include "LP_commands.c"
 
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
 {
-    char *myipaddr=0,*retstr; long filesize,n; int32_t timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
+    char *myipaddr=0,*retstr; long filesize,n; int32_t len,timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
-    portable_mutex_init(&LP_jsonmutex);
+    portable_mutex_init(&LP_commandmutex);
     if ( profitmargin == 0. )
     {
         profitmargin = 0.01;
@@ -651,11 +622,13 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
                 nonz++;
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                 {
+                    portable_mutex_lock(&LP_commandmutex);
                     if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
                     {
                         printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                         free(retstr);
                     }
+                    portable_mutex_unlock(&LP_commandmutex);
                     free_json(argjson);
                 } else printf("error parsing.(%s)\n",(char *)ptr);
                 if ( ptr != 0 )
@@ -665,7 +638,14 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
         {
             nonz++;
-            printf("PULL.[%d] %s\n",recvsize,(char *)ptr);
+            if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
+            {
+                len = (int32_t)strlen((char *)ptr) + 1;
+                portable_mutex_lock(&LP_commandmutex);
+                LP_command(mypeer,mypub,argjson,&ptr[len],recvsize - len,profitmargin);
+                portable_mutex_unlock(&LP_commandmutex);
+                free_json(argjson);
+            }
             if ( ptr != 0 )
                 nn_freemsg(ptr), ptr = 0;
         }
