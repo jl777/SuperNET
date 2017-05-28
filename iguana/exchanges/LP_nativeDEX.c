@@ -14,11 +14,13 @@
  *                                                                            *
  ******************************************************************************/
 //
-//  LP_unspents.c
+//  LP_nativeDEX.c
 //  marketmaker
 //
 
 #include <stdio.h>
+#include "LP_include.h"
+#include "LP_network.c"
 
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 
@@ -43,40 +45,12 @@ struct LP_utxoinfo
     bits256 txid,deposittxid,otherpubkey;
     void *swap;
     uint64_t satoshis,depositsatoshis;
-    int32_t vout,depositvout; uint32_t lasttime,errors,swappending;
+    uint8_t key[sizeof(bits256) + sizeof(int32_t)];
+    int32_t vout,depositvout,pair; uint32_t lasttime,errors,swappending;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;
 } *LP_utxoinfos;
-
-char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
-{
-    sprintf(str,"tcp://%s:%u",ipaddr,port);
-    return(str);
-}
-
-int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
-{
-    int32_t sentbytes,len,i; struct nn_pollfd pfd;
-    for (i=0; i<100; i++)
-    {
-        pfd.fd = sock;
-        pfd.events = NN_POLLOUT;
-        if ( nn_poll(&pfd,1,100) > 0 )
-        {
-            len = (int32_t)strlen(msg) + 1;
-            if ( (sentbytes= nn_send(sock,msg,len,0)) != len )
-                printf("LP_send sent %d instead of %d\n",sentbytes,len);
-            else printf("SENT.(%s)\n",msg);
-            if ( freeflag != 0 )
-                free(msg);
-            return(sentbytes);
-        }
-        usleep(1000);
-    }
-    printf("error LP_send\n");
-    return(-1);
-}
 
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
 {
@@ -88,11 +62,13 @@ struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
     return(peer);
 }
 
-struct LP_utxoinfo *LP_utxofind(bits256 txid)
+struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
 {
-    struct LP_utxoinfo *utxo=0;
+    struct LP_utxoinfo *utxo=0; uint8_t key[sizeof(txid) + sizeof(vout)];
+    memcpy(key,txid.bytes,sizeof(txid));
+    memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
     portable_mutex_lock(&LP_utxomutex);
-    HASH_FIND(hh,LP_utxoinfos,&txid,sizeof(txid),utxo);
+    HASH_FIND(hh,LP_utxoinfos,key,sizeof(key),utxo);
     portable_mutex_unlock(&LP_utxomutex);
     return(utxo);
 }
@@ -214,13 +190,13 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
 
 struct LP_utxoinfo *LP_addutxo(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
 {
-    struct LP_utxoinfo *utxo = 0;
+    struct LP_utxoinfo *utxo = 0; uint8_t key[sizeof(txid) + sizeof(vout)];
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
     {
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d %d %d %d\n", coin == 0,coin[0] == 0,spendscript == 0,spendscript[0] == 0,coinaddr == 0,coinaddr[0] == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
         return(0);
     }
-    if ( (utxo= LP_utxofind(txid)) != 0 )
+    if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->deposittxid) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->depositvout || depositsatoshis != utxo->depositsatoshis || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
@@ -233,6 +209,7 @@ struct LP_utxoinfo *LP_addutxo(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     else
     {
         utxo = calloc(1,sizeof(*utxo));
+        utxo->pair = -1;
         utxo->profitmargin = profitmargin;
         strcpy(utxo->ipaddr,ipaddr);
         utxo->port = port;
@@ -245,8 +222,11 @@ struct LP_utxoinfo *LP_addutxo(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         utxo->deposittxid = deposittxid;
         utxo->depositvout = depositvout;
         utxo->depositsatoshis = depositsatoshis;
+        memcpy(key,txid.bytes,sizeof(txid));
+        memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
+        memcpy(utxo->key,key,sizeof(key));
         portable_mutex_lock(&LP_utxomutex);
-        HASH_ADD(hh,LP_utxoinfos,txid,sizeof(txid),utxo);
+        HASH_ADD(hh,LP_utxoinfos,key,sizeof(key),utxo);
         if ( mypeer != 0 )
         {
             mypeer->numutxos++;
@@ -525,9 +505,50 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin
     return(total);
 }
 
+
+int32_t basilisk_istrustedbob(struct basilisk_swap *swap)
+{
+    // for BTC and if trusted LP
+    return(0);
+}
+
+struct iguana_info KMDcoin,BTCcoin,LTCcoin;
+
+struct iguana_info *LP_coinfind(char *symbol)
+{
+    struct iguana_info *coin;
+    if ( strcmp(symbol,"BTC") == 0 )
+        return(&BTCcoin);
+    else if ( strcmp(symbol,"LTC") == 0 )
+        return(&LTCcoin);
+    else //if ( strcmp(symbol,"KMD") == 0 )
+    {
+        coin = calloc(1,sizeof(*coin));
+        *coin = KMDcoin;
+        strcpy(coin->symbol,symbol);
+        return(coin);
+    }
+}
+
+void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
+{
+    
+}
+
+void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel,double relvolume)
+{
+    // add to trades
+}
+
+char GLOBAL_DBDIR[] = ".";
+
+#include "LP_secp.c"
+#include "LP_rpc.c"
 #include "LP_bitcoin.c"
-#include "LP_swap.c"
+#include "LP_transaction.c"
 #include "LP_remember.c"
+#include "LP_statemachine.c"
+#include "LP_swap.c"
 #include "LP_commands.c"
 
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
