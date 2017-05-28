@@ -638,9 +638,10 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
     }
     height = kmd_height(coin);
     loadheight = coin->kmd_height+1;
-    if ( strcmp(coin->symbol,"LTC") == 0 )
-        lag = 3;
-    else lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 2);
+    //if ( strcmp(coin->symbol,"LTC") == 0 )
+    //    lag = 3;
+    //else
+        lag = (strcmp(coin->symbol,"KMD") == 0 ? KMD_EXPLORER_LAG : 2);
     while ( loadheight < height-lag )
     {
         flag = 0;
@@ -749,7 +750,7 @@ int32_t _kmd_bitcoinscan(struct iguana_info *coin)
             }
             free_json(blockjson);
         }
-        if ( flag != 0 || num > 500 )
+        if ( flag != 0 || num > 100 )
             break;
         coin->kmd_height = loadheight++;
     }
@@ -771,7 +772,7 @@ void kmd_bitcoinscan()
                     {
                         //if ( strcmp("KMD",coin->symbol) == 0 )
                             _kmd_bitcoinscan(coin);
-                        usleep(250000);
+                        sleep(1);
                     }
                 }
             }

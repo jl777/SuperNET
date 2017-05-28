@@ -1,1 +1,2 @@
-gcc -o marketmaker -I../crypto777 exchanges/mm.c ../crypto777/cJSON.c ../agents/libcrypto777.a -lnanomsg -lcurl -lpthread -lm
+cd secp256k1; ./m_unix; cd ..
+gcc -o marketmaker -I../crypto777 exchanges/mm.c mini-gmp.c secp256k1.o ../agents/libcrypto777.a -lnanomsg -lcurl -lpthread -lm
