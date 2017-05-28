@@ -199,9 +199,9 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
                         printf(" pubkey[%d]\n",i);
                     }
                 }
-                for (i=0; i<33; i++)
-                    printf("%02x",pubkey33[i]);
-                printf(" invalid pubkey33 n.%d\n",n);
+                //for (i=0; i<33; i++)
+                //    printf("%02x",pubkey33[i]);
+                //printf(" invalid pubkey33 n.%d\n",n);
             } else printf("recoververify error nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
         } else printf("hash mismatch or bad nonce.%u packetlen.%d\n",sigpacket->nonce,sigpacket->packetlen);
     } else if ( recvbytes > 0 )
@@ -478,7 +478,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
             if ( nn_poll(&pfd,1,100) > 0 )
             {
                 sentbytes = nn_send(myinfo->reqsock,dexp,size,0);
-                printf(" [%d] sent.%d:%d datalen.%d crc.%08x\n",i,sentbytes,size,datalen,calc_crc32(0,(void *)dexp,size));
+                //printf(" [%d] sent.%d:%d datalen.%d crc.%08x\n",i,sentbytes,size,datalen,calc_crc32(0,(void *)dexp,size));
                 break;
             }
             usleep(1000);
@@ -487,7 +487,7 @@ char *_dex_reqsend(struct supernet_info *myinfo,char *handler,uint8_t *key,int32
         //    printf("%02x",((uint8_t *)data)[i]);
         if ( (recvbytes= signed_nn_recv(&freeptr,myinfo,myinfo->notaries,myinfo->numnotaries,myinfo->reqsock,&retptr)) >= 0 )
         {
-            printf("req returned.[%d]\n",recvbytes);
+            //printf("req returned.[%d]\n",recvbytes);
             portable_mutex_lock(&myinfo->dexmutex);
             ipbits = 0;
             if ( strcmp(handler,"DEX") == 0 )
