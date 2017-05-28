@@ -148,7 +148,7 @@ int32_t signed_nn_recv(void **freeptrp,struct supernet_info *myinfo,uint8_t nota
     int32_t i=0,recvbytes; uint8_t pubkey33[33],pubkey0[33]; bits256 packethash; struct signed_nnpacket *sigpacket=0;
     *(void **)packetp = 0;
     *freeptrp = 0;
-    /*for (i=0; i<100; i++)
+    /*for (i=0; i<100; i++) cant do this!! slows down notary servers, big latency
     {
         struct nn_pollfd pfd;
         pfd.fd = myinfo->reqsock;
@@ -2160,11 +2160,11 @@ int32_t dpow_nanomsg_update(struct supernet_info *myinfo)
             if ( (flags & 4) == 0 && (size= nn_recv(myinfo->repsock,&dexp,NN_MSG,0)) > 0 )
             {
                 num2++;
-                printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
+                //printf("REP got %d crc.%08x\n",size,calc_crc32(0,(void *)dexp,size));
                 if ( (retstr= dex_response(&broadcastflag,myinfo,dexp)) != 0 )
                 {
                     signed_nn_send(myinfo,myinfo->ctx,myinfo->persistent_priv,myinfo->repsock,retstr,(int32_t)strlen(retstr)+1);
-                    printf("send back[%ld]\n",strlen(retstr)+1);
+                    //printf("send back[%ld]\n",strlen(retstr)+1);
                     free(retstr);
                     if ( broadcastflag != 0 )
                     {
