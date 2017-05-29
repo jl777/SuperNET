@@ -637,21 +637,26 @@ struct iguana_info *LP_coinfind(char *symbol)
     return(coin);
 }
 
-uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,uint8_t addrtype,char *passphrase,char *wifstr)
+uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr)
 {
-    char *retstr,coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20];
+    char *retstr,coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( coin == 0 )
+    {
+        printf("cant add privkey for %s, coin not active\n",symbol);
+        return(0);
+    }
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
-    iguana_priv2pub(pubkey33,coinaddr,privkey,addrtype);
+    iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
-    retstr = iguana_listunspent(coin,coinaddr);
+    retstr = iguana_listunspent(symbol,coinaddr);
     if ( retstr != 0 && retstr[0] == '[' && retstr[1] == ']' )
         free(retstr), retstr = 0;
     if ( retstr == 0 )
     {
-        if ( (retstr= DEX_listunspent(coin,coinaddr)) == 0 )
+        if ( (retstr= DEX_listunspent(symbol,coinaddr)) == 0 )
         {
             printf("null listunspent\n");
             return(0);
@@ -693,7 +698,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin
                         {
                             value = values[i];
                             values[i] = 0, used++;
-                            LP_addutxo(mypeer,mypubsock,coin,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
+                            LP_addutxo(mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
                             total += value;
                         }
                     }
@@ -772,7 +777,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         exit(-1);
     }
     LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD"); LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
-    LP_privkey_init(mypeer,pubsock,"KMD",60,"test","");
+    LP_privkey_init(mypeer,pubsock,"KMD","test","");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     while ( 1 )
     {
