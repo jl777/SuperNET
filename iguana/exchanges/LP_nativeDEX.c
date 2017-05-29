@@ -521,9 +521,16 @@ void LP_statefname(char *fname,char *symbol,char *assetname,char *str)
         strcat(fname,".litecoin");
     else
     {
-        if ( assetname[0] == 0 )
-            strcat(fname,".komodo");
-        else strcat(fname,assetname);
+        strcat(fname,".komodo");
+        if ( strcmp(symbol,"KMD") != 0 )
+        {
+#ifdef WIN32
+            strcat(fname,"\\");
+#else
+            strcat(fname,"/");
+#endif
+            strcat(fname,assetname);
+        }
     }
 #ifdef WIN32
     strcat(fname,"\\");
@@ -623,6 +630,7 @@ struct iguana_info *LP_coinfind(char *symbol)
         cdata.wiftype = 188;
         LP_userpass(cdata.userpass,symbol,symbol,strcmp(symbol,"KMD") == 0 ? "komodo" : symbol);
     }
+    printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
     LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
     coin = &LP_coins[LP_numcoins++];
     *coin = cdata;
@@ -763,7 +771,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD");
+    LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD"); LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
     LP_privkey_init(mypeer,pubsock,"KMD",60,"test","");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     while ( 1 )
