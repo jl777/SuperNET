@@ -38,13 +38,13 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,*pairstr; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
-    printf("LP_command.(%s)\n",jprint(argjson,0));
-    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"rel":"BTC","method":"price"})
+    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","method":"price"})
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(txid,jint(argjson,"vout"))) != 0 && strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
+            printf("LP_command.(%s)\n",jprint(argjson,0));
             if ( time(NULL) > utxo->swappending )
                 utxo->swappending = 0;
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 )
@@ -77,8 +77,8 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         }
                         retstr = jprint(retjson,1);
                         LP_send(pubsock,retstr,1);
-                    }
-                }
+                    } else printf("null price\n");
+                } else printf("swappending.%u pair.%d\n",utxo->swappending,utxo->pair);
             }
             else if ( strcmp(method,"connect") == 0 )
             {
