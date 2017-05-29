@@ -765,6 +765,9 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         exit(-1);
     }
     LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD"); LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
+    printf("%s\n",jprint(LP_getinfo("BTC"),1));
+    printf("%s\n",jprint(LP_getinfo("KMD"),1));
+
     LP_privkey_init(mypeer,pubsock,"BTC","test","");
     LP_privkey_init(mypeer,pubsock,"KMD","test","");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));

@@ -70,6 +70,12 @@ void LP_unspents_mark(char *symbol,cJSON *vins)
     printf("LOCK (%s)\n",jprint(vins,0));
 }
 
+cJSON *LP_getinfo(char *symbol)
+{
+    struct iguana_info *coin = LP_coinfind(symbol);
+    return(bitcoin_json(coin,"getinfo","[]"));
+}
+
 cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
     char buf[128],str[65]; struct iguana_info *coin = LP_coinfind(symbol);
