@@ -766,8 +766,6 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin,c
         printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
         exit(-1);
     }
-//curl --url "bitcoing54g44rpc:passgh6456h5word@127.0.0.1:8332" --data "{\"method\":\"getinfo\",\"params\":[]}"
-//    curl --url "bitcoinrp456454z4zhhc:passwg45hgz64g499ord@127.0.0.1:7771" --data "{\"method\":\"getinfo\",\"params\":[]}"
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);

@@ -814,11 +814,12 @@ int main(int argc, const char * argv[])
         profitmargin = jdouble(retjson,"profitmargin");
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
             passphrase = "test";
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)passphrase) != 0 )
+        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)clonestr(passphrase)) != 0 )
         {
             printf("error launching LP_main %f\n",profitmargin);
             exit(-1);
-        } getchar();
+        } else printf("launched.(%s)\n",passphrase);
+getchar();
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
         start_base = jdouble(retjson,"start_base");
