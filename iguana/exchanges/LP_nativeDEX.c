@@ -640,7 +640,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr)
 {
-    char coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    char coinaddr[64],*script; cJSON *array,*item,*retjson; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
@@ -654,7 +654,8 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         printf("%s coinaddr.%s %d wif.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr);
-        LP_importprivkey(coin->symbol,tmpstr);
+        if ( (retjson= LP_importprivkey(coin->symbol,tmpstr)) != 0 )
+            printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
