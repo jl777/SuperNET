@@ -257,12 +257,14 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                        peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
-                    if ( peer != 0 )
                     {
-                        peer->lasttime = now;
-                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
-                            peer->numpeers = n;
+                        peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        if ( peer != 0 )
+                        {
+                            peer->lasttime = now;
+                            if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
+                                peer->numpeers = n;
+                        }
                     }
                 }
             }
@@ -351,24 +353,27 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
     if ( peer != 0 && peer->errors > 0 )
         return;
-    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer->numpeers,mypeer->numutxos)) != 0 )
+    if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
         //printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
         LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
+        if ( mypeer != 0 )
         {
-            if ( peer->lasttime != now )
+            HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                printf("{%s:%u %.6f} ",peer->ipaddr,peer->port,peer->profitmargin);
-                flag++;
-                if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers,0)) != 0 )
-                    free(retstr);
+                if ( peer->lasttime != now )
+                {
+                    printf("{%s:%u %.6f} ",peer->ipaddr,peer->port,peer->profitmargin);
+                    flag++;
+                    if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers,0)) != 0 )
+                        free(retstr);
+                }
             }
+            if ( flag != 0 )
+                printf(" <- missing peers\n");
         }
-        if ( flag != 0 )
-            printf(" <- missing peers\n");
     } else if ( peer != 0 )
         peer->errors++;
 }
@@ -638,7 +643,7 @@ struct iguana_info *LP_coinfind(char *symbol)
     return(coin);
 }
 
-uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr)
+uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
     char coinaddr[64],*script; cJSON *array,*item,*retjson; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
@@ -659,7 +664,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
-    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    if ( amclient == 0 && (array= LP_listunspent(symbol,coinaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -707,132 +712,157 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     return(total);
 }
 
-void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin,char *passphrase)
+void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
-    char *myipaddr=0,*retstr; long filesize,n; int32_t len,timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
-    OS_randombytes((void *)&n,sizeof(n));
-    srand((int32_t)n);
-    portable_mutex_init(&LP_peermutex);
-    portable_mutex_init(&LP_utxomutex);
-    portable_mutex_init(&LP_commandmutex);
-    if ( profitmargin == 0. || profitmargin == 0.01 )
+    char *retstr; int32_t i,len,recvsize,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson;
+    for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
     {
-        profitmargin = 0.01 + (double)(rand() % 100)/10000;
-        printf("default profit margin %f\n",profitmargin);
-    }
-    if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
-    {
-        if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
-        {
-            n = strlen(myipaddr);
-            if ( myipaddr[n-1] == '\n' )
-                myipaddr[--n] = 0;
-            pullsock = pubsock = -1;
-            nanomsg_tcpname(pushaddr,myipaddr,mypull);
-            nanomsg_tcpname(subaddr,myipaddr,mypub);
-            printf(">>>>>>>>> myipaddr.%s (%s %s)\n",myipaddr,pushaddr,subaddr);
-            if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
-            {
-                if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
-                {
-                    timeout = 10;
-                    nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
-                    timeout = 1;
-                    nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
-                    timeout = 1;
-                    maxsize = 1024 * 1024;
-                    nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
-                }
-                else
-                {
-                    printf("error binding to (%s).%d (%s).%d\n",pushaddr,pullsock,subaddr,pubsock);
-                    if ( pullsock >= 0 )
-                        nn_close(pullsock), pullsock = -1;
-                    if ( pubsock >= 0 )
-                        nn_close(pubsock), pubsock = -1;
-                }
-            } else printf("error getting sockets %d %d\n",pullsock,pubsock);
-            LP_mypubsock = pubsock;
-            LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,profitmargin,0,0);
-            //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
-            for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
-            {
-                if ( (rand() % 100) > 25 )
-                    continue;
-                LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,myipaddr,myport,profitmargin);
-            }
-        } else printf("error getting myipaddr\n");
-    } else printf("error issuing curl\n");
-    if ( myipaddr == 0 || mypeer == 0 )
-    {
-        printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
-        exit(-1);
+        if ( amclient == 0 && (rand() % 100) > 25 )
+            continue;
+        LP_peersquery(mypeer,pubsock,default_LPnodes[i],myport,mypeer!=0?mypeer->ipaddr:"127.0.0.1",myport,profitmargin);
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
-    LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD"); LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
-    LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"");
-    LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"");
-    printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
-    while ( 1 )
+    LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD");
+    LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
+    if ( amclient != 0 )
     {
-        nonz = 0;
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )
+            printf("%s:%u ",peer->ipaddr,peer->port);
+        }
+        printf("peers\n");
+        while ( 1 )
+        {
+            sleep(1);
+        }
+    }
+    else
+    {
+        LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"",amclient);
+        LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"",amclient);
+        while ( 1 )
+        {
+            nonz = 0;
+            HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                if ( peer->numpeers != mypeer->numpeers )
-                    printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
-                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-                    LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,myipaddr,myport,profitmargin);
+                if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )
+                {
+                    if ( peer->numpeers != mypeer->numpeers )
+                        printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
+                    if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+                        LP_peersquery(mypeer,pubsock,peer->ipaddr,peer->port,mypeer->ipaddr,myport,profitmargin);
+                }
+                if ( peer->numutxos != mypeer->numutxos )
+                {
+                    lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
+                    if ( lastn < 0 )
+                        lastn = LP_PROPAGATION_SLACK * 2;
+                    printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
+                    if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
+                        LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
+                }
+                while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
+                {
+                    nonz++;
+                    if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
+                    {
+                        portable_mutex_lock(&LP_commandmutex);
+                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
+                        {
+                            printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                            free(retstr);
+                        }
+                        portable_mutex_unlock(&LP_commandmutex);
+                        free_json(argjson);
+                    } else printf("error parsing.(%s)\n",(char *)ptr);
+                    if ( ptr != 0 )
+                        nn_freemsg(ptr), ptr = 0;
+                }
             }
-            if ( peer->numutxos != mypeer->numutxos )
-            {
-                lastn = peer->numutxos - mypeer->numutxos + LP_PROPAGATION_SLACK;
-                if ( lastn < 0 )
-                    lastn = LP_PROPAGATION_SLACK * 2;
-                printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
-                if ( strcmp(peer->ipaddr,myipaddr) != 0 )
-                    LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,myipaddr,myport,profitmargin);
-            }
-            while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
+            while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
             {
                 nonz++;
                 if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
                 {
+                    len = (int32_t)strlen((char *)ptr) + 1;
                     portable_mutex_lock(&LP_commandmutex);
-                    if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypub)) != 0 )
-                    {
-                        printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
-                        free(retstr);
-                    }
+                    LP_command(mypeer,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin);
                     portable_mutex_unlock(&LP_commandmutex);
                     free_json(argjson);
-                } else printf("error parsing.(%s)\n",(char *)ptr);
+                }
                 if ( ptr != 0 )
                     nn_freemsg(ptr), ptr = 0;
             }
+            if ( nonz == 0 )
+                sleep(mypeer->numpeers + 1);
         }
-        while ( pullsock >= 0 && (recvsize= nn_recv(pullsock,&ptr,NN_MSG,0)) >= 0 )
-        {
-            nonz++;
-            if ( (argjson= cJSON_Parse((char *)ptr)) != 0 )
-            {
-                len = (int32_t)strlen((char *)ptr) + 1;
-                portable_mutex_lock(&LP_commandmutex);
-                LP_command(mypeer,mypub,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin);
-                portable_mutex_unlock(&LP_commandmutex);
-                free_json(argjson);
-            }
-            if ( ptr != 0 )
-                nn_freemsg(ptr), ptr = 0;
-        }
-       if ( nonz == 0 )
-            sleep(mypeer->numpeers + 1);
     }
+}
+
+void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient)
+{
+    char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
+    OS_randombytes((void *)&n,sizeof(n));
+    srand((int32_t)n);
+    portable_mutex_init(&LP_peermutex);
+    portable_mutex_init(&LP_utxomutex);
+    portable_mutex_init(&LP_commandmutex);
+    if ( amclient == 0 )
+    {
+        if ( profitmargin == 0. || profitmargin == 0.01 )
+        {
+            profitmargin = 0.01 + (double)(rand() % 100)/100000;
+            printf("default profit margin %f\n",profitmargin);
+        }
+        if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
+        {
+            if ( (myipaddr= OS_filestr(&filesize,"/tmp/myipaddr")) != 0 && myipaddr[0] != 0 )
+            {
+                n = strlen(myipaddr);
+                if ( myipaddr[n-1] == '\n' )
+                    myipaddr[--n] = 0;
+                pullsock = pubsock = -1;
+                nanomsg_tcpname(pushaddr,myipaddr,mypullport);
+                nanomsg_tcpname(subaddr,myipaddr,mypubport);
+                printf(">>>>>>>>> myipaddr.%s (%s %s)\n",myipaddr,pushaddr,subaddr);
+                if ( (pullsock= nn_socket(AF_SP,NN_PULL)) >= 0 && (pubsock= nn_socket(AF_SP,NN_PUB)) >= 0 )
+                {
+                    if ( nn_bind(pullsock,pushaddr) >= 0 && nn_bind(pubsock,subaddr) >= 0 )
+                    {
+                        timeout = 10;
+                        nn_setsockopt(pubsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
+                        timeout = 1;
+                        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
+                        timeout = 1;
+                        maxsize = 1024 * 1024;
+                        nn_setsockopt(pullsock,NN_SOL_SOCKET,NN_RCVBUF,&maxsize,sizeof(maxsize));
+                    }
+                    else
+                    {
+                        printf("error binding to (%s).%d (%s).%d\n",pushaddr,pullsock,subaddr,pubsock);
+                        if ( pullsock >= 0 )
+                            nn_close(pullsock), pullsock = -1;
+                        if ( pubsock >= 0 )
+                            nn_close(pubsock), pubsock = -1;
+                    }
+                } else printf("error getting sockets %d %d\n",pullsock,pubsock);
+                LP_mypubsock = pubsock;
+                LP_mypeer = mypeer = LP_addpeer(mypeer,pubsock,myipaddr,myport,0,0,profitmargin,0,0);
+                //printf("my ipaddr.(%s) peers.(%s)\n",ipaddr,retstr!=0?retstr:"");
+            } else printf("error getting myipaddr\n");
+        } else printf("error issuing curl\n");
+        if ( myipaddr == 0 || mypeer == 0 )
+        {
+            printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
+            exit(-1);
+        }
+        printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
+    }
+    LP_mainloop(mypeer,mypubport,pubsock,pullsock,myport,amclient,passphrase,profitmargin);
 }
 
 /*#ifdef __APPLE__

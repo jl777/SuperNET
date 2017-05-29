@@ -149,21 +149,24 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
     {
         if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
-            if ( (pushport= juint(argjson,"push")) == 0 )
-                pushport = argport + 1;
-            if ( (subport= juint(argjson,"sub")) == 0 )
-                subport = argport + 2;
-            if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
+            if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
             {
-                if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
-                    peer->numpeers = otherpeers;
-                if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                if ( (pushport= juint(argjson,"push")) == 0 )
+                    pushport = argport + 1;
+                if ( (subport= juint(argjson,"sub")) == 0 )
+                    subport = argport + 2;
+                if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),argport)) != 0 )
                 {
-                    printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer->numutxos);
-                    peer->numutxos = othernumutxos;
-                }
-                //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
-            } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
+                    if ( (otherpeers= jint(argjson,"numpeers")) > peer->numpeers )
+                        peer->numpeers = otherpeers;
+                    if ( (othernumutxos= jint(argjson,"numutxos")) > peer->numutxos )
+                    {
+                        printf("change.(%s) numutxos.%d -> %d mynumutxos.%d\n",peer->ipaddr,peer->numutxos,othernumutxos,LP_mypeer->numutxos);
+                        peer->numutxos = othernumutxos;
+                    }
+                    //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
+                } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
+            }
             if ( strcmp(method,"getpeers") == 0 )
                 retstr = LP_peers();
             else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
