@@ -34,6 +34,24 @@ cJSON *basilisk_nullretjson(cJSON *retjson)
     return(retjson);
 }
 
+char *dex_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
+{
+    return(0);
+}
+
+bits256 LP_privkey(char *coinaddr)
+{
+    bits256 privkey;
+    return(privkey);
+}
+
+bits256 LP_pubkey(bits256 privkey)
+{
+    bits256 pubkey;
+    pubkey = curve25519(privkey,curve25519_basepoint9());
+    return(pubkey);
+}
+
 void LP_unspentslock(char *symbol,cJSON *vins)
 {
     
@@ -54,44 +72,20 @@ uint64_t LP_txfee(char *symbol)
     return(10000);
 }
 
-char *dpow_validateaddress(struct supernet_info *myinfo,struct iguana_info *coin,char *address)
+char *LP_validateaddress(char *symbol,char *address)
 {
-    char buf[128],*retstr=0;
-    if ( coin->FULLNODE < 0 )
-    {
-        sprintf(buf,"\"%s\"",address);
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"validateaddress",buf);
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        retstr = bitcoinrpc_validateaddress(myinfo,coin,0,0,address);
-    }
-    else
-    {
-        return(0);
-    }
+    char buf[128],*retstr=0; struct iguana_info *coin = LP_coinfind(symbol);
+    sprintf(buf,"\"%s\"",address);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"validateaddress",buf);
+    usleep(10000);
     return(retstr);
 }
 
-cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid,int32_t vout)
+cJSON *LP_gettxout(char *symbol,bits256 txid,int32_t vout)
 {
-    char buf[128],str[65],*retstr=0; cJSON *json = 0;
+    char buf[128],str[65],*retstr=0; cJSON *json=0; struct iguana_info *coin = LP_coinfind(symbol);
     sprintf(buf,"\"%s\", %d",bits256_str(str,txid),vout);
-    if ( coin->FULLNODE < 0 )
-    {
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"gettxout",buf);
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        printf("need to test following call\n");
-        retstr = bitcoinrpc_gettxout(myinfo,coin,0,buf,txid,1,0); // untested
-    }
-    else
-    {
-        return(0);
-    }
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"gettxout",buf);
     if ( retstr != 0 )
     {
         json = cJSON_Parse(retstr);
@@ -101,48 +95,24 @@ cJSON *dpow_gettxout(struct supernet_info *myinfo,struct iguana_info *coin,bits2
     return(json);
 }
 
-char *dpow_decoderawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx)
+char *LP_decoderawtransaction(char *symbol,char *rawtx)
 {
-    char *retstr,*paramstr; cJSON *array;
-    if ( coin->FULLNODE < 0 )
-    {
-        array = cJSON_CreateArray();
-        jaddistr(array,rawtx);
-        paramstr = jprint(array,1);
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"decoderawtransaction",paramstr);
-        //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
-        free(paramstr);
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        retstr = bitcoinrpc_decoderawtransaction(myinfo,coin,0,0,rawtx,1);
-    }
-    else
-    {
-        return(0);
-    }
+    char *retstr,*paramstr; cJSON *array; struct iguana_info *coin = LP_coinfind(symbol);
+    array = cJSON_CreateArray();
+    jaddistr(array,rawtx);
+    paramstr = jprint(array,1);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"decoderawtransaction",paramstr);
+    //printf("%s decoderawtransaction.(%s) <- (%s)\n",coin->symbol,retstr,paramstr);
+    free(paramstr);
     return(retstr);
 }
 
-cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin,bits256 txid)
+cJSON *LP_gettransaction(char *symbol,bits256 txid)
 {
-    char buf[128],str[65],*retstr=0; cJSON *json = 0;
-    if ( coin->FULLNODE < 0 )
+    char buf[128],str[65],*retstr=0; cJSON *json = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
+    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"getrawtransaction",buf)) != 0 )
     {
-        sprintf(buf,"[\"%s\", 1]",bits256_str(str,txid));
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"getrawtransaction",buf)) != 0 )
-        {
-        }
-        usleep(10000);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        retstr = bitcoinrpc_getrawtransaction(myinfo,coin,0,0,txid,1);
-    }
-    else
-    {
-        return(0);
     }
     if ( retstr != 0 )
     {
@@ -152,140 +122,64 @@ cJSON *dpow_gettransaction(struct supernet_info *myinfo,struct iguana_info *coin
     return(json);
 }
 
-cJSON *dpow_listunspent(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr)
+cJSON *LP_listunspent(char *symbol,char *coinaddr)
 {
-    char buf[128],*retstr; cJSON *array,*json = 0;
-    if ( coin->FULLNODE < 0 )
+    char buf[128],*retstr; cJSON *json = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
+    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"listunspent",buf)) != 0 )
     {
-        sprintf(buf,"0, 99999999, [\"%s\"]",coinaddr);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listunspent",buf)) != 0 )
-        {
-            json = cJSON_Parse(retstr);
-            //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
-            free(retstr);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        array = cJSON_CreateArray();
-        jaddistr(array,coinaddr);
-        json = iguana_listunspents(myinfo,coin,array,1,coin->longestchain,"");
-        free_json(array);
-    }
-    else
-    {
-        return(0);
-    }
+        json = cJSON_Parse(retstr);
+        //printf("%s (%s) listunspent.(%s)\n",coin->symbol,buf,retstr);
+        free(retstr);
+    } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     return(json);
 }
 
-cJSON *dpow_listtransactions(struct supernet_info *myinfo,struct iguana_info *coin,char *coinaddr,int32_t count,int32_t skip)
+cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t count,int32_t skip)
 {
-    char buf[128],*retstr; cJSON *json = 0;
-    if ( coin->FULLNODE < 0 )
+    char buf[128],*retstr; cJSON *json = 0; struct iguana_info *coin = LP_coinfind(symbol);
+    if ( count == 0 )
+        count = 100;
+    sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
+    if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"listtransactions",buf)) != 0 )
     {
-        if ( count == 0 )
-            count = 100;
-        sprintf(buf,"[\"%s\", %d, %d, true]",coinaddr,count,skip);
-        if ( (retstr= bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"listtransactions",buf)) != 0 )
-        {
-            //printf("LIST.(%s)\n",retstr);
-            json = cJSON_Parse(retstr);
-            free(retstr);
-            return(json);
-        } else printf("%s null retstr from (%s)n",coin->symbol,buf);
-    }
+        //printf("LIST.(%s)\n",retstr);
+        json = cJSON_Parse(retstr);
+        free(retstr);
+        return(json);
+    } else printf("%s null retstr from (%s)n",coin->symbol,buf);
     return(0);
 }
 
-char *dpow_signrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *rawtx,cJSON *vins)
+char *LP_signrawtransaction(char *symbol,char *rawtx,cJSON *vins)
 {
-    cJSON *array,*privkeys,*item; char *wifstr,*str,*paramstr,*retstr; uint8_t script[256]; int32_t i,n,len,hashtype; struct vin_info V; struct iguana_waddress *waddr; struct iguana_waccount *wacct;
-    if ( coin->FULLNODE < 0 )
-    {
-        array = cJSON_CreateArray();
-        jaddistr(array,rawtx);
-        jaddi(array,jduplicate(vins));
-        paramstr = jprint(array,1);
-        //printf("signrawtransaction\n");
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"signrawtransaction",paramstr);
-        //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
-        free(paramstr);
-        usleep(10000);
-        return(retstr);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        privkeys = cJSON_CreateArray();
-        if ( (n= cJSON_GetArraySize(vins)) > 0 )
-        {
-            for (i=0; i<n; i++)
-            {
-                wifstr = "";
-                item = jitem(vins,i);
-                if ( (str= jstr(item,"scriptPubkey")) != 0 && is_hexstr(str,0) > 0 && strlen(str) < sizeof(script)*2 )
-                {
-                    len = (int32_t)strlen(str) >> 1;
-                    decode_hex(script,len,str);
-                    V.spendlen = len;
-                    memcpy(V.spendscript,script,len);
-                    if ( (hashtype= _iguana_calcrmd160(coin,&V)) >= 0 && V.coinaddr[0] != 0 )
-                    {
-                        if ( (waddr= iguana_waddresssearch(myinfo,&wacct,V.coinaddr)) != 0 )
-                        {
-                            if ( bits256_nonz(waddr->privkey) != 0 )
-                            {
-                                if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->chain->wiftype) > 0 )
-                                {
-                                    wifstr = waddr->wifstr;
-                                }
-                            }
-                        }
-                    }
-                }
-                jaddistr(privkeys,wifstr);
-            }
-        }
-        retstr = bitcoinrpc_signrawtransaction(myinfo,coin,0,0,rawtx,vins,privkeys,"ALL");
-        printf("call sign.(%s) vins.(%s) privs.(%s) -> (%s)\n",rawtx,jprint(vins,0),jprint(privkeys,0),retstr);
-        free_json(privkeys);
-        return(retstr);
-    }
-    else
-    {
-        return(0);
-    }
+    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
+    array = cJSON_CreateArray();
+    jaddistr(array,rawtx);
+    jaddi(array,jduplicate(vins));
+    paramstr = jprint(array,1);
+    //printf("signrawtransaction\n");
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr);
+    //printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+    free(paramstr);
+    return(retstr);
 }
 
-char *dpow_sendrawtransaction(struct supernet_info *myinfo,struct iguana_info *coin,char *signedtx)
+char *LP_sendrawtransaction(char *symbol,char *signedtx)
 {
-    bits256 txid; cJSON *json,*array; char *paramstr,*retstr;
-    if ( coin->FULLNODE < 0 )
-    {
-        array = cJSON_CreateArray();
-        jaddistr(array,signedtx);
-        paramstr = jprint(array,1);
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"sendrawtransaction",paramstr);
-        printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
-        free(paramstr);
-        return(retstr);
-    }
-    else if ( coin->FULLNODE > 0 || coin->VALIDATENODE > 0 )
-    {
-        txid = iguana_sendrawtransaction(myinfo,coin,signedtx);
-        json = cJSON_CreateObject();
-        jaddbits256(json,"result",txid);
-        return(jprint(json,1));
-    }
-    else
-    {
-        return(0);
-    }
+    cJSON *array; char *paramstr,*retstr; struct iguana_info *coin = LP_coinfind(symbol);
+    array = cJSON_CreateArray();
+    jaddistr(array,signedtx);
+    paramstr = jprint(array,1);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"sendrawtransaction",paramstr);
+    printf(">>>>>>>>>>> %s dpow_sendrawtransaction.(%s) -> (%s)\n",coin->symbol,paramstr,retstr);
+    free(paramstr);
+    return(retstr);
 }
 
 char *LP_importaddress(char *symbol,char *address)
 {
-    char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0;
+    char buf[1024],*retstr; cJSON *validatejson; int32_t isvalid=0,doneflag = 0; struct iguana_info *coin = LP_coinfind(symbol);
     if ( (retstr= LP_validateaddress(symbol,address)) != 0 )
     {
         if ( (validatejson= cJSON_Parse(retstr)) != 0 )
@@ -302,27 +196,12 @@ char *LP_importaddress(char *symbol,char *address)
     }
     if ( isvalid == 0 )
         return(clonestr("{\"isvalid\":false}"));
-    update_alladdresses(myinfo,coin,address);
     if ( doneflag != 0 )
         return(0); // success
-    if ( coin->FULLNODE < 0 )
-    {
-        sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
-        retstr = bitcoind_passthru(coin->symbol,coin->chain->serverport,coin->chain->userpass,"importaddress",buf);
-        printf("%s importaddress.(%s) -> (%s)\n",coin->symbol,address,retstr);
-        return(retstr);
-    }
-    else return(0);
-}
-
-char *LP_importaddress(char *symbol,char *coinaddr)
-{
-    return(0);
-}
-
-char *LP_sendrawtransaction(char *symbol,char *signedtx)
-{
-    return(0);
+    sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
+    retstr = bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf);
+    printf("%s importaddress.(%s) -> (%s)\n",coin->symbol,address,retstr);
+    return(retstr);
 }
 
 char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *vins,char *rawtxbytes,cJSON *privkeys,struct vin_info *V)
@@ -330,33 +209,10 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     return(0);
 }
 
-cJSON *LP_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
-{
-    return(0);
-}
-
-char *dex_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
-{
-    return(0);
-}
-
-bits256 LP_privkey(char *coinaddr)
-{
-    bits256 privkey;
-    return(privkey);
-}
-
-bits256 LP_pubkey(bits256 privkey)
-{
-    bits256 pubkey;
-    pubkey = curve25519(privkey,curve25519_basepoint9());
-    return(pubkey);
-}
-
 cJSON *LP_swapgettxout(char *symbol,bits256 trigger,int32_t vout)
 {
     cJSON *retjson=0; //char *retstr; struct iguana_info *coin;
-    /*if ( ((coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
+    /*if ( ((coin= LP_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
      {
      if ( (retstr= dex_gettxout(0,0,0,trigger,symbol,vout)) != 0 )
      {
@@ -385,7 +241,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
 cJSON *LP_swapgettx(char *symbol,bits256 txid)
 {
     cJSON *retjson=0; //char *retstr; struct iguana_info *coin;
-    /*if ( ((coin= iguana_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
+    /*if ( ((coin= LP_coinfind(symbol)) == 0 || coin->FULLNODE == 0) && iguana_isnotarychain(symbol) >= 0 )
      {
      if ( (retstr= dex_gettransaction(0,0,0,txid,symbol)) != 0 )
      {

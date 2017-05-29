@@ -675,7 +675,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
     }
 }
 
-#ifdef __APPLE__
+/*#ifdef __APPLE__
 int32_t nn_bind() { return(-1); }
 int32_t nn_close() { return(-1); }
 int32_t nn_connect() { return(-1); }
@@ -686,4 +686,4 @@ int32_t nn_send() { return(-1); }
 int32_t nn_setsockopt() { return(-1); }
 int32_t nn_socket() { return(-1); }
 
-#endif
+#endif*/
