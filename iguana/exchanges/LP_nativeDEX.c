@@ -574,7 +574,7 @@ uint32_t LP_assetmagic(char *symbol,uint64_t supply)
 uint16_t LP_assetport(uint32_t magic)
 {
     if ( magic == 0x8de4eef9 )
-        return(7770);
+        return(7771);
     else return(8000 + (magic % 7777));
 }
 
@@ -583,7 +583,7 @@ uint16_t LP_port(char *symbol,uint64_t supply,uint32_t *magicp)
     if ( symbol == 0 || symbol[0] == 0 || strcmp("KMD",symbol) == 0 )
     {
         *magicp = 0x8de4eef9;
-        return(7770);
+        return(7771);
     }
     else if ( strcmp("BTC",symbol) == 0 )
         return(8332);
