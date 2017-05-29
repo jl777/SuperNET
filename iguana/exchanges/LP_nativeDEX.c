@@ -735,7 +735,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
     char *retstr,*utxostr; int32_t i,len,recvsize,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson;
-    for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
+    for (i=amclient; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
     {
         if ( amclient == 0 && (rand() % 100) > 25 )
             continue;
