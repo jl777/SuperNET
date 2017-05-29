@@ -46,14 +46,11 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
-    //static void *cHandle;
     char *retstr; cJSON *retjson = 0;
     if ( coin != 0 )
     {
-        printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
-        //retstr = curl_post(&cHandle,coin->serverport,coin->userpass,params,method,0,0,0);
+        //printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
         retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
-        //retstr = bitcoind_RPC(0,"",coin->serverport,0,method,params);
         if ( retstr != 0 && retstr[0] != 0 )
         {
             printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
@@ -113,10 +110,10 @@ cJSON *LP_validateaddress(char *symbol,char *address)
     return(bitcoin_json(coin,"validateaddress",buf));
 }
 
-cJSON *LP_importprivkey(char *symbol,char *wifstr,int32_t flag)
+cJSON *LP_importprivkey(char *symbol,char *wifstr,char *label,int32_t flag)
 {
     char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"[\"%s\", %s]",wifstr,flag < 0 ? "false" : "true");
+    sprintf(buf,"[\"%s\", \"%s\", %s]",wifstr,label,flag < 0 ? "false" : "true");
     return(bitcoin_json(coin,"importprivkey",buf));
 }
 
