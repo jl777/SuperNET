@@ -654,6 +654,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         printf("%s coinaddr.%s %d wif.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr);
+        LP_importaddress(coin->symbol,tmpstr);
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
@@ -705,7 +706,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     return(total);
 }
 
-void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
+void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin,char *passphrase)
 {
     char *myipaddr=0,*retstr; long filesize,n; int32_t len,timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
     portable_mutex_init(&LP_peermutex);
@@ -772,8 +773,8 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         exit(-1);
     }
     LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD"); LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
-    LP_privkey_init(mypeer,pubsock,"BTC","test","");
-    LP_privkey_init(mypeer,pubsock,"KMD","test","");
+    LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"");
+    LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     while ( 1 )
     {

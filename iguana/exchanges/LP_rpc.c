@@ -133,7 +133,10 @@ int32_t LP_importaddress(char *symbol,char *address)
         return(0); // success
     sprintf(buf,"[\"%s\", \"%s\", false]",address,address);
     if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf)) != 0 )
+    {
+        printf("importaddress.(%s %s) -> (%s)\n",symbol,address,retstr);
         free(retstr);
+    } else printf("importaddress.(%s %s)\n",symbol,address);
     return(1);
 }
 

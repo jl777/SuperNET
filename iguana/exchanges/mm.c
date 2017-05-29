@@ -798,8 +798,8 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
 
 void LP_main(void *ptr)
 {
-    double profitmargin = *(double *)ptr;
-    LPinit(7779,7780,7781,profitmargin);
+    double profitmargin = 0.01; char *passphrase = ptr;
+    LPinit(7779,7780,7781,profitmargin,passphrase);
 }
 
 int main(int argc, const char * argv[])
@@ -812,7 +812,9 @@ int main(int argc, const char * argv[])
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
         profitmargin = jdouble(retjson,"profitmargin");
-        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)&profitmargin) != 0 )
+        if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
+            passphrase = "test";
+        if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_main,(void *)passphrase) != 0 )
         {
             printf("error launching LP_main %f\n",profitmargin);
             exit(-1);
@@ -821,7 +823,6 @@ int main(int argc, const char * argv[])
         incrratio = jdouble(retjson,"lotratio");
         start_base = jdouble(retjson,"start_base");
         start_rel = jdouble(retjson,"start_rel");
-        passphrase = jstr(retjson,"passphrase");
         apikey = jstr(retjson,"apikey");
         apisecret = jstr(retjson,"apisecret");
         base = jstr(retjson,"base");
