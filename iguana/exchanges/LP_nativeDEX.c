@@ -362,7 +362,7 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         return;
     if ( (retstr= issue_LP_getpeers(destipaddr,destport,myipaddr,myport,myprofit,mypeer!=0?mypeer->numpeers:0,mypeer!=0?mypeer->numutxos:0)) != 0 )
     {
-        //printf("got.(%s)\n",retstr);
+        printf("got.(%s)\n",retstr);
         now = (uint32_t)time(NULL);
         LP_peersparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
