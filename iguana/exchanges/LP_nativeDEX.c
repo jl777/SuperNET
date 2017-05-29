@@ -329,7 +329,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
     //printf("send.(%s)\n",url);
     retstr = issue_curl(url);
-    printf("GETPEERS.(%s)\n",retstr);
+    //printf("GETPEERS.(%s)\n",retstr);
     return(retstr);
 }
 
@@ -337,6 +337,13 @@ char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
+}
+
+char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d",destip,destport,coin,lastn);
     return(issue_curl(url));
 }
 
@@ -727,7 +734,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
 
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
-    char *retstr; int32_t i,len,recvsize,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson;
+    char *retstr,*utxostr; int32_t i,len,recvsize,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson;
     for (i=0; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
     {
         if ( amclient == 0 && (rand() % 100) > 25 )
@@ -747,7 +754,8 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            printf("%s:%u ",peer->ipaddr,peer->port);
+            utxostr = issue_LP_clientgetutxos(peer->ipaddr,peer->port,"KMD",0);
+            printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
         }
         printf("peers\n");
         while ( 1 )
