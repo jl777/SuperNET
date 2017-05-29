@@ -680,10 +680,43 @@ int32_t marketmaker_spread(char *exchange,char *base,char *rel,double bid,double
     return(n);
 }
 
-void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double start_BASE,double start_REL,double profitmargin,double maxexposure,double ratioincr,char *exchange,char *name,char *base,char *rel)
+double marketmaker_updateprice(char *name,char *base,char *rel,double theoretical,double *incrp)
 {
     static uint32_t counter;
-    cJSON *fiatjson; char *retstr; double bid,ask,start_DEXbase,start_DEXrel,USD_average=0.,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,usdprice=0.,CMC_average=0.,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
+    cJSON *fiatjson; double USD_average=0.,usdprice=0.,CMC_average=0.,avebid=0.,aveask=0.,val,changes[3],highbid=0.,lowask=0.;
+    if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel,&USD_average)) != 0. )
+    {
+        if ( theoretical == 0. )
+        {
+            theoretical = val;
+            if ( *incrp > 2 )
+            {
+                *incrp = (int32_t)*incrp;
+                *incrp += 0.777;
+            }
+        } else theoretical = (theoretical + val) * 0.5;
+        if ( (counter++ % 12) == 0 )
+        {
+            if ( USD_average > SMALLVAL && CMC_average > SMALLVAL && theoretical > SMALLVAL )
+            {
+                usdprice = USD_average * (theoretical / CMC_average);
+                printf("USD %.4f <- (%.6f * (%.8f / %.8f))\n",usdprice,USD_average,theoretical,CMC_average);
+                PAXPRICES[0] = usdprice;
+                if ( (fiatjson= yahoo_allcurrencies()) != 0 )
+                {
+                    marketmaker_fiatupdate(fiatjson);
+                    free_json(fiatjson);
+                }
+            }
+        }
+        LP_priceupdate(base,rel,theoretical,avebid,aveask,highbid,lowask,PAXPRICES);
+    }
+    return(theoretical);
+}
+
+void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double start_BASE,double start_REL,double profitmargin,double maxexposure,double ratioincr,char *exchange,char *name,char *base,char *rel)
+{
+    char *retstr; double bid,ask,start_DEXbase,start_DEXrel,DEX_base = 0.,DEX_rel = 0.,balance_base=0.,balance_rel=0.,mmbid,mmask,aveprice,incr,pendingbids,pendingasks,buyvol,sellvol,bidincr,askincr,filledprice,avebid=0.,aveask=0.,highbid=0.,lowask=0.,theoretical = 0.; uint32_t lasttime = 0;
     incr = maxexposure * ratioincr;
     buyvol = sellvol = 0.;
     start_DEXbase = dex_balance(base,baseaddr);
@@ -692,34 +725,10 @@ void marketmaker(double minask,double maxbid,char *baseaddr,char *reladdr,double
     {
         if ( time(NULL) > lasttime+60 )
         {
-            if ( (val= get_theoretical(&avebid,&aveask,&highbid,&lowask,&CMC_average,changes,name,base,rel,&USD_average)) != 0. )
+            if ( (theoretical= marketmaker_updateprice(name,base,rel,theoretical,&incr)) != 0. )
             {
-                if ( theoretical == 0. )
-                {
-                    theoretical = val;
-                    incr /= theoretical;
+                if ( lasttime == 0 )
                     maxexposure /= theoretical;
-                    if ( incr > 2 )
-                    {
-                        incr = (int32_t)incr;
-                        incr += 0.777;
-                    }
-                } else theoretical = (theoretical + val) * 0.5;
-                if ( (counter++ % 12) == 0 )
-                {
-                    if ( USD_average > SMALLVAL && CMC_average > SMALLVAL && theoretical > SMALLVAL )
-                    {
-                        usdprice = USD_average * (theoretical / CMC_average);
-                        printf("USD %.4f <- (%.6f * (%.8f / %.8f))\n",usdprice,USD_average,theoretical,CMC_average);
-                        PAXPRICES[0] = usdprice;
-                        if ( (fiatjson= yahoo_allcurrencies()) != 0 )
-                        {
-                            marketmaker_fiatupdate(fiatjson);
-                            free_json(fiatjson);
-                        }
-                    }
-                }
-                LP_priceupdate(base,rel,theoretical,avebid,aveask,highbid,lowask,PAXPRICES);
             }
             if ( strcmp(exchange,"bittrex") == 0 )
             {
@@ -809,7 +818,7 @@ void LP_main(void *ptr)
 int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
-    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid;
+    double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr,theoretical = 0.;
     cJSON *retjson,*loginjson; int32_t i;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
@@ -820,7 +829,12 @@ int main(int argc, const char * argv[])
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-getchar();
+        incr = 100.;
+        while ( 1 )
+        {
+            theoretical = marketmaker_updateprice("komodo","KMD","BTC",theoretical,&incr);
+            sleep(30);
+        }
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
         maxbid = jdouble(retjson,"maxbid");
