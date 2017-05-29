@@ -25,7 +25,7 @@ char *LP_getdatadir()
 
 cJSON *basilisk_nullretjson(cJSON *retjson)
 {
-    char *outstr;
+    /*char *outstr;
     if ( retjson != 0 )
     {
         outstr = jprint(retjson,0);
@@ -35,7 +35,7 @@ cJSON *basilisk_nullretjson(cJSON *retjson)
             retjson = 0;
         }
         free(outstr);
-    }
+    }*/
     return(retjson);
 }
 
