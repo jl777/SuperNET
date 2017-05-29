@@ -46,13 +46,14 @@ char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
 {
-    static void *cHandle;
+    //static void *cHandle;
     char *retstr; cJSON *retjson = 0;
     if ( coin != 0 )
     {
         printf("issue.(%s, %s, %s, %s, %s)\n",coin->symbol,coin->serverport,coin->userpass,method,params);
-        retstr = curl_post(&cHandle,coin->serverport,coin->userpass,params,method,0,0,0);
+        //retstr = curl_post(&cHandle,coin->serverport,coin->userpass,params,method,0,0,0);
         //retstr = bitcoind_passthru(coin->symbol,coin->serverport,coin->userpass,method,params);
+        retstr = bitcoind_RPC(0,"",coin->serverport,0,method,params);
         if ( retstr != 0 && retstr[0] != 0 )
         {
             printf("%s: %s.%s -> (%s)\n",coin->symbol,method,params,retstr);
