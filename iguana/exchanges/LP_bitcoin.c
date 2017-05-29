@@ -36,13 +36,13 @@ int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
 {
     bits256 tmpkey;
     tmpkey = LP_privkeyfind(rmd160);
-    if ( bits256_nonz(privkey) != 0 )
+    if ( bits256_nonz(tmpkey) != 0 )
         return(-bits256_cmp(privkey,tmpkey));
     LP_privkeys[LP_numprivkeys].privkey = privkey;
     memcpy(LP_privkeys[LP_numprivkeys].rmd160,rmd160,20);
     int32_t i; for (i=0; i<20; i++)
         printf("%02x",rmd160[i]);
-    char str[65]; printf(" -> privkey.(%s)\n",bits256_str(str,privkey));
+    char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
     LP_numprivkeys++;
     return(LP_numprivkeys);
 }
