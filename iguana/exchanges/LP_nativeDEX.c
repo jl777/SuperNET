@@ -763,6 +763,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
+    LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD");
     LP_privkey_init(mypeer,pubsock,"KMD",60,"test","");
     printf("utxos.(%s)\n",LP_utxos(mypeer,"",10000));
     while ( 1 )
