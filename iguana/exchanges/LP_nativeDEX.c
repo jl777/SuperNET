@@ -336,7 +336,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
 char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
     char url[512];
-    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
     return(issue_curl(url));
 }
 
