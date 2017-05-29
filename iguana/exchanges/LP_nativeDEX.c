@@ -766,7 +766,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                             reqjson = cJSON_CreateObject();
                             jaddbits256(reqjson,"txid",jbits256(item,"txid"));
                             jaddnum(reqjson,"vout",jint(item,"vout"));
-                            jaddstr(reqjson,"base",jstr(item,"base"));
+                            jaddstr(reqjson,"base",jstr(item,"coin"));
                             jaddstr(reqjson,"rel","BTC");
                             jaddstr(reqjson,"method","price");
                             //5.9.253.196:7779 [{"ipaddr":"5.9.253.196","port":7779,"profit":0.01064000,"coin":"KMD","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","script":"76a914434009423522682bd7cc1b18a614c3096d19683188ac","txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"value":100,"deposit":"07902a65d11f0f577a0346432bcd2b6b53de5554c314209d1964693962524d69","dvout":1,"dvalue":120}]

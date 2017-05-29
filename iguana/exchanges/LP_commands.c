@@ -39,6 +39,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
 {
     char *method,*base,*rel,*retstr,*pairstr; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
     printf("LP_command.(%s)\n",jprint(argjson,0));
+    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"rel":"BTC","method":"price"})
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
