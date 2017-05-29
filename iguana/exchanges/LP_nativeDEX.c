@@ -42,11 +42,11 @@ struct LP_peerinfo
 struct LP_utxoinfo
 {
     UT_hash_handle hh;
-    bits256 txid,deposittxid,otherpubkey;
+    bits256 txid,deposittxid,feetxid,otherpubkey;
     void *swap;
-    uint64_t satoshis,depositsatoshis;
+    uint64_t satoshis,depositsatoshis,feesatoshis;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
-    int32_t vout,depositvout,pair; uint32_t lasttime,errors,swappending;
+    int32_t vout,depositvout,feevout,pair; uint32_t lasttime,errors,swappending;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;
@@ -188,7 +188,7 @@ struct LP_peerinfo *LP_addpeer(struct LP_peerinfo *mypeer,int32_t mypubsock,char
     return(peer);
 }
 
-struct LP_utxoinfo *LP_addutxo(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
+struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,bits256 txid,int32_t vout,int64_t satoshis,bits256 deposittxid,int32_t depositvout,int64_t depositsatoshis,char *spendscript,char *coinaddr,char *ipaddr,uint16_t port,double profitmargin)
 {
     struct LP_utxoinfo *utxo = 0; uint8_t key[sizeof(txid) + sizeof(vout)];
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
@@ -219,9 +219,18 @@ struct LP_utxoinfo *LP_addutxo(struct LP_peerinfo *mypeer,int32_t mypubsock,char
         utxo->txid = txid;
         utxo->vout = vout;
         utxo->satoshis = satoshis;
-        utxo->deposittxid = deposittxid;
-        utxo->depositvout = depositvout;
-        utxo->depositsatoshis = depositsatoshis;
+        if ( amclient == 0 )
+        {
+            utxo->deposittxid = deposittxid;
+            utxo->depositvout = depositvout;
+            utxo->depositsatoshis = depositsatoshis;
+        }
+        else
+        {
+            utxo->feetxid = deposittxid;
+            utxo->feevout = depositvout;
+            utxo->feesatoshis = depositsatoshis;
+        }
         memcpy(key,txid.bytes,sizeof(txid));
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
         memcpy(utxo->key,key,sizeof(key));
@@ -274,7 +283,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
     return(n);
 }
 
-int32_t LP_utxosparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
+int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *retstr,uint32_t now)
 {
     struct LP_peerinfo *peer,*destpeer; uint32_t argipbits; char *argipaddr; uint16_t argport,pushport,subport; cJSON *array,*item; int32_t i,n=0; bits256 txid; struct LP_utxoinfo *utxo;
     if ( (array= cJSON_Parse(retstr)) != 0 )
@@ -296,7 +305,7 @@ int32_t LP_utxosparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     if ( jobj(item,"txid") != 0 )
                     {
                         txid = jbits256(item,"txid");
-                        utxo = LP_addutxo(mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),SATOSHIDEN * jdouble(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
+                        utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),SATOSHIDEN * jdouble(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
                         if ( utxo != 0 )
                             utxo->lasttime = now;
                     }
@@ -378,7 +387,7 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
         peer->errors++;
 }
 
-void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
+void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr,uint16_t destport,char *coin,int32_t lastn,char *myipaddr,uint16_t myport,double myprofit)
 {
     char *retstr; struct LP_utxoinfo *utxo,*tmp; struct LP_peerinfo *peer; int32_t i,firsti; uint32_t now,flag = 0;
     peer = LP_peerfind((uint32_t)calc_ipbits(destipaddr),destport);
@@ -389,7 +398,7 @@ void LP_utxosquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
     if ( (retstr= issue_LP_getutxos(destipaddr,destport,coin,lastn,myipaddr,myport,myprofit,mypeer->numpeers,mypeer->numutxos)) != 0 )
     {
         now = (uint32_t)time(NULL);
-        LP_utxosparse(mypeer,mypubsock,destipaddr,destport,retstr,now);
+        LP_utxosparse(amclient,mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
         i = 0;
         if ( lastn >= mypeer->numutxos )
@@ -664,7 +673,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
-    if ( amclient == 0 && (array= LP_listunspent(symbol,coinaddr)) != 0 )
+    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -688,7 +697,9 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                     script = jstr(item,"scriptPubKey");
                     depositval = values[i];
                     values[i] = 0, used++;
-                    targetval = (depositval / 9) * 8;
+                    if ( amclient != 0 )
+                        targetval = (depositval / 777);
+                    else targetval = (depositval / 9) * 8;
                     printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                     if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                     {
@@ -699,7 +710,9 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                         {
                             value = values[i];
                             values[i] = 0, used++;
-                            LP_addutxo(mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
+                            if ( amclient == 0 )
+                                LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
+                            else LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,"127.0.0.1",0,0);
                             total += value;
                         }
                     }
@@ -763,7 +776,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         lastn = LP_PROPAGATION_SLACK * 2;
                     printf("%s numutxos.%d vs %d lastn.%d\n",peer->ipaddr,peer->numutxos,mypeer->numutxos,lastn);
                     if ( strcmp(peer->ipaddr,mypeer->ipaddr) != 0 )
-                        LP_utxosquery(mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
+                        LP_utxosquery(0,mypeer,pubsock,peer->ipaddr,peer->port,"",lastn,mypeer->ipaddr,myport,profitmargin);
                 }
                 while ( peer->subsock >= 0 && (recvsize= nn_recv(peer->subsock,&ptr,NN_MSG,0)) >= 0 )
                 {
