@@ -653,7 +653,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     {
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        printf("%s coinaddr.%s %d wif.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr);
+        printf("%s coinaddr.%s %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
