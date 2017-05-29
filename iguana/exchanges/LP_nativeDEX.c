@@ -653,7 +653,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     {
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        printf("%s coinaddr.%s %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
+        printf("%s coinaddr.(%s) %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
@@ -710,12 +710,14 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin,char *passphrase)
 {
     char *myipaddr=0,*retstr; long filesize,n; int32_t len,timeout,maxsize,recvsize,nonz,i,lastn,pullsock=-1,pubsock=-1; struct LP_peerinfo *peer,*tmp,*mypeer=0; char pushaddr[128],subaddr[128]; void *ptr; cJSON *argjson;
+    OS_randombytes((void *)&n,sizeof(n));
+    srand((int32_t)n);
     portable_mutex_init(&LP_peermutex);
     portable_mutex_init(&LP_utxomutex);
     portable_mutex_init(&LP_commandmutex);
-    if ( profitmargin == 0. )
+    if ( profitmargin == 0. || profitmargin == 0.01 )
     {
-        profitmargin = 0.01;
+        profitmargin = 0.01 + (double)(rand() % 100)/10000;
         printf("default profit margin %f\n",profitmargin);
     }
     if ( system("curl -s4 checkip.amazonaws.com > /tmp/myipaddr") == 0 )
