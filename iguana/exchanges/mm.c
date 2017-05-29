@@ -170,13 +170,13 @@ char *iguana_walletpassphrase(char *passphrase,int32_t timeout)
     return(bitcoind_RPC(0,"",url,0,"walletpassphrase",postdata));
 }
 
-char *iguana_listunspent(char *coin,char *coinaddr)
+/*char *iguana_listunspent(char *coin,char *coinaddr)
 {
     char url[512],postdata[1024];
     sprintf(url,"%s/coin=%s&agent=bitcoinrpc&method=listunspent?",IGUANA_URL,coin);
     sprintf(postdata,"[\"%s\"]",coinaddr);
     return(bitcoind_RPC(0,"",url,0,"listunspent",postdata));
-}
+}*/
 
 /*char *issue_LP_intro(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers)
 {

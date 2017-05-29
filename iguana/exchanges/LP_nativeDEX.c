@@ -639,7 +639,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr)
 {
-    char *retstr,coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    char coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
@@ -652,19 +652,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     printf("%s coinaddr.%s %d\n",symbol,coinaddr,coin->pubtype);
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
-    retstr = iguana_listunspent(symbol,coinaddr);
-    if ( retstr != 0 && retstr[0] == '[' && retstr[1] == ']' )
-        free(retstr), retstr = 0;
-    if ( retstr == 0 )
-    {
-        if ( (retstr= DEX_listunspent(symbol,coinaddr)) == 0 )
-        {
-            printf("null listunspent\n");
-            return(0);
-        }
-    }
-    printf("LP_privkey_init.(%s)\n",retstr);
-    if ( (array= cJSON_Parse(retstr)) != 0 )
+    if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
     {
         if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -709,7 +697,6 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         }
         free_json(array);
     }
-    free(retstr);
     return(total);
 }
 
