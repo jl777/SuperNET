@@ -728,6 +728,8 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD");
     LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
+    LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"",amclient);
+    LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"",amclient);
     if ( amclient != 0 )
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
@@ -742,8 +744,6 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     else
     {
-        LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"",amclient);
-        LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"",amclient);
         while ( 1 )
         {
             nonz = 0;
