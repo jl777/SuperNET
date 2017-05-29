@@ -372,7 +372,7 @@ void LP_peersquery(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipaddr
             {
                 if ( peer->lasttime != now )
                 {
-                    printf("{%s:%u %.6f} ",peer->ipaddr,peer->port,peer->profitmargin);
+                    printf("{%s:%u %.6f}.%d ",peer->ipaddr,peer->port,peer->profitmargin,peer->lasttime - now);
                     flag++;
                     if ( (retstr= issue_LP_notify(destipaddr,destport,peer->ipaddr,peer->port,peer->profitmargin,peer->numpeers,0)) != 0 )
                         free(retstr);
