@@ -149,7 +149,7 @@ uint64_t LP_getestimatedrate(char *symbol)
     char buf[512],*retstr; uint64_t rate = 200; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin != 0 )
     {
-        sprintf(buf,"[%d]",3);
+        sprintf(buf,"[\"%d\"]",3);
         if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"importaddress",buf)) != 0 )
         {
             rate = atof(retstr);
