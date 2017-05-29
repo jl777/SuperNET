@@ -631,7 +631,7 @@ struct iguana_info *LP_coinfind(char *symbol)
         cdata.wiftype = 188;
         LP_userpass(cdata.userpass,symbol,symbol,strcmp(symbol,"KMD") == 0 ? "komodo" : symbol);
     }
-    printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
+    //printf("%s: (%s) (%s)\n",symbol,cdata.serverport,cdata.userpass);
     LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
     coin = &LP_coins[LP_numcoins++];
     *coin = cdata;
@@ -650,7 +650,11 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
-    printf("%s coinaddr.%s %d\n",symbol,coinaddr,coin->pubtype);
+    {
+        char tmpstr[128];
+        bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
+        printf("%s coinaddr.%s %d wif.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr);
+    }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
     if ( (array= LP_listunspent(symbol,coinaddr)) != 0 )
