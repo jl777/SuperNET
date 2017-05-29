@@ -654,7 +654,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
         printf("%s coinaddr.%s %d wif.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr);
-        LP_importaddress(coin->symbol,tmpstr);
+        LP_importprivkey(coin->symbol,tmpstr);
     }
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
