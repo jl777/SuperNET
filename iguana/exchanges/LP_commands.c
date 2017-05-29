@@ -109,7 +109,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                             {
                                 desthash = jbits256(argjson,"desthash");
                                 LP_requestinit(&R,srchash,desthash,base,satoshis,rel,destsatoshis,timestamp,quotetime,DEXselector);
-                                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) != 0 )
+                                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
                                     retjson = cJSON_CreateObject();
                                     jaddstr(retjson,"result","connected");
