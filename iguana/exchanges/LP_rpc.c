@@ -113,10 +113,10 @@ cJSON *LP_validateaddress(char *symbol,char *address)
     return(bitcoin_json(coin,"validateaddress",buf));
 }
 
-cJSON *LP_importprivkey(char *symbol,char *wifstr)
+cJSON *LP_importprivkey(char *symbol,char *wifstr,int32_t flag)
 {
     char buf[512]; struct iguana_info *coin = LP_coinfind(symbol);
-    sprintf(buf,"\"%s\"",wifstr);
+    sprintf(buf,"[\"%s\", %s]",wifstr,flag < 0 ? "false" : "true");
     return(bitcoin_json(coin,"importprivkey",buf));
 }
 
