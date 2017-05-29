@@ -35,6 +35,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "../../crypto777/nanosrc/pipeline.h"
 #include "../../crypto777/nanosrc/reqrep.h"
 #include "../../crypto777/nanosrc/tcp.h"
+#include "../../crypto777/nanosrc/pair.h"
 #else
 #include "/usr/local/include/nanomsg/nn.h"
 #include "/usr/local/include/nanomsg/bus.h"
@@ -42,6 +43,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "/usr/local/include/nanomsg/pipeline.h"
 #include "/usr/local/include/nanomsg/reqrep.h"
 #include "/usr/local/include/nanomsg/tcp.h"
+#include "/usr/local/include/nanomsg/pair.h"
 #endif
 
 char DEX_baseaddr[64],DEX_reladdr[64];

@@ -663,7 +663,7 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
             {
                 len = (int32_t)strlen((char *)ptr) + 1;
                 portable_mutex_lock(&LP_commandmutex);
-                LP_command(mypeer,mypub,argjson,&ptr[len],recvsize - len,profitmargin);
+                LP_command(mypeer,mypub,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin);
                 portable_mutex_unlock(&LP_commandmutex);
                 free_json(argjson);
             }
