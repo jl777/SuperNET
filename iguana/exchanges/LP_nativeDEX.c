@@ -264,14 +264,12 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
-                    {
                         peer = LP_addpeer(mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
-                        if ( peer != 0 )
-                        {
-                            peer->lasttime = now;
-                            if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
-                                peer->numpeers = n;
-                        }
+                    if ( peer != 0 )
+                    {
+                        peer->lasttime = now;
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
+                            peer->numpeers = n;
                     }
                 }
             }
