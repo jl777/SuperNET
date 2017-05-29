@@ -37,7 +37,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
 
 void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method,*base,*rel,*retstr,*pairstr; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
+    char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
     //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","method":"price"})
     if ( (method= jstr(argjson,"method")) != 0 )
     {
@@ -102,9 +102,10 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         //if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
                         {
                             destsatoshis = value;
+                            nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
                                 printf("error creating utxo->pair\n");
-                            else if ( (pairstr= jstr(argjson,"pair")) != 0 && nn_connect(utxo->pair,pairstr) >= 0 )
+                            else if ( nn_connect(utxo->pair,pairstr) >= 0 )
                             {
                                 desthash = jbits256(argjson,"desthash");
                                 LP_requestinit(&R,srchash,desthash,base,satoshis,rel,destsatoshis,timestamp,quotetime,DEXselector);
@@ -112,6 +113,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                                 {
                                     retjson = cJSON_CreateObject();
                                     jaddstr(retjson,"result","connected");
+                                    jaddstr(retjson,"pair",pairstr);
                                     jaddnum(retjson,"requestid",R.requestid);
                                     jaddnum(retjson,"quoteid",R.quoteid);
                                     retstr = jprint(retjson,1);
