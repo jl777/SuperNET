@@ -268,7 +268,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                     if ( peer != 0 )
                     {
                         peer->lasttime = now;
-                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers < n )
+                        if ( strcmp(argipaddr,destipaddr) == 0 && destport == argport && peer->numpeers != n )
                             peer->numpeers = n;
                     }
                 }
@@ -752,7 +752,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     {
         HASH_ITER(hh,LP_peerinfos,peer,tmp)
         {
-            utxostr = issue_LP_clientgetutxos(peer->ipaddr,peer->port,"KMD",0);
+            utxostr = issue_LP_clientgetutxos(peer->ipaddr,peer->port,"KMD",10);
             printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
         }
         printf("peers\n");
