@@ -818,7 +818,7 @@ int main(int argc, const char * argv[])
         {
             printf("error launching LP_main %f\n",profitmargin);
             exit(-1);
-        } else printf("launched.(%s)\n",passphrase);
+        } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
 getchar();
         maxexposure = jdouble(retjson,"maxexposure");
         incrratio = jdouble(retjson,"lotratio");
