@@ -59,6 +59,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         retjson = cJSON_CreateObject();
                         jaddstr(retjson,"base",base);
                         jaddstr(retjson,"rel",rel);
+                        jaddstr(retjson,"address",utxo->coinaddr);
                         jaddnum(retjson,"timestamp",time(NULL));
                         jaddnum(retjson,"price",price);
                         jaddbits256(retjson,"txid",txid);
@@ -131,9 +132,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                             }
                             else
                             {
-                                if ( pairstr != 0 )
-                                    printf("printf error nn_connect to %s\n",pairstr);
-                                else printf("(%s) missing pair\n",jprint(argjson,0));
+                                printf("printf error nn_connect to %s\n",pairstr);
                                 nn_close(utxo->pair);
                                 utxo->pair = -1;
                             }
