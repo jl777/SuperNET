@@ -152,8 +152,11 @@ uint64_t LP_getestimatedrate(char *symbol)
         sprintf(buf,"[%d]",13);
         if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"estimatefee",buf)) != 0 )
         {
-            rate = atof(retstr);
-            printf("estimated rate %s -> %llu\n",retstr,(long long)rate);
+            if ( retstr[0] != '-' )
+            {
+                rate = atof(retstr);
+                printf("estimated rate %s -> %llu\n",retstr,(long long)rate);
+            }
             free(retstr);
         }
     }
@@ -164,7 +167,7 @@ uint64_t LP_txfee(char *symbol)
 {
     uint64_t txfee = 0;
     if ( strcmp(symbol,"BTC") != 0 )
-        txfee = 50000;
+        txfee = 10000;
     return(txfee);
 }
 
