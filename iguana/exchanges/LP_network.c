@@ -115,6 +115,13 @@ char *nanomsg_tcpname(char *str,char *ipaddr,uint16_t port)
 int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
 {
     int32_t sentbytes,len,i; struct nn_pollfd pfd;
+    if ( sock < 0 )
+    {
+        printf("LP_send to illegal socket\n");
+        if ( freeflag != 0 )
+            free(msg);
+        return(-1);
+    }
     for (i=0; i<100; i++)
     {
         pfd.fd = sock;
@@ -132,6 +139,8 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
         usleep(1000);
     }
     printf("error LP_send\n");
+    if ( freeflag != 0 )
+        free(msg);
     return(-1);
 }
 
