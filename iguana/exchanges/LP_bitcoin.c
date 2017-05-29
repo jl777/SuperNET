@@ -18,6 +18,29 @@
 //  marketmaker
 //
 
+struct { bits256 privkey; uint8_t rmd160[20]; } LP_privkeys[100]; int32_t LP_numprivkeys;
+
+bits256 LP_privkeyfind(uint8_t rmd160[20])
+{
+    int32_t i; static bits256 zero;
+    for (i=0; i<LP_numprivkeys; i++)
+        if ( memcmp(rmd160,LP_privkeys[i].rmd160,20) == 0 )
+            return(LP_privkeys[i].privkey);
+    return(zero);
+}
+
+int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
+{
+    bits256 tmpkey;
+    tmpkey = LP_privkeyfind(rmd160);
+    if ( bits256_nonz(privkey) != 0 )
+        return(-bits256_cmp(privkey,tmpkey));
+    LP_privkeys[LP_numprivkeys].privkey = privkey;
+    memcpy(LP_privkeys[LP_numprivkeys].rmd160,rmd160,20);
+    LP_numprivkeys++;
+    return(LP_numprivkeys);
+}
+
 int32_t iguana_rwnum(int32_t rwflag,uint8_t *serialized,int32_t len,void *endianedp)
 {
     int32_t i; uint64_t x;
@@ -736,6 +759,21 @@ int32_t bitcoin_priv2wiflong(char *wifstr,bits256 privkey,uint8_t addrtype)
         }
     }
     return((int32_t)strlen(wifstr));
+}
+
+bits256 LP_privkey(char *coinaddr)
+{
+    bits256 privkey; uint8_t addrtype,rmd160[20];
+    bitcoin_addr2rmd160(&addrtype,rmd160,coinaddr);
+    privkey = LP_privkeyfind(rmd160);
+    return(privkey);
+}
+
+bits256 LP_pubkey(bits256 privkey)
+{
+    bits256 pubkey;
+    pubkey = curve25519(privkey,curve25519_basepoint9());
+    return(pubkey);
 }
 
 char *_setVsigner(uint8_t pubtype,struct vin_info *V,int32_t ind,char *pubstr,char *wifstr)

@@ -437,13 +437,207 @@ int32_t LP_nearestvalue(uint64_t *values,int32_t n,uint64_t targetval)
     return(mini);
 }
 
+int32_t basilisk_istrustedbob(struct basilisk_swap *swap)
+{
+    // for BTC and if trusted LP
+    return(0);
+}
+
+void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
+{
+    
+}
+
+void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel,double relvolume)
+{
+    // add to trades
+}
+
+char GLOBAL_DBDIR[] = ".";
+
+#include "LP_secp.c"
+#include "LP_rpc.c"
+#include "LP_bitcoin.c"
+#include "LP_transaction.c"
+#include "LP_remember.c"
+#include "LP_statemachine.c"
+#include "LP_swap.c"
+#include "LP_commands.c"
+
+char *parse_conf_line(char *line,char *field)
+{
+    line += strlen(field);
+    for (; *line!='='&&*line!=0; line++)
+        break;
+    if ( *line == 0 )
+        return(0);
+    if ( *line == '=' )
+        line++;
+    while ( line[strlen(line)-1] == '\r' || line[strlen(line)-1] == '\n' || line[strlen(line)-1] == ' ' )
+        line[strlen(line)-1] = 0;
+    //printf("LINE.(%s)\n",line);
+    _stripwhite(line,0);
+    return(clonestr(line));
+}
+
+void LP_userpassfp(char *username,char *password,FILE *fp)
+{
+    char *rpcuser,*rpcpassword,*str,line[8192];
+    rpcuser = rpcpassword = 0;
+    username[0] = password[0] = 0;
+    while ( fgets(line,sizeof(line),fp) != 0 )
+    {
+        if ( line[0] == '#' )
+            continue;
+        //printf("line.(%s) %p %p\n",line,strstr(line,(char *)"rpcuser"),strstr(line,(char *)"rpcpassword"));
+        if ( (str= strstr(line,(char *)"rpcuser")) != 0 )
+            rpcuser = parse_conf_line(str,(char *)"rpcuser");
+        else if ( (str= strstr(line,(char *)"rpcpassword")) != 0 )
+            rpcpassword = parse_conf_line(str,(char *)"rpcpassword");
+    }
+    if ( rpcuser != 0 && rpcpassword != 0 )
+    {
+        strcpy(username,rpcuser);
+        strcpy(password,rpcpassword);
+    }
+    //printf("rpcuser.(%s) rpcpassword.(%s) KMDUSERPASS.(%s) %u\n",rpcuser,rpcpassword,KMDUSERPASS,port);
+    if ( rpcuser != 0 )
+        free(rpcuser);
+    if ( rpcpassword != 0 )
+        free(rpcpassword);
+}
+
+void LP_statefname(char *fname,char *symbol,char *assetname,char *str)
+{
+    sprintf(fname,"%s",LP_getdatadir());
+#ifdef WIN32
+    strcat(fname,"\\");
+#else
+    strcat(fname,"/");
+#endif
+    if ( strcmp(symbol,"BTC") == 0 )
+        strcat(fname,".bitcoin");
+    else if ( strcmp(symbol,"LTC") == 0 )
+        strcat(fname,".litecoin");
+    else
+    {
+        if ( assetname[0] == 0 )
+            strcat(fname,".komodo");
+        else strcat(fname,assetname);
+    }
+#ifdef WIN32
+    strcat(fname,"\\");
+#else
+    strcat(fname,"/");
+#endif
+    strcat(fname,str);
+    printf("LP_statefname.(%s) <- %s %s %s\n",fname,symbol,assetname,str);
+}
+
+int32_t LP_userpass(char *userpass,char *symbol,char *assetname,char *confroot)
+{
+    FILE *fp; char fname[512],username[512],password[512],confname[16];
+    userpass[0] = 0;
+    sprintf(confname,"%s.conf",confroot);
+#ifdef __APPLE__
+    confname[0] = toupper(confname[0]);
+#endif
+    LP_statefname(fname,symbol,assetname,confname);
+    if ( (fp= fopen(fname,"rb")) != 0 )
+    {
+        LP_userpassfp(username,password,fp);
+        sprintf(userpass,"%s:%s",username,password);
+        fclose(fp);
+        return((int32_t)strlen(userpass));
+    }
+    return(-1);
+}
+
+uint32_t LP_assetmagic(char *symbol,uint64_t supply)
+{
+    uint8_t buf[512]; int32_t len = 0;
+    if ( strcmp(symbol,"KMD") == 0 )
+        return(0x8de4eef9);
+    len = iguana_rwnum(1,&buf[len],sizeof(supply),(void *)&supply);
+    strcpy((char *)&buf[len],symbol);
+    len += strlen(symbol);
+    return(calc_crc32(0,buf,len));
+}
+
+uint16_t LP_assetport(uint32_t magic)
+{
+    if ( magic == 0x8de4eef9 )
+        return(7770);
+    else return(8000 + (magic % 7777));
+}
+
+uint16_t LP_port(char *symbol,uint64_t supply,uint32_t *magicp)
+{
+    if ( symbol == 0 || symbol[0] == 0 || strcmp("KMD",symbol) == 0 )
+    {
+        *magicp = 0x8de4eef9;
+        return(7770);
+    }
+    else if ( strcmp("BTC",symbol) == 0 )
+        return(8332);
+    else if ( strcmp("LTC",symbol) == 0 )
+        return(9332);
+    *magicp = LP_assetmagic(symbol,supply);
+    return(LP_assetport(*magicp));
+}
+
+struct iguana_info *LP_coinfind(char *symbol)
+{
+    static struct iguana_info *LP_coins; static int32_t LP_numcoins;
+    struct iguana_info *coin,cdata; int32_t i; uint32_t magic; uint16_t port;
+    for (i=0; i<LP_numcoins; i++)
+        if ( strcmp(LP_coins[i].symbol,symbol) == 0 )
+            return(&LP_coins[i]);
+    coin = &cdata;
+    safecopy(cdata.symbol,symbol,sizeof(cdata.symbol));
+    port = LP_port(symbol,10,&magic);
+    sprintf(cdata.serverport,"127.0.0.1:%u",port);
+    cdata.longestchain = 100000;
+    cdata.txfee = 10000;
+    cdata.estimatedrate = 20;
+    if ( strcmp(symbol,"BTC") == 0 )
+    {
+        cdata.txfee = 50000;
+        cdata.estimatedrate = 200;
+        cdata.p2shtype = 5;
+        cdata.wiftype = 128;
+        LP_userpass(cdata.userpass,symbol,"","bitcoin");
+    }
+    else if ( strcmp(symbol,"LTC") == 0 )
+    {
+        cdata.pubtype = 48;
+        cdata.p2shtype = 5;
+        cdata.wiftype = 176;
+        LP_userpass(cdata.userpass,symbol,"","litecoin");
+    }
+    else
+    {
+        cdata.isPoS = 1;
+        cdata.pubtype = 60;
+        cdata.p2shtype = 85;
+        cdata.wiftype = 188;
+        LP_userpass(cdata.userpass,symbol,symbol,strcmp(symbol,"KMD") == 0 ? "komodo" : symbol);
+    }
+    LP_coins = realloc(LP_coins,sizeof(*LP_coins) * (LP_numcoins+1));
+    coin = &LP_coins[LP_numcoins++];
+    *coin = cdata;
+    return(coin);
+}
+
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin,uint8_t addrtype,char *passphrase,char *wifstr)
 {
-    char *retstr,coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33];
+    char *retstr,coinaddr[64],*script; cJSON *array,*item; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20];
     if ( passphrase != 0 )
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coinaddr,privkey,addrtype);
+    bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
+    LP_privkeyadd(privkey,rmd160);
     retstr = iguana_listunspent(coin,coinaddr);
     if ( retstr != 0 && retstr[0] == '[' && retstr[1] == ']' )
         free(retstr), retstr = 0;
@@ -504,52 +698,6 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *coin
     free(retstr);
     return(total);
 }
-
-
-int32_t basilisk_istrustedbob(struct basilisk_swap *swap)
-{
-    // for BTC and if trusted LP
-    return(0);
-}
-
-struct iguana_info KMDcoin,BTCcoin,LTCcoin;
-
-struct iguana_info *LP_coinfind(char *symbol)
-{
-    struct iguana_info *coin;
-    if ( strcmp(symbol,"BTC") == 0 )
-        return(&BTCcoin);
-    else if ( strcmp(symbol,"LTC") == 0 )
-        return(&LTCcoin);
-    else //if ( strcmp(symbol,"KMD") == 0 )
-    {
-        coin = calloc(1,sizeof(*coin));
-        *coin = KMDcoin;
-        strcpy(coin->symbol,symbol);
-        return(coin);
-    }
-}
-
-void tradebot_swap_balancingtrade(struct basilisk_swap *swap,int32_t iambob)
-{
-    
-}
-
-void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel,double relvolume)
-{
-    // add to trades
-}
-
-char GLOBAL_DBDIR[] = ".";
-
-#include "LP_secp.c"
-#include "LP_rpc.c"
-#include "LP_bitcoin.c"
-#include "LP_transaction.c"
-#include "LP_remember.c"
-#include "LP_statemachine.c"
-#include "LP_swap.c"
-#include "LP_commands.c"
 
 void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
 {

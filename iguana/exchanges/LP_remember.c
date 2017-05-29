@@ -169,7 +169,7 @@ void basilisk_dontforget_userdata(char *userdataname,FILE *fp,uint8_t *script,in
 
 void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx,int32_t locktime,bits256 triggertxid)
 {
-    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65],*tmp; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
+    char zeroes[32],fname[512],str[65],coinaddr[64],secretAmstr[41],secretAm256str[65],secretBnstr[41],secretBn256str[65]; FILE *fp; int32_t i,len; uint8_t redeemscript[256],script[256];
     sprintf(fname,"%s/SWAPS/%u-%u.%s",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid,rawtx->name), OS_compatible_path(fname);
     coinaddr[0] = secretAmstr[0] = secretAm256str[0] = secretBnstr[0] = secretBn256str[0] = 0;
     memset(zeroes,0,sizeof(zeroes));
@@ -187,8 +187,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
                 basilisk_swap_coinaddr(swap,&swap->bobcoin,coinaddr,rawtx->txbytes,rawtx->I.datalen);
                 if ( coinaddr[0] != 0 )
                 {
-                    if ( (tmp= LP_importaddress(swap->bobcoin.symbol,coinaddr)) != 0 )
-                        free(tmp);
+                    LP_importaddress(swap->bobcoin.symbol,coinaddr);
                     if ( rawtx == &swap->bobdeposit )
                         safecopy(swap->Bdeposit,coinaddr,sizeof(swap->Bdeposit));
                     else safecopy(swap->Bpayment,coinaddr,sizeof(swap->Bpayment));
@@ -210,8 +209,7 @@ void basilisk_dontforget(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx
         if ( bits256_nonz(swap->I.pubAm) != 0 && bits256_nonz(swap->I.pubBn) != 0 )
         {
             basilisk_alicescript(redeemscript,&len,script,0,coinaddr,swap->alicecoin.p2shtype,swap->I.pubAm,swap->I.pubBn);
-            if ( (tmp= LP_importaddress(swap->alicecoin.symbol,coinaddr)) != 0 )
-                free(tmp);
+            LP_importaddress(swap->alicecoin.symbol,coinaddr);
             fprintf(fp,",\"Apayment\":\"%s\"",coinaddr);
         }
         /*basilisk_dontforget_userdata("Aclaim",fp,swap->I.userdata_aliceclaim,swap->I.userdata_aliceclaimlen);
@@ -658,7 +656,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                         safecopy(alicecoin,symbol,sizeof(alicecoin));
                     if ( finishedflag == 0 )
                     {
-                        if ( (sentobj= LP_swapgettx(symbol,txid)) == 0 )
+                        if ( (sentobj= LP_gettx(symbol,txid)) == 0 )
                         {
                             //printf("%s %s ready to broadcast\n",symbol,bits256_str(str2,txid));
                         }
@@ -722,7 +720,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             printf("txbytes.%p Apayment.%s\n",txbytes[BASILISK_ALICEPAYMENT],bits256_str(str,txids[BASILISK_ALICEPAYMENT]));
             if ( txbytes[BASILISK_ALICEPAYMENT] != 0 )
                 sentflags[BASILISK_ALICEPAYMENT] = 1;
-            else if ( (sentobj= LP_swapgettx(alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
+            else if ( (sentobj= LP_gettx(alicecoin,txids[BASILISK_ALICEPAYMENT])) != 0 )
             {
                 sentflags[BASILISK_ALICEPAYMENT] = 1;
                 free_json(sentobj);
@@ -756,7 +754,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_ALICESPEND] != 0 )
                     {
-                        txids[BASILISK_ALICESPEND] = basilisk_swap_sendrawtransaction("alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
+                        txids[BASILISK_ALICESPEND] = LP_broadcast("alicespend",bobcoin,txbytes[BASILISK_ALICESPEND]);
                         if ( bits256_nonz(txids[BASILISK_ALICESPEND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_ALICESPEND] = 1;
@@ -781,7 +779,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_ALICECLAIM] != 0 )
                     {
-                        txids[BASILISK_ALICECLAIM] = basilisk_swap_sendrawtransaction("aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM]);
+                        txids[BASILISK_ALICECLAIM] = LP_broadcast("aliceclaim",bobcoin,txbytes[BASILISK_ALICECLAIM]);
                         if ( bits256_nonz(txids[BASILISK_ALICECLAIM]) != 0 ) // tested
                         {
                             sentflags[BASILISK_ALICECLAIM] = 1;
@@ -803,7 +801,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 }
                 if ( txbytes[BASILISK_ALICERECLAIM] != 0 )
                 {
-                    txids[BASILISK_ALICERECLAIM] = basilisk_swap_sendrawtransaction("alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM]);
+                    txids[BASILISK_ALICERECLAIM] = LP_broadcast("alicereclaim",alicecoin,txbytes[BASILISK_ALICERECLAIM]);
                     if ( bits256_nonz(txids[BASILISK_ALICERECLAIM]) != 0 ) // tested
                     {
                         sentflags[BASILISK_ALICERECLAIM] = 1;
@@ -833,7 +831,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_BOBSPEND] != 0 )
                     {
-                        txids[BASILISK_BOBSPEND] = basilisk_swap_sendrawtransaction("bobspend",alicecoin,txbytes[BASILISK_BOBSPEND]);
+                        txids[BASILISK_BOBSPEND] = LP_broadcast("bobspend",alicecoin,txbytes[BASILISK_BOBSPEND]);
                         if ( bits256_nonz(txids[BASILISK_BOBSPEND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_BOBSPEND] = 1;
@@ -862,7 +860,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                 }
                 if ( txbytes[BASILISK_BOBRECLAIM] != 0 )
                 {
-                    txids[BASILISK_BOBRECLAIM] = basilisk_swap_sendrawtransaction("bobreclaim",bobcoin,txbytes[BASILISK_BOBRECLAIM]);
+                    txids[BASILISK_BOBRECLAIM] = LP_broadcast("bobreclaim",bobcoin,txbytes[BASILISK_BOBRECLAIM]);
                     if ( bits256_nonz(txids[BASILISK_BOBRECLAIM]) != 0 ) // tested
                     {
                         sentflags[BASILISK_BOBRECLAIM] = 1;
@@ -886,7 +884,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                     }
                     if ( txbytes[BASILISK_BOBREFUND] != 0 )
                     {
-                        txids[BASILISK_BOBREFUND] = basilisk_swap_sendrawtransaction("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
+                        txids[BASILISK_BOBREFUND] = LP_broadcast("bobrefund",bobcoin,txbytes[BASILISK_BOBREFUND]);
                         if ( bits256_nonz(txids[BASILISK_BOBREFUND]) != 0 ) // tested
                         {
                             sentflags[BASILISK_BOBREFUND] = 1;

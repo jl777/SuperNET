@@ -19,6 +19,81 @@
 //
 
 
+bits256 LP_broadcast(char *txname,char *symbol,char *txbytes)
+{
+    char *retstr; bits256 txid; int32_t i,sentflag = 0;
+    memset(&txid,0,sizeof(txid));
+    for (i=0; i<3; i++)
+    {
+        if ( (retstr= LP_sendrawtransaction(symbol,txbytes)) != 0 )
+        {
+            if ( is_hexstr(retstr,0) == 64 )
+            {
+                decode_hex(txid.bytes,32,retstr);
+                sentflag = 1;
+            }
+            char str[65]; printf("[%s] %s RETSTR.(%s) %s.%s\n",txname,txbytes,retstr,symbol,bits256_str(str,txid));
+            free(retstr);
+        }
+        if ( sentflag != 0 )
+            break;
+    }
+    return(txid);
+}
+
+bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
+{
+    bits256 txid; char *signedtx;
+    memset(txid.bytes,0,sizeof(txid));
+    if ( data != 0 && datalen != 0 )
+    {
+        char str[65];
+#ifdef BASILISK_DISABLESENDTX
+        txid = bits256_doublesha256(0,data,datalen);
+        printf("%s <- dont sendrawtransaction (%s)\n",name,bits256_str(str,txid));
+        return(txid);
+#endif
+        signedtx = malloc(datalen*2 + 1);
+        init_hexbytes_noT(signedtx,data,datalen);
+        txid = LP_broadcast(name,symbol,signedtx);
+        // sent to nn_socket!
+        free(signedtx);
+    }
+    return(txid);
+}
+
+uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
+{
+    uint64_t value = 0; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 && vout < numvouts )
+        {
+            utxoobj = jitem(vouts,vout);
+            if ( (value= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
+            {
+                char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d/%d\n",symbol,bits256_str(str,txid),jprint(utxoobj,0),vout,numvouts);
+            }
+        }
+        free_json(txobj);
+    }
+    return(value);
+}
+
+int32_t LP_numconfirms(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx)
+{
+    int32_t numconfirms = 100;
+#ifndef BASILISK_DISABLEWAITTX
+    cJSON *txobj;
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
+    {
+        numconfirms = jint(txobj,"confirmations");
+        free_json(txobj);
+    }
+#endif
+    return(numconfirms);
+}
+
 
 #ifdef later
 int32_t iguana_msgtx_Vset(uint8_t *serialized,int32_t maxlen,struct iguana_msgtx *msgtx,struct vin_info *V)
@@ -488,9 +563,8 @@ int32_t iguana_signrawtransaction(uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS
     *signedtxp = signedtx;
     return(complete);
 }
-#endif
 
-/*int32_t basilisk_rawtx_return(struct basilisk_rawtx *rawtx,cJSON *item,int32_t lockinputs,struct vin_info *V)
+int32_t basilisk_rawtx_return(struct basilisk_rawtx *rawtx,cJSON *item,int32_t lockinputs,struct vin_info *V)
 {
     char *signedtx,*txbytes; cJSON *vins,*privkeyarray; int32_t i,n,retval = -1;
     if ( (txbytes= jstr(item,"rawtx")) != 0 && (vins= jobj(item,"vins")) != 0 )
@@ -676,7 +750,8 @@ int32_t _basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8
     free_json(txobj);
     free(V);
     return(retval);
-}*/
+}
+#endif
 
 char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp)
 {
@@ -688,7 +763,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     //printf("bobtxspend.%s redeem.[%d]\n",symbol,redeemlen);
     if ( redeemlen < 0 )
         return(0);
-    if ( (utxoobj= LP_swapgettxout(symbol,utxotxid,vout)) == 0 )
+    if ( (utxoobj= LP_gettxout(symbol,utxotxid,vout)) == 0 )
     {
         printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
         return(0);
@@ -802,9 +877,9 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             if ( strcmp(coin->symbol,"BTC") != 0 )
                 return(retval);
             len = rawtx->I.datalen;
-            if ( coin->estimatedfee == 0 )
-                coin->estimatedfee = LP_getestimatedfee(coin->symbol);
-            newtxfee = coin->estimatedfee * len;
+            if ( coin->estimatedrate == 0 )
+                coin->estimatedrate = LP_getestimatedrate(coin->symbol);
+            newtxfee = coin->estimatedrate * len;
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
         } else break;
     }
@@ -813,7 +888,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
 
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
-    char *signedtx; int64_t txfee,newtxfee=0,estimatedfee,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,len,retval = -1;
+    char *signedtx; int64_t txfee,newtxfee=0,estimatedrate,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,len,retval = -1;
     timestamp = swap->I.started;
     if ( dest == &swap->aliceclaim )
         locktime = swap->bobdeposit.I.locktime + 1, sequenceid = 0;
@@ -835,8 +910,8 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
             if ( strcmp(symbol,"BTC") != 0 )
                 return(retval);
             len = rawtx->I.datalen;
-            estimatedfee = LP_getestimatedfee(symbol);
-            newtxfee = estimatedfee * len;
+            estimatedrate = LP_getestimatedrate(symbol);
+            newtxfee = estimatedrate * len;
         } else break;
     }
     return(retval);
@@ -907,7 +982,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 {
     cJSON *retjson;
     coinaddr[0] = 0;
-    if ( (retjson= LP_swapgettx(symbol,txid)) != 0 )
+    if ( (retjson= LP_gettx(symbol,txid)) != 0 )
     {
         LP_swap_txdestaddr(coinaddr,txid,vout,retjson);
         free_json(retjson);
@@ -918,7 +993,7 @@ int32_t LP_swap_getcoinaddr(char *symbol,char *coinaddr,bits256 txid,int32_t vou
 int32_t basilisk_swap_getsigscript(char *symbol,uint8_t *script,int32_t maxlen,bits256 txid,int32_t vini)
 {
     cJSON *retjson,*vins,*item,*skey; int32_t n,scriptlen = 0; char *hexstr;
-    if ( (retjson= LP_swapgettx(symbol,txid)) != 0 )
+    if ( (retjson= LP_gettx(symbol,txid)) != 0 )
     {
         if ( (vins= jarray(&n,retjson,"vin")) != 0 && vini < n )
         {
@@ -939,7 +1014,7 @@ int64_t basilisk_txvalue(char *symbol,bits256 txid,int32_t vout)
 {
     cJSON *txobj,*vouts,*item; int32_t n; int64_t value = 0;
     //char str[65]; printf("%s txvalue.(%s)\n",symbol,bits256_str(str,txid));
-    if ( (txobj= LP_swapgettx(symbol,txid)) != 0 )
+    if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
         //printf("txobj.(%s)\n",jprint(txobj,0));
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 )
@@ -957,7 +1032,7 @@ bits256 _LP_swap_spendtxid(char *symbol,char *destaddr,char *coinaddr,bits256 ut
 {
     char *retstr,*addr; cJSON *array,*item,*array2; int32_t i,n,m; bits256 spendtxid,txid;
     memset(&spendtxid,0,sizeof(spendtxid));
-    if ( (retstr= dex_listtransactions(symbol,coinaddr,100,0)) != 0 )
+    if ( (retstr= blocktrail_listtransactions(symbol,coinaddr,100,0)) != 0 )
     {
         if ( (array= cJSON_Parse(retstr)) != 0 )
         {
@@ -1014,7 +1089,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
     coinaddr[0] = 0;
     memset(&spendtxid,0,sizeof(spendtxid));
     //char str[65]; printf("swap %s spendtxid.(%s)\n",symbol,bits256_str(str,utxotxid));
-    if ( strcmp("BTC",symbol) == 0 )
+    if ( 0 && strcmp("BTC",symbol) == 0 )
     {
         //[{"type":"sent","confirmations":379,"height":275311,"timestamp":1492084664,"txid":"8703c5517bc57db38134058370a14e99b8e662b99ccefa2061dea311bbd02b8b","vout":0,"amount":117.50945263,"spendtxid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","vin":0,"paid":{"type":"paid","txid":"cf2509e076fbb9b22514923df916b7aacb1391dce9c7e1460b74947077b12510","height":275663,"timestamp":1492106024,"vouts":[{"RUDpN6PEBsE7ZFbGjUxk1W3QVsxnjBLYw6":117.50935263}]}}]
         LP_swap_getcoinaddr(symbol,coinaddr,utxotxid,vout);
@@ -1069,7 +1144,7 @@ bits256 LP_swap_spendtxid(char *symbol,char *destaddr,bits256 utxotxid,int32_t v
                         if ( (catstr= jstr(item,"category")) != 0 && strcmp(catstr,"send") == 0 )
                         {
                             txid = jbits256(item,"txid");
-                            if ( (txobj= LP_swapgettx(symbol,txid)) != 0 )
+                            if ( (txobj= LP_gettx(symbol,txid)) != 0 )
                             {
                                 if ( (vins= jarray(&m,txobj,"vin")) != 0 && m > jint(item,"vout") )
                                 {
@@ -1309,7 +1384,7 @@ int32_t basilisk_verify_bobpaid(void *ptr,uint8_t *data,int32_t datalen)
     memset(revAm.bytes,0,sizeof(revAm));
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobpayment,0,data,datalen,0) == 0 )
     {
-        swap->bobpayment.I.signedtxid = LP_broadcast(swap->bobpayment.name,swap->bobpayment.coin->symbol,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
+        swap->bobpayment.I.signedtxid = LP_broadcast_tx(swap->bobpayment.name,swap->bobpayment.coin->symbol,swap->bobpayment.txbytes,swap->bobpayment.I.datalen);
         if ( bits256_nonz(swap->bobpayment.I.signedtxid) != 0 )
             swap->paymentunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobpayment);
@@ -1452,7 +1527,7 @@ uint32_t LP_swapdata_rawtxsend(struct basilisk_swap *swap,uint32_t msgbits,uint8
         if ( bits256_nonz(rawtx->I.signedtxid) != 0 && bits256_nonz(rawtx->I.actualtxid) == 0 )
         {
             char str[65],str2[65];
-            rawtx->I.actualtxid = LP_broadcast(rawtx->name,rawtx->coin->symbol,rawtx->txbytes,rawtx->I.datalen);
+            rawtx->I.actualtxid = LP_broadcast_tx(rawtx->name,rawtx->coin->symbol,rawtx->txbytes,rawtx->I.datalen);
             if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
             {
                 printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
@@ -1536,7 +1611,7 @@ int32_t basilisk_verify_bobdeposit(void *ptr,uint8_t *data,int32_t datalen)
     uint8_t userdata[512]; int32_t i,retval,len = 0; static bits256 zero; struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->bobcoin.longestchain,&swap->bobdeposit,0,data,datalen,0) == 0 )
     {
-        swap->bobdeposit.I.signedtxid = LP_broadcast(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
+        swap->bobdeposit.I.signedtxid = LP_broadcast_tx(swap->bobdeposit.name,swap->bobcoin.symbol,swap->bobdeposit.txbytes,swap->bobdeposit.I.datalen);
         if ( bits256_nonz(swap->bobdeposit.I.signedtxid) != 0 )
             swap->depositunconf = 1;
         basilisk_dontforget_update(swap,&swap->bobdeposit);
@@ -1599,7 +1674,7 @@ int32_t basilisk_verify_alicepaid(void *ptr,uint8_t *data,int32_t datalen)
     struct basilisk_swap *swap = ptr;
     if ( basilisk_rawtx_spendscript(swap,swap->alicecoin.longestchain,&swap->alicepayment,0,data,datalen,0) == 0 )
     {
-        swap->alicepayment.I.signedtxid = LP_broadcast(swap->alicepayment.name,swap->alicecoin.symbol,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
+        swap->alicepayment.I.signedtxid = LP_broadcast_tx(swap->alicepayment.name,swap->alicecoin.symbol,swap->alicepayment.txbytes,swap->alicepayment.I.datalen);
         if ( bits256_nonz(swap->alicepayment.I.signedtxid) != 0 )
             swap->aliceunconf = 1;
         basilisk_dontforget_update(swap,&swap->alicepayment);

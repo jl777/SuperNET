@@ -171,7 +171,7 @@ struct basilisk_swapinfo
 
 struct iguana_info
 {
-    uint64_t txfee,estimatedfee;
+    uint64_t txfee,estimatedrate;
     int32_t longestchain;
     uint8_t pubtype,p2shtype,isPoS,wiftype;
     char symbol[16],changeaddr[64],userpass[1024],serverport[128];
@@ -466,5 +466,6 @@ void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
+struct iguana_info *LP_coinfind(char *symbol);
 
 #endif
