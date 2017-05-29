@@ -147,6 +147,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
+        amclient = 0;
         if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
             if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
@@ -168,19 +169,19 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 } else LP_addpeer(LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
                 amclient = 0;
             } else amclient = 1;
-            if ( strcmp(method,"getpeers") == 0 )
-                retstr = LP_peers();
-            else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
-                retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-            else if ( strcmp(method,"notify") == 0 )
-                retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-            else if ( strcmp(method,"notifyutxo") == 0 )
-            {
-                printf("utxonotify.(%s)\n",jprint(argjson,0));
-                LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),ipaddr,argport,jdouble(argjson,"profit"));
-                retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
-            }
-        } else printf("malformed request.(%s)\n",jprint(argjson,0));
+        }
+        if ( strcmp(method,"getpeers") == 0 )
+            retstr = LP_peers();
+        else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
+            retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
+        else if ( strcmp(method,"notify") == 0 )
+            retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
+        else if ( strcmp(method,"notifyutxo") == 0 )
+        {
+            printf("utxonotify.(%s)\n",jprint(argjson,0));
+            LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
+            retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
+        }
     }
     if ( retstr != 0 )
         return(retstr);
