@@ -94,12 +94,12 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         desttxid = jbits256(argjson,"desttxid");
                         destvout = jint(argjson,"destvout");
                         timestamp = juint(argjson,"timestamp");
-                        quotetime = juint(argjson,"quotetime");
                         privkey = LP_privkey(utxo->coinaddr);
                         pubkey = LP_pubkey(privkey);
                         srchash = jbits256(argjson,"srchash");
                         value = j64bits(argjson,"destsatoshis");
-                        if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
+                        quotetime = juint(argjson,"quotetime");
+                        //if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
                         {
                             destsatoshis = value;
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
@@ -135,7 +135,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                                 nn_close(utxo->pair);
                                 utxo->pair = -1;
                             }
-                        } else printf("dest %.8f < required %.8f\n",dstr(value),dstr(price*(utxo->satoshis-txfee)));
+                        } //else printf("dest %.8f < required %.8f\n",dstr(value),dstr(price*(utxo->satoshis-txfee)));
                     } else printf("no price for %s/%s\n",base,rel);
                 } else printf("utxo->pair.%d when connect came in (%s)\n",utxo->pair,jprint(argjson,0));
             }

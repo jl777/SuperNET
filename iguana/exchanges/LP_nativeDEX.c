@@ -774,7 +774,12 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                             LP_send(peer->pushsock,jprint(reqjson,0),1);
                             jdelete(reqjson,"method");
                             jaddstr(reqjson,"method","request");
-                            LP_send(peer->pushsock,jprint(reqjson,1),1);
+                            LP_send(peer->pushsock,jprint(reqjson,0),1);
+                            jdelete(reqjson,"method");
+                            jaddstr(reqjson,"method","connect");
+                            LP_send(peer->pushsock,jprint(reqjson,0),1);
+                            
+                            //SENT.({"base":"KMD","rel":"BTC","timestamp":1496076137,"price":0.00021791,"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","srchash":"2fe57da347cd62431528daac5fbb290730fff684afc4cfc2ed90995f58cb3b74","txfee":"100000","satoshis":"9999900000","destsatoshis":"2179101","result":"reserved","pending":1496076197}
                             nonz = 1;
                         }
                     }
