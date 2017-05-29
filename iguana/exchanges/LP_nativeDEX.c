@@ -237,13 +237,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_lock(&LP_utxomutex);
         HASH_ADD(hh,LP_utxoinfos,key,sizeof(key),utxo);
         if ( mypeer != 0 )
-        {
             mypeer->numutxos++;
-            printf("%s:%u LP_addutxo.(%.8f %.8f) numutxos.%d\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis),mypeer->numutxos);
-        }
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
+        printf("%s:%u LP_addutxo.(%.8f %.8f) numutxos.%d\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0);
     }
     return(utxo);
 }
