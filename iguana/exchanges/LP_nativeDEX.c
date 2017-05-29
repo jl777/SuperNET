@@ -649,6 +649,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
         conv_NXTpassword(privkey.bytes,pubkey.bytes,(uint8_t *)passphrase,(int32_t)strlen(passphrase));
     else privkey = iguana_wif2privkey(wifstr);
     iguana_priv2pub(pubkey33,coinaddr,privkey,coin->pubtype);
+    printf("%s coinaddr.%s %d\n",symbol,coinaddr,coin->pubtype);
     bitcoin_addr2rmd160(&tmptype,rmd160,coinaddr);
     LP_privkeyadd(privkey,rmd160);
     retstr = iguana_listunspent(symbol,coinaddr);
