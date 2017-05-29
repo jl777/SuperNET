@@ -64,13 +64,14 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         jaddbits256(retjson,"txid",txid);
                         pubkey = LP_pubkey(LP_privkey(utxo->coinaddr));
                         jaddbits256(retjson,"srchash",pubkey);
-                        txfee = LP_txfee(base);
+                        if ( (txfee= LP_getestimatedrate(base)*LP_AVETXSIZE) < 10000 )
+                            txfee = 10000;
                         jadd64bits(retjson,"txfee",txfee);
                         jadd64bits(retjson,"satoshis",utxo->satoshis - txfee);
                         jadd64bits(retjson,"destsatoshis",price * (utxo->satoshis-txfee));
                         if ( strcmp(method,"request") == 0 )
                         {
-                            utxo->swappending = (uint32_t)(time(NULL) + 60);
+                            utxo->swappending = (uint32_t)(time(NULL) + LP_RESERVETIME);
                             utxo->otherpubkey = jbits256(argjson,"pubkey");
                             jaddstr(retjson,"result","reserved");
                             jaddnum(retjson,"pending",utxo->swappending);
@@ -87,9 +88,9 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                     if ( (price= LP_price(base,rel)) != 0. )
                     {
                         price *= (1. + profitmargin);
-                        txfee = LP_txfee(base);
+                        txfee = j64bits(argjson,"txfee");
                         satoshis = j64bits(argjson,"satoshis");
-                        desttxfee = LP_txfee(rel);
+                        desttxfee = LP_getestimatedrate(rel) * LP_AVETXSIZE;
                         desttxid = jbits256(argjson,"desttxid");
                         destvout = jint(argjson,"destvout");
                         timestamp = juint(argjson,"timestamp");
@@ -98,7 +99,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         pubkey = LP_pubkey(privkey);
                         srchash = jbits256(argjson,"srchash");
                         value = j64bits(argjson,"destsatoshis");
-                        if ( timestamp == utxo->swappending-60 && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
+                        if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
                         {
                             destsatoshis = value;
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
