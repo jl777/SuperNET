@@ -578,7 +578,7 @@ uint16_t LP_assetport(uint32_t magic)
     else return(8000 + (magic % 7777));
 }
 
-uint16_t LP_port(char *symbol,uint64_t supply,uint32_t *magicp)
+uint16_t LP_rpcport(char *symbol,uint64_t supply,uint32_t *magicp)
 {
     if ( symbol == 0 || symbol[0] == 0 || strcmp("KMD",symbol) == 0 )
     {
@@ -590,7 +590,7 @@ uint16_t LP_port(char *symbol,uint64_t supply,uint32_t *magicp)
     else if ( strcmp("LTC",symbol) == 0 )
         return(9332);
     *magicp = LP_assetmagic(symbol,supply);
-    return(LP_assetport(*magicp));
+    return(LP_assetport(*magicp)+1);
 }
 
 struct iguana_info *LP_coinfind(char *symbol)
@@ -602,7 +602,7 @@ struct iguana_info *LP_coinfind(char *symbol)
             return(&LP_coins[i]);
     coin = &cdata;
     safecopy(cdata.symbol,symbol,sizeof(cdata.symbol));
-    port = LP_port(symbol,10,&magic);
+    port = LP_rpcport(symbol,10,&magic);
     sprintf(cdata.serverport,"127.0.0.1:%u",port);
     cdata.longestchain = 100000;
     cdata.txfee = 10000;
@@ -759,6 +759,8 @@ void LPinit(uint16_t myport,uint16_t mypull,uint16_t mypub,double profitmargin)
         printf("couldnt get myipaddr or null mypeer.%p\n",mypeer);
         exit(-1);
     }
+//curl --url "bitcoing54g44rpc:passgh6456h5word@127.0.0.1:8332" --data "{\"method\":\"getinfo\",\"params\":[]}"
+//    curl --url "bitcoinrp456454z4zhhc:passwg45hgz64g499ord@127.0.0.1:7771" --data "{\"method\":\"getinfo\",\"params\":[]}"
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
