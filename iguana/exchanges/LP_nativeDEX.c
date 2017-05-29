@@ -273,7 +273,7 @@ int32_t LP_peersparse(struct LP_peerinfo *mypeer,int32_t mypubsock,char *destipa
                                 peer->numpeers = n;
                         }
                     }
-                }
+                } 
             }
         }
         free_json(array);
