@@ -892,6 +892,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                             free(retstr);
                         }
                         portable_mutex_unlock(&LP_commandmutex);
+                        printf("subloop.(%s)\n",jprint(argjson,0));
                         free_json(argjson);
                     } else printf("error parsing.(%s)\n",(char *)ptr);
                     if ( ptr != 0 )
@@ -899,7 +900,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 }
             }
             if ( nonz == 0 )
-                sleep(n + 1);
+                sleep(1);
         }
     }
     else
