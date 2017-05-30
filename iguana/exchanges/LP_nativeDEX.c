@@ -732,7 +732,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
 
 void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,int32_t pullsock,uint16_t myport,int32_t amclient,char *passphrase,double profitmargin)
 {
-    char *retstr,*utxostr; int32_t i,n,len,recvsize,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson,*array,*reqjson,*item;
+    char *retstr; int32_t i,len,recvsize,counter,nonz,lastn; struct LP_peerinfo *peer,*tmp; void *ptr; cJSON *argjson;
     for (i=amclient; i<sizeof(default_LPnodes)/sizeof(*default_LPnodes); i++)
     {
         if ( amclient == 0 && (rand() % 100) > 25 )
@@ -746,51 +746,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     LP_coinfind("BTC"); LP_coinfind("LTC"); LP_coinfind("KMD");
     LP_coinfind("USD"); LP_coinfind("REVS"); LP_coinfind("JUMBLR");
-    LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"",amclient);
-    LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"",amclient);
     if ( amclient != 0 )
     {
         nonz = 0;
-        HASH_ITER(hh,LP_peerinfos,peer,tmp)
-        {
-            if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,"KMD",10)) != 0 )
-            {
-                printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
-                if ( (array= cJSON_Parse(utxostr)) != 0 )
-                {
-                    if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
-                    {
-                        for (i=0; i<1; i++)
-                        {
-                            item = jitem(array,i);
-                            reqjson = cJSON_CreateObject();
-                            jaddbits256(reqjson,"txid",jbits256(item,"txid"));
-                            jaddnum(reqjson,"vout",jint(item,"vout"));
-                            jaddstr(reqjson,"base",jstr(item,"coin"));
-                            jaddstr(reqjson,"rel","BTC");
-                            jaddstr(reqjson,"method","price");
-                            //5.9.253.196:7779 [{"ipaddr":"5.9.253.196","port":7779,"profit":0.01064000,"coin":"KMD","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","script":"76a914434009423522682bd7cc1b18a614c3096d19683188ac","txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"value":100,"deposit":"07902a65d11f0f577a0346432bcd2b6b53de5554c314209d1964693962524d69","dvout":1,"dvalue":120}]
-
-                            LP_send(peer->pushsock,jprint(reqjson,0),1);
-                            jdelete(reqjson,"method");
-                            jaddstr(reqjson,"method","request");
-                            LP_send(peer->pushsock,jprint(reqjson,0),1);
-                            jdelete(reqjson,"method");
-                            jaddstr(reqjson,"method","connect");
-                            LP_send(peer->pushsock,jprint(reqjson,0),1);
-                            
-                            //SENT.({"base":"KMD","rel":"BTC","timestamp":1496076137,"price":0.00021791,"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","srchash":"2fe57da347cd62431528daac5fbb290730fff684afc4cfc2ed90995f58cb3b74","txfee":"100000","satoshis":"9999900000","destsatoshis":"2179101","result":"reserved","pending":1496076197}
-                            nonz = 1;
-                        }
-                    }
-                    free_json(array);
-                }
-                free(utxostr);
-            }
-            if ( nonz != 0 )
-                break;
-        }
         printf("peers\n");
+        LP_orderbook("KMD","BTC");
         while ( 1 )
         {
             sleep(1);
@@ -798,9 +758,19 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     else
     {
+        counter = 0;
         while ( 1 )
         {
             nonz = 0;
+            if ( (counter++ % 60) == 0 )
+            {
+                LP_privkey_init(mypeer,pubsock,"BTC",passphrase,"",amclient);
+                LP_privkey_init(mypeer,pubsock,"KMD",passphrase,"",amclient);
+                LP_privkey_init(mypeer,pubsock,"LTC",passphrase,"",amclient);
+                LP_privkey_init(mypeer,pubsock,"USD",passphrase,"",amclient);
+                LP_privkey_init(mypeer,pubsock,"REVS",passphrase,"",amclient);
+                LP_privkey_init(mypeer,pubsock,"JUMBLR",passphrase,"",amclient);
+            }
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
                 if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )

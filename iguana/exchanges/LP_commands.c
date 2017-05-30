@@ -35,6 +35,48 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     return(rp);
 }
 
+struct LP_utxoinfo *LP_orderbook(char *base,char *rel)
+{
+    struct LP_peerinfo *peer,*tmp; char *utxostr; cJSON *array,*reqjson,*item; int32_t i,n;
+    HASH_ITER(hh,LP_peerinfos,peer,tmp)
+    {
+        if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,"KMD",10)) != 0 )
+        {
+            printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
+            if ( 0 && (array= cJSON_Parse(utxostr)) != 0 )
+            {
+                if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
+                {
+                    for (i=0; i<1; i++)
+                    {
+                        item = jitem(array,i);
+                        reqjson = cJSON_CreateObject();
+                        jaddbits256(reqjson,"txid",jbits256(item,"txid"));
+                        jaddnum(reqjson,"vout",jint(item,"vout"));
+                        jaddstr(reqjson,"base",jstr(item,"coin"));
+                        jaddstr(reqjson,"rel","BTC");
+                        jaddstr(reqjson,"method","price");
+                        //5.9.253.196:7779 [{"ipaddr":"5.9.253.196","port":7779,"profit":0.01064000,"coin":"KMD","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","script":"76a914434009423522682bd7cc1b18a614c3096d19683188ac","txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"value":100,"deposit":"07902a65d11f0f577a0346432bcd2b6b53de5554c314209d1964693962524d69","dvout":1,"dvalue":120}]
+                        
+                        LP_send(peer->pushsock,jprint(reqjson,0),1);
+                        jdelete(reqjson,"method");
+                        jaddstr(reqjson,"method","request");
+                        LP_send(peer->pushsock,jprint(reqjson,0),1);
+                        jdelete(reqjson,"method");
+                        jaddstr(reqjson,"method","connect");
+                        LP_send(peer->pushsock,jprint(reqjson,0),1);
+                        
+                        //SENT.({"base":"KMD","rel":"BTC","timestamp":1496076137,"price":0.00021791,"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","srchash":"2fe57da347cd62431528daac5fbb290730fff684afc4cfc2ed90995f58cb3b74","txfee":"100000","satoshis":"9999900000","destsatoshis":"2179101","result":"reserved","pending":1496076197}
+                    }
+                }
+                free_json(array);
+            }
+            free(utxostr);
+        }
+    }
+    return(0);
+}
+
 void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;

@@ -29,7 +29,7 @@ bits256 LP_privkeyfind(uint8_t rmd160[20])
     for (i=0; i<20; i++)
         printf("%02x",rmd160[i]);
     printf(" -> no privkey\n");
-   return(zero);
+    return(zero);
 }
 
 int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
