@@ -329,7 +329,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
         memcpy(utxo->key,key,sizeof(key));
         portable_mutex_lock(&LP_utxomutex);
-        HASH_ADD(hh,LP_utxoinfos,key,sizeof(key),utxo);
+        HASH_ADD_KEYPTR(hh,LP_utxoinfos,utxo->key,sizeof(key),utxo);
         if ( mypeer != 0 )
             mypeer->numutxos++;
         portable_mutex_unlock(&LP_utxomutex);
