@@ -118,7 +118,8 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                             } else icopy = jduplicate(item);
                             if ( icopy != 0 )
                             {
-                                jaddnum(icopy,"price",price);
+                                if ( price != 0. )
+                                    jaddnum(icopy,"price",price);
                                 jaddi(retarray,icopy);
                             }
                         }
@@ -178,7 +179,12 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     }
                 }
                 if ( besti >= 0 )
+                {
                     bestitem = jduplicate(jitem(array,besti));
+                    if ( jobj(bestitem,"price") != 0 )
+                        jdelete(bestitem,"price");
+                    jaddnum(bestitem,"price",prices[besti]);
+                }
             }
             free_json(array);
         }
