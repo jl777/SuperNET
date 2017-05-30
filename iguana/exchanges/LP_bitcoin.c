@@ -26,9 +26,9 @@ bits256 LP_privkeyfind(uint8_t rmd160[20])
     for (i=0; i<LP_numprivkeys; i++)
         if ( memcmp(rmd160,LP_privkeys[i].rmd160,20) == 0 )
             return(LP_privkeys[i].privkey);
-    for (i=0; i<20; i++)
-        printf("%02x",rmd160[i]);
-    printf(" -> no privkey\n");
+    //for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //printf(" -> no privkey\n");
     return(zero);
 }
 
@@ -40,9 +40,9 @@ int32_t LP_privkeyadd(bits256 privkey,uint8_t rmd160[20])
         return(-bits256_cmp(privkey,tmpkey));
     LP_privkeys[LP_numprivkeys].privkey = privkey;
     memcpy(LP_privkeys[LP_numprivkeys].rmd160,rmd160,20);
-    int32_t i; for (i=0; i<20; i++)
-        printf("%02x",rmd160[i]);
-    char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
+    //int32_t i; for (i=0; i<20; i++)
+    //    printf("%02x",rmd160[i]);
+    //char str[65]; printf(" -> add privkey.(%s)\n",bits256_str(str,privkey));
     LP_numprivkeys++;
     return(LP_numprivkeys);
 }
