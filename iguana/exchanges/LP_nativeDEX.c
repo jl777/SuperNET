@@ -108,12 +108,13 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
             HASH_ADD_KEYPTR(hh,LP_cacheinfos,ptr->key,sizeof(ptr->key),ptr);
             portable_mutex_unlock(&LP_cachemutex);
         } else printf("LP_cacheadd keysize mismatch?\n");
-    } else printf("CACHE hit!\n");
+    } //else printf("CACHE hit!\n");
+    if ( price != ptr->price )
+        printf("updated %s/%s %llu price %.8f\n",base,rel,(long long)satoshis,price);
     ptr->price = price;
     ptr->satoshis = satoshis;
     ptr->destsatoshis = satoshis * price;
     ptr->timestamp = (uint32_t)time(NULL);
-    printf("updated %s/%s %llu price %.8f\n",base,rel,(long long)satoshis,price);
     return(ptr);
 }
 
@@ -146,8 +147,6 @@ struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
     portable_mutex_lock(&LP_utxomutex);
     HASH_FIND(hh,LP_utxoinfos,key,sizeof(key),utxo);
     portable_mutex_unlock(&LP_utxomutex);
-    if ( utxo != 0 )
-        printf("found utxo\n");
     return(utxo);
 }
 
@@ -312,18 +311,9 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         utxo->txid = txid;
         utxo->vout = vout;
         utxo->satoshis = satoshis;
-        if ( amclient == 0 )
-        {
-            utxo->deposittxid = deposittxid;
-            utxo->depositvout = depositvout;
-            utxo->depositsatoshis = depositsatoshis;
-        }
-        else
-        {
-            utxo->feetxid = deposittxid;
-            utxo->feevout = depositvout;
-            utxo->feesatoshis = depositsatoshis;
-        }
+        utxo->deposittxid = deposittxid;
+        utxo->depositvout = depositvout;
+        utxo->depositsatoshis = depositsatoshis;
         memcpy(key,txid.bytes,sizeof(txid));
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
         memcpy(utxo->key,key,sizeof(key));
