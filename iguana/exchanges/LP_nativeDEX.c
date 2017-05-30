@@ -405,6 +405,7 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     {
                         txid = jbits256(item,"txid");
                         utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),SATOSHIDEN * jdouble(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
+                        utxo = LP_addutxo(amclient,mypeer,mypubsock,jstr(item,"coin"),txid,jint(item,"vout"),SATOSHIDEN*jdouble(item,"value"),jbits256(item,"deposit"),jint(item,"dvout"),SATOSHIDEN * jdouble(item,"dvalue"),jstr(item,"script"),jstr(item,"address"),argipaddr,argport,jdouble(item,"profit"));
                         if ( utxo != 0 )
                             utxo->lasttime = now;
                     }
