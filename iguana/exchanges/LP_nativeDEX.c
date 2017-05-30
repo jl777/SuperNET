@@ -418,7 +418,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
     //printf("send.(%s)\n",url);
     retstr = issue_curl(url);
-    //printf("GETPEERS.(%s)\n",retstr);
+    printf("GETPEERS.(%s)\n",retstr);
     return(retstr);
 }
 
