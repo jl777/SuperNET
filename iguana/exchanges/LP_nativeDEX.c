@@ -229,7 +229,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             if ( amclient == 0 )
                 enabled = 1;
             else enabled = (rand() % (1 << Client_connections)) == 0;
-            if ( enabled != 0 && pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
+            if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 timeout = 1000;
                 nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
@@ -350,7 +350,6 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                         pushport = argport + 1;
                     if ( (subport= juint(item,"sub")) == 0 )
                         subport = argport + 2;
-                    printf("(%s)\n",jprint(item,0));
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                         peer = LP_addpeer(amclient,mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
