@@ -166,6 +166,7 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     jaddnum(item,"port",utxo->port);
     jaddnum(item,"profit",utxo->profitmargin);
     jaddstr(item,"base",utxo->coin);
+    jaddstr(item,"coin",utxo->coin);
     jaddstr(item,"address",utxo->coinaddr);
     jaddstr(item,"script",utxo->spendscript);
     jaddbits256(item,"txid",utxo->txid);
