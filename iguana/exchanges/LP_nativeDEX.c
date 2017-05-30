@@ -350,6 +350,7 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                         pushport = argport + 1;
                     if ( (subport= juint(item,"sub")) == 0 )
                         subport = argport + 2;
+                    printf("(%s)\n",jprint(item,0));
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                         peer = LP_addpeer(amclient,mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
@@ -466,7 +467,7 @@ void LP_peersquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
         now = (uint32_t)time(NULL);
         LP_peersparse(amclient,mypeer,mypubsock,destipaddr,destport,retstr,now);
         free(retstr);
-        if ( mypeer != 0 )
+        if ( amclient == 0 )
         {
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -844,7 +845,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         {
             if ( (rand() % 100) > 25 )
                 continue;
-            LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,mypeer!=0?mypeer->ipaddr:"127.0.0.1",myport,profitmargin);
+            LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,mypeer->ipaddr,myport,profitmargin);
         }
     }
     else
@@ -853,7 +854,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
         {
             i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
-            LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,mypeer!=0?mypeer->ipaddr:"127.0.0.1",myport,profitmargin);
+            LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
         }
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
