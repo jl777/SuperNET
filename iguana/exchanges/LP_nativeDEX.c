@@ -291,7 +291,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->deposittxid) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->depositvout || depositsatoshis != utxo->depositsatoshis || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
             utxo->errors++;
-            char str[65]; printf("error on subsequent utxo add.(%s)\n",bits256_str(str,txid));
+            char str[65]; printf("error on subsequent utxo add.(%s) %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(deposittxid,utxo->deposittxid) != 0,vout != utxo->vout,satoshis != utxo->satoshis,depositvout != utxo->depositvout,depositsatoshis != utxo->depositsatoshis,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port);
         }
         else if ( profitmargin != 0. )
             utxo->profitmargin = profitmargin;
