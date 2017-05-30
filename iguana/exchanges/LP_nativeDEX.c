@@ -211,7 +211,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
-        //printf("LPaddpeer %s\n",ipaddr);
+        printf("LPaddpeer %s\n",ipaddr);
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
             if ( peer->profitmargin == 0. )
@@ -269,7 +269,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             if ( mypubsock >= 0 )
                 LP_send(mypubsock,jprint(LP_peerjson(peer),1),1);
         }
-    }
+    } else printf("LP_addpeer: checkip.(%s) vs (%s)\n",checkip,ipaddr);
     return(peer);
 }
 
@@ -352,7 +352,10 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                         subport = argport + 2;
                     argipbits = (uint32_t)calc_ipbits(argipaddr);
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
+                    {
                         peer = LP_addpeer(amclient,mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
+                        printf("peer.%p after LP_addpeer\n",peer);
+                    } else printf("have peer.%p\n",peer);
                     if ( peer != 0 )
                     {
                         peer->lasttime = now;
