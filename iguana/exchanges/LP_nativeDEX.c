@@ -857,19 +857,20 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     else
     {
-        myport += 10;
         OS_randombytes((void *)&r,sizeof(r));
         for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
         {
             i = (r + j) % (sizeof(default_LPnodes)/sizeof(*default_LPnodes));
             LP_peersquery(amclient,mypeer,pubsock,default_LPnodes[i],myport,"127.0.0.1",myport,profitmargin);
         }
+        myport += 10;
     }
     if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)stats_rpcloop,(void *)&myport) != 0 )
     {
         printf("error launching stats rpcloop for port.%u\n",myport);
         exit(-1);
     }
+    myport -= 10 * amclient;
     for (i=0; i<sizeof(activecoins)/sizeof(*activecoins); i++)
         LP_coinfind(activecoins[i]);
     if ( amclient != 0 )
