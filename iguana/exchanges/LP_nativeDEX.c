@@ -24,7 +24,7 @@
 
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 
-char *activecoins[] = { "BTC", "KMD", "LTC", "USD", "REVS", "JUMBLR" };
+char *activecoins[] = { "BTC", "KMD", };//"LTC", "USD", "REVS", "JUMBLR" };
 
 char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
