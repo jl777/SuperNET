@@ -211,7 +211,6 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
     expand_ipbits(checkip,ipbits);
     if ( strcmp(checkip,ipaddr) == 0 )
     {
-        printf("LPaddpeer %s\n",ipaddr);
         if ( (peer= LP_peerfind(ipbits,port)) != 0 )
         {
             if ( peer->profitmargin == 0. )
@@ -223,6 +222,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
         }
         else
         {
+            printf("LPaddpeer %s\n",ipaddr);
             peer = calloc(1,sizeof(*peer));
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
