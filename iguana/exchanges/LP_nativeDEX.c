@@ -26,7 +26,7 @@
 
 char *activecoins[] = { "BTC", "KMD", };//"LTC", "USD", "REVS", "JUMBLR" };
 
-char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" };
+char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
 int32_t LP_mypubsock = -1;
 int32_t Client_connections;
@@ -418,7 +418,7 @@ char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t por
     sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
     //printf("send.(%s)\n",url);
     retstr = issue_curl(url);
-    printf("GETPEERS.(%s)\n",retstr);
+    //printf("GETPEERS.(%s)\n",retstr);
     return(retstr);
 }
 
