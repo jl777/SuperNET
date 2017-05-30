@@ -85,7 +85,7 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
         HASH_FIND(hh,LP_cacheinfos,key,sizeof(key),ptr);
         portable_mutex_unlock(&LP_cachemutex);
     } else printf("LP_cachefind keysize mismatch?\n");
-    if ( ptr->timestamp != 0 && ptr->timestamp < time(NULL)-LP_CACHEDURATION )
+    if ( ptr != 0 && ptr->timestamp != 0 && ptr->timestamp < time(NULL)-LP_CACHEDURATION )
     {
         printf("expire price %.8f\n",ptr->price);
         ptr->price = 0.;
