@@ -232,6 +232,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 timeout = 1000;
+                printf("pushsock.%d\n",pushsock);
                 nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nanomsg_tcpname(pushaddr,peer->ipaddr,pushport);
                 if ( nn_connect(peer->pushsock,pushaddr) >= 0 )
@@ -252,7 +253,12 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
                             Client_connections += amclient;
                         } else nn_close(subsock);
                     }
-                } else nn_close(pushsock);
+                }
+                else
+                {
+                    nn_close(pushsock);
+                    printf("error connecting to push.(%s)\n",pushaddr);
+                }
             } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
