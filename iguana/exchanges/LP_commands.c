@@ -190,10 +190,7 @@ char *LP_quote(uint32_t reserved,char *base,char *rel,bits256 txid,int32_t vout,
 {
     struct LP_cacheinfo *ptr;
     if ( (ptr= LP_cacheadd(base,rel,txid,vout,price,satoshis)) != 0 )
-    {
-LP_cacheadd(base,rel,txid,vout,price,satoshis);
         return(clonestr("{\"result\":\"updated\"}"));
-    }
     else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
