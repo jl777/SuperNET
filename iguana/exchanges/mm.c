@@ -819,7 +819,7 @@ int main(int argc, const char * argv[])
 {
     char *base,*rel,*name,*exchange,*apikey,*apisecret,*blocktrail,*retstr,*baseaddr,*reladdr,*passphrase;
     double profitmargin,maxexposure,incrratio,start_rel,start_base,minask,maxbid,incr,theoretical = 0.;
-    cJSON *retjson,*loginjson; int32_t i;
+    cJSON *retjson,*loginjson,*matchjson; int32_t i;
     if ( argc > 1 && (retjson= cJSON_Parse(argv[1])) != 0 )
     {
         if ( (passphrase= jstr(retjson,"passphrase")) == 0 )
@@ -834,6 +834,15 @@ int main(int argc, const char * argv[])
         {
             theoretical = marketmaker_updateprice("komodo","KMD","BTC",theoretical,&incr);
             sleep(30);
+            if ( jint(retjson,"client") != 0 )
+            {
+                struct LP_utxoinfo *utxo,*utmp;
+                HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
+                {
+                    if ( (matchjson= LP_bestprice(utxo,"KMD")) != 0 )
+                        printf("bestprice (%s)\n",jprint(matchjson,1));
+                }
+            }
         }
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");

@@ -20,6 +20,8 @@
 
 double LP_kmdbtc;
 
+
+ 
 // very, very simple for now
 
 void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32])
