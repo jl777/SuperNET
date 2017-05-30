@@ -313,12 +313,11 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         return(clonestr("{\"error\":\"need method in request\"}"));
     else
     {
-        amclient = 0;
+        amclient = (LP_mypeer == 0);
         if ( (ipaddr= jstr(argjson,"ipaddr")) != 0 && (argport= juint(argjson,"port")) != 0 )
         {
             if ( strcmp(ipaddr,"127.0.0.1") != 0 && port >= 1000 )
             {
-                amclient = 0;
                 if ( (pushport= juint(argjson,"push")) == 0 )
                     pushport = argport + 1;
                 if ( (subport= juint(argjson,"sub")) == 0 )
@@ -334,7 +333,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                     }
                     //printf("peer.(%s) found (%d %d) (%d %d) (%s)\n",peer->ipaddr,peer->numpeers,peer->numutxos,otherpeers,othernumutxos,jprint(argjson,0));
                 } else LP_addpeer(amclient,LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
-            } else amclient = 1;
+            } 
         }
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"));

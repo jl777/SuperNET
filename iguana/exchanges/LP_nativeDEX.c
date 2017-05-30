@@ -301,20 +301,23 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         safecopy(utxo->coin,coin,sizeof(utxo->coin));
         safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
         safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
-        utxo->txid = txid;
-        utxo->vout = vout;
-        utxo->satoshis = satoshis;
         if ( amclient == 0 )
         {
+            utxo->txid = txid;
+            utxo->vout = vout;
+            utxo->satoshis = satoshis;
             utxo->deposittxid = deposittxid;
             utxo->depositvout = depositvout;
             utxo->depositsatoshis = depositsatoshis;
         }
         else
         {
-            utxo->feetxid = deposittxid;
-            utxo->feevout = depositvout;
-            utxo->feesatoshis = depositsatoshis;
+            utxo->feetxid = txid;
+            utxo->feevout = vout;
+            utxo->feesatoshis = satoshis;
+            utxo->txid = deposittxid;
+            utxo->vout = depositvout;
+            utxo->satoshis = depositsatoshis;
         }
         memcpy(key,txid.bytes,sizeof(txid));
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
