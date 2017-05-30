@@ -278,7 +278,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     struct LP_utxoinfo *utxo = 0; uint8_t key[sizeof(txid) + sizeof(vout)];
     if ( coin == 0 || coin[0] == 0 || spendscript == 0 || spendscript[0] == 0 || coinaddr == 0 || coinaddr[0] == 0 || bits256_nonz(txid) == 0 || bits256_nonz(deposittxid) == 0 || vout < 0 || depositvout < 0 || satoshis <= 0 || depositsatoshis <= 0 )
     {
-        printf("malformed addutxo %d %d %d %d %d %d %d %d %d %d %d %d\n", coin == 0,coin[0] == 0,spendscript == 0,spendscript[0] == 0,coinaddr == 0,coinaddr[0] == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
+        printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
         return(0);
     }
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
