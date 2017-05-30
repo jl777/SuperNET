@@ -235,9 +235,9 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
                 printf("pushsock.%d\n",pushsock);
                 nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nanomsg_tcpname(pushaddr,peer->ipaddr,pushport);
-                if ( nn_connect(peer->pushsock,pushaddr) >= 0 )
+                if ( nn_connect(pushsock,pushaddr) >= 0 )
                 {
-                    printf("connected to push.(%s) %d\n",pushaddr,peer->pushsock);
+                    printf("connected to push.(%s) %d\n",pushaddr,pushsock);
                     peer->connected = (uint32_t)time(NULL);
                     peer->pushsock = pushsock;
                     if ( enabled != 0 && (subsock= nn_socket(AF_SP,NN_SUB)) >= 0 )
@@ -246,7 +246,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
                         nn_setsockopt(subsock,NN_SOL_SOCKET,NN_RCVTIMEO,&timeout,sizeof(timeout));
                         nn_setsockopt(subsock,NN_SUB,NN_SUB_SUBSCRIBE,"",0);
                         nanomsg_tcpname(subaddr,peer->ipaddr,subport);
-                        if ( nn_connect(peer->subsock,subaddr) >= 0 )
+                        if ( nn_connect(subsock,subaddr) >= 0 )
                         {
                             peer->subsock = subsock;
                             printf("connected to sub.(%s) %d\n",subaddr,peer->subsock);
