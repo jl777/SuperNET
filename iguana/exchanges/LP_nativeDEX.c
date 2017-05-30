@@ -309,23 +309,20 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         safecopy(utxo->coin,coin,sizeof(utxo->coin));
         safecopy(utxo->coinaddr,coinaddr,sizeof(utxo->coinaddr));
         safecopy(utxo->spendscript,spendscript,sizeof(utxo->spendscript));
+        utxo->txid = txid;
+        utxo->vout = vout;
+        utxo->satoshis = satoshis;
         if ( amclient == 0 )
         {
-            utxo->txid = txid;
-            utxo->vout = vout;
-            utxo->satoshis = satoshis;
             utxo->deposittxid = deposittxid;
             utxo->depositvout = depositvout;
             utxo->depositsatoshis = depositsatoshis;
         }
         else
         {
-            utxo->feetxid = txid;
-            utxo->feevout = vout;
-            utxo->feesatoshis = satoshis;
-            utxo->txid = deposittxid;
-            utxo->vout = depositvout;
-            utxo->satoshis = depositsatoshis;
+            utxo->feetxid = deposittxid;
+            utxo->feevout = depositvout;
+            utxo->feesatoshis = depositsatoshis;
         }
         memcpy(key,txid.bytes,sizeof(txid));
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
@@ -825,7 +822,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                             values[i] = 0, used++;
                             if ( amclient == 0 )
                                 LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
-                            else LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,"127.0.0.1",0,0);
+                            else LP_addutxo(amclient,mypeer,mypubsock,symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coinaddr,"127.0.0.1",0,0);
                             total += value;
                         }
                     }
