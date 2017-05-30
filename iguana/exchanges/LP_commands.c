@@ -340,7 +340,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"));
         else if ( strcmp(method,"getpeers") == 0 )
             retstr = LP_peers();
-        else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"base")) != 0 )
+        else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
             retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
         else if ( strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
