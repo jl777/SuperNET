@@ -30,6 +30,7 @@ char *default_LPnodes[] = { "5.9.253.195", "5.9.253.196", "5.9.253.197", "5.9.25
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
 int32_t LP_mypubsock = -1;
 int32_t Client_connections;
+int32_t IAMCLIENT = 0;
 
 struct LP_peerinfo
 {
@@ -856,6 +857,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
     }
     else
     {
+        myport += 10;
         OS_randombytes((void *)&r,sizeof(r));
         for (j=0; j<sizeof(default_LPnodes)/sizeof(*default_LPnodes); j++)
         {
@@ -969,6 +971,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
 void LPinit(uint16_t myport,uint16_t mypullport,uint16_t mypubport,double profitmargin,char *passphrase,int32_t amclient)
 {
     char *myipaddr=0; long filesize,n; int32_t timeout,maxsize,pullsock=-1,pubsock=-1; struct LP_peerinfo *mypeer=0; char pushaddr[128],subaddr[128];
+    IAMCLIENT = amclient;
     OS_randombytes((void *)&n,sizeof(n));
     srand((int32_t)n);
     portable_mutex_init(&LP_peermutex);

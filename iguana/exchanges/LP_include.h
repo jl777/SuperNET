@@ -38,6 +38,7 @@
 #define BASILISK_KEYSIZE ((int32_t)(2*sizeof(bits256)+sizeof(uint32_t)*2))
 
 extern char GLOBAL_DBDIR[];
+extern int32_t IAMCLIENT;
 
 void *bitcoin_ctx();
 int32_t bitcoin_verify(void *ctx,uint8_t *sig,int32_t siglen,bits256 txhash2,uint8_t *pubkey,int32_t plen);
