@@ -337,13 +337,13 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"));
-        else if ( strcmp(method,"getpeers") == 0 )
+        else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
             retstr = LP_peers();
-        else if ( strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
+        else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
             retstr = LP_utxos(LP_mypeer,coin,jint(argjson,"lastn"));
-        else if ( strcmp(method,"notify") == 0 )
+        else if ( IAMCLIENT == 0 && strcmp(method,"notify") == 0 )
             retstr = clonestr("{\"result\":\"success\",\"notify\":\"received\"}");
-        else if ( strcmp(method,"notifyutxo") == 0 )
+        else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
         {
             printf("utxonotify.(%s)\n",jprint(argjson,0));
             LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
