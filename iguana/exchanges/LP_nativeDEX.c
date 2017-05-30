@@ -228,7 +228,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             strcpy(peer->ipaddr,ipaddr);
             if ( amclient == 0 )
                 enabled = 1;
-            else enabled = (rand() % (1 << Client_connections)) == 0;
+            else enabled = 1;//(rand() % (1 << Client_connections)) == 0;
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 timeout = 1000;
