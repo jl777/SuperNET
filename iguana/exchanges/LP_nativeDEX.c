@@ -767,7 +767,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
     {
         char tmpstr[128];
         bitcoin_priv2wif(tmpstr,privkey,coin->wiftype);
-        printf("%s coinaddr.(%s) %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
+        //printf("%s coinaddr.(%s) %d wif.(%s) passphrase.(%s)\n",symbol,coinaddr,coin->pubtype,tmpstr,passphrase);
         if ( (retjson= LP_importprivkey(coin->symbol,tmpstr,coinaddr,-1)) != 0 )
             printf("importprivkey -> (%s)\n",jprint(retjson,1));
     }
@@ -783,9 +783,9 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                 item = jitem(array,i);
                 satoshis = SATOSHIDEN * jdouble(item,"amount");
                 values[i] = satoshis;
-                printf("%.8f ",dstr(satoshis));
+                //printf("%.8f ",dstr(satoshis));
             }
-            printf("array.%d\n",n);
+            //printf("array.%d\n",n);
             used = 0;
             while ( used < n )
             {
@@ -800,7 +800,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                     if ( amclient != 0 )
                         targetval = (depositval / 777);
                     else targetval = (depositval / 9) * 8;
-                    printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
+                    //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                     if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
                     {
                         item = jitem(array,i);
@@ -867,7 +867,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         while ( 1 )
         {
             nonz = n = 0;
-            if ( (counter++ % 60) == 0 )
+            if ( (counter++ % 3600) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -880,11 +880,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                         portable_mutex_lock(&LP_commandmutex);
                         if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
                         {
-                            printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                            //printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
                             free(retstr);
                         }
                         portable_mutex_unlock(&LP_commandmutex);
-                        printf("subloop.(%s)\n",jprint(argjson,0));
+                        //printf("subloop.(%s)\n",jprint(argjson,0));
                         free_json(argjson);
                     } else printf("error parsing.(%s)\n",(char *)ptr);
                     if ( ptr != 0 )

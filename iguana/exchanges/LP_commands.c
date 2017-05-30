@@ -93,12 +93,12 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     estimatedbase = myutxo->satoshis / price;
     if ( estimatedbase <= 0 )
         return(0);
-    printf("%s -> %s price %.8f mysatoshis %llu estimated base %llu\n",base,myutxo->coin,price,(long long)myutxo->satoshis,(long long)estimatedbase);
+    //printf("%s -> %s price %.8f mysatoshis %llu estimated base %llu\n",base,myutxo->coin,price,(long long)myutxo->satoshis,(long long)estimatedbase);
     HASH_ITER(hh,LP_peerinfos,peer,tmp)
     {
         if ( (utxostr= issue_LP_clientgetutxos(peer->ipaddr,peer->port,base,100)) != 0 )
         {
-            printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
+            //printf("%s:%u %s\n",peer->ipaddr,peer->port,utxostr);
             if ( (array= cJSON_Parse(utxostr)) != 0 )
             {
                 if ( is_cJSON_Array(array) != 0 && (n= cJSON_GetArraySize(array)) > 0 )
