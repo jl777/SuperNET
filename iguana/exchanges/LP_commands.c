@@ -355,5 +355,6 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         return(retstr);
     retjson = cJSON_CreateObject();
     jaddstr(retjson,"error","unrecognized command");
+    printf("ERROR.(%s)\n",jprint(argjson,0));
     return(clonestr(jprint(retjson,1)));
 }
