@@ -107,7 +107,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
                     for (i=0; i<n; i++)
                     {
                         item = jitem(array,i);
-                        safecopy(coinstr,jstr(item,"coin"),sizeof(coinstr));
+                        safecopy(coinstr,jstr(item,"base"),sizeof(coinstr));
                         if ( strcmp(coinstr,base) == 0 && LP_sizematch(estimatedbase,j64bits(item,"satoshis")) == 0 )
                         {
                             icopy = 0;
