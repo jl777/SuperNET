@@ -105,10 +105,10 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
         if ( LP_cachekey(ptr->key,base,rel,txid,vout) == sizeof(ptr->key) )
         {
             portable_mutex_lock(&LP_cachemutex);
-            HASH_ADD(hh,LP_cacheinfos,key,sizeof(ptr->key),ptr);
+            HASH_ADD_KEYPTR(hh,LP_cacheinfos,ptr->key,sizeof(ptr->key),ptr);
             portable_mutex_unlock(&LP_cachemutex);
         } else printf("LP_cacheadd keysize mismatch?\n");
-    }
+    } else printf("CACHE hit!\n");
     ptr->price = price;
     ptr->satoshis = satoshis;
     ptr->destsatoshis = satoshis * price;
@@ -146,6 +146,8 @@ struct LP_utxoinfo *LP_utxofind(bits256 txid,int32_t vout)
     portable_mutex_lock(&LP_utxomutex);
     HASH_FIND(hh,LP_utxoinfos,key,sizeof(key),utxo);
     portable_mutex_unlock(&LP_utxomutex);
+    if ( utxo != 0 )
+        printf("found utxo\n");
     return(utxo);
 }
 
