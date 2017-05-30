@@ -253,7 +253,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
                         } else nn_close(subsock);
                     }
                 } else nn_close(pushsock);
-            }
+            } else printf("%s pushport.%u subport.%u pushsock.%d\n",ipaddr,pushport,subport,pushsock);
             peer->profitmargin = profitmargin;
             peer->ipbits = ipbits;
             peer->port = port;
