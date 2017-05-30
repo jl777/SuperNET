@@ -222,7 +222,7 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
         }
         else
         {
-            printf("LPaddpeer %s\n",ipaddr);
+            //printf("LPaddpeer %s\n",ipaddr);
             peer = calloc(1,sizeof(*peer));
             peer->pushsock = peer->subsock = pushsock = subsock = -1;
             strcpy(peer->ipaddr,ipaddr);
@@ -232,7 +232,6 @@ struct LP_peerinfo *LP_addpeer(int32_t amclient,struct LP_peerinfo *mypeer,int32
             if ( pushport != 0 && subport != 0 && (pushsock= nn_socket(AF_SP,NN_PUSH)) >= 0 )
             {
                 timeout = 1000;
-                printf("pushsock.%d\n",pushsock);
                 nn_setsockopt(pushsock,NN_SOL_SOCKET,NN_SNDTIMEO,&timeout,sizeof(timeout));
                 nanomsg_tcpname(pushaddr,peer->ipaddr,pushport);
                 if ( nn_connect(pushsock,pushaddr) >= 0 )
@@ -360,8 +359,7 @@ int32_t LP_peersparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
                     if ( (peer= LP_peerfind(argipbits,argport)) == 0 )
                     {
                         peer = LP_addpeer(amclient,mypeer,mypubsock,argipaddr,argport,pushport,subport,jdouble(item,"profit"),jint(item,"numpeers"),jint(item,"numutxos"));
-                        printf("peer.%p after LP_addpeer\n",peer);
-                    } else printf("have peer.%p\n",peer);
+                    }
                     if ( peer != 0 )
                     {
                         peer->lasttime = now;
@@ -909,7 +907,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         while ( 1 )
         {
             nonz = 0;
-            if ( (counter++ % 60) == 0 )
+            if ( (counter++ % 300) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
@@ -962,7 +960,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     nn_freemsg(ptr), ptr = 0;
             }
             if ( nonz == 0 )
-                sleep(mypeer->numpeers + 1);
+                sleep(1);
         }
     }
 }
