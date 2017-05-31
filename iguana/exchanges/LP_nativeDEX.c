@@ -446,7 +446,6 @@ char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
-    printf("getutxos.(%s)\n",url);
     return(issue_curl(url));
 }
 
@@ -454,6 +453,7 @@ char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t 
 {
     char url[512];
     sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
+    printf("getutxos.(%s)\n",url);
     return(issue_curl(url));
 }
 
