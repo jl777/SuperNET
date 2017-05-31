@@ -57,6 +57,9 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                     jaddbits256(reqjson,"otherpub",mypub);
                     if ( argitem != 0 )
                     {
+                        printf("ARGITEM.(%s)\n",jprint(argitem,0));
+                        jaddnum(reqjson,"timestamp",j64bits(argitem,"timestamp"));
+                        jaddnum(reqjson,"quotetime",j64bits(argitem,"quotetime"));
                         jadd64bits(reqjson,"satoshis",j64bits(argitem,"satoshis"));
                         jadd64bits(reqjson,"txfee",j64bits(argitem,"txfee"));
                         jadd64bits(reqjson,"desttxfee",j64bits(argitem,"desttxfee"));
@@ -173,7 +176,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 {
                     price = LP_query("price",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),zero,0);
                     if ( destsatoshis[i] != 0 && (double)j64bits(item,"value")/destsatoshis[i] > price )
-                        price = (double)j64bits(item,"satoshis")/destsatoshis[i];
+                        price = (double)j64bits(item,"value")/destsatoshis[i];
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
