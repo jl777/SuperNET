@@ -256,9 +256,9 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 )
             {
                 retval = 1;
-                if ( utxo->swappending == 0 && utxo->pair < 0 )
+                if ( utxo->swappending == 0 )
                 {
-                    if ( utxo->pair >= 0 )
+                    if ( strcmp(method,"request") == 0 && utxo->pair >= 0 )
                         nn_close(utxo->pair), utxo->pair = -1;
                     if ( (price= LP_price(base,rel)) != 0. )
                     {
