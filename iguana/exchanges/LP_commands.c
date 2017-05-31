@@ -318,7 +318,22 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
                                     retjson = cJSON_CreateObject();
-                                    jaddstr(retjson,"result","connected");
+                                    jaddstr(retjson,"base",base);
+                                    jaddstr(retjson,"rel",rel);
+                                    jaddstr(retjson,"address",utxo->coinaddr);
+                                    jaddnum(retjson,"timestamp",timestamp);
+                                    jaddnum(retjson,"quotetime",quotetime);
+                                    jaddnum(retjson,"price",price);
+                                    jaddbits256(retjson,"txid",txid);
+                                    jaddnum(retjson,"vout",utxo->vout);
+                                    pubkey = LP_pubkey(LP_privkey(utxo->coinaddr));
+                                    jaddbits256(retjson,"srchash",pubkey);
+                                    jadd64bits(retjson,"txfee",txfee);
+                                    jadd64bits(retjson,"desttxfee",desttxfee);
+                                    jadd64bits(retjson,"value",utxo->satoshis);
+                                    jadd64bits(retjson,"satoshis",utxo->satoshis - txfee);
+                                    jadd64bits(retjson,"destsatoshis",price * (utxo->satoshis-txfee) + desttxfee);
+                                    jaddstr(retjson,"method","connected");
                                     jaddstr(retjson,"pair",pairstr);
                                     jaddnum(retjson,"requestid",R.requestid);
                                     jaddnum(retjson,"quoteid",R.quoteid);
@@ -380,6 +395,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"),j64bits(argjson,"txfee"),j64bits(argjson,"destsatoshis"),j64bits(argjson,"desttxfee"),jbits256(argjson,"otherpubkey"));
+        else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
+            retstr = jprint(argjson,0);
         else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
             retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
         else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
