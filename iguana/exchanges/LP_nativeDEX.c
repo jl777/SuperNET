@@ -121,12 +121,12 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
         if ( LP_cachekey(ptr->key,base,rel,txid,vout) == sizeof(ptr->key) )
         {
             portable_mutex_lock(&LP_cachemutex);
-            HASH_ADD_KEYPTR(hh,LP_cacheinfos,ptr->key,sizeof(ptr->key),ptr);
+            HASH_ADD(hh,LP_cacheinfos,key,sizeof(ptr->key),ptr);
             portable_mutex_unlock(&LP_cachemutex);
         } else printf("LP_cacheadd keysize mismatch?\n");
     } //else printf("CACHE hit!\n");
-    if ( price != ptr->price )
-        printf("updated %s/%s %llu price %.8f\n",base,rel,(long long)satoshis,price);
+    char str[65]; if ( price != ptr->price )
+        printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)satoshis,price);
     ptr->price = price;
     ptr->satoshis = satoshis;
     ptr->destsatoshis = satoshis * price;
