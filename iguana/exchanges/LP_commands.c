@@ -199,7 +199,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                         }
                     }
                 }
-                if ( besti >= 0 && bits256_cmp(utxo->mypub,otherpubs[besti]) == 0 )
+                if ( besti >= 0 )//&& bits256_cmp(utxo->mypub,otherpubs[besti]) == 0 )
                 {
                     bestitem = jduplicate(jitem(array,besti));
                     i = besti;
