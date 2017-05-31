@@ -20,6 +20,7 @@
 
 struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srchash,bits256 desthash,char *src,uint64_t srcsatoshis,char *dest,uint64_t destsatoshis,uint32_t timestamp,uint32_t quotetime,int32_t DEXselector)
 {
+    struct basilisk_request R;
     memset(rp,0,sizeof(*rp));
     rp->srchash = srchash;
     rp->desthash = desthash;
@@ -30,7 +31,9 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->DEXselector = DEXselector;
     safecopy(rp->src,src,sizeof(rp->src));
     safecopy(rp->dest,dest,sizeof(rp->dest));
+    R = *rp;
     rp->requestid = basilisk_requestid(rp);
+    *rp = R;
     rp->quoteid = basilisk_quoteid(rp);
     return(rp);
 }
@@ -59,8 +62,8 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                     {
                         printf("ARGITEM.(%s)\n",jprint(argitem,0));
                         jaddnum(reqjson,"timestamp",j64bits(argitem,"timestamp"));
-                        jaddnum(reqjson,"quotetime",j64bits(argitem,"quotetime"));
-                        jadd64bits(reqjson,"satoshis",j64bits(argitem,"satoshis"));
+                        jaddnum(reqjson,"quotetime",time(NULL));
+                        jadd64bits(reqjson,"satoshis",j64bits(argitem,"value")-j64bits(argitem,"txfee"));
                         jadd64bits(reqjson,"txfee",j64bits(argitem,"txfee"));
                         jadd64bits(reqjson,"desttxfee",j64bits(argitem,"desttxfee"));
                         jadd64bits(reqjson,"destsatoshis",j64bits(argitem,"destsatoshis"));
