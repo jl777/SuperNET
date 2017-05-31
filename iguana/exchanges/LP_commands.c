@@ -141,22 +141,23 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
     bestprice = 0.;
     if ( (array= LP_tradecandidates(utxo,base)) != 0 )
     {
-        printf("%s %.8f -> (%s)\n",utxo->coin,dstr(utxo->satoshis),jprint(array,0));
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
             memset(prices,0,sizeof(prices));
             memset(destsatoshis,0,sizeof(destsatoshis));
+            //BTC 0.02500000 -> ([{"ipaddr":"5.9.253.196","port":7779,"profit":0.01035000,"base":"KMD","coin":"KMD","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","script":"76a914434009423522682bd7cc1b18a614c3096d19683188ac","txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"value":100,"deposit":"07902a65d11f0f577a0346432bcd2b6b53de5554c314209d1964693962524d69","dvout":1,"dvalue":120}])
             for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
             {
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
                     price = LP_pricequery(&destsatoshis[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"));
-                    if ( destsatoshis[i] != 0 && (double)j64bits(item,"satoshis")/destsatoshis[i] > price )
+                    if ( destsatoshis[i] != 0 && (double)j64bits(item,"value")/destsatoshis[i] > price )
                         price = (double)j64bits(item,"satoshis")/destsatoshis[i];
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
+                printf("i.%d price %.8f bestprice %.8f\n",i,price,bestprice);
             }
             if ( bestprice != 0. )
             {
@@ -236,6 +237,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         if ( (desttxfee= LP_getestimatedrate(rel) * LP_AVETXSIZE) < 10000 )
                             desttxfee = 10000;
                         jadd64bits(retjson,"desttxfee",desttxfee);
+                        jadd64bits(retjson,"value",utxo->satoshis);
                         jadd64bits(retjson,"satoshis",utxo->satoshis - txfee);
                         jadd64bits(retjson,"destsatoshis",price * (utxo->satoshis-txfee) + desttxfee);
                         if ( strcmp(method,"request") == 0 )
