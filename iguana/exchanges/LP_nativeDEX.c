@@ -96,6 +96,22 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     return(ptr);
 }
 
+double LP_pricecache(uint64_t *destsatoshisp,char *base,char *rel,bits256 txid,int32_t vout)
+{
+    struct LP_cacheinfo *ptr;
+    if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
+    {
+        if ( destsatoshisp != 0 )
+            *destsatoshisp = ptr->destsatoshis;
+        printf("found %s/%s %.8f\n",base,rel,ptr->price);
+        return(ptr->price);
+    }
+    else if ( destsatoshisp != 0 )
+        *destsatoshisp = 0;
+    char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
+    return(0.);
+}
+
 struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,double price,uint64_t satoshis)
 {
     struct LP_cacheinfo *ptr=0;
@@ -115,19 +131,8 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
     ptr->satoshis = satoshis;
     ptr->destsatoshis = satoshis * price;
     ptr->timestamp = (uint32_t)time(NULL);
+    LP_pricecache(0,base,rel,txid,vout);
     return(ptr);
-}
-
-double LP_pricecache(uint64_t *destsatoshisp,char *base,char *rel,bits256 txid,int32_t vout)
-{
-    struct LP_cacheinfo *ptr;
-    if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
-    {
-        *destsatoshisp = ptr->destsatoshis;
-        printf("found %s/%s %.8f\n",base,rel,ptr->price);
-        return(ptr->price);
-    } else *destsatoshisp = 0;
-    return(0.);
 }
 
 struct LP_peerinfo *LP_peerfind(uint32_t ipbits,uint16_t port)
@@ -326,7 +331,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        printf("%s:%u LP_addutxo.(%.8f %.8f) numutxos.%d\n",ipaddr,port,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0);
+        printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0);
     }
     return(utxo);
 }
