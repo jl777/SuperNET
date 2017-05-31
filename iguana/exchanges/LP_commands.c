@@ -159,7 +159,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
 {
     static bits256 zero;
-    int32_t i,n,besti; cJSON *array,*item,*bestitem=0; double bestmetric,metric,bestprice=0.,price,prices[100]; bits256 otherpubs[100]; uint32_t reserved[100]; uint64_t txfees[100],destsatoshis[100],desttxfees[100]; quoteinfo struct
+    int32_t i,n,besti; cJSON *array,*item,*bestitem=0; double bestmetric,metric,bestprice=0.,price,prices[100]; bits256 otherpubs[100]; uint32_t reserved[100]; uint64_t txfees[100],destsatoshis[100],desttxfees[100]; //quoteinfo struct
     bestprice = 0.;
     if ( (array= LP_tradecandidates(utxo,base)) != 0 )
     {
@@ -177,7 +177,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
-                    horrible, pass in quoteinfo, utxo
+// horrible, pass in quoteinfo, utxo
                     price = LP_query("price",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),zero,0);
                     if ( destsatoshis[i] != 0 && (double)j64bits(item,"value")/destsatoshis[i] > price )
                         price = (double)j64bits(item,"value")/destsatoshis[i];
@@ -222,7 +222,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     jaddbits256(bestitem,"otherpub",otherpubs[besti]);
                     if ( LP_price(base,utxo->coin) > 0.975*price )
                     {
-                         the same, cleanup
+// the same, cleanup
                         price = LP_query("connect",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub,item);
                     }
                 }
@@ -270,7 +270,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                     if ( (price= LP_price(base,rel)) != 0. )
                     {
                         price *= (1. + profitmargin);
-            horror show
+// horror show
                         retjson = cJSON_CreateObject();
                         jaddstr(retjson,"base",base);
                         jaddstr(retjson,"rel",rel);
@@ -317,11 +317,12 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         desttxfee = j64bits(argjson,"desttxfee");
                         satoshis = j64bits(argjson,"satoshis");
                         desttxid = jbits256(argjson,"desttxid");
+                        srchash = jbits256(argjson,"srchash");
                         destvout = jint(argjson,"destvout");
                         timestamp = juint(argjson,"timestamp");
                         privkey = LP_privkey(utxo->coinaddr);
-                        srchash = LP_pubkey(privkey);
-                        jaddbits256(argjson,"srchash",srchash);
+                        pubkey = LP_pubkey(privkey);
+                        jaddbits256(argjson,"srchash",pubkey);
                         value = j64bits(argjson,"destsatoshis");
                         quotetime = juint(argjson,"quotetime");
                         if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
