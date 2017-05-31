@@ -400,6 +400,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 } else LP_addpeer(amclient,LP_mypeer,LP_mypubsock,ipaddr,argport,pushport,subport,jdouble(argjson,"profit"),jint(argjson,"numpeers"),jint(argjson,"numutxos"));
             } 
         }
+        printf("CMD.(%s)\n",jprint(argjson,0));
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"),j64bits(argjson,"txfee"),j64bits(argjson,"destsatoshis"),j64bits(argjson,"desttxfee"),jbits256(argjson,"otherpubkey"));
         else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
