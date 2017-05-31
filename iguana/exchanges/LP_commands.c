@@ -53,7 +53,7 @@ double LP_pricequery(uint64_t *destsatoshisp,char *ipaddr,uint16_t port,char *ba
                 jaddstr(reqjson,"rel",rel);
                 jaddstr(reqjson,"method","price");
                 LP_send(pushsock,jprint(reqjson,1),1);
-                for (i=0; i<10; i++)
+                for (i=0; i<30; i++)
                 {
                     if ( (price= LP_pricecache(destsatoshisp,base,rel,txid,vout)) != 0. )
                         break;
