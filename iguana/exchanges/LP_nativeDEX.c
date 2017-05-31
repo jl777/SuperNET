@@ -17,6 +17,8 @@
 //  LP_nativeDEX.c
 //  marketmaker
 //
+// jl777: fix price calcs based on specific txfees
+// jl777: add change output
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -90,25 +92,29 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     {
         printf("expire price %.8f\n",ptr->price);
         ptr->price = 0.;
-        ptr->destsatoshis = 0;
+        ptr->destsatoshis = ptr->txfee = ptr->desttxfee = 0;
         ptr->timestamp = 0;
     }
     return(ptr);
 }
 
-double LP_pricecache(uint64_t *destsatoshisp,char *base,char *rel,bits256 txid,int32_t vout)
+double LP_pricecache(uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr;
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
     {
         if ( destsatoshisp != 0 )
+        {
             *destsatoshisp = ptr->destsatoshis;
-        printf("found %s/%s %.8f\n",base,rel,ptr->price);
+            *txfeep = ptr->txfee;
+            *desttxfeep = ptr->desttxfee;
+        }
+        //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
     else if ( destsatoshisp != 0 )
         *destsatoshisp = 0;
-    char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
+    //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
     return(0.);
 }
 
@@ -131,7 +137,6 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
     ptr->satoshis = satoshis;
     ptr->destsatoshis = satoshis * price;
     ptr->timestamp = (uint32_t)time(NULL);
-    LP_pricecache(0,base,rel,txid,vout);
     return(ptr);
 }
 

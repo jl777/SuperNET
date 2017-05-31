@@ -840,7 +840,7 @@ int main(int argc, const char * argv[])
                 HASH_ITER(hh,LP_utxoinfos,utxo,utmp)
                 {
                     if ( (matchjson= LP_bestprice(utxo,"KMD")) != 0 )
-                        printf("bestprice (%s)\n",jprint(matchjson,1));
+                        printf("bestprice %.8f txfees %.8f %.8f destsatoshis %.8f (%s)\n",jdouble(matchjson,"price"),dstr(j64bits(matchjson,"txfee")),dstr(j64bits(matchjson,"desttxfee")),dstr(j64bits(matchjson,"destsatoshis")),jprint(matchjson,1));
                 }
             }
         }
