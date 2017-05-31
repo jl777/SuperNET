@@ -877,7 +877,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
             if ( strcmp(coin->symbol,"BTC") != 0 )
                 return(retval);
             len = rawtx->I.datalen;
-            if ( coin->estimatedrate == 0 )
+            if ( coin->estimatedrate == 0. )
                 coin->estimatedrate = LP_getestimatedrate(coin->symbol);
             newtxfee = coin->estimatedrate * len;
             printf("txfee %.8f -> newtxfee %.8f\n",dstr(txfee),dstr(newtxfee));
@@ -888,7 +888,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
 
 int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,struct basilisk_swap *swap,struct basilisk_rawtx *dest,struct basilisk_rawtx *rawtx,bits256 privkey,bits256 *privkey2,uint8_t *userdata,int32_t userdatalen,int32_t ignore_cltverr)
 {
-    char *signedtx; int64_t txfee,newtxfee=0,estimatedrate,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,len,retval = -1;
+    char *signedtx; int64_t txfee,newtxfee=0,destamount; uint32_t timestamp,locktime=0,sequenceid = 0xffffffff; int32_t iter,len,retval = -1; double estimatedrate;
     timestamp = swap->I.started;
     if ( dest == &swap->aliceclaim )
         locktime = swap->bobdeposit.I.locktime + 1, sequenceid = 0;

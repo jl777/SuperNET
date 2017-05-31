@@ -176,7 +176,7 @@ struct basilisk_swapinfo
 
 struct iguana_info
 {
-    uint64_t txfee,estimatedrate;
+    uint64_t txfee; double estimatedrate;
     int32_t longestchain;
     uint8_t pubtype,p2shtype,isPoS,wiftype;
     char symbol[16],changeaddr[64],userpass[1024],serverport[128];
