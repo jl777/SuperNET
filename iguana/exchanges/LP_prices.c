@@ -41,3 +41,24 @@ double LP_price(char *base,char *rel)
     }
     return(0.);
 }
+
+char *LP_pricestr(char *base,char *rel)
+{
+    double price = 0.; cJSON *retjson;
+    if ( base != 0 && base[0] != 0 && rel != 0 && rel[0] != 0 )
+        price = LP_price(base,rel);
+    if ( price != 0. )
+    {
+        retjson = cJSON_CreateObject();
+        jaddstr(retjson,"result","success");
+        jaddnum(retjson,"price",price);
+        return(jprint(retjson,1));
+    } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
+}
+
+
+
+
+
+
+

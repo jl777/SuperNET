@@ -380,6 +380,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
             retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"),j64bits(argjson,"txfee"),j64bits(argjson,"destsatoshis"),j64bits(argjson,"desttxfee"),jbits256(argjson,"otherpubkey"));
+        else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
+            retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
         else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
             retstr = LP_peers();
         else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )
