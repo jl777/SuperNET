@@ -973,7 +973,14 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 {
                     len = (int32_t)strlen((char *)ptr) + 1;
                     portable_mutex_lock(&LP_commandmutex);
-                    LP_command(mypeer,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin);
+                    if ( LP_command(mypeer,pubsock,argjson,&((uint8_t *)ptr)[len],recvsize - len,profitmargin) == 0 )
+                    {
+                        if ( (retstr= stats_JSON(argjson,"127.0.0.1",mypubport)) != 0 )
+                        {
+                            printf("%s RECV.[%d] %s\n",peer->ipaddr,recvsize,(char *)ptr);
+                            free(retstr);
+                        }
+                    }
                     portable_mutex_unlock(&LP_commandmutex);
                     free_json(argjson);
                 }

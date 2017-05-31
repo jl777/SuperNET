@@ -241,9 +241,9 @@ char *LP_quote(uint32_t reserved,char *base,char *rel,bits256 txid,int32_t vout,
     else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
-void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
+int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
-    char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
+    char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,retval = -1,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
     //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","method":"price"})
     if ( (method= jstr(argjson,"method")) != 0 )
     {
@@ -255,6 +255,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                 utxo->swappending = 0;
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 )
             {
+                retval = 1;
                 if ( utxo->swappending == 0 && utxo->pair < 0 )
                 {
                     if ( utxo->pair >= 0 )
@@ -283,6 +284,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         jadd64bits(retjson,"destsatoshis",price * (utxo->satoshis-txfee) + desttxfee);
                         if ( strcmp(method,"request") == 0 )
                         {
+                            retval |= 2;
                             utxo->swappending = (uint32_t)(time(NULL) + LP_RESERVETIME);
                             utxo->otherpubkey = jbits256(argjson,"mypub");
                             jaddbits256(retjson,"otherpubkey",utxo->otherpubkey);
@@ -296,6 +298,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
             }
             else if ( strcmp(method,"connect") == 0 )
             {
+                retval = 4;
                 if ( utxo->pair < 0 )
                 {
                     if ( (price= LP_price(base,rel)) != 0. )
@@ -369,6 +372,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
             }
         }
     }
+    return(retval);
 }
 
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
