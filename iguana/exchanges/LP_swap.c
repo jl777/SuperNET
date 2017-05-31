@@ -177,6 +177,14 @@ void basilisk_swap_finished(struct basilisk_swap *swap)
     swap->nummessages = 0;
 }
 
+uint32_t basilisk_quoteid(struct basilisk_request *rp)
+{
+    struct basilisk_request R;
+    R = *rp;
+    R.unused = R.requestid = R.quoteid = R.DEXselector = 0;
+    return(calc_crc32(0,(void *)&R,sizeof(R)));
+}
+
 uint32_t basilisk_requestid(struct basilisk_request *rp)
 {
     struct basilisk_request R;
@@ -184,22 +192,14 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
     R.requestid = R.quoteid = R.quotetime = R.DEXselector = 0;
     R.destamount = R.unused = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
-    if ( 0 )
+    if ( 1 )
     {
         int32_t i;
         for (i=0; i<sizeof(R); i++)
             printf("%02x",((uint8_t *)&R)[i]);
         printf(" <- crc.%u\n",calc_crc32(0,(void *)&R,sizeof(R)));
-        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.srchash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)));
+        char str[65],str2[65]; printf("B REQUESTID: t.%u r.%u q.%u %s %.8f %s -> %s %.8f %s crc.%u q%u\n",R.timestamp,R.requestid,R.quoteid,R.src,dstr(R.srcamount),bits256_str(str,R.srchash),R.dest,dstr(R.destamount),bits256_str(str2,R.desthash),calc_crc32(0,(void *)&R,sizeof(R)),basilisk_quoteid(&R));
     }
-    return(calc_crc32(0,(void *)&R,sizeof(R)));
-}
-
-uint32_t basilisk_quoteid(struct basilisk_request *rp)
-{
-    struct basilisk_request R;
-    R = *rp;
-    R.requestid = R.quoteid = R.unused = R.DEXselector = 0;
     return(calc_crc32(0,(void *)&R,sizeof(R)));
 }
 
