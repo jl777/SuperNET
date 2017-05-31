@@ -275,7 +275,7 @@ void LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_
                         if ( strcmp(method,"request") == 0 )
                         {
                             utxo->swappending = (uint32_t)(time(NULL) + LP_RESERVETIME);
-                            utxo->otherpubkey = jbits256(argjson,"pubkey");
+                            utxo->otherpubkey = jbits256(argjson,"mypub");
                             jaddbits256(retjson,"otherpubkey",utxo->otherpubkey);
                             jaddstr(retjson,"method","reserved");
                             jaddnum(retjson,"pending",utxo->swappending);
