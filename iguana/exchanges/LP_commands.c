@@ -199,7 +199,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     bestitem = jduplicate(jitem(array,besti));
                     i = besti;
                     item = bestitem;
-                    price = LP_pricequery(&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),myutxo->pubkey);
+                    price = LP_pricequery(&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub);
                     if ( jobj(bestitem,"price") != 0 )
                         jdelete(bestitem,"price");
                     jaddnum(bestitem,"reserved",reserved[besti]);
