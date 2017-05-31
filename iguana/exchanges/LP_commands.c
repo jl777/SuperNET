@@ -30,8 +30,8 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     rp->DEXselector = DEXselector;
     safecopy(rp->src,src,sizeof(rp->src));
     safecopy(rp->dest,dest,sizeof(rp->dest));
-    rp->quoteid = basilisk_quoteid(rp);
     rp->requestid = basilisk_requestid(rp);
+    rp->quoteid = basilisk_quoteid(rp);
     return(rp);
 }
 
