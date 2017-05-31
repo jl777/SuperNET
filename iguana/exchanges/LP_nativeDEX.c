@@ -124,6 +124,7 @@ double LP_pricecache(uint64_t *destsatoshisp,char *base,char *rel,bits256 txid,i
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
     {
         *destsatoshisp = ptr->destsatoshis;
+        printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     } else *destsatoshisp = 0;
     return(0.);
