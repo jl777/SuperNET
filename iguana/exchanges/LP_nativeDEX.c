@@ -48,7 +48,7 @@ struct LP_peerinfo
 struct LP_utxoinfo
 {
     UT_hash_handle hh;
-    bits256 txid,deposittxid,feetxid,otherpubkey;
+    bits256 txid,deposittxid,feetxid,otherpubkey,mypub;
     void *swap;
     uint64_t satoshis,depositsatoshis,feesatoshis;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
@@ -775,7 +775,7 @@ struct iguana_info *LP_coinfind(char *symbol)
 
 uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symbol,char *passphrase,char *wifstr,int32_t amclient)
 {
-    char coinaddr[64],*script; cJSON *array,*item,*retjson; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
+    char coinaddr[64],*script; struct LP_utxoinfo *utxo; cJSON *array,*item,*retjson; bits256 txid,deposittxid; int32_t used,i,n,vout,depositvout; uint64_t *values,satoshis,depositval,targetval,value,total = 0; bits256 privkey,pubkey; uint8_t pubkey33[33],tmptype,rmd160[20]; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin == 0 )
     {
         printf("cant add privkey for %s, coin not active\n",symbol);
@@ -833,7 +833,11 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                             values[i] = 0, used++;
                             if ( amclient == 0 )
                                 LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
-                            else LP_addutxo(amclient,mypeer,mypubsock,symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coinaddr,"127.0.0.1",0,0);
+                            else
+                            {
+                                if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,deposittxid,depositvout,depositval,txid,vout,value,script,coinaddr,"127.0.0.1",0,0)) != 0 )
+                                    utxo->mypub = curve25519(privkey,curve25519_basepoint9());
+                            }
                             total += value;
                         }
                     }
