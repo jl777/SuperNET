@@ -65,7 +65,7 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                 }
                 jaddstr(reqjson,"method",method);
                 LP_send(pushsock,jprint(reqjson,1),1);
-                for (i=0; i<10; i++)
+                for (i=0; i<100; i++)
                 {
                     if ( (price= LP_pricecache(otherpubp,reservedp,txfeep,destsatoshisp,desttxfeep,base,rel,txid,vout)) != 0. )
                     {
