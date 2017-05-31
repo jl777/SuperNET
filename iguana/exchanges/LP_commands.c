@@ -35,7 +35,7 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     return(rp);
 }
 
-double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *ipaddr,uint16_t port,char *base,char *rel,bits256 txid,int32_t vout,bits256 mypub)
+double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *ipaddr,uint16_t port,char *base,char *rel,bits256 txid,int32_t vout,bits256 mypub,cJSON *argitem)
 {
     cJSON *reqjson; struct LP_peerinfo *peer; int32_t i,flag = 0,pushsock = -1; double price = 0.;
     if ( ipaddr != 0 && port >= 1000 )
@@ -55,6 +55,13 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                 {
                     flag = 1;
                     jaddbits256(reqjson,"mypub",mypub);
+                    if ( argitem != 0 )
+                    {
+                        jadd64bits(reqjson,"satoshis",j64bits(argitem,"satoshis"));
+                        jadd64bits(reqjson,"txfee",j64bits(argitem,"txfee"));
+                        jadd64bits(reqjson,"desttxfee",j64bits(argitem,"desttxfee"));
+                        jadd64bits(reqjson,"destsatoshis",j64bits(argitem,"destsatoshis"));
+                    }
                 }
                 jaddstr(reqjson,"method",method);
                 LP_send(pushsock,jprint(reqjson,1),1);
@@ -164,7 +171,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
-                    price = LP_query("price",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),zero);
+                    price = LP_query("price",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),zero,0);
                     if ( destsatoshis[i] != 0 && (double)j64bits(item,"value")/destsatoshis[i] > price )
                         price = (double)j64bits(item,"satoshis")/destsatoshis[i];
                 }
@@ -192,12 +199,12 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                         }
                     }
                 }
-                if ( besti >= 0 )
+                if ( besti >= 0 && bits256_cmp(utxo->mypub,otherpubs[besti]) == 0 )
                 {
                     bestitem = jduplicate(jitem(array,besti));
                     i = besti;
                     item = bestitem;
-                    price = LP_query("request",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub);
+                    price = LP_query("request",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub,0);
                     if ( jobj(bestitem,"price") != 0 )
                         jdelete(bestitem,"price");
                     jaddnum(bestitem,"reserved",reserved[besti]);
@@ -208,7 +215,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     jaddbits256(bestitem,"otherpub",otherpubs[besti]);
                     if ( LP_price(base,utxo->coin) > 0.975*price )
                     {
-                        price = LP_query("connect",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub);
+                        price = LP_query("connect",&otherpubs[i],&reserved[i],&txfees[i],&destsatoshis[i],&desttxfees[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub,item);
                     }
                 }
             }
