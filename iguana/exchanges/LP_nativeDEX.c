@@ -980,7 +980,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                     nn_freemsg(ptr), ptr = 0;
             }
             if ( nonz == 0 )
-                sleep(1);
+                usleep(50000);
         }
     }
 }

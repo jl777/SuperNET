@@ -172,7 +172,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
-                printf("i.%d price %.8f bestprice %.8f: (%s)\n",i,price,bestprice,jprint(item,0));
+                //printf("i.%d price %.8f bestprice %.8f: (%s)\n",i,price,bestprice,jprint(item,0));
             }
             if ( bestprice != 0. )
             {
