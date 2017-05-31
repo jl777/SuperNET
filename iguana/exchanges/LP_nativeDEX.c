@@ -61,10 +61,11 @@ struct LP_utxoinfo
 struct LP_cacheinfo
 {
     UT_hash_handle hh;
+    bits256 otherpub;
     uint8_t key[sizeof(bits256)+sizeof(uint64_t)*2+sizeof(int32_t)];
     double price;
     uint64_t satoshis,txfee,destsatoshis,desttxfee;
-    uint32_t timestamp;
+    uint32_t timestamp,reserved;
 } *LP_cacheinfos;
 
 int32_t LP_cachekey(uint8_t *key,char *base,char *rel,bits256 txid,int32_t vout)
@@ -98,22 +99,30 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     return(ptr);
 }
 
-double LP_pricecache(uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *base,char *rel,bits256 txid,int32_t vout)
+double LP_pricecache(bits256 *otherpubp,uint32_t *reservedp,uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr;
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
     {
         if ( destsatoshisp != 0 )
         {
+            *otherpubp = ptr->otherpub;
             *destsatoshisp = ptr->destsatoshis;
             *txfeep = ptr->txfee;
             *desttxfeep = ptr->desttxfee;
+            *reservedp = ptr->reserved;
         }
         //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
     else if ( destsatoshisp != 0 )
+    {
+        memset(otherpubp,0,sizeof(*otherpubp));
         *destsatoshisp = 0;
+        *txfeep = 0;
+        *desttxfeep = 0;
+        *reservedp = 0;
+    }
     //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
     return(0.);
 }
