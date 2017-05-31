@@ -51,6 +51,8 @@ char *LP_pricestr(char *base,char *rel)
     {
         retjson = cJSON_CreateObject();
         jaddstr(retjson,"result","success");
+        jaddstr(retjson,"base",base);
+        jaddstr(retjson,"rel",rel);
         jaddnum(retjson,"price",price);
         return(jprint(retjson,1));
     } else return(clonestr("{\"error\":\"cant find baserel pair\"}"));
