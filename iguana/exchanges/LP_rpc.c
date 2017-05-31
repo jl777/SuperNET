@@ -154,7 +154,7 @@ uint64_t LP_getestimatedrate(char *symbol)
         {
             if ( retstr[0] != '-' )
             {
-                rate = atof(retstr);
+                rate = SATOSHIDEN * atof(retstr);
                 printf("estimated rate %s -> %llu\n",retstr,(long long)rate);
             }
             free(retstr);
