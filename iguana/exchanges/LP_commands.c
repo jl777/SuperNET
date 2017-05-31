@@ -54,7 +54,7 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                 if ( bits256_nonz(mypub) != 0 )
                 {
                     flag = 1;
-                    jaddbits256(reqjson,"mypub",mypub);
+                    jaddbits256(reqjson,"otherpub",mypub);
                     if ( argitem != 0 )
                     {
                         jadd64bits(reqjson,"satoshis",j64bits(argitem,"satoshis"));
@@ -65,7 +65,7 @@ double LP_query(char *method,bits256 *otherpubp,uint32_t *reservedp,uint64_t *tx
                 }
                 jaddstr(reqjson,"method",method);
                 LP_send(pushsock,jprint(reqjson,1),1);
-                for (i=0; i<100; i++)
+                for (i=0; i<30; i++)
                 {
                     if ( (price= LP_pricecache(otherpubp,reservedp,txfeep,destsatoshisp,desttxfeep,base,rel,txid,vout)) != 0. )
                     {
@@ -244,7 +244,6 @@ char *LP_quote(uint32_t reserved,char *base,char *rel,bits256 txid,int32_t vout,
 int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 srchash,desthash,pubkey,privkey,txid,desttxid; struct LP_utxoinfo *utxo; uint32_t timestamp,quotetime; int32_t destvout,retval = -1,DEXselector = 0; uint64_t txfee,satoshis,desttxfee,destsatoshis,value; struct basilisk_request R;
-    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","method":"price"})
     if ( (method= jstr(argjson,"method")) != 0 )
     {
         txid = jbits256(argjson,"txid");
@@ -286,8 +285,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         {
                             retval |= 2;
                             utxo->swappending = (uint32_t)(time(NULL) + LP_RESERVETIME);
-                            utxo->otherpubkey = jbits256(argjson,"mypub");
-                            jaddbits256(retjson,"otherpubkey",utxo->otherpubkey);
+                            utxo->otherpubkey = jbits256(argjson,"otherpub");
+                            jaddbits256(retjson,"otherpub",utxo->otherpubkey);
                             jaddstr(retjson,"method","reserved");
                             jaddnum(retjson,"pending",utxo->swappending);
                         } else jaddstr(retjson,"method","quote");
@@ -301,6 +300,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                 retval = 4;
                 if ( utxo->pair < 0 )
                 {
+                    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","mypub":"3b8f71015d644aaa4c9cceeee289b9a50dc9ec7fafab861c4d5872a8e3844466","satoshis":"0","txfee":"100000","desttxfee":"10000","destsatoshis":"2163363","method":"connect"})
                     if ( (price= LP_price(base,rel)) != 0. )
                     {
                         price *= (1. + profitmargin);
@@ -311,8 +311,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         destvout = jint(argjson,"destvout");
                         timestamp = juint(argjson,"timestamp");
                         privkey = LP_privkey(utxo->coinaddr);
-                        pubkey = LP_pubkey(privkey);
-                        srchash = jbits256(argjson,"srchash");
+                        srchash = LP_pubkey(privkey);
+                        jaddbits256(argjson,"srchash",srchash);
                         value = j64bits(argjson,"destsatoshis");
                         quotetime = juint(argjson,"quotetime");
                         //if ( timestamp == utxo->swappending-LP_RESERVETIME && quotetime >= timestamp && quotetime < utxo->swappending && bits256_cmp(pubkey,srchash) == 0 && (destsatoshis= LP_txvalue(rel,desttxid,destvout)) > price*(utxo->satoshis-txfee)+desttxfee && value <= destsatoshis-desttxfee )
@@ -323,7 +323,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                                 printf("error creating utxo->pair\n");
                             else if ( nn_connect(utxo->pair,pairstr) >= 0 )
                             {
-                                desthash = jbits256(argjson,"desthash");
+                                desthash = jbits256(argjson,"otherpub");
+                                char str[65],str2[65]; printf("(%s) -> %s %s %s %.8f %s %.8f %u %u %d\n",jprint(argjson,0),bits256_str(str,srchash),bits256_str(str2,desthash),base,dstr(satoshis),rel,dstr(destsatoshis),timestamp,quotetime,DEXselector);
                                 LP_requestinit(&R,srchash,desthash,base,satoshis,rel,destsatoshis,timestamp,quotetime,DEXselector);
                                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
@@ -406,7 +407,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         printf("CMD.(%s)\n",jprint(argjson,0));
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
-            retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"),j64bits(argjson,"txfee"),j64bits(argjson,"destsatoshis"),j64bits(argjson,"desttxfee"),jbits256(argjson,"otherpubkey"));
+            retstr = LP_quote(juint(argjson,"pending"),jstr(argjson,"base"),jstr(argjson,"rel"),jbits256(argjson,"txid"),jint(argjson,"vout"),jdouble(argjson,"price"),j64bits(argjson,"satoshis"),j64bits(argjson,"txfee"),j64bits(argjson,"destsatoshis"),j64bits(argjson,"desttxfee"),jbits256(argjson,"otherpub"));
         else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
         {
             retstr = jprint(argjson,0);
