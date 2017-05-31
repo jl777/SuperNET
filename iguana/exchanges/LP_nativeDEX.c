@@ -61,7 +61,7 @@ struct LP_cacheinfo
     UT_hash_handle hh;
     uint8_t key[sizeof(bits256)+sizeof(uint64_t)*2+sizeof(int32_t)];
     double price;
-    uint64_t satoshis,destsatoshis;
+    uint64_t satoshis,txfee,destsatoshis,desttxfee;
     uint32_t timestamp;
 } *LP_cacheinfos;
 
