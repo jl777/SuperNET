@@ -144,9 +144,9 @@ int32_t LP_importaddress(char *symbol,char *address)
     return(1);
 }
 
-uint64_t LP_getestimatedrate(char *symbol)
+double LP_getestimatedrate(char *symbol)
 {
-    char buf[512],*retstr; uint64_t rate = 200; struct iguana_info *coin = LP_coinfind(symbol);
+    char buf[512],*retstr; double rate = 200; struct iguana_info *coin = LP_coinfind(symbol);
     if ( coin != 0 )
     {
         sprintf(buf,"[%d]",3);
@@ -155,7 +155,7 @@ uint64_t LP_getestimatedrate(char *symbol)
             if ( retstr[0] != '-' )
             {
                 rate = atof(retstr) / 1024.;
-                printf("estimated rate %s -> %llu\n",retstr,(long long)rate);
+                printf("estimated rate %s -> %.8f\n",retstr,rate);
             }
             free(retstr);
         }
