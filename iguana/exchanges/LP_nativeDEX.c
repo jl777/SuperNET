@@ -751,7 +751,6 @@ struct iguana_info *LP_coinfind(char *symbol)
     }
     else
     {
-        cdata.isPoS = 1;
         cdata.pubtype = 60;
         cdata.p2shtype = 85;
         cdata.wiftype = 188;
