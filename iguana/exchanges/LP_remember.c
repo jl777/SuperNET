@@ -761,7 +761,9 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 bitcoin_address(privaddr,60,privpub33,33);
                                 printf("alicespend len.%d redeemlen.%d priv0addr.(%s) priv0.(%s)\n",len,redeemlen,privaddr,bits256_str(str,myprivs[0]));
                             }
-                            if ( (txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,txfee,"alicespend",bobcoin,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,myprivs[0],0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,0,pubkey33,1,expiration,&values[BASILISK_ALICESPEND],0,0,bobpaymentaddr)) != 0 )
+                            for (j=0; j<32; j++)
+                                rev.bytes[j] = myprivs[0].bytes[31 - j];
+                            if ( (txbytes[BASILISK_ALICESPEND]= basilisk_swap_bobtxspend(&signedtxid,txfee,"alicespend",bobcoin,bob->pubtype,bob->p2shtype,bob->isPoS,bob->wiftype,ctx,rev/*myprivs[0]*/,0,redeemscript,redeemlen,userdata,len,txids[BASILISK_BOBPAYMENT],0,0,pubkey33,1,expiration,&values[BASILISK_ALICESPEND],0,0,bobpaymentaddr)) != 0 )
                                 printf("alicespend.(%s)\n",txbytes[BASILISK_ALICESPEND]);
                         }
                     }
