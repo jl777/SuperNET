@@ -145,7 +145,10 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
                     if ( (price= LP_pricecache(qp,base,rel,qp->txid,qp->vout)) != 0. )
                     {
                         if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
+                        {
+                            printf("break out of loop.%d price %.8f\n",i,price);
                             break;
+                        }
                     }
                     usleep(250000);
                 }
@@ -231,8 +234,12 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     LP_quoteparse(&Q[i],item);
                     char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
+                    printf("price %.8f\n",price);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
+                    {
+                        printf("adjustprice %.8f -> %.8f\n",price,(double)j64bits(item,"satoshis")/Q[i].destsatoshis);
                         price = (double)j64bits(item,"satoshis")/Q[i].destsatoshis;
+                    }
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
