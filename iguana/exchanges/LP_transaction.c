@@ -637,9 +637,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddnum(item,"vout",vout);
     bitcoin_address(tmpaddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,tmpaddr);
-    if ( addrtype == p2shtype )
-        spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
-    else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     /*int32_t i;
      for (i=0; i<33; i++)
      printf("%02x",pubkey33[i]);
@@ -652,15 +649,16 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
      printf("%02x",rmd160[i]);
      printf(" <- vs direct calc\n");*/
     //spendlen = bitcoin_standardspend(spendscript,0,rmd160);
-    init_hexbytes_noT(hexstr,spendscript,spendlen);
-    jaddstr(item,"scriptPubKey",hexstr);
-    jaddnum(item,"suppress",suppress_pubkeys);
-    jaddnum(item,"sequence",sequenceid);
     if ( redeemlen != 0 )
     {
         init_hexbytes_noT(hexstr,redeemscript,redeemlen);
         jaddstr(item,"redeemScript",hexstr);
-    }
+        spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+    } else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+    init_hexbytes_noT(hexstr,spendscript,spendlen);
+    jaddstr(item,"scriptPubKey",hexstr);
+    jaddnum(item,"suppress",suppress_pubkeys);
+    jaddnum(item,"sequence",sequenceid);
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
