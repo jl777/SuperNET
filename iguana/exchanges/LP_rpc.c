@@ -208,7 +208,7 @@ printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
                 len = (int32_t)strlen(hexstr);
                 signedtx = calloc(1,len+1);
                 strcpy(signedtx,hexstr);
-                *completedp = jint(json,"completed");
+                *completedp = is_cJSON_True(jobj(json,"complete"));
                 data = malloc(len >> 1);
                 decode_hex(data,len>>1,hexstr);
                 *signedtxidp = bits256_doublesha256(0,data,len >> 1);
