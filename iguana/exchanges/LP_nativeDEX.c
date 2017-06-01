@@ -820,6 +820,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                         {
                             value = values[i];
                             values[i] = 0, used++;
+                            printf("addutxo.(%s)\n",jprint(item,0));
                             if ( amclient == 0 )
                                 LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin);
                             else
