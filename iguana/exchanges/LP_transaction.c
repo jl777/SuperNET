@@ -426,13 +426,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shty
                 {
                     flag++;
                     numsigs++;
-                    int32_t z;
-                     for (z=0; z<siglen-1; z++)
-                     printf("%02x",sig[z]);
-                     printf(" <- sig[%d]\n",j);
-                     for (z=0; z<33; z++)
-                     printf("%02x",vp->signers[j].pubkey[z]);
-                     printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);
+                    int32_t z; char tmpaddr[64];
+                    for (z=0; z<siglen-1; z++)
+                        printf("%02x",sig[z]);
+                    printf(" <- sig[%d]\n",j);
+                    for (z=0; z<33; z++)
+                        printf("%02x",vp->signers[j].pubkey[z]);
+                    bitcoin_address(tmpaddr,60,vp->signers[j].pubkey,33);
+                    printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d %s\n",vini,j,numsigs,vp->M,tmpaddr);
                 }
             }
             if ( numsigs >= vp->M )
