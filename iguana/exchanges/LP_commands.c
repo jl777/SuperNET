@@ -277,12 +277,12 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
     return(retarray);
 }
 
-cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
+cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
 {
     static bits256 zero;
     int32_t i,n,besti; cJSON *array,*item,*bestitem=0; double bestmetric,metric,bestprice=0.,price,prices[100]; struct LP_quoteinfo Q[sizeof(prices)/sizeof(*prices)];
     bestprice = 0.;
-    if ( (array= LP_tradecandidates(utxo,base)) != 0 )
+    if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
         if ( (n= cJSON_GetArraySize(array)) > 0 )
         {
@@ -295,7 +295,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 {
                     LP_quoteparse(&Q[i],item);
                     //char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
-                    price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
+                    price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,zero);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
                     {
                         printf("adjustprice %.8f -> %.8f\n",price,(double)j64bits(item,"satoshis")/Q[i].destsatoshis);
@@ -326,19 +326,21 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                         }
                     }
                 }
-                if ( besti >= 0 )//&& bits256_cmp(utxo->mypub,otherpubs[besti]) == 0 )
+                if ( besti >= 0 )//&& bits256_cmp(myutxo->mypub,otherpubs[besti]) == 0 )
                 {
                     item = jitem(array,besti);
                     bestitem = LP_quotejson(&Q[i]);
                     i = besti;
-                    price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,utxo->mypub);
+                    Q[i].desttxid = myutxo->txid;
+                    Q[i].destvout = myutxo->vout;
+                    price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                     if ( jobj(bestitem,"price") != 0 )
                         jdelete(bestitem,"price");
                     jaddnum(bestitem,"price",prices[besti]);
-                    if ( LP_price(base,utxo->coin) > 0.975*price )
+                    if ( LP_price(base,myutxo->coin) > 0.975*price )
                     {
 // the same, cleanup
-                        price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,utxo->mypub);
+                        price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                     }
                 }
             }

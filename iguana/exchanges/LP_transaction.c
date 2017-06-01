@@ -67,7 +67,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
     uint64_t value = 0; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
-        printf("%s txobj.(%s)\n",symbol,jprint(txobj,0));
+        char str[65]; printf("%s.(%s) txobj.(%s)\n",symbol,bits256_str(str,txid),jprint(txobj,0));
         if ( (vouts= jarray(&numvouts,txobj,"vout")) != 0 && vout < numvouts )
         {
             utxoobj = jitem(vouts,vout);
