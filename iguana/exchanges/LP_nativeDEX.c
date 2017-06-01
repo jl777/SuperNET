@@ -113,6 +113,11 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
     {
         if ( qp != 0 )
             (*qp) = ptr->Q;
+        if ( ptr->price == 0. && ptr->Q.satoshis != 0 )
+        {
+            printf("null ptr->price? ");
+            ptr->price = (double)ptr->Q.destsatoshis / ptr->Q.satoshis;
+        }
         printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
