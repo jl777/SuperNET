@@ -443,11 +443,13 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
     int32_t datalen,sendlen,retval = -1;
     if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
     {
+        printf("waitsend waited\n");
         if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
         {
             if ( (sendlen= nn_send(pairsock,data,datalen,0)) == datalen )
             {
                 retval = 0;
+                printf("sent success\n");
             } else printf("send %s error\n",statename);
         }
     } else printf("didnt get pubkeys\n");
@@ -459,10 +461,14 @@ int32_t LP_sendwait(char *statename,int32_t timeout,int32_t pairsock,struct basi
     int32_t datalen,sendlen,retval = -1;
     if ( (datalen= (*datagen)(swap,data,maxlen)) > 0 )
     {
+        printf("sendwait.%d\n",datalen);
         if ( (sendlen= nn_send(pairsock,data,datalen,0)) == datalen )
         {
             if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
+            {
                 retval = 0;
+                printf("waited success\n");
+            }
             else printf("didnt get %s\n",statename);
         } else printf("send pubkeys error\n");
     }
