@@ -410,8 +410,8 @@ int32_t LP_utxosparse(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubs
             {
                 if ( destpeer->numutxos < n )
                 {
-                    destpeer->numutxos = n;
-                    printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
+                    //destpeer->numutxos = n;
+                    //printf("got.(%s) from %s numutxos.%d\n",retstr,destpeer->ipaddr,destpeer->numutxos);
                 }
             }
         }
