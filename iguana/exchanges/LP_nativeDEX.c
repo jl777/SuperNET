@@ -585,7 +585,7 @@ char GLOBAL_DBDIR[] = "DB";
 #include "LP_bitcoin.c"
 #include "LP_transaction.c"
 #include "LP_remember.c"
-#include "LP_statemachine.c"
+//#include "LP_statemachine.c"
 #include "LP_swap.c"
 #include "LP_commands.c"
 

@@ -483,5 +483,6 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 struct iguana_info *LP_coinfind(char *symbol);
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);
+uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,struct basilisk_rawtx *rawtx,uint32_t nextbits,int32_t suppress_swapsend);
 
 #endif

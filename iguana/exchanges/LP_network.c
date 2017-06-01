@@ -144,7 +144,7 @@ int32_t LP_send(int32_t sock,char *msg,int32_t freeflag)
     return(-1);
 }
 
-uint32_t LP_swapsend(struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
+uint32_t LP_swapsend(int32_t pairsock,struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t datalen,uint32_t nextbits,uint32_t crcs[2])
 {
     uint8_t *buf; int32_t sentbytes,offset=0,i;
     buf = malloc(datalen + sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2);
@@ -156,17 +156,11 @@ uint32_t LP_swapsend(struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,i
     offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
     if ( datalen > 0 )
         memcpy(&buf[offset],data,datalen), offset += datalen;
-    if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
+    if ( (sentbytes= nn_send(pairsock,buf,offset,0)) != offset )
     {
         printf("sentbytes.%d vs offset.%d\n",sentbytes,offset);
         if ( sentbytes < 0 )
         {
-            if ( swap->pushsock >= 0 )
-                nn_close(swap->pushsock), swap->pushsock = -1; //,
-            if ( swap->subsock >= 0 ) //
-                nn_close(swap->subsock), swap->subsock = -1;
-            swap->connected = swap->I.iambob != 0 ? -1 : 0;
-            swap->aborted = (uint32_t)time(NULL);
         }
     }
     //else printf("send.[%d] %x offset.%d datalen.%d [%llx]\n",sentbytes,msgbits,offset,datalen,*(long long *)data);
