@@ -776,11 +776,17 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         free_json(utxoobj);
         return(0);
     } else free_json(utxoobj);
+    if ( satoshis != 0 )
+    {
+        if ( destamount > satoshis+txfee )
+            change = destamount - (satoshis - txfee);
+        printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(destamount),dstr(satoshis),dstr(change),dstr(txfee));
+        destamount = satoshis;
+    }
     *destamountp = destamount;
-    if ( satoshis != 0 && destamount > satoshis+txfee )
-        change = destamount - (satoshis - txfee);
     if ( destamount > txfee )
         destamount -= txfee;
+    else printf("unexpected too small destamount %.8f txfee %.8f\n",dstr(destamount),dstr(txfee));
     timestamp = (uint32_t)time(NULL);
     V = calloc(256,sizeof(*V));
     privkeys = cJSON_CreateArray();
@@ -848,6 +854,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         bitcoin_addr2rmd160(&changetype,changermd160,changeaddr);
         changelen = bitcoin_standardspend(changescript,0,changermd160);
         txobj = bitcoin_txoutput(txobj,changescript,changelen,change);
+        printf("add change.(%s)\n",jprint(txobj,0));
     }
     if ( (rawtxbytes= bitcoin_json2hex(isPoS,&txid,txobj,V)) != 0 )
     {
@@ -881,6 +888,7 @@ int32_t basilisk_rawtx_gen(void *ctx,char *str,uint32_t swapstarted,uint8_t *pub
     {
         changeaddr = _changeaddr;
         bitcoin_address(changeaddr,coin->pubtype,changermd160,20);
+        printf("changeaddr.(%s)\n",changeaddr);
     }
     for (iter=0; iter<2; iter++)
     {
@@ -919,6 +927,7 @@ int32_t basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_
     {
         changeaddr = _changeaddr;
         bitcoin_address(changeaddr,pubtype,changermd160,20);
+        printf("changeaddr.(%s)\n",changeaddr);
     }
     for (iter=0; iter<2; iter++)
     {
