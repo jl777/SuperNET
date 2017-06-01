@@ -1569,6 +1569,7 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
         {
             jadd(interpreter,"result",jfalse());
             printf("Evaluate FALSE, depth.%d errs.%d [0] size.%d num.%d\n",stacks->stackdepth,errs,stacks->stack[0].size,stacks->stack[0].U.val);
+            errs++;
             if ( stacks->logarray != 0 )
                 printf("LOG.(%s)\n\n",jprint(stacks->logarray,0));
         }
