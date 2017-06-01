@@ -23,17 +23,16 @@ struct basilisk_request *LP_requestinit(struct basilisk_request *rp,bits256 srch
     struct basilisk_request R;
     memset(rp,0,sizeof(*rp));
     rp->srchash = srchash;
-    rp->desthash = desthash;
     rp->srcamount = srcsatoshis;
-    rp->destamount = destsatoshis;
     rp->timestamp = timestamp;
-    rp->quotetime = quotetime;
     rp->DEXselector = DEXselector;
     safecopy(rp->src,src,sizeof(rp->src));
     safecopy(rp->dest,dest,sizeof(rp->dest));
     R = *rp;
     rp->requestid = basilisk_requestid(rp);
-    *rp = R;
+    rp->quotetime = quotetime;
+    rp->desthash = desthash;
+    rp->destamount = destsatoshis;
     rp->quoteid = basilisk_quoteid(rp);
     return(rp);
 }
