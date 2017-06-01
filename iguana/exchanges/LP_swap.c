@@ -496,6 +496,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
                 sendbuf[sendlen++] = rawtx->I.datalen & 0xff;
                 sendbuf[sendlen++] = (rawtx->I.datalen >> 8) & 0xff;
                 sendbuf[sendlen++] = rawtx->I.redeemlen;
+                printf("datalen.%d redeemlen.%d\n",rawtx->I.datalen,rawtx->I.redeemlen);
                 memcpy(&sendbuf[sendlen],rawtx->txbytes,rawtx->I.datalen), sendlen += rawtx->I.datalen;
                 if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
                 {
