@@ -426,13 +426,13 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shty
                 {
                     flag++;
                     numsigs++;
-                    /*int32_t z;
+                    int32_t z;
                      for (z=0; z<siglen-1; z++)
                      printf("%02x",sig[z]);
                      printf(" <- sig[%d]\n",j);
                      for (z=0; z<33; z++)
                      printf("%02x",vp->signers[j].pubkey[z]);
-                     printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);*/
+                     printf(" <- pub, SIG.%d.%d VERIFIED numsigs.%d vs M.%d\n",vini,j,numsigs,vp->M);
                 }
             }
             if ( numsigs >= vp->M )
@@ -556,7 +556,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t
                     }
                 }
                 finalized = iguana_vininfo_create(pubtype,p2shtype,isPoS,serialized2,maxsize,msgtx,vins,numinputs,V);
-                //printf("finalized.%d\n",finalized);
+                printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     /*int32_t tmp; //char str[65];
@@ -698,7 +698,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     } else printf("error making rawtx\n");
     free_json(privkeys);
     free_json(txobj);
-    free(V);
     return(signedtx);
 }
 
