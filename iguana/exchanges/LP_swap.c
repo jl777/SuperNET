@@ -487,7 +487,7 @@ uint32_t LP_swapdata_rawtxsend(int32_t pairsock,struct basilisk_swap *swap,uint3
             rawtx->I.actualtxid = LP_broadcast_tx(rawtx->name,rawtx->coin->symbol,rawtx->txbytes,rawtx->I.datalen);
             if ( bits256_cmp(rawtx->I.actualtxid,rawtx->I.signedtxid) != 0 )
             {
-                printf("%s rawtxsend %s vs %s\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
+                printf("%s rawtxsend.[%d] %s vs %s\n",rawtx->name,rawtx->I.datalen,bits256_str(str,rawtx->I.signedtxid),bits256_str(str2,rawtx->I.actualtxid));
                 rawtx->I.actualtxid = rawtx->I.signedtxid;
             }
             if ( bits256_nonz(rawtx->I.actualtxid) != 0 && msgbits != 0 )

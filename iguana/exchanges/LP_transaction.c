@@ -1401,8 +1401,11 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; bits256 txid;
     datalen = recvbuf[0];
     datalen += (int32_t)recvbuf[1] << 8;
-    if ( datalen > 65536 )
+    if ( datalen > 1024 )
+    {
+        printf("LP_rawtx_spendscript %s datalen.%d too big\n",rawtx->name,datalen);
         return(-1);
+    }
     rawtx->I.redeemlen = recvbuf[2];
     data = &recvbuf[3];
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
