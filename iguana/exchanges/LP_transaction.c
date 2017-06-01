@@ -79,8 +79,7 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
             {
                 if ( (utxoobj= LP_gettxout(symbol,txid,vout)) != 0 )
                 {
-                    printf("gettxout.(%s)\n",jprint(utxoobj,0));
-                    if ( (interest= jdouble(txobj,"interest")) != 0. )
+                    if ( (interest= jdouble(utxoobj,"interest")) != 0. )
                     {
                         printf("add interest of %.8f to %.8f\n",interest,dstr(value));
                         value += SATOSHIDEN * interest;
@@ -786,10 +785,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( satoshis != 0 )
     {
         if ( value > satoshis+txfee )
-        {
-            if ( strcmp(symbol,"BTC") == 0 || value > satoshis+txfee*5 )
-                change = value - (satoshis + txfee);
-        }
+            change = value - (satoshis + txfee);
         printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(change),dstr(txfee));
     } else if ( value > txfee )
         satoshis = value - txfee;
