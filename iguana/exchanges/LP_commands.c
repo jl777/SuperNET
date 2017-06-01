@@ -124,7 +124,6 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
 double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 mypub)
 {
     cJSON *reqjson; struct LP_peerinfo *peer; int32_t i,flag = 0,pushsock = -1; double price = 0.;
-    memset(qp,0,sizeof(*qp));
     if ( ipaddr != 0 && port >= 1000 )
     {
         if ( (peer= LP_peerfind((uint32_t)calc_ipbits(ipaddr),port)) == 0 )
