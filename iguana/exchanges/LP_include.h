@@ -208,6 +208,22 @@ struct LP_quoteinfo
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };
 
+union iguana_stacknum { int32_t val; int64_t val64; uint8_t rmd160[20]; bits256 hash2; uint8_t pubkey[33]; uint8_t sig[74]; };
+struct iguana_stackdata { uint8_t *data; uint16_t size; union iguana_stacknum U; };
+
+#define MAX_SCRIPT_ELEMENT_SIZE 520
+#define MAX_OPS_PER_SCRIPT 201 // Maximum number of non-push operations per script
+#define MAX_PUBKEYS_PER_MULTISIG 20 // Maximum number of public keys per multisig
+
+#define IGUANA_MAXSTACKITEMS ((int32_t)(IGUANA_MAXSCRIPTSIZE / sizeof(uint32_t)))
+#define IGUANA_MAXSTACKDEPTH 128
+struct iguana_interpreter
+{
+    int32_t active,ifdepth,elsedepth,codeseparator,stackdepth,altstackdepth,maxstackdepth;
+    int8_t lastpath[IGUANA_MAXSTACKDEPTH];
+    cJSON *logarray;
+    struct iguana_stackdata stack[];
+};
 static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *OPTABLE; static char *OPCODES[0x100]; static int32_t OPCODELENS[0x100];
 
 #define SIGHASH_ALL 1

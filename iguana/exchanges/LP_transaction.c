@@ -231,6 +231,7 @@ void iguana_ensure_privkey(struct iguana_info *coin,bits256 privkey)
         }
     }
 }
+#endif
 
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
@@ -251,7 +252,7 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
         }
         memcpy(V[vini].spendscript,activescript,activescriptlen);
         V[vini].spendlen = activescriptlen;
-        spendscript = iguana_spendasm(coin,activescript,activescriptlen);
+        spendscript = iguana_spendasm(activescript,activescriptlen);
         if ( activescriptlen < 16 )
             continue;
         //printf("interpreter.(%s)\n",jprint(spendscript,0));
@@ -293,7 +294,6 @@ int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLoc
     }
     return(0);
 }
-#endif
 
 bits256 iguana_str2priv(char *str)
 {
@@ -448,6 +448,14 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shty
     return(complete);
 }
 
+int64_t iguana_lockval(int32_t finalized,int64_t locktime)
+{
+    int64_t lockval = -1;
+    if ( finalized == 0 )
+        return(locktime);
+    return(lockval);
+}
+
 int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,int32_t height,struct iguana_msgtx *msgtx,char **signedtxp,bits256 *signedtxidp,struct vin_info *V,int32_t numinputs,char *rawtx,cJSON *vins,cJSON *privkeysjson)
 {
     uint8_t *serialized,*serialized2,*serialized3,*serialized4,*extraspace,pubkeys[64][33]; int32_t finalized,i,len,n,z,plen,maxsize,complete = 0,extralen = 65536; char *privkeystr,*signedtx = 0; bits256 privkeys[64],privkey,txid; cJSON *item; cJSON *txobj = 0;
@@ -560,12 +568,12 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t
                 printf("finalized.%d\n",finalized);
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
-                    /*int32_t tmp; //char str[65];
-                     if ( (tmp= iguana_interpreter(coin,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
-                     {
-                     printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
-                     complete = 0;
-                     } */
+                    int32_t tmp; //char str[65];
+                    if ( (tmp= iguana_interpreter(ctx,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
+                    {
+                        printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
+                        complete = 0;
+                    } else printf("interpreter passed\n");
                 } else printf("complete.%d\n",complete);
             } else printf("rwmsgtx error\n");
         } else fprintf(stderr,"no inputs in vins.(%s)\n",vins!=0?jprint(vins,0):"null");
@@ -686,8 +694,8 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         completed = 0;
         memset(signedtxidp,0,sizeof(*signedtxidp));
         //printf("locktime.%u sequenceid.%x rawtx.(%s) vins.(%s)\n",locktime,sequenceid,rawtxbytes,jprint(vins,0));
-        //if ( (completed= iguana_signrawtransaction(ctx,symbol,pubtype,p2shtype,isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,1,rawtxbytes,vins,privkeys)) < 0 )
-        if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
+        if ( (completed= iguana_signrawtransaction(ctx,symbol,pubtype,p2shtype,isPoS,1000000,&msgtx,&signedtx,signedtxidp,V,1,rawtxbytes,vins,privkeys)) < 0 )
+        //if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
             printf("couldnt sign transaction.%s %s\n",name,bits256_str(str,*signedtxidp));
         else if ( completed == 0 )
         {
