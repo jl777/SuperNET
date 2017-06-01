@@ -753,7 +753,7 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
                                 rev.bytes[j] = privAm.bytes[31 - j];
                             //revcalc_rmd160_sha256(secretAm,rev);//privAm);
                             //vcalc_sha256(0,secretAm256,rev.bytes,sizeof(rev));
-                            redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,privAm/*rev*/,privBn,secretAm,secretAm256,secretBn,secretBn256);
+                            redeemlen = basilisk_swap_bobredeemscript(0,&secretstart,redeemscript,plocktime,pubA0,pubB0,pubB1,rev,privBn,secretAm,secretAm256,secretBn,secretBn256);
                             len = basilisk_swapuserdata(userdata,rev,0,myprivs[0],redeemscript,redeemlen);
                             {
                                 char privaddr[64]; uint8_t privpub33[33];
