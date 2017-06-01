@@ -829,7 +829,7 @@ int main(int argc, const char * argv[])
             printf("error launching LP_main (%s)\n",jprint(retjson,0));
             exit(-1);
         } else printf("(%s) launched.(%s)\n",argv[1],passphrase);
-        if ( (retstr= basilisk_swaplist()) != 0 )
+        if ( (0) && (retstr= basilisk_swaplist()) != 0 )
         {
             printf("%s\ngetchar to continue\n",retstr);
             getchar();

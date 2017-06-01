@@ -643,18 +643,6 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     }
     jaddbits256(item,"txid",utxotxid);
     jaddnum(item,"vout",vout);
-    /*int32_t i;
-     for (i=0; i<33; i++)
-     printf("%02x",pubkey33[i]);
-     printf(" pubkey33 ->\n");
-     for (i=0; i<20; i++)
-     printf("%02x",rmd160[i]);
-     printf(" destaddr.(%s)\n",destaddr);
-     calc_rmd160_sha256(rmd160,pubkey33,33);
-     for (i=0; i<20; i++)
-     printf("%02x",rmd160[i]);
-     printf(" <- vs direct calc\n");*/
-    //spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     bitcoin_address(tmpaddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,tmpaddr);
     if ( redeemlen != 0 )
