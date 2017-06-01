@@ -1432,7 +1432,7 @@ int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct ba
     if ( (txobj= bitcoin_data2json(rawtx->coin->pubtype,rawtx->coin->p2shtype,rawtx->coin->isPoS,height,&rawtx->I.signedtxid,&rawtx->msgtx,rawtx->extraspace,sizeof(rawtx->extraspace),data,datalen,0,suppress_pubkeys)) != 0 )
     {
         rawtx->I.actualtxid = rawtx->I.signedtxid;
-        //char str[65]; printf("got txid.%s (%s)\n",bits256_str(str,rawtx->signedtxid),jprint(txobj,0));
+        char str[65]; printf("got %s txid.%s (%s)\n",rawtx->name,bits256_str(str,rawtx->I.signedtxid),jprint(txobj,0));
         rawtx->I.locktime = rawtx->msgtx.lock_time;
         if ( (vouts= jarray(&n,txobj,"vout")) != 0 && v < n )
         {
@@ -1484,7 +1484,7 @@ int32_t LP_verify_bobdeposit(struct basilisk_swap *swap,uint8_t *data,int32_t da
             printf(" <- aliceclaim\n");
             //basilisk_txlog(swap,&swap->aliceclaim,swap->I.putduration+swap->I.callduration);
             return(retval);
-        }
+        } else printf("error signing aliceclaim\n");
     }
     printf("error with bobdeposit\n");
     return(-1);
@@ -1500,7 +1500,8 @@ int32_t LP_verify_alicepayment(struct basilisk_swap *swap,uint8_t *data,int32_t 
         basilisk_dontforget_update(swap,&swap->alicepayment);
         return(0);
     }
-    else return(-1);
+    printf("error validating alicepayment\n");
+    return(-1);
 }
 
 int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t datalen)
@@ -1532,5 +1533,6 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
             return(retval);
         }
     }
+    printf("error validating bobpayment\n");
     return(-1);
 }

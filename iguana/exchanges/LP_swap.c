@@ -555,6 +555,7 @@ void LP_bobloop(void *_utxo)
                     printf("%s\n",retstr);
                     free(retstr);
                 }
+                sleep(10);
             }
         }
         basilisk_swap_finished(swap);
@@ -601,6 +602,7 @@ void LP_aliceloop(void *_qp)
                     printf("%s\n",retstr);
                     free(retstr);
                 }
+                sleep(10);
             }
         }
         basilisk_swap_finished(swap);
