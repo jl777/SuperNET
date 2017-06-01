@@ -873,14 +873,14 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.putduration -= optionduration;
     else if ( optionduration > 0 )
         swap->I.callduration += optionduration;
-    swap->I.bobsatoshis = swap->I.req.destamount;
-    swap->I.alicesatoshis = swap->I.req.srcamount;
+    swap->I.bobsatoshis = swap->I.req.srcamount;
+    swap->I.alicesatoshis = swap->I.req.destamount;
     if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
         swap->I.bobinsurance = 50000;
     if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
         swap->I.aliceinsurance = 50000;
-    strcpy(swap->I.bobstr,swap->I.req.dest);
-    strcpy(swap->I.alicestr,swap->I.req.src);
+    strcpy(swap->I.bobstr,swap->I.req.src);
+    strcpy(swap->I.alicestr,swap->I.req.dest);
     swap->I.started = (uint32_t)time(NULL);
     swap->I.expiration = swap->I.req.timestamp + swap->I.putduration + swap->I.callduration;
     OS_randombytes((uint8_t *)&swap->I.choosei,sizeof(swap->I.choosei));
@@ -904,7 +904,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         char str[65]; printf("couldnt generate privkeys %d %s\n",x,bits256_str(str,privkey));
         return(0);
     }
-    if ( (coin= LP_coinfind(swap->I.req.dest)) != 0 )
+    if ( (coin= LP_coinfind(swap->I.alicestr)) != 0 )
         swap->alicecoin = *coin;
     else
     {
@@ -912,7 +912,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         free(swap);
         return(0);
     }
-    if ( (coin= LP_coinfind(swap->I.req.src)) != 0 )
+    if ( (coin= LP_coinfind(swap->I.bobstr)) != 0 )
         swap->bobcoin = *coin;
     else
     {
