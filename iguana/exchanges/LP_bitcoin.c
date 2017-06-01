@@ -792,6 +792,7 @@ int32_t iguana_checksig(void *ctx,struct iguana_stackdata pubkeyarg,struct iguan
     uint8_t pubkey[MAX_SCRIPT_ELEMENT_SIZE],sig[MAX_SCRIPT_ELEMENT_SIZE]; int32_t retval,plen,siglen;
     plen = iguana_databuf(pubkey,pubkeyarg);
     siglen = iguana_databuf(sig,sigarg);
+    printf("checksig\n");
     if ( bitcoin_pubkeylen(pubkey) == plen && plen > 0 && siglen > 0 && siglen < 74 )
     {
         if ( (retval= (bitcoin_verify(ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
