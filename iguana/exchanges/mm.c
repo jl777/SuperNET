@@ -833,7 +833,7 @@ int main(int argc, const char * argv[])
         while ( 1 )
         {
             theoretical = marketmaker_updateprice("komodo","KMD","BTC",theoretical,&incr);
-            sleep(3);
+            sleep(10);
             if ( jint(retjson,"client") != 0 )
             {
                 struct LP_utxoinfo *utxo,*utmp;
