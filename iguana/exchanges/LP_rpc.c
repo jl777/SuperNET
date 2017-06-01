@@ -215,7 +215,8 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
                 decode_hex(data,len>>1,hexstr);
                 *signedtxidp = bits256_doublesha256(0,data,len >> 1);
             }
-            else printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
+            //else
+                printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
             free_json(json);
         }
         free(retstr);
