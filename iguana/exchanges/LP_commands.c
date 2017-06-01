@@ -214,11 +214,11 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
-// horrible, pass in quoteinfo, utxo
+                    printf("i.%d of %d: (%s)\n",i,n,jprint(item,0));
                     LP_quoteparse(&Q[i],item);
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
-                    if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"value")/Q[i].destsatoshis > price )
-                        price = (double)j64bits(item,"value")/Q[i].destsatoshis;
+                    if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
+                        price = (double)j64bits(item,"satoshis")/Q[i].destsatoshis;
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
