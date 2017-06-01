@@ -298,6 +298,11 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         printf("malformed addutxo %d %d %d %d %d %d %d %d %d\n", coin == 0,spendscript == 0,coinaddr == 0,bits256_nonz(txid) == 0,bits256_nonz(deposittxid) == 0,vout < 0,depositvout < 0,satoshis <= 0,depositsatoshis <= 0);
         return(0);
     }
+    if ( amclient == 0 && strcmp(ipaddr,"127.0.0.1") == 0 )
+    {
+        printf("LP node got localhost utxo\n");
+        return(0);
+    }
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
         if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->txid2) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->vout2 || depositsatoshis != utxo->satoshis2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
