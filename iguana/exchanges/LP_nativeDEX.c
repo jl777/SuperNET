@@ -113,7 +113,7 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
     {
         if ( qp != 0 )
             (*qp) = ptr->Q;
-        //printf("found %s/%s %.8f\n",base,rel,ptr->price);
+        printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
     else if ( qp != 0 )
@@ -140,6 +140,7 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
     ptr->price = price;
     ptr->Q = *qp;
     ptr->timestamp = (uint32_t)time(NULL);
+    printf("cacheadd %.8f\n",price);
     return(ptr);
 }
 
@@ -926,7 +927,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                if ( peer->numpeers != mypeer->numpeers || (rand() % 1000) == 0 )
+                if ( peer->numpeers != mypeer->numpeers || (rand() % 10000) == 0 )
                 {
                     if ( peer->numpeers != mypeer->numpeers )
                         printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);

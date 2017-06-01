@@ -284,6 +284,7 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
 {
     memset(qp,0,sizeof(*qp));
     qp->timestamp = (uint32_t)time(NULL);
+    safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
         qp->txfee = 10000;
     if ( qp->txfee >= utxo->satoshis || qp->txfee >= utxo->satoshis2 )
@@ -302,7 +303,6 @@ int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *
     qp->destsatoshis -= qp->desttxfee;
     safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
     safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
-    safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
     qp->srchash = LP_pubkey(LP_privkey(utxo->coinaddr));
     return(0);
 }
