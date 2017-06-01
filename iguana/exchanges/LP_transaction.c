@@ -75,10 +75,18 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
             {
                 char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d/%d\n",symbol,bits256_str(str,txid),jprint(utxoobj,0),vout,numvouts);
             }
-            else if ( (interest= jdouble(txobj,"interest")) != 0. )
+            else if ( strcmp(symbol,"KMD") == 0 )
             {
-                printf("add interest of %.8f to %.8f\n",interest,dstr(value));
-                value += SATOSHIDEN * interest;
+                if ( (utxoobj= LP_gettxout(symbol,txid,vout)) != 0 )
+                {
+                    printf("gettxout.(%s)\n",jprint(utxoobj,0));
+                    if ( (interest= jdouble(txobj,"interest")) != 0. )
+                    {
+                        printf("add interest of %.8f to %.8f\n",interest,dstr(value));
+                        value += SATOSHIDEN * interest;
+                    }
+                    free_json(utxoobj);
+                }
             }
         }
         free_json(txobj);
