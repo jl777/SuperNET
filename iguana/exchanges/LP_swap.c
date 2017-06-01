@@ -534,7 +534,7 @@ void LP_aliceloop(void *_qp)
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 10;
-    swap = LP_swapinit(1,0,qp->privkey,&qp->R);
+    swap = LP_swapinit(0,0,qp->privkey,&qp->R);
     if ( swap != 0 )
     {
         if ( LP_sendwait("pubkeys",10,qp->pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
@@ -555,9 +555,9 @@ void LP_aliceloop(void *_qp)
             // alicespend
             // done
         }
-    } else printf("swap timed out\n");
-    basilisk_swap_finished(swap);
-    free(swap);
+        basilisk_swap_finished(swap);
+        free(swap);
+    }
     nn_close(qp->pair);
     free(qp);
 }
