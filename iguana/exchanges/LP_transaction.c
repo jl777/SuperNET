@@ -1398,16 +1398,22 @@ int32_t LP_verify_otherfee(struct basilisk_swap *swap,uint8_t *data,int32_t data
 
 int32_t LP_rawtx_spendscript(struct basilisk_swap *swap,int32_t height,struct basilisk_rawtx *rawtx,int32_t v,uint8_t *recvbuf,int32_t recvlen,int32_t suppress_pubkeys)
 {
-    int32_t datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; bits256 txid;
-    datalen = recvbuf[0];
-    datalen += (int32_t)recvbuf[1] << 8;
+    bits256 otherhash,myhash,txid; int32_t i,offset=0,datalen=0,retval=-1,hexlen,n; uint8_t *data; cJSON *txobj,*skey,*vouts,*vout; char *hexstr; uint32_t quoteid,msgbits;
+    for (i=0; i<32; i++)
+        otherhash.bytes[i] = recvbuf[offset++];
+    for (i=0; i<32; i++)
+        myhash.bytes[i] = recvbuf[offset++];
+    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(quoteid),&quoteid);
+    offset += iguana_rwnum(0,&recvbuf[offset],sizeof(msgbits),&msgbits);
+    datalen = recvbuf[offset++];
+    datalen += (int32_t)recvbuf[offset++] << 8;
     if ( datalen > 1024 )
     {
         printf("LP_rawtx_spendscript %s datalen.%d too big\n",rawtx->name,datalen);
         return(-1);
     }
-    rawtx->I.redeemlen = recvbuf[2];
-    data = &recvbuf[3];
+    rawtx->I.redeemlen = recvbuf[offset++];
+    data = &recvbuf[offset++];
     if ( rawtx->I.redeemlen > 0 && rawtx->I.redeemlen < 0x100 )
         memcpy(rawtx->redeemscript,&data[datalen],rawtx->I.redeemlen);
     //printf("recvlen.%d datalen.%d redeemlen.%d\n",recvlen,datalen,rawtx->redeemlen);
