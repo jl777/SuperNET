@@ -1344,7 +1344,7 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
                              for (i=0; i<20; i++)
                              printf("%02x",rmd160[i]);
                              printf(" <- rmd160 databuf\n");*/
-                            if ( datalen == 32 )
+                            if ( 0 && datalen == 32 )
                                 calc_rmd160_sha256(rmd160,revdatabuf,datalen);
                             else calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
