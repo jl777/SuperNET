@@ -216,10 +216,8 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
     int32_t i,len = 0;
     if ( datalen == sizeof(swap->otherdeck) )
     {
-        printf("extract pubkeys\n");
         for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
-        printf("done extract pubkeys\n");
         return(0);
     }
     printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck));

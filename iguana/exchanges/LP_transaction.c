@@ -1715,15 +1715,15 @@ int32_t basilisk_alicetxs(struct basilisk_swap *swap,uint8_t *data,int32_t maxle
     }
     if ( swap->myfee.I.datalen == 0 )
     {
-        printf("generate fee\n");
+        //printf("generate fee\n");
         if ( basilisk_rawtx_gen(swap->ctx,"myfee",swap->I.started,swap->persistent_pubkey33,swap->I.iambob,1,&swap->myfee,0,swap->myfee.spendscript,swap->myfee.I.spendlen,swap->myfee.coin->txfee,1,0,swap->persistent_privkey) == 0 )
         {
             swap->I.statebits |= LP_swapdata_rawtxsend(swap,0x80,data,maxlen,&swap->myfee,0x40,0);
             LP_unspents_mark(swap->I.iambob!=0?swap->bobcoin.symbol:swap->alicecoin.symbol,swap->myfee.vins);
             //basilisk_txlog(swap,&swap->myfee,-1);
-            for (i=0; i<swap->myfee.I.spendlen; i++)
+            for (i=0; i<swap->myfee.I.datalen; i++)
                 printf("%02x",swap->myfee.txbytes[i]);
-            printf(" fee %p %x\n",swap->myfee.txbytes,swap->I.statebits);
+            printf(" <- fee state.%x\n",swap->I.statebits);
             swap->I.statebits |= 0x40;
         }
         else

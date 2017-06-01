@@ -221,6 +221,5 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
         free(retstr);
     }
     free(paramstr);
-    printf("return signedtx.%p\n",signedtx);
     return(signedtx);
 }
