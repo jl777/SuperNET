@@ -802,6 +802,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                 {
                     item = jitem(array,i);
                     deposittxid = jbits256(item,"txid");
+                    char str[65],str2[65]; printf("addutxo.(%s) %s\n",jprint(item,0),bits256_str(str,deposittxid));
                     depositvout = juint(item,"vout");
                     script = jstr(item,"scriptPubKey");
                     depositval = values[i];
@@ -819,7 +820,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                         {
                             value = values[i];
                             values[i] = 0, used++;
-                            char str[65],str2[65]; printf("addutxo.(%s) %s %s\n",jprint(item,0),bits256_str(str,txid),bits256_str(str2,deposittxid));
+                            printf("addutxo.(%s) %s %s\n",jprint(item,0),bits256_str(str,txid),bits256_str(str2,deposittxid));
                             if ( amclient == 0 )
                             {
                                 if ( (utxo= LP_addutxo(amclient,mypeer,mypubsock,symbol,txid,vout,value,deposittxid,depositvout,depositval,script,coinaddr,LP_peerinfos[0].ipaddr,LP_peerinfos[0].port,LP_peerinfos[0].profitmargin)) != 0 )
