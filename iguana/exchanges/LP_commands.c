@@ -418,7 +418,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         privkey = LP_privkey(utxo->coinaddr);
                         if ( bits256_nonz(utxo->mypub) == 0 )
                             utxo->mypub = LP_pubkey(privkey);
-                        if ( bits256_nonz(privkey) != 0 && Q.timestamp == utxo->swappending-LP_RESERVETIME && Q.quotetime >= Q.timestamp && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
+                        if ( bits256_nonz(privkey) != 0 && Q.timestamp == utxo->swappending-LP_RESERVETIME && Q.quotetime >= Q.timestamp-3 && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
                         {
                             Q.change = destvalue - (Q.destsatoshis+Q.desttxfee);
                             nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
