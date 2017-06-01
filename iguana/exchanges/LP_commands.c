@@ -66,11 +66,6 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     }
     if ( bits256_nonz(qp->desthash) != 0 )
         jaddbits256(retjson,"desthash",qp->desthash);
-    if ( bits256_nonz(qp->txid) != 0 )
-    {
-        jaddbits256(retjson,"txid",qp->txid);
-        jaddnum(retjson,"vout",qp->vout);
-    }
     if ( bits256_nonz(qp->txid2) != 0 )
     {
         jaddbits256(retjson,"txid2",qp->txid2);
@@ -339,7 +334,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                     jaddnum(bestitem,"price",prices[besti]);
                     if ( LP_price(base,myutxo->coin) > 0.975*price )
                     {
-// the same, cleanup
+                        Q[i].desttxid = myutxo->txid;
+                        Q[i].destvout = myutxo->vout;
                         price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                     }
                 }
@@ -397,7 +393,6 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                 retval = 4;
                 if ( utxo->pair < 0 )
                 {
-                    //LP_command.({"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"base":"KMD","rel":"BTC","mypub":"3b8f71015d644aaa4c9cceeee289b9a50dc9ec7fafab861c4d5872a8e3844466","satoshis":"0","txfee":"100000","desttxfee":"10000","destsatoshis":"2163363","method":"connect"})
                     if ( (price= LP_price(base,rel)) != 0. )
                     {
                         price *= (1. + profitmargin);
@@ -405,6 +400,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                             return(-1);
                         if ( LP_quoteparse(&Q,argjson) < 0 )
                             return(-2);
+                        printf("connect with.(%s)\n",jprint(argjson,0));
                         privkey = LP_privkey(utxo->coinaddr);
                         if ( bits256_nonz(utxo->mypub) == 0 )
                             utxo->mypub = LP_pubkey(privkey);
