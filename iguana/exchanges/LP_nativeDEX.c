@@ -922,11 +922,11 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
         while ( 1 )
         {
             nonz = 0;
-            if ( (counter++ % 300) == 0 )
+            if ( (counter++ % 2000) == 0 )
                 LP_privkey_updates(mypeer,pubsock,passphrase,amclient);
             HASH_ITER(hh,LP_peerinfos,peer,tmp)
             {
-                if ( peer->numpeers != mypeer->numpeers || (rand() % 10) == 0 )
+                if ( peer->numpeers != mypeer->numpeers || (rand() % 1000) == 0 )
                 {
                     if ( peer->numpeers != mypeer->numpeers )
                         printf("%s num.%d vs %d\n",peer->ipaddr,peer->numpeers,mypeer->numpeers);
