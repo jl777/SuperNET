@@ -578,7 +578,7 @@ void tradebot_pendingadd(cJSON *tradejson,char *base,double basevolume,char *rel
     // add to trades
 }
 
-char GLOBAL_DBDIR[] = ".";
+char GLOBAL_DBDIR[] = "DB";
 
 #include "LP_secp.c"
 #include "LP_rpc.c"
