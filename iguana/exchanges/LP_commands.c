@@ -121,6 +121,66 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     return(0);
 }
 
+int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price)
+{
+    memset(qp,0,sizeof(*qp));
+    qp->timestamp = (uint32_t)time(NULL);
+    safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
+    if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
+        qp->txfee = 10000;
+    if ( qp->txfee >= utxo->satoshis || qp->txfee >= utxo->satoshis2 )
+        return(-1);
+    qp->txid = utxo->txid;
+    qp->vout = utxo->vout;
+    qp->txid2 = utxo->txid2;
+    qp->vout2 = utxo->vout2;
+    qp->satoshis2 = utxo->satoshis2 - qp->txfee;
+    qp->satoshis = utxo->satoshis - qp->txfee;
+    qp->destsatoshis = qp->satoshis * price;
+    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < 10000 )
+        qp->desttxfee = 10000;
+    if ( qp->desttxfee >= qp->destsatoshis )
+        return(-2);
+    qp->destsatoshis -= qp->desttxfee;
+    safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
+    safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
+    qp->srchash = LP_pubkey(LP_privkey(utxo->coinaddr));
+    return(0);
+}
+
+int32_t LP_quoteinfoset(struct LP_quoteinfo *qp,uint32_t timestamp,uint32_t quotetime,uint64_t value,uint64_t txfee,uint64_t destsatoshis,uint64_t desttxfee,bits256 desttxid,int32_t destvout,bits256 desthash,char *destaddr)
+{
+    if ( txfee != qp->txfee )
+    {
+        if ( txfee >= value )
+            return(-1);
+        qp->txfee = txfee;
+        qp->satoshis = value - txfee;
+    }
+    qp->timestamp = timestamp;
+    qp->quotetime = quotetime;
+    qp->destsatoshis = destsatoshis;
+    qp->desttxfee = desttxfee;
+    qp->desttxid = desttxid;
+    qp->destvout = destvout;
+    qp->desthash = desthash;
+    safecopy(qp->destaddr,destaddr,sizeof(qp->destaddr));
+    return(0);
+}
+
+char *LP_quote(cJSON *argjson)
+{
+    struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
+    LP_quoteparse(&Q,argjson);
+    price = (double)(Q.destsatoshis + Q.desttxfee) / (Q.satoshis + Q.txfee);
+    if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
+    {
+        ptr->Q = Q;
+        return(clonestr("{\"result\":\"updated\"}"));
+    }
+    else return(clonestr("{\"error\":\"nullptr\"}"));
+}
+
 double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 mypub)
 {
     cJSON *reqjson; struct LP_peerinfo *peer; int32_t i,flag = 0,pushsock = -1; double price = 0.;
@@ -135,6 +195,8 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
                 qp->desthash = mypub;
                 strcpy(qp->srccoin,base);
                 strcpy(qp->destcoin,rel);
+                if ( strcmp(method,"request") == 0 )
+                    qp->quotetime = (uint32_t)time(NULL);
                 reqjson = LP_quotejson(qp);
                 if ( bits256_nonz(qp->desthash) != 0 )
                     flag = 1;
@@ -146,7 +208,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
                     {
                         if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
                         {
-                            printf("break out of loop.%d price %.8f\n",i,price);
+                            //printf("break out of loop.%d price %.8f\n",i,price);
                             break;
                         }
                     }
@@ -232,9 +294,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
                     LP_quoteparse(&Q[i],item);
-                    char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
+                    //char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
-                    printf("price %.8f\n",price);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
                     {
                         printf("adjustprice %.8f -> %.8f\n",price,(double)j64bits(item,"satoshis")/Q[i].destsatoshis);
@@ -243,7 +304,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 }
                 if ( (prices[i]= price) != 0. && (bestprice == 0. || price < bestprice) )
                     bestprice = price;
-                printf("i.%d price %.8f bestprice %.8f: (%s)\n",i,price,bestprice,jprint(item,0));
+                //printf("i.%d price %.8f bestprice %.8f: (%s)\n",i,price,bestprice,jprint(item,0));
             }
             if ( bestprice != 0. )
             {
@@ -287,67 +348,6 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
     return(bestitem);
 }
 
-int32_t LP_quoteinfoinit(struct LP_quoteinfo *qp,struct LP_utxoinfo *utxo,char *destcoin,double price)
-{
-    memset(qp,0,sizeof(*qp));
-    qp->timestamp = (uint32_t)time(NULL);
-    safecopy(qp->destcoin,destcoin,sizeof(qp->destcoin));
-    if ( (qp->txfee= LP_getestimatedrate(utxo->coin)*LP_AVETXSIZE) < 10000 )
-        qp->txfee = 10000;
-    if ( qp->txfee >= utxo->satoshis || qp->txfee >= utxo->satoshis2 )
-        return(-1);
-    qp->txid = utxo->txid;
-    qp->vout = utxo->vout;
-    qp->txid2 = utxo->txid2;
-    qp->vout2 = utxo->vout2;
-    qp->satoshis2 = utxo->satoshis2 - qp->txfee;
-    qp->satoshis = utxo->satoshis - qp->txfee;
-    qp->destsatoshis = qp->satoshis * price;
-    if ( (qp->desttxfee= LP_getestimatedrate(qp->destcoin) * LP_AVETXSIZE) < 10000 )
-        qp->desttxfee = 10000;
-    if ( qp->desttxfee >= qp->destsatoshis )
-        return(-2);
-    qp->destsatoshis -= qp->desttxfee;
-    safecopy(qp->srccoin,utxo->coin,sizeof(qp->srccoin));
-    safecopy(qp->coinaddr,utxo->coinaddr,sizeof(qp->coinaddr));
-    qp->srchash = LP_pubkey(LP_privkey(utxo->coinaddr));
-    return(0);
-}
-
-int32_t LP_quoteinfoset(struct LP_quoteinfo *qp,uint32_t timestamp,uint32_t quotetime,uint64_t value,uint64_t txfee,uint64_t destsatoshis,uint64_t desttxfee,bits256 desttxid,int32_t destvout,bits256 desthash,char *destaddr)
-{
-    if ( txfee != qp->txfee )
-    {
-        if ( txfee >= value )
-            return(-1);
-        qp->txfee = txfee;
-        qp->satoshis = value - txfee;
-    }
-    qp->timestamp = timestamp;
-    qp->quotetime = quotetime;
-    qp->destsatoshis = destsatoshis;
-    qp->desttxfee = desttxfee;
-    qp->desttxid = desttxid;
-    qp->destvout = destvout;
-    qp->desthash = desthash;
-    safecopy(qp->destaddr,destaddr,sizeof(qp->destaddr));
-    return(0);
-}
-
-char *LP_quote(cJSON *argjson)
-{
-    struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
-    LP_quoteparse(&Q,argjson);
-    price = (double)(Q.destsatoshis + Q.desttxfee) / (Q.satoshis + Q.txfee);
-    if ( (ptr= LP_cacheadd(Q.srccoin,Q.destcoin,Q.txid,Q.vout,price,&Q)) != 0 )
-    {
-        //SENT.({"base":"KMD","rel":"BTC","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","timestamp":1496216835,"price":0.00021141,"txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","srchash":"0bcabd875bfa724e26de5f35035ca3767c50b30960e23cbfcbd478cac9147412","txfee":"100000","desttxfee":"10000","value":"10000000000","satoshis":"9999900000","destsatoshis":"2124104","method":"quote"})
-        ptr->Q = Q;
-        return(clonestr("{\"result\":\"updated\"}"));
-    }
-    else return(clonestr("{\"error\":\"nullptr\"}"));
-}
-
 int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 privkey,txid; struct LP_utxoinfo *utxo; int32_t retval = -1,DEXselector = 0; uint64_t destvalue; struct basilisk_request R; struct LP_quoteinfo Q;
@@ -371,6 +371,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         price *= (1. + profitmargin);
                         if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
                             return(-1);
+                        if ( strcmp(method,"price") == 0 )
+                            Q.timestamp = (uint32_t)time(NULL);
                         retjson = LP_quotejson(&Q);
                         if ( strcmp(method,"request") == 0 )
                         {
@@ -381,7 +383,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                             jaddnum(retjson,"pending",utxo->swappending);
                             jaddbits256(retjson,"desthash",utxo->otherpubkey);
                             jaddstr(retjson,"method","reserved");
-                        } else jaddstr(retjson,"method","quote");
+                        }
+                        else jaddstr(retjson,"method","quote");
                         retstr = jprint(retjson,1);
                         LP_send(pubsock,retstr,1);
                     } else printf("null price\n");

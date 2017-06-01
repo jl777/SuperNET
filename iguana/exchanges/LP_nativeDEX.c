@@ -96,7 +96,7 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
         HASH_FIND(hh,LP_cacheinfos,key,sizeof(key),ptr);
         portable_mutex_unlock(&LP_cachemutex);
     } else printf("LP_cachefind keysize mismatch?\n");
-    if ( ptr != 0 && ptr->timestamp != 0 && ptr->timestamp < time(NULL)-LP_CACHEDURATION )
+    if ( 0 && ptr != 0 && ptr->timestamp != 0 && ptr->timestamp < time(NULL)-LP_CACHEDURATION )
     {
         printf("expire price %.8f\n",ptr->price);
         ptr->price = 0.;
@@ -118,7 +118,7 @@ double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,i
             printf("null ptr->price? ");
             ptr->price = (double)ptr->Q.destsatoshis / ptr->Q.satoshis;
         }
-        printf("found %s/%s %.8f\n",base,rel,ptr->price);
+        //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
     //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
