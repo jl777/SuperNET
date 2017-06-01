@@ -1502,8 +1502,8 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
                     //printf(" <- redeem.%d\n",swap->bobpayment.redeemlen);
                     printf(" <- GENERATED BOB PAYMENT.%d\n",swap->bobpayment.I.datalen);
                     LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
-                    basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                    printf("bobscripts set completed\n");
+                    //basilisk_bobpayment_reclaim(swap,swap->I.callduration);
+                    //printf("bobscripts set completed\n");
                     return(0);
                 }
             }
