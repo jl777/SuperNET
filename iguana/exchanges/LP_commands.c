@@ -499,6 +499,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
                 qp->pair = pairsock;
                 qp->privkey = LP_privkey(qp->destaddr);
                 LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+                printf("alice pairstr.(%s)\n",pairstr);
                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
                 {
                 }

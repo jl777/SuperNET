@@ -441,6 +441,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
 int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basilisk_swap *swap,uint8_t *data,int32_t maxlen,int32_t (*verify)(struct basilisk_swap *swap,uint8_t *data,int32_t datalen),int32_t (*datagen)(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen))
 {
     int32_t datalen,sendlen,retval = -1;
+    printf("wait on pairsock.%d\n",pairsock);
     if ( LP_waitfor(pairsock,swap,timeout,verify) == 0 )
     {
         printf("waitsend waited\n");
@@ -525,9 +526,9 @@ void LP_bobloop(void *_utxo)
             // bobrefund
             // done
         }
+        basilisk_swap_finished(swap);
+        free(utxo->swap);
     } else printf("swap timed out\n");
-    basilisk_swap_finished(swap);
-    free(utxo->swap);
     utxo->swap = 0;
     nn_close(utxo->pair);
     utxo->pair = -1;
@@ -536,7 +537,7 @@ void LP_bobloop(void *_utxo)
 void LP_aliceloop(void *_qp)
 {
     uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = 0; struct LP_quoteinfo *qp = _qp;
-    fprintf(stderr,"start swap iamalice\n");
+    fprintf(stderr,"start swap iamalice pair.%d\n",qp->pair);
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 10;
