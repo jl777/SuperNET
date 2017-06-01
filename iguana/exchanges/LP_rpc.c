@@ -191,7 +191,10 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     memset(signedtxidp,0,sizeof(*signedtxidp));
     *completedp = 0;
     if ( coin == 0 )
+    {
+        printf("LP_signrawtx cant find coin.(%s)\n",symbol);
         return(0);
+    }
     array = cJSON_CreateArray();
     jaddistr(array,rawtx);
     jaddi(array,jduplicate(vins));

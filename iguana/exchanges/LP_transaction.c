@@ -842,9 +842,12 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     txobj = bitcoin_txoutput(txobj,spendscript,spendlen,destamount);
     if ( (rawtxbytes= bitcoin_json2hex(isPoS,&txid,txobj,V)) != 0 )
     {
+        char str[65];
+        completed = 0;
+        memset(signedtxidp,0,sizeof(*signedtxidp));
         //printf("locktime.%u sequenceid.%x rawtx.(%s) vins.(%s)\n",locktime,sequenceid,rawtxbytes,jprint(vins,0));
         if ( (signedtx= LP_signrawtx(symbol,signedtxidp,&completed,vins,rawtxbytes,privkeys,V)) == 0 )
-            printf("couldnt sign transaction.%s\n",name);
+            printf("couldnt sign transaction.%s %s\n",name,bits256_str(str,*signedtxidp));
         else if ( completed == 0 )
         {
             printf("incomplete signing %s\n",name);
