@@ -408,7 +408,7 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
                     swap->I.secretAm[i] = data[len++];
                 for (i=0; i<32; i++)
                     swap->I.secretAm256[i] = data[len++];
-                basilisk_bobscripts_set(swap,1,1);
+                //basilisk_bobscripts_set(swap,1,1);
             }
             else
             {
@@ -508,7 +508,7 @@ void LP_bobloop(void *_utxo)
             printf("error waitsend choosei\n");
         else if ( LP_waitsend("mostprivs",10,utxo->pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             printf("error waitsend mostprivs\n");
-        else if ( basilisk_bobscripts_set(swap,1,1) < 0 )
+        else if ( basilisk_bobscripts_set(swap,1,1) < 0 || basilisk_bobscripts_set(swap,0,1) < 0 )
             printf("error bobscripts\n");
         else
         {
