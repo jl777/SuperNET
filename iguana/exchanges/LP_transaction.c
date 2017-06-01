@@ -654,6 +654,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         init_hexbytes_noT(hexstr,redeemscript,redeemlen);
         jaddstr(item,"redeemScript",hexstr);
         spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
+        printf("P2SH path\n");
     } else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
     jaddstr(item,"scriptPubKey",hexstr);
