@@ -216,10 +216,14 @@ int32_t LP_pubkeys_verify(struct basilisk_swap *swap,uint8_t *data,int32_t datal
     int32_t i,len = 0;
     if ( datalen == sizeof(swap->otherdeck) )
     {
+        printf("extract pubkeys\n");
         for (i=0; i<sizeof(swap->otherdeck)/sizeof(swap->otherdeck[0][0]); i++)
             len += iguana_rwnum(0,&data[len],sizeof(swap->otherdeck[i>>1][i&1]),&swap->otherdeck[i>>1][i&1]);
+        printf("done extract pubkeys\n");
         return(0);
-    } else return(-1);
+    }
+    printf("pubkeys verify size mismatch %d != %d\n",datalen,(int32_t)sizeof(swap->otherdeck));
+    return(-1);
 }
 
 int32_t LP_choosei_data(struct basilisk_swap *swap,uint8_t *data,int32_t maxlen)
@@ -434,6 +438,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
             printf("got %d bytes\n",datalen);
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
+            printf("retval.%d\n",retval);
         } else printf("error nn_recv\n");
     }
     return(retval);
@@ -454,7 +459,7 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
                 printf("sent success\n");
             } else printf("send %s error\n",statename);
         }
-    } else printf("didnt get data\n");
+    } else printf("didnt get valid data\n");
     return(retval);
 }
 
