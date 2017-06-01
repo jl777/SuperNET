@@ -404,6 +404,8 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         if ( LP_quoteparse(&Q,argjson) < 0 )
                             return(-2);
                         privkey = LP_privkey(utxo->coinaddr);
+                        if ( bits256_nonz(utxo->mypub) == 0 )
+                            utxo->mypub = LP_pubkey(privkey);
                         if ( bits256_nonz(privkey) != 0 && Q.timestamp == utxo->swappending-LP_RESERVETIME && Q.quotetime >= Q.timestamp && Q.quotetime < utxo->swappending && bits256_cmp(utxo->mypub,Q.srchash) == 0 && (destvalue= LP_txvalue(rel,Q.desttxid,Q.destvout)) >= price*Q.satoshis+Q.desttxfee && destvalue >= Q.destsatoshis+Q.desttxfee )
                         {
                             Q.change = destvalue - (Q.destsatoshis+Q.desttxfee);
@@ -439,7 +441,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                                 nn_close(utxo->pair);
                                 utxo->pair = -1;
                             }
-                        } else printf("dest %.8f < required %.8f (%d %d %d %d %d %d)\n",dstr(Q.satoshis),dstr(price*(utxo->satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->swappending-LP_RESERVETIME ,Q.quotetime >= Q.timestamp ,Q.quotetime < utxo->swappending ,bits256_cmp(utxo->mypub,Q.srchash) == 0 ,   LP_txvalue(rel,Q.desttxid,Q.destvout) >= price*Q.satoshis+Q.desttxfee);
+                        } else printf("dest %.8f < required %.8f (%d %d %d %d %d %d) %.8f %.8f\n",dstr(Q.satoshis),dstr(price*(utxo->satoshis-Q.txfee)),bits256_nonz(privkey) != 0 ,Q.timestamp == utxo->swappending-LP_RESERVETIME ,Q.quotetime >= Q.timestamp ,Q.quotetime < utxo->swappending ,bits256_cmp(utxo->mypub,Q.srchash) == 0 ,   LP_txvalue(rel,Q.desttxid,Q.destvout) >= price*Q.satoshis+Q.desttxfee,dstr(LP_txvalue(rel,Q.desttxid,Q.destvout)),dstr(price*Q.satoshis+Q.desttxfee));
                     } else printf("no price for %s/%s\n",base,rel);
                 } else printf("utxo->pair.%d when connect came in (%s)\n",utxo->pair,jprint(argjson,0));
             }
