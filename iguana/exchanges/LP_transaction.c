@@ -656,7 +656,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         if ( vinaddr != 0 )
             bitcoin_addr2rmd160(&addrtype,rmd160,vinaddr);
         spendlen = bitcoin_p2shspend(spendscript,0,rmd160);
-        printf("P2SH path\n");
+        printf("P2SH path.%s\n",vinaddr!=0?vinaddr:0);
     } else spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
     jaddstr(item,"scriptPubKey",hexstr);
@@ -692,7 +692,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
             printf("couldnt sign transaction.%s %s\n",name,bits256_str(str,*signedtxidp));
         else if ( completed == 0 )
         {
-            printf("incomplete signing %s\n",name);
+            printf("incomplete signing %s (%s)\n",name,jprint(vins,0));
             if ( signedtx != 0 )
                 free(signedtx), signedtx = 0;
         } else printf("%s -> %s\n",name,bits256_str(str,*signedtxidp));
