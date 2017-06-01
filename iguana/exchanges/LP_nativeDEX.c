@@ -100,6 +100,7 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     {
         printf("expire price %.8f\n",ptr->price);
         ptr->price = 0.;
+        ptr->timestamp = 0;
         memset(&ptr->Q,0,sizeof(ptr->Q));
     }
     return(ptr);
