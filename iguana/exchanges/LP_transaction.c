@@ -379,7 +379,7 @@ int32_t bitcoin_verifyvins(void *ctx,char *symbol,uint8_t pubtype,uint8_t p2shty
         {
             script = V->p2shscript;
             scriptlen = V->p2shlen;
-            //printf("V->p2shlen.%d\n",V->p2shlen);
+            printf("V->p2shlen.%d\n",V->p2shlen);
         }
         else
         {
