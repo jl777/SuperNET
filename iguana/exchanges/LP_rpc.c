@@ -214,8 +214,8 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
                 data = malloc(len >> 1);
                 decode_hex(data,len>>1,hexstr);
                 *signedtxidp = bits256_doublesha256(0,data,len >> 1);
-                printf("%s signrawtransaction.(%s) params.(%s) -> \nsignedtx.(%s)\n",coin->symbol,retstr,paramstr,signedtx);
             }
+            else printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
             free_json(json);
         }
         free(retstr);

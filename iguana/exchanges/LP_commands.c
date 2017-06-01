@@ -79,6 +79,11 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
         jaddbits256(retjson,"desttxid",qp->desttxid);
         jaddnum(retjson,"destvout",qp->destvout);
     }
+    if ( bits256_nonz(qp->feetxid) != 0 )
+    {
+        jaddbits256(retjson,"feetxid",qp->feetxid);
+        jaddnum(retjson,"feevout",qp->feevout);
+    }
     if ( qp->destsatoshis != 0 )
         jadd64bits(retjson,"destsatoshis",qp->destsatoshis);
     if ( qp->desttxfee != 0 )
@@ -100,8 +105,10 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->txid2 = jbits256(argjson,"txid2");
     qp->vout = jint(argjson,"vout");
     qp->vout2 = jint(argjson,"vout2");
+    qp->feevout = jint(argjson,"feevout");
     qp->srchash = jbits256(argjson,"srchash");
     qp->desttxid = jbits256(argjson,"desttxid");
+    qp->feetxid = jbits256(argjson,"feetxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
     if ( (qp->satoshis= j64bits(argjson,"satoshis")) == 0 )
@@ -327,6 +334,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                     i = besti;
                     Q[i].desttxid = myutxo->txid;
                     Q[i].destvout = myutxo->vout;
+                    Q[i].feetxid = myutxo->txid2;
+                    Q[i].feevout = myutxo->vout2;
                     strcpy(Q[i].destaddr,myutxo->coinaddr);
                     price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                     if ( jobj(bestitem,"price") != 0 )
@@ -336,6 +345,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                     {
                         Q[i].desttxid = myutxo->txid;
                         Q[i].destvout = myutxo->vout;
+                        Q[i].feetxid = myutxo->txid2;
+                        Q[i].feevout = myutxo->vout2;
                         strcpy(Q[i].destaddr,myutxo->coinaddr);
                         price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                         LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);

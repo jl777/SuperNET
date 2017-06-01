@@ -202,9 +202,9 @@ struct basilisk_swap
 struct LP_quoteinfo
 {
     struct basilisk_request R;
-    bits256 srchash,desthash,txid,txid2,desttxid,privkey;
+    bits256 srchash,desthash,txid,txid2,desttxid,feetxid,privkey;
     uint64_t satoshis,satoshis2,txfee,destsatoshis,desttxfee,change;
-    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,pair;
+    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,feevout,pair;
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };
 

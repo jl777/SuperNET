@@ -410,7 +410,7 @@ int32_t LP_mostprivs_verify(struct basilisk_swap *swap,uint8_t *data,int32_t dat
                     swap->I.secretAm[i] = data[len++];
                 for (i=0; i<32; i++)
                     swap->I.secretAm256[i] = data[len++];
-                basilisk_bobscripts_set(swap,1,1);
+                //basilisk_bobscripts_set(swap,1,1);
             }
             else
             {
@@ -999,6 +999,9 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
     swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
     swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
     swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
+    if ( iambob != 0 )
+        swap->otherfee.utxotxid = qp->feetxid, swap->otherfee.utxovout = qp->feevout;
+    else swap->myfee.utxotxid = qp->feetxid, swap->myfee.utxovout = qp->feevout;
     return(swap);
 }
 
