@@ -621,10 +621,11 @@ cJSON *LP_createvins(struct basilisk_rawtx *dest,struct vin_info *V,struct basil
         jaddbits256(item,"txid",rawtx->I.actualtxid);
     else jaddbits256(item,"txid",rawtx->I.signedtxid);
     jaddnum(item,"vout",0);
-    sobj = cJSON_CreateObject();
+    //sobj = cJSON_CreateObject();
     init_hexbytes_noT(hexstr,rawtx->spendscript,rawtx->I.spendlen);
-    jaddstr(sobj,"hex",hexstr);
-    jadd(item,"scriptPubKey",sobj);
+    //jaddstr(sobj,"hex",hexstr);
+    //jadd(item,"scriptPubKey",sobj);
+    jaddstr(item,"scriptPubKey",hexstr);
     jaddnum(item,"suppress",dest->I.suppress_pubkeys);
     jaddnum(item,"sequence",sequenceid);
     if ( (dest->I.redeemlen= rawtx->I.redeemlen) != 0 )
