@@ -373,8 +373,8 @@ int32_t basilisk_verify_privi(void *ptr,uint8_t *data,int32_t datalen)
             basilisk_dontforget_update(swap,0);
             char str[65]; printf("privi verified.(%s)\n",bits256_str(str,privkey));
             return(0);
-        }
-    }
+        } else printf("pubpair doesnt verify privi\n");
+    } else printf("verify privi size mismatch %d != %d\n",datalen,(int32_t)sizeof(bits256));
     return(-1);
 }
 
