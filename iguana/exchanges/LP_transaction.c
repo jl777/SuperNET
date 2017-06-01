@@ -818,12 +818,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     }
     jaddbits256(item,"txid",utxotxid);
     jaddnum(item,"vout",vout);
-    //sobj = cJSON_CreateObject();
-    if ( destaddr == 0 )
-    {
-        destaddr = _destaddr;
-        bitcoin_address(destaddr,pubtype,pubkey33,33);
-    }
+    bitcoin_address(destaddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
     /*int32_t i;
      for (i=0; i<33; i++)
@@ -838,6 +833,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
      printf(" <- vs direct calc\n");*/
     spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
+    //sobj = cJSON_CreateObject();
     //jaddstr(sobj,"hex",hexstr);
     //jadd(item,"scriptPubKey",sobj);
     jaddstr(item,"scriptPubKey",hexstr);
@@ -851,6 +847,12 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     jaddi(vins,item);
     jdelete(txobj,"vin");
     jadd(txobj,"vin",vins);
+    if ( destaddr == 0 )
+    {
+        destaddr = _destaddr;
+        bitcoin_address(destaddr,pubtype,pubkey33,33);
+    }
+    bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
     txobj = bitcoin_txoutput(txobj,spendscript,spendlen,destamount);
     if ( change != 0 )
     {
