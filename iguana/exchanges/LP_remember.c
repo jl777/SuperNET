@@ -559,13 +559,13 @@ cJSON *basilisk_remember(int64_t *KMDtotals,int64_t *BTCtotals,uint32_t requesti
             if ( bits256_nonz(privkey) != 0 )
             {
                 privAm = privkey;
-                //printf("set privAm <- %s\n",bits256_str(str,privAm));
+                printf("set privAm <- %s\n",bits256_str(str,privAm));
             }
             privkey = jbits256(item,"privBn");
             if ( bits256_nonz(privkey) != 0 )
             {
                 privBn = privkey;
-                //printf("set privBn <- %s\n",bits256_str(str,privBn));
+                printf("set privBn <- %s\n",bits256_str(str,privBn));
             }
             expiration = juint(item,"expiration");
             state = jint(item,"state");
