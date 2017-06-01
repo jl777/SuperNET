@@ -875,10 +875,10 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         swap->I.callduration += optionduration;
     swap->I.bobsatoshis = swap->I.req.srcamount;
     swap->I.alicesatoshis = swap->I.req.destamount;
-    if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
-        swap->I.bobinsurance = 50000;
-    if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 50000 )
-        swap->I.aliceinsurance = 50000;
+    if ( (swap->I.bobinsurance= (swap->I.bobsatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
+        swap->I.bobinsurance = 10000;
+    if ( (swap->I.aliceinsurance= (swap->I.alicesatoshis / INSTANTDEX_INSURANCEDIV)) < 10000 )
+        swap->I.aliceinsurance = 10000;
     strcpy(swap->I.bobstr,swap->I.req.src);
     strcpy(swap->I.alicestr,swap->I.req.dest);
     swap->I.started = (uint32_t)time(NULL);

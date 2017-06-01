@@ -18,7 +18,6 @@
 //  marketmaker
 //
 // jl777: fix price calcs based on specific txfees
-// jl777: add change output
 
 #include <stdio.h>
 #include "LP_include.h"
@@ -809,7 +808,7 @@ uint64_t LP_privkey_init(struct LP_peerinfo *mypeer,int32_t mypubsock,char *symb
                     depositval = values[i];
                     values[i] = 0, used++;
                     if ( amclient != 0 )
-                        targetval = (depositval / 777);
+                        targetval = (depositval / 776) + 50000;
                     else targetval = (depositval / 9) * 8;
                     //printf("i.%d %.8f target %.8f\n",i,dstr(depositval),dstr(targetval));
                     if ( (i= LP_nearestvalue(values,n,targetval)) >= 0 )
