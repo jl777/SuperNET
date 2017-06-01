@@ -1279,7 +1279,7 @@ cJSON *bitcoin_txoutput(cJSON *txobj,uint8_t *paymentscript,int32_t len,uint64_t
     jaddstr(skey,"hex",hexstr);
     //printf("addoutput.(%s %s)\n",hexstr,jprint(skey,0));
     free(hexstr);
-    jadd(item,"scriptPubkey",skey);
+    jadd(item,"scriptPubKey",skey);
     jaddi(vouts,item);
     jadd(txobj,"vout",vouts);
     return(txobj);
