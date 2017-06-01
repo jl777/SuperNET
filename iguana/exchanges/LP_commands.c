@@ -413,7 +413,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                             nanomsg_tcpname(pairstr,mypeer->ipaddr,10000+(rand() % 10000));
                             if ( (utxo->pair= nn_socket(AF_SP,NN_PAIR)) < 0 )
                                 printf("error creating utxo->pair\n");
-                            else if ( nn_connect(utxo->pair,pairstr) >= 0 )
+                            else if ( nn_bind(utxo->pair,pairstr) >= 0 )
                             {
                                 //char str[65]; printf("destsatoshis %.8f %s t%u\n",dstr(Q.destsatoshis),bits256_str(str,Q.desthash),Q.quotetime);
                                 LP_requestinit(&R,Q.srchash,Q.desthash,base,Q.satoshis,rel,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
