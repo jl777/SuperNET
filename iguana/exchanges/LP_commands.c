@@ -274,7 +274,7 @@ cJSON *LP_tradecandidates(struct LP_utxoinfo *myutxo,char *base)
 cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
 {
     static bits256 zero;
-    int32_t i,n,besti; cJSON *array,*item,*bestitem=0; double bestmetric,metric,bestprice=0.,price,prices[100]; struct LP_quoteinfo Q[sizeof(prices)/sizeof(*prices)];
+    int32_t i,n,besti,DEXselector=0; cJSON *array,*item,*bestitem=0; struct basilisk_request R; double bestmetric,metric,bestprice=0.,price,prices[100]; struct LP_quoteinfo Q[sizeof(prices)/sizeof(*prices)];
     bestprice = 0.;
     if ( (array= LP_tradecandidates(myutxo,base)) != 0 )
     {
@@ -336,6 +336,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                         Q[i].desttxid = myutxo->txid;
                         Q[i].destvout = myutxo->vout;
                         price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
+                        LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);
+                        printf("Alice r.%u q.%u\n",R.requestid,R.quoteid);
                     }
                 }
             }
@@ -399,7 +401,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                             return(-1);
                         if ( LP_quoteparse(&Q,argjson) < 0 )
                             return(-2);
-                        printf("connect with.(%s)\n",jprint(argjson,0));
+                        //printf("connect with.(%s)\n",jprint(argjson,0));
                         privkey = LP_privkey(utxo->coinaddr);
                         if ( bits256_nonz(utxo->mypub) == 0 )
                             utxo->mypub = LP_pubkey(privkey);
@@ -411,7 +413,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                                 printf("error creating utxo->pair\n");
                             else if ( nn_connect(utxo->pair,pairstr) >= 0 )
                             {
-                                char str[65]; printf("destsatoshis %.8f %s t%u\n",dstr(Q.destsatoshis),bits256_str(str,Q.desthash),Q.quotetime);
+                                //char str[65]; printf("destsatoshis %.8f %s t%u\n",dstr(Q.destsatoshis),bits256_str(str,Q.desthash),Q.quotetime);
                                 LP_requestinit(&R,Q.srchash,Q.desthash,base,Q.satoshis,rel,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
                                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
