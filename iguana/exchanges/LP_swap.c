@@ -192,7 +192,7 @@ uint32_t basilisk_requestid(struct basilisk_request *rp)
     R.requestid = R.quoteid = R.quotetime = R.DEXselector = 0;
     R.destamount = R.unused = 0;
     memset(R.desthash.bytes,0,sizeof(R.desthash.bytes));
-    if ( 1 )
+    if ( 0 )
     {
         int32_t i;
         for (i=0; i<sizeof(R); i++)
