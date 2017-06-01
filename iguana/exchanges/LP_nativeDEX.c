@@ -518,7 +518,7 @@ void LP_utxosquery(int32_t amclient,struct LP_peerinfo *mypeer,int32_t mypubsock
         {
             if ( i++ < firsti )
                 continue;
-            if ( utxo->lasttime != now )
+            if ( utxo->lasttime != now && strcmp(utxo->ipaddr,"127.0.0.1") != 0 )
             {
                 char str[65]; printf("{%s:%u %s} ",utxo->ipaddr,utxo->port,bits256_str(str,utxo->txid));
                 flag++;
