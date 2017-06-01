@@ -1476,6 +1476,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
     {
         swap->bobpayment.I.spendlen = basilisk_bobscript(swap->bobpayment.I.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.I.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.I.locktime,&swap->bobpayment.I.secretstart,&swap->I,0);
         bitcoin_address(swap->bobpayment.p2shaddr,swap->bobcoin.p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
+        strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
         //for (i=0; i<swap->bobpayment.redeemlen; i++)
         //    printf("%02x",swap->bobpayment.redeemscript[i]);
         //printf(" <- bobpayment.%d\n",i);
@@ -1512,6 +1513,7 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
     {
         swap->bobdeposit.I.spendlen = basilisk_bobscript(swap->bobdeposit.I.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.I.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.I.locktime,&swap->bobdeposit.I.secretstart,&swap->I,1);
         bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin.p2shtype,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
+        strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
         if ( genflag != 0 && (swap->bobdeposit.I.datalen == 0 || swap->bobrefund.I.datalen == 0) )
         {
             //for (i=0; i<3; i++)
