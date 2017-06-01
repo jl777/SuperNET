@@ -797,7 +797,7 @@ int32_t iguana_checksig(void *ctx,struct iguana_stackdata pubkeyarg,struct iguan
         if ( (retval= (bitcoin_verify(ctx,sig,siglen-1,sigtxid,pubkey,plen) == 0)) == 0 )
         {
         }
-        if ( (1) )
+        if ( (0) )
         {
             int32_t i; char str[65];
             for (i=0; i<siglen; i++)
@@ -1295,14 +1295,14 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
                     else
                     {
                         iguana_pushdata(stacks,0,0,0);
-                        for (i=0; i<args[0].size; i++)
+                    }   for (i=0; i<args[0].size; i++)
                             printf("%02x",args[0].U.pubkey[i]);
                         printf(" <- args[0]\n");
                         for (i=0; i<args[1].size; i++)
                             printf("%02x",args[1].U.pubkey[i]);
                         printf(" <- args[1]\n");
                         printf("OP_EQUAL.%02x %d vs %d\n",op->opcode,args[0].size,args[1].size);
-                    }
+                    //}
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
