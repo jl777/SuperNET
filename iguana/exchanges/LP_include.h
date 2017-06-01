@@ -199,6 +199,15 @@ struct basilisk_swap
     
 };
 
+struct LP_quoteinfo
+{
+    struct basilisk_request R;
+    bits256 srchash,desthash,txid,txid2,desttxid,privkey;
+    uint64_t satoshis,satoshis2,txfee,destsatoshis,desttxfee,change;
+    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,pair;
+    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
+};
+
 static struct bitcoin_opcode { UT_hash_handle hh; uint8_t opcode,flags,stackitems; int8_t extralen; } *OPTABLE; static char *OPCODES[0x100]; static int32_t OPCODELENS[0x100];
 
 #define SIGHASH_ALL 1
@@ -470,7 +479,7 @@ enum opcodetype
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
-struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp);
+struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 struct iguana_info *LP_coinfind(char *symbol);
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);

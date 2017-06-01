@@ -426,7 +426,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                                     jaddnum(retjson,"quoteid",R.quoteid);
                                     retstr = jprint(retjson,1);
                                     LP_send(pubsock,retstr,1);
-                                    utxo->swap = LP_swapinit(1,0,privkey,&R);
+                                    utxo->swap = LP_swapinit(1,0,privkey,&R,&Q);
                                 }
                                 else
                                 {

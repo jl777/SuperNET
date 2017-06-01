@@ -538,7 +538,7 @@ void LP_aliceloop(void *_qp)
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 10;
-    swap = LP_swapinit(0,0,qp->privkey,&qp->R);
+    swap = LP_swapinit(0,0,qp->privkey,&qp->R,qp);
     if ( swap != 0 )
     {
         if ( LP_sendwait("pubkeys",10,qp->pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
@@ -977,7 +977,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
     return(swap);
 }
 
-struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp)
+struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp,struct LP_quoteinfo *qp)
 {
     struct basilisk_swap *swap; bits256 pubkey25519; uint8_t pubkey33[33];
     swap = calloc(1,sizeof(*swap));
@@ -996,6 +996,9 @@ struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 
         free(swap);
         swap = 0;
     }
+    swap->bobpayment.utxotxid = qp->txid, swap->bobpayment.utxovout = qp->vout;
+    swap->bobdeposit.utxotxid = qp->txid2, swap->bobdeposit.utxovout = qp->vout2;
+    swap->alicepayment.utxotxid = qp->desttxid, swap->alicepayment.utxovout = qp->destvout;
     return(swap);
 }
 
