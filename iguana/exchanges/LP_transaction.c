@@ -64,7 +64,7 @@ bits256 LP_broadcast_tx(char *name,char *symbol,uint8_t *data,int32_t datalen)
 
 uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
 {
-    uint64_t value = 0; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
+    uint64_t value = 0; double interest; cJSON *txobj,*vouts,*utxoobj; int32_t numvouts;
     if ( (txobj= LP_gettx(symbol,txid)) != 0 )
     {
         //char str[65]; printf("%s.(%s) txobj.(%s)\n",symbol,bits256_str(str,txid),jprint(txobj,0));
@@ -74,6 +74,11 @@ uint64_t LP_txvalue(char *symbol,bits256 txid,int32_t vout)
             if ( (value= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
             {
                 char str[65]; printf("%s LP_txvalue.%s strange utxo.(%s) vout.%d/%d\n",symbol,bits256_str(str,txid),jprint(utxoobj,0),vout,numvouts);
+            }
+            else if ( (interest= jdouble(txobj,"interest")) != 0. )
+            {
+                printf("add interest of %.8f to %.8f\n",interest,dstr(value));
+                value += SATOSHIDEN * interest;
             }
         }
         free_json(txobj);
@@ -779,7 +784,10 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     if ( satoshis != 0 )
     {
         if ( value > satoshis+txfee )
-            change = value - (satoshis - txfee);
+        {
+            if ( strcmp(symbol,"BTC") == 0 || value > satoshis+txfee*5 )
+                change = value - (satoshis + txfee);
+        }
         printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(change),dstr(txfee));
     } else if ( value > txfee )
         satoshis = value - txfee;
