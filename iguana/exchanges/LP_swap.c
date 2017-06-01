@@ -527,22 +527,21 @@ void LP_bobloop(void *_utxo)
     utxo->pair = -1;
 }
 
-void LP_aliceloop(void *_utxo)
+void LP_aliceloop(void *_qp)
 {
-    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap; struct LP_utxoinfo *utxo = _utxo;
-    fprintf(stderr,"start swap iambob\n");
+    uint8_t *data; int32_t maxlen; uint32_t expiration; struct basilisk_swap *swap = 0; struct LP_quoteinfo *qp = _qp;
+    fprintf(stderr,"start swap iamalice\n");
     maxlen = 1024*1024 + sizeof(*swap);
     data = malloc(maxlen);
     expiration = (uint32_t)time(NULL) + 10;
-    while ( (swap= utxo->swap) == 0 && time(NULL) < expiration )
-        sleep(1);
-    if ( (utxo->swap= swap) != 0 )
+    swap = LP_swapinit(1,0,qp->privkey,&qp->R);
+    if ( swap != 0 )
     {
-        if ( LP_sendwait("pubkeys",10,utxo->pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
+        if ( LP_sendwait("pubkeys",10,qp->pair,swap,data,maxlen,LP_pubkeys_verify,LP_pubkeys_data) < 0 )
             printf("error LP_sendwait pubkeys\n");
-        else if ( LP_sendwait("choosei",10,utxo->pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
+        else if ( LP_sendwait("choosei",10,qp->pair,swap,data,maxlen,LP_choosei_verify,LP_choosei_data) < 0 )
             printf("error LP_sendwait choosei\n");
-        else if ( LP_sendwait("mostprivs",10,utxo->pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
+        else if ( LP_sendwait("mostprivs",10,qp->pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             printf("error LP_sendwait mostprivs\n");
         else if ( basilisk_alicetxs(swap,data,maxlen) != 0 )
             printf("basilisk_alicetxs error\n");
@@ -558,10 +557,9 @@ void LP_aliceloop(void *_utxo)
         }
     } else printf("swap timed out\n");
     basilisk_swap_finished(swap);
-    free(utxo->swap);
-    utxo->swap = 0;
-    nn_close(utxo->pair);
-    utxo->pair = -1;
+    free(swap);
+    nn_close(qp->pair);
+    free(qp);
 }
 
 #ifdef old

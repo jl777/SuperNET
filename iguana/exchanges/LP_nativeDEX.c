@@ -60,9 +60,10 @@ struct LP_utxoinfo
 
 struct LP_quoteinfo
 {
-    bits256 srchash,desthash,txid,txid2,desttxid;
+    struct basilisk_request R;
+    bits256 srchash,desthash,txid,txid2,desttxid,privkey;
     uint64_t satoshis,satoshis2,txfee,destsatoshis,desttxfee,change;
-    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout;
+    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout,pair;
     char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
 };
 

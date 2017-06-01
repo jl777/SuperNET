@@ -470,6 +470,7 @@ enum opcodetype
 void basilisk_dontforget_update(struct basilisk_swap *swap,struct basilisk_rawtx *rawtx);
 uint32_t basilisk_requestid(struct basilisk_request *rp);
 uint32_t basilisk_quoteid(struct basilisk_request *rp);
+struct basilisk_swap *LP_swapinit(int32_t iambob,int32_t optionduration,bits256 privkey,struct basilisk_request *rp);
 char *bitcoind_passthru(char *coinstr,char *serverport,char *userpass,char *method,char *params);
 struct iguana_info *LP_coinfind(char *symbol);
 void *curl_post(void **cHandlep,char *url,char *userpass,char *postfields,char *hdr0,char *hdr1,char *hdr2,char *hdr3);

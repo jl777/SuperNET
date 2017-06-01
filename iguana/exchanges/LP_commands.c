@@ -486,8 +486,21 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
             retstr = LP_quote(argjson);
         else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
         {
-            retstr = jprint(argjson,0);
-            printf("got connected! (%s)\n",retstr);
+            int32_t pairsock = -1; char *pairstr;
+            if ( (pairstr= jstr(argjson,"pair")) == 0 || (pairsock= nn_socket(AF_SP,NN_PAIR)) < 0 )
+                printf("error creating pairsock\n");
+            else if ( nn_connect(pairsock,pairstr) >= 0 )
+            {
+                struct LP_quoteinfo *qp; int32_t DEXselector = 0;
+                qp = calloc(1,sizeof(*qp));
+                LP_quoteparse(qp,argjson);
+                qp->pair = pairsock;
+                qp->privkey = LP_privkey(qp->destaddr);
+                LP_requestinit(&qp->R,qp->srchash,qp->desthash,qp->srccoin,qp->satoshis,qp->destcoin,qp->destsatoshis,qp->timestamp,qp->quotetime,DEXselector);
+                if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_aliceloop,(void *)qp) == 0 )
+                {
+                }
+            }
         }
         else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
             retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
