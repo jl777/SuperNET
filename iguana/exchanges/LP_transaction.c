@@ -810,7 +810,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     }
     jaddbits256(item,"txid",utxotxid);
     jaddnum(item,"vout",vout);
-    sobj = cJSON_CreateObject();
+    //sobj = cJSON_CreateObject();
     bitcoin_address(destaddr,pubtype,pubkey33,33);
     bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
     /*int32_t i;
@@ -826,8 +826,9 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
      printf(" <- vs direct calc\n");*/
     spendlen = bitcoin_standardspend(spendscript,0,rmd160);
     init_hexbytes_noT(hexstr,spendscript,spendlen);
-    jaddstr(sobj,"hex",hexstr);
-    jadd(item,"scriptPubKey",sobj);
+    //jaddstr(sobj,"hex",hexstr);
+    //jadd(item,"scriptPubKey",sobj);
+    jaddstr(item,"scriptPubKey",hexstr);
     jaddnum(item,"suppress",suppress_pubkeys);
     jaddnum(item,"sequence",sequenceid);
     if ( redeemlen != 0 )

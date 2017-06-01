@@ -833,7 +833,7 @@ int main(int argc, const char * argv[])
         while ( 1 )
         {
             theoretical = marketmaker_updateprice("komodo","KMD","BTC",theoretical,&incr);
-            sleep(30);
+            sleep(10);
             if ( jint(retjson,"client") != 0 )
             {
                 struct LP_utxoinfo *utxo,*utmp;
@@ -843,6 +843,7 @@ int main(int argc, const char * argv[])
                         printf("bestprice (%s)\n",jprint(matchjson,1));
                 }
             }
+            sleep(1000);
         }
         profitmargin = jdouble(retjson,"profitmargin");
         minask = jdouble(retjson,"minask");
