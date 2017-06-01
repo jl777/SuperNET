@@ -106,7 +106,7 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     return(0);
 }
 
-double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 txid,int32_t vout,bits256 mypub,cJSON *argitem)
+double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 mypub)
 {
     cJSON *reqjson; struct LP_peerinfo *peer; int32_t i,flag = 0,pushsock = -1; double price = 0.;
     memset(qp,0,sizeof(*qp));
@@ -118,31 +118,17 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
         {
             if ( (pushsock= peer->pushsock) >= 0 )
             {
-                reqjson = cJSON_CreateObject();
-                jaddbits256(reqjson,"txid",txid);
-                jaddnum(reqjson,"vout",vout);
-                jaddstr(reqjson,"base",base);
-                jaddstr(reqjson,"rel",rel);
-                if ( bits256_nonz(mypub) != 0 )
-                {
+                qp->desthash = mypub;
+                strcpy(qp->srccoin,base);
+                strcpy(qp->destcoin,rel);
+                reqjson = LP_quotejson(qp);
+                if ( bits256_nonz(qp->desthash) != 0 )
                     flag = 1;
-                    jaddbits256(reqjson,"desthash",mypub);
-                    if ( argitem != 0 )
-                    {
-                        printf("ARGITEM.(%s)\n",jprint(argitem,0));
-                        jaddnum(reqjson,"timestamp",j64bits(argitem,"timestamp"));
-                        jaddnum(reqjson,"quotetime",time(NULL));
-                        jadd64bits(reqjson,"satoshis",j64bits(argitem,"value")-j64bits(argitem,"txfee"));
-                        jadd64bits(reqjson,"txfee",j64bits(argitem,"txfee"));
-                        jadd64bits(reqjson,"desttxfee",j64bits(argitem,"desttxfee"));
-                        jadd64bits(reqjson,"destsatoshis",j64bits(argitem,"destsatoshis"));
-                    }
-                }
                 jaddstr(reqjson,"method",method);
                 LP_send(pushsock,jprint(reqjson,1),1);
                 for (i=0; i<30; i++)
                 {
-                    if ( (price= LP_pricecache(qp,base,rel,txid,vout)) != 0. )
+                    if ( (price= LP_pricecache(qp,base,rel,qp->txid,qp->vout)) != 0. )
                     {
                         if ( flag == 0 || bits256_nonz(qp->desthash) != 0 )
                             break;
@@ -223,14 +209,14 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
         {
             memset(prices,0,sizeof(prices));
             memset(Q,0,sizeof(Q));
-            //BTC 0.02500000 -> ([{"ipaddr":"5.9.253.196","port":7779,"profit":0.01035000,"base":"KMD","coin":"KMD","address":"RFQn4gNG555woQWQV1wPseR47spCduiJP5","script":"76a914434009423522682bd7cc1b18a614c3096d19683188ac","txid":"f5d5e2eb4ef85c78f95076d0d2d99af9e1b85968e57b3c7bdb282bd005f7c341","vout":1,"value":100,"deposit":"07902a65d11f0f577a0346432bcd2b6b53de5554c314209d1964693962524d69","dvout":1,"dvalue":120}])
             for (i=0; i<n && i<sizeof(prices)/sizeof(*prices); i++)
             {
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
 // horrible, pass in quoteinfo, utxo
-                    price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),zero,0);
+                    LP_quoteparse(&Q[i],item);
+                    price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"value")/Q[i].destsatoshis > price )
                         price = (double)j64bits(item,"value")/Q[i].destsatoshis;
                 }
@@ -263,14 +249,14 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                     item = jitem(array,besti);
                     bestitem = LP_quotejson(&Q[i]);
                     i = besti;
-                    price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub,0);
+                    price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,utxo->mypub);
                     if ( jobj(bestitem,"price") != 0 )
                         jdelete(bestitem,"price");
                     jaddnum(bestitem,"price",prices[besti]);
                     if ( LP_price(base,utxo->coin) > 0.975*price )
                     {
 // the same, cleanup
-                        price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,jbits256(item,"txid"),jint(item,"vout"),utxo->mypub,bestitem);
+                        price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,utxo->mypub);
                     }
                 }
             }
@@ -488,7 +474,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         else if ( IAMCLIENT == 0 && strcmp(method,"notifyutxo") == 0 )
         {
             printf("utxonotify.(%s)\n",jprint(argjson,0));
-            LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"deposit"),jint(argjson,"dvout"),SATOSHIDEN * jdouble(argjson,"dvalue"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
+            LP_addutxo(amclient,LP_mypeer,LP_mypubsock,jstr(argjson,"coin"),jbits256(argjson,"txid"),jint(argjson,"vout"),SATOSHIDEN * jdouble(argjson,"value"),jbits256(argjson,"txid2"),jint(argjson,"vout2"),SATOSHIDEN * jdouble(argjson,"value2"),jstr(argjson,"script"),jstr(argjson,"address"),jstr(argjson,"ipaddr"),juint(argjson,"port"),jdouble(argjson,"profit"));
             retstr = clonestr("{\"result\":\"success\",\"notifyutxo\":\"received\"}");
         }
     }
