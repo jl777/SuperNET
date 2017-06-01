@@ -431,9 +431,10 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
     {
         if ( (datalen= nn_recv(pairsock,&data,NN_MSG,0)) >= 0 )
         {
+            printf("got %d bytes\n",datalen);
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
-        }
+        } else printf("error nn_recv\n");
     }
     return(retval);
 }
@@ -453,7 +454,7 @@ int32_t LP_waitsend(char *statename,int32_t timeout,int32_t pairsock,struct basi
                 printf("sent success\n");
             } else printf("send %s error\n",statename);
         }
-    } else printf("didnt get pubkeys\n");
+    } else printf("didnt get data\n");
     return(retval);
 }
 
