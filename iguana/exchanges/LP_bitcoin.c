@@ -564,12 +564,12 @@ static int32_t iguana_pushdata(struct iguana_interpreter *stacks,int64_t num64,u
     //printf("PUSH.(%lld %p %d)\n",(long long)num64,numbuf,numlen);
     if ( stacks->maxstackdepth > 0 )
     {
-        /*if ( numbuf != 0 )
-         {
-         int32_t i; for (i=0; i<numlen; i++)
-         printf("%02x",numbuf[i]);
-         } else printf("%lld",(long long)num64);
-         printf(" PUSHDATA len.%d\n",numlen);*/
+        if ( numbuf != 0 )
+        {
+            int32_t i; for (i=0; i<numlen; i++)
+                printf("%02x",numbuf[i]);
+        } else printf("%lld",(long long)num64);
+        printf(" PUSHDATA len.%d\n",numlen);
         if ( stacks->stackdepth < stacks->maxstackdepth )
         {
             if ( stacks->logarray != 0 )
@@ -1127,7 +1127,7 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
             break;
         }
         HASH_FIND(hh,OPTABLE,str,j,op);
-        //printf("{%s}\n",str);
+        printf("{%s}\n",str);
         str += j;
         if ( op != 0 )
         {
@@ -1295,14 +1295,14 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
                     else
                     {
                         iguana_pushdata(stacks,0,0,0);
-                    }   for (i=0; i<args[0].size; i++)
+                       for (i=0; i<args[0].size; i++)
                             printf("%02x",args[0].U.pubkey[i]);
                         printf(" <- args[0]\n");
                         for (i=0; i<args[1].size; i++)
                             printf("%02x",args[1].U.pubkey[i]);
                         printf(" <- args[1]\n");
                         printf("OP_EQUAL.%02x %d vs %d\n",op->opcode,args[0].size,args[1].size);
-                    //}
+                    }
                 }
                 else if ( (op->flags & IGUANA_CRYPTOFLAG) != 0 )
                 {
@@ -1568,7 +1568,7 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
         else
         {
             jadd(interpreter,"result",jfalse());
-            printf("Evaluate FALSE, depth.%d errs.%d [0] size.%d num.%d\n",stacks->stackdepth,errs,stacks->stack[0].size,stacks->stack[0].U.val);
+            printf("Evaluate FALSE, depth.%d errs.%d [0] size.%d val.%d\n",stacks->stackdepth,errs,stacks->stack[0].size,stacks->stack[0].U.val);
             errs++;
             if ( stacks->logarray != 0 )
                 printf("LOG.(%s)\n\n",jprint(stacks->logarray,0));

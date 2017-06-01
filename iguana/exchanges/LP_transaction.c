@@ -571,7 +571,7 @@ int32_t iguana_signrawtransaction(void *ctx,char *symbol,uint8_t pubtype,uint8_t
                 if ( (complete= bitcoin_verifyvins(ctx,symbol,pubtype,p2shtype,isPoS,height,signedtxidp,&signedtx,msgtx,serialized3,maxsize,V,SIGHASH_ALL,1,V->suppress_pubkeys)) > 0 && signedtx != 0 )
                 {
                     int32_t tmp; //char str[65];
-                    if ( (tmp= iguana_interpreter(ctx,0,iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
+                    if ( (tmp= iguana_interpreter(ctx,cJSON_CreateArray(),iguana_lockval(finalized,jint(txobj,"locktime")),V,numinputs)) < 0 )
                     {
                         printf("iguana_interpreter %d error.(%s)\n",tmp,signedtx);
                         complete = 0;
