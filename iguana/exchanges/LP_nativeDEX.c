@@ -48,24 +48,31 @@ struct LP_peerinfo
 struct LP_utxoinfo
 {
     UT_hash_handle hh;
-    bits256 txid,deposittxid,feetxid,otherpubkey,mypub;
+    bits256 txid,txid2,feetxid,otherpubkey,mypub;
     void *swap;
-    uint64_t satoshis,depositsatoshis,feesatoshis;
+    uint64_t satoshis,satoshis2;
     uint8_t key[sizeof(bits256) + sizeof(int32_t)];
-    int32_t vout,depositvout,feevout,pair; uint32_t lasttime,errors,swappending;
+    int32_t vout,vout2,pair; uint32_t lasttime,errors,swappending;
     double profitmargin;
     char ipaddr[64],coinaddr[64],spendscript[256],coin[16];
     uint16_t port;
 } *LP_utxoinfos;
 
+struct LP_quoteinfo
+{
+    bits256 srchash,desthash,txid,txid2,desttxid;
+    uint64_t satoshis,satoshis2,txfee,destsatoshis,desttxfee,change;
+    uint32_t timestamp,quotetime; int32_t vout,vout2,destvout;
+    char srccoin[16],coinaddr[64],destcoin[16],destaddr[64];
+};
+
 struct LP_cacheinfo
 {
     UT_hash_handle hh;
-    bits256 otherpub;
+    struct LP_quoteinfo Q;
     uint8_t key[sizeof(bits256)+sizeof(uint64_t)*2+sizeof(int32_t)];
     double price;
-    uint64_t satoshis,txfee,destsatoshis,desttxfee;
-    uint32_t timestamp,reserved;
+    uint32_t timestamp;
 } *LP_cacheinfos;
 
 int32_t LP_cachekey(uint8_t *key,char *base,char *rel,bits256 txid,int32_t vout)
@@ -93,41 +100,28 @@ struct LP_cacheinfo *LP_cachefind(char *base,char *rel,bits256 txid,int32_t vout
     {
         printf("expire price %.8f\n",ptr->price);
         ptr->price = 0.;
-        ptr->destsatoshis = ptr->txfee = ptr->desttxfee = 0;
-        ptr->timestamp = 0;
+        memset(&ptr->Q,0,sizeof(ptr->Q));
     }
     return(ptr);
 }
 
-double LP_pricecache(bits256 *otherpubp,uint32_t *reservedp,uint64_t *txfeep,uint64_t *destsatoshisp,uint64_t *desttxfeep,char *base,char *rel,bits256 txid,int32_t vout)
+double LP_pricecache(struct LP_quoteinfo *qp,char *base,char *rel,bits256 txid,int32_t vout)
 {
     struct LP_cacheinfo *ptr;
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) != 0 )
     {
-        if ( destsatoshisp != 0 )
-        {
-            *otherpubp = ptr->otherpub;
-            *destsatoshisp = ptr->destsatoshis;
-            *txfeep = ptr->txfee;
-            *desttxfeep = ptr->desttxfee;
-            *reservedp = ptr->reserved;
-        }
+        if ( qp != 0 )
+            (*qp) = ptr->Q;
         //printf("found %s/%s %.8f\n",base,rel,ptr->price);
         return(ptr->price);
     }
-    else if ( destsatoshisp != 0 )
-    {
-        memset(otherpubp,0,sizeof(*otherpubp));
-        *destsatoshisp = 0;
-        *txfeep = 0;
-        *desttxfeep = 0;
-        *reservedp = 0;
-    }
+    else if ( qp != 0 )
+        memset(qp,0,sizeof(*qp));
     //char str[65]; printf("cachemiss %s/%s %s/v%d\n",base,rel,bits256_str(str,txid),vout);
     return(0.);
 }
 
-struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,double price,uint64_t satoshis)
+struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,double price,struct LP_quoteinfo *qp)
 {
     struct LP_cacheinfo *ptr=0;
     if ( (ptr= LP_cachefind(base,rel,txid,vout)) == 0 )
@@ -143,8 +137,7 @@ struct LP_cacheinfo *LP_cacheadd(char *base,char *rel,bits256 txid,int32_t vout,
     //char str[65]; if ( price != ptr->price )
     //    printf("updated %s/v%d %s/%s %llu price %.8f\n",bits256_str(str,txid),vout,base,rel,(long long)satoshis,price);
     ptr->price = price;
-    ptr->satoshis = satoshis;
-    ptr->destsatoshis = satoshis * price;
+    ptr->Q = *qp;
     ptr->timestamp = (uint32_t)time(NULL);
     return(ptr);
 }
@@ -192,9 +185,9 @@ cJSON *LP_utxojson(struct LP_utxoinfo *utxo)
     jaddbits256(item,"txid",utxo->txid);
     jaddnum(item,"vout",utxo->vout);
     jaddnum(item,"value",dstr(utxo->satoshis));
-    jaddbits256(item,"deposit",utxo->deposittxid);
-    jaddnum(item,"dvout",utxo->depositvout);
-    jaddnum(item,"dvalue",dstr(utxo->depositsatoshis));
+    jaddbits256(item,"txid2",utxo->txid2);
+    jaddnum(item,"vout2",utxo->vout2);
+    jaddnum(item,"value2",dstr(utxo->satoshis2));
     return(item);
 }
 
@@ -311,10 +304,10 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
     }
     if ( (utxo= LP_utxofind(txid,vout)) != 0 )
     {
-        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->deposittxid) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->depositvout || depositsatoshis != utxo->depositsatoshis || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
+        if ( bits256_cmp(txid,utxo->txid) != 0 || bits256_cmp(deposittxid,utxo->txid2) != 0 || vout != utxo->vout || satoshis != utxo->satoshis || depositvout != utxo->vout2 || depositsatoshis != utxo->satoshis2 || strcmp(coin,utxo->coin) != 0 || strcmp(spendscript,utxo->spendscript) != 0 || strcmp(coinaddr,utxo->coinaddr) != 0 || strcmp(ipaddr,utxo->ipaddr) != 0 || port != utxo->port )
         {
             utxo->errors++;
-            char str[65],str2[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_str(str2,utxo->txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(deposittxid,utxo->deposittxid) != 0,vout != utxo->vout,satoshis != utxo->satoshis,depositvout != utxo->depositvout,depositsatoshis != utxo->depositsatoshis,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port);
+            char str[65],str2[65]; printf("error on subsequent utxo add.(%s v %s) %d %d %d %d %d %d %d %d %d %d %d\n",bits256_str(str,txid),bits256_str(str2,utxo->txid),bits256_cmp(txid,utxo->txid) != 0,bits256_cmp(deposittxid,utxo->txid2) != 0,vout != utxo->vout,satoshis != utxo->satoshis,depositvout != utxo->vout2,depositsatoshis != utxo->satoshis2,strcmp(coin,utxo->coin) != 0,strcmp(spendscript,utxo->spendscript) != 0,strcmp(coinaddr,utxo->coinaddr) != 0,strcmp(ipaddr,utxo->ipaddr) != 0,port != utxo->port);
         }
         else if ( profitmargin != 0. )
             utxo->profitmargin = profitmargin;
@@ -332,9 +325,9 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         utxo->txid = txid;
         utxo->vout = vout;
         utxo->satoshis = satoshis;
-        utxo->deposittxid = deposittxid;
-        utxo->depositvout = depositvout;
-        utxo->depositsatoshis = depositsatoshis;
+        utxo->txid2 = deposittxid;
+        utxo->vout2 = depositvout;
+        utxo->satoshis2 = depositsatoshis;
         memcpy(key,txid.bytes,sizeof(txid));
         memcpy(&key[sizeof(txid)],&vout,sizeof(vout));
         memcpy(utxo->key,key,sizeof(key));
@@ -467,7 +460,7 @@ char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,
 char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
 {
     char url[4096],str[65],str2[65];
-    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&deposit=%s&dvout=%d&dvalue=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->deposittxid),utxo->depositvout,dstr(utxo->depositsatoshis),utxo->spendscript,utxo->coinaddr);
+    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&deposit=%s&dvout=%d&dvalue=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->txid2),utxo->vout2,dstr(utxo->satoshis2),utxo->spendscript,utxo->coinaddr);
     if ( strlen(url) > 1024 )
         printf("WARNING long url.(%s)\n",url);
     return(issue_curl(url));
