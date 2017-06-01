@@ -200,7 +200,6 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
     //printf("signrawtransaction\n");
     if ( (retstr= bitcoind_passthru(symbol,coin->serverport,coin->userpass,"signrawtransaction",paramstr)) != 0 )
     {
-//printf("%s signrawtransaction.(%s) params.(%s)\n",coin->symbol,retstr,paramstr);
         if ( (json= cJSON_Parse(retstr)) != 0 )
         {
             if ( (hexstr= jstr(json,"hex")) != 0 )
@@ -212,6 +211,7 @@ char *LP_signrawtx(char *symbol,bits256 *signedtxidp,int32_t *completedp,cJSON *
                 data = malloc(len >> 1);
                 decode_hex(data,len>>1,hexstr);
                 *signedtxidp = bits256_doublesha256(0,data,len >> 1);
+                printf("%s signrawtransaction.(%s) params.(%s) -> \nsignedtx.(%s)\n",coin->symbol,retstr,paramstr,signedtx);
             }
             free_json(json);
         }
