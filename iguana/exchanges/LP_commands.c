@@ -327,6 +327,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                     i = besti;
                     Q[i].desttxid = myutxo->txid;
                     Q[i].destvout = myutxo->vout;
+                    strcpy(Q[i].destaddr,myutxo->coinaddr);
                     price = LP_query("request",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                     if ( jobj(bestitem,"price") != 0 )
                         jdelete(bestitem,"price");
@@ -335,6 +336,7 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
                     {
                         Q[i].desttxid = myutxo->txid;
                         Q[i].destvout = myutxo->vout;
+                        strcpy(Q[i].destaddr,myutxo->coinaddr);
                         price = LP_query("connect",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,myutxo->coin,myutxo->mypub);
                         LP_requestinit(&R,Q[i].srchash,Q[i].desthash,base,Q[i].satoshis,Q[i].destcoin,Q[i].destsatoshis,Q[i].timestamp,Q[i].quotetime,DEXselector);
                         printf("Alice r.%u q.%u\n",R.requestid,R.quoteid);
