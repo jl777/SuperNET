@@ -439,6 +439,7 @@ int32_t LP_waitfor(int32_t pairsock,struct basilisk_swap *swap,int32_t timeout,i
             retval = (*verify)(swap,data,datalen);
             nn_freemsg(data);
             printf("retval.%d\n",retval);
+            return(retval);
         } else printf("error nn_recv\n");
     }
     return(retval);
