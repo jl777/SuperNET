@@ -43,16 +43,27 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     double price; cJSON *retjson = cJSON_CreateObject();
     jaddstr(retjson,"base",qp->srccoin);
     jaddstr(retjson,"rel",qp->destcoin);
-    jaddstr(retjson,"address",qp->coinaddr);
+    if ( qp->coinaddr[0] != 0 )
+        jaddstr(retjson,"address",qp->coinaddr);
     if ( qp->timestamp != 0 )
         jaddnum(retjson,"timestamp",qp->timestamp);
-    jaddbits256(retjson,"txid",qp->txid);
-    jaddnum(retjson,"vout",qp->vout);
-    jaddbits256(retjson,"srchash",qp->srchash);
-    jadd64bits(retjson,"txfee",qp->txfee);
+    if ( bits256_nonz(qp->txid) != 0 )
+    {
+        jaddbits256(retjson,"txid",qp->txid);
+        jaddnum(retjson,"vout",qp->vout);
+    }
+    if ( bits256_nonz(qp->srchash) != 0 )
+        jaddbits256(retjson,"srchash",qp->srchash);
+    if ( qp->txfee != 0 )
+        jadd64bits(retjson,"txfee",qp->txfee);
     if ( qp->quotetime != 0 )
         jaddnum(retjson,"quotetime",qp->quotetime);
-    jadd64bits(retjson,"satoshis",qp->satoshis);
+    if ( qp->satoshis != 0 )
+    {
+        jadd64bits(retjson,"satoshis",qp->satoshis);
+        price = (double)(qp->destsatoshis+qp->desttxfee) / qp->satoshis;
+        jaddnum(retjson,"price",price);
+    }
     if ( bits256_nonz(qp->desthash) != 0 )
         jaddbits256(retjson,"desthash",qp->desthash);
     if ( bits256_nonz(qp->txid) != 0 )
@@ -64,20 +75,22 @@ cJSON *LP_quotejson(struct LP_quoteinfo *qp)
     {
         jaddbits256(retjson,"txid2",qp->txid2);
         jaddnum(retjson,"vout2",qp->vout2);
-        jadd64bits(retjson,"satoshis2",qp->satoshis2);
+        if ( qp->satoshis2 != 0 )
+            jadd64bits(retjson,"satoshis2",qp->satoshis2);
     }
     if ( bits256_nonz(qp->desttxid) != 0 )
     {
-        jaddstr(retjson,"destaddr",qp->destaddr);
+        if ( qp->destaddr[0] != 0 )
+            jaddstr(retjson,"destaddr",qp->destaddr);
         jaddbits256(retjson,"desttxid",qp->desttxid);
         jaddnum(retjson,"destvout",qp->destvout);
     }
-    jadd64bits(retjson,"destsatoshis",qp->destsatoshis);
-    jadd64bits(retjson,"desttxfee",qp->desttxfee);
+    if ( qp->destsatoshis != 0 )
+        jadd64bits(retjson,"destsatoshis",qp->destsatoshis);
+    if ( qp->desttxfee != 0 )
+        jadd64bits(retjson,"desttxfee",qp->desttxfee);
     if ( qp->change != 0 )
         jaddnum(retjson,"change",dstr(qp->change));
-    price = (double)(qp->destsatoshis+qp->desttxfee) / qp->satoshis;
-    jaddnum(retjson,"price",price);
     return(retjson);
 }
 
@@ -97,10 +110,12 @@ int32_t LP_quoteparse(struct LP_quoteinfo *qp,cJSON *argjson)
     qp->desttxid = jbits256(argjson,"desttxid");
     qp->destvout = jint(argjson,"destvout");
     qp->desthash = jbits256(argjson,"desthash");
-    qp->satoshis = j64bits(argjson,"satoshis");
+    if ( (qp->satoshis= j64bits(argjson,"satoshis")) == 0 )
+        qp->satoshis = j64bits(argjson,"value");
+    if ( (qp->satoshis2= j64bits(argjson,"satoshis2")) == 0 )
+        qp->satoshis2 = j64bits(argjson,"value2");
     qp->destsatoshis = j64bits(argjson,"destsatoshis");
     qp->change = SATOSHIDEN * jdouble(argjson,"change");
-    qp->satoshis2 = j64bits(argjson,"satoshis2");
     qp->txfee = j64bits(argjson,"txfee");
     qp->desttxfee = j64bits(argjson,"desttxfee");
     return(0);
@@ -214,8 +229,8 @@ cJSON *LP_bestprice(struct LP_utxoinfo *utxo,char *base)
                 item = jitem(array,i);
                 if ( (price= jdouble(item,"price")) == 0. )
                 {
-                    printf("i.%d of %d: (%s)\n",i,n,jprint(item,0));
                     LP_quoteparse(&Q[i],item);
+                    char str[65]; printf("i.%d of %d: (%s) -> txid.%s\n",i,n,jprint(item,0),bits256_str(str,Q[i].txid));
                     price = LP_query("price",&Q[i],jstr(item,"ipaddr"),jint(item,"port"),base,utxo->coin,zero);
                     if ( Q[i].destsatoshis != 0 && (double)j64bits(item,"satoshis")/Q[i].destsatoshis > price )
                         price = (double)j64bits(item,"satoshis")/Q[i].destsatoshis;
