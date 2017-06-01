@@ -757,7 +757,7 @@ int32_t _basilisk_rawtx_sign(char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8
 
 char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,char *symbol,uint8_t pubtype,uint8_t p2shtype,uint8_t isPoS,uint8_t wiftype,void *ctx,bits256 privkey,bits256 *privkey2p,uint8_t *redeemscript,int32_t redeemlen,uint8_t *userdata,int32_t userdatalen,bits256 utxotxid,int32_t vout,char *destaddr,uint8_t *pubkey33,int32_t finalseqid,uint32_t expiration,int64_t *destamountp,uint64_t satoshis,char *changeaddr)
 {
-    char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*privkeys; int32_t completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t destamount,change = 0;
+    char *rawtxbytes=0,*signedtx=0,str[65],tmpaddr[64],hexstr[999],wifstr[128],_destaddr[64]; uint8_t spendscript[512],addrtype,rmd160[20]; cJSON *utxoobj,*txobj,*vins,*item,*privkeys; int32_t completed,spendlen,ignore_cltverr=1,suppress_pubkeys=1; struct vin_info *V; uint32_t timestamp,locktime = 0,sequenceid = 0xffffffff * finalseqid; bits256 txid; uint64_t destamount,value,change = 0;
     *destamountp = 0;
     memset(signedtxidp,0,sizeof(*signedtxidp));
     if ( finalseqid == 0 )
@@ -770,7 +770,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
         return(0);
     }
-    if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
+    if ( (value= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (value= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
     {
         printf("%s %s basilisk_swap_bobtxspend.%s strange utxo.(%s)\n",symbol,bits256_str(str,utxotxid),name,jprint(utxoobj,0));
         free_json(utxoobj);
@@ -778,15 +778,13 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
     } else free_json(utxoobj);
     if ( satoshis != 0 )
     {
-        if ( destamount > satoshis+txfee )
-            change = destamount - (satoshis - txfee);
-        printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(destamount),dstr(satoshis),dstr(change),dstr(txfee));
-        destamount = satoshis;
-    }
-    *destamountp = destamount;
-    if ( destamount > txfee )
-        destamount -= txfee;
-    else printf("unexpected too small destamount %.8f txfee %.8f\n",dstr(destamount),dstr(txfee));
+        if ( value > satoshis+txfee )
+            change = value - (satoshis - txfee);
+        printf("utxo %.8f, destamount %.8f change %.8f txfee %.8f\n",dstr(value),dstr(satoshis),dstr(change),dstr(txfee));
+    } else if ( value > txfee )
+        satoshis = value - txfee;
+    else printf("unexpected small value %.8f vs txfee %.8f\n",dstr(value),dstr(txfee));
+    *destamountp = satoshis;
     timestamp = (uint32_t)time(NULL);
     V = calloc(256,sizeof(*V));
     privkeys = cJSON_CreateArray();
@@ -853,7 +851,8 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         bitcoin_address(destaddr,pubtype,pubkey33,33);
     }
     bitcoin_addr2rmd160(&addrtype,rmd160,destaddr);
-    txobj = bitcoin_txoutput(txobj,spendscript,spendlen,destamount);
+    spendlen = bitcoin_standardspend(spendscript,0,rmd160);
+    txobj = bitcoin_txoutput(txobj,spendscript,spendlen,satoshis);
     if ( change != 0 )
     {
         int32_t changelen; uint8_t changescript[1024],changetype,changermd160[20];
