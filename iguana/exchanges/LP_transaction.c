@@ -766,7 +766,7 @@ char *basilisk_swap_bobtxspend(bits256 *signedtxidp,uint64_t txfee,char *name,ch
         return(0);
     if ( (utxoobj= LP_gettxout(symbol,utxotxid,vout)) == 0 )
     {
-        printf("basilisk_swap_bobtxspend.%s utxo already spent or doesnt exist\n",name);
+        printf("basilisk_swap_bobtxspend.%s %s utxo.(%s) already spent or doesnt exist\n",name,symbol,bits256_str(str,utxotxid));
         return(0);
     }
     if ( (destamount= jdouble(utxoobj,"amount")*SATOSHIDEN) == 0 && (destamount= jdouble(utxoobj,"value")*SATOSHIDEN) == 0 )
