@@ -907,7 +907,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         return(0);
     }
     if ( (coin= LP_coinfind(swap->I.req.dest)) != 0 )
-        swap->bobcoin = *coin;
+        swap->alicecoin = *coin;
     else
     {
         printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",&swap->bobcoin,&swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
@@ -915,7 +915,7 @@ struct basilisk_swap *bitcoin_swapinit(bits256 privkey,uint8_t *pubkey33,bits256
         return(0);
     }
     if ( (coin= LP_coinfind(swap->I.req.src)) != 0 )
-        swap->alicecoin = *coin;
+        swap->bobcoin = *coin;
     else
     {
         printf("missing bobcoin.%p or missing alicecoin.%p src.%p dest.%p\n",&swap->bobcoin,&swap->alicecoin,LP_coinfind(swap->I.req.src),LP_coinfind(swap->I.req.dest));
