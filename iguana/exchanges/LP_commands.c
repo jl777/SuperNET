@@ -411,6 +411,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                                 printf("error creating utxo->pair\n");
                             else if ( nn_connect(utxo->pair,pairstr) >= 0 )
                             {
+                                char str[65]; printf("destsatoshis %.8f %s t%u\n",dstr(Q.destsatoshis),bits256_str(str,Q.desthash),Q.quotetime);
                                 LP_requestinit(&R,Q.srchash,Q.desthash,base,Q.satoshis,rel,Q.destsatoshis,Q.timestamp,Q.quotetime,DEXselector);
                                 if ( OS_thread_create(malloc(sizeof(pthread_t)),NULL,(void *)LP_bobloop,(void *)utxo) == 0 )
                                 {
