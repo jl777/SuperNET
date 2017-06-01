@@ -908,7 +908,7 @@ void LP_mainloop(struct LP_peerinfo *mypeer,uint16_t mypubport,int32_t pubsock,i
                 }
             }
             if ( nonz == 0 )
-                sleep(1);
+                usleep(100000);
         }
     }
     else
