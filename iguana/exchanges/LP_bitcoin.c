@@ -1321,30 +1321,30 @@ int32_t bitcoin_assembler(void *ctx,cJSON *logarray,uint8_t script[IGUANA_MAXSCR
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
                             break;
                         case IGUANA_OP_HASH160:
-                            if ( datalen == 32 )
-                            {
-                                revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
-                                printf("SPECIAL CASE REVERSE\n");
-                            } else
-                                for (i=0; i<32; i++)
-                                    printf("%02x",databuf[i]);
-                            printf(" <- databuf\n");
-                            for (i=0; i<32; i++)
-                                printf("%02x",revdatabuf[i]);
-                            printf(" <- revdatabuf\n");
-                            calc_rmd160_sha256(rmd160,revdatabuf,datalen);
-                            for (i=0; i<20; i++)
-                                printf("%02x",rmd160[i]);
-                            printf(" <- rmd160 revdatabuf\n");
-                            revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
-                            for (i=0; i<20; i++)
-                                printf("%02x",rmd160[i]);
-                            printf(" <- rmd160 special\n");
-                            calc_rmd160_sha256(rmd160,databuf,datalen);
-                            for (i=0; i<20; i++)
-                                printf("%02x",rmd160[i]);
-                            printf(" <- rmd160 databuf\n");
-                            if ( datalen == 32 )
+                            /*if ( datalen == 32 )
+                             {
+                             revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
+                             printf("SPECIAL CASE REVERSE\n");
+                             } else
+                             for (i=0; i<32; i++)
+                             printf("%02x",databuf[i]);
+                             printf(" <- databuf\n");
+                             for (i=0; i<32; i++)
+                             printf("%02x",revdatabuf[i]);
+                             printf(" <- revdatabuf\n");
+                             calc_rmd160_sha256(rmd160,revdatabuf,datalen);
+                             for (i=0; i<20; i++)
+                             printf("%02x",rmd160[i]);
+                             printf(" <- rmd160 revdatabuf\n");
+                             revcalc_rmd160_sha256(rmd160,*(bits256 *)databuf);
+                             for (i=0; i<20; i++)
+                             printf("%02x",rmd160[i]);
+                             printf(" <- rmd160 special\n");
+                             calc_rmd160_sha256(rmd160,databuf,datalen);
+                             for (i=0; i<20; i++)
+                             printf("%02x",rmd160[i]);
+                             printf(" <- rmd160 databuf\n");*/
+                            if ( 0 && datalen == 32 )
                                 calc_rmd160_sha256(rmd160,revdatabuf,datalen);
                             else calc_rmd160_sha256(rmd160,databuf,datalen);
                             iguana_pushdata(stacks,0,rmd160,sizeof(rmd160));
