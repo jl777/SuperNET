@@ -2056,10 +2056,12 @@ FOUR_STRINGS(SuperNET,login,handle,password,permanentfile,passphrase)
 void komodo_ICO_batch(cJSON *array,int32_t batchid)
 {
     int32_t i,n,iter; cJSON *item; uint64_t kmdamount,revsamount; char *coinaddr,cmd[512]; double totalKMD,totalREVS; struct supernet_info *myinfo = SuperNET_MYINFO(0);
+    if ( myinfo->rpcport == 0 )
+        myinfo->rpcport = 7778;
     if ( (n= cJSON_GetArraySize(array)) > 0 )
     {
         totalKMD = totalREVS = 0;
-        for (iter=3; iter<4; iter++)
+        for (iter=0; iter<1; iter++)
         for (i=0; i<n; i++)
         {
             item = jitem(array,i);
@@ -2159,7 +2161,7 @@ void iguana_main(void *arg)
     else printf("ENDIAN ERROR\n");
     mycalloc(0,0,0);
 #ifdef __APPLE__
-    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 17;
+    char *batchstr,*batchstr2; cJSON *batchjson; long batchsize; char fname[512],fname2[512]; int32_t batchid = 18;
     sprintf(fname,"REVS.raw"), sprintf(fname2,"REVS.rawtxids");
     if ( (0) && (batchstr= OS_filestr(&batchsize,fname)) != 0 && (batchstr2= OS_filestr(&batchsize,fname2)) != 0 )
     {
