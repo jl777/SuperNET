@@ -26,7 +26,7 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port);
 #include "stats.c"
-#include "LP_prices.c"
+void LP_priceupdate(char *base,char *rel,double price,double avebid,double aveask,double highbid,double lowask,double PAXPRICES[32]);
 
 #if defined(__APPLE__) || defined(WIN32) || defined(USE_STATIC_NANOMSG)
 #include "../../crypto777/nanosrc/nn.h"

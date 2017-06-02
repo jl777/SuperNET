@@ -169,7 +169,7 @@ int32_t LP_quoteinfoset(struct LP_quoteinfo *qp,uint32_t timestamp,uint32_t quot
     return(0);
 }
 
-char *LP_quote(cJSON *argjson)
+char *LP_quotereceived(cJSON *argjson)
 {
     struct LP_cacheinfo *ptr; double price; struct LP_quoteinfo Q;
     LP_quoteparse(&Q,argjson);
@@ -178,8 +178,7 @@ char *LP_quote(cJSON *argjson)
     {
         ptr->Q = Q;
         return(clonestr("{\"result\":\"updated\"}"));
-    }
-    else return(clonestr("{\"error\":\"nullptr\"}"));
+    } else return(clonestr("{\"error\":\"nullptr\"}"));
 }
 
 double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,char *base,char *rel,bits256 mypub)
@@ -213,7 +212,7 @@ double LP_query(char *method,struct LP_quoteinfo *qp,char *ipaddr,uint16_t port,
                             break;
                         }
                     }
-                    usleep(250000);
+                    usleep(100000);
                 }
             } else printf("no pushsock for peer.%s:%u\n",ipaddr,port);
         } else printf("cant find/create peer.%s:%u\n",ipaddr,port);
@@ -360,6 +359,27 @@ cJSON *LP_bestprice(struct LP_utxoinfo *myutxo,char *base)
     return(bestitem);
 }
 
+int32_t LP_priceping(int32_t pubsock,struct LP_utxoinfo *utxo,char *rel,double profitmargin)
+{
+    double price; uint32_t now; cJSON *retjson; struct LP_quoteinfo Q; char *retstr;
+    if ( (now= (uint32_t)time(NULL)) > utxo->swappending )
+        utxo->swappending = 0;
+    if ( now > utxo->published+60 && utxo->swappending == 0 && utxo->pair < 0 && utxo->swap == 0 && (price= LP_price(utxo->coin,rel)) != 0. )
+    {
+        price *= (1. + profitmargin);
+        if ( LP_quoteinfoinit(&Q,utxo,rel,price) < 0 )
+            return(-1);
+        Q.timestamp = (uint32_t)time(NULL);
+        retjson = LP_quotejson(&Q);
+        jaddstr(retjson,"method","quote");
+        retstr = jprint(retjson,1);
+        LP_send(pubsock,retstr,1);
+        utxo->published = now;
+        return(0);
+    }
+    return(-1);
+}
+
 int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uint8_t *data,int32_t datalen,double profitmargin)
 {
     char *method,*base,*rel,*retstr,pairstr[512]; cJSON *retjson; double price; bits256 privkey,txid; struct LP_utxoinfo *utxo; int32_t retval = -1,DEXselector = 0; uint64_t destvalue; struct basilisk_request R; struct LP_quoteinfo Q;
@@ -368,7 +388,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
         txid = jbits256(argjson,"txid");
         if ( (utxo= LP_utxofind(txid,jint(argjson,"vout"))) != 0 && strcmp(utxo->ipaddr,mypeer->ipaddr) == 0 && utxo->port == mypeer->port && (base= jstr(argjson,"base")) != 0 && (rel= jstr(argjson,"rel")) != 0 && strcmp(base,utxo->coin) == 0 )
         {
-            printf("LP_command.(%s)\n",jprint(argjson,0));
+            //printf("LP_command.(%s)\n",jprint(argjson,0));
             if ( time(NULL) > utxo->swappending )
                 utxo->swappending = 0;
             if ( strcmp(method,"price") == 0 || strcmp(method,"request") == 0 )
@@ -399,6 +419,7 @@ int32_t LP_command(struct LP_peerinfo *mypeer,int32_t pubsock,cJSON *argjson,uin
                         else jaddstr(retjson,"method","quote");
                         retstr = jprint(retjson,1);
                         LP_send(pubsock,retstr,1);
+                        utxo->published = (uint32_t)time(NULL);
                     } else printf("null price\n");
                 } else printf("swappending.%u pair.%d\n",utxo->swappending,utxo->pair);
             }
@@ -496,7 +517,7 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         printf("CMD.(%s)\n",jprint(argjson,0));
         if ( strcmp(method,"quote") == 0 || strcmp(method,"reserved") == 0 )
-            retstr = LP_quote(argjson);
+            retstr = LP_quotereceived(argjson);
         else if ( IAMCLIENT != 0 && strcmp(method,"connected") == 0 )
         {
             int32_t pairsock = -1; char *pairstr;
@@ -518,6 +539,8 @@ char *stats_JSON(cJSON *argjson,char *remoteaddr,uint16_t port) // from rpc port
         }
         else if ( IAMCLIENT == 0 && strcmp(method,"getprice") == 0 )
             retstr = LP_pricestr(jstr(argjson,"base"),jstr(argjson,"rel"));
+        else if ( strcmp(method,"orderbook") == 0 )
+            retstr = LP_orderbook(jstr(argjson,"base"),jstr(argjson,"rel"));
         else if ( IAMCLIENT == 0 && strcmp(method,"getpeers") == 0 )
             retstr = LP_peers();
         else if ( IAMCLIENT == 0 && strcmp(method,"getutxos") == 0 && (coin= jstr(argjson,"coin")) != 0 )

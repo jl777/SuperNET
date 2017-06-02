@@ -202,37 +202,6 @@ int32_t iguana_msgtx_Vset(uint8_t *serialized,int32_t maxlen,struct iguana_msgtx
     return(len);
 }
 
-#ifdef adfafds
-void iguana_ensure_privkey(struct iguana_info *coin,bits256 privkey)
-{
-    uint8_t pubkey33[33]; struct iguana_waccount *wacct; struct iguana_waddress *waddr,addr; char coinaddr[128];
-    bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
-    bitcoin_address(coinaddr,coin->pubtype,pubkey33,33);
-    //printf("privkey for (%s)\n",coinaddr);
-    if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
-    {
-        if ( waddr == 0 )
-        {
-            memset(&addr,0,sizeof(addr));
-            iguana_waddresscalc(coin->pubtype,coin->wiftype,&addr,privkey);
-            if ( (wacct= iguana_waccountfind("default")) != 0 )
-                waddr = iguana_waddressadd(coin,wacct,&addr,0);
-        }
-        if ( waddr != 0 )
-        {
-            waddr->privkey = privkey;
-            if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->wiftype) > 0 )
-            {
-                if ( (0) && waddr->wiftype != coin->wiftype )
-                    printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->wiftype,coin->wiftype);
-                if ( (0) && waddr->addrtype != coin->pubtype )
-                    printf("ensurepriv warning: mismatched addrtype %02x != %02x\n",waddr->addrtype,coin->pubtype);
-            }
-        }
-    }
-}
-#endif
-
 int32_t iguana_interpreter(struct iguana_info *coin,cJSON *logarray,int64_t nLockTime,struct vin_info *V,int32_t numvins)
 {
     uint8_t script[IGUANA_MAXSCRIPTSIZE],*activescript,savescript[IGUANA_MAXSCRIPTSIZE]; char str[IGUANA_MAXSCRIPTSIZE*2+1]; int32_t vini,scriptlen,activescriptlen,savelen,errs = 0; cJSON *spendscript,*item=0;

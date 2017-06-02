@@ -17,6 +17,317 @@
 //  LP_statemachine.c
 //  marketmaker
 //
+
+/*void basilisk_swaps_init(struct supernet_info *myinfo)
+ {
+ char fname[512]; uint32_t iter,swapcompleted,requestid,quoteid,optionduration,statebits; FILE *fp; bits256 privkey;struct basilisk_request R; struct basilisk_swapmessage M; struct basilisk_swap *swap = 0;
+ sprintf(fname,"%s/SWAPS/list",GLOBAL_DBDIR), OS_compatible_path(fname);
+ if ( (myinfo->swapsfp= fopen(fname,"rb+")) != 0 )
+ {
+ while ( fread(&requestid,1,sizeof(requestid),myinfo->swapsfp) == sizeof(requestid) && fread(&quoteid,1,sizeof(quoteid),myinfo->swapsfp) == sizeof(quoteid) )
+ {
+ sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+ printf("%s\n",fname);
+ if ( (fp= fopen(fname,"rb+")) != 0 ) // check to see if completed
+ {
+ memset(&M,0,sizeof(M));
+ swapcompleted = 1;
+ for (iter=0; iter<2; iter++)
+ {
+ if ( fread(privkey.bytes,1,sizeof(privkey),fp) == sizeof(privkey) &&
+ fread(&R,1,sizeof(R),fp) == sizeof(R) &&
+ fread(&statebits,1,sizeof(statebits),fp) == sizeof(statebits) &&
+ fread(&optionduration,1,sizeof(optionduration),fp) == sizeof(optionduration) )
+ {
+ while ( 0 && fread(&M,1,sizeof(M),fp) == sizeof(M) )
+ {
+ M.data = 0;
+ //printf("entry iter.%d crc32.%x datalen.%d\n",iter,M.crc32,M.datalen);
+ if ( M.datalen < 100000 )
+ {
+ M.data = malloc(M.datalen);
+ if ( fread(M.data,1,M.datalen,fp) == M.datalen )
+ {
+ if ( calc_crc32(0,M.data,M.datalen) == M.crc32 )
+ {
+ if ( iter == 1 )
+ {
+ if ( swap == 0 )
+ {
+ swap = basilisk_thread_start(privkey,&R,statebits,optionduration,1);
+ swap->I.choosei = swap->I.otherchoosei = -1;
+ }
+ if ( swap != 0 )
+ basilisk_swapgotdata(swap,M.crc32,M.srchash,M.desthash,M.quoteid,M.msgbits,M.data,M.datalen,1);
+ }
+ } else printf("crc mismatch %x vs %x\n",calc_crc32(0,M.data,M.datalen),M.crc32);
+ } else printf("error reading M.datalen %d\n",M.datalen);
+ free(M.data), M.data = 0;
+ }
+ }
+ }
+ if ( swapcompleted != 0 )
+ break;
+ rewind(fp);
+ }
+ }
+ }
+ } else myinfo->swapsfp = fopen(fname,"wb+");
+ }*/
+
+FILE *basilisk_swap_save(struct basilisk_swap *swap,bits256 privkey,struct basilisk_request *rp,uint32_t statebits,int32_t optionduration,int32_t reinit)
+{
+    FILE *fp=0; /*char fname[512];
+                 sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,rp->requestid,rp->quoteid), OS_compatible_path(fname);
+                 if ( (fp= fopen(fname,"rb+")) == 0 )
+                 {
+                 if ( (fp= fopen(fname,"wb+")) != 0 )
+                 {
+                 fwrite(privkey.bytes,1,sizeof(privkey),fp);
+                 fwrite(rp,1,sizeof(*rp),fp);
+                 fwrite(&statebits,1,sizeof(statebits),fp);
+                 fwrite(&optionduration,1,sizeof(optionduration),fp);
+                 fflush(fp);
+                 }
+                 }
+                 else if ( reinit != 0 )
+                 {
+                 }*/
+    return(fp);
+}
+
+int32_t basilisk_swap_load(uint32_t requestid,uint32_t quoteid,bits256 *privkeyp,struct basilisk_request *rp,uint32_t *statebitsp,int32_t *optiondurationp)
+{
+    FILE *fp=0; char fname[512]; int32_t retval = -1;
+    sprintf(fname,"%s/SWAPS/%u-%u",GLOBAL_DBDIR,requestid,quoteid), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"rb+")) != 0 )
+    {
+        if ( fread(privkeyp,1,sizeof(*privkeyp),fp) == sizeof(*privkeyp) &&
+            fread(rp,1,sizeof(*rp),fp) == sizeof(*rp) &&
+            fread(statebitsp,1,sizeof(*statebitsp),fp) == sizeof(*statebitsp) &&
+            fread(optiondurationp,1,sizeof(*optiondurationp),fp) == sizeof(*optiondurationp) )
+            retval = 0;
+        fclose(fp);
+    }
+    return(retval);
+}
+
+void basilisk_swap_saveupdate(struct basilisk_swap *swap)
+{
+    FILE *fp; char fname[512];
+    sprintf(fname,"%s/SWAPS/%u-%u.swap",GLOBAL_DBDIR,swap->I.req.requestid,swap->I.req.quoteid), OS_compatible_path(fname);
+    if ( (fp= fopen(fname,"wb")) != 0 )
+    {
+        fwrite(&swap->I,1,sizeof(swap->I),fp);
+        /*fwrite(&swap->bobdeposit,1,sizeof(swap->bobdeposit),fp);
+         fwrite(&swap->bobpayment,1,sizeof(swap->bobpayment),fp);
+         fwrite(&swap->alicepayment,1,sizeof(swap->alicepayment),fp);
+         fwrite(&swap->myfee,1,sizeof(swap->myfee),fp);
+         fwrite(&swap->otherfee,1,sizeof(swap->otherfee),fp);
+         fwrite(&swap->aliceclaim,1,sizeof(swap->aliceclaim),fp);
+         fwrite(&swap->alicespend,1,sizeof(swap->alicespend),fp);
+         fwrite(&swap->bobreclaim,1,sizeof(swap->bobreclaim),fp);
+         fwrite(&swap->bobspend,1,sizeof(swap->bobspend),fp);
+         fwrite(&swap->bobrefund,1,sizeof(swap->bobrefund),fp);
+         fwrite(&swap->alicereclaim,1,sizeof(swap->alicereclaim),fp);*/
+        fwrite(swap->privkeys,1,sizeof(swap->privkeys),fp);
+        fwrite(swap->otherdeck,1,sizeof(swap->otherdeck),fp);
+        fwrite(swap->deck,1,sizeof(swap->deck),fp);
+        fclose(fp);
+    }
+}
+
+/*int32_t basilisk_swap_loadtx(struct basilisk_rawtx *rawtx,FILE *fp,char *bobcoinstr,char *alicecoinstr)
+ {
+ if ( fread(rawtx,1,sizeof(*rawtx),fp) == sizeof(*rawtx) )
+ {
+ rawtx->coin = 0;
+ rawtx->vins = 0;
+ if ( strcmp(rawtx->I.coinstr,bobcoinstr) == 0 || strcmp(rawtx->I.coinstr,alicecoinstr) == 0 )
+ {
+ rawtx->coin = LP_coinfind(rawtx->I.coinstr);
+ if ( rawtx->vinstr[0] != 0 )
+ rawtx->vins = cJSON_Parse(rawtx->vinstr);
+ printf("loaded.%s len.%d\n",rawtx->name,rawtx->I.datalen);
+ return(0);
+ }
+ }
+ return(-1);
+ }*/
+
+void basilisk_swap_sendabort(struct basilisk_swap *swap)
+{
+    uint32_t msgbits = 0; uint8_t buf[sizeof(msgbits) + sizeof(swap->I.req.quoteid) + sizeof(bits256)*2]; int32_t sentbytes,offset=0;
+    memset(buf,0,sizeof(buf));
+    offset += iguana_rwnum(1,&buf[offset],sizeof(swap->I.req.quoteid),&swap->I.req.quoteid);
+    offset += iguana_rwnum(1,&buf[offset],sizeof(msgbits),&msgbits);
+    if ( (sentbytes= nn_send(swap->pushsock,buf,offset,0)) != offset )
+    {
+        if ( sentbytes < 0 )
+        {
+            if ( swap->pushsock >= 0 ) //
+                nn_close(swap->pushsock), swap->pushsock = -1;
+            if ( swap->subsock >= 0 ) //
+                nn_close(swap->subsock), swap->subsock = -1;
+            swap->connected = 0;
+        }
+    } else printf("basilisk_swap_sendabort\n");
+}
+
+void basilisk_psockinit(struct basilisk_swap *swap,int32_t amlp);
+
+void basilisk_swapgotdata(struct basilisk_swap *swap,uint32_t crc32,bits256 srchash,bits256 desthash,uint32_t quoteid,uint32_t msgbits,uint8_t *data,int32_t datalen,int32_t reinit)
+{
+    int32_t i; struct basilisk_swapmessage *mp;
+    for (i=0; i<swap->nummessages; i++)
+        if ( crc32 == swap->messages[i].crc32 && msgbits == swap->messages[i].msgbits && bits256_cmp(srchash,swap->messages[i].srchash) == 0 && bits256_cmp(desthash,swap->messages[i].desthash) == 0 )
+            return;
+    //printf(" new message.[%d] datalen.%d Q.%x msg.%x [%llx]\n",swap->nummessages,datalen,quoteid,msgbits,*(long long *)data);
+    swap->messages = realloc(swap->messages,sizeof(*swap->messages) * (swap->nummessages + 1));
+    mp = &swap->messages[swap->nummessages++];
+    mp->crc32 = crc32;
+    mp->srchash = srchash;
+    mp->desthash = desthash;
+    mp->msgbits = msgbits;
+    mp->quoteid = quoteid;
+    mp->data = malloc(datalen);
+    mp->datalen = datalen;
+    memcpy(mp->data,data,datalen);
+    if ( reinit == 0 && swap->fp != 0 )
+    {
+        fwrite(mp,1,sizeof(*mp),swap->fp);
+        fwrite(data,1,datalen,swap->fp);
+        fflush(swap->fp);
+    }
+}
+
+int32_t basilisk_swapget(struct basilisk_swap *swap,uint32_t msgbits,uint8_t *data,int32_t maxlen,int32_t (*basilisk_verify_func)(void *ptr,uint8_t *data,int32_t datalen))
+{
+    uint8_t *ptr; bits256 srchash,desthash; uint32_t crc32,_msgbits,quoteid; int32_t i,size,offset,retval = -1; struct basilisk_swapmessage *mp = 0;
+    while ( (size= nn_recv(swap->subsock,&ptr,NN_MSG,0)) >= 0 )
+    {
+        swap->lasttime = (uint32_t)time(NULL);
+        memset(srchash.bytes,0,sizeof(srchash));
+        memset(desthash.bytes,0,sizeof(desthash));
+        //printf("gotmsg.[%d] crc.%x\n",size,crc32);
+        offset = 0;
+        for (i=0; i<32; i++)
+            srchash.bytes[i] = ptr[offset++];
+        for (i=0; i<32; i++)
+            desthash.bytes[i] = ptr[offset++];
+        offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&quoteid);
+        offset += iguana_rwnum(0,&ptr[offset],sizeof(uint32_t),&_msgbits);
+        if ( size > offset )
+        {
+            crc32 = calc_crc32(0,&ptr[offset],size-offset);
+            if ( size > offset )
+            {
+                //printf("size.%d offset.%d datalen.%d\n",size,offset,size-offset);
+                basilisk_swapgotdata(swap,crc32,srchash,desthash,quoteid,_msgbits,&ptr[offset],size-offset,0);
+            }
+        }
+        else if ( bits256_nonz(srchash) == 0 && bits256_nonz(desthash) == 0 )
+        {
+            if ( swap->aborted == 0 )
+            {
+                swap->aborted = (uint32_t)time(NULL);
+                printf("got abort signal from other side\n");
+            }
+        } else printf("basilisk_swapget: got strange packet\n");
+        if ( ptr != 0 )
+            nn_freemsg(ptr), ptr = 0;
+    }
+    //char str[65],str2[65];
+    for (i=0; i<swap->nummessages; i++)
+    {
+        //printf("%d: %s vs %s\n",i,bits256_str(str,swap->messages[i].srchash),bits256_str(str2,swap->messages[i].desthash));
+        if ( bits256_cmp(swap->messages[i].desthash,swap->I.myhash) == 0 )
+        {
+            if ( swap->messages[i].msgbits == msgbits )
+            {
+                if ( swap->I.iambob == 0 && swap->lasttime != 0 && time(NULL) > swap->lasttime+360 )
+                {
+                    printf("nothing received for a while from Bob, try new sockets\n");
+                    if ( swap->pushsock >= 0 ) //
+                        nn_close(swap->pushsock), swap->pushsock = -1;
+                    if ( swap->subsock >= 0 ) //
+                        nn_close(swap->subsock), swap->subsock = -1;
+                    swap->connected = 0;
+                    basilisk_psockinit(swap,swap->I.iambob != 0);
+                }
+                mp = &swap->messages[i];
+                if ( msgbits != 0x80000000 )
+                    break;
+            }
+        }
+    }
+    if ( mp != 0 )
+        retval = (*basilisk_verify_func)(swap,mp->data,mp->datalen);
+    //printf("mine/other %s vs %s\n",bits256_str(str,swap->I.myhash),bits256_str(str2,swap->I.otherhash));
+    return(retval);
+}
+
+int32_t basilisk_messagekeyread(uint8_t *key,uint32_t *channelp,uint32_t *msgidp,bits256 *srchashp,bits256 *desthashp)
+{
+    int32_t keylen = 0;
+    keylen += iguana_rwnum(0,&key[keylen],sizeof(uint32_t),channelp);
+    keylen += iguana_rwnum(0,&key[keylen],sizeof(uint32_t),msgidp);
+    keylen += iguana_rwbignum(0,&key[keylen],sizeof(*srchashp),srchashp->bytes);
+    keylen += iguana_rwbignum(0,&key[keylen],sizeof(*desthashp),desthashp->bytes);
+    return(keylen);
+}
+
+int32_t basilisk_messagekey(uint8_t *key,uint32_t channel,uint32_t msgid,bits256 srchash,bits256 desthash)
+{
+    int32_t keylen = 0;
+    keylen += iguana_rwnum(1,&key[keylen],sizeof(uint32_t),&channel);
+    keylen += iguana_rwnum(1,&key[keylen],sizeof(uint32_t),&msgid);
+    keylen += iguana_rwbignum(1,&key[keylen],sizeof(srchash),srchash.bytes);
+    keylen += iguana_rwbignum(1,&key[keylen],sizeof(desthash),desthash.bytes);
+    return(keylen);
+}
+
+void LP_channelsend(bits256 srchash,bits256 desthash,uint32_t channel,uint32_t msgid,uint8_t *data,int32_t datalen)
+{
+    int32_t keylen; uint8_t key[BASILISK_KEYSIZE]; //char *retstr;
+    keylen = basilisk_messagekey(key,channel,msgid,srchash,desthash);
+    //if ( (retstr= _dex_reqsend(myinfo,"DEX",key,keylen,data,datalen)) != 0 )
+    //    free(retstr);
+}
+
+
+#ifdef adfafds
+void iguana_ensure_privkey(struct iguana_info *coin,bits256 privkey)
+{
+    uint8_t pubkey33[33]; struct iguana_waccount *wacct; struct iguana_waddress *waddr,addr; char coinaddr[128];
+    bitcoin_pubkey33(swap->ctx,pubkey33,privkey);
+    bitcoin_address(coinaddr,coin->pubtype,pubkey33,33);
+    //printf("privkey for (%s)\n",coinaddr);
+    if ( myinfo->expiration != 0 && ((waddr= iguana_waddresssearch(&wacct,coinaddr)) == 0 || bits256_nonz(waddr->privkey) == 0) )
+    {
+        if ( waddr == 0 )
+        {
+            memset(&addr,0,sizeof(addr));
+            iguana_waddresscalc(coin->pubtype,coin->wiftype,&addr,privkey);
+            if ( (wacct= iguana_waccountfind("default")) != 0 )
+                waddr = iguana_waddressadd(coin,wacct,&addr,0);
+        }
+        if ( waddr != 0 )
+        {
+            waddr->privkey = privkey;
+            if ( bitcoin_priv2wif(waddr->wifstr,waddr->privkey,coin->wiftype) > 0 )
+            {
+                if ( (0) && waddr->wiftype != coin->wiftype )
+                    printf("ensurepriv warning: mismatched wiftype %02x != %02x\n",waddr->wiftype,coin->wiftype);
+                if ( (0) && waddr->addrtype != coin->pubtype )
+                    printf("ensurepriv warning: mismatched addrtype %02x != %02x\n",waddr->addrtype,coin->pubtype);
+            }
+        }
+    }
+}
+#endif
+
+
 int32_t basilisk_rawtx_return(struct basilisk_rawtx *rawtx,cJSON *item,int32_t lockinputs,struct vin_info *V)
 {
     char *signedtx,*txbytes; cJSON *vins,*privkeyarray; int32_t i,n,retval = -1;

@@ -17,31 +17,45 @@
 //  LP_rpc.c
 //  marketmaker
 //
-
-char *LP_getdatadir()
+char *issue_LP_getpeers(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
-    return("/root");
+    char url[512],*retstr;
+    sprintf(url,"http://%s:%u/api/stats/getpeers?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    //printf("send.(%s)\n",url);
+    retstr = issue_curl(url);
+    //printf("GETPEERS.(%s)\n",retstr);
+    return(retstr);
 }
 
-cJSON *basilisk_nullretjson(cJSON *retjson)
+char *issue_LP_getutxos(char *destip,uint16_t destport,char *coin,int32_t lastn,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
 {
-    /*char *outstr;
-    if ( retjson != 0 )
-    {
-        outstr = jprint(retjson,0);
-        if ( strcmp(outstr,"{}") == 0 || strcmp(outstr,"[]") == 0 )
-        {
-            free_json(retjson);
-            retjson = 0;
-        }
-        free(outstr);
-    }*/
-    return(retjson);
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,coin,lastn,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
 }
 
-char *blocktrail_listtransactions(char *symbol,char *coinaddr,int32_t num,int32_t skip)
+char *issue_LP_clientgetutxos(char *destip,uint16_t destport,char *coin,int32_t lastn)
 {
-    return(0);
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/getutxos?coin=%s&lastn=%d&ipaddr=127.0.0.1&port=0",destip,destport,coin,lastn);
+    //printf("getutxos.(%s)\n",url);
+    return(issue_curl(url));
+}
+
+char *issue_LP_notify(char *destip,uint16_t destport,char *ipaddr,uint16_t port,double profitmargin,int32_t numpeers,int32_t numutxos)
+{
+    char url[512];
+    sprintf(url,"http://%s:%u/api/stats/notify?ipaddr=%s&port=%u&profit=%.6f&numpeers=%d&numutxos=%d",destip,destport,ipaddr,port,profitmargin,numpeers,numutxos);
+    return(issue_curl(url));
+}
+
+char *issue_LP_notifyutxo(char *destip,uint16_t destport,struct LP_utxoinfo *utxo)
+{
+    char url[4096],str[65],str2[65];
+    sprintf(url,"http://%s:%u/api/stats/notifyutxo?ipaddr=%s&port=%u&profit=%.6f&coin=%s&txid=%s&vout=%d&value=%.8f&txid2=%s&vout2=%d&value2=%.8f&script=%s&address=%s",destip,destport,utxo->ipaddr,utxo->port,utxo->profitmargin,utxo->coin,bits256_str(str,utxo->txid),utxo->vout,dstr(utxo->satoshis),bits256_str(str2,utxo->txid2),utxo->vout2,dstr(utxo->satoshis2),utxo->spendscript,utxo->coinaddr);
+    if ( strlen(url) > 1024 )
+        printf("WARNING long url.(%s)\n",url);
+    return(issue_curl(url));
 }
 
 cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
@@ -59,7 +73,7 @@ cJSON *bitcoin_json(struct iguana_info *coin,char *method,char *params)
         }
         //printf("dpow_gettxout.(%s)\n",retstr);
     }
-    return(basilisk_nullretjson(retjson));
+    return(retjson);
 }
 
 void LP_unspents_mark(char *symbol,cJSON *vins)
