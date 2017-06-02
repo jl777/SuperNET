@@ -536,8 +536,8 @@ void LP_bobloop(void *_utxo)
             printf("error waitsend choosei\n");
         else if ( LP_waitsend("mostprivs",10,utxo->pair,swap,data,maxlen,LP_mostprivs_verify,LP_mostprivs_data) < 0 )
             printf("error waitsend mostprivs\n");
-        else if ( basilisk_bobscripts_set(swap,1,1) < 0 || basilisk_bobscripts_set(swap,0,1) < 0 )
-            printf("error bobscripts\n");
+        else if ( basilisk_bobscripts_set(swap,1,1) < 0 )
+            printf("error bobscripts deposit\n");
         else
         {
             LP_swapsfp_update(&swap->I.req);
@@ -547,6 +547,8 @@ void LP_bobloop(void *_utxo)
                 printf("error sending bobdeposit\n");
             else if ( LP_waitfor(utxo->pair,swap,10,LP_verify_alicepayment) < 0 )
                 printf("error waiting for alicepayment\n");
+            else if ( basilisk_bobscripts_set(swap,0,1) < 0 )
+                printf("error bobscripts payment\n");
             else if ( LP_swapdata_rawtxsend(utxo->pair,swap,0x8000,data,maxlen,&swap->bobpayment,0x4000,0) == 0 )
                 printf("error sending bobpayment\n");
             while ( 1 )

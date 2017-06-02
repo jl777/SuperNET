@@ -25,7 +25,7 @@
 
 #define LP_PROPAGATION_SLACK 10 // txid ordering is not enforced, so getting extra recent txid
 
-char *activecoins[] = { "BTC", "KMD", };//"LTC", "USD", "REVS", "JUMBLR" };
+char *activecoins[] = { "BTC", "KMD", "REVS", "JUMBLR" };//"LTC", "USD",   };
 
 char *default_LPnodes[] = { "5.9.253.196", "5.9.253.197", "5.9.253.198", "5.9.253.199", "5.9.253.200", "5.9.253.201", "5.9.253.202", "5.9.253.203", "5.9.253.204" }; //"5.9.253.195",
 portable_mutex_t LP_peermutex,LP_utxomutex,LP_commandmutex,LP_cachemutex;
@@ -338,7 +338,7 @@ struct LP_utxoinfo *LP_addutxo(int32_t amclient,struct LP_peerinfo *mypeer,int32
         portable_mutex_unlock(&LP_utxomutex);
         if ( mypubsock >= 0 )
             LP_send(mypubsock,jprint(LP_utxojson(utxo),1),1);
-        char str[65],str2[65]; printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
+        //char str[65],str2[65]; printf("%s:%u %s LP_addutxo.(%.8f %.8f) numutxos.%d %s %s\n",ipaddr,port,utxo->coin,dstr(satoshis),dstr(depositsatoshis),mypeer!=0?mypeer->numutxos:0,bits256_str(str,utxo->txid),bits256_str(str2,txid));
     }
     return(utxo);
 }

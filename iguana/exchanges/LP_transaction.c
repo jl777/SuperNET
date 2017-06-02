@@ -1150,7 +1150,6 @@ int32_t basilisk_swapuserdata(uint8_t *userdata,bits256 privkey,int32_t ifpath,b
     return(len);
 }
 
-#ifdef old
 /*Bob paytx:
  OP_IF
  <now + INSTANTDEX_LOCKTIME> OP_CLTV OP_DROP <bob_pubB1> OP_CHECKSIG
@@ -1165,7 +1164,7 @@ int32_t basilisk_bobpayment_reclaim(struct basilisk_swap *swap,int32_t delay)
     len = basilisk_swapuserdata(userdata,zero,1,swap->I.myprivs[1],swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
     memcpy(swap->I.userdata_bobreclaim,userdata,len);
     swap->I.userdata_bobreclaimlen = len;
-    if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobreclaim,&swap->bobpayment,swap->I.myprivs[1],0,userdata,len,1,swap->changermd160)) == 0 )
+    if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobreclaim,&swap->bobpayment,swap->I.myprivs[1],0,userdata,len,1,swap->changermd160,swap->bobpayment.I.destaddr)) == 0 )
     {
         for (i=0; i<swap->bobreclaim.I.datalen; i++)
             printf("%02x",swap->bobreclaim.txbytes[i]);
@@ -1182,7 +1181,7 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
     len = basilisk_swapuserdata(userdata,swap->I.privBn,0,swap->I.myprivs[0],swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
     memcpy(swap->I.userdata_bobrefund,userdata,len);
     swap->I.userdata_bobrefundlen = len;
-    if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobrefund,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,0,swap->changermd160)) == 0 )
+    if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->bobrefund,&swap->bobdeposit,swap->I.myprivs[0],0,userdata,len,0,swap->changermd160,swap->bobdeposit.I.destaddr)) == 0 )
     {
         for (i=0; i<swap->bobrefund.I.datalen; i++)
             printf("%02x",swap->bobrefund.txbytes[i]);
@@ -1192,7 +1191,6 @@ int32_t basilisk_bobdeposit_refund(struct basilisk_swap *swap,int32_t delay)
     }
     return(-1);
 }
-#endif
 
 int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,int32_t genflag)
 {
@@ -1204,35 +1202,31 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
         swap->bobpayment.I.spendlen = basilisk_bobscript(swap->bobpayment.I.rmd160,swap->bobpayment.redeemscript,&swap->bobpayment.I.redeemlen,swap->bobpayment.spendscript,0,&swap->bobpayment.I.locktime,&swap->bobpayment.I.secretstart,&swap->I,0);
         bitcoin_address(swap->bobpayment.p2shaddr,swap->bobcoin.p2shtype,swap->bobpayment.redeemscript,swap->bobpayment.I.redeemlen);
         strcpy(swap->bobpayment.I.destaddr,swap->bobpayment.p2shaddr);
-        //for (i=0; i<swap->bobpayment.redeemlen; i++)
-        //    printf("%02x",swap->bobpayment.redeemscript[i]);
-        //printf(" <- bobpayment.%d\n",i);
+        int32_t i; for (i=0; i<swap->bobpayment.I.redeemlen; i++)
+            printf("%02x",swap->bobpayment.redeemscript[i]);
+        printf(" <- bobpayment redeem %d %s\n",i,swap->bobpayment.I.destaddr);
         if ( genflag != 0 && bits256_nonz(*(bits256 *)swap->I.secretBn256) != 0 && swap->bobpayment.I.datalen == 0 )
         {
-            //for (i=0; i<3; i++)
+            basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
+            if ( swap->bobpayment.I.spendlen == 0 || swap->bobpayment.I.datalen == 0 )
             {
-                //if ( swap->bobpayment.txbytes != 0 && swap->bobpayment.I.spendlen != 0 )
-                //    break;
-                basilisk_rawtx_gen(swap->ctx,"payment",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobpayment,swap->bobpayment.I.locktime,swap->bobpayment.spendscript,swap->bobpayment.I.spendlen,swap->bobpayment.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
-                if ( swap->bobpayment.I.spendlen == 0 || swap->bobpayment.I.datalen == 0 )
-                {
-                    printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.I.spendlen);
-                    sleep(DEX_SLEEP);
-                }
-                else
-                {
-                    for (j=0; j<swap->bobpayment.I.datalen; j++)
-                        printf("%02x",swap->bobpayment.txbytes[j]);
-                    printf(" <- bobpayment.%d\n",swap->bobpayment.I.datalen);
-                    for (j=0; j<swap->bobpayment.I.redeemlen; j++)
-                        printf("%02x",swap->bobpayment.redeemscript[j]);
-                    printf(" <- redeem.%d\n",swap->bobpayment.I.redeemlen);
-                    printf(" <- GENERATED BOB PAYMENT.%d destaddr.(%s)\n",swap->bobpayment.I.datalen,swap->bobpayment.I.destaddr);
-                    LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
-                    //basilisk_bobpayment_reclaim(swap,swap->I.callduration);
-                    //printf("bobscripts set completed\n");
-                    return(0);
-                }
+                printf("error bob generating %p payment.%d\n",swap->bobpayment.txbytes,swap->bobpayment.I.spendlen);
+                sleep(DEX_SLEEP);
+            }
+            else
+            {
+                for (j=0; j<swap->bobpayment.I.datalen; j++)
+                    printf("%02x",swap->bobpayment.txbytes[j]);
+                printf(" <- bobpayment.%d\n",swap->bobpayment.I.datalen);
+                for (j=0; j<swap->bobpayment.I.redeemlen; j++)
+                    printf("%02x",swap->bobpayment.redeemscript[j]);
+                printf(" <- redeem.%d\n",swap->bobpayment.I.redeemlen);
+                printf(" <- GENERATED BOB PAYMENT.%d destaddr.(%s)\n",swap->bobpayment.I.datalen,swap->bobpayment.I.destaddr);
+                LP_unspents_mark(swap->bobcoin.symbol,swap->bobpayment.vins);
+                if ( swap->I.iambob != 0 )
+                    basilisk_bobpayment_reclaim(swap,swap->I.callduration);
+                //printf("bobscripts set completed\n");
+                return(0);
             }
         }
     }
@@ -1241,37 +1235,29 @@ int32_t basilisk_bobscripts_set(struct basilisk_swap *swap,int32_t depositflag,i
         swap->bobdeposit.I.spendlen = basilisk_bobscript(swap->bobdeposit.I.rmd160,swap->bobdeposit.redeemscript,&swap->bobdeposit.I.redeemlen,swap->bobdeposit.spendscript,0,&swap->bobdeposit.I.locktime,&swap->bobdeposit.I.secretstart,&swap->I,1);
         bitcoin_address(swap->bobdeposit.p2shaddr,swap->bobcoin.p2shtype,swap->bobdeposit.redeemscript,swap->bobdeposit.I.redeemlen);
         strcpy(swap->bobdeposit.I.destaddr,swap->bobdeposit.p2shaddr);
+        int32_t i; for (i=0; i<swap->bobdeposit.I.redeemlen; i++)
+            printf("%02x",swap->bobdeposit.redeemscript[i]);
+        printf(" <- bobdeposit redeem %d %s\n",i,swap->bobdeposit.I.destaddr);
         if ( genflag != 0 && (swap->bobdeposit.I.datalen == 0 || swap->bobrefund.I.datalen == 0) )
         {
-            //for (i=0; i<3; i++)
+            basilisk_rawtx_gen(swap->ctx,"deposit",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
+            if ( swap->bobdeposit.I.datalen == 0 || swap->bobdeposit.I.spendlen == 0 )
             {
-                //if ( swap->bobdeposit.txbytes != 0 && swap->bobdeposit.I.spendlen != 0 )
-                //    break;
-                basilisk_rawtx_gen(swap->ctx,"deposit",swap->I.started,swap->persistent_pubkey33,1,1,&swap->bobdeposit,swap->bobdeposit.I.locktime,swap->bobdeposit.spendscript,swap->bobdeposit.I.spendlen,swap->bobdeposit.coin->txfee,1,0,swap->persistent_privkey,swap->changermd160,0);
-                if ( swap->bobdeposit.I.datalen == 0 || swap->bobdeposit.I.spendlen == 0 )
-                {
-                    printf("error bob generating %p deposit.%d\n",swap->bobdeposit.txbytes,swap->bobdeposit.I.spendlen);
-                    sleep(DEX_SLEEP);
-                }
-                else
-                {
-                    for (j=0; j<swap->bobdeposit.I.datalen; j++)
-                        printf("%02x",swap->bobdeposit.txbytes[j]);
-                    printf(" <- GENERATED BOB DEPOSIT.%d\n",swap->bobdeposit.I.datalen);
-                    //for (j=0; j<swap->bobdeposit.redeemlen; j++)
-                    //    printf("%02x",swap->bobdeposit.redeemscript[j]);
-                    //printf(" <- redeem.%d\n",swap->bobdeposit.redeemlen);
-                    //printf("GENERATED BOB DEPOSIT\n");
-                    LP_unspents_mark(swap->bobcoin.symbol,swap->bobdeposit.vins);
-                    //basilisk_bobdeposit_refund(swap,swap->I.putduration);
-                    printf("bobscripts set completed\n");
-                    return(0);
-                }
+                printf("error bob generating %p deposit.%d\n",swap->bobdeposit.txbytes,swap->bobdeposit.I.spendlen);
+                sleep(DEX_SLEEP);
+            }
+            else
+            {
+                for (j=0; j<swap->bobdeposit.I.datalen; j++)
+                    printf("%02x",swap->bobdeposit.txbytes[j]);
+                printf(" <- GENERATED BOB DEPOSIT.%d\n",swap->bobdeposit.I.datalen);
+                LP_unspents_mark(swap->bobcoin.symbol,swap->bobdeposit.vins);
+                if ( swap->I.iambob != 0 )
+                    basilisk_bobdeposit_refund(swap,swap->I.putduration);
+                printf("bobscripts set completed\n");
+                return(0);
             }
         }
-        //for (i=0; i<swap->bobdeposit.redeemlen; i++)
-        //    printf("%02x",swap->bobdeposit.redeemscript[i]);
-        //printf(" <- bobdeposit.%d\n",i);
     }
     return(0);
 }
@@ -1532,14 +1518,14 @@ int32_t LP_verify_bobpayment(struct basilisk_swap *swap,uint8_t *data,int32_t da
         swap->I.userdata_alicespendlen = len;
         retval = 0;
         char str[65],str2[65]; printf("bobpaid privAm.(%s) myprivs[0].(%s)\n",bits256_str(str,swap->I.privAm),bits256_str(str2,swap->I.myprivs[0]));
-        //if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160)) == 0 )
+        if ( (retval= basilisk_rawtx_sign(swap->bobcoin.symbol,swap->bobcoin.pubtype,swap->bobcoin.p2shtype,swap->bobcoin.isPoS,swap->bobcoin.wiftype,swap,&swap->alicespend,&swap->bobpayment,swap->I.myprivs[0],0,userdata,len,1,swap->changermd160,swap->alicepayment.I.destaddr)) == 0 )
         {
             for (i=0; i<swap->bobpayment.I.datalen; i++)
                 printf("%02x",swap->bobpayment.txbytes[i]);
             printf(" <- bobpayment\n");
-            //for (i=0; i<swap->alicespend.I.datalen; i++)
-            //    printf("%02x",swap->alicespend.txbytes[i]);
-            //printf(" <- alicespend\n\n");
+            for (i=0; i<swap->alicespend.I.datalen; i++)
+                printf("%02x",swap->alicespend.txbytes[i]);
+            printf(" <- alicespend\n\n");
             swap->I.alicespent = 1;
             //basilisk_txlog(swap,&swap->alicespend,-1);
             return(retval);
